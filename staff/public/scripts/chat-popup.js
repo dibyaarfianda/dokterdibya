@@ -27,6 +27,10 @@
       .toUpperCase();
   }
 
+  const API_ORIGIN = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+    ? 'http://localhost:3001'
+    : window.location.origin.replace(/\/$/, '');
+
   // ---------- HTML ----------
   const chatHTML = `
     <div id="chat-popup-container">
@@ -369,7 +373,7 @@
       // Send to backend
       try {
         const token = await window.getIdToken();
-        const response = await fetch('https://praktekdrdibya.com/api/chat/send', {
+  const response = await fetch(`${API_ORIGIN}/api/chat/send`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
           body: JSON.stringify({
@@ -391,7 +395,7 @@
         async function loadChatHistory() {
             try {
                 const token = await window.getIdToken();
-                const response = await fetch('https://praktekdrdibya.com/api/chat/messages', {
+                const response = await fetch(`${API_ORIGIN}/api/chat/messages`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }

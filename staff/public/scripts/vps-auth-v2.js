@@ -5,8 +5,8 @@ const API_BASE = (() => {
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
         return 'http://localhost:3001';
     }
-    // Use production domain
-    return 'https://praktekdrdibya.com';
+    // Default to the current origin so API calls stay same-host in production
+    return window.location.origin.replace(/\/$/, '');
 })();
 
 export const auth = {

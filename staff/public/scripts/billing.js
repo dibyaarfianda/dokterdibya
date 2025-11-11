@@ -9,7 +9,9 @@ import { getIdToken, hasPermission } from './vps-auth-v2.js';
 import { broadcastBillingUpdate } from './realtime-sync.js';
 
 // VPS API Configuration
-const VPS_API_BASE = 'https://praktekdrdibya.com';
+const VPS_API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+    ? 'http://localhost:3001'
+    : window.location.origin.replace(/\/$/, '');
 
 const serviceListContainer = document.getElementById('serviceList');
 const tindakanSearchInput = document.getElementById('tindakanSearchInput');

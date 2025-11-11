@@ -2065,18 +2065,18 @@
                                         
                                         <div class="form-group">
                                             <label for="profile-current-password">Current Password</label>
-                                            <input type="password" class="form-control" id="profile-current-password" placeholder="Masukkan password saat ini">
+                                            <input type="password" class="form-control" id="profile-current-password" placeholder="Masukkan password saat ini" autocomplete="current-password">
                                             <small class="form-text text-muted">Diperlukan untuk mengubah password</small>
                                         </div>
                                         
                                         <div class="form-group">
                                             <label for="profile-new-password">New Password</label>
-                                            <input type="password" class="form-control" id="profile-new-password" placeholder="Password baru (min. 6 karakter)">
+                                            <input type="password" class="form-control" id="profile-new-password" placeholder="Password baru (min. 6 karakter)" autocomplete="new-password">
                                         </div>
                                         
                                         <div class="form-group">
                                             <label for="profile-confirm-password">Confirm New Password</label>
-                                            <input type="password" class="form-control" id="profile-confirm-password" placeholder="Konfirmasi password baru">
+                                            <input type="password" class="form-control" id="profile-confirm-password" placeholder="Konfirmasi password baru" autocomplete="new-password">
                                         </div>
                                         
                                         <div class="alert alert-info">
@@ -2587,7 +2587,7 @@
     window.auth = auth;
     window.getIdToken = getIdToken;
     await import('./scripts/toast.js?v=' + v); // Toast notification system
-    const { initMain } = await import('/scripts/main.js?v=' + v);
+    const { initMain } = await import('./scripts/main.js?v=' + v);
     const { initBilling } = await import('./scripts/billing.js?v=' + v);
     const { initDashboard } = await import('./scripts/dashboard.js?v=' + v);
     const { initAuth } = await import('./scripts/auth.js?v=' + v);
@@ -2646,7 +2646,11 @@
  <!-- Socket.IO initialization for chat -->
  <script>
     // Initialize Socket.IO connection for chat
-    window.socket = io('https://praktekdrdibya.com', {
+    const socketOrigin = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+        ? 'http://localhost:3001'
+        : window.location.origin.replace(/\/$/, '');
+
+    window.socket = io(socketOrigin, {
         transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionDelay: 1000,
@@ -2663,7 +2667,7 @@
  </script>
 
  <!-- Chat Popup Widget -->
- <script src="/scripts/chat-popup.js"></script>
+ <script src="./scripts/chat-popup.js"></script>
 
 </body>
 </html>
