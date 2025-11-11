@@ -1,0 +1,111 @@
+{
+  "submissionId": "1762821911376-b3bc1e",
+  "receivedAt": "2025-11-11T00:45:11.376Z",
+  "status": "patient_reported",
+  "payload": {
+    "full_name": "Feby Kumalasari",
+    "nik": "033310239029",
+    "dob": "1983-02-06",
+    "age": "42",
+    "address": "Jl. Balowerti 2 No. 6",
+    "phone": "08123172041",
+    "marital_status": "cerai",
+    "occupation": "Wiraswasta",
+    "education": "sarjana",
+    "consent": true,
+    "edd": "2026-05-10",
+    "first_check_ga": "11",
+    "height": "155",
+    "weight": "44",
+    "bmi": "18.3",
+    "general_condition": "baik",
+    "blood_type": "O",
+    "rhesus": "positive",
+    "menarche_age": "13",
+    "cycle_length": "15",
+    "cycle_regular": "ya",
+    "lmp": "2025-08-07",
+    "gravida": "1",
+    "patient_signature": "Feby",
+    "final_ack": true,
+    "medications": [],
+    "previousPregnancies": [
+      {
+        "index": 1,
+        "year": "1993",
+        "mode": "SC"
+      }
+    ],
+    "prenatalVisits": [],
+    "labResults": [],
+    "metadata": {
+      "currentStep": 6,
+      "deviceTimestamp": "2025-11-11T00:45:11.162Z",
+      "bmiValue": "18.3",
+      "bmiCategory": "Underweight",
+      "edd": {
+        "value": "2026-05-10",
+        "source": "manual-override",
+        "autoValue": "2026-05-14",
+        "lmpReference": "2025-08-07"
+      },
+      "obstetricTotals": {
+        "gravida": 1,
+        "para": 0,
+        "abortus": 0,
+        "living": 0
+      },
+      "riskFlags": [
+        "Usia ibu di bawah 18 tahun atau di atas 35 tahun"
+      ],
+      "highRisk": true,
+      "stage": "patient_reported",
+      "autoSaveKey": "dibya-intake-draft-v1"
+    },
+    "review": {
+      "status": "patient_reported",
+      "verifiedBy": null,
+      "verifiedAt": null,
+      "sections": {}
+    },
+    "flags": {
+      "highRisk": true,
+      "consentSigned": true,
+      "finalAcknowledged": true
+    },
+    "signature": {
+      "type": "digital_name",
+      "value": "Feby"
+    }
+  },
+  "review": {
+    "status": "patient_reported",
+    "verifiedBy": null,
+    "verifiedAt": null,
+    "sections": {},
+    "history": [
+      {
+        "status": "patient_reported",
+        "actor": "patient",
+        "timestamp": "2025-11-11T00:45:11.376Z"
+      }
+    ]
+  },
+  "summary": {
+    "highRisk": true,
+    "riskFlags": [
+      "Usia ibu di bawah 18 tahun atau di atas 35 tahun"
+    ]
+  },
+  "client": {
+    "ip": "182.253.116.8",
+    "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "referer": "https://praktekdrdibya.com/patient-intake.html"
+  },
+  "audit": {
+    "signatureType": "digital_name",
+    "signatureValue": "Feby",
+    "deviceTimestamp": "2025-11-11T00:45:11.162Z",
+    "payloadHash": "d4d415da9051157154b7b002f03a76d7b1fa515cfbebcdbbe41c1261fa174ac2"
+  }
+}
