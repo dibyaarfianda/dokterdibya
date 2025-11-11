@@ -5,6 +5,7 @@ const fs = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
 const logger = require('../utils/logger');
+const PatientIntakeIntegrationService = require('../services/PatientIntakeIntegrationService');
 
 const router = express.Router();
 const STORAGE_DIR = path.join(__dirname, '..', 'logs', 'patient-intake');
@@ -395,6 +396,29 @@ router.put('/api/patient-intake/:submissionId/review', async (req, res, next) =>
             record.payload.review.sections = Object.assign({}, record.payload.review.sections || {}, sections);
         }
 
+        let integrationResult = null;
+        if (desiredStatus === 'verified') {
+            try {
+                integrationResult = await PatientIntakeIntegrationService.process(record, {
+                    reviewer,
+                    notes,
+                    reviewedAt: now,
+                });
+                if (integrationResult) {
+                    record.integration = integrationResult;
+                }
+            } catch (integrationError) {
+                logger.error('Failed to integrate intake submission', {
+                    submissionId,
+                    error: integrationError.message,
+                });
+                return res.status(500).json({
+                    success: false,
+                    message: `Integrasi EMR gagal: ${integrationError.message}`,
+                });
+            }
+        }
+
         await saveRecord(record);
 
         res.json({
@@ -403,6 +427,7 @@ router.put('/api/patient-intake/:submissionId/review', async (req, res, next) =>
             status: desiredStatus,
             reviewedBy: reviewer,
             reviewedAt: now,
+            integration: integrationResult || record.integration || null,
         });
     } catch (error) {
         if (/INTAKE_ENCRYPTION_KEY/.test(error.message)) {

@@ -298,8 +298,8 @@ function populateDetail(record) {
 }
 
 async function openDetailModal(submissionId) {
-    currentSubmissionId = submissionId;
     resetDetailModal();
+    currentSubmissionId = submissionId;
     detailModal.modal('show');
     try {
         const res = await authorizedFetch(`/api/patient-intake/${submissionId}`);

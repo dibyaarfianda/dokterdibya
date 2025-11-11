@@ -132,10 +132,10 @@
                                 </select>
                             </div>
                             <div class="form-group mr-3 mb-2">
-                                <label class="mb-1">Periode</label>
+                                <span class="mb-1 d-block">Periode</span>
                                 <div class="d-flex">
-                                    <input type="date" id="filter-from" class="form-control form-control-sm mr-2" placeholder="Dari">
-                                    <input type="date" id="filter-to" class="form-control form-control-sm" placeholder="Sampai">
+                                    <input type="date" id="filter-from" class="form-control form-control-sm mr-2" placeholder="Dari" aria-label="Tanggal mulai">
+                                    <input type="date" id="filter-to" class="form-control form-control-sm" placeholder="Sampai" aria-label="Tanggal akhir">
                                 </div>
                             </div>
                             <div class="form-group mr-3 mb-2">
@@ -143,7 +143,7 @@
                                 <input type="search" id="filter-search" class="form-control form-control-sm" placeholder="Ketik kata kunci...">
                             </div>
                             <div class="form-group mb-2">
-                                <label class="mb-1">&nbsp;</label>
+                                <span class="mb-1 d-block" aria-hidden="true">&nbsp;</span>
                                 <div>
                                     <button class="btn btn-primary btn-sm" id="btn-refresh">
                                         <i class="fas fa-sync-alt"></i> Refresh

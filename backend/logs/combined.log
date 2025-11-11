@@ -5421,3 +5421,140 @@
 {"code":"ECONNRESET","errno":-104,"fatal":true,"level":"\u001b[31merror\u001b[39m","message":"\u001b[31mDatabase connection error: read ECONNRESET\u001b[39m","stack":"Error: read ECONNRESET\n    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)","syscall":"read","timestamp":"2025-11-11 15:45:57"}
 {"activeUsers":0,"avgResponseTime":4,"errorCount":1,"errorRate":0.68,"level":"\u001b[32minfo\u001b[39m","loadAverage":[0.41,0.19,0.07],"memoryUsage":44,"message":"\u001b[32mMetrics Summary\u001b[39m","p95ResponseTime":17,"timestamp":"2025-11-11 15:49:21","totalRequests":146,"uptime":2099}
 {"activeUsers":0,"avgResponseTime":4,"errorCount":1,"errorRate":0.68,"level":"\u001b[32minfo\u001b[39m","loadAverage":[0.18,0.22,0.11],"memoryUsage":45,"message":"\u001b[32mMetrics Summary\u001b[39m","p95ResponseTime":17,"timestamp":"2025-11-11 15:54:21","totalRequests":146,"uptime":2400}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mBackend server running on port 3001\u001b[39m","timestamp":"2025-11-11 17:27:02"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mEnvironment: production\u001b[39m","timestamp":"2025-11-11 17:27:02"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mSocket.io real-time enabled\u001b[39m","timestamp":"2025-11-11 17:27:02"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mNew database connection established\u001b[39m","timestamp":"2025-11-11 17:27:02"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mDatabase connection pool initialized successfully\u001b[39m","timestamp":"2025-11-11 17:27:02"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mStarting intake integration\u001b[39m","reviewer":"clinic_staff","submissionId":"1762821911375-69b0ea","timestamp":"2025-11-11 17:27:10"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mPatient intake integration process started\u001b[39m","reviewer":"clinic_staff","submissionId":"1762821911375-69b0ea","timestamp":"2025-11-11 17:27:10"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mPatient intake integration process finished\u001b[39m","result":{"createdNewPatient":false,"examCreated":true,"integratedAt":"2025-11-11T10:27:10.168Z","medicalExamId":34,"notes":"Testing endpoint","patientId":"52643","reviewer":"clinic_staff","risk":{"flags":["Usia ibu di bawah 18 tahun atau di atas 35 tahun"],"highRisk":true},"status":"completed","updatedExistingPatient":true,"visitCreated":true,"visitId":9},"submissionId":"1762821911375-69b0ea","timestamp":"2025-11-11 17:27:10"}
+{"level":"\u001b[32minfo\u001b[39m","medicalExamId":34,"message":"\u001b[32mPatient intake integrated into EMR\u001b[39m","patientId":"52643","submissionId":"1762821911375-69b0ea","timestamp":"2025-11-11 17:27:10","visitId":9}
+{"integration":{"createdNewPatient":false,"examCreated":true,"integratedAt":"2025-11-11T10:27:10.168Z","medicalExamId":34,"notes":"Testing endpoint","patientId":"52643","reviewer":"clinic_staff","risk":{"flags":["Usia ibu di bawah 18 tahun atau di atas 35 tahun"],"highRisk":true},"status":"completed","updatedExistingPatient":true,"visitCreated":true,"visitId":9},"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mCompleted intake integration\u001b[39m","submissionId":"1762821911375-69b0ea","timestamp":"2025-11-11 17:27:10"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient connected: saJogj0pub63tDs8AAAB\u001b[39m","timestamp":"2025-11-11 17:29:46"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mNew database connection established\u001b[39m","timestamp":"2025-11-11 17:29:46"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mNew database connection established\u001b[39m","timestamp":"2025-11-11 17:29:46"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient connected: XPu8BxsYHIJQ7S7wAAAD\u001b[39m","timestamp":"2025-11-11 17:29:46"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mUser registered on socket: dr.dibya (superadmin)\u001b[39m","timestamp":"2025-11-11 17:29:46"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mNo current patient selected, skipping auto-select for dr.dibya\u001b[39m","timestamp":"2025-11-11 17:29:46"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient disconnected: saJogj0pub63tDs8AAAB (unknown)\u001b[39m","timestamp":"2025-11-11 17:29:50"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient disconnected: XPu8BxsYHIJQ7S7wAAAD (dr.dibya)\u001b[39m","timestamp":"2025-11-11 17:29:50"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient connected: Il36KOpV0HAle76pAAAF\u001b[39m","timestamp":"2025-11-11 17:29:51"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient connected: loFhgbB71KLduanlAAAH\u001b[39m","timestamp":"2025-11-11 17:29:51"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mUser registered on socket: dr.dibya (superadmin)\u001b[39m","timestamp":"2025-11-11 17:29:51"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mNo current patient selected, skipping auto-select for dr.dibya\u001b[39m","timestamp":"2025-11-11 17:29:51"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient disconnected: Il36KOpV0HAle76pAAAF (unknown)\u001b[39m","timestamp":"2025-11-11 17:29:52"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient disconnected: loFhgbB71KLduanlAAAH (dr.dibya)\u001b[39m","timestamp":"2025-11-11 17:29:52"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mUser logged in: nanda.arfianda@gmail.com\u001b[39m","timestamp":"2025-11-11 17:30:42"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient connected: Ho13hvDVdPLxJBedAAAJ\u001b[39m","timestamp":"2025-11-11 17:30:42"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient connected: ZVvvhUKEqEmDUUE_AAAL\u001b[39m","timestamp":"2025-11-11 17:30:42"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mUser registered on socket: dr.dibya (superadmin)\u001b[39m","timestamp":"2025-11-11 17:30:42"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mNo current patient selected, skipping auto-select for dr.dibya\u001b[39m","timestamp":"2025-11-11 17:30:42"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient disconnected: Ho13hvDVdPLxJBedAAAJ (unknown)\u001b[39m","timestamp":"2025-11-11 17:30:45"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient disconnected: ZVvvhUKEqEmDUUE_AAAL (dr.dibya)\u001b[39m","timestamp":"2025-11-11 17:30:45"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient connected: 2nFfrWG0Ub0AFS34AAAN\u001b[39m","timestamp":"2025-11-11 17:30:58"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient connected: n3QbAs3bJVbrVb9_AAAP\u001b[39m","timestamp":"2025-11-11 17:30:58"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mUser registered on socket: dr.dibya (superadmin)\u001b[39m","timestamp":"2025-11-11 17:30:58"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mNo current patient selected, skipping auto-select for dr.dibya\u001b[39m","timestamp":"2025-11-11 17:30:58"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient disconnected: 2nFfrWG0Ub0AFS34AAAN (unknown)\u001b[39m","timestamp":"2025-11-11 17:31:43"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient disconnected: n3QbAs3bJVbrVb9_AAAP (dr.dibya)\u001b[39m","timestamp":"2025-11-11 17:31:43"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient connected: govrfI2QqtqVODwyAAAR\u001b[39m","timestamp":"2025-11-11 17:31:58"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient connected: -p2KJSeFdNkBxk3WAAAT\u001b[39m","timestamp":"2025-11-11 17:31:58"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mUser registered on socket: dr.dibya (superadmin)\u001b[39m","timestamp":"2025-11-11 17:31:58"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mNo current patient selected, skipping auto-select for dr.dibya\u001b[39m","timestamp":"2025-11-11 17:31:58"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient disconnected: govrfI2QqtqVODwyAAAR (unknown)\u001b[39m","timestamp":"2025-11-11 17:31:59"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient disconnected: -p2KJSeFdNkBxk3WAAAT (dr.dibya)\u001b[39m","timestamp":"2025-11-11 17:31:59"}
+{"activeUsers":0,"avgResponseTime":4,"errorCount":0,"errorRate":0,"level":"\u001b[32minfo\u001b[39m","loadAverage":[0,0.15,0.14],"memoryUsage":47,"message":"\u001b[32mMetrics Summary\u001b[39m","p95ResponseTime":10,"timestamp":"2025-11-11 17:32:01","totalRequests":68,"uptime":299}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient connected: qDnWtgvOS4X-WnO5AAAV\u001b[39m","timestamp":"2025-11-11 17:33:18"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mUser registered on socket: dr.dibya (superadmin)\u001b[39m","timestamp":"2025-11-11 17:33:18"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mNo current patient selected, skipping auto-select for dr.dibya\u001b[39m","timestamp":"2025-11-11 17:33:18"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient connected: AA--_GXLswnccx8WAAAX\u001b[39m","timestamp":"2025-11-11 17:33:18"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient disconnected: AA--_GXLswnccx8WAAAX (unknown)\u001b[39m","timestamp":"2025-11-11 17:33:19"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient disconnected: qDnWtgvOS4X-WnO5AAAV (dr.dibya)\u001b[39m","timestamp":"2025-11-11 17:33:19"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mUser logged in: konchelsky83@gmail.com\u001b[39m","timestamp":"2025-11-11 17:33:28"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient connected: aGYZrfXrS2lcw79fAAAZ\u001b[39m","timestamp":"2025-11-11 17:33:29"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient connected: WmOVqLZa9yxKATX8AAAb\u001b[39m","timestamp":"2025-11-11 17:33:29"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mUser registered on socket: nanda (manager)\u001b[39m","timestamp":"2025-11-11 17:33:29"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mNo current patient selected, skipping auto-select for nanda\u001b[39m","timestamp":"2025-11-11 17:33:29"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient disconnected: WmOVqLZa9yxKATX8AAAb (nanda)\u001b[39m","timestamp":"2025-11-11 17:33:32"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient disconnected: aGYZrfXrS2lcw79fAAAZ (unknown)\u001b[39m","timestamp":"2025-11-11 17:33:32"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mUser logged in: lizhaafirah@gmail.com\u001b[39m","timestamp":"2025-11-11 17:33:43"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient connected: 6deyeQdTzJHbV3G0AAAd\u001b[39m","timestamp":"2025-11-11 17:33:43"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mNew database connection established\u001b[39m","timestamp":"2025-11-11 17:33:43"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient connected: 6XJa5huO_KKXx9-eAAAf\u001b[39m","timestamp":"2025-11-11 17:33:43"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mUser registered on socket: liza (doctorassistant)\u001b[39m","timestamp":"2025-11-11 17:33:43"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mNo current patient selected, skipping auto-select for liza\u001b[39m","timestamp":"2025-11-11 17:33:43"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient disconnected: 6deyeQdTzJHbV3G0AAAd (unknown)\u001b[39m","timestamp":"2025-11-11 17:33:54"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient disconnected: 6XJa5huO_KKXx9-eAAAf (liza)\u001b[39m","timestamp":"2025-11-11 17:33:54"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mUser logged in: nanda.arfianda@gmail.com\u001b[39m","timestamp":"2025-11-11 17:33:59"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient connected: 51NtHfCT9-lOPo1fAAAh\u001b[39m","timestamp":"2025-11-11 17:33:59"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient connected: ipJwlcT4qbEy-KS-AAAj\u001b[39m","timestamp":"2025-11-11 17:34:00"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mUser registered on socket: dr.dibya (superadmin)\u001b[39m","timestamp":"2025-11-11 17:34:00"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mNo current patient selected, skipping auto-select for dr.dibya\u001b[39m","timestamp":"2025-11-11 17:34:00"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient disconnected: 51NtHfCT9-lOPo1fAAAh (unknown)\u001b[39m","timestamp":"2025-11-11 17:34:01"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient disconnected: ipJwlcT4qbEy-KS-AAAj (dr.dibya)\u001b[39m","timestamp":"2025-11-11 17:34:01"}
+{"activeUsers":0,"avgResponseTime":5,"errorCount":0,"errorRate":0,"level":"\u001b[32minfo\u001b[39m","loadAverage":[0.02,0.07,0.09],"memoryUsage":49,"message":"\u001b[32mMetrics Summary\u001b[39m","p95ResponseTime":15,"timestamp":"2025-11-11 17:37:01","totalRequests":104,"uptime":600}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient connected: Z_zE_UWGpkJXOicsAAAl\u001b[39m","timestamp":"2025-11-11 17:39:47"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient disconnected: Z_zE_UWGpkJXOicsAAAl (unknown)\u001b[39m","timestamp":"2025-11-11 17:39:48"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mUser logged in: nanda.arfianda@gmail.com\u001b[39m","timestamp":"2025-11-11 17:39:50"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient connected: ocegn_wPkxLgs8osAAAn\u001b[39m","timestamp":"2025-11-11 17:39:50"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient connected: p5hc8BqXQ0smUvF2AAAp\u001b[39m","timestamp":"2025-11-11 17:39:51"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mUser registered on socket: dr.dibya (superadmin)\u001b[39m","timestamp":"2025-11-11 17:39:51"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mNo current patient selected, skipping auto-select for dr.dibya\u001b[39m","timestamp":"2025-11-11 17:39:51"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient disconnected: p5hc8BqXQ0smUvF2AAAp (dr.dibya)\u001b[39m","timestamp":"2025-11-11 17:39:56"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient disconnected: ocegn_wPkxLgs8osAAAn (unknown)\u001b[39m","timestamp":"2025-11-11 17:39:56"}
+{"activeUsers":0,"avgResponseTime":6,"errorCount":0,"errorRate":0,"level":"\u001b[32minfo\u001b[39m","loadAverage":[0,0.03,0.07],"memoryUsage":49,"message":"\u001b[32mMetrics Summary\u001b[39m","p95ResponseTime":29,"timestamp":"2025-11-11 17:42:01","totalRequests":119,"uptime":900}
+{"code":"ECONNRESET","errno":-104,"fatal":true,"level":"\u001b[31merror\u001b[39m","message":"\u001b[31mDatabase connection error: read ECONNRESET\u001b[39m","stack":"Error: read ECONNRESET\n    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)","syscall":"read","timestamp":"2025-11-11 17:43:43"}
+{"code":"ECONNRESET","errno":-104,"fatal":true,"level":"\u001b[31merror\u001b[39m","message":"\u001b[31mDatabase connection error: read ECONNRESET\u001b[39m","stack":"Error: read ECONNRESET\n    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)","syscall":"read","timestamp":"2025-11-11 17:43:43"}
+{"activeUsers":0,"avgResponseTime":5,"errorCount":0,"errorRate":0,"level":"\u001b[32minfo\u001b[39m","loadAverage":[0.04,0.03,0.06],"memoryUsage":47,"message":"\u001b[32mMetrics Summary\u001b[39m","p95ResponseTime":15,"timestamp":"2025-11-11 17:47:01","totalRequests":125,"uptime":1200}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mStarting intake integration\u001b[39m","reviewer":"dr.dibya","submissionId":"1762821911376-b3bc1e","timestamp":"2025-11-11 17:48:24"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mPatient intake integration process started\u001b[39m","reviewer":"dr.dibya","submissionId":"1762821911376-b3bc1e","timestamp":"2025-11-11 17:48:24"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mPatient intake integration process finished\u001b[39m","result":{"createdNewPatient":false,"examCreated":true,"integratedAt":"2025-11-11T10:48:24.689Z","medicalExamId":35,"notes":null,"patientId":"52643","reviewer":"dr.dibya","risk":{"flags":["Usia ibu di bawah 18 tahun atau di atas 35 tahun"],"highRisk":true},"status":"completed","updatedExistingPatient":true,"visitCreated":true,"visitId":10},"submissionId":"1762821911376-b3bc1e","timestamp":"2025-11-11 17:48:24"}
+{"level":"\u001b[32minfo\u001b[39m","medicalExamId":35,"message":"\u001b[32mPatient intake integrated into EMR\u001b[39m","patientId":"52643","submissionId":"1762821911376-b3bc1e","timestamp":"2025-11-11 17:48:24","visitId":10}
+{"integration":{"createdNewPatient":false,"examCreated":true,"integratedAt":"2025-11-11T10:48:24.689Z","medicalExamId":35,"notes":null,"patientId":"52643","reviewer":"dr.dibya","risk":{"flags":["Usia ibu di bawah 18 tahun atau di atas 35 tahun"],"highRisk":true},"status":"completed","updatedExistingPatient":true,"visitCreated":true,"visitId":10},"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mCompleted intake integration\u001b[39m","submissionId":"1762821911376-b3bc1e","timestamp":"2025-11-11 17:48:24"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mStarting intake integration\u001b[39m","reviewer":"dr.dibya","submissionId":"1762849208446-497875","timestamp":"2025-11-11 17:48:37"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mPatient intake integration process started\u001b[39m","reviewer":"dr.dibya","submissionId":"1762849208446-497875","timestamp":"2025-11-11 17:48:37"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mPatient intake integration process finished\u001b[39m","result":{"createdNewPatient":true,"examCreated":true,"integratedAt":"2025-11-11T10:48:37.626Z","medicalExamId":36,"notes":null,"patientId":"93567","reviewer":"dr.dibya","risk":{"flags":["Usia ibu di bawah 18 tahun atau di atas 35 tahun","Riwayat: Diabetes"],"highRisk":true},"status":"completed","updatedExistingPatient":false,"visitCreated":true,"visitId":11},"submissionId":"1762849208446-497875","timestamp":"2025-11-11 17:48:37"}
+{"level":"\u001b[32minfo\u001b[39m","medicalExamId":36,"message":"\u001b[32mPatient intake integrated into EMR\u001b[39m","patientId":"93567","submissionId":"1762849208446-497875","timestamp":"2025-11-11 17:48:37","visitId":11}
+{"integration":{"createdNewPatient":true,"examCreated":true,"integratedAt":"2025-11-11T10:48:37.626Z","medicalExamId":36,"notes":null,"patientId":"93567","reviewer":"dr.dibya","risk":{"flags":["Usia ibu di bawah 18 tahun atau di atas 35 tahun","Riwayat: Diabetes"],"highRisk":true},"status":"completed","updatedExistingPatient":false,"visitCreated":true,"visitId":11},"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mCompleted intake integration\u001b[39m","submissionId":"1762849208446-497875","timestamp":"2025-11-11 17:48:37"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient connected: rsmNUAyTfSmh6xc-AAAr\u001b[39m","timestamp":"2025-11-11 17:49:04"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient connected: gqCRqkeEv87S1QaIAAAt\u001b[39m","timestamp":"2025-11-11 17:49:04"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mUser registered on socket: dr.dibya (superadmin)\u001b[39m","timestamp":"2025-11-11 17:49:04"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mNo current patient selected, skipping auto-select for dr.dibya\u001b[39m","timestamp":"2025-11-11 17:49:04"}
+{"level":"\u001b[31merror\u001b[39m","message":"\u001b[31mRequest error\u001b[39m","method":"GET","statusCode":404,"timestamp":"2025-11-11 17:49:22","url":"/api/medical-exams/patient/93567/latest/physical","userId":"YANOh3ZXnGQQNmE0Ge0JngMhAgt1"}
+{"level":"\u001b[31merror\u001b[39m","message":"\u001b[31mRequest error\u001b[39m","method":"GET","statusCode":404,"timestamp":"2025-11-11 17:49:24","url":"/api/medical-exams/patient/93567/latest/usg","userId":"YANOh3ZXnGQQNmE0Ge0JngMhAgt1"}
+{"level":"\u001b[31merror\u001b[39m","message":"\u001b[31mRequest error\u001b[39m","method":"GET","statusCode":404,"timestamp":"2025-11-11 17:49:25","url":"/api/medical-exams/patient/93567/latest/lab","userId":"YANOh3ZXnGQQNmE0Ge0JngMhAgt1"}
+{"level":"\u001b[31merror\u001b[39m","message":"\u001b[31mRequest error\u001b[39m","method":"GET","statusCode":404,"timestamp":"2025-11-11 17:49:38","url":"/api/medical-exams/patient/93567/latest/physical","userId":"YANOh3ZXnGQQNmE0Ge0JngMhAgt1"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient disconnected: rsmNUAyTfSmh6xc-AAAr (unknown)\u001b[39m","timestamp":"2025-11-11 17:49:48"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient disconnected: gqCRqkeEv87S1QaIAAAt (dr.dibya)\u001b[39m","timestamp":"2025-11-11 17:49:48"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient connected: WS0aE43qr1Qb7ofIAAAv\u001b[39m","timestamp":"2025-11-11 17:50:09"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient connected: 2PPgRggA8A0n2dLRAAAx\u001b[39m","timestamp":"2025-11-11 17:50:10"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mNew database connection established\u001b[39m","timestamp":"2025-11-11 17:50:10"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mUser registered on socket: dr.dibya (superadmin)\u001b[39m","timestamp":"2025-11-11 17:50:10"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mNo current patient selected, skipping auto-select for dr.dibya\u001b[39m","timestamp":"2025-11-11 17:50:10"}
+{"activeUsers":0,"avgResponseTime":5,"errorCount":4,"errorRate":2.35,"level":"\u001b[32minfo\u001b[39m","loadAverage":[0.02,0.07,0.08],"memoryUsage":47,"message":"\u001b[32mMetrics Summary\u001b[39m","p95ResponseTime":13,"timestamp":"2025-11-11 17:52:01","totalRequests":170,"uptime":1500}
+{"activeUsers":0,"avgResponseTime":5,"errorCount":4,"errorRate":2.35,"level":"\u001b[32minfo\u001b[39m","loadAverage":[0,0.02,0.05],"memoryUsage":47,"message":"\u001b[32mMetrics Summary\u001b[39m","p95ResponseTime":13,"timestamp":"2025-11-11 17:57:01","totalRequests":170,"uptime":1800}
+{"code":"ECONNRESET","errno":-104,"fatal":true,"level":"\u001b[31merror\u001b[39m","message":"\u001b[31mDatabase connection error: read ECONNRESET\u001b[39m","stack":"Error: read ECONNRESET\n    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)","syscall":"read","timestamp":"2025-11-11 18:00:10"}
+{"code":"ECONNRESET","errno":-104,"fatal":true,"level":"\u001b[31merror\u001b[39m","message":"\u001b[31mDatabase connection error: read ECONNRESET\u001b[39m","stack":"Error: read ECONNRESET\n    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)","syscall":"read","timestamp":"2025-11-11 18:00:10"}
+{"activeUsers":0,"avgResponseTime":5,"errorCount":4,"errorRate":2.33,"level":"\u001b[32minfo\u001b[39m","loadAverage":[0,0,0.02],"memoryUsage":47,"message":"\u001b[32mMetrics Summary\u001b[39m","p95ResponseTime":13,"timestamp":"2025-11-11 18:02:01","totalRequests":172,"uptime":2100}
+{"activeUsers":0,"avgResponseTime":5,"errorCount":4,"errorRate":2.31,"level":"\u001b[32minfo\u001b[39m","loadAverage":[0.07,0.02,0.01],"memoryUsage":48,"message":"\u001b[32mMetrics Summary\u001b[39m","p95ResponseTime":13,"timestamp":"2025-11-11 18:07:01","totalRequests":173,"uptime":2400}
+{"activeUsers":0,"avgResponseTime":5,"errorCount":4,"errorRate":2.31,"level":"\u001b[32minfo\u001b[39m","loadAverage":[0,0.02,0],"memoryUsage":12,"message":"\u001b[32mMetrics Summary\u001b[39m","p95ResponseTime":13,"timestamp":"2025-11-11 18:12:01","totalRequests":173,"uptime":2700}
+{"code":"ECONNRESET","errno":-104,"fatal":true,"level":"\u001b[31merror\u001b[39m","message":"\u001b[31mDatabase connection error: read ECONNRESET\u001b[39m","stack":"Error: read ECONNRESET\n    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)","syscall":"read","timestamp":"2025-11-11 18:13:16"}
+{"activeUsers":0,"avgResponseTime":5,"errorCount":4,"errorRate":2.31,"level":"\u001b[32minfo\u001b[39m","loadAverage":[0.07,0.04,0.01],"memoryUsage":21,"message":"\u001b[32mMetrics Summary\u001b[39m","p95ResponseTime":13,"timestamp":"2025-11-11 18:17:01","totalRequests":173,"uptime":3000}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient disconnected: 2PPgRggA8A0n2dLRAAAx (dr.dibya)\u001b[39m","timestamp":"2025-11-11 18:19:18"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient disconnected: WS0aE43qr1Qb7ofIAAAv (unknown)\u001b[39m","timestamp":"2025-11-11 18:19:18"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient connected: dbALooXfnNaVeKzCAAAz\u001b[39m","timestamp":"2025-11-11 18:19:19"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mNew database connection established\u001b[39m","timestamp":"2025-11-11 18:19:19"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mNew database connection established\u001b[39m","timestamp":"2025-11-11 18:19:19"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mNew database connection established\u001b[39m","timestamp":"2025-11-11 18:19:19"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mClient connected: FY7TEtpPRjgG34JwAAA1\u001b[39m","timestamp":"2025-11-11 18:19:19"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mUser registered on socket: dr.dibya (superadmin)\u001b[39m","timestamp":"2025-11-11 18:19:19"}
+{"level":"\u001b[32minfo\u001b[39m","message":"\u001b[32mNo current patient selected, skipping auto-select for dr.dibya\u001b[39m","timestamp":"2025-11-11 18:19:19"}
+{"activeUsers":0,"avgResponseTime":5,"errorCount":4,"errorRate":2.19,"level":"\u001b[32minfo\u001b[39m","loadAverage":[0.03,0.04,0],"memoryUsage":25,"message":"\u001b[32mMetrics Summary\u001b[39m","p95ResponseTime":13,"timestamp":"2025-11-11 18:22:01","totalRequests":183,"uptime":3300}
+{"activeUsers":0,"avgResponseTime":5,"errorCount":4,"errorRate":2.19,"level":"\u001b[32minfo\u001b[39m","loadAverage":[0.01,0.05,0.01],"memoryUsage":31,"message":"\u001b[32mMetrics Summary\u001b[39m","p95ResponseTime":13,"timestamp":"2025-11-11 18:27:01","totalRequests":183,"uptime":3600}
+{"code":"ECONNRESET","errno":-104,"fatal":true,"level":"\u001b[31merror\u001b[39m","message":"\u001b[31mDatabase connection error: read ECONNRESET\u001b[39m","stack":"Error: read ECONNRESET\n    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)","syscall":"read","timestamp":"2025-11-11 18:29:19"}
+{"code":"ECONNRESET","errno":-104,"fatal":true,"level":"\u001b[31merror\u001b[39m","message":"\u001b[31mDatabase connection error: read ECONNRESET\u001b[39m","stack":"Error: read ECONNRESET\n    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)","syscall":"read","timestamp":"2025-11-11 18:29:19"}
+{"code":"ECONNRESET","errno":-104,"fatal":true,"level":"\u001b[31merror\u001b[39m","message":"\u001b[31mDatabase connection error: read ECONNRESET\u001b[39m","stack":"Error: read ECONNRESET\n    at TCP.onStreamRead (node:internal/stream_base_commons:216:20)","syscall":"read","timestamp":"2025-11-11 18:29:26"}
+{"activeUsers":0,"avgResponseTime":5,"errorCount":4,"errorRate":2.19,"level":"\u001b[32minfo\u001b[39m","loadAverage":[0,0.01,0],"memoryUsage":31,"message":"\u001b[32mMetrics Summary\u001b[39m","p95ResponseTime":13,"timestamp":"2025-11-11 18:32:01","totalRequests":183,"uptime":3900}
+{"activeUsers":0,"avgResponseTime":5,"errorCount":4,"errorRate":2.19,"level":"\u001b[32minfo\u001b[39m","loadAverage":[0,0,0],"memoryUsage":31,"message":"\u001b[32mMetrics Summary\u001b[39m","p95ResponseTime":13,"timestamp":"2025-11-11 18:37:01","totalRequests":183,"uptime":4200}
+{"activeUsers":0,"avgResponseTime":5,"errorCount":4,"errorRate":2.19,"level":"\u001b[32minfo\u001b[39m","loadAverage":[0.01,0.02,0],"memoryUsage":32,"message":"\u001b[32mMetrics Summary\u001b[39m","p95ResponseTime":13,"timestamp":"2025-11-11 18:42:01","totalRequests":183,"uptime":4500}
