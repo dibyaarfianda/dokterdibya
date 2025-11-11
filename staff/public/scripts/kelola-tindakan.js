@@ -7,7 +7,9 @@ import { showSuccess, showError, showWarning } from './toast.js';
 console.log('🔄 kelola-tindakan.js LOADED - Version: 2025-11-08-11:40 - Using AUTH');
 
 // VPS API Configuration
-const VPS_API_BASE = 'https://praktekdrdibya.com';
+const VPS_API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+    ? 'http://localhost:3001'
+    : window.location.origin.replace(/\/$/, '');
 
 let allServices = [];
 let isEditMode = false;

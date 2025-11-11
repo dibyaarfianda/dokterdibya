@@ -1526,18 +1526,18 @@
                                         
                                         <div class="form-group">
                                             <label for="profile-current-password">Current Password</label>
-                                            <input type="password" class="form-control" id="profile-current-password" placeholder="Masukkan password saat ini">
+                                            <input type="password" class="form-control" id="profile-current-password" placeholder="Masukkan password saat ini" autocomplete="current-password">
                                             <small class="form-text text-muted">Diperlukan untuk mengubah password</small>
                                         </div>
                                         
                                         <div class="form-group">
                                             <label for="profile-new-password">New Password</label>
-                                            <input type="password" class="form-control" id="profile-new-password" placeholder="Password baru (min. 6 karakter)">
+                                            <input type="password" class="form-control" id="profile-new-password" placeholder="Password baru (min. 6 karakter)" autocomplete="new-password">
                                         </div>
                                         
                                         <div class="form-group">
                                             <label for="profile-confirm-password">Confirm New Password</label>
-                                            <input type="password" class="form-control" id="profile-confirm-password" placeholder="Konfirmasi password baru">
+                                            <input type="password" class="form-control" id="profile-confirm-password" placeholder="Konfirmasi password baru" autocomplete="new-password">
                                         </div>
                                         
                                         <div class="alert alert-info">
@@ -2041,7 +2041,7 @@
     // Import modules with cache buster
     const { auth, onAuthStateChanged } = await import('./scripts/vps-auth-v2.js?v=' + v);
     await import('./scripts/toast.js?v=' + v); // Toast notification system
-    const { initMain } = await import('/scripts/main.js?v=' + v);
+    const { initMain } = await import('./scripts/main.js?v=' + v);
     const { initBilling } = await import('./scripts/billing.js?v=' + v);
     const { initDashboard } = await import('./scripts/dashboard.js?v=' + v);
     const { initAuth } = await import('./scripts/auth.js?v=' + v);

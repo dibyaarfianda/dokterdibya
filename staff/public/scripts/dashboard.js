@@ -3,7 +3,9 @@
 import { getIdToken } from './vps-auth-v2.js';
 
 // VPS API Configuration
-const VPS_API_BASE = 'https://praktekdrdibya.com';
+const VPS_API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+    ? 'http://localhost:3001'
+    : window.location.origin.replace(/\/$/, '');
 
 function formatDateLocal(date) {
     const year = date.getFullYear();

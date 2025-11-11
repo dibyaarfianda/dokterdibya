@@ -7,7 +7,9 @@ import { getIdToken, hasPermission } from './vps-auth-v2.js';
 import { broadcastBillingUpdate } from './realtime-sync.js';
 
 // API Base URL
-const API_BASE = 'https://praktekdrdibya.com/api';
+const API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+    ? 'http://localhost:3001/api'
+    : `${window.location.origin.replace(/\/$/, '')}/api`;
 
 let allObat = [];
 let selectedObat = [];

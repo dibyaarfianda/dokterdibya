@@ -1,7 +1,9 @@
 import { getIdToken } from './vps-auth-v2.js';
 
 const CHAT_EDGE_THRESHOLD_PX = 4; // when mouse near right edge
-const VPS_API_BASE = 'https://praktekdrdibya.com';
+const VPS_API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+    ? 'http://localhost:3001'
+    : window.location.origin.replace(/\/$/, '');
 
 // Popular emojis for quick access
 const EMOJI_LIST = [
