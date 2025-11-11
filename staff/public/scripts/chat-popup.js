@@ -265,54 +265,73 @@
         // Inject HTML
         document.body.insertAdjacentHTML('beforeend', chatHTML);
 
+        // Ensure chat audio elements exist
+        if (!document.getElementById('chat-send-sound')) {
+            const sendAudioEl = document.createElement('audio');
+            sendAudioEl.id = 'chat-send-sound';
+            sendAudioEl.src = '/staff/public/sounds/send.mp3';
+            sendAudioEl.preload = 'auto';
+            document.body.appendChild(sendAudioEl);
+        }
+        if (!document.getElementById('chat-incoming-sound')) {
+            const incomingAudioEl = document.createElement('audio');
+            incomingAudioEl.id = 'chat-incoming-sound';
+            incomingAudioEl.src = '/staff/public/sounds/incoming.mp3';
+            incomingAudioEl.preload = 'auto';
+            document.body.appendChild(incomingAudioEl);
+        }
+
         // Get elements
         const toggleBtn = document.getElementById('chat-toggle-btn');
         const closeBtn = document.getElementById('chat-close-btn');
         const chatBox = document.getElementById('chat-box');
         const chatInput = document.getElementById('chat-input');
         const sendBtn = document.getElementById('chat-send-btn');
-        const messagesContainer = document.getElementById('chat-messages');
-        const chatBadge = document.querySelector('.chat-badge');
+    const messagesContainer = document.getElementById('chat-messages');
+    const chatBadge = document.querySelector('.chat-badge');
+    const sendAudio = document.getElementById('chat-send-sound');
+    const incomingAudio = document.getElementById('chat-incoming-sound');
         const onlineNamesEl = document.getElementById('online-names');
 
-        let isChatOpen = false;
-        let lastSender = null; // Track last message sender for avatar grouping
+  let isChatOpen = false;
+  let isHistoryLoading = false;
+  let lastSender = null; // Track last message sender for avatar grouping
   const userPhotoCache = new Map();
 
         // Function to update online users
-    function updateOnlineUsers(users) {
-      if (!onlineNamesEl) return;
+        function updateOnlineUsers(users) {
+            if (!onlineNamesEl) return;
 
-      if (!users || users.length === 0) {
-        onlineNamesEl.textContent = 'No one online';
-        return;
-      }
+            if (!users || users.length === 0) {
+                onlineNamesEl.textContent = 'No one online';
+                return;
+            }
 
-      const uniqueUsers = [];
-      const seen = new Set();
+            const uniqueUsers = [];
+            const seen = new Set();
 
-      users.forEach((u) => {
-        if (!u) return;
-        const key = `${u.userId || u.id || ''}-${u.name || ''}`;
-        if (!key || seen.has(key)) return;
-        seen.add(key);
-        uniqueUsers.push(u);
-      });
+            users.forEach((u) => {
+                if (!u) return;
+                const key = `${u.userId || u.id || ''}-${u.name || ''}`;
+                if (!key || seen.has(key)) return;
+                seen.add(key);
+                uniqueUsers.push(u);
+            });
 
-      if (uniqueUsers.length === 0) {
-        onlineNamesEl.textContent = 'No one online';
-        return;
-      }
+            if (uniqueUsers.length === 0) {
+                onlineNamesEl.textContent = 'No one online';
+                return;
+            }
 
-      uniqueUsers.forEach((u) => {
-        if (!u || !u.userId) return;
-        if (u.photo) {
-          userPhotoCache.set(u.userId, u.photo);
+            uniqueUsers.forEach((u) => {
+                if (!u || !u.userId) return;
+                if (u.photo) {
+                    userPhotoCache.set(u.userId, u.photo);
+                }
+            });
+
+            onlineNamesEl.textContent = uniqueUsers.map((u) => u.name).join(', ');
         }
-      });
-
-      onlineNamesEl.textContent = uniqueUsers.map((u) => u.name).join(', ');
-    }
 
         // Listen for online users updates via Socket.IO
         if (window.socket) {
@@ -361,13 +380,19 @@
     async function sendMessage() {
       const message = chatInput.value.trim();
       if (!message) return;
-  const curUser = window.auth?.currentUser;
+      const curUser = window.auth?.currentUser;
       if (!curUser) { console.error('User not authenticated'); return; }
 
-  const userPhoto = curUser.photo_url || curUser.photoURL || null;
+      const userPhoto = curUser.photo_url || curUser.photoURL || null;
 
       // Show immediately
-  addMessage(message, 'sent', null, curUser.name || curUser.email, userPhoto, curUser.id);
+      addMessage(message, 'sent', null, curUser.name || curUser.email, userPhoto, curUser.id);
+      if (sendAudio && typeof sendAudio.play === 'function') {
+        try {
+          sendAudio.currentTime = 0;
+          sendAudio.play().catch(() => {});
+        } catch (err) {}
+      }
       chatInput.value = '';
 
       // Send to backend
@@ -392,7 +417,8 @@
     chatInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') sendMessage(); });
 
         // Load chat history
-        async function loadChatHistory() {
+    async function loadChatHistory() {
+      isHistoryLoading = true;
             try {
                 const token = await window.getIdToken();
                 const response = await fetch(`${API_ORIGIN}/api/chat/messages`, {
@@ -410,11 +436,13 @@
               const type = msg.user_id === user.id ? 'sent' : 'received';
               addMessage(msg.message, type, msg.created_at, msg.user_name, msg.user_photo, msg.user_id);
                         });
-                    }
-                }
-            } catch (error) {
+          }
+        }
+      } catch (error) {
                 console.error('Error loading chat history:', error);
                 messagesContainer.innerHTML = '<div class="text-center text-muted p-3">Gagal memuat riwayat chat</div>';
+      } finally {
+        isHistoryLoading = false;
             }
         }
 
@@ -475,6 +503,13 @@
         const currentCount = parseInt(chatBadge.textContent) || 0;
         chatBadge.textContent = currentCount + 1;
         chatBadge.style.display = 'block';
+      }
+
+      if (!isHistoryLoading && type === 'received' && incomingAudio && typeof incomingAudio.play === 'function') {
+        try {
+          incomingAudio.currentTime = 0;
+          incomingAudio.play().catch(() => {});
+        } catch (err) {}
       }
     }
     
