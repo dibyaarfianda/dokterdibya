@@ -1,5 +1,5 @@
 // Backend API for Patients
-// Save as: /var/www/dibyaklinik/backend/routes/patients.js
+// Save as: /var/www/dokterdibya/staff/backend/routes/patients.js
 
 const express = require('express');
 const router = express.Router();

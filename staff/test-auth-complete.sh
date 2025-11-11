@@ -16,14 +16,16 @@ NC='\033[0m' # No Color
 
 test_count=0
 pass_count=0
+display_count=0
 
 # Function to run a test
 run_test() {
     local test_name="$1"
     local test_cmd="$2"
+    ((display_count++))
     ((test_count++))
     
-    echo -n "Test $test_count: $test_name ... "
+    echo -n "Test $display_count: $test_name ... "
     if eval "$test_cmd" > /dev/null 2>&1; then
         echo -e "${GREEN}✓ PASS${NC}"
         ((pass_count++))
@@ -36,10 +38,10 @@ run_test() {
 run_test_output() {
     local test_name="$1"
     local test_cmd="$2"
-    ((test_count++))
+    ((display_count++))
     
     echo ""
-    echo -e "${YELLOW}Test $test_count: $test_name${NC}"
+    echo -e "${YELLOW}Test $display_count: $test_name${NC}"
     eval "$test_cmd"
 }
 
@@ -71,13 +73,13 @@ echo "FRONTEND FILES"
 echo "════════════════════════════════════════════════════════════════"
 
 run_test "vps-auth-v2.js exists" \
-    "test -f /var/www/dibyaklinik/public/scripts/vps-auth-v2.js"
+    "test -f /var/www/dokterdibya/staff/public/scripts/vps-auth-v2.js"
 
 run_test "login.html exists" \
-    "test -f /var/www/dibyaklinik/public/login.html"
+    "test -f /var/www/dokterdibya/staff/public/login.html"
 
 run_test "index-adminlte.html exists" \
-    "test -f /var/www/dibyaklinik/public/index-adminlte.html"
+    "test -f /var/www/dokterdibya/staff/public/index-adminlte.html"
 
 echo ""
 echo "════════════════════════════════════════════════════════════════"
@@ -85,10 +87,10 @@ echo "CRITICAL BUG FIX VERIFICATION"
 echo "════════════════════════════════════════════════════════════════"
 
 run_test "onAuthStateChanged fix is applied" \
-    "grep -q 'Call immediately with current state' /var/www/dibyaklinik/public/scripts/vps-auth-v2.js"
+    "grep -q 'Call immediately with current state' /var/www/dokterdibya/staff/public/scripts/vps-auth-v2.js"
 
 run_test_output "onAuthStateChanged function calls callback immediately" \
-    "grep -A 2 'export function onAuthStateChanged' /var/www/dibyaklinik/public/scripts/vps-auth-v2.js | grep -E 'cb\(auth.currentUser\)|try'"
+    "grep -A 2 'export function onAuthStateChanged' /var/www/dokterdibya/staff/public/scripts/vps-auth-v2.js | grep -E 'cb\(auth.currentUser\)|try'"
 
 echo ""
 echo "════════════════════════════════════════════════════════════════"
@@ -96,13 +98,13 @@ echo "CODE QUALITY CHECKS"
 echo "════════════════════════════════════════════════════════════════"
 
 run_test "vps-auth-v2.js has proper error handling" \
-    "grep -q 'try.*catch' /var/www/dibyaklinik/public/scripts/vps-auth-v2.js"
+    "grep -q 'try.*catch' /var/www/dokterdibya/staff/public/scripts/vps-auth-v2.js"
 
 run_test "login.html has redirect logic" \
-    "grep -q 'window.location.replace' /var/www/dibyaklinik/public/login.html"
+    "grep -q 'window.location.replace' /var/www/dokterdibya/staff/public/login.html"
 
 run_test "auth.js exports required functions" \
-    "grep -E 'signIn|fetchMe|getIdToken|onAuthStateChanged' /var/www/dibyaklinik/public/scripts/vps-auth-v2.js | wc -l | grep -E '[4-9]'"
+    "grep -E 'signIn|fetchMe|getIdToken|onAuthStateChanged' /var/www/dokterdibya/staff/public/scripts/vps-auth-v2.js | wc -l | grep -Eq '([4-9]|[1-9][0-9])'"
 
 echo ""
 echo "════════════════════════════════════════════════════════════════"
@@ -113,7 +115,7 @@ run_test "Test login page accessible" \
     "curl -s http://localhost:3001/login.html --max-time 2 | grep -q 'DOCTYPE'"
 
 run_test "Auth flow test page created" \
-    "test -f /var/www/dibyaklinik/public/auth-flow-test.html"
+    "test -f /var/www/dokterdibya/staff/public/auth-flow-test.html"
 
 run_test "Test page is accessible" \
     "curl -s http://localhost:3001/auth-flow-test.html --max-time 2 | grep -q 'DOCTYPE'"
@@ -124,13 +126,13 @@ echo "SUMMARY DOCUMENTATION"
 echo "════════════════════════════════════════════════════════════════"
 
 run_test "Authentication fix summary created" \
-    "test -f /var/www/dibyaklinik/AUTH_BUG_FIX_SUMMARY.md"
+    "test -f /var/www/dokterdibya/staff/AUTH_BUG_FIX_SUMMARY.md"
 
 run_test "Summary contains root cause analysis" \
-    "grep -q 'race condition' /var/www/dibyaklinik/AUTH_BUG_FIX_SUMMARY.md"
+    "grep -q 'race condition' /var/www/dokterdibya/staff/AUTH_BUG_FIX_SUMMARY.md"
 
 run_test "Summary contains fix details" \
-    "grep -q 'Call immediately with current state' /var/www/dibyaklinik/AUTH_BUG_FIX_SUMMARY.md"
+    "grep -q 'Call immediately with current state' /var/www/dokterdibya/staff/AUTH_BUG_FIX_SUMMARY.md"
 
 echo ""
 echo "════════════════════════════════════════════════════════════════"

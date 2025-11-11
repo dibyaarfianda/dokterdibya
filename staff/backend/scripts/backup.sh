@@ -1,9 +1,9 @@
 #!/bin/bash
 # Database Backup Script for Dibya Klinik
-# Save as: /var/www/dibyaklinik/backend/scripts/backup.sh
+# Save as: /var/www/dokterdibya/staff/backend/scripts/backup.sh
 
 # Configuration
-BACKUP_DIR="/var/www/dibyaklinik/backups"
+BACKUP_DIR="/var/www/dokterdibya/backups"
 DB_NAME="dibyaklinik"
 DB_USER="dibyaklinik_user"
 DB_HOST="localhost"
@@ -12,8 +12,8 @@ BACKUP_FILE="${BACKUP_DIR}/dibyaklinik_${DATE}.sql"
 RETENTION_DAYS=30
 
 # Load database password from .env file
-if [ -f "/var/www/dibyaklinik/backend/.env" ]; then
-    export $(grep -v '^#' /var/www/dibyaklinik/backend/.env | grep DB_PASSWORD | xargs)
+if [ -f "/var/www/dokterdibya/staff/backend/.env" ]; then
+    export $(grep -v '^#' /var/www/dokterdibya/staff/backend/.env | grep DB_PASSWORD | xargs)
 fi
 
 # Create backup directory if it doesn't exist

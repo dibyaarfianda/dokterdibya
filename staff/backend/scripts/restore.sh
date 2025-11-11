@@ -1,16 +1,16 @@
 #!/bin/bash
 # Database Restore Script for Dibya Klinik
-# Save as: /var/www/dibyaklinik/backend/scripts/restore.sh
+# Save as: /var/www/dokterdibya/staff/backend/scripts/restore.sh
 
 # Configuration
-BACKUP_DIR="/var/www/dibyaklinik/backups"
+BACKUP_DIR="/var/www/dokterdibya/backups"
 DB_NAME="dibyaklinik"
 DB_USER="dibyaklinik_user"
 DB_HOST="localhost"
 
 # Load database password from .env file
-if [ -f "/var/www/dibyaklinik/backend/.env" ]; then
-    export $(grep -v '^#' /var/www/dibyaklinik/backend/.env | grep DB_PASSWORD | xargs)
+if [ -f "/var/www/dokterdibya/staff/backend/.env" ]; then
+    export $(grep -v '^#' /var/www/dokterdibya/staff/backend/.env | grep DB_PASSWORD | xargs)
 fi
 
 # Check if backup file is provided
