@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Role Management - Sistem Klinik</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
+    <style>
+        .permission-category {
+            background: #f8f9fa;
+            padding: 10px;
+            margin-bottom: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+        }
+        .permission-category h5 {
+            margin: 0 0 10px 0;
+            color: #007bff;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .permission-checkbox {
+            margin-right: 15px;
+            margin-bottom: 8px;
+        }
+        .role-badge {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .role-badge.system {
+            background: #6c757d;
+            color: white;
+        }
+        .role-badge.custom {
+            background: #28a745;
+            color: white;
+        }
+        .user-status-active {
+            color: #28a745;
+            font-weight: 600;
+        }
+        .user-status-inactive {
+            color: #dc3545;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body class="hold-transition sidebar-mini">
+<div class="wrapper">
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="index-adminlte.html" class="nav-link">Dashboard</a>
+            </li>
+        </ul>
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <button class="btn btn-sm btn-outline-danger" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </li>
+        </ul>
+    </nav>
+
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+        <a href="index-adminlte.html" class="brand-link">
+            <span class="brand-text font-weight-light">Sistem Klinik</span>
+        </a>
+        <div class="sidebar">
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+                    <li class="nav-item">
+                        <a href="index-adminlte.html" class="nav-link">
+                            <i class="nav-icon fas fa-tachometer-alt"></i>
+                            <p>Dashboard</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="role-management.html" class="nav-link active">
+                            <i class="nav-icon fas fa-user-shield"></i>
+                            <p>Role Management</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="patient-intake-review.html" class="nav-link">
+                            <i class="nav-icon fas fa-notes-medical"></i>
+                            <p>Review Intake Pasien</p>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </aside>
+
+    <div class="content-wrapper">
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1 class="m-0"><i class="fas fa-user-shield"></i> Role Management</h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="container-fluid">
+                
+                <!-- Tabs -->
+                <ul class="nav nav-tabs" id="roleManagementTabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link active" id="roles-tab" data-toggle="tab" href="#roles" role="tab">
+                            <i class="fas fa-shield-alt"></i> Roles
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="users-tab" data-toggle="tab" href="#users" role="tab">
+                            <i class="fas fa-users"></i> Users & Roles
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" id="permissions-tab" data-toggle="tab" href="#permissions" role="tab">
+                            <i class="fas fa-key"></i> Permissions
+                        </a>
+                    </li>
+                </ul>
+
+                <div class="tab-content" id="roleManagementTabsContent">
+                    
+                    <!-- Roles Tab -->
+                    <div class="tab-pane fade show active" id="roles" role="tabpanel">
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h3 class="card-title">Daftar Roles</h3>
+                                <div class="card-tools">
+                                    <button class="btn btn-primary btn-sm" onclick="showCreateRoleModal()">
+                                        <i class="fas fa-plus"></i> Tambah Role
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <table id="roles-table" class="table table-bordered table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Nama Role</th>
+                                            <th>Deskripsi</th>
+                                            <th>Tipe</th>
+                                            <th>Permissions</th>
+                                            <th>Users</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Users Tab -->
+                    <div class="tab-pane fade" id="users" role="tabpanel">
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h3 class="card-title">Manajemen User & Role</h3>
+                            </div>
+                            <div class="card-body">
+                                <table id="users-table" class="table table-bordered table-hover">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Nama</th>
+                                            <th>Email</th>
+                                            <th>Role</th>
+                                            <th>Status</th>
+                                            <th>Last Login</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Permissions Tab -->
+                    <div class="tab-pane fade" id="permissions" role="tabpanel">
+                        <div class="card mt-3">
+                            <div class="card-header">
+                                <h3 class="card-title">Daftar Permissions</h3>
+                            </div>
+                            <div class="card-body">
+                                <div id="permissions-list"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create/Edit Role Modal -->
+<div class="modal fade" id="role-modal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary">
+                <h5 class="modal-title" id="role-modal-title">Tambah Role</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="role-form">
+                <div class="modal-body">
+                    <input type="hidden" id="role-id">
+                    <div class="form-group">
+                        <label>Nama Role <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="role-name" required>
+                        <small class="form-text text-muted">Gunakan format snake_case (contoh: custom_role)</small>
+                    </div>
+                    <div class="form-group">
+                        <label>Display Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="role-display-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Deskripsi</label>
+                        <textarea class="form-control" id="role-description" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Manage Permissions Modal -->
+<div class="modal fade" id="permissions-modal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-info">
+                <h5 class="modal-title">Kelola Permission Role: <span id="perm-role-name"></span></h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="permissions-form">
+                <div class="modal-body">
+                    <input type="hidden" id="perm-role-id">
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-sm btn-success" onclick="selectAllPermissions()">
+                            <i class="fas fa-check-double"></i> Pilih Semua
+                        </button>
+                        <button type="button" class="btn btn-sm btn-warning" onclick="deselectAllPermissions()">
+                            <i class="fas fa-times"></i> Hapus Semua
+                        </button>
+                    </div>
+                    <div id="permissions-grid"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-info">Simpan Permission</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Assign Role to User Modal -->
+<div class="modal fade" id="assign-role-modal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success">
+                <h5 class="modal-title">Tetapkan Role untuk: <span id="assign-user-name"></span></h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <form id="assign-role-form">
+                <div class="modal-body">
+                    <input type="hidden" id="assign-user-id">
+                    <div class="form-group">
+                        <label>Pilih Role <span class="text-danger">*</span></label>
+                        <select class="form-control" id="assign-role-select" required>
+                            <option value="">-- Pilih Role --</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-success">Tetapkan Role</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="scripts/role-management.js" type="module"></script>
+</body>
+</html>

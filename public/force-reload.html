@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Force Reload - dr.Dibya Clinic</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .container {
+            text-align: center;
+            padding: 40px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+        }
+        h1 { margin: 0 0 20px 0; font-size: 2em; }
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        p { font-size: 1.2em; margin: 10px 0; }
+        .btn {
+            display: inline-block;
+            margin-top: 20px;
+            padding: 12px 30px;
+            background: white;
+            color: #667eea;
+            text-decoration: none;
+            border-radius: 25px;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        .btn:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Clearing Cache...</h1>
+        <div class="spinner"></div>
+        <p id="status">Preparing fresh version...</p>
+        <p id="countdown"></p>
+        <a href="#" class="btn" id="manual-btn" style="display:none;">Click Here if Not Redirected</a>
+    </div>
+
+    <script>
+        console.log('🔄 Force Reload Page Loaded');
+        
+        // Clear all possible caches
+        if ('caches' in window) {
+            caches.keys().then(names => {
+                names.forEach(name => {
+                    console.log('🗑️ Deleting cache:', name);
+                    caches.delete(name);
+                });
+            });
+        }
+        
+        // Clear localStorage (optional - comment out if you want to keep login)
+        // localStorage.clear();
+        // sessionStorage.clear();
+        
+        const statusEl = document.getElementById('status');
+        const countdownEl = document.getElementById('countdown');
+        const manualBtn = document.getElementById('manual-btn');
+        
+        let count = 3;
+        
+        statusEl.textContent = 'Cache cleared! Redirecting...';
+        
+        const interval = setInterval(() => {
+            countdownEl.textContent = `Redirecting in ${count}...`;
+            count--;
+            
+            if (count < 0) {
+                clearInterval(interval);
+                // Redirect with cache buster
+                const url = `index-adminlte.html?nocache=${Date.now()}`;
+                console.log('🚀 Redirecting to:', url);
+                window.location.replace(url);
+            }
+        }, 1000);
+        
+        // Show manual button after 5 seconds
+        setTimeout(() => {
+            manualBtn.style.display = 'inline-block';
+            manualBtn.href = `index-adminlte.html?nocache=${Date.now()}`;
+        }, 5000);
+    </script>
+</body>
+</html>
+
