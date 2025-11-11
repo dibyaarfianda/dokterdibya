@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 480 480">
+    <defs>
+        <linearGradient id="bgGradient" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#03045e" />
+            <stop offset="55%" stop-color="#0096c7" />
+            <stop offset="100%" stop-color="#90e0ef" />
+        </linearGradient>
+    </defs>
+    <rect width="480" height="480" rx="48" fill="url(#bgGradient)" />
+    <circle cx="340" cy="150" r="62" fill="rgba(202,240,248,0.45)" />
+    <circle cx="150" cy="340" r="46" fill="rgba(0,180,216,0.35)" />
+    <g fill="#ffffff" font-family="'Poppins', Arial, sans-serif" text-anchor="middle">
+        <text x="240" y="210" font-size="28" letter-spacing="4">dr.</text>
+        <text x="240" y="270" font-size="56" font-weight="700">DIBYA</text>
+        <text x="240" y="320" font-size="32">Arfianda</text>
+        <text x="240" y="360" font-size="18" letter-spacing="4">SpOG · M.Ked.Klin.</text>
+    </g>
+</svg>
