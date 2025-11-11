@@ -12,11 +12,11 @@ curl -s http://localhost:3001/api/status 2>&1 | head -5
 
 echo ""
 echo "2. Verifying middleware is working:"
-ps aux | grep "node /var/www/dibyaklinik/backend/server.js" | grep -v grep
+ps aux | grep "node /var/www/dokterdibya/staff/backend/server.js" | grep -v grep
 
 echo ""
 echo "3. Files that were updated:"
-echo "   ✓ /var/www/dibyaklinik/public/scripts/vps-auth-v2.js"
+echo "   ✓ /var/www/dokterdibya/staff/public/scripts/vps-auth-v2.js"
 echo "     - Fixed API_BASE to use dynamic hostname"
 echo "     - getIdToken() now checks both localStorage and sessionStorage"
 

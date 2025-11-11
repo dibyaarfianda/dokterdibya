@@ -62,22 +62,22 @@ echo ""
 echo "Test 3: Check frontend files"
 echo ""
 
-if [ -f "/var/www/dibyaklinik/public/login.html" ]; then
+if [ -f "/var/www/dokterdibya/staff/public/login.html" ]; then
     echo "✅ login.html exists"
 else
     echo "❌ login.html not found"
 fi
 
-if [ -f "/var/www/dibyaklinik/public/index-adminlte.html" ]; then
+if [ -f "/var/www/dokterdibya/staff/public/index-adminlte.html" ]; then
     echo "✅ index-adminlte.html exists"
 else
     echo "❌ index-adminlte.html not found"
 fi
 
-if [ -f "/var/www/dibyaklinik/public/scripts/vps-auth-v2.js" ]; then
+if [ -f "/var/www/dokterdibya/staff/public/scripts/vps-auth-v2.js" ]; then
     echo "✅ vps-auth-v2.js exists"
     # Check if the fix is in place
-    if grep -q "call immediately with current state" /var/www/dibyaklinik/public/scripts/vps-auth-v2.js; then
+    if grep -q "call immediately with current state" /var/www/dokterdibya/staff/public/scripts/vps-auth-v2.js; then
         echo "✅ Auth module fix is in place (onAuthStateChanged calls callback immediately)"
     else
         echo "⚠️  Auth module fix not found"

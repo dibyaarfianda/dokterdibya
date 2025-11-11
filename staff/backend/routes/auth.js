@@ -1,4 +1,4 @@
-// Auth API for VPS (save as /var/www/dibyaklinik/backend/routes/auth.js)
+// Auth API for VPS (save as /var/www/dokterdibya/staff/backend/routes/auth.js)
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
