@@ -14,13 +14,13 @@ Automated MySQL backup with compression and retention policy.
 
 1. Make scripts executable:
 ```bash
-chmod +x /var/www/dibyaklinik/backend/scripts/backup.sh
-chmod +x /var/www/dibyaklinik/backend/scripts/restore.sh
+chmod +x /var/www/dokterdibya/staff/backend/scripts/backup.sh
+chmod +x /var/www/dokterdibya/staff/backend/scripts/restore.sh
 ```
 
 2. Create backup directory:
 ```bash
-mkdir -p /var/www/dibyaklinik/backups
+mkdir -p /var/www/dokterdibya/backups
 ```
 
 3. Set up cron job for daily backups at 2 AM:
@@ -30,14 +30,14 @@ crontab -e
 
 Add this line:
 ```
-0 2 * * * /var/www/dibyaklinik/backend/scripts/backup.sh >> /var/www/dibyaklinik/backups/backup.log 2>&1
+0 2 * * * /var/www/dokterdibya/staff/backend/scripts/backup.sh >> /var/www/dokterdibya/backups/backup.log 2>&1
 ```
 
 ### Manual Backup
 
 Run backup manually:
 ```bash
-cd /var/www/dibyaklinik/backend
+cd /var/www/dokterdibya/staff/backend
 ./scripts/backup.sh
 ```
 
@@ -45,13 +45,13 @@ cd /var/www/dibyaklinik/backend
 
 List available backups:
 ```bash
-ls -lh /var/www/dibyaklinik/backups/
+ls -lh /var/www/dokterdibya/backups/
 ```
 
 Restore from backup:
 ```bash
-cd /var/www/dibyaklinik/backend
-./scripts/restore.sh /var/www/dibyaklinik/backups/dibyaklinik_20240101_020000.sql.gz
+cd /var/www/dokterdibya/staff/backend
+./scripts/restore.sh /var/www/dokterdibya/backups/dibyaklinik_20240101_020000.sql.gz
 ```
 
 ### Configuration
@@ -63,18 +63,18 @@ Edit `backup.sh` to change:
 
 ### Backup Location
 
-Default: `/var/www/dibyaklinik/backups/`
+Default: `/var/www/dokterdibya/backups/`
 
 ### Important Notes
 
 1. **Security**: Ensure backup directory has proper permissions
    ```bash
-   chmod 700 /var/www/dibyaklinik/backups
+   chmod 700 /var/www/dokterdibya/backups
    ```
 
 2. **Storage**: Monitor disk space for backups
    ```bash
-   du -sh /var/www/dibyaklinik/backups
+   du -sh /var/www/dokterdibya/backups
    ```
 
 3. **Testing**: Test restore process regularly
@@ -92,7 +92,7 @@ Default: `/var/www/dibyaklinik/backups/`
 4. **Off-site Backups**: Consider copying backups to remote storage
    ```bash
    # Example: rsync to remote server
-   rsync -avz /var/www/dibyaklinik/backups/ user@remote:/backups/dibyaklinik/
+   rsync -avz /var/www/dokterdibya/backups/ user@remote:/backups/dibyaklinik/
    ```
 
 ### Troubleshooting

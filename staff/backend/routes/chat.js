@@ -1,5 +1,5 @@
 // Chat API Routes with Socket.io real-time support
-// Save as /var/www/dibyaklinik/backend/routes/chat.js
+// Save as /var/www/dokterdibya/staff/backend/routes/chat.js
 
 const express = require('express');
 const router = express.Router();

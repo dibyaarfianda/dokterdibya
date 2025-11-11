@@ -7,6 +7,7 @@ const compression = require('compression');
 const mysql = require('mysql2/promise');
 const http = require('http');
 const { Server } = require('socket.io');
+const path = require('path');
 const logger = require('./utils/logger');
 const { errorHandler, notFoundHandler } = require('./middleware/errorHandler');
 const { requestLogger, performanceLogger } = require('./middleware/requestLogger');
@@ -108,6 +109,9 @@ const patientIntakeRoutes = require('./routes/patient-intake');
 chatRoutes.setSocketIO(io);
 logsRoutes.setSocketIO(io);
 statusRoutes.setSocketIO(io);
+
+// Serve static staff assets directly from the merged repo
+app.use(express.static(path.join(__dirname, '../public')));
 
 // Use routes
 // API v1 (modern, service-based)

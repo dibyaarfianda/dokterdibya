@@ -13,7 +13,7 @@
 ## Root Cause Analysis
 
 ### Issue Location
-File: `/var/www/dibyaklinik/public/scripts/vps-auth-v2.js`
+File: `/var/www/dokterdibya/staff/public/scripts/vps-auth-v2.js`
 
 ### The Bug
 The `onAuthStateChanged()` function had a race condition:
@@ -56,7 +56,7 @@ export function onAuthStateChanged(cb) {
 ```
 
 ### File Modified
-- **Path**: `/var/www/dibyaklinik/public/scripts/vps-auth-v2.js`
+- **Path**: `/var/www/dokterdibya/staff/public/scripts/vps-auth-v2.js`
 - **Lines**: 19-23
 - **Change**: Added immediate callback invocation with `try-catch` error handling
 
@@ -146,7 +146,7 @@ curl -H "Authorization: Bearer $TOKEN" http://localhost:3001/api/auth/me
 
 ## Files Modified
 
-### `/var/www/dibyaklinik/public/scripts/vps-auth-v2.js`
+### `/var/www/dokterdibya/staff/public/scripts/vps-auth-v2.js`
 - Lines 19-23: Added immediate callback in `onAuthStateChanged()`
 - Change: Single function enhancement with error handling
 - Impact: Fixes authentication state propagation race condition
@@ -164,7 +164,7 @@ curl -H "Authorization: Bearer $TOKEN" http://localhost:3001/api/auth/me
 1. **Verify fix is in place**:
    ```bash
    grep -A 3 "Call immediately with current state" \
-     /var/www/dibyaklinik/public/scripts/vps-auth-v2.js
+   /var/www/dokterdibya/staff/public/scripts/vps-auth-v2.js
    ```
 
 2. **Clear browser cache** (important!):

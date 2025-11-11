@@ -192,7 +192,7 @@ chmod +x backend/scripts/*.sh
 
 # Set up daily backup cron job
 crontab -e
-# Add: 0 2 * * * /var/www/dibyaklinik/backend/scripts/backup.sh >> /var/www/dibyaklinik/backups/backup.log 2>&1
+# Add: 0 2 * * * /var/www/dokterdibya/staff/backend/scripts/backup.sh >> /var/www/dokterdibya/staff/backups/backup.log 2>&1
 ```
 
 **Benefits:**
@@ -295,26 +295,26 @@ curl http://localhost:3000/api/v1/patients
 ### 4. Test Backup
 ```bash
 # Manual backup
-cd /var/www/dibyaklinik/backend
+cd /var/www/dokterdibya/staff/backend
 ./scripts/backup.sh
 
 # List backups
-ls -lh /var/www/dibyaklinik/backups/
+ls -lh /var/www/dokterdibya/staff/backups/
 
 # Test restore (careful!)
-./scripts/restore.sh /var/www/dibyaklinik/backups/dibyaklinik_20240101_020000.sql.gz
+./scripts/restore.sh /var/www/dokterdibya/staff/backups/dibyaklinik_20240101_020000.sql.gz
 ```
 
 ### 5. Monitor Logs
 ```bash
 # Watch application logs
-tail -f /var/www/dibyaklinik/backend/logs/combined.log
+tail -f /var/www/dokterdibya/staff/backend/logs/combined.log
 
 # Watch error logs
-tail -f /var/www/dibyaklinik/backend/logs/error.log
+tail -f /var/www/dokterdibya/staff/backend/logs/error.log
 
 # Watch backup logs
-tail -f /var/www/dibyaklinik/backups/backup.log
+tail -f /var/www/dokterdibya/staff/backups/backup.log
 ```
 
 ---
@@ -337,7 +337,7 @@ Expected improvements after implementing all features:
 ### 1. Set Up Automated Backups
 ```bash
 crontab -e
-# Add: 0 2 * * * /var/www/dibyaklinik/backend/scripts/backup.sh >> /var/www/dibyaklinik/backups/backup.log 2>&1
+# Add: 0 2 * * * /var/www/dokterdibya/staff/backend/scripts/backup.sh >> /var/www/dokterdibya/staff/backups/backup.log 2>&1
 ```
 
 ### 2. Monitor Application

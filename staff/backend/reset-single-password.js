@@ -1,4 +1,4 @@
-// Reset single user password to "123456"
+// Reset single user password to "superadmin123"
 const mysql = require('mysql2/promise');
 const bcrypt = require('bcryptjs');
 
@@ -11,7 +11,7 @@ const dbConfig = {
 
 async function resetPassword() {
     const email = 'nanda.arfianda@gmail.com';
-    const newPassword = '123456';
+    const newPassword = 'superadmin123';
     
     console.log(`🔐 Resetting password for ${email}...\n`);
     

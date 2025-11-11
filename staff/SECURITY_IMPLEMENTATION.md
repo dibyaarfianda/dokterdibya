@@ -137,7 +137,7 @@ Before deploying to production:
 ## 🚀 Starting the Server
 
 ```bash
-cd /var/www/dibyaklinik/backend
+cd /var/www/dokterdibya/staff/backend
 npm start
 ```
 

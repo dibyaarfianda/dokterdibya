@@ -1,5 +1,5 @@
 // Activity Logs API Routes with Socket.io real-time support
-// Save as /var/www/dibyaklinik/backend/routes/logs.js
+// Save as /var/www/dokterdibya/staff/backend/routes/logs.js
 
 const express = require('express');
 const router = express.Router();
