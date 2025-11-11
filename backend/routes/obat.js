@@ -1,0 +1,249 @@
+// Backend API for Obat (Medications)
+// Save as: ~/dibyaklinik-backend/routes/obat.js
+
+const express = require('express');
+const router = express.Router();
+const db = require('../db'); // Your database connection
+const cache = require('../utils/cache');
+const { verifyToken, requirePermission } = require('../middleware/auth');
+const { validateObat, validateObatUpdate } = require('../middleware/validation');
+
+// ==================== OBAT ENDPOINTS ====================
+
+// GET ALL OBAT (Protected - requires authentication and permission)
+router.get('/api/obat', verifyToken, requirePermission('medications.view'), async (req, res) => {
+    try {
+        const { category, active } = req.query;
+        
+        // Generate cache key
+        const cacheKey = `obat:list:${category || 'all'}:${active || 'all'}`;
+        
+        // Try to get from cache
+        const cached = cache.get(cacheKey, 'medium');
+        if (cached) {
+            return res.json(cached);
+        }
+        
+        let query = 'SELECT * FROM obat WHERE 1=1';
+        const params = [];
+        
+        if (category) {
+            query += ' AND category = ?';
+            params.push(category);
+        }
+        
+        if (active !== undefined) {
+            query += ' AND is_active = ?';
+            params.push(active === 'true' ? 1 : 0);
+        }
+        
+        query += ' ORDER BY category, name';
+        
+        const [rows] = await db.query(query, params);
+        
+        const response = {
+            success: true,
+            data: rows,
+            count: rows.length
+        };
+        
+        // Cache the result (medium TTL since obat changes less frequently)
+        cache.set(cacheKey, response, 'medium');
+        
+        res.json(response);
+    } catch (error) {
+        console.error('Error fetching public obat:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch obat',
+            error: error.message
+        });
+    }
+});
+
+// GET OBAT BY ID (Protected)
+router.get('/api/obat/:id', verifyToken, requirePermission('medications.view'), async (req, res) => {
+    try {
+        const [rows] = await db.query('SELECT * FROM obat WHERE id = ?', [req.params.id]);
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Obat not found' });
+        }
+        res.json({ success: true, data: rows[0] });
+    } catch (error) {
+        console.error('Error fetching obat by ID:', error);
+        res.status(500).json({ success: false, message: 'Failed to fetch obat', error: error.message });
+    }
+});
+
+// ==================== PROTECTED ENDPOINTS (WRITE) ====================
+// Note: Add authentication middleware here if needed
+
+// ADD NEW OBAT
+router.post('/api/obat', verifyToken, requirePermission('settings.medications_manage'), validateObat, async (req, res) => {
+    try {
+        const { code, name, category, price, stock, unit, min_stock } = req.body;
+        
+        if (!code || !name || !category || price === undefined) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Missing required fields: code, name, category, price' 
+            });
+        }
+        
+        const [result] = await db.query(
+            'INSERT INTO obat (code, name, category, price, stock, unit, min_stock) VALUES (?, ?, ?, ?, ?, ?, ?)',
+            [code, name, category, price, stock || 0, unit || 'tablet', min_stock || 10]
+        );
+        
+        // Invalidate obat cache
+        cache.delPattern('obat:');
+        
+        res.status(201).json({ 
+            success: true, 
+            message: 'Obat added successfully', 
+            id: result.insertId 
+        });
+    } catch (error) {
+        console.error('Error adding obat:', error);
+        
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Kode obat sudah digunakan' 
+            });
+        }
+        
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to add obat', 
+            error: error.message 
+        });
+    }
+});
+
+// UPDATE OBAT
+router.put('/api/obat/:id', verifyToken, requirePermission('settings.medications_manage'), validateObatUpdate, async (req, res) => {
+    try {
+        const { name, category, price, stock, unit, min_stock, is_active } = req.body;
+        
+        const [result] = await db.query(
+            'UPDATE obat SET name = ?, category = ?, price = ?, stock = ?, unit = ?, min_stock = ?, is_active = ? WHERE id = ?',
+            [name, category, price, stock, unit, min_stock, is_active, req.params.id]
+        );
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'Obat not found' });
+        }
+        
+        // Invalidate obat cache
+        cache.delPattern('obat:');
+        
+        res.json({ success: true, message: 'Obat updated successfully' });
+    } catch (error) {
+        console.error('Error updating obat:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to update obat', 
+            error: error.message 
+        });
+    }
+});
+
+// UPDATE STOCK (for deducting after finalization)
+router.patch('/api/obat/:id/stock', async (req, res) => {
+    try {
+        const { quantity } = req.body;
+        
+        if (quantity === undefined) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Quantity is required' 
+            });
+        }
+        
+        // Get current stock
+        const [rows] = await db.query('SELECT stock FROM obat WHERE id = ?', [req.params.id]);
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Obat not found' });
+        }
+        
+        const currentStock = rows[0].stock;
+        const newStock = currentStock - quantity;
+        
+        if (newStock < 0) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Stok tidak mencukupi',
+                currentStock,
+                requested: quantity
+            });
+        }
+        
+        // Update stock
+        await db.query('UPDATE obat SET stock = ? WHERE id = ?', [newStock, req.params.id]);
+        
+        res.json({ 
+            success: true, 
+            message: 'Stock updated successfully',
+            oldStock: currentStock,
+            newStock: newStock
+        });
+    } catch (error) {
+        console.error('Error updating stock:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to update stock', 
+            error: error.message 
+        });
+    }
+});
+
+// DELETE OBAT
+router.delete('/api/obat/:id', verifyToken, requirePermission('settings.medications_manage'), async (req, res) => {
+    try {
+        // Soft delete - set is_active to 0 instead of actually deleting
+        const [result] = await db.query('UPDATE obat SET is_active = 0 WHERE id = ? AND is_active = 1', [req.params.id]);
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'Obat not found or already deleted' });
+        }
+        
+        // Invalidate obat cache
+        cache.delPattern('obat:');
+        
+        res.json({ success: true, message: 'Obat deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting obat:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to delete obat', 
+            error: error.message 
+        });
+    }
+});
+
+// GET LOW STOCK ITEMS
+router.get('/public/obat/low-stock', async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            'SELECT * FROM obat WHERE stock <= min_stock AND is_active = 1 ORDER BY stock ASC'
+        );
+        
+        res.json({
+            success: true,
+            data: rows,
+            count: rows.length
+        });
+    } catch (error) {
+        console.error('Error fetching low stock:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch low stock items',
+            error: error.message
+        });
+    }
+});
+
+module.exports = router;
+

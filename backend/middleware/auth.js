@@ -1,0 +1,296 @@
+const jwt = require('jsonwebtoken');
+const logger = require('../utils/logger');
+
+// Ensure JWT_SECRET is set - fail fast if not
+const JWT_SECRET = process.env.JWT_SECRET;
+
+if (!JWT_SECRET) {
+    console.error('\x1b[31m%s\x1b[0m', 'FATAL ERROR: JWT_SECRET environment variable is not defined.');
+    console.error('\x1b[31m%s\x1b[0m', 'Please set JWT_SECRET in your .env file before starting the server.');
+    process.exit(1);
+}
+
+// Track failed login attempts (in production, use Redis)
+const failedAttempts = new Map();
+const MAX_FAILED_ATTEMPTS = parseInt(process.env.MAX_FAILED_LOGIN_ATTEMPTS) || 5;
+const LOCK_TIME_MS = parseInt(process.env.LOGIN_LOCK_TIME_MS) || 15 * 60 * 1000; // 15 minutes
+
+/**
+ * Record failed login attempt
+ */
+function recordFailedAttempt(email) {
+    const key = email.toLowerCase();
+    const now = Date.now();
+    
+    if (!failedAttempts.has(key)) {
+        failedAttempts.set(key, []);
+    }
+    
+    const attempts = failedAttempts.get(key);
+    
+    // Remove old attempts outside lock window
+    const recentAttempts = attempts.filter(t => now - t < LOCK_TIME_MS);
+    failedAttempts.set(key, [...recentAttempts, now]);
+    
+    return failedAttempts.get(key).length;
+}
+
+/**
+ * Check if account is locked
+ */
+function isAccountLocked(email) {
+    const key = email.toLowerCase();
+    const now = Date.now();
+    
+    if (!failedAttempts.has(key)) {
+        return false;
+    }
+    
+    const attempts = failedAttempts.get(key);
+    const recentAttempts = attempts.filter(t => now - t < LOCK_TIME_MS);
+    
+    return recentAttempts.length >= MAX_FAILED_ATTEMPTS;
+}
+
+/**
+ * Clear failed attempts
+ */
+function clearFailedAttempts(email) {
+    failedAttempts.delete(email.toLowerCase());
+}
+
+/**
+ * Middleware to verify JWT token from Authorization header
+ * Enhanced with better error logging and context tracking
+ */
+function verifyToken(req, res, next) {
+    const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+    const requestId = req.context?.requestId || 'unknown';
+    
+    if (!authHeader) {
+        logger.warn('Missing authorization header', {
+            requestId,
+            ip: req.ip,
+            path: req.path
+        });
+        return res.status(401).json({ 
+            success: false, 
+            message: 'Missing authorization header' 
+        });
+    }
+
+    const parts = authHeader.split(' ');
+    
+    if (parts.length !== 2 || parts[0] !== 'Bearer') {
+        logger.warn('Invalid authorization header format', {
+            requestId,
+            format: parts[0],
+            ip: req.ip
+        });
+        return res.status(401).json({ 
+            success: false, 
+            message: 'Invalid authorization header format. Expected: Bearer <token>' 
+        });
+    }
+
+    const token = parts[1];
+
+    try {
+        const payload = jwt.verify(token, JWT_SECRET);
+        req.user = payload;
+        
+        // Log successful authentication
+        logger.debug('Token verified successfully', {
+            requestId,
+            userId: payload.id,
+            email: payload.email
+        });
+        
+        next();
+    } catch (err) {
+        logger.warn('Token verification failed', {
+            requestId,
+            errorName: err.name,
+            message: err.message,
+            ip: req.ip
+        });
+        
+        if (err.name === 'TokenExpiredError') {
+            return res.status(401).json({ 
+                success: false, 
+                message: 'Token has expired' 
+            });
+        }
+        return res.status(401).json({ 
+            success: false, 
+            message: 'Invalid token' 
+        });
+    }
+}
+
+/**
+ * Middleware to check if user has required role
+ * Enhanced with audit logging
+ */
+function requireRole(...allowedRoles) {
+    return (req, res, next) => {
+        const requestId = req.context?.requestId || 'unknown';
+        
+        if (!req.user) {
+            logger.warn('Missing user in requireRole middleware', {
+                requestId,
+                ip: req.ip,
+                path: req.path
+            });
+            return res.status(401).json({ 
+                success: false, 
+                message: 'Authentication required' 
+            });
+        }
+
+        if (!allowedRoles.includes(req.user.role)) {
+            logger.warn('Insufficient permissions', {
+                requestId,
+                userId: req.user.id,
+                userRole: req.user.role,
+                allowedRoles,
+                path: req.path
+            });
+            return res.status(403).json({ 
+                success: false, 
+                message: 'Insufficient permissions' 
+            });
+        }
+
+        logger.debug('Role authorization successful', {
+            requestId,
+            userId: req.user.id,
+            role: req.user.role
+        });
+        
+        next();
+    };
+}
+
+/**
+ * Optional authentication middleware (doesn't fail if missing)
+ */
+function optionalAuth(req, res, next) {
+    const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+    
+    if (!authHeader) {
+        return next(); // Continue without authentication
+    }
+    
+    const parts = authHeader.split(' ');
+    
+    if (parts.length !== 2 || parts[0] !== 'Bearer') {
+        return next(); // Continue without authentication
+    }
+
+    const token = parts[1];
+
+    try {
+        const payload = jwt.verify(token, JWT_SECRET);
+        req.user = payload;
+    } catch (err) {
+        logger.debug('Optional auth token verification failed', { error: err.message });
+    }
+    
+    next();
+}
+
+/**
+ * Middleware to check if user has required permissions
+ * Enhanced with permission-based authorization
+ */
+function requirePermission(...requiredPermissions) {
+    return async (req, res, next) => {
+        const requestId = req.context?.requestId || 'unknown';
+        
+        if (!req.user) {
+            logger.warn('Missing user in requirePermission middleware', {
+                requestId,
+                ip: req.ip,
+                path: req.path
+            });
+            return res.status(401).json({ 
+                success: false, 
+                message: 'Authentication required' 
+            });
+        }
+
+        // Superadmin has all permissions
+        if (req.user.role === 'superadmin') {
+            logger.debug('Superadmin access granted', {
+                requestId,
+                userId: req.user.id,
+                requiredPermissions
+            });
+            return next();
+        }
+
+        try {
+            // Get user's permissions from database
+            const db = require('../db');
+            const [rows] = await db.query(`
+                SELECT DISTINCT p.name 
+                FROM permissions p
+                INNER JOIN role_permissions rp ON p.id = rp.permission_id
+                INNER JOIN users u ON u.role_id = rp.role_id
+                WHERE u.id = ?
+            `, [req.user.id]);
+
+            const userPermissions = rows.map(row => row.name);
+
+            // Check if user has at least one of the required permissions
+            const hasPermission = requiredPermissions.some(permission => 
+                userPermissions.includes(permission)
+            );
+
+            if (!hasPermission) {
+                logger.warn('Insufficient permissions', {
+                    requestId,
+                    userId: req.user.id,
+                    userRole: req.user.role,
+                    userPermissions,
+                    requiredPermissions,
+                    path: req.path
+                });
+                return res.status(403).json({ 
+                    success: false, 
+                    message: 'Insufficient permissions' 
+                });
+            }
+
+            logger.debug('Permission authorization successful', {
+                requestId,
+                userId: req.user.id,
+                grantedPermission: requiredPermissions.find(p => userPermissions.includes(p))
+            });
+            
+            next();
+        } catch (error) {
+            logger.error('Error checking permissions', {
+                requestId,
+                userId: req.user.id,
+                error: error.message
+            });
+            return res.status(500).json({
+                success: false,
+                message: 'Error checking permissions'
+            });
+        }
+    };
+}
+
+module.exports = { 
+    verifyToken, 
+    requireRole,
+    requirePermission,
+    optionalAuth,
+    recordFailedAttempt,
+    isAccountLocked,
+    clearFailedAttempts,
+    JWT_SECRET 
+};

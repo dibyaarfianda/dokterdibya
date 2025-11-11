@@ -1,0 +1,91 @@
+require('dotenv').config();
+const express = require('express');
+const cors = require('cors');
+const rateLimit = require('express-rate-limit');
+const mysql = require('mysql2/promise');
+
+const app = express();
+const PORT = process.env.PORT || 3000;
+
+// Middleware
+app.use(cors({
+    origin: process.env.CORS_ORIGIN,
+    credentials: true
+}));
+app.use(express.json());
+
+// Rate limiting
+const limiter = rateLimit({
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 900000,
+    max: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100,
+    message: 'Too many requests from this IP'
+});
+app.use('/api/', limiter);
+
+// Database connection pool
+const pool = require('./db');
+
+// Import routes
+const obatRoutes = require('./routes/obat');
+const tindakanRoutes = require('./routes/05-public-tindakan');
+const patientsRoutes = require('./routes/patients');
+const tindakanProtectedRoutes = require('./routes/02-tindakan-api');
+const visitsRoutes = require('./routes/visits');
+const medicalExamsRoutes = require('./routes/medical-exams');
+// Use routes
+app.use('/', tindakanRoutes);
+app.use('/', obatRoutes);
+app.use('/', patientsRoutes);
+app.use('/', tindakanProtectedRoutes);
+app.use('/', visitsRoutes);
+app.use('/', medicalExamsRoutes);
+// Health check
+app.get('/api/health', async (req, res) => {
+    try {
+        await pool.query('SELECT 1');
+        res.json({ 
+            status: 'healthy', 
+            timestamp: new Date().toISOString(),
+            database: 'connected'
+        });
+    } catch (error) {
+        res.status(500).json({ 
+            status: 'unhealthy', 
+            error: error.message 
+        });
+    }
+});
+
+// Basic API routes
+app.get('/api/patients', async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT * FROM patients ORDER BY created_at DESC LIMIT 10');
+        res.json({ success: true, data: rows });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// 404 handler
+app.use((req, res) => {
+    res.status(404).json({ error: 'Endpoint not found' });
+});
+
+// Error handler
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({ error: 'Internal server error' });
+});
+
+// Start server
+app.listen(PORT, () => {
+    console.log('Backend server running on port ' + PORT);
+    console.log('Environment: ' + process.env.NODE_ENV);
+});
+
+// Graceful shutdown
+process.on('SIGTERM', async () => {
+    console.log('SIGTERM received, closing server...');
+    await pool.end();
+    process.exit(0);
+});

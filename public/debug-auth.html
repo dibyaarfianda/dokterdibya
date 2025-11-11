@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auth Debug Test</title>
+</head>
+<body>
+    <h1>Authentication Debug Test</h1>
+    <button onclick="testLogin()">Test Login</button>
+    <button onclick="testAPI()">Test API</button>
+    <div id="results"></div>
+
+    <script>
+        const API_BASE = 'https://praktekdrdibya.com';
+        
+        async function log(message) {
+            const div = document.getElementById('results');
+            div.innerHTML += '<div>' + new Date().toLocaleTimeString() + ': ' + message + '</div>';
+            console.log(message);
+        }
+        
+        async function testAPI() {
+            log('Testing API access...');
+            try {
+                const res = await fetch(`${API_BASE}/api/auth/me`);
+                log(`API Response status: ${res.status} OK: ${res.ok}`);
+                const data = await res.text();
+                log(`API Response: ${data.substring(0, 100)}...`);
+            } catch (err) {
+                log(`API Error: ${err.message}`);
+            }
+        }
+        
+        async function testLogin() {
+            log('Testing login...');
+            try {
+                const res = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        email: 'nanda.arfianda@gmail.com', 
+                        password: '123456' 
+                    })
+                });
+                log(`Login Response status: ${res.status} OK: ${res.ok}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    log(`Login Success: ${JSON.stringify(data.success)}`);
+                    if (data.data && data.data.token) {
+                        log(`Token received: ${data.data.token.substring(0, 20)}...`);
+                        // Store token and test /me endpoint
+                        localStorage.setItem('test_token', data.data.token);
+                        await testMe();
+                    }
+                } else {
+                    const error = await res.text();
+                    log(`Login Error: ${error}`);
+                }
+            } catch (err) {
+                log(`Login Exception: ${err.message}`);
+            }
+        }
+        
+        async function testMe() {
+            log('Testing /me endpoint...');
+            const token = localStorage.getItem('test_token');
+            if (!token) {
+                log('No token available');
+                return;
+            }
+            
+            try {
+                const res = await fetch(`${API_BASE}/api/auth/me`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                log(`/me Response status: ${res.status} OK: ${res.ok}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    log(`/me Success: User = ${data.data ? data.data.email : 'no data'}`);
+                } else {
+                    const error = await res.text();
+                    log(`/me Error: ${error}`);
+                }
+            } catch (err) {
+                log(`/me Exception: ${err.message}`);
+            }
+        }
+    </script>
+</body>
+</html>

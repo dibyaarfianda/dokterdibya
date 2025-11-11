@@ -1,0 +1,192 @@
+// Core AdminLTE bootstrap for dibyaklinik
+// This module ports essential UX from index-asli.html: clock, page switching, and basic bindings.
+
+import { validatePatient, validateObatUsage, updatePatientDisplay, getCurrentPatientData, getSelectedServices, getSelectedObat } from './billing.js';
+import { showWarning } from './toast.js';
+import { updateCashierSummary } from './cashier.js';
+import { initMedicalExam, setCurrentPatientForExam, toggleMedicalExamMenu } from './medical-exam.js';
+
+// -------------------- CLOCK --------------------
+let clockIntervalId = null;
+function updateDateTime() {
+    const dateEl = document.getElementById('date-display');
+    const timeEl = document.getElementById('time-display');
+    if (!dateEl || !timeEl) return;
+    const now = new Date();
+    const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Jakarta' };
+    const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Jakarta', hour12: false };
+    dateEl.textContent = now.toLocaleDateString('id-ID', dateOptions);
+    timeEl.textContent = `${now.toLocaleTimeString('id-ID', timeOptions)} WIB`;
+}
+function startClock() {
+    if (clockIntervalId) clearInterval(clockIntervalId);
+    updateDateTime();
+    clockIntervalId = setInterval(updateDateTime, 1000);
+}
+
+// -------------------- PAGE SWITCHING --------------------
+const pages = {};
+function grab(id) { return document.getElementById(id); }
+function initPages() {
+    pages.dashboard = grab('dashboard-page');
+    pages.patient = grab('patient-page');
+    pages.anamnesa = grab('anamnesa-page');
+    pages.physical = grab('physical-exam-page');
+    pages.usg = grab('usg-exam-page');
+    pages.lab = grab('lab-exam-page');
+    pages.tindakan = grab('tindakan-page');
+    pages.obat = grab('obat-page');
+    pages.cashier = grab('cashier-page');
+
+    pages.logs = grab('log-page');
+    pages.roles = grab('role-management-page');
+    pages.appointments = grab('appointments-page');
+    pages.analytics = grab('analytics-page');
+    pages.profile = grab('profile-settings-page');
+}
+function hideAllPages() {
+    Object.values(pages).forEach(p => { if (p) p.classList.add('d-none'); });
+    document.querySelectorAll('.nav-sidebar .nav-link').forEach(l => l.classList.remove('active'));
+}
+function setTitleAndActive(title, navId) {
+    const titleEl = document.getElementById('page-title');
+    if (titleEl) titleEl.textContent = title;
+    if (navId) {
+        const link = document.querySelector(`#${navId} .nav-link`);
+        if (link) link.classList.add('active');
+    }
+}
+function showDashboardPage() { hideAllPages(); pages.dashboard?.classList.remove('d-none'); setTitleAndActive('Dashboard', 'nav-dashboard'); }
+function showTindakanPage() { 
+    hideAllPages(); 
+    pages.tindakan?.classList.remove('d-none'); 
+    setTitleAndActive('Tindakan', 'nav-tindakan');
+    updatePatientDisplay(); // Update patient display saat buka halaman Tindakan
+    // Load billing module
+    import('./billing.js').then(module => {
+        if (module.initBilling) {
+            module.initBilling();
+        }
+    });
+}
+function showObatPage() { hideAllPages(); pages.obat?.classList.remove('d-none'); setTitleAndActive('Obat & Alkes', 'nav-obat'); }
+function showCashierPage() { 
+    // Validate patient before opening Rincian Tagihan
+    if (!validatePatient()) {
+        showPatientPage();
+        return;
+    }
+    if (!validateObatUsage()) {
+        showObatPage();
+        return;
+    }
+    hideAllPages(); 
+    pages.cashier?.classList.remove('d-none'); 
+    setTitleAndActive('Rincian Tagihan', 'nav-cashier');
+    
+    // Load cashier summary with current billing data
+    const patientData = getCurrentPatientData();
+    const tindakanData = getSelectedServices();
+    const obatData = getSelectedObat();
+    updateCashierSummary(patientData, tindakanData, obatData);
+}
+function showPatientPage() { hideAllPages(); pages.patient?.classList.remove('d-none'); setTitleAndActive('Data Pasien', 'nav-patient'); }
+// Make function globally accessible for onclick handlers
+window.showPatientPage = showPatientPage;
+function showAnamnesa() { hideAllPages(); pages.anamnesa?.classList.remove('d-none'); setTitleAndActive('Anamnesa', 'nav-anamnesa'); }
+function showPhysicalExam() { hideAllPages(); pages.physical?.classList.remove('d-none'); setTitleAndActive('Pemeriksaan Fisik', 'nav-physical'); }
+function showUSGExam() { 
+    hideAllPages(); 
+    pages.usg?.classList.remove('d-none'); 
+    setTitleAndActive('Pemeriksaan USG', 'nav-usg');
+    
+    // Re-check pregnancy status when page opens
+    const gynSection = document.getElementById('usg-gynecology-section');
+    const obstetriSection = document.getElementById('usg-obstetri-section');
+    const anamnesaSelect = document.getElementById('anamnesa-pregnant');
+    
+    if (anamnesaSelect && gynSection && obstetriSection) {
+        const pregnantStatus = anamnesaSelect.value;
+        console.log('showUSGExam - Pregnancy status:', pregnantStatus);
+        
+        if (pregnantStatus === 'ya') {
+            obstetriSection.classList.remove('d-none');
+            gynSection.classList.add('d-none');
+        } else if (pregnantStatus === 'tidak') {
+            gynSection.classList.remove('d-none');
+            obstetriSection.classList.add('d-none');
+        } else {
+            gynSection.classList.add('d-none');
+            obstetriSection.classList.add('d-none');
+        }
+    }
+}
+function showLabExam() { hideAllPages(); pages.lab?.classList.remove('d-none'); setTitleAndActive('Pemeriksaan Penunjang', 'nav-lab'); }
+
+function showLogPage() { hideAllPages(); pages.logs?.classList.remove('d-none'); setTitleAndActive('Log Aktivitas', 'nav-logs'); }
+function showRoleManagementPage() { hideAllPages(); pages.roles?.classList.remove('d-none'); setTitleAndActive('Kelola Role', 'nav-roles'); }
+function showAppointmentsPage() { hideAllPages(); pages.appointments?.classList.remove('d-none'); setTitleAndActive('Appointment', 'nav-appointments'); }
+function showAnalyticsPage() { hideAllPages(); pages.analytics?.classList.remove('d-none'); setTitleAndActive('Analytics', 'nav-analytics'); }
+function showProfileSettings() { 
+    hideAllPages(); 
+    pages.profile?.classList.remove('d-none'); 
+    setTitleAndActive('Profile Settings', null);
+    // Load profile module and initialize
+    import('./profile.js').then(module => {
+        if (module.initProfile) {
+            module.initProfile();
+        }
+        if (module.loadProfileData) {
+            module.loadProfileData();
+        }
+    });
+}
+
+// Expose for inline onclicks already set in HTML
+window.showTindakanPage = showTindakanPage;
+window.showObatPage = showObatPage;
+window.showCashierPage = showCashierPage;
+window.showPatientPage = showPatientPage;
+window.showAnamnesa = showAnamnesa;
+window.showPhysicalExam = showPhysicalExam;
+window.showUSGExam = showUSGExam;
+window.showLabExam = showLabExam;
+window.showProfileSettings = showProfileSettings;
+
+window.showLogPage = showLogPage;
+window.showRoleManagementPage = showRoleManagementPage;
+window.showAppointmentsPage = showAppointmentsPage;
+window.showAnalyticsPage = showAnalyticsPage;
+window.showDashboardPage = showDashboardPage;
+
+// -------------------- BASIC BINDINGS --------------------
+function bindBasics() {
+    const backFromLogBtn = grab('backFromLogBtn');
+    backFromLogBtn?.addEventListener('click', showTindakanPage);
+
+    // Summary action buttons (disabled until billing logic is ported)
+    const backToTindakanBtn = grab('backToTindakanBtn');
+    backToTindakanBtn?.addEventListener('click', showTindakanPage);
+}
+
+// -------------------- BOOT --------------------
+function initMain() {
+    initPages();
+    startClock();
+    bindBasics();
+    initMedicalExam(); // Initialize medical examination pages
+    // Default landing: Dashboard
+    showDashboardPage();
+}
+
+// Auto-init if DOM is ready, otherwise wait
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initMain);
+} else {
+    initMain();
+}
+
+// Export for manual initialization if needed
+export { initMain };
+
+

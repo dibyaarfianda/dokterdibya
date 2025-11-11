@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Login</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        textarea { width: 100%; height: 400px; }
+    </style>
+</head>
+<body>
+    <h1>Test Login Flow</h1>
+    <p>Email: nanda.arfianda@gmail.com</p>
+    <p>Password: superadmin123</p>
+    
+    <button onclick="testLogin()">Test Login</button>
+    <button onclick="clearStorage()">Clear Storage</button>
+    <button onclick="checkAuth()">Check Auth</button>
+    
+    <h2>Console Output:</h2>
+    <textarea id="output" readonly></textarea>
+    
+    <script type="module">
+        import { auth, onAuthStateChanged, signIn, getIdToken, fetchMe } from './scripts/vps-auth-v2.js';
+        
+        const output = document.getElementById('output');
+        
+        function log(msg) {
+            output.value += msg + '\n';
+            output.scrollTop = output.scrollHeight;
+            console.log(msg);
+        }
+        
+        window.testLogin = async function() {
+            log('[TEST] Starting login test...');
+            try {
+                log('[TEST] Calling signIn()...');
+                const result = await signIn('nanda.arfianda@gmail.com', 'superadmin123', true);
+                log('[TEST] signIn returned: ' + JSON.stringify({success: result.success, hasToken: !!result.data?.token}));
+                log('[TEST] auth.currentUser: ' + JSON.stringify(auth.currentUser));
+                
+                const token = await getIdToken();
+                log('[TEST] getIdToken returned: ' + (token ? 'Token found' : 'No token'));
+                
+                setTimeout(async () => {
+                    const user = await fetchMe();
+                    log('[TEST] fetchMe returned: ' + JSON.stringify({hasUser: !!user}));
+                }, 100);
+                
+            } catch(e) {
+                log('[TEST ERROR] ' + e.message);
+            }
+        };
+        
+        window.clearStorage = function() {
+            localStorage.clear();
+            sessionStorage.clear();
+            log('[TEST] Storage cleared');
+        };
+        
+        window.checkAuth = async function() {
+            const token = await getIdToken();
+            log('[CHECK] Token in storage: ' + (token ? token.substring(0, 50) + '...' : 'NONE'));
+            log('[CHECK] auth.currentUser: ' + JSON.stringify(auth.currentUser));
+        };
+        
+        log('[INIT] Page loaded');
+        log('[INIT] Registering onAuthStateChanged listener...');
+        
+        onAuthStateChanged((user) => {
+            log('[AUTH] onAuthStateChanged fired - User: ' + JSON.stringify(user));
+        });
+        
+        log('[INIT] Module imported, listeners registered');
+    </script>
+</body>
+</html>
