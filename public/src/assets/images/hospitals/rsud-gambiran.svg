@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 200">
+    <rect width="360" height="200" rx="28" fill="#f5f0ff"/>
+    <circle cx="110" cy="100" r="72" fill="#6c2eb9"/>
+    <path d="M110 52 L124 66 L110 80 L96 66 Z" fill="#f9d94a"/>
+    <path d="M110 140 C134 120 134 102 110 90 C86 102 86 120 110 140 Z" fill="#f9d94a"/>
+    <path d="M110 68 L120 90 L100 90 Z" fill="#6c2eb9"/>
+    <text x="180" y="110" font-family="'Poppins', Arial, sans-serif" font-weight="700" font-size="22" fill="#03045e">RSUD GAMBIRAN</text>
+    <text x="180" y="140" font-family="'Poppins', Arial, sans-serif" font-size="18" fill="#6c2eb9">KOTA KEDIRI</text>
+</svg>
