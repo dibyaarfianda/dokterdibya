@@ -123,7 +123,7 @@
             log(elemId, 'Importing vps-auth-v2.js...');
             
             try {
-                const auth = await import('/scripts/vps-auth-v2.js');
+                const auth = await import('./scripts/vps-auth-v2.js');
                 log(elemId, `✓ Module imported`);
                 log(elemId, `✓ signIn function: ${typeof auth.signIn}`);
                 log(elemId, `✓ fetchMe function: ${typeof auth.fetchMe}`);
@@ -142,7 +142,7 @@
             log(elemId, 'Step 1: Import auth module...');
             
             try {
-                const auth = await import('/scripts/vps-auth-v2.js');
+                const auth = await import('./scripts/vps-auth-v2.js');
                 log(elemId, '✓ Auth module imported');
                 
                 log(elemId, 'Step 2: Register onAuthStateChanged listener...');

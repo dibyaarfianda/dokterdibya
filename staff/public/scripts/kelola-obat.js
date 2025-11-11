@@ -7,8 +7,11 @@ import { getIdToken } from './vps-auth-v2.js';
 console.log('🔄 kelola-obat.js LOADED - Version: 2025-11-08-11:40 - Using AUTH');
 
 // API Base URL
-const API_BASE = 'https://praktekdrdibya.com/api'; // Protected endpoint for write operations
-const PUBLIC_API = 'https://praktekdrdibya.com/public'; // Public endpoint for read operations
+const ORIGIN_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+    ? 'http://localhost:3001'
+    : window.location.origin.replace(/\/$/, '');
+const API_BASE = `${ORIGIN_BASE}/api`; // Protected endpoint for write operations
+const PUBLIC_API = `${ORIGIN_BASE}/public`; // Public endpoint for read operations
 
 let allObat = [];
 let isEditMode = false;

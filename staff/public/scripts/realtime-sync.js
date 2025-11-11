@@ -1,9 +1,9 @@
 // Real-time synchronization module using Socket.io
 // Allows users to see what others are doing in real-time
 
-const REALTIME_API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' 
-    ? 'http://localhost:3001' 
-    : 'https://praktekdrdibya.com';
+const REALTIME_API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    ? 'http://localhost:3001'
+    : window.location.origin;
 
 let socket = null;
 let currentUser = null;
