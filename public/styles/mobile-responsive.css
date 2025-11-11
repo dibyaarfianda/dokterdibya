@@ -1,0 +1,569 @@
+/**
+ * DIBYA KLINIK - MOBILE RESPONSIVE STYLES
+ * Optimized for mobile devices (phones & tablets)
+ */
+
+/* ============================================
+   MOBILE BREAKPOINTS
+   ============================================ */
+
+/* Small phones: 320px - 480px */
+/* Large phones: 481px - 767px */
+/* Tablets: 768px - 1024px */
+/* Desktop: 1025px+ */
+
+/* ============================================
+   BASE MOBILE STYLES
+   ============================================ */
+
+@media (max-width: 767px) {
+    /* Body & HTML */
+    body {
+        font-size: 14px;
+        overflow-x: hidden;
+    }
+
+    /* Hide sidebar on mobile by default */
+    .main-sidebar {
+        position: fixed;
+        left: -250px;
+        transition: left 0.3s ease;
+        z-index: 1050;
+    }
+
+    .main-sidebar.sidebar-open {
+        left: 0;
+    }
+
+    /* Adjust content wrapper */
+    .content-wrapper {
+        margin-left: 0 !important;
+        padding: 10px;
+    }
+
+    .main-header {
+        margin-left: 0 !important;
+    }
+
+    .main-footer {
+        margin-left: 0 !important;
+    }
+
+    /* Mobile overlay for sidebar */
+    .sidebar-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1040;
+    }
+
+    .sidebar-overlay.active {
+        display: block;
+    }
+
+    /* ============================================
+       NAVBAR MOBILE
+       ============================================ */
+
+    .main-header .navbar {
+        padding: 0.5rem 1rem;
+    }
+
+    .navbar-nav .nav-link {
+        padding: 0.5rem;
+    }
+
+    /* Mobile menu toggle */
+    .navbar-toggler {
+        display: block !important;
+        border: none;
+        padding: 0.5rem;
+    }
+
+    /* Hide desktop elements */
+    .navbar .d-none.d-sm-inline-block {
+        display: none !important;
+    }
+
+    /* ============================================
+       CARDS & CONTENT
+       ============================================ */
+
+    .card {
+        margin-bottom: 1rem;
+    }
+
+    .card-header {
+        padding: 0.75rem 1rem;
+        font-size: 1rem;
+    }
+
+    .card-body {
+        padding: 1rem;
+    }
+
+    /* Info boxes (KPI cards) */
+    .info-box {
+        margin-bottom: 1rem;
+        min-height: 80px;
+    }
+
+    .info-box-icon {
+        width: 70px;
+        font-size: 2rem;
+    }
+
+    .info-box-content {
+        padding: 5px 10px;
+    }
+
+    .info-box-text {
+        font-size: 0.875rem;
+    }
+
+    .info-box-number {
+        font-size: 1.25rem;
+    }
+
+    /* Small boxes */
+    .small-box {
+        margin-bottom: 1rem;
+    }
+
+    .small-box .inner h3 {
+        font-size: 1.5rem;
+    }
+
+    .small-box .inner p {
+        font-size: 0.875rem;
+    }
+
+    /* ============================================
+       FORMS
+       ============================================ */
+
+    .form-group {
+        margin-bottom: 1rem;
+    }
+
+    .form-control {
+        font-size: 16px; /* Prevents zoom on iOS */
+        padding: 0.5rem 0.75rem;
+    }
+
+    .form-label {
+        font-size: 0.875rem;
+        margin-bottom: 0.25rem;
+    }
+
+    /* Select dropdowns */
+    select.form-control {
+        font-size: 16px;
+        height: auto;
+        padding: 0.5rem 0.75rem;
+    }
+
+    /* Buttons */
+    .btn {
+        padding: 0.5rem 1rem;
+        font-size: 0.875rem;
+    }
+
+    .btn-lg {
+        padding: 0.75rem 1.5rem;
+        font-size: 1rem;
+    }
+
+    .btn-sm {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.75rem;
+    }
+
+    /* Button groups */
+    .btn-group {
+        display: flex;
+        flex-wrap: wrap;
+    }
+
+    .btn-group .btn {
+        flex: 1 1 auto;
+        margin-bottom: 0.5rem;
+    }
+
+    /* ============================================
+       TABLES
+       ============================================ */
+
+    .table-responsive {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .table {
+        font-size: 0.875rem;
+    }
+
+    .table thead th {
+        font-size: 0.75rem;
+        padding: 0.5rem;
+        white-space: nowrap;
+    }
+
+    .table tbody td {
+        padding: 0.5rem;
+        font-size: 0.875rem;
+    }
+
+    /* Hide less important columns on mobile */
+    .table .d-none-mobile {
+        display: none !important;
+    }
+
+    /* ============================================
+       PATIENT FORM
+       ============================================ */
+
+    #patient-form .row {
+        margin-left: 0;
+        margin-right: 0;
+    }
+
+    #patient-form .col-md-6,
+    #patient-form .col-md-4,
+    #patient-form .col-md-3 {
+        padding-left: 0;
+        padding-right: 0;
+        width: 100%;
+    }
+
+    /* Obstetric data - stack vertically */
+    #obstetric-section .form-group {
+        width: 100%;
+        margin-bottom: 0.75rem;
+    }
+
+    /* Riwayat Kehamilan table */
+    #pregnancy-history-table {
+        font-size: 0.75rem;
+    }
+
+    #pregnancy-history-table input,
+    #pregnancy-history-table select {
+        font-size: 0.75rem;
+        padding: 0.25rem;
+    }
+
+    /* ============================================
+       MEDICATION & SERVICE LISTS
+       ============================================ */
+
+    .obat-item,
+    .service-item {
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .obat-item-name,
+    .service-item-name {
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+
+    .obat-item-category,
+    .service-item-category {
+        font-size: 0.75rem;
+    }
+
+    .obat-item-price,
+    .service-item-price {
+        font-size: 1rem;
+        font-weight: bold;
+    }
+
+    /* Selected items */
+    .selected-items-list {
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    /* ============================================
+       BILLING / CASHIER
+       ============================================ */
+
+    #cashier-summary .card {
+        margin-bottom: 1rem;
+    }
+
+    #cashier-summary .list-group-item {
+        padding: 0.75rem;
+        font-size: 0.875rem;
+    }
+
+    .grand-total {
+        font-size: 1.5rem !important;
+    }
+
+    /* ============================================
+       CHAT BOX
+       ============================================ */
+
+    #chat-slide-panel {
+        width: 100% !important;
+        right: -100% !important;
+    }
+
+    #chat-slide-panel.open {
+        right: 0 !important;
+    }
+
+    #chat-messages {
+        height: calc(100vh - 200px);
+    }
+
+    .chat-message {
+        font-size: 0.875rem;
+        padding: 0.5rem;
+    }
+
+    /* ============================================
+       MODAL
+       ============================================ */
+
+    .modal-dialog {
+        margin: 0.5rem;
+        max-width: calc(100% - 1rem);
+    }
+
+    .modal-content {
+        border-radius: 0.5rem;
+    }
+
+    .modal-header {
+        padding: 1rem;
+    }
+
+    .modal-body {
+        padding: 1rem;
+    }
+
+    .modal-footer {
+        padding: 0.75rem;
+    }
+
+    /* ============================================
+       DASHBOARD CHARTS
+       ============================================ */
+
+    .chart-container {
+        height: 250px !important;
+        margin-bottom: 1rem;
+    }
+
+    /* ============================================
+       LOGIN PAGE
+       ============================================ */
+
+    .login-box {
+        width: 100% !important;
+        margin: 1rem auto;
+        padding: 0 1rem;
+    }
+
+    .login-card-body {
+        padding: 1.5rem;
+    }
+
+    .login-logo {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+    }
+
+    .login-logo img {
+        max-width: 150px;
+    }
+
+    /* ============================================
+       UTILITY CLASSES
+       ============================================ */
+
+    /* Hide on mobile */
+    .d-mobile-none {
+        display: none !important;
+    }
+
+    /* Show only on mobile */
+    .d-mobile-block {
+        display: block !important;
+    }
+
+    /* Full width on mobile */
+    .mobile-full-width {
+        width: 100% !important;
+    }
+
+    /* Smaller text on mobile */
+    .mobile-small-text {
+        font-size: 0.875rem !important;
+    }
+
+    /* Stack columns on mobile */
+    .mobile-stack > * {
+        width: 100% !important;
+        margin-bottom: 0.5rem;
+    }
+
+    /* ============================================
+       SPACING ADJUSTMENTS
+       ============================================ */
+
+    .content-header {
+        padding: 0.75rem 0;
+    }
+
+    .content-header h1 {
+        font-size: 1.5rem;
+    }
+
+    .breadcrumb {
+        font-size: 0.75rem;
+        padding: 0.5rem 0;
+    }
+
+    /* Reduce padding/margins */
+    .p-3 {
+        padding: 1rem !important;
+    }
+
+    .p-4 {
+        padding: 1.5rem !important;
+    }
+
+    .m-3 {
+        margin: 1rem !important;
+    }
+
+    .m-4 {
+        margin: 1.5rem !important;
+    }
+}
+
+/* ============================================
+   TABLET SPECIFIC (768px - 1024px)
+   ============================================ */
+
+@media (min-width: 768px) and (max-width: 1024px) {
+    .content-wrapper {
+        padding: 15px;
+    }
+
+    .info-box {
+        min-height: 90px;
+    }
+
+    .card-body {
+        padding: 1.25rem;
+    }
+
+    /* Sidebar can be visible on tablets */
+    .main-sidebar {
+        position: fixed;
+        left: 0;
+    }
+
+    .content-wrapper,
+    .main-header,
+    .main-footer {
+        margin-left: 250px !important;
+    }
+
+    /* But allow collapsing */
+    body.sidebar-collapse .main-sidebar {
+        left: -250px;
+    }
+
+    body.sidebar-collapse .content-wrapper,
+    body.sidebar-collapse .main-header,
+    body.sidebar-collapse .main-footer {
+        margin-left: 0 !important;
+    }
+}
+
+/* ============================================
+   LANDSCAPE ORIENTATION
+   ============================================ */
+
+@media (max-width: 767px) and (orientation: landscape) {
+    .content-wrapper {
+        padding: 5px;
+    }
+
+    .card-body {
+        padding: 0.75rem;
+    }
+
+    #chat-messages {
+        height: calc(100vh - 150px);
+    }
+}
+
+/* ============================================
+   PRINT STYLES (for invoices)
+   ============================================ */
+
+@media print {
+    .main-sidebar,
+    .main-header,
+    .main-footer,
+    .btn,
+    .no-print {
+        display: none !important;
+    }
+
+    .content-wrapper {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+
+    body {
+        font-size: 10pt;
+    }
+
+    .card {
+        border: none;
+        box-shadow: none;
+    }
+}
+
+/* ============================================
+   TOUCH IMPROVEMENTS
+   ============================================ */
+
+@media (hover: none) and (pointer: coarse) {
+    /* Larger touch targets */
+    .btn,
+    .nav-link,
+    .list-group-item {
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+
+    /* Remove hover effects on touch devices */
+    .btn:hover,
+    .nav-link:hover,
+    .list-group-item:hover {
+        transform: none;
+    }
+
+    /* Add active/pressed state */
+    .btn:active,
+    .nav-link:active,
+    .list-group-item:active {
+        opacity: 0.7;
+    }
+}
+

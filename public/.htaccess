@@ -1,0 +1,17 @@
+# Disable caching for JavaScript files during development
+<FilesMatch "\.(js|json)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires 0
+</FilesMatch>
+
+# Disable caching for HTML files
+<FilesMatch "\.(html|htm)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires 0
+</FilesMatch>
+
+# Enable CORS for local development
+Header set Access-Control-Allow-Origin "*"
+

@@ -1,0 +1,2673 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>dr.Dibya | Private Clinic</title>
+
+    <!-- Error Handler (load first) -->
+    <script src="scripts/error-handler.js"></script>
+
+    <!-- Font & Icons (Font Awesome 5) -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
+    <!-- AdminLTE 3 CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+    <style>
+        /* Sidebar color and width */
+        .main-sidebar { 
+            background-color: #DEE0E3 !important;
+        }
+        
+        /* Sidebar width when expanded */
+        body:not(.sidebar-collapse) .main-sidebar {
+            width: 210px !important; /* Default 250px - 40px (5 spasi) */
+        }
+        
+        /* Sidebar width when collapsed */
+        body.sidebar-collapse .main-sidebar {
+            width: 4.6rem !important; /* AdminLTE default collapsed width */
+        }
+        
+        .main-sidebar .brand-link { background-color: #DEE0E3 !important; }
+        .sidebar-logo { 
+            background-color: #DEE0E3; 
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden; /* Keep logo within bounds */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 88px; /* Fixed height to prevent jumping */
+            padding: 0.5rem;
+        }
+        
+        /* Logo sizing */
+        .sidebar-logo img {
+            max-height: 68px;
+            max-width: 100%; /* Prevent overflow */
+            width: auto;
+            height: auto;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: center center;
+            display: block;
+            will-change: transform; /* Optimize for animation */
+        }
+        
+        /* Logo when sidebar collapsed - shrink to fit with smooth scale */
+        body.sidebar-collapse .sidebar-logo {
+            min-height: 60px; /* Smaller container when collapsed */
+            padding: 0.25rem;
+        }
+        
+        body.sidebar-collapse .sidebar-logo img {
+            max-height: 40px; /* Smaller max size */
+            max-width: 40px;
+        }
+        
+        /* Adjust content area to match sidebar width when expanded */
+        body:not(.sidebar-collapse) .content-wrapper,
+        body:not(.sidebar-collapse) .main-footer,
+        body:not(.sidebar-collapse) .main-header {
+            margin-left: 210px !important;
+        }
+        
+        /* Adjust content area when sidebar collapsed */
+        body.sidebar-collapse .content-wrapper,
+        body.sidebar-collapse .main-footer,
+        body.sidebar-collapse .main-header {
+            margin-left: 4.6rem !important;
+        }
+
+        /* Default (not selected) link/icon color */
+        .sidebar .nav-sidebar .nav-link { color: #000 !important; }
+        .sidebar .nav-sidebar .nav-link .nav-icon { color: #000 !important; }
+
+        /* Hover */
+        .sidebar .nav-sidebar .nav-link:hover { background-color: rgba(0,0,0,0.08) !important; color: #000 !important; }
+        .sidebar .nav-sidebar .nav-link:hover .nav-icon { color: #000 !important; }
+
+        /* Active (selected) */
+        .sidebar .nav-sidebar .nav-link.active { background-color: #007BFF !important; color: #fff !important; }
+        .sidebar .nav-sidebar .nav-link.active .nav-icon { color: #fff !important; }
+
+        /* Nav section headers color to blue */
+        .sidebar .nav-header { color: #0d6efd !important; }
+        
+        /* Hide sidebar scrollbar */
+        .main-sidebar,
+        .main-sidebar .sidebar,
+        .sidebar-mini .main-sidebar { 
+            overflow-y: auto !important;
+            scrollbar-width: none !important; /* Firefox */
+            -ms-overflow-style: none !important; /* IE and Edge */
+        }
+        .main-sidebar::-webkit-scrollbar,
+        .main-sidebar .sidebar::-webkit-scrollbar,
+        .sidebar-mini .main-sidebar::-webkit-scrollbar {
+            width: 0 !important;
+            height: 0 !important;
+            display: none !important; /* Chrome, Safari, Opera */
+        }
+        .main-sidebar:hover::-webkit-scrollbar,
+        .main-sidebar .sidebar:hover::-webkit-scrollbar {
+            width: 0 !important;
+            height: 0 !important;
+            display: none !important;
+        }
+        
+        /* Obstetri fields fixed width */
+        .obstetri-field { max-width: 260px; }
+        .obstetri-label { min-width: 140px; max-width: 140px; }
+        /* Reduce all dropdown (select) vertical height ~20% */
+        select.form-control, select.form-control-sm {
+            padding-top: .2rem !important; /* default ~.25rem */
+            padding-bottom: .2rem !important;
+        }
+        /* Modern micro-interactions (no color changes) */
+        html { scroll-behavior: smooth; }
+        .card { border-radius: .5rem; box-shadow: 0 2px 10px rgba(0,0,0,.06); transition: box-shadow 200ms ease, transform 200ms ease; }
+        .card:hover { box-shadow: 0 6px 18px rgba(0,0,0,.12); }
+        .btn { transition: transform 140ms ease, box-shadow 140ms ease; }
+        .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 14px rgba(0,0,0,.12); }
+        .form-control, .custom-select, select.form-control, textarea.form-control { border-radius: .35rem; transition: box-shadow 180ms ease, border-color 180ms ease, background-color 180ms ease; }
+        .form-control:focus, .custom-select:focus, select.form-control:focus, textarea.form-control:focus { box-shadow: 0 0 0 .15rem rgba(0,123,255,.2); }
+        /* Smooth reveal for obstetri section */
+        #quick-preg-section { opacity: 0; transform: translateY(-6px); transition: opacity 220ms ease, transform 220ms ease; }
+        #quick-preg-section.reveal { opacity: 1; transform: none; }
+        /* Compact labels to align neatly */
+        .small.text-muted { line-height: 1.2; }
+        /* Align auxiliary textareas with dropdown left edge */
+        .align-with-dropdown { margin-left: calc(140px + 16px); }
+        .obstetri-textarea { max-width: 620px; }
+        
+        /* Toast Notification Styles */
+        .toast-container {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            z-index: 9999;
+            max-width: 400px;
+        }
+        
+        .custom-toast {
+            min-width: 300px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            animation: slideInRight 0.3s ease-out;
+        }
+        
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+        
+        .custom-toast.fade-out {
+            animation: slideOutRight 0.3s ease-out forwards;
+        }
+        
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+        }
+        
+        .custom-toast .toast-header {
+            border-top-left-radius: 8px;
+            border-top-right-radius: 8px;
+            font-weight: 600;
+        }
+        
+        .custom-toast.toast-success .toast-header {
+            background-color: #28a745;
+            color: white;
+        }
+        
+        .custom-toast.toast-error .toast-header {
+            background-color: #dc3545;
+            color: white;
+        }
+        
+        .custom-toast.toast-warning .toast-header {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        
+        .custom-toast.toast-info .toast-header {
+            background-color: #17a2b8;
+            color: white;
+        }
+        
+        .custom-toast .toast-header .close {
+            color: inherit;
+            opacity: 0.8;
+        }
+        
+        .custom-toast .toast-header .close:hover {
+            opacity: 1;
+        }
+        
+        /* Fix for appointments page not showing - force display */
+        #appointments-page {
+            width: 100% !important;
+            min-height: 100px !important;
+        }
+        
+        #appointments-page.d-none {
+            display: none !important;
+        }
+        
+        #appointments-page:not(.d-none) {
+            display: block !important;
+        }
+        
+        /* Online Users Panel Styles */
+        #online-users-panel .card {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        #online-users-panel .list-group-item {
+            border-left: 0;
+            border-right: 0;
+            padding: 8px 12px;
+            font-size: 0.875rem;
+        }
+        
+        #online-users-panel .list-group-item:first-child {
+            border-top: 0;
+        }
+        
+        .user-status-indicator {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+        
+        .user-status-online {
+            background-color: #28a745;
+            box-shadow: 0 0 4px rgba(40, 167, 69, 0.6);
+        }
+        
+        .user-activity {
+            font-size: 0.75rem;
+            color: #6c757d;
+            margin-top: 2px;
+        }
+        
+        .user-activity-icon {
+            margin-right: 4px;
+            font-size: 0.7rem;
+        }
+        
+        #online-users-panel .badge {
+            font-size: 0.7rem;
+            padding: 2px 6px;
+        }
+    </style>
+
+        <!-- Mobile Responsive Styles -->
+        <link rel="stylesheet" href="styles/mobile-responsive.css">
+    
+    <!-- Global Debug Function for Appointments - DISABLED -->
+    <script>
+        // Set up debug function immediately in head (before DOM loads)
+        (function() {
+            window.debugAppointments_DISABLED = function() {
+                console.log('[DEBUG] ===== APPOINTMENTS DEBUG (Global) =====');
+                
+                // Basic checks that don't require the module
+                const btn = document.getElementById('btn-add-appointment');
+                const modal = document.getElementById('appointment-modal');
+                const appointmentsPage = document.getElementById('appointments-page');
+                
+                console.log('[DEBUG] Basic DOM checks:');
+                console.log('  - Button exists?', !!btn);
+                console.log('  - Modal exists?', !!modal);
+                console.log('  - Appointments page exists?', !!appointmentsPage);
+                console.log('  - Appointments page visible?', appointmentsPage && !appointmentsPage.classList.contains('d-none'));
+                console.log('  - window.openNewAppointment type:', typeof window.openNewAppointment);
+                console.log('  - jQuery available?', typeof $ !== 'undefined');
+                console.log('  - Bootstrap modal available?', typeof $ !== 'undefined' && $.fn.modal);
+                
+                if (btn) {
+                    console.log('[DEBUG] Button details:');
+                    console.log('  - ID:', btn.id);
+                    console.log('  - Text:', btn.textContent);
+                    console.log('  - onclick:', btn.onclick);
+                    console.log('  - parent:', btn.parentNode);
+                    console.log('  - disabled?', btn.disabled);
+                    console.log('  - style.display:', btn.style.display);
+                    console.log('  - style.visibility:', btn.style.visibility);
+                    if (window.getComputedStyle) {
+                        console.log('  - computed style:', window.getComputedStyle(btn).display);
+                    }
+                    
+                    // If button has no onclick handler, attach one directly
+                    if (!btn.onclick && typeof $ !== 'undefined' && $.fn.modal && modal) {
+                        console.log('[DEBUG] Button has no onclick handler - attaching direct handler...');
+                        btn.addEventListener('click', function(e) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            console.log('[DEBUG] Button clicked via direct handler');
+                            
+                            // Try to use window.openNewAppointment if available
+                            if (typeof window.openNewAppointment === 'function') {
+                                console.log('[DEBUG] Using window.openNewAppointment');
+                                window.openNewAppointment();
+                            } else {
+                                // Fallback: open modal directly
+                                console.log('[DEBUG] Opening modal directly as fallback');
+                                try {
+                                    // Reset form
+                                    const idInput = document.getElementById('appointment-id');
+                                    const titleEl = document.getElementById('appointment-modal-title');
+                                    const patientSelect = document.getElementById('appointment-patient-select');
+                                    const dateInput = document.getElementById('appointment-date');
+                                    const timeInput = document.getElementById('appointment-time');
+                                    const typeInput = document.getElementById('appointment-type');
+                                    const notesInput = document.getElementById('appointment-notes');
+                                    
+                                    if (idInput) idInput.value = '';
+                                    if (titleEl) titleEl.innerHTML = '<i class="fas fa-calendar-plus mr-2"></i>Tambah Appointment Baru';
+                                    if (patientSelect) patientSelect.innerHTML = '<option value="">Memuat pasien...</option>';
+                                    if (dateInput) {
+                                        const today = new Date().toISOString().split('T')[0];
+                                        dateInput.value = today;
+                                    }
+                                    if (timeInput) timeInput.value = '09:00';
+                                    if (typeInput) typeInput.value = 'Konsultasi';
+                                    if (notesInput) notesInput.value = '';
+                                    
+                                    // Show modal
+                                    $('#appointment-modal').modal('show');
+                                } catch (err) {
+                                    console.error('[DEBUG] Error opening modal:', err);
+                                }
+                            }
+                        });
+                        console.log('[DEBUG] Direct click handler attached to button');
+                    }
+                }
+                
+                // If the module is loaded, try to call openNewAppointment
+                if (typeof window.openNewAppointment === 'function') {
+                    console.log('[DEBUG] Module appears to be loaded (window.openNewAppointment exists)');
+                    console.log('[DEBUG] Attempting to manually trigger modal...');
+                    try {
+                        window.openNewAppointment();
+                    } catch (err) {
+                        console.error('[DEBUG] Error calling openNewAppointment:', err);
+                    }
+                } else {
+                    console.warn('[DEBUG] Appointments module not loaded yet');
+                    console.warn('[DEBUG] window.openNewAppointment is not a function');
+                    
+                    // Try to manually open the modal as a fallback
+                    if (modal && typeof $ !== 'undefined' && $.fn.modal) {
+                        console.log('[DEBUG] Attempting to open modal manually using jQuery/Bootstrap...');
+                        try {
+                            // Reset form
+                            const idInput = document.getElementById('appointment-id');
+                            const titleEl = document.getElementById('appointment-modal-title');
+                            const patientSelect = document.getElementById('appointment-patient-select');
+                            const dateInput = document.getElementById('appointment-date');
+                            const timeInput = document.getElementById('appointment-time');
+                            const typeInput = document.getElementById('appointment-type');
+                            const notesInput = document.getElementById('appointment-notes');
+                            
+                            if (idInput) idInput.value = '';
+                            if (titleEl) titleEl.innerHTML = '<i class="fas fa-calendar-plus mr-2"></i>Tambah Appointment Baru';
+                            if (patientSelect) patientSelect.innerHTML = '<option value="">Memuat pasien...</option>';
+                            if (dateInput) {
+                                const today = new Date().toISOString().split('T')[0];
+                                dateInput.value = today;
+                            }
+                            if (timeInput) timeInput.value = '09:00';
+                            if (typeInput) typeInput.value = 'Konsultasi';
+                            if (notesInput) notesInput.value = '';
+                            
+                            // Show modal
+                            $('#appointment-modal').modal('show');
+                            console.log('[DEBUG] Modal should now be visible');
+                        } catch (err) {
+                            console.error('[DEBUG] Error opening modal manually:', err);
+                        }
+                    } else {
+                        console.error('[DEBUG] Cannot open modal - missing jQuery or Bootstrap');
+                    }
+                    
+                    // Try to reload the appointments module
+                    console.log('[DEBUG] Attempting to manually load appointments module...');
+                    try {
+                        import('./scripts/appointments.js?v=' + Date.now()).then(module => {
+                            console.log('[DEBUG] Module loaded manually:', module);
+                            if (module && module.initAppointments) {
+                                module.initAppointments();
+                                console.log('[DEBUG] initAppointments called manually');
+                                // Try again after a short delay
+                                setTimeout(() => {
+                                    if (typeof window.openNewAppointment === 'function') {
+                                        console.log('[DEBUG] window.openNewAppointment is now available!');
+                                        window.openNewAppointment();
+                                    }
+                                }, 500);
+                            }
+                        }).catch(err => {
+                            console.error('[DEBUG] Failed to load appointments module:', err);
+                        });
+                    } catch (err) {
+                        console.error('[DEBUG] Cannot use dynamic import:', err);
+                    }
+                }
+                
+                console.log('[DEBUG] ===== END DEBUG (Global) =====');
+                
+                return {
+                    buttonExists: !!btn,
+                    modalExists: !!modal,
+                    pageExists: !!appointmentsPage,
+                    pageVisible: appointmentsPage && !appointmentsPage.classList.contains('d-none'),
+                    functionExists: typeof window.openNewAppointment === 'function',
+                    jqueryExists: typeof $ !== 'undefined'
+                };
+            };
+            console.log('[DEBUG] window.debugAppointments is now available globally');
+            
+            // Auto-attach button handler when appointments page is visible
+            function autoAttachAppointmentButton() {
+                // Check if appointments page is visible
+                const appointmentsPage = document.getElementById('appointments-page');
+                if (!appointmentsPage || appointmentsPage.classList.contains('d-none')) {
+                    return; // Page not visible yet
+                }
+                
+                const btn = document.getElementById('btn-add-appointment');
+                if (!btn) {
+                    return; // Button doesn't exist yet
+                }
+                
+                // Check if button already has handlers
+                if (btn.onclick || (btn.getAttribute('data-handler-attached') === 'true')) {
+                    return; // Already has handler
+                }
+                
+                // Attach handler
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    if (typeof window.openNewAppointment === 'function') {
+                        window.openNewAppointment();
+                    } else {
+                        // Fallback: open modal directly
+                        const modal = document.getElementById('appointment-modal');
+                        if (modal && typeof $ !== 'undefined' && $.fn.modal) {
+                            const idInput = document.getElementById('appointment-id');
+                            const titleEl = document.getElementById('appointment-modal-title');
+                            const patientSelect = document.getElementById('appointment-patient-select');
+                            const dateInput = document.getElementById('appointment-date');
+                            const timeInput = document.getElementById('appointment-time');
+                            const typeInput = document.getElementById('appointment-type');
+                            const notesInput = document.getElementById('appointment-notes');
+                            
+                            if (idInput) idInput.value = '';
+                            if (titleEl) titleEl.innerHTML = '<i class="fas fa-calendar-plus mr-2"></i>Tambah Appointment Baru';
+                            if (patientSelect) patientSelect.innerHTML = '<option value="">Memuat pasien...</option>';
+                            if (dateInput) {
+                                const today = new Date().toISOString().split('T')[0];
+                                dateInput.value = today;
+                            }
+                            if (timeInput) timeInput.value = '09:00';
+                            if (typeInput) typeInput.value = 'Konsultasi';
+                            if (notesInput) notesInput.value = '';
+                            
+                            $('#appointment-modal').modal('show');
+                        }
+                    }
+                });
+                btn.setAttribute('data-handler-attached', 'true');
+                console.log('[DEBUG] Auto-attached click handler to appointment button');
+            }
+            
+            // Wait for DOM to be ready before setting up observers
+            function setupObserver() {
+                if (!document.body) {
+                    // Body not ready yet, wait for DOMContentLoaded
+                    if (document.readyState === 'loading') {
+                        document.addEventListener('DOMContentLoaded', setupObserver);
+                        return;
+                    }
+                    // If still not ready, retry after a short delay
+                    setTimeout(setupObserver, 100);
+                    return;
+                }
+                
+                // Run check immediately and periodically
+                setTimeout(autoAttachAppointmentButton, 1000);
+                setTimeout(autoAttachAppointmentButton, 3000);
+                
+                // Also check when DOM changes (using MutationObserver)
+                if (typeof MutationObserver !== 'undefined' && document.body) {
+                    const observer = new MutationObserver(function(mutations) {
+                        autoAttachAppointmentButton();
+                    });
+                    observer.observe(document.body, {
+                        childList: true,
+                        subtree: true,
+                        attributes: true,
+                        attributeFilter: ['class']
+                    });
+                }
+            }
+            
+            // Start setup
+            setupObserver();
+        })();
+    </script>
+</head>
+<body class="hold-transition sidebar-mini layout-fixed">
+<div class="wrapper" id="main-app">
+
+    <!-- Navbar -->
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <span class="nav-link">
+                    <i class="far fa-calendar-alt mr-1"></i>
+                    <span id="date-display"></span>
+                </span>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <span class="nav-link">
+                    <i class="far fa-clock mr-1"></i>
+                    <span id="time-display"></span>
+                </span>
+            </li>
+        </ul>
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <span id="status-banner" class="nav-link d-none">
+                    <span class="badge badge-warning">Loading...</span>
+                </span>
+            </li>
+            <li class="nav-item dropdown">
+                <a class="nav-link" data-toggle="dropdown" href="#">
+                    <img id="navbar-user-avatar" src="" alt="User" class="img-circle elevation-2 mr-2" style="width: 50px; height: 50px; object-fit: cover; display: none;">
+                    <span id="user-info"></span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
+                    <a href="#" class="dropdown-item" id="navbar-profile-btn" onclick="showProfileSettings(); return false;">
+                        <i class="fas fa-user-cog mr-2"></i> Profile Settings
+                    </a>
+                    <div class="dropdown-divider" id="navbar-divider"></div>
+                    <a href="#" class="dropdown-item" id="navbar-logout-btn">
+                        <i class="fas fa-sign-out-alt mr-2"></i> Logout
+                    </a>
+                </div>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Main Sidebar -->
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+        <div class="sidebar">
+            <div class="p-3 text-center sidebar-logo">
+                <img src="images/logodpc.svg" alt="Logo" class="sidebar-logo-img">
+            </div>
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                    <li class="nav-item" id="nav-dashboard">
+                        <a href="#" class="nav-link" onclick="showDashboardPage(); return false;">
+                            <i class="nav-icon fas fa-tachometer-alt"></i>
+                            <p>Dashboard</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" id="nav-patient">
+                        <a href="#" class="nav-link" onclick="showPatientPage(); return false;">
+                            <i class="nav-icon fas fa-user-injured"></i>
+                            <p>Data Pasien</p>
+                        </a>
+                    </li>
+                    
+                    <!-- Medical Examination Menu (hidden until patient selected) -->
+                    <li class="nav-item medical-exam-menu d-none" id="nav-anamnesa">
+                        <a href="#" class="nav-link" onclick="showAnamnesa(); return false;">
+                            <i class="nav-icon fas fa-clipboard-list"></i>
+                            <p>Anamnesa</p>
+                        </a>
+                    </li>
+                    <li class="nav-item medical-exam-menu d-none" id="nav-physical">
+                        <a href="#" class="nav-link" onclick="showPhysicalExam(); return false;">
+                            <i class="nav-icon fas fa-stethoscope"></i>
+                            <p>Pemeriksaan Fisik</p>
+                        </a>
+                    </li>
+                    <li class="nav-item medical-exam-menu d-none" id="nav-usg">
+                        <a href="#" class="nav-link" onclick="showUSGExam(); return false;">
+                            <i class="nav-icon fas fa-baby"></i>
+                            <p>Pemeriksaan USG</p>
+                        </a>
+                    </li>
+                    <li class="nav-item medical-exam-menu d-none" id="nav-lab">
+                        <a href="#" class="nav-link" onclick="showLabExam(); return false;">
+                            <i class="nav-icon fas fa-flask"></i>
+                            <p>Pemeriksaan Penunjang</p>
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item" id="nav-tindakan">
+                        <a href="#" class="nav-link" onclick="showTindakanPage(); return false;">
+                            <i class="nav-icon fas fa-notes-medical"></i>
+                            <p>Tindakan</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" id="nav-obat">
+                        <a href="#" class="nav-link" onclick="showObatPage(); return false;">
+                            <i class="nav-icon fas fa-pills"></i>
+                            <p>Obat</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" id="nav-cashier">
+                        <a href="#" class="nav-link" onclick="showCashierPage(); return false;">
+                            <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                            <p>Rincian Tagihan</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" id="nav-appointments">
+                        <a href="#" class="nav-link" onclick="showAppointmentsPage(); return false;">
+                            <i class="nav-icon fas fa-calendar-check"></i>
+                            <p>Appointment</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-item superadmin-exclusive d-none" id="nav-finance">
+                        <a href="#" class="nav-link" onclick="showFinancePage(); return false;">
+                            <i class="nav-icon fas fa-chart-line"></i>
+                            <p>Finance Analysis</p>
+                        </a>
+                    </li>
+
+                    <!-- Superadmin only -->
+                    <!-- HIDDEN: Stok Opname
+                    <li class="nav-item superadmin-only d-none" id="nav-admin">
+                        <a href="#" class="nav-link" onclick="showStokOpnamePage(); return false;">
+                            <i class="nav-icon fas fa-boxes"></i>
+                            <p>Stok Opname</p>
+                        </a>
+                    </li>
+                    -->
+                    <li class="nav-item superadmin-only d-none" id="nav-kelola-obat">
+                        <a href="#" class="nav-link" onclick="showKelolaObatPage(); return false;">
+                            <i class="nav-icon fas fa-pills"></i>
+                            <p>Kelola Obat</p>
+                        </a>
+                    </li>
+                    <li class="nav-item superadmin-only d-none" id="nav-pengaturan">
+                        <a href="#" class="nav-link" onclick="showPengaturanPage(); return false;">
+                            <i class="nav-icon fas fa-cogs"></i>
+                            <p>Kelola Tindakan</p>
+                        </a>
+                    </li>
+                    <li class="nav-item superadmin-only d-none" id="nav-roles">
+                        <a href="role-management.html" class="nav-link">
+                            <i class="nav-icon fas fa-user-shield"></i>
+                            <p>Kelola Role</p>
+                        </a>
+                    </li>
+                    <li class="nav-item superadmin-only d-none" id="nav-patient-intake-review">
+                        <a href="patient-intake-review.html" class="nav-link">
+                            <i class="nav-icon fas fa-notes-medical"></i>
+                            <p>Review Intake Pasien</p>
+                        </a>
+                    </li>
+                    <!-- HIDDEN: Log Aktivitas
+                    <li class="nav-item superadmin-only d-none" id="nav-logs">
+                        <a href="#" class="nav-link" onclick="showLogPage(); return false;">
+                            <i class="nav-icon fas fa-history"></i>
+                            <p>Log Aktivitas</p>
+                        </a>
+                    </li>
+                    -->
+                </ul>
+            </nav>
+            
+            <!-- Online Users Activity Panel -->
+            <div class="mt-3 px-3" id="online-users-panel">
+                <div class="card card-primary card-outline">
+                    <div class="card-header py-2">
+                        <h3 class="card-title mb-0">
+                            <i class="fas fa-users"></i> Online Users
+                        </h3>
+                        <span class="badge badge-success float-right" id="online-count">0</span>
+                    </div>
+                    <div class="card-body p-0" style="max-height: 300px; overflow-y: auto;">
+                        <ul class="list-group list-group-flush" id="online-users-list">
+                            <li class="list-group-item text-center text-muted py-2">
+                                <small>No users online</small>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Content Wrapper -->
+    <div class="content-wrapper">
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1 class="m-0" id="page-title">Dashboard</h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section class="content">
+            <div class="container-fluid">
+                <!-- DASHBOARD PAGE -->
+                <div id="dashboard-page">
+                    <div class="row">
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-primary">
+                                <div class="inner">
+                                    <h3 id="stat-visits-today">-</h3>
+                                    <p>Kunjungan Hari Ini</p>
+                                </div>
+                                <div class="icon"><i class="fas fa-notes-medical"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-success">
+                                <div class="inner">
+                                    <h3 id="stat-total-bookings">-</h3>
+                                    <p>Total Booking Aktif</p>
+                                </div>
+                                <div class="icon"><i class="fas fa-calendar-plus"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-warning">
+                                <div class="inner">
+                                    <h3 id="stat-appointments-today" class="text-dark">-</h3>
+                                    <p>Appointment Hari Ini</p>
+                                </div>
+                                <div class="icon"><i class="fas fa-calendar-check"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-lg-3 col-6">
+                            <div class="small-box bg-info">
+                                <div class="inner">
+                                    <h3 id="stat-online-users">-</h3>
+                                    <p>Pengguna Online</p>
+                                </div>
+                                <div class="icon"><i class="fas fa-users"></i></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-lg-8">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-calendar-check mr-2"></i>Appointment Hari Ini</h3>
+                                </div>
+                                <div class="card-body" id="dashboard-today-appointments">
+                                    <p class="text-muted mb-0">Tidak ada data.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-bell mr-2"></i>Aktivitas Terbaru</h3>
+                                </div>
+                                <div class="card-body" id="dashboard-recent-activity" style="max-height: 260px; overflow-y: auto;">
+                                    <p class="text-muted mb-0">Belum ada aktivitas.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h3 class="card-title mb-0"><i class="fas fa-chart-area mr-2"></i>Kunjungan 30 Hari Terakhir</h3>
+                                    <span class="badge badge-primary badge-pill" id="stat-visits-30days-total">-</span>
+                                </div>
+                                <div class="card-body">
+                                    <div id="visits-30-days-chart" class="text-center text-muted" style="min-height: 220px;">
+                                        <small>Memuat data kunjungan...</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FINANCE PAGE (Superadmin) -->
+                <div id="finance-page" class="d-none">
+                    <div class="row">
+                        <div class="col-lg-4 col-12">
+                            <div class="small-box bg-primary">
+                                <div class="inner">
+                                    <h3 id="kpi-total-visits">-</h3>
+                                    <p>Kunjungan Hari Ini</p>
+                                </div>
+                                <div class="icon"><i class="fas fa-notes-medical"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-12">
+                            <div class="small-box bg-success">
+                                <div class="inner">
+                                    <h3 id="kpi-revenue">-</h3>
+                                    <p>Pendapatan Hari Ini</p>
+                                </div>
+                                <div class="icon"><i class="fas fa-dollar-sign"></i></div>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-12">
+                            <div class="small-box bg-info">
+                                <div class="inner">
+                                    <h3 id="kpi-avg-bill">-</h3>
+                                    <p>Rata-rata Tagihan</p>
+                                </div>
+                                <div class="icon"><i class="fas fa-receipt"></i></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5 class="mb-3"><i class="fas fa-chart-line mr-2"></i>Finance Analysis</h5>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card card-primary">
+                                <div class="card-header">
+                                    <h3 class="card-title">Pemasukan Mingguan (7 Hari Terakhir)</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div id="weekly-revenue-chart"></div>
+                                    <div class="mt-3 text-center">
+                                        <strong>Total:</strong> <span id="weekly-total" class="text-success">-</span><br>
+                                        <small class="text-muted">Rata-rata/hari: <span id="weekly-avg">-</span></small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card card-success">
+                                <div class="card-header">
+                                    <h3 class="card-title">Pemasukan Bulanan (30 Hari Terakhir)</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div id="monthly-revenue-chart"></div>
+                                    <div class="mt-3 text-center">
+                                        <strong>Total:</strong> <span id="monthly-total" class="text-success">-</span><br>
+                                        <small class="text-muted">Rata-rata/hari: <span id="monthly-avg">-</span></small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card card-info">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-pills mr-2"></i>Top 10 Obat Terjual</h3>
+                                </div>
+                                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                                    <div id="top-drugs-table"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card card-warning">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-notes-medical mr-2"></i>Top 10 Tindakan Dilakukan</h3>
+                                </div>
+                                <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                                    <div id="top-services-table"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- PAGES: keep IDs to match logic in index-asli.html -->
+
+                <div id="tindakan-page" class="d-none">
+                    <!-- Patient Display Card -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div id="tindakan-patient-alert" class="alert alert-warning">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>
+                                <strong>Pasien belum dipilih.</strong> Silakan pilih pasien di menu <a href="#" onclick="showPatientPage(); return false;" class="alert-link font-weight-bold">Data Pasien</a> terlebih dahulu.
+                            </div>
+                            <div id="selected-patient-display" class="alert alert-success d-none">
+                                <i class="fas fa-check-circle mr-2"></i>
+                                <strong>Pasien: </strong><span id="selected-patient-name"></span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <div class="card card-primary card-outline">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-stethoscope mr-2"></i>Daftar Layanan Tindakan <small class="text-muted">(Opsional)</small></h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="input-group mb-3">
+                                        <input type="text" id="tindakanSearchInput" class="form-control" placeholder="Cari layanan tindakan...">
+                                        <div class="input-group-append">
+                                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                        </div>
+                                    </div>
+                                    <div id="serviceList" style="max-height:400px; overflow-y:auto;"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <div class="card card-success card-outline">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-clipboard-list mr-2"></i>Tindakan Terpilih</h3>
+                                    <div class="card-tools">
+                                        <button id="new-bill-btn" class="btn btn-danger btn-sm"><i class="fas fa-redo mr-1"></i>Reset</button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <ul id="selectedServicesList" class="list-unstyled mb-0" style="min-height:300px;">
+                                        <li id="empty-state-tindakan" class="text-center text-muted py-5">
+                                            <i class="fas fa-hand-pointer fa-3x mb-3 opacity-25"></i>
+                                            <p>Pilih layanan tindakan di sebelah kiri<br><small>(atau langsung lanjut ke Obat)</small></p>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div class="card-footer bg-light">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="h5 mb-0 text-bold">TOTAL TINDAKAN</span>
+                                        <span id="totalAmountTindakan" class="h4 mb-0 text-success text-bold">Rp 0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="obat-page" class="d-none">
+                    <div class="row">
+                        <div class="col-lg-7">
+                            <div class="card card-info card-outline">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-pills mr-2"></i>Daftar Obat, Vial & Alkes</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="input-group mb-3">
+                                        <input type="text" id="obatSearchInput" class="form-control" placeholder="Cari obat, vial, atau alkes...">
+                                        <div class="input-group-append">
+                                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                        </div>
+                                    </div>
+                                    
+                                    <ul class="nav nav-tabs" id="obatTabs" role="tablist">
+                                        <li class="nav-item">
+                                            <a class="nav-link active" id="drugs-tab" data-toggle="tab" href="#drugs-panel" role="tab">
+                                                <i class="fas fa-tablets"></i> Obat-obatan
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" id="ampuls-tab" data-toggle="tab" href="#ampuls-panel" role="tab">
+                                                <i class="fas fa-syringe"></i> Ampul & Vial
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" id="consumables-tab" data-toggle="tab" href="#consumables-panel" role="tab">
+                                                <i class="fas fa-box"></i> Alkes
+                                            </a>
+                                        </li>
+                                    </ul>
+                                    
+                                    <div class="tab-content mt-3" id="obatTabContent">
+                                        <div class="tab-pane fade show active" id="drugs-panel" role="tabpanel">
+                                            <div id="drugs-container" style="max-height:450px; overflow-y:auto;"></div>
+                                        </div>
+                                        <div class="tab-pane fade" id="ampuls-panel" role="tabpanel">
+                                            <div id="ampuls-container" style="max-height:450px; overflow-y:auto;"></div>
+                                        </div>
+                                        <div class="tab-pane fade" id="consumables-panel" role="tabpanel">
+                                            <div id="consumables-container" style="max-height:450px; overflow-y:auto;"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div id="no-results-obat" class="text-center text-muted py-4 d-none">
+                                        <i class="fas fa-search fa-2x mb-2"></i>
+                                        <p>Tidak ada hasil ditemukan</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-5">
+                            <div class="card card-warning card-outline">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-prescription-bottle mr-2"></i>Obat Terpilih</h3>
+                                    <div class="card-tools">
+                                        <button id="clear-obat-btn" class="btn btn-danger btn-sm"><i class="fas fa-trash mr-1"></i>Hapus Semua</button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div id="selected-obat-list" style="min-height:400px; max-height:500px; overflow-y:auto;">
+                                        <div id="empty-state-obat" class="text-center text-muted py-5">
+                                            <i class="fas fa-hand-pointer fa-3x mb-3 opacity-25"></i>
+                                            <p>Pilih obat dari daftar di sebelah kiri</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-light">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="h5 mb-0 text-bold">TOTAL OBAT & ALKES</span>
+                                        <span id="totalAmountObat" class="h4 mb-0 text-warning text-bold">Rp 0</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="cashier-page" class="d-none">
+                    <!-- Summary Section -->
+                    <div class="row">
+                        <!-- Patient Info -->
+                        <div class="col-md-6">
+                            <div class="card card-primary card-outline">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-user-injured mr-2"></i>Data Pasien</h3>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm table-borderless">
+                                        <tr>
+                                            <td width="120"><strong>Nama</strong></td>
+                                            <td>: <span id="summary-patient-name">-</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>No. WhatsApp</strong></td>
+                                            <td>: <span id="summary-patient-phone">-</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Tanggal</strong></td>
+                                            <td>: <span id="summary-date">-</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Kasir</strong></td>
+                                            <td>: <span id="summary-cashier">-</span></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Total Summary -->
+                        <div class="col-md-6">
+                            <div class="card card-success card-outline">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-calculator mr-2"></i>Total Tagihan</h3>
+                                </div>
+                                <div class="card-body">
+                                    <table class="table table-sm">
+                                        <tr>
+                                            <td><strong>Total Tindakan</strong></td>
+                                            <td class="text-right"><span id="summary-tindakan-total">Rp 0</span></td>
+                                        </tr>
+                                        <tr>
+                                            <td><strong>Total Obat & Alkes</strong></td>
+                                            <td class="text-right"><span id="summary-obat-total">Rp 0</span></td>
+                                        </tr>
+                                        <tr class="border-top">
+                                            <td><h5 class="mb-0"><strong>GRAND TOTAL</strong></h5></td>
+                                            <td class="text-right"><h4 class="mb-0 text-success"><strong id="summary-grand-total">Rp 0</strong></h4></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Tindakan Detail -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card card-info card-outline">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-stethoscope mr-2"></i>Rincian Tindakan</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div id="summary-tindakan-list">
+                                        <p class="text-muted">Tidak ada tindakan</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Obat Detail -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card card-warning card-outline">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-pills mr-2"></i>Rincian Obat & Alkes</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div id="summary-obat-list">
+                                        <p class="text-muted">Tidak ada obat</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-body text-center">
+                                    <button id="finalize-bill-btn" class="btn btn-success btn-lg mr-2">
+                                        <i class="fas fa-check-circle mr-2"></i>Finalisasi Pemeriksaan
+                                    </button>
+                                    <button id="print-etiket-btn" class="btn btn-secondary btn-lg mr-2 d-none">
+                                        <i class="fas fa-tags mr-2"></i>Cetak Etiket Obat
+                                    </button>
+                                    <button id="print-invoice-btn" class="btn btn-primary btn-lg mr-2 d-none">
+                                        <i class="fas fa-file-invoice mr-2"></i>Cetak Invoice
+                                    </button>
+                                    <button id="new-patient-btn" class="btn btn-info btn-lg d-none">
+                                        <i class="fas fa-user-plus mr-2"></i>Periksa Pasien Baru
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="patient-page" class="d-none">
+                    <!-- Selected Patient Display -->
+                    <div id="patient-selected-for-billing" class="alert alert-success d-none mb-3">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <i class="fas fa-check-circle mr-2"></i>
+                                <strong>Pasien terpilih untuk billing:</strong> <span id="billing-patient-name" class="font-weight-bold"></span>
+                            </div>
+                            <button class="btn btn-sm btn-primary" onclick="showTindakanPage(); return false;">
+                                <i class="fas fa-arrow-right mr-1"></i>Lanjut ke Tindakan
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="border rounded p-3 mb-3 bg-light">
+                                <div class="h6 mb-2">Tambah Pasien Baru</div>
+                                <form id="quick-add-patient" class="form-inline flex-wrap">
+                                    <div class="form-group mr-2 mb-2">
+                                        <label for="quick-id" class="sr-only">ID</label>
+                                        <input type="text" id="quick-id" class="form-control form-control-sm" placeholder="ID (auto)" readonly style="width:110px;">
+                                    </div>
+                                    <div class="form-group mr-2 mb-2">
+                                        <label for="quick-name" class="sr-only">Nama Lengkap</label>
+                                        <input type="text" id="quick-name" class="form-control form-control-sm" placeholder="Nama lengkap tanpa gelar" required>
+                                    </div>
+                                    <div class="form-group mr-2 mb-2">
+                                        <label for="quick-whatsapp" class="sr-only">WhatsApp</label>
+                                        <input type="tel" id="quick-whatsapp" class="form-control form-control-sm" placeholder="No. WhatsApp">
+                                    </div>
+                                    <div class="form-group mr-2 mb-2">
+                                        <label for="quick-birthdate" class="sr-only">Tanggal Lahir</label>
+                                        <input type="date" id="quick-birthdate" class="form-control form-control-sm" placeholder="Tanggal Lahir">
+                                    </div>
+                                    <div class="form-group mr-2 mb-2">
+                                        <label for="quick-age" class="sr-only">Usia</label>
+                                        <input type="text" id="quick-age" class="form-control form-control-sm" placeholder="Usia" readonly style="width:90px;">
+                                    </div>
+                                    <button class="btn btn-sm btn-success mb-2" type="submit">Simpan</button>
+                                </form>
+                                <div class="small text-muted">Setelah menyimpan data pasien, lanjutkan ke menu Anamnesa untuk melengkapi data kehamilan dan pemeriksaan.</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-12">
+                                    <input type="text" id="patient-search-input" class="form-control" placeholder="Cari nomor rekam medis (5 angka) atau nama pasien...">
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div id="patient-list" style="max-height:70vh; overflow-y:auto;" class="mt-3"></div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div id="patient-details-content" class="mt-3" style="max-height:70vh; overflow-y:auto;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ANAMNESA PAGE -->
+                <div id="anamnesa-page" class="d-none">
+                    <div class="card card-primary">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-clipboard-list mr-2"></i>Anamnesa</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                Pasien: <strong id="anamnesa-patient-name">-</strong>
+                            </div>
+                            
+                            <form id="anamnesa-form">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Status Kehamilan</label>
+                                            <select id="anamnesa-pregnant" class="form-control">
+                                                <option value="">Hamil?</option>
+                                                <option value="ya">Ya</option>
+                                                <option value="tidak">Tidak</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <!-- Section for Tidak Hamil -->
+                                        <div id="anamnesa-not-preg-section" class="d-none">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="small text-muted">Alergi obat/makanan</label>
+                                                        <textarea id="anamnesa-allergy-notpreg" class="form-control form-control-sm" rows="3" maxlength="500"></textarea>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="small text-muted">Riwayat penyakit sebelumnya</label>
+                                                        <textarea id="anamnesa-history-notpreg" class="form-control form-control-sm" rows="3" maxlength="500"></textarea>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="small text-muted">Hari Pertama Haid Terakhir (HPHT)</label>
+                                                        <input type="date" id="anamnesa-hpht-notpreg" class="form-control form-control-sm">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Section for Ya Hamil -->
+                                        <div id="anamnesa-preg-section" class="d-none">
+                                            <div class="h6 mb-2">Status Obstetri</div>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="small text-muted">Hamil ke</label>
+                                                        <select id="anamnesa-gravida" class="form-control form-control-sm">
+                                                            <option value="">Pilih</option>
+                                                            <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="small text-muted">Lahir aterm</label>
+                                                        <select id="anamnesa-term" class="form-control form-control-sm">
+                                                            <option value="">Pilih</option>
+                                                            <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="small text-muted">Lahir prematur</label>
+                                                        <select id="anamnesa-preterm" class="form-control form-control-sm">
+                                                            <option value="">Pilih</option>
+                                                            <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="small text-muted">Abortus</label>
+                                                        <select id="anamnesa-abortion" class="form-control form-control-sm">
+                                                            <option value="">Pilih</option>
+                                                            <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="small text-muted">Anak hidup</label>
+                                                        <select id="anamnesa-living" class="form-control form-control-sm">
+                                                            <option value="">Pilih</option>
+                                                            <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="alert alert-secondary">
+                                                        <strong>Diagnosis sementara:</strong> <span id="anamnesa-diagnosis-display"></span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <div class="form-group">
+                                                        <label class="small text-muted">Alergi obat/makanan</label>
+                                                        <textarea id="anamnesa-allergy" class="form-control form-control-sm" rows="3" maxlength="500"></textarea>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="small text-muted">Riwayat penyakit sebelumnya</label>
+                                                        <textarea id="anamnesa-history" class="form-control form-control-sm" rows="3" maxlength="500"></textarea>
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label class="small text-muted">Hari Pertama Haid Terakhir (HPHT)</label>
+                                                        <input type="date" id="anamnesa-hpht" class="form-control form-control-sm">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <div class="form-group">
+                                            <label>Keluhan Utama</label>
+                                            <textarea id="anamnesa-complaint" class="form-control" rows="4" placeholder="Keluhan pasien saat ini..."></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Riwayat Penyakit Sekarang</label>
+                                            <textarea id="anamnesa-current-illness" class="form-control" rows="4" placeholder="Detail keluhan dan riwayat penyakit saat ini..."></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save mr-2"></i>Simpan Anamnesa
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PHYSICAL EXAM PAGE -->
+                <div id="physical-exam-page" class="d-none">
+                    <div class="card card-success">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-stethoscope mr-2"></i>Pemeriksaan Fisik</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                Pasien: <strong id="physical-patient-name">-</strong>
+                            </div>
+                            
+                            <form id="physical-exam-form">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h5 class="mb-3">Vital Signs</h5>
+                                        <div class="form-group row">
+                                            <label class="col-sm-4 col-form-label">Tekanan Darah</label>
+                                            <div class="col-sm-8">
+                                                <div class="input-group">
+                                                    <input type="number" id="physical-bp-systolic" class="form-control" placeholder="Sistol">
+                                                    <div class="input-group-append input-group-prepend">
+                                                        <span class="input-group-text">/</span>
+                                                    </div>
+                                                    <input type="number" id="physical-bp-diastolic" class="form-control" placeholder="Diastol">
+                                                    <div class="input-group-append">
+                                                        <span class="input-group-text">mmHg</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group row">
+                                            <label class="col-sm-4 col-form-label">Nadi</label>
+                                            <div class="col-sm-8">
+                                                <div class="input-group">
+                                                    <input type="number" id="physical-pulse" class="form-control">
+                                                    <div class="input-group-append">
+                                                        <span class="input-group-text">x/menit</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group row">
+                                            <label class="col-sm-4 col-form-label">Suhu</label>
+                                            <div class="col-sm-8">
+                                                <div class="input-group">
+                                                    <input type="number" step="0.1" id="physical-temp" class="form-control">
+                                                    <div class="input-group-append">
+                                                        <span class="input-group-text">°C</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group row">
+                                            <label class="col-sm-4 col-form-label">Pernapasan</label>
+                                            <div class="col-sm-8">
+                                                <div class="input-group">
+                                                    <input type="number" id="physical-resp" class="form-control">
+                                                    <div class="input-group-append">
+                                                        <span class="input-group-text">x/menit</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group row">
+                                            <label class="col-sm-4 col-form-label">Berat Badan</label>
+                                            <div class="col-sm-8">
+                                                <div class="input-group">
+                                                    <input type="number" step="0.1" id="physical-weight" class="form-control">
+                                                    <div class="input-group-append">
+                                                        <span class="input-group-text">kg</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group row">
+                                            <label class="col-sm-4 col-form-label">Tinggi Badan</label>
+                                            <div class="col-sm-8">
+                                                <div class="input-group">
+                                                    <input type="number" id="physical-height" class="form-control">
+                                                    <div class="input-group-append">
+                                                        <span class="input-group-text">cm</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h5 class="mb-3">Pemeriksaan Umum</h5>
+                                        <div class="form-group">
+                                            <label>Keadaan Umum</label>
+                                            <select id="physical-general-condition" class="form-control">
+                                                <option value="">Pilih...</option>
+                                                <option value="Baik">Baik</option>
+                                                <option value="Sedang">Sedang</option>
+                                                <option value="Lemah">Lemah</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Kesadaran</label>
+                                            <select id="physical-consciousness" class="form-control">
+                                                <option value="">Pilih...</option>
+                                                <option value="Compos Mentis">Compos Mentis</option>
+                                                <option value="Apatis">Apatis</option>
+                                                <option value="Somnolen">Somnolen</option>
+                                                <option value="Sopor">Sopor</option>
+                                                <option value="Koma">Koma</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Catatan Pemeriksaan Fisik</label>
+                                            <textarea id="physical-notes" class="form-control" rows="8" placeholder="Hasil pemeriksaan fisik lainnya..."></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="fas fa-save mr-2"></i>Simpan Pemeriksaan Fisik
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- USG EXAM PAGE -->
+                <div id="usg-exam-page" class="d-none">
+                    <div class="card card-info">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-baby mr-2"></i>Pemeriksaan USG</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                Pasien: <strong id="usg-patient-name">-</strong>
+                            </div>
+                            
+                            <form id="usg-exam-form">
+                                <!-- USG Ginekologi (Tidak Hamil) -->
+                                <div id="usg-gynecology-section" class="d-none">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <h5 class="mb-3"><i class="fas fa-check-square mr-2"></i>Pemeriksaan Uterus</h5>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-uterus-normal">
+                                                <label class="custom-control-label" for="usg-gyn-uterus-normal">Uterus ukuran normal</label>
+                                            </div>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-uterus-anteverted">
+                                                <label class="custom-control-label" for="usg-gyn-uterus-anteverted">Posisi anteverted</label>
+                                            </div>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-uterus-retroverted">
+                                                <label class="custom-control-label" for="usg-gyn-uterus-retroverted">Posisi retroverted</label>
+                                            </div>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-myoma">
+                                                <label class="custom-control-label" for="usg-gyn-myoma">Myoma uteri</label>
+                                            </div>
+                                            <div id="myoma-detail-section" class="ml-4 d-none">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Jumlah</label>
+                                                    <select id="myoma-count" class="form-control form-control-sm" style="width: 100px;">
+                                                        <option value="">Pilih</option>
+                                                        <option value="1">1</option>
+                                                        <option value="2">2</option>
+                                                        <option value="3">3</option>
+                                                        <option value="4">4</option>
+                                                        <option value="5">5</option>
+                                                    </select>
+                                                </div>
+                                                <div id="myoma-sizes"></div>
+                                            </div>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-adenomyosis">
+                                                <label class="custom-control-label" for="usg-gyn-adenomyosis">Adenomyosis</label>
+                                            </div>
+                                            <div class="form-group mt-3">
+                                                <label class="small text-muted">Ukuran Uterus (cm)</label>
+                                                <input type="text" id="usg-gyn-uterus-size" class="form-control form-control-sm" placeholder="Contoh: 8 x 5 x 4 cm">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h5 class="mb-3"><i class="fas fa-check-square mr-2"></i>Pemeriksaan Ovarium</h5>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-ovary-normal">
+                                                <label class="custom-control-label" for="usg-gyn-ovary-normal">Ovarium kanan-kiri normal</label>
+                                            </div>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-cyst-right">
+                                                <label class="custom-control-label" for="usg-gyn-cyst-right">Kista ovarium kanan</label>
+                                            </div>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-cyst-left">
+                                                <label class="custom-control-label" for="usg-gyn-cyst-left">Kista ovarium kiri</label>
+                                            </div>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-pcos">
+                                                <label class="custom-control-label" for="usg-gyn-pcos">PCOS (Polycystic Ovary Syndrome)</label>
+                                            </div>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-endometrioma">
+                                                <label class="custom-control-label" for="usg-gyn-endometrioma">Endometrioma</label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-md-6">
+                                            <h5 class="mb-3"><i class="fas fa-check-square mr-2"></i>Endometrium</h5>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-endo-normal">
+                                                <label class="custom-control-label" for="usg-gyn-endo-normal">Endometrium normal</label>
+                                            </div>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-endo-thick">
+                                                <label class="custom-control-label" for="usg-gyn-endo-thick">Penebalan endometrium</label>
+                                            </div>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-polyp">
+                                                <label class="custom-control-label" for="usg-gyn-polyp">Polip endometrium</label>
+                                            </div>
+                                            <div class="form-group mt-3">
+                                                <label class="small text-muted">Ketebalan Endometrium (mm)</label>
+                                                <input type="number" step="0.1" id="usg-gyn-endo-thickness" class="form-control form-control-sm">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <h5 class="mb-3"><i class="fas fa-check-square mr-2"></i>Lain-lain</h5>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-free-fluid">
+                                                <label class="custom-control-label" for="usg-gyn-free-fluid">Free fluid di cavum douglas</label>
+                                            </div>
+                                            <div class="custom-control custom-checkbox mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="usg-gyn-adhesion">
+                                                <label class="custom-control-label" for="usg-gyn-adhesion">Perlengketan</label>
+                                            </div>
+                                            <div class="form-group mt-3">
+                                                <label>Catatan Tambahan</label>
+                                                <textarea id="usg-gyn-notes" class="form-control" rows="4" placeholder="Catatan hasil USG ginekologi..."></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- USG Obstetri (Hamil) -->
+                                <div id="usg-obstetri-section" class="d-none">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <h5 class="mb-3">Data Janin</h5>
+                                        <div class="form-group">
+                                            <label>Jumlah Janin</label>
+                                            <select id="usg-fetus-count" class="form-control">
+                                                <option value="">Pilih...</option>
+                                                <option value="1">Tunggal</option>
+                                                <option value="2">Gemeli (2)</option>
+                                                <option value="3">Triplet (3)</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Presentasi</label>
+                                            <select id="usg-presentation" class="form-control">
+                                                <option value="">Pilih...</option>
+                                                <option value="Kepala">Kepala</option>
+                                                <option value="Bokong">Bokong</option>
+                                                <option value="Lintang">Lintang</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Denyut Jantung Janin (DJJ)</label>
+                                            <div class="input-group">
+                                                <input type="number" id="usg-fhr" class="form-control">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text">x/menit</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Gerakan Janin</label>
+                                            <select id="usg-fetal-movement" class="form-control">
+                                                <option value="">Pilih...</option>
+                                                <option value="Aktif">Aktif</option>
+                                                <option value="Kurang Aktif">Kurang Aktif</option>
+                                                <option value="Tidak Ada">Tidak Ada</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Cairan Ketuban</label>
+                                            <select id="usg-amniotic-fluid" class="form-control">
+                                                <option value="">Pilih...</option>
+                                                <option value="Cukup">Cukup</option>
+                                                <option value="Oligohidramnion">Oligohidramnion (Kurang)</option>
+                                                <option value="Polihidramnion">Polihidramnion (Berlebih)</option>
+                                            </select>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Plasenta</label>
+                                            <select id="usg-placenta" class="form-control">
+                                                <option value="">Pilih...</option>
+                                                <option value="Fundus">Fundus</option>
+                                                <option value="Korpus">Korpus</option>
+                                                <option value="Previa">Previa</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <h5 class="mb-3">Biometri Janin</h5>
+                                        <div class="form-group">
+                                            <label>BPD (Biparietal Diameter)</label>
+                                            <div class="input-group">
+                                                <input type="number" step="0.1" id="usg-bpd" class="form-control">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text">cm</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>FL (Femur Length)</label>
+                                            <div class="input-group">
+                                                <input type="number" step="0.1" id="usg-fl" class="form-control">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text">cm</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>AC (Abdominal Circumference)</label>
+                                            <div class="input-group">
+                                                <input type="number" step="0.1" id="usg-ac" class="form-control">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text">cm</span>
+                                                </div
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>HC (Head Circumference)</label>
+                                            <div class="input-group">
+                                                <input type="number" step="0.1" id="usg-hc" class="form-control">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text">cm</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Taksiran Berat Janin (TBJ)</label>
+                                            <div class="input-group">
+                                                <input type="number" id="usg-efw" class="form-control">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text">gram</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Usia Kehamilan (USG)</label>
+                                            <div class="input-group">
+                                                <input type="number" id="usg-ga-weeks" class="form-control" placeholder="Minggu" style="width: 80px;">
+                                                <input type="number" id="usg-ga-days" class="form-control" placeholder="Hari" style="width: 70px;">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text">minggu hari</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Catatan USG</label>
+                                            <textarea id="usg-notes" class="form-control" rows="4" placeholder="Catatan tambahan hasil USG..."></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+                                </div>
+                                <!-- End USG Obstetri Section -->
+                                
+                                <button type="submit" class="btn btn-info">
+                                    <i class="fas fa-save mr-2"></i>Simpan Hasil USG
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                </div>
+                <!-- END USG EXAM PAGE -->
+
+                <!-- LAB EXAM PAGE -->
+                <div id="lab-exam-page" class="d-none">
+                    <div class="card card-warning">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-flask mr-2"></i>Pemeriksaan Penunjang (Laboratorium)</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                Pasien: <strong id="lab-patient-name">-</strong>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header bg-primary">
+                                            <h5 class="card-title mb-0"><i class="fas fa-upload mr-2"></i>Upload Hasil Laboratorium</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <div class="form-group">
+                                                <label>Upload Foto/Scan Hasil Lab</label>
+                                                <input type="file" id="lab-upload" class="form-control-file" accept="image/*">
+                                                <small class="form-text text-muted">Format: JPG, PNG, WebP (Max 5MB)</small>
+                                            </div>
+                                            <div id="lab-preview" class="mt-3 d-none">
+                                                <img id="lab-preview-img" src="" alt="Preview" class="img-fluid border rounded" style="max-height: 400px;">
+                                            </div>
+                                            <button type="button" id="lab-ai-interpret-btn" class="btn btn-success btn-lg btn-block mt-3" disabled>
+                                                <i class="fas fa-robot mr-2"></i>Buat Laporan Lab dengan AI
+                                            </button>
+                                            <div id="lab-ai-loading" class="d-none mt-3 text-center">
+                                                <div class="spinner-border text-primary" role="status">
+                                                    <span class="sr-only">Loading...</span>
+                                                </div>
+                                                <p class="mt-2"><i class="fas fa-brain mr-2"></i>AI sedang menganalisis hasil lab...
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card">
+                                        <div class="card-header">
+                                            <h5 class="card-title mb-0">Hasil Interpretasi</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <form id="lab-exam-form">
+                                                <div class="form-group">
+                                                    <label>Jenis Pemeriksaan</label>
+                                                    <input type="text" id="lab-test-type" class="form-control" placeholder="Contoh: Darah Lengkap, Urin Rutin, dll">
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Hasil Laboratorium</label>
+                                                    <textarea id="lab-results" class="form-control" rows="10" placeholder="Hasil lab akan muncul di sini setelah AI menganalisis..."></textarea>
+                                                    <small class="form-text text-muted">Anda dapat mengedit hasil interpretasi AI</small>
+                                                </div>
+                                                <div class="form-group">
+                                                    <label>Kesimpulan</label>
+                                                    <textarea id="lab-conclusion" class="form-control" rows="3" placeholder="Kesimpulan hasil laboratorium..."></textarea>
+                                                </div>
+                                                <button type="submit" class="btn btn-warning">
+                                                    <i class="fas fa-save mr-2"></i>Simpan Hasil Lab
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- STOK OPNAME PAGE -->
+                <div id="admin-page" class="d-none">
+                    <div class="row">
+                        <!-- Add New Item Card -->
+                        <div class="col-md-4">
+                            <div class="card card-primary">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-plus-circle mr-2"></i>Tambah Obat Baru</h3>
+                                </div>
+                                <form id="add-obat-form">
+                                    <div class="card-body">
+                                        <div class="form-group">
+                                            <label for="new-obat-name">Nama Obat <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="new-obat-name" placeholder="Contoh: Paracetamol 500mg" required>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <label for="new-obat-category">Kategori <span class="text-danger">*</span></label>
+                                            <select class="form-control" id="new-obat-category" required>
+                                                <option value="">Pilih Kategori</option>
+                                                <option value="drugs">Obat-obatan</option>
+                                                <option value="vials">Ampul & Vial</option>
+                                                <option value="alkes">Alat Kesehatan</option>
+                                            </select>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <label for="new-obat-price">Harga (Rp) <span class="text-danger">*</span></label>
+                                            <input type="number" class="form-control" id="new-obat-price" placeholder="0" min="0" required>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <label for="new-obat-stock">Stok Awal <span class="text-danger">*</span></label>
+                                            <input type="number" class="form-control" id="new-obat-stock" placeholder="0" min="0" required>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer">
+                                        <button type="submit" class="btn btn-primary btn-block">
+                                            <i class="fas fa-plus mr-2"></i>Tambah Obat
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            <!-- Summary Card -->
+                            <div class="card card-info">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-chart-pie mr-2"></i>Ringkasan Stok</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="info-box bg-light mb-2">
+                                        <span class="info-box-icon bg-primary"><i class="fas fa-pills"></i></span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">Total Item</span>
+                                            <span class="info-box-number" id="summary-total-items">0</span>
+                                        </div>
+                                    </div>
+                                    <div class="info-box bg-light mb-2">
+                                        <span class="info-box-icon bg-success"><i class="fas fa-check-circle"></i></span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">Stok Aman</span>
+                                            <span class="info-box-number" id="summary-stock-ok">0</span>
+                                        </div>
+                                    </div>
+                                    <div class="info-box bg-light mb-0">
+                                        <span class="info-box-icon bg-danger"><i class="fas fa-exclamation-triangle"></i></span>
+                                        <div class="info-box-content">
+                                            <span class="info-box-text">Stok Kritis (≤5)</span>
+                                            <span class="info-box-number" id="summary-stock-low">0</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Stock List Card -->
+                        <div class="col-md-8">
+                            <div class="card card-success">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-boxes mr-2"></i>Daftar Stok Obat & Alkes</h3>
+                                    <div class="card-tools">
+                                        <div class="input-group input-group-sm" style="width: 250px;">
+                                            <input type="text" id="stok-search" class="form-control" placeholder="Cari obat...">
+                                            <div class="input-group-append">
+                                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div id="stok-opname-list" style="max-height: 70vh; overflow-y: auto;">
+                                        <p class="text-center text-muted p-4">Memuat data...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="log-page" class="d-none">
+                    <div class="card">
+                        <div class="card-header"><h3 class="card-title"><i class="fas fa-history mr-2"></i> Log Aktivitas</h3></div>
+                        <div class="card-body"><div id="log-list-container" style="max-height:70vh; overflow-y:auto;"><p class="text-center text-muted">Memuat log...</p></div></div>
+                        <div class="card-footer"><button id="backFromLogBtn" class="btn btn-secondary"><i class="fas fa-arrow-left mr-1"></i> Kembali ke Billing</button></div>
+                    </div>
+                </div>
+
+                <div id="role-management-page" class="d-none"></div>
+                
+                <!-- APPOINTMENTS PAGE -->
+                <div id="appointments-page" class="d-none">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card card-primary">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-calendar-check mr-2"></i>Jadwal Appointment</h3>
+                                    <div class="card-tools">
+                                        <button id="btn-add-appointment" class="btn btn-success btn-sm">
+                                            <i class="fas fa-plus mr-1"></i>Tambah Appointment
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Today's Appointments -->
+                                    <div class="mb-4">
+                                        <h5><i class="fas fa-calendar-day mr-2"></i>Appointment Hari Ini</h5>
+                                        <div id="appointments-today-list" class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
+                                            <p class="text-center text-muted"><i class="fas fa-spinner fa-spin"></i> Memuat data...</p>
+                                        </div>
+                                    </div>
+                                    
+                                    <!-- All Appointments List -->
+                                    <div>
+                                        <h5><i class="fas fa-list mr-2"></i>Semua Appointment</h5>
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <input type="text" id="appointments-search" class="form-control" placeholder="🔍 Cari pasien...">
+                                            </div>
+                                            <div class="col-md-3">
+                                                <select id="appointments-filter-status" class="form-control">
+                                                    <option value="">Semua Status</option>
+                                                    <option value="scheduled">Terjadwal</option>
+                                                    <option value="confirmed">Dikonfirmasi</option>
+                                                    <option value="completed">Selesai</option>
+                                                    <option value="cancelled">Dibatalkan</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <input type="date" id="appointments-filter-date" class="form-control">
+                                            </div>
+                                        </div>
+                                        <div id="appointments-list" class="table-responsive">
+                                            <table class="table table-bordered table-striped table-hover">
+                                                <thead class="bg-light">
+                                                    <tr>
+                                                        <th width="50">#</th>
+                                                        <th>Pasien</th>
+                                                        <th width="120">Jenis</th>
+                                                        <th width="100">Tanggal</th>
+                                                        <th width="80">Waktu</th>
+                                                        <th width="100">Status</th>
+                                                        <th width="150" class="text-center">Aksi</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="appointments-list-body">
+                                                    <tr>
+                                                        <td colspan="7" class="text-center text-muted py-4">
+                                                            <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                                                            <p class="mb-0">Memuat data...</p>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="analytics-page" class="d-none"></div>
+
+                <!-- PROFILE SETTINGS PAGE -->
+                <div id="profile-settings-page" class="d-none">
+                    <div class="row">
+                        <!-- Profile Info Card -->
+                        <div class="col-md-4">
+                            <div class="card card-primary card-outline">
+                                <div class="card-body box-profile">
+                                    <div class="text-center">
+                                        <div class="profile-avatar mb-3 position-relative" style="display: inline-block;">
+                                            <img id="profile-avatar-img" src="" alt="Profile Picture" class="img-circle elevation-2" style="width: 120px; height: 120px; object-fit: cover; display: none;">
+                                            <i id="profile-avatar-icon" class="fas fa-user-circle fa-5x text-primary"></i>
+                                            <div class="profile-avatar-overlay" style="position: absolute; bottom: 0; right: 0;">
+                                                <label for="profile-picture-input" class="btn btn-primary btn-sm rounded-circle" style="width: 35px; height: 35px; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                                                    <i class="fas fa-camera"></i>
+                                                </label>
+                                                <input type="file" id="profile-picture-input" accept="image/*" style="display: none;">
+                                            </div>
+                                        </div>
+                                        <h3 class="profile-username text-center" id="profile-display-name">-</h3>
+                                        <p class="text-muted text-center" id="profile-display-email">-</p>
+                                    </div>
+                                    <hr>
+                                    <strong><i class="fas fa-id-badge mr-1"></i> User ID</strong>
+                                    <p class="text-muted" id="profile-display-uid">-</p>
+                                    
+                                    <strong><i class="fas fa-calendar-alt mr-1"></i> Member Since</strong>
+                                    <p class="text-muted" id="profile-display-created">-</p>
+                                    
+                                    <strong><i class="fas fa-clock mr-1"></i> Last Login</strong>
+                                    <p class="text-muted" id="profile-display-lastlogin">-</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Edit Profile Card -->
+                        <div class="col-md-8">
+                            <div class="card card-primary">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-user-edit mr-2"></i>Edit Profile</h3>
+                                </div>
+                                <form id="profile-form">
+                                    <div class="card-body">
+                                        <div class="form-group">
+                                            <label for="profile-displayname">Display Name <span class="text-danger">*</span></label>
+                                            <input type="text" class="form-control" id="profile-displayname" placeholder="Nama yang ditampilkan" required>
+                                            <small class="form-text text-muted">Nama ini akan muncul di navbar dan laporan</small>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <label for="profile-email">Email</label>
+                                            <input type="email" class="form-control" id="profile-email" readonly disabled>
+                                            <small class="form-text text-muted">Email tidak dapat diubah</small>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <label>Profile Picture</label>
+                                            <div class="d-flex align-items-center">
+                                                <div id="profile-picture-preview" class="mr-3">
+                                                    <img id="profile-picture-preview-img" src="" alt="Preview" class="img-circle elevation-2" style="width: 80px; height: 80px; object-fit: cover; display: none;">
+                                                    <i id="profile-picture-preview-icon" class="fas fa-user-circle fa-4x text-muted"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <button type="button" class="btn btn-primary btn-sm" onclick="document.getElementById('profile-picture-input').click()">
+                                                        <i class="fas fa-upload mr-1"></i>Upload Photo
+                                                    </button>
+                                                    <button type="button" class="btn btn-danger btn-sm ml-2" id="remove-profile-picture-btn" style="display: none;">
+                                                        <i class="fas fa-trash mr-1"></i>Remove
+                                                    </button>
+                                                    <div class="mt-2">
+                                                        <small class="text-muted">Max 2MB. Format: JPG, PNG, GIF</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <hr>
+                                        <h5 class="mb-3"><i class="fas fa-key mr-2"></i>Change Password</h5>
+                                        
+                                        <div class="form-group">
+                                            <label for="profile-current-password">Current Password</label>
+                                            <input type="password" class="form-control" id="profile-current-password" placeholder="Masukkan password saat ini">
+                                            <small class="form-text text-muted">Diperlukan untuk mengubah password</small>
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <label for="profile-new-password">New Password</label>
+                                            <input type="password" class="form-control" id="profile-new-password" placeholder="Password baru (min. 6 karakter)">
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <label for="profile-confirm-password">Confirm New Password</label>
+                                            <input type="password" class="form-control" id="profile-confirm-password" placeholder="Konfirmasi password baru">
+                                        </div>
+                                        
+                                        <div class="alert alert-info">
+                                            <i class="fas fa-info-circle mr-2"></i>
+                                            <strong>Tips Keamanan:</strong>
+                                            <ul class="mb-0 mt-2">
+                                                <li>Gunakan minimal 6 karakter</li>
+                                                <li>Kombinasi huruf besar, kecil, dan angka</li>
+                                                <li>Jangan gunakan password yang mudah ditebak</li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    <div class="card-footer">
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="fas fa-save mr-2"></i>Save Changes
+                                        </button>
+                                        <button type="button" class="btn btn-secondary" onclick="showDashboardPage(); return false;">
+                                            <i class="fas fa-times mr-2"></i>Cancel
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            <!-- Account Security Card -->
+                            <div class="card card-warning">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-shield-alt mr-2"></i>Account Security</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-sm-6">
+                                            <div class="info-box bg-light">
+                                                <span class="info-box-icon"><i class="fas fa-lock"></i></span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">Password Strength</span>
+                                                    <span class="info-box-number" id="profile-password-strength">Strong</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-6">
+                                            <div class="info-box bg-light">
+                                                <span class="info-box-icon"><i class="fas fa-sign-in-alt"></i></span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">Login Method</span>
+                                                    <span class="info-box-number">Email/Password</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Pengaturan Page (Superadmin Only) -->
+                <div id="pengaturan-page" class="d-none">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card card-primary card-outline">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-cogs mr-2"></i>Edit Tindakan</h3>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Add New Tindakan Form -->
+                                    <div class="card card-success mb-4">
+                                        <div class="card-header">
+                                            <h5 class="card-title mb-0"><i class="fas fa-plus-circle mr-2"></i>Tambah Tindakan Baru</h5>
+                                        </div>
+                                        <div class="card-body">
+                                            <form id="add-tindakan-form">
+                                                <div class="row">
+                                                    <div class="col-md-4">
+                                                        <div class="form-group">
+                                                            <label for="tindakan-name">Nama Tindakan <span class="text-danger">*</span></label>
+                                                            <input type="text" class="form-control" id="tindakan-name" placeholder="Contoh: Konsultasi" required>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label for="tindakan-category">Kategori <span class="text-danger">*</span></label>
+                                                            <select class="form-control" id="tindakan-category" required>
+                                                                <option value="">Pilih Kategori</option>
+                                                                <option value="ADMINISTRATIF">Administratif</option>
+                                                                <option value="LAYANAN">Layanan</option>
+                                                                <option value="TINDAKAN MEDIS">Tindakan Medis</option>
+                                                                <option value="KONTRASEPSI">Kontrasepsi</option>
+                                                                <option value="VAKSINASI">Vaksinasi</option>
+                                                                <option value="LABORATORIUM">Laboratorium</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label for="tindakan-price">Harga (Rp) <span class="text-danger">*</span></label>
+                                                            <input type="number" class="form-control" id="tindakan-price" placeholder="50000" min="0" required>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-2">
+                                                        <div class="form-group">
+                                                            <label>&nbsp;</label>
+                                                            <button type="submit" class="btn btn-success btn-block">
+                                                                <i class="fas fa-plus mr-1"></i>Tambah
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+
+                                    <!-- Search and Filter -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <div class="input-group">
+                                                <input type="text" class="form-control" id="tindakan-search" placeholder="Cari tindakan...">
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <select class="form-control" id="tindakan-filter-category">
+                                                <option value="">Semua Kategori</option>
+                                                <option value="ADMINISTRATIF">Administratif</option>
+                                                <option value="LAYANAN">Layanan</option>
+                                                <option value="TINDAKAN MEDIS">Tindakan Medis</option>
+                                                <option value="KONTRASEPSI">Kontrasepsi</option>
+                                                <option value="VAKSINASI">Vaksinasi</option>
+                                                <option value="LABORATORIUM">Laboratorium</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="text-right">
+                                                <span class="badge badge-info badge-lg p-2">
+                                                    <i class="fas fa-list mr-1"></i>Total: <span id="tindakan-total-count">0</span>
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Tindakan List Table -->
+                                    <div class="table-responsive">
+                                        <table class="table table-hover table-striped">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th width="5%">#</th>
+                                                    <th width="35%">Nama Tindakan</th>
+                                                    <th width="20%">Kategori</th>
+                                                    <th width="20%">Harga</th>
+                                                    <th width="20%" class="text-center">Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="tindakan-list-body">
+                                                <tr>
+                                                    <td colspan="5" class="text-center text-muted py-4">
+                                                        <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                                                        <p>Memuat data...</p>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kelola Obat Page (Superadmin Only) -->
+                <div id="kelola-obat-page" class="d-none">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card card-success">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-pills mr-2"></i>Kelola Obat, Vial & Alkes</h3>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Form Tambah/Edit Obat -->
+                                    <form id="kelola-obat-form" class="mb-4">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label>Nama Obat/Item</label>
+                                                    <input type="text" id="kelola-obat-name" class="form-control" placeholder="Contoh: Paracetamol 500mg" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label>Kategori</label>
+                                                    <select id="kelola-obat-category" class="form-control" required>
+                                                        <option value="">Pilih Kategori</option>
+                                                        <option value="Obat-obatan">Obat-obatan</option>
+                                                        <option value="Ampul & Vial">Ampul & Vial</option>
+                                                        <option value="Alkes">Alkes</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label>Harga (Rp)</label>
+                                                    <input type="number" id="kelola-obat-price" class="form-control" placeholder="0" min="0" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label>Stok Awal</label>
+                                                    <input type="number" id="kelola-obat-stock" class="form-control" placeholder="0" min="0" value="0">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label>&nbsp;</label>
+                                                    <button type="submit" class="btn btn-success btn-block">
+                                                        <i class="fas fa-plus mr-1"></i>Tambah
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </form>
+
+                                    <!-- Search & Filter -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <input type="text" id="kelola-obat-search" class="form-control" placeholder="🔍 Cari obat...">
+                                        </div>
+                                        <div class="col-md-4">
+                                            <select id="kelola-obat-filter-category" class="form-control">
+                                                <option value="">Semua Kategori</option>
+                                                <option value="Obat-obatan">Obat-obatan</option>
+                                                <option value="Ampul & Vial">Ampul & Vial</option>
+                                                <option value="Alkes">Alkes</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2 text-right">
+                                            <span class="badge badge-success badge-lg p-2">
+                                                Total: <span id="kelola-obat-total-count">0</span>
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <!-- Table List Obat -->
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-striped table-hover table-sm">
+                                            <thead class="bg-light">
+                                                <tr>
+                                                    <th width="40">#</th>
+                                                    <th>Nama Obat/Item</th>
+                                                    <th width="120">Kategori</th>
+                                                    <th width="100">Harga</th>
+                                                    <th width="80">Stok</th>
+                                                    <th width="150" class="text-center">Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="kelola-obat-list-body">
+                                                <tr>
+                                                    <td colspan="6" class="text-center text-muted py-4">
+                                                        <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                                                        <p class="mb-0">Memuat data...</p>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Shared Summary (movable) -->
+                <div id="total-summary-container" class="d-none bg-light border-top" style="position:sticky; bottom:0; z-index:1000;">
+                    <div class="container-fluid py-3">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <div>
+                                <h5 class="mb-1">Rincian Total</h5>
+                                <p class="text-muted small mb-0">Pasien: <span id="patientNameDisplay" class="font-weight-bold"></span></p>
+                            </div>
+                            <button id="resetObatButton" class="btn btn-sm btn-danger">Reset Obat</button>
+                        </div>
+                        <div id="summary-tindakan-section" class="mb-3">
+                            <h6 class="font-weight-bold">Layanan & Tindakan</h6>
+                            <div id="summary-tindakan-list" class="border rounded p-2" style="max-height:120px; overflow-y:auto; background:white;"></div>
+                        </div>
+                        <h6 class="font-weight-bold">Obat & Alkes</h6>
+                        <div class="border rounded p-2 mb-3" style="max-height:150px; overflow-y:auto; background:white;">
+                            <div class="d-none d-sm-flex font-weight-bold small text-muted mb-2 pb-2 border-bottom">
+                                <div class="col-5">Nama Item</div>
+                                <div class="col-2">Jumlah</div>
+                                <div class="col-2 text-right">Harga</div>
+                                <div class="col-3 text-right">Subtotal</div>
+                            </div>
+                            <div id="selected-obat-list" class="small"></div>
+                        </div>
+                        <div class="border-top pt-3">
+                            <div class="d-flex flex-column small mb-2">
+                                <div class="d-flex justify-content-between mb-1"><span class="text-muted">Total Biaya Tindakan:</span><span id="subtotalTindakanDisplay" class="font-weight-bold">Rp 0</span></div>
+                                <div class="d-flex justify-content-between mb-1"><span class="text-muted">Total Biaya Obat & Alkes:</span><span id="subtotalObatDisplay" class="font-weight-bold">Rp 0</span></div>
+                                <div class="d-flex justify-content-between h4 border-top pt-2 mt-2 mb-0"><span>GRAND TOTAL:</span><span id="grandTotalDisplay" class="text-primary">Rp 0</span></div>
+                            </div>
+                            <div id="summary-buttons" class="d-flex flex-wrap gap-2 justify-content-end">
+                                <button id="backToTindakanBtn" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left mr-1"></i> Kembali</button>
+                                <button id="finalize-bill-btn-2" class="btn btn-success btn-sm d-none">Selesaikan & Siap Cetak</button>
+                                <button id="print-etiket-btn-2" class="btn btn-secondary btn-sm">Cetak Etiket</button>
+                                <button id="print-invoice-2" class="btn btn-primary btn-sm">Cetak Invoice</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+    </div>
+
+    <footer class="main-footer">
+        <strong>&copy; 2025 Dr. Dibya Private Clinic.</strong> All rights reserved.
+        <div class="float-right d-none d-sm-inline-block"><b>Version</b> 1.0</div>
+    </footer>
+</div>
+
+
+<!-- Toast Notification Container -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- Chat feature now handled by chat-popup.js -->
+
+<!-- Appointment Modal -->
+<div class="modal fade" id="appointment-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-primary">
+                <h5 class="modal-title" id="appointment-modal-title">
+                    <i class="fas fa-calendar-plus mr-2"></i>Tambah Appointment Baru
+                </h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="appointment-form">
+                    <input type="hidden" id="appointment-id">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="appointment-patient-select">Pasien <span class="text-danger">*</span></label>
+                                <select class="form-control" id="appointment-patient-select" required>
+                                    <option value="">Pilih pasien...</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="appointment-type">Jenis Appointment <span class="text-danger">*</span></label>
+                                <select class="form-control" id="appointment-type" required>
+                                    <option value="Konsultasi">Konsultasi</option>
+                                    <option value="Kontrol">Kontrol</option>
+                                    <option value="USG">USG</option>
+                                    <option value="Imunisasi">Imunisasi</option>
+                                    <option value="Lainnya">Lainnya</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="appointment-date">Tanggal <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" id="appointment-date" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="appointment-time">Waktu <span class="text-danger">*</span></label>
+                                <input type="time" class="form-control" id="appointment-time" required>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="form-group">
+                                <label for="appointment-reminder">Reminder</label>
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input" type="checkbox" id="appointment-reminder">
+                                    <label class="form-check-label" for="appointment-reminder">
+                                        Kirim WhatsApp reminder
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="appointment-notes">Catatan</label>
+                        <textarea class="form-control" id="appointment-notes" rows="3" placeholder="Catatan tambahan..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" onclick="window.saveAppointment()">
+                    <i class="fas fa-save mr-1"></i>Simpan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<!-- Chat sounds (always play) -->
+<audio id="chat-send-sound" src="sounds/send.mp3" preload="auto"></audio>
+<audio id="chat-incoming-sound" src="sounds/incoming.mp3" preload="auto"></audio>
+
+
+<!-- Dependencies -->
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+<script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
+<!-- Core app modules -->
+<!-- Mobile Menu Handler -->
+<script>
+    // Dynamic cache busting - force reload on every page load
+    const cacheBuster = Date.now();
+    
+    // Load mobile menu with cache buster
+    const script = document.createElement('script');
+    script.src = `scripts/mobile-menu.js?v=${cacheBuster}`;
+    document.head.appendChild(script);
+</script>
+
+<!-- Global Debug Function for Appointments - Available Immediately -->
+<script>
+    // Set up debug function immediately (before modules load) - DISABLED
+    window.debugAppointments_DISABLED_2 = function() {
+        console.log('🔧 [DEBUG] ===== APPOINTMENTS DEBUG (Global) - DISABLED =====');
+        
+        // Basic checks that don't require the module
+        const btn = document.getElementById('btn-add-appointment');
+        const modal = document.getElementById('appointment-modal');
+        const appointmentsPage = document.getElementById('appointments-page');
+        
+        console.log('🔧 [DEBUG] Basic DOM checks:');
+        console.log('  - Button exists?', !!btn);
+        console.log('  - Modal exists?', !!modal);
+        console.log('  - Appointments page exists?', !!appointmentsPage);
+        console.log('  - Appointments page visible?', appointmentsPage && !appointmentsPage.classList.contains('d-none'));
+        console.log('  - window.openNewAppointment type:', typeof window.openNewAppointment);
+        console.log('  - jQuery available?', typeof $ !== 'undefined');
+        console.log('  - Bootstrap modal available?', typeof $ !== 'undefined' && $.fn.modal);
+        
+        if (btn) {
+            console.log('🔧 [DEBUG] Button details:');
+            console.log('  - ID:', btn.id);
+            console.log('  - Text:', btn.textContent);
+            console.log('  - onclick:', btn.onclick);
+            console.log('  - parent:', btn.parentNode);
+            console.log('  - disabled?', btn.disabled);
+            console.log('  - style.display:', btn.style.display);
+            console.log('  - style.visibility:', btn.style.visibility);
+            console.log('  - computed style:', window.getComputedStyle(btn).display);
+            
+            // Check for event listeners (if possible)
+            console.log('🔧 [DEBUG] Trying to check event listeners...');
+            try {
+                const listeners = typeof getEventListeners !== 'undefined' ? getEventListeners(btn) : 'getEventListeners not available (Chrome DevTools)';
+                console.log('  - Event listeners:', listeners);
+            } catch (e) {
+                console.log('  - Cannot check event listeners (use Chrome DevTools)');
+            }
+        }
+        
+        // If the module is loaded, try to call openNewAppointment
+        if (typeof window.openNewAppointment === 'function') {
+            console.log('🔧 [DEBUG] Module appears to be loaded (window.openNewAppointment exists)');
+            console.log('🔧 [DEBUG] Attempting to manually trigger modal...');
+            try {
+                window.openNewAppointment();
+            } catch (err) {
+                console.error('❌ [DEBUG] Error calling openNewAppointment:', err);
+            }
+        } else {
+            console.warn('⚠️ [DEBUG] Appointments module not loaded yet');
+            console.warn('⚠️ [DEBUG] Navigate to the appointments page first, then try again');
+        }
+        
+        console.log('🔧 [DEBUG] ===== END DEBUG (Global) =====');
+        
+        return {
+            buttonExists: !!btn,
+            modalExists: !!modal,
+            pageExists: !!appointmentsPage,
+            pageVisible: appointmentsPage && !appointmentsPage.classList.contains('d-none'),
+            functionExists: typeof window.openNewAppointment === 'function',
+            jqueryExists: typeof $ !== 'undefined'
+        };
+    };
+    
+    console.log('✅ window.debugAppointments is now available globally');
+</script>
+
+<script type="module">
+    // Dynamic cache busting for all imports
+    const v = Date.now();
+    
+    // Import modules with cache buster
+    const { auth, onAuthStateChanged, getIdToken } = await import('./scripts/vps-auth-v2.js?v=' + v);
+    // Expose auth and getIdToken globally for chat-popup.js
+    window.auth = auth;
+    window.getIdToken = getIdToken;
+    await import('./scripts/toast.js?v=' + v); // Toast notification system
+    const { initMain } = await import('/scripts/main.js?v=' + v);
+    const { initBilling } = await import('./scripts/billing.js?v=' + v);
+    const { initDashboard } = await import('./scripts/dashboard.js?v=' + v);
+    const { initAuth } = await import('./scripts/auth.js?v=' + v);
+    const { initFinanceDashboard } = await import('./scripts/finance-dashboard.js?v=' + v);
+    const { initAnalyticsDashboard } = await import('./scripts/analytics.js?v=' + v);
+    await import('./scripts/medical-exam.js?v=' + v); // Medical examination pages
+    // Chat is now handled by chat-popup.js loaded at bottom of page
+    const { initPatients } = await import('./scripts/patients.js?v=' + v);
+    // initCashier now loaded dynamically when Cashier page is opened
+    const { initSessionManager, restoreSessionOnLoad } = await import('./scripts/session-manager.js?v=' + v);
+    const { initRealtimeSync } = await import('./scripts/realtime-sync.js?v=' + v);
+    
+    // Check authentication before initializing app
+    onAuthStateChanged((user) => {
+        if (!user) {
+            // Not logged in, redirect to login page
+            window.location.replace('login.html');
+        } else {
+            // User is logged in, initialize app
+            initializeApp(user);
+        }
+    });
+    
+    function initializeApp(user) {
+        // Initialize core UI (pages, clock, navigation)
+        initMain();
+        
+        // Initialize feature areas
+        initAuth();
+        initSessionManager();
+        // initBilling(); - Now loaded dynamically when Tindakan/Obat pages are opened
+        initDashboard();
+        if (user.role === 'superadmin') {
+            initFinanceDashboard();
+            initAnalyticsDashboard(); // Finance page charts
+        }
+        initPatients();
+        // Chat is now handled by chat-popup.js loaded at bottom of page
+        // initCashier() - Now loaded dynamically when Cashier page is opened
+        
+        // Initialize real-time sync
+        initRealtimeSync(user);
+        console.log('🔄 Real-time sync initialized for user:', user.name);
+        
+        // Restore session if exists
+        restoreSessionOnLoad().then(session => {
+            if (session && session.patient) {
+                console.log('Session restored for patient:', session.patient.name);
+                // TODO: Restore UI state based on session data
+            }
+        });
+        console.log('AdminLTE app initialized');
+    }
+ </script>
+
+ <!-- Socket.IO initialization for chat -->
+ <script>
+    // Initialize Socket.IO connection for chat
+    window.socket = io('https://praktekdrdibya.com', {
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionAttempts: 5
+    });
+
+    window.socket.on('connect', () => {
+        console.log('Socket.IO connected for chat');
+    });
+
+    window.socket.on('disconnect', () => {
+        console.log('Socket.IO disconnected');
+    });
+ </script>
+
+ <!-- Chat Popup Widget -->
+ <script src="/scripts/chat-popup.js"></script>
+
+</body>
+</html>
+
