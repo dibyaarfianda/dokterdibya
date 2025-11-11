@@ -49,8 +49,9 @@ router.post('/api/chat/send', verifyToken, validateChatMessage, async (req, res)
             });
         }
 
-        let userName = null;
-        let finalPhoto = null;
+    let userName = null;
+    let finalPhoto = null;
+    const requestPhoto = typeof req.body.user_photo === 'string' ? req.body.user_photo : null;
 
         try {
             const [userRows] = await db.query(
@@ -68,6 +69,12 @@ router.post('/api/chat/send', verifyToken, validateChatMessage, async (req, res)
             const userRecord = userRows[0];
             userName = userRecord.name || userRecord.email || userEmail;
             finalPhoto = userRecord.photo_url || null;
+            if (finalPhoto && finalPhoto.startsWith('data:')) {
+                finalPhoto = null;
+            }
+            if (finalPhoto && finalPhoto.length > 1000) {
+                finalPhoto = null;
+            }
         } catch (lookupError) {
             console.warn('Failed to fetch chat user profile:', lookupError.message);
             userName = userEmail || 'Pengguna';
@@ -87,8 +94,12 @@ router.post('/api/chat/send', verifyToken, validateChatMessage, async (req, res)
             if (!newMessage[0].user_name && userName) {
                 newMessage[0].user_name = userName;
             }
-            if (!newMessage[0].user_photo && finalPhoto) {
-                newMessage[0].user_photo = finalPhoto;
+            if (!newMessage[0].user_photo) {
+                if (finalPhoto) {
+                    newMessage[0].user_photo = finalPhoto;
+                } else if (requestPhoto) {
+                    newMessage[0].user_photo = requestPhoto;
+                }
             }
         }
         
