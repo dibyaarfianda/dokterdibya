@@ -2,19 +2,26 @@
 const API_BASE_URL = '/api/patients';
 
 // Configuration
-const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID'; // TODO: Replace with actual Google Client ID from console.cloud.google.com
+const GOOGLE_CLIENT_ID = '738335602560-52as846lk2oo78fr38a86elu8888m7eh.apps.googleusercontent.com'; // TODO: Replace with actual Google Client ID from console.cloud.google.com
 const REDIRECT_AFTER_LOGIN = '/patient-dashboard.html'; // Change to '/patient-intake.html' if you want direct form access
 
 // Initialize Google Sign-In
 function initializeGoogleSignIn() {
     // Only initialize if Google Sign-In API is loaded AND client ID is configured
-    if (typeof google !== 'undefined' && GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID') {
-        google.accounts.id.initialize({
-            client_id: GOOGLE_CLIENT_ID,
-            callback: handleGoogleSignIn
-        });
+    if (typeof google !== 'undefined' && google.accounts && GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID') {
+        try {
+            google.accounts.id.initialize({
+                client_id: GOOGLE_CLIENT_ID,
+                callback: handleGoogleSignIn
+            });
+            console.log('Google Sign-In initialized successfully');
+        } catch (error) {
+            console.error('Google Sign-In initialization error:', error);
+        }
     } else if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') {
         console.log('Google Sign-In: Client ID not configured. See GOOGLE_OAUTH_SETUP.md');
+    } else {
+        console.log('Google Sign-In: API not loaded yet, will retry...');
     }
 }
 
@@ -200,8 +207,10 @@ function logout() {
 
 // Event Listeners
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize Google Sign-In
-    initializeGoogleSignIn();
+    // Initialize Google Sign-In with delay to ensure API is loaded
+    setTimeout(() => {
+        initializeGoogleSignIn();
+    }, 500);
     
     // Check if user is already logged in
     checkAuth();
@@ -211,12 +220,21 @@ document.addEventListener('DOMContentLoaded', function() {
     if (googleSignUpBtn) {
         googleSignUpBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            if (typeof google !== 'undefined') {
+            console.log('Google Sign-In button clicked');
+            console.log('Client ID:', GOOGLE_CLIENT_ID);
+            console.log('Google available:', typeof google !== 'undefined');
+            
+            if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') {
+                showMessage('Google Sign-In belum dikonfigurasi. Silakan gunakan email/password untuk mendaftar.', 'error');
+                alert('Google Sign-In belum dikonfigurasi.\n\nSilakan gunakan formulir email/password di bawah untuk mendaftar.');
+            } else if (typeof google !== 'undefined') {
                 google.accounts.id.prompt();
             } else {
                 showMessage('Google Sign-In tidak tersedia. Silakan gunakan email.', 'error');
             }
         });
+    } else {
+        console.log('Google signup button not found');
     }
     
     // Email Registration Form
