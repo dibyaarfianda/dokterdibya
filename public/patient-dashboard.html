@@ -588,6 +588,12 @@
                 const data = await response.json();
                 const profile = data.user;
 
+                // Check if profile is completed, redirect if not
+                if (profile.profile_completed !== 1) {
+                    window.location.href = '/complete-profile.html';
+                    return;
+                }
+
                 // Update UI with profile data
                 document.getElementById('user-name').textContent = profile.fullname;
                 document.getElementById('profile-name').textContent = profile.fullname;
