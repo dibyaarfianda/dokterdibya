@@ -252,7 +252,7 @@ router.get('/verify', verifyToken, (req, res) => {
 router.get('/profile', verifyToken, async (req, res) => {
     try {
         const [patients] = await db.query(
-            'SELECT id, fullname, email, phone, photo_url, registration_date FROM web_patients WHERE id = ?',
+            'SELECT id, fullname, email, phone, photo_url, birth_date, age, registration_date FROM web_patients WHERE id = ?',
             [req.user.id]
         );
         
@@ -265,6 +265,57 @@ router.get('/profile', verifyToken, async (req, res) => {
     } catch (error) {
         console.error('Profile error:', error);
         res.status(500).json({ message: 'Terjadi kesalahan' });
+    }
+});
+
+// Update user profile
+router.put('/profile', verifyToken, async (req, res) => {
+    try {
+        const { fullname, email, phone, birth_date, age } = req.body;
+        
+        // Validation
+        if (!fullname || !email || !phone) {
+            return res.status(400).json({ message: 'Nama, email, dan nomor telepon harus diisi' });
+        }
+        
+        // Validate email format
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ message: 'Format email tidak valid' });
+        }
+        
+        // Check if email is taken by another user
+        const [existingUsers] = await db.query(
+            'SELECT id FROM web_patients WHERE email = ? AND id != ?',
+            [email, req.user.id]
+        );
+        
+        if (existingUsers.length > 0) {
+            return res.status(400).json({ message: 'Email sudah digunakan oleh pengguna lain' });
+        }
+        
+        // Update patient data
+        await db.query(
+            `UPDATE web_patients 
+             SET fullname = ?, email = ?, phone = ?, birth_date = ?, age = ?, updated_at = NOW()
+             WHERE id = ?`,
+            [fullname, email, phone, birth_date || null, age || null, req.user.id]
+        );
+        
+        // Fetch updated profile
+        const [updatedPatient] = await db.query(
+            'SELECT id, fullname, email, phone, photo_url, birth_date, age, registration_date FROM web_patients WHERE id = ?',
+            [req.user.id]
+        );
+        
+        res.json({ 
+            message: 'Profil berhasil diperbarui',
+            user: updatedPatient[0]
+        });
+        
+    } catch (error) {
+        console.error('Update profile error:', error);
+        res.status(500).json({ message: 'Terjadi kesalahan saat menyimpan profil' });
     }
 });
 
