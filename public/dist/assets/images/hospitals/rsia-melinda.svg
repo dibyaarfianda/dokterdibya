@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 200">
-    <rect width="360" height="200" rx="28" fill="#ffffff"/>
-    <path d="M110 60 C70 40 40 76 40 112 C40 152 78 168 110 148 C142 128 148 86 110 60 Z" fill="#f58634"/>
-    <path d="M128 60 C170 30 210 58 210 108 C210 154 150 186 112 162 C168 162 182 116 150 88" fill="#00b4d8"/>
-    <circle cx="196" cy="52" r="12" fill="#f58634"/>
-    <text x="220" y="110" font-family="'Poppins', Arial, sans-serif" font-weight="600" font-size="28" fill="#023e8a">RSIA</text>
-    <text x="220" y="140" font-family="'Poppins', Arial, sans-serif" font-weight="700" font-size="32" fill="#00b4d8">MELINDA</text>
-</svg>

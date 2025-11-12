@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 200">
-    <rect width="360" height="200" rx="28" fill="#e9f7fb"/>
-    <path d="M110 60 L180 40 L250 60 L230 140 L110 140 Z" fill="#023e8a"/>
-    <circle cx="180" cy="86" r="26" fill="#00b4d8"/>
-    <path d="M180 70 L186 86 L174 86 Z" fill="#ffffff"/>
-    <rect x="168" y="96" width="24" height="26" rx="8" fill="#ffffff"/>
-    <text x="180" y="150" font-family="'Poppins', Arial, sans-serif" font-weight="600" font-size="22" fill="#03045e" text-anchor="middle">RS BHAYANGKARA</text>
-    <text x="180" y="172" font-family="'Poppins', Arial, sans-serif" font-size="16" fill="#00b4d8" text-anchor="middle">KEDIRI</text>
-</svg>

@@ -1,0 +1,284 @@
+// JWT Authentication for Patient Registration and Login
+const API_BASE_URL = '/api/patients';
+
+// Google Sign-In Configuration
+const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID'; // Replace with actual client ID
+
+// Initialize Google Sign-In
+function initializeGoogleSignIn() {
+    if (typeof google !== 'undefined') {
+        google.accounts.id.initialize({
+            client_id: GOOGLE_CLIENT_ID,
+            callback: handleGoogleSignIn
+        });
+    }
+}
+
+// Handle Google Sign-In Response
+async function handleGoogleSignIn(response) {
+    try {
+        // Send Google credential to backend
+        const res = await fetch(`${API_BASE_URL}/auth/google`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                credential: response.credential
+            })
+        });
+
+        if (!res.ok) {
+            throw new Error('Google sign-in failed');
+        }
+
+        const data = await res.json();
+        
+        // Store JWT token
+        localStorage.setItem('patient_token', data.token);
+        localStorage.setItem('patient_user', JSON.stringify(data.user));
+        
+        // Show success message
+        showMessage('Login berhasil! Mengalihkan...', 'success');
+        
+        // Redirect to patient dashboard
+        setTimeout(() => {
+            window.location.href = '/patient-dashboard.html';
+        }, 1500);
+        
+    } catch (error) {
+        console.error('Google sign-in error:', error);
+        showMessage('Login dengan Google gagal. Silakan coba lagi.', 'error');
+    }
+}
+
+// Sign Up with Email
+async function signUpWithEmail(fullname, email, phone, password) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/register`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                fullname,
+                email,
+                phone,
+                password
+            })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(data.message || 'Registrasi gagal');
+        }
+
+        // Store JWT token
+        localStorage.setItem('patient_token', data.token);
+        localStorage.setItem('patient_user', JSON.stringify(data.user));
+        
+        // Show success message
+        showMessage('Registrasi berhasil! Mengalihkan...', 'success');
+        
+        // Redirect to patient dashboard
+        setTimeout(() => {
+            window.location.href = '/patient-dashboard.html';
+        }, 1500);
+        
+    } catch (error) {
+        console.error('Registration error:', error);
+        showMessage(error.message, 'error');
+        throw error;
+    }
+}
+
+// Sign In with Email
+async function signInWithEmail(email, password) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                email,
+                password
+            })
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+            throw new Error(data.message || 'Login gagal');
+        }
+
+        // Store JWT token
+        localStorage.setItem('patient_token', data.token);
+        localStorage.setItem('patient_user', JSON.stringify(data.user));
+        
+        // Show success message
+        showMessage('Login berhasil! Mengalihkan...', 'success');
+        
+        // Redirect to patient dashboard
+        setTimeout(() => {
+            window.location.href = '/patient-dashboard.html';
+        }, 1500);
+        
+    } catch (error) {
+        console.error('Login error:', error);
+        showMessage(error.message, 'error');
+        throw error;
+    }
+}
+
+// Show Message Helper
+function showMessage(message, type) {
+    // Create alert element
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type === 'success' ? 'success' : 'danger'} alert-dismissible fade in`;
+    alertDiv.innerHTML = `
+        <button type="button" class="close" data-dismiss="alert">&times;</button>
+        <strong>${type === 'success' ? 'Sukses!' : 'Error!'}</strong> ${message}
+    `;
+    
+    // Insert before first section
+    const firstSection = document.querySelector('section');
+    if (firstSection) {
+        firstSection.insertBefore(alertDiv, firstSection.firstChild);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            alertDiv.remove();
+        }, 5000);
+    }
+}
+
+// Check if user is already logged in
+function checkAuth() {
+    const token = localStorage.getItem('patient_token');
+    const user = localStorage.getItem('patient_user');
+    
+    if (token && user) {
+        // Optionally verify token with backend
+        verifyToken(token);
+    }
+}
+
+// Verify token validity
+async function verifyToken(token) {
+    try {
+        const res = await fetch(`${API_BASE_URL}/verify`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!res.ok) {
+            // Token invalid, clear storage
+            localStorage.removeItem('patient_token');
+            localStorage.removeItem('patient_user');
+        }
+    } catch (error) {
+        console.error('Token verification error:', error);
+        localStorage.removeItem('patient_token');
+        localStorage.removeItem('patient_user');
+    }
+}
+
+// Logout function
+function logout() {
+    localStorage.removeItem('patient_token');
+    localStorage.removeItem('patient_user');
+    window.location.href = '/index.html';
+}
+
+// Event Listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Google Sign-In
+    initializeGoogleSignIn();
+    
+    // Check if user is already logged in
+    checkAuth();
+    
+    // Google Sign-Up Button
+    const googleSignUpBtn = document.getElementById('google-signup-btn');
+    if (googleSignUpBtn) {
+        googleSignUpBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (typeof google !== 'undefined') {
+                google.accounts.id.prompt();
+            } else {
+                showMessage('Google Sign-In tidak tersedia. Silakan gunakan email.', 'error');
+            }
+        });
+    }
+    
+    // Email Registration Form
+    const registerForm = document.getElementById('register-form');
+    if (registerForm) {
+        registerForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const fullname = document.getElementById('fullname').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const password = document.getElementById('password').value;
+            
+            // Basic validation
+            if (!fullname || !email || !phone || !password) {
+                showMessage('Semua field harus diisi!', 'error');
+                return;
+            }
+            
+            if (password.length < 6) {
+                showMessage('Password minimal 6 karakter!', 'error');
+                return;
+            }
+            
+            // Disable submit button
+            const submitBtn = registerForm.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Mendaftar...';
+            
+            try {
+                await signUpWithEmail(fullname, email, phone, password);
+            } catch (error) {
+                // Re-enable submit button
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'DAFTAR SEKARANG';
+            }
+        });
+    }
+    
+    // Login Form
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) {
+        loginForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            
+            // Basic validation
+            if (!email || !password) {
+                showMessage('Email dan password harus diisi!', 'error');
+                return;
+            }
+            
+            // Disable submit button
+            const submitBtn = loginForm.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Masuk...';
+            
+            try {
+                await signInWithEmail(email, password);
+            } catch (error) {
+                // Re-enable submit button
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'MASUK';
+            }
+        });
+    }
+});
