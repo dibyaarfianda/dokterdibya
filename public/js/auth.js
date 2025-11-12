@@ -52,9 +52,9 @@ async function handleGoogleSignIn(response) {
         // Show success message
         showMessage('Login berhasil! Mengalihkan...', 'success');
         
-        // Redirect to patient dashboard
-        setTimeout(() => {
-            window.location.href = REDIRECT_AFTER_LOGIN;
+        // Check profile completion and redirect accordingly
+        setTimeout(async () => {
+            await checkProfileCompletionAndRedirect();
         }, 1500);
         
     } catch (error) {
@@ -92,9 +92,9 @@ async function signUpWithEmail(fullname, email, phone, password) {
         // Show success message
         showMessage('Registrasi berhasil! Mengalihkan...', 'success');
         
-        // Redirect to patient dashboard
-        setTimeout(() => {
-            window.location.href = REDIRECT_AFTER_LOGIN;
+        // Check profile completion and redirect accordingly
+        setTimeout(async () => {
+            await checkProfileCompletionAndRedirect();
         }, 1500);
         
     } catch (error) {
@@ -131,9 +131,9 @@ async function signInWithEmail(email, password) {
         // Show success message
         showMessage('Login berhasil! Mengalihkan...', 'success');
         
-        // Redirect to patient dashboard
-        setTimeout(() => {
-            window.location.href = REDIRECT_AFTER_LOGIN;
+        // Check profile completion and redirect accordingly
+        setTimeout(async () => {
+            await checkProfileCompletionAndRedirect();
         }, 1500);
         
     } catch (error) {
@@ -195,6 +195,42 @@ async function verifyToken(token) {
         console.error('Token verification error:', error);
         localStorage.removeItem('patient_token');
         localStorage.removeItem('patient_user');
+    }
+}
+
+// Check profile completion and redirect accordingly
+async function checkProfileCompletionAndRedirect() {
+    try {
+        const token = localStorage.getItem('patient_token');
+        if (!token) {
+            window.location.href = '/index.html';
+            return;
+        }
+
+        const res = await fetch(`${API_BASE_URL}/profile`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!res.ok) {
+            throw new Error('Failed to fetch profile');
+        }
+
+        const data = await res.json();
+        const profile = data.user;
+
+        // Check if profile is completed
+        if (profile.profile_completed === 1) {
+            window.location.href = REDIRECT_AFTER_LOGIN;
+        } else {
+            window.location.href = '/complete-profile.html';
+        }
+    } catch (error) {
+        console.error('Profile check error:', error);
+        // On error, redirect to complete profile to be safe
+        window.location.href = '/complete-profile.html';
     }
 }
 

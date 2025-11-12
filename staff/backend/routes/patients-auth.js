@@ -252,7 +252,7 @@ router.get('/verify', verifyToken, (req, res) => {
 router.get('/profile', verifyToken, async (req, res) => {
     try {
         const [patients] = await db.query(
-            'SELECT id, fullname, email, phone, photo_url, birth_date, age, registration_date FROM web_patients WHERE id = ?',
+            'SELECT id, fullname, email, phone, photo_url, birth_date, age, registration_date, profile_completed FROM web_patients WHERE id = ?',
             [req.user.id]
         );
         
@@ -315,6 +315,47 @@ router.put('/profile', verifyToken, async (req, res) => {
         
     } catch (error) {
         console.error('Update profile error:', error);
+        res.status(500).json({ message: 'Terjadi kesalahan saat menyimpan profil' });
+    }
+});
+
+// Complete profile (first-time setup)
+router.post('/complete-profile', verifyToken, async (req, res) => {
+    try {
+        const { fullname, phone, birth_date, age } = req.body;
+        
+        // Validation
+        if (!fullname || !phone || !birth_date) {
+            return res.status(400).json({ message: 'Nama, nomor telepon, dan tanggal lahir harus diisi' });
+        }
+        
+        // Validate phone format (Indonesian mobile)
+        const phoneRegex = /^08\d{8,12}$/;
+        if (!phoneRegex.test(phone)) {
+            return res.status(400).json({ message: 'Format nomor telepon tidak valid. Harus dimulai dengan 08' });
+        }
+        
+        // Update patient data and mark profile as completed
+        await db.query(
+            `UPDATE web_patients 
+             SET fullname = ?, phone = ?, birth_date = ?, age = ?, profile_completed = 1, updated_at = NOW()
+             WHERE id = ?`,
+            [fullname, phone, birth_date, age || null, req.user.id]
+        );
+        
+        // Fetch updated profile
+        const [updatedPatient] = await db.query(
+            'SELECT id, fullname, email, phone, photo_url, birth_date, age, registration_date, profile_completed FROM web_patients WHERE id = ?',
+            [req.user.id]
+        );
+        
+        res.json({ 
+            message: 'Profil berhasil dilengkapi',
+            user: updatedPatient[0]
+        });
+        
+    } catch (error) {
+        console.error('Complete profile error:', error);
         res.status(500).json({ message: 'Terjadi kesalahan saat menyimpan profil' });
     }
 });
