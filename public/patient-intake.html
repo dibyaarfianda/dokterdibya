@@ -819,12 +819,12 @@
                                 <button type="button" id="add-lab-row">Tambah Tes Lab</button>
                             </div>
                             <div class="summary" id="staff-lab-note">
-                                Staf dapat memperbarui tabel lab setiap kali hasil baru tersedia. Riwayat pasien dikunci sampai diverifikasi.
+                                Staff dapat memperbarui tabel lab setiap kali hasil baru tersedia. Riwayat pasien dikunci sampai diverifikasi.
                             </div>
                         </div>
                         <div class="divider"></div>
                         <div class="alert">
-                            Setelah menekan "Kirim", data akan dikirim ke klinik dan Anda akan menerima salinan ringkas.
+                            Setelah menekan "Kirim", data akan dikirim ke dr.Dibya dan Anda akan menerima salinan ringkas.
                         </div>
                         <div class="divider"></div>
                         <div>
@@ -836,7 +836,7 @@
                             <div class="field" style="margin-top:0.5rem;">
                                 <label class="checkbox-item">
                                     <input type="checkbox" id="final_ack" name="final_ack" required>
-                                    <span>Saya menyatakan bahwa informasi di atas benar dan bersedia data ini diverifikasi oleh tim klinik.</span>
+                                    <span>Saya menyatakan bahwa informasi di atas benar dan bersedia data ini diverifikasi oleh tim dr.Dibya.</span>
                                 </label>
                             </div>
                             <p class="table-note">Waktu pengiriman, alamat IP, dan perangkat akan tercatat otomatis untuk keamanan.</p>
@@ -853,10 +853,65 @@
             </div>
         </main>
         <footer>
-            Dibya Klinik &mdash; Privasi Anda menjadi prioritas kami.
+            dr. Dibya &mdash; Privasi Anda menjadi prioritas kami.
         </footer>
         <div class="toast" id="toast"></div>
     </div>
+    
+    <!-- Load patient profile data -->
+    <script>
+        // Auto-fill patient data from profile
+        async function loadPatientProfile() {
+            const token = localStorage.getItem('patient_token');
+            
+            if (!token) {
+                console.log('No patient token found');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/patients/profile', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const profile = data.user;
+                    
+                    // Auto-fill available fields
+                    if (profile.fullname) {
+                        document.getElementById('full_name').value = profile.fullname;
+                    }
+                    
+                    if (profile.phone) {
+                        document.getElementById('phone').value = profile.phone;
+                    }
+                    
+                    if (profile.birth_date) {
+                        const birthDate = new Date(profile.birth_date);
+                        document.getElementById('dob').value = birthDate.toISOString().split('T')[0];
+                        
+                        // Auto-calculate age
+                        if (profile.age) {
+                            document.getElementById('age').value = profile.age;
+                        }
+                    }
+                    
+                    console.log('Patient profile loaded successfully');
+                } else {
+                    console.log('Failed to load patient profile');
+                }
+            } catch (error) {
+                console.error('Error loading patient profile:', error);
+            }
+        }
+        
+        // Load profile when page loads
+        window.addEventListener('DOMContentLoaded', loadPatientProfile);
+    </script>
+    
     <script type="module" src="./scripts/patient-intake.js?v=1"></script>
 </body>
 </html>
