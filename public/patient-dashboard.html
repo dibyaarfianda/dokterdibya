@@ -6,194 +6,408 @@
     <title>Dashboard Pasien - Dokter Dibya</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link rel="stylesheet" href="css/templatemo-style.css">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,300,600,700' rel='stylesheet' type='text/css'>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
-            background: #f5f5f5;
-            padding-top: 70px;
+            background: #303030;
+            color: #ffffff;
+            font-family: 'Open Sans', sans-serif;
+            font-weight: 300;
+            margin: 0;
+            padding: 0;
         }
-        .navbar-custom {
-            background: #2d2d2d;
-            border: none;
+        
+        a {
+            color: #47C6F8;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            color: #0FF;
+            text-decoration: none;
+        }
+        
+        /* Header */
+        header {
+            background: #202020;
+            padding: 20px 0;
+            border-bottom: 1px solid #404040;
+        }
+        
+        header .phone,
+        header .email {
+            color: #ffffff;
+            font-size: 14px;
             margin-bottom: 0;
         }
-        .navbar-custom .navbar-brand {
-            color: #fff;
-            font-weight: 600;
+        
+        header .phone i,
+        header .email i {
+            color: #28a7e9;
+            margin-right: 5px;
         }
-        .navbar-custom .navbar-nav > li > a {
-            color: #fff;
+        
+        header h1 {
+            color: #28a7e9;
+            font-size: 28px;
+            font-weight: 700;
+            margin: 20px 0 10px;
         }
-        .navbar-custom .navbar-nav > li > a:hover {
-            color: #3498db;
-        }
-        .dashboard-container {
-            max-width: 1200px;
-            margin: 30px auto;
-            padding: 0 15px;
-        }
-        .welcome-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 40px;
-            border-radius: 10px;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-        }
-        .welcome-card h1 {
-            margin: 0 0 10px;
-            font-size: 32px;
-            font-weight: 600;
-        }
-        .welcome-card p {
+        
+        header p.subtitle {
+            color: #cccccc;
+            font-size: 14px;
             margin: 0;
-            opacity: 0.9;
-            font-size: 16px;
         }
+        
+        /* Main Content */
+        .dashboard-container {
+            padding: 30px 15px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        /* Cards */
         .dashboard-card {
-            background: white;
-            border-radius: 10px;
+            background: #202020;
+            border: 1px solid #404040;
+            border-radius: 8px;
             padding: 25px;
             margin-bottom: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
             transition: transform 0.3s, box-shadow 0.3s;
         }
+        
         .dashboard-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 5px 20px rgba(0,0,0,0.12);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(40, 167, 233, 0.3);
+            border-color: #28a7e9;
         }
+        
         .dashboard-card h3 {
-            margin-top: 0;
-            color: #2d2d2d;
+            color: #28a7e9;
+            font-size: 24px;
             font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 20px;
             display: flex;
             align-items: center;
         }
+        
         .dashboard-card h3 i {
             margin-right: 10px;
-            color: #3498db;
             width: 30px;
         }
-        .action-btn {
-            display: inline-block;
-            padding: 12px 30px;
-            background: #3498db;
-            color: white;
-            text-decoration: none;
+        
+        /* Alert */
+        .alert-info-custom {
+            background: #1a3a4a;
+            border: 1px solid #28a7e9;
+            border-left: 4px solid #28a7e9;
+            padding: 15px;
+            margin-bottom: 20px;
             border-radius: 5px;
-            margin-top: 15px;
-            transition: background 0.3s;
-            border: none;
-            font-size: 16px;
-            cursor: pointer;
+            color: #ffffff;
         }
-        .action-btn:hover {
-            background: #2980b9;
-            color: white;
-            text-decoration: none;
+        
+        .alert-info-custom i {
+            color: #28a7e9;
+            margin-right: 10px;
         }
-        .action-btn-secondary {
-            background: #95a5a6;
-        }
-        .action-btn-secondary:hover {
-            background: #7f8c8d;
-        }
-        .profile-info {
-            list-style: none;
-            padding: 0;
-        }
-        .profile-info li {
-            padding: 10px 0;
-            border-bottom: 1px solid #eee;
-            display: flex;
-            justify-content: space-between;
-        }
-        .profile-info li:last-child {
-            border-bottom: none;
-        }
-        .profile-info strong {
-            color: #7f8c8d;
-            font-weight: 500;
-        }
+        
+        /* Quick Actions Grid */
         .quick-actions {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 15px;
             margin-top: 20px;
         }
+        
         .quick-action-btn {
-            padding: 20px;
-            background: white;
-            border: 2px solid #3498db;
+            padding: 25px 15px;
+            background: #303030;
+            border: 2px solid #28a7e9;
             border-radius: 8px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s;
             text-decoration: none;
-            color: #3498db;
+            color: #28a7e9;
             display: block;
         }
+        
         .quick-action-btn:hover {
-            background: #3498db;
-            color: white;
+            background: #28a7e9;
+            color: #ffffff;
             text-decoration: none;
-            transform: translateY(-3px);
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(40, 167, 233, 0.4);
         }
+        
         .quick-action-btn i {
-            font-size: 32px;
+            font-size: 36px;
             display: block;
             margin-bottom: 10px;
         }
-        .alert-info-custom {
-            background: #e3f2fd;
-            border-left: 4px solid #2196f3;
-            padding: 15px;
-            margin-bottom: 20px;
+        
+        .quick-action-btn div {
+            font-size: 13px;
+            line-height: 1.4;
+        }
+        
+        /* Profile Info */
+        .profile-info {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .profile-info li {
+            padding: 12px 0;
+            border-bottom: 1px solid #404040;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .profile-info li:last-child {
+            border-bottom: none;
+        }
+        
+        .profile-info strong {
+            color: #28a7e9;
+            font-weight: 500;
+        }
+        
+        .profile-info span {
+            color: #cccccc;
+            text-align: right;
+        }
+        
+        /* Buttons */
+        .action-btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #28a7e9;
+            color: white;
+            text-decoration: none;
             border-radius: 5px;
+            margin-top: 15px;
+            transition: all 0.3s;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: 400;
         }
+        
+        .action-btn:hover {
+            background: #0FF;
+            color: #303030;
+            text-decoration: none;
+            transform: translateY(-2px);
+        }
+        
+        .action-btn i {
+            margin-right: 8px;
+        }
+        
+        .action-btn-secondary {
+            background: #505050;
+        }
+        
+        .action-btn-secondary:hover {
+            background: #606060;
+            color: #ffffff;
+        }
+        
         .logout-btn {
-            background: #e74c3c;
+            background: #d9534f;
         }
+        
         .logout-btn:hover {
-            background: #c0392b;
+            background: #c9302c;
+            color: #ffffff;
+        }
+        
+        /* Empty State */
+        .empty-state {
+            color: #808080;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .empty-state i {
+            font-size: 48px;
+            display: block;
+            margin-bottom: 15px;
+            opacity: 0.3;
+        }
+        
+        /* Navigation */
+        .nav-bar {
+            background: #202020;
+            padding: 10px 0;
+            border-bottom: 1px solid #404040;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .nav-bar a {
+            color: #cccccc;
+            padding: 10px 15px;
+            display: inline-block;
+            transition: color 0.3s;
+        }
+        
+        .nav-bar a:hover {
+            color: #28a7e9;
+        }
+        
+        .nav-bar a i {
+            margin-right: 5px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 24px;
+                margin: 15px 0 5px;
+            }
+            
+            .dashboard-card {
+                padding: 20px;
+            }
+            
+            .dashboard-card h3 {
+                font-size: 20px;
+            }
+            
+            .quick-actions {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            
+            .quick-action-btn {
+                padding: 20px 10px;
+            }
+            
+            .quick-action-btn i {
+                font-size: 28px;
+            }
+            
+            .quick-action-btn div {
+                font-size: 12px;
+            }
+            
+            .profile-info li {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            
+            .profile-info span {
+                text-align: left;
+            }
+            
+            .nav-bar {
+                text-align: center;
+            }
+            
+            .nav-bar a {
+                padding: 8px 12px;
+                font-size: 14px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            header .phone,
+            header .email {
+                font-size: 12px;
+            }
+            
+            .dashboard-container {
+                padding: 20px 10px;
+            }
+            
+            .quick-actions {
+                grid-template-columns: 1fr;
+            }
+            
+            .dashboard-card h3 {
+                font-size: 18px;
+            }
+            
+            .welcome-message p {
+                font-size: 14px !important;
+            }
+            
+            .welcome-message strong[style*="font-size: 20px"] {
+                font-size: 17px !important;
+            }
+            
+            .dashboard-card p {
+                font-size: 14px;
+            }
         }
     </style>
 </head>
 <body>
     <!-- Navigation -->
-    <nav class="navbar navbar-custom navbar-fixed-top">
-        <div class="container-fluid">
-            <div class="navbar-header">
-                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-collapse">
-                    <span class="icon-bar" style="background: white;"></span>
-                    <span class="icon-bar" style="background: white;"></span>
-                    <span class="icon-bar" style="background: white;"></span>
-                </button>
-                <a class="navbar-brand" href="/">
-                    <i class="fa fa-heartbeat"></i> Dokter Dibya
-                </a>
-            </div>
-            <div class="collapse navbar-collapse" id="navbar-collapse">
-                <ul class="nav navbar-nav navbar-right">
-                    <li><a href="#profile-section"><i class="fa fa-user"></i> Profil</a></li>
-                    <li><a href="#" id="logout-link"><i class="fa fa-sign-out"></i> Keluar</a></li>
-                </ul>
-            </div>
+    <nav class="nav-bar">
+        <div class="container">
+            <a href="#profile-section"><i class="fa fa-user"></i> Profil</a>
+            <a href="#" id="logout-link"><i class="fa fa-sign-out"></i> Keluar</a>
         </div>
     </nav>
 
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6 col-sm-6 col-xs-12">
+                    <p class="phone"><i class="fa fa-phone"></i> +62 822-2950-9661</p>
+                </div>
+                <div class="col-md-6 col-sm-6 col-xs-12">
+                    <p class="email"><i class="fa fa-envelope-o"></i> info@dokterdibya.com</p>
+                </div>
+                <div class="col-md-12">
+                    <h1>Selamat Datang, <span id="user-name">Pasien</span>!</h1>
+                    <p class="subtitle">Dashboard pribadi Anda untuk mengelola kesehatan</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
     <!-- Main Content -->
     <div class="dashboard-container">
-        <!-- Welcome Card -->
-        <div class="welcome-card">
-            <h1>Selamat Datang, <span id="user-name">Pasien</span>!</h1>
-            <p>Dashboard pribadi Anda untuk mengelola kesehatan dan janji temu dengan Dokter Dibya</p>
+        <!-- Welcome Message -->
+        <div class="dashboard-card welcome-message" style="margin-bottom: 30px;">
+            <h3><i class="fa fa-heart"></i> Selamat Datang</h3>
+            <div style="line-height: 1.9; color: #e0e0e0; font-family: 'Poppins', sans-serif; font-size: 16px; font-weight: 400;">
+                <p style="font-size: 16px;">Halaman ini adalah ruang khusus bagi Anda — tempat saya membantu Anda, memantau kehamilan atau kesehatan kandungan Anda secara berkala dan privat.</p>
+                
+                <p style="font-size: 16px;">Semua catatan dan informasi di sini bersifat <strong style="color: #28a7e9; font-weight: 600;">rahasia</strong>. Mohon untuk tidak membagikan halaman rekam medis kepada orang selain keluarga inti/ keluarga yang dipercaya. Karena itupun keamanan sistem ini menjadi prioritas saya dan saya telah terapkan proteksi terbaik dan enkripsi untuk mencegah diretas.</p>
+                
+                <p style="font-size: 16px;">Adanya <strong style="color: #28a7e9; font-weight: 600;">dokterDIBYA</strong> berawal dari keinginan <i>sederhana</i> saya, yaitu agar setiap pasien bisa tetap terhubung dengan dokter pilihannya, tanpa batasan rumah sakit, tempat, atau waktu. Update selalu dengan perubahan jadwal dari saya, reminding jadwal kontrol, booking slot dengan mudah, dan bahkan kedepan bukan tidak mungkin konsultasi secara online dengan jadwal yang disepakati!</p>
+                
+                <p style="font-size: 16px;">Walaupun demikian saya paham, banyak tantangan dan kesulitan dalam memulai hal baru. Tapi saya percaya, langkah kecil ini bisa membawa perubahan besar menuju pelayanan berkesinambungan dari dokter favorit Anda.</p>
+                
+                <p style="font-size: 16px;">Sebelum kita memulai journey ini, mohon mengisi data pribadi dan riwayat medis, data kehamilan, masalah kandungan, riwayat KB. Besar harapan saya, Anda mengisi dengan lengkap sehingga dapat menjadi modalitas bagi saya dalam pemilihan terapi dan layanan terbaik untuk Anda.</p>
+                
+                <p style="margin-top: 20px; font-size: 16px;">Terima kasih telah menjadi bagian dari <strong style="color: #28a7e9; font-weight: 600;">"modern therapy without boundary"</strong> — pendampingan dan terapi berkelanjutan, di mana pun dan kapan pun Anda membutuhkannya.</p>
+                
+                <p style="margin-top: 30px; text-align: right; color: #28a7e9; font-size: 17px;">
+                    <strong style="font-weight: 500;">Best Regards,</strong><br>
+                    <strong style="font-size: 20px; font-weight: 600;">dr. Dibya</strong>
+                </p>
+            </div>
         </div>
-
+        
         <!-- Alert for first-time users -->
         <div class="alert-info-custom" id="first-time-alert" style="display: none;">
             <i class="fa fa-info-circle"></i> <strong>Langkah Selanjutnya:</strong> 
-            Lengkapi formulir rekam medis awal Anda untuk memulai konsultasi dengan dokter.
+            Lengkapi formulir rekam medis awal Anda untuk memulai journey Anda.
         </div>
 
         <div class="row">
@@ -242,11 +456,15 @@
                             <span id="profile-phone">-</span>
                         </li>
                         <li>
+                            <strong>Tanggal Lahir</strong>
+                            <span id="profile-birthdate">-</span>
+                        </li>
+                        <li>
                             <strong>Terdaftar Sejak</strong>
                             <span id="profile-registered">-</span>
                         </li>
                     </ul>
-                    <button class="action-btn action-btn-secondary" onclick="alert('Fitur edit profil segera hadir!')">
+                    <button class="action-btn action-btn-secondary" onclick="openProfileModal()">
                         <i class="fa fa-edit"></i> Edit Profil
                     </button>
                 </div>
@@ -256,8 +474,8 @@
             <div class="col-md-6">
                 <div class="dashboard-card">
                     <h3><i class="fa fa-calendar-check-o"></i> Janji Temu Mendatang</h3>
-                    <p style="color: #95a5a6; text-align: center; padding: 30px 0;">
-                        <i class="fa fa-calendar-o" style="font-size: 48px; display: block; margin-bottom: 15px; opacity: 0.3;"></i>
+                    <p class="empty-state">
+                        <i class="fa fa-calendar-o"></i>
                         Belum ada janji temu yang dijadwalkan
                     </p>
                     <a href="#" class="action-btn" onclick="alert('Fitur booking segera hadir!'); return false;">
@@ -267,8 +485,8 @@
 
                 <div class="dashboard-card" style="margin-top: 20px;">
                     <h3><i class="fa fa-file-text-o"></i> Rekam Medis</h3>
-                    <p style="color: #95a5a6; text-align: center; padding: 30px 0;">
-                        <i class="fa fa-folder-open-o" style="font-size: 48px; display: block; margin-bottom: 15px; opacity: 0.3;"></i>
+                    <p class="empty-state">
+                        <i class="fa fa-folder-open-o"></i>
                         Belum ada rekam medis
                     </p>
                     <a href="/patient-intake.html" class="action-btn">
@@ -279,10 +497,63 @@
         </div>
 
         <!-- Logout Button -->
-        <div style="text-align: center; margin-top: 30px; margin-bottom: 50px;">
+        <div style="text-align: center; margin-top: 40px; margin-bottom: 50px;">
             <button class="action-btn logout-btn" id="logout-btn">
                 <i class="fa fa-sign-out"></i> Keluar dari Akun
             </button>
+        </div>
+    </div>
+
+    <!-- Profile Edit Modal -->
+    <div class="modal fade" id="profileModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="background: #202020; color: #ffffff; border: 1px solid #404040;">
+                <div class="modal-header" style="border-bottom: 1px solid #404040;">
+                    <button type="button" class="close" data-dismiss="modal" style="color: #ffffff; opacity: 0.8;">&times;</button>
+                    <h4 class="modal-title" style="color: #28a7e9;"><i class="fa fa-edit"></i> Edit Profil</h4>
+                </div>
+                <div class="modal-body">
+                    <form id="profile-form">
+                        <div class="form-group">
+                            <label style="color: #28a7e9;">Nama Lengkap *</label>
+                            <input type="text" class="form-control" id="edit-fullname" required 
+                                   style="background: #303030; border: 1px solid #404040; color: #ffffff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="color: #28a7e9;">Email *</label>
+                            <input type="email" class="form-control" id="edit-email" required 
+                                   style="background: #303030; border: 1px solid #404040; color: #ffffff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="color: #28a7e9;">Nomor WhatsApp *</label>
+                            <input type="tel" class="form-control" id="edit-phone" required 
+                                   placeholder="+62812345678"
+                                   style="background: #303030; border: 1px solid #404040; color: #ffffff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="color: #28a7e9;">Tanggal Lahir</label>
+                            <input type="date" class="form-control" id="edit-birthdate" 
+                                   style="background: #303030; border: 1px solid #404040; color: #ffffff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="color: #28a7e9;">Umur</label>
+                            <input type="number" class="form-control" id="edit-age" 
+                                   placeholder="Otomatis terisi dari tanggal lahir"
+                                   style="background: #303030; border: 1px solid #404040; color: #ffffff;">
+                        </div>
+                        <div class="alert" id="profile-error" style="display: none; background: #3a1a1a; border: 1px solid #d9534f; color: #ffffff;"></div>
+                        <div class="alert" id="profile-success" style="display: none; background: #1a3a2a; border: 1px solid #28a7e9; color: #ffffff;"></div>
+                    </form>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #404040;">
+                    <button type="button" class="btn btn-default" data-dismiss="modal" 
+                            style="background: #505050; color: #ffffff; border: none;">Batal</button>
+                    <button type="button" class="btn btn-primary" onclick="saveProfile()" 
+                            style="background: #28a7e9; border: none;">
+                        <i class="fa fa-save"></i> Simpan Perubahan
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -323,6 +594,18 @@
                 document.getElementById('profile-email').textContent = profile.email;
                 document.getElementById('profile-phone').textContent = profile.phone || 'Belum diisi';
                 
+                // Format birth date
+                if (profile.birth_date) {
+                    const birthDate = new Date(profile.birth_date);
+                    document.getElementById('profile-birthdate').textContent = birthDate.toLocaleDateString('id-ID', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+                } else {
+                    document.getElementById('profile-birthdate').textContent = 'Belum diisi';
+                }
+                
                 // Format registration date
                 const regDate = new Date(profile.registration_date);
                 document.getElementById('profile-registered').textContent = regDate.toLocaleDateString('id-ID', {
@@ -330,6 +613,9 @@
                     month: 'long',
                     day: 'numeric'
                 });
+
+                // Store profile data for editing
+                window.currentProfile = profile;
 
                 // Check if first time user (registered within last 24 hours)
                 const hoursSinceReg = (Date.now() - regDate.getTime()) / (1000 * 60 * 60);
@@ -343,6 +629,103 @@
                 logout();
             }
         }
+
+        function openProfileModal() {
+            if (!window.currentProfile) return;
+            
+            // Populate form with current data
+            document.getElementById('edit-fullname').value = window.currentProfile.fullname || '';
+            document.getElementById('edit-email').value = window.currentProfile.email || '';
+            document.getElementById('edit-phone').value = window.currentProfile.phone || '';
+            
+            if (window.currentProfile.birth_date) {
+                const birthDate = new Date(window.currentProfile.birth_date);
+                document.getElementById('edit-birthdate').value = birthDate.toISOString().split('T')[0];
+            }
+            
+            document.getElementById('edit-age').value = window.currentProfile.age || '';
+            
+            // Show modal
+            $('#profileModal').modal('show');
+        }
+
+        async function saveProfile() {
+            const fullname = document.getElementById('edit-fullname').value.trim();
+            const email = document.getElementById('edit-email').value.trim();
+            const phone = document.getElementById('edit-phone').value.trim();
+            const birthdate = document.getElementById('edit-birthdate').value;
+            const age = document.getElementById('edit-age').value;
+
+            // Hide previous messages
+            document.getElementById('profile-error').style.display = 'none';
+            document.getElementById('profile-success').style.display = 'none';
+
+            // Validation
+            if (!fullname || !email || !phone) {
+                document.getElementById('profile-error').textContent = 'Nama, email, dan nomor telepon harus diisi!';
+                document.getElementById('profile-error').style.display = 'block';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/patients/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fullname,
+                        email,
+                        phone,
+                        birth_date: birthdate || null,
+                        age: age ? parseInt(age) : null
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Gagal menyimpan profil');
+                }
+
+                // Show success message
+                document.getElementById('profile-success').textContent = 'Profil berhasil diperbarui!';
+                document.getElementById('profile-success').style.display = 'block';
+
+                // Reload profile data
+                setTimeout(() => {
+                    $('#profileModal').modal('hide');
+                    loadUserProfile();
+                }, 1500);
+
+            } catch (error) {
+                console.error('Error saving profile:', error);
+                document.getElementById('profile-error').textContent = error.message;
+                document.getElementById('profile-error').style.display = 'block';
+            }
+        }
+
+        // Auto-calculate age from birth date
+        document.addEventListener('DOMContentLoaded', function() {
+            const birthdateInput = document.getElementById('edit-birthdate');
+            const ageInput = document.getElementById('edit-age');
+            
+            if (birthdateInput && ageInput) {
+                birthdateInput.addEventListener('change', function() {
+                    const birthDate = new Date(this.value);
+                    const today = new Date();
+                    let age = today.getFullYear() - birthDate.getFullYear();
+                    const monthDiff = today.getMonth() - birthDate.getMonth();
+                    
+                    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                        age--;
+                    }
+                    
+                    ageInput.value = age >= 0 ? age : '';
+                });
+            }
+        });
 
         function logout() {
             localStorage.removeItem('patient_token');
