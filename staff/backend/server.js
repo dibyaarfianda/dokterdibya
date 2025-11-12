@@ -81,6 +81,7 @@ const pool = require('./db');
 const obatRoutes = require('./routes/obat');
 const tindakanRoutes = require('./routes/05-public-tindakan');
 const patientsRoutes = require('./routes/patients');
+const patientsAuthRoutes = require('./routes/patients-auth');
 const tindakanProtectedRoutes = require('./routes/02-tindakan-api');
 const visitsRoutes = require('./routes/visits');
 const medicalExamsRoutes = require('./routes/medical-exams');
@@ -116,6 +117,9 @@ app.use(express.static(path.join(__dirname, '../public')));
 // Use routes
 // API v1 (modern, service-based)
 app.use('/api/v1', v1Routes);
+
+// Patient authentication routes (must be before patientsRoutes to avoid conflicts)
+app.use('/api/patients', patientsAuthRoutes);
 
 // Legacy routes (keep for backward compatibility)
 app.use('/', tindakanRoutes);

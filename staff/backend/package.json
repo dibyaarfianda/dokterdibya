@@ -24,6 +24,7 @@
     "express-rate-limit": "^7.1.5",
     "express-validator": "^7.3.0",
     "fuse.js": "^7.1.0",
+    "google-auth-library": "^10.5.0",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.1",
