@@ -1,16 +1,20 @@
 // JWT Authentication for Patient Registration and Login
 const API_BASE_URL = '/api/patients';
 
-// Google Sign-In Configuration
-const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID'; // Replace with actual client ID
+// Configuration
+const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID'; // TODO: Replace with actual Google Client ID from console.cloud.google.com
+const REDIRECT_AFTER_LOGIN = '/patient-dashboard.html'; // Change to '/patient-intake.html' if you want direct form access
 
 // Initialize Google Sign-In
 function initializeGoogleSignIn() {
-    if (typeof google !== 'undefined') {
+    // Only initialize if Google Sign-In API is loaded AND client ID is configured
+    if (typeof google !== 'undefined' && GOOGLE_CLIENT_ID !== 'YOUR_GOOGLE_CLIENT_ID') {
         google.accounts.id.initialize({
             client_id: GOOGLE_CLIENT_ID,
             callback: handleGoogleSignIn
         });
+    } else if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') {
+        console.log('Google Sign-In: Client ID not configured. See GOOGLE_OAUTH_SETUP.md');
     }
 }
 
@@ -43,7 +47,7 @@ async function handleGoogleSignIn(response) {
         
         // Redirect to patient dashboard
         setTimeout(() => {
-            window.location.href = '/patient-dashboard.html';
+            window.location.href = REDIRECT_AFTER_LOGIN;
         }, 1500);
         
     } catch (error) {
@@ -83,7 +87,7 @@ async function signUpWithEmail(fullname, email, phone, password) {
         
         // Redirect to patient dashboard
         setTimeout(() => {
-            window.location.href = '/patient-dashboard.html';
+            window.location.href = REDIRECT_AFTER_LOGIN;
         }, 1500);
         
     } catch (error) {
@@ -122,7 +126,7 @@ async function signInWithEmail(email, password) {
         
         // Redirect to patient dashboard
         setTimeout(() => {
-            window.location.href = '/patient-dashboard.html';
+            window.location.href = REDIRECT_AFTER_LOGIN;
         }, 1500);
         
     } catch (error) {
