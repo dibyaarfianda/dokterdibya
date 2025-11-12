@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Pasien - Dokter Dibya</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link rel="stylesheet" href="css/templatemo-style.css">
+    <style>
+        body {
+            background: #f5f5f5;
+            padding-top: 70px;
+        }
+        .navbar-custom {
+            background: #2d2d2d;
+            border: none;
+            margin-bottom: 0;
+        }
+        .navbar-custom .navbar-brand {
+            color: #fff;
+            font-weight: 600;
+        }
+        .navbar-custom .navbar-nav > li > a {
+            color: #fff;
+        }
+        .navbar-custom .navbar-nav > li > a:hover {
+            color: #3498db;
+        }
+        .dashboard-container {
+            max-width: 1200px;
+            margin: 30px auto;
+            padding: 0 15px;
+        }
+        .welcome-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        .welcome-card h1 {
+            margin: 0 0 10px;
+            font-size: 32px;
+            font-weight: 600;
+        }
+        .welcome-card p {
+            margin: 0;
+            opacity: 0.9;
+            font-size: 16px;
+        }
+        .dashboard-card {
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.12);
+        }
+        .dashboard-card h3 {
+            margin-top: 0;
+            color: #2d2d2d;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+        }
+        .dashboard-card h3 i {
+            margin-right: 10px;
+            color: #3498db;
+            width: 30px;
+        }
+        .action-btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 15px;
+            transition: background 0.3s;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .action-btn:hover {
+            background: #2980b9;
+            color: white;
+            text-decoration: none;
+        }
+        .action-btn-secondary {
+            background: #95a5a6;
+        }
+        .action-btn-secondary:hover {
+            background: #7f8c8d;
+        }
+        .profile-info {
+            list-style: none;
+            padding: 0;
+        }
+        .profile-info li {
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+        }
+        .profile-info li:last-child {
+            border-bottom: none;
+        }
+        .profile-info strong {
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .quick-action-btn {
+            padding: 20px;
+            background: white;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            color: #3498db;
+            display: block;
+        }
+        .quick-action-btn:hover {
+            background: #3498db;
+            color: white;
+            text-decoration: none;
+            transform: translateY(-3px);
+        }
+        .quick-action-btn i {
+            font-size: 32px;
+            display: block;
+            margin-bottom: 10px;
+        }
+        .alert-info-custom {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .logout-btn {
+            background: #e74c3c;
+        }
+        .logout-btn:hover {
+            background: #c0392b;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-custom navbar-fixed-top">
+        <div class="container-fluid">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#navbar-collapse">
+                    <span class="icon-bar" style="background: white;"></span>
+                    <span class="icon-bar" style="background: white;"></span>
+                    <span class="icon-bar" style="background: white;"></span>
+                </button>
+                <a class="navbar-brand" href="/">
+                    <i class="fa fa-heartbeat"></i> Dokter Dibya
+                </a>
+            </div>
+            <div class="collapse navbar-collapse" id="navbar-collapse">
+                <ul class="nav navbar-nav navbar-right">
+                    <li><a href="#profile-section"><i class="fa fa-user"></i> Profil</a></li>
+                    <li><a href="#" id="logout-link"><i class="fa fa-sign-out"></i> Keluar</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="dashboard-container">
+        <!-- Welcome Card -->
+        <div class="welcome-card">
+            <h1>Selamat Datang, <span id="user-name">Pasien</span>!</h1>
+            <p>Dashboard pribadi Anda untuk mengelola kesehatan dan janji temu dengan Dokter Dibya</p>
+        </div>
+
+        <!-- Alert for first-time users -->
+        <div class="alert-info-custom" id="first-time-alert" style="display: none;">
+            <i class="fa fa-info-circle"></i> <strong>Langkah Selanjutnya:</strong> 
+            Lengkapi formulir rekam medis awal Anda untuk memulai konsultasi dengan dokter.
+        </div>
+
+        <div class="row">
+            <!-- Quick Actions -->
+            <div class="col-md-12">
+                <div class="dashboard-card">
+                    <h3><i class="fa fa-bolt"></i> Aksi Cepat</h3>
+                    <div class="quick-actions">
+                        <a href="/patient-intake.html" class="quick-action-btn">
+                            <i class="fa fa-file-text"></i>
+                            <div>Formulir<br>Rekam Medis Awal</div>
+                        </a>
+                        <a href="#" class="quick-action-btn" onclick="alert('Fitur segera hadir!'); return false;">
+                            <i class="fa fa-calendar"></i>
+                            <div>Buat Janji<br>Konsultasi</div>
+                        </a>
+                        <a href="#" class="quick-action-btn" onclick="alert('Fitur segera hadir!'); return false;">
+                            <i class="fa fa-stethoscope"></i>
+                            <div>Riwayat<br>Kesehatan</div>
+                        </a>
+                        <a href="#" class="quick-action-btn" onclick="alert('Fitur segera hadir!'); return false;">
+                            <i class="fa fa-comments"></i>
+                            <div>Chat dengan<br>Dokter</div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Profile Info -->
+            <div class="col-md-6">
+                <div class="dashboard-card" id="profile-section">
+                    <h3><i class="fa fa-user"></i> Informasi Profil</h3>
+                    <ul class="profile-info">
+                        <li>
+                            <strong>Nama Lengkap</strong>
+                            <span id="profile-name">-</span>
+                        </li>
+                        <li>
+                            <strong>Email</strong>
+                            <span id="profile-email">-</span>
+                        </li>
+                        <li>
+                            <strong>Nomor Telepon</strong>
+                            <span id="profile-phone">-</span>
+                        </li>
+                        <li>
+                            <strong>Terdaftar Sejak</strong>
+                            <span id="profile-registered">-</span>
+                        </li>
+                    </ul>
+                    <button class="action-btn action-btn-secondary" onclick="alert('Fitur edit profil segera hadir!')">
+                        <i class="fa fa-edit"></i> Edit Profil
+                    </button>
+                </div>
+            </div>
+
+            <!-- Appointments & Records -->
+            <div class="col-md-6">
+                <div class="dashboard-card">
+                    <h3><i class="fa fa-calendar-check-o"></i> Janji Temu Mendatang</h3>
+                    <p style="color: #95a5a6; text-align: center; padding: 30px 0;">
+                        <i class="fa fa-calendar-o" style="font-size: 48px; display: block; margin-bottom: 15px; opacity: 0.3;"></i>
+                        Belum ada janji temu yang dijadwalkan
+                    </p>
+                    <a href="#" class="action-btn" onclick="alert('Fitur booking segera hadir!'); return false;">
+                        <i class="fa fa-plus"></i> Buat Janji Temu
+                    </a>
+                </div>
+
+                <div class="dashboard-card" style="margin-top: 20px;">
+                    <h3><i class="fa fa-file-text-o"></i> Rekam Medis</h3>
+                    <p style="color: #95a5a6; text-align: center; padding: 30px 0;">
+                        <i class="fa fa-folder-open-o" style="font-size: 48px; display: block; margin-bottom: 15px; opacity: 0.3;"></i>
+                        Belum ada rekam medis
+                    </p>
+                    <a href="/patient-intake.html" class="action-btn">
+                        <i class="fa fa-file-text"></i> Formulir Rekam Medis Awal
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logout Button -->
+        <div style="text-align: center; margin-top: 30px; margin-bottom: 50px;">
+            <button class="action-btn logout-btn" id="logout-btn">
+                <i class="fa fa-sign-out"></i> Keluar dari Akun
+            </button>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script>
+        // Check authentication
+        const token = localStorage.getItem('patient_token');
+        const user = JSON.parse(localStorage.getItem('patient_user') || '{}');
+
+        if (!token || !user.id) {
+            // Not authenticated, redirect to login
+            window.location.href = '/index.html#masuk';
+        } else {
+            // Load user profile
+            loadUserProfile();
+        }
+
+        async function loadUserProfile() {
+            try {
+                const response = await fetch('/api/patients/profile', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load profile');
+                }
+
+                const data = await response.json();
+                const profile = data.user;
+
+                // Update UI with profile data
+                document.getElementById('user-name').textContent = profile.fullname;
+                document.getElementById('profile-name').textContent = profile.fullname;
+                document.getElementById('profile-email').textContent = profile.email;
+                document.getElementById('profile-phone').textContent = profile.phone || 'Belum diisi';
+                
+                // Format registration date
+                const regDate = new Date(profile.registration_date);
+                document.getElementById('profile-registered').textContent = regDate.toLocaleDateString('id-ID', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                // Check if first time user (registered within last 24 hours)
+                const hoursSinceReg = (Date.now() - regDate.getTime()) / (1000 * 60 * 60);
+                if (hoursSinceReg < 24) {
+                    document.getElementById('first-time-alert').style.display = 'block';
+                }
+
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                // Token might be invalid, logout
+                logout();
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('patient_token');
+            localStorage.removeItem('patient_user');
+            window.location.href = '/index.html';
+        }
+
+        // Logout event listeners
+        document.getElementById('logout-btn').addEventListener('click', logout);
+        document.getElementById('logout-link').addEventListener('click', function(e) {
+            e.preventDefault();
+            logout();
+        });
+
+        // Auto-refresh token verification every 5 minutes
+        setInterval(async () => {
+            try {
+                const response = await fetch('/api/patients/verify', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    logout();
+                }
+            } catch (error) {
+                console.error('Token verification failed:', error);
+            }
+        }, 5 * 60 * 1000);
+    </script>
+</body>
+</html>
