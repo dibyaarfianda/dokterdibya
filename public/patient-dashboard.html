@@ -630,6 +630,11 @@
                     document.getElementById('first-time-alert').style.display = 'block';
                 }
 
+                // Update intake button appearance if completed
+                if (profile.intake_completed === 1) {
+                    updateIntakeButtonCompleted();
+                }
+
             } catch (error) {
                 console.error('Error loading profile:', error);
                 // Token might be invalid, logout
@@ -657,17 +662,47 @@
         }
 
         async function saveProfile() {
-            const fullname = document.getElementById('edit-fullname').value.trim();
-            const email = document.getElementById('edit-email').value.trim();
-            const phone = document.getElementById('edit-phone').value.trim();
-            const birthdate = document.getElementById('edit-birthdate').value;
-            const age = document.getElementById('edit-age').value;
-
             // Hide previous messages
             document.getElementById('profile-error').style.display = 'none';
             document.getElementById('profile-success').style.display = 'none';
 
-            // Validation
+            // Get current values from form
+            const fullnameInput = document.getElementById('edit-fullname').value.trim();
+            const emailInput = document.getElementById('edit-email').value.trim();
+            const phoneInput = document.getElementById('edit-phone').value.trim();
+            const birthdateInput = document.getElementById('edit-birthdate').value;
+            const ageInput = document.getElementById('edit-age').value;
+
+            // Get current profile data
+            const currentFullname = window.currentProfile?.fullname || '';
+            const currentEmail = window.currentProfile?.email || '';
+            const currentPhone = window.currentProfile?.phone || '';
+            const currentBirthdate = window.currentProfile?.birth_date || '';
+            const currentAge = window.currentProfile?.age ? String(window.currentProfile.age) : '';
+
+            // Check if there are any changes
+            const hasChanges = 
+                (fullnameInput !== currentFullname) ||
+                (emailInput !== currentEmail) ||
+                (phoneInput !== currentPhone) ||
+                (birthdateInput !== currentBirthdate) ||
+                (ageInput !== currentAge);
+
+            // If no changes, just close the modal
+            if (!hasChanges) {
+                console.log('No changes detected, closing modal');
+                $('#profileModal').modal('hide');
+                return;
+            }
+
+            // Use input values or fallback to current data
+            const fullname = fullnameInput || currentFullname;
+            const email = emailInput || currentEmail;
+            const phone = phoneInput || currentPhone;
+            const birthdate = birthdateInput || currentBirthdate || null;
+            const age = ageInput || currentAge || null;
+
+            // Validation - require essential fields
             if (!fullname || !email || !phone) {
                 document.getElementById('profile-error').textContent = 'Nama, email, dan nomor telepon harus diisi!';
                 document.getElementById('profile-error').style.display = 'block';
@@ -733,6 +768,37 @@
                 });
             }
         });
+
+        function updateIntakeButtonCompleted() {
+            // Find all intake buttons (both in quick actions and full list)
+            const intakeButtons = document.querySelectorAll('a[href="/patient-intake.html"]');
+            
+            intakeButtons.forEach(btn => {
+                // Change background to green
+                btn.style.background = 'linear-gradient(135deg, #2ecc71 0%, #27ae60 100%)';
+                btn.style.borderColor = '#27ae60';
+                btn.style.color = '#ffffff';
+                
+                // Add checkmark icon with white color
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    icon.className = 'fa fa-check-circle';
+                    icon.style.color = '#ffffff';
+                    icon.style.fontSize = '48px';
+                }
+                
+                // Update text with white color
+                const textDiv = btn.querySelector('div');
+                if (textDiv) {
+                    textDiv.innerHTML = 'Formulir Rekam Medis<br><small style="font-size: 11px; color: #ffffff; font-weight: 600;">✓ Sudah Diselesaikan</small>';
+                    textDiv.style.color = '#ffffff';
+                    textDiv.style.fontWeight = '600';
+                }
+                
+                // Make it clickable to view again (optional)
+                btn.title = 'Formulir sudah diselesaikan';
+            });
+        }
 
         function logout() {
             localStorage.removeItem('patient_token');

@@ -221,8 +221,11 @@ async function checkProfileCompletionAndRedirect() {
         const data = await res.json();
         const profile = data.user;
 
-        // Check email verification FIRST (most important)
-        if (profile.email_verified === 0 || profile.email_verified === false) {
+        // Skip email verification check for Google users (they're already verified by Google)
+        const isGoogleUser = profile.google_id && profile.google_id.length > 0;
+        
+        // Check email verification FIRST (most important) - but skip for Google users
+        if (!isGoogleUser && (profile.email_verified === 0 || profile.email_verified === false)) {
             console.log('Email not verified, redirecting to verify-email');
             window.location.href = '/verify-email.html';
             return;
@@ -230,7 +233,7 @@ async function checkProfileCompletionAndRedirect() {
 
         // Check birth_date second (required for all patients)
         if (!profile.birth_date) {
-            window.location.href = '/complete-birthdate.html';
+            window.location.href = '/complete-profile.html';
             return;
         }
 
@@ -242,7 +245,21 @@ async function checkProfileCompletionAndRedirect() {
         }
     } catch (error) {
         console.error('Profile check error:', error);
-        // On error, redirect to verify email to be safe
+        // Check if user data exists in localStorage to determine redirect
+        const userData = localStorage.getItem('patient_user');
+        if (userData) {
+            try {
+                const user = JSON.parse(userData);
+                // If Google user, skip email verification
+                if (user.google_id) {
+                    window.location.href = '/complete-profile.html';
+                    return;
+                }
+            } catch (e) {
+                console.error('Failed to parse user data:', e);
+            }
+        }
+        // On error for non-Google users, redirect to verify email to be safe
         window.location.href = '/verify-email.html';
     }
 }
@@ -284,6 +301,25 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     } else {
         console.log('Google signup button not found');
+    }
+
+    // Google Sign-In Button inside navbar dropdown
+    const googleSigninBtn = document.getElementById('google-signin-btn');
+    if (googleSigninBtn) {
+        googleSigninBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            console.log('Google Sign-In (navbar) clicked');
+            if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') {
+                showMessage('Google Sign-In belum dikonfigurasi. Silakan gunakan email/password.', 'error');
+                alert('Google Sign-In belum dikonfigurasi. Silakan gunakan email/password.');
+            } else if (typeof google !== 'undefined') {
+                google.accounts.id.prompt();
+            } else {
+                showMessage('Google Sign-In tidak tersedia saat ini.', 'error');
+            }
+        });
+    } else {
+        console.log('Google signin button (navbar) not found');
     }
     
     // Email Registration Form
@@ -327,7 +363,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Login Form
+    // Login Form (section)
     const loginForm = document.getElementById('login-form');
     if (loginForm) {
         loginForm.addEventListener('submit', async function(e) {
@@ -358,6 +394,81 @@ document.addEventListener('DOMContentLoaded', function() {
                     submitBtn.value = 'MASUK';
                 }
             }
+        });
+    }
+    
+    // Navbar Login Form
+    const navbarLoginForm = document.getElementById('navbar-login-form');
+    if (navbarLoginForm) {
+        navbarLoginForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('navbar-email').value.trim();
+            const password = document.getElementById('navbar-password').value;
+            
+            // Basic validation
+            if (!email || !password) {
+                showMessage('Email dan password harus diisi!', 'error');
+                return;
+            }
+            
+            // Disable submit button
+            const submitBtn = navbarLoginForm.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Loading...';
+            }
+            
+            try {
+                await signInWithEmail(email, password);
+            } catch (error) {
+                // Re-enable submit button
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Login';
+                }
+            }
+        });
+    }
+    
+    // Forgot Password Link
+    const forgotPasswordLink = document.getElementById('forgot-password-link');
+    if (forgotPasswordLink) {
+        forgotPasswordLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const email = prompt('Masukkan email Anda untuk reset password:');
+            if (!email) {
+                return;
+            }
+            
+            // Validate email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showMessage('Format email tidak valid!', 'error');
+                return;
+            }
+            
+            // Send reset password request
+            fetch(`${API_BASE_URL}/forgot-password`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ email: email })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('Link reset password telah dikirim ke email Anda. Silakan cek inbox atau spam folder.', 'success');
+                } else {
+                    showMessage(data.message || 'Gagal mengirim link reset password', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Forgot password error:', error);
+                showMessage('Terjadi kesalahan. Silakan coba lagi.', 'error');
+            });
         });
     }
 });
