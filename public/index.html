@@ -46,7 +46,7 @@
             <div class="container">
                 <div class="row">
                     <div class="col-md-6 col-sm-6 col-xs-12">
-                        <p><i class="fa fa-phone"></i><span> Phone</span>+62 822-2950-9661</p>
+                        <p><i class="fa fa-phone"></i><span> Whatsapp</span>+62 822-2950-9661</p>
                     </div>
                     <div class="col-md-6 col-sm-6 col-xs-12">
                         <p><i class="fa fa-envelope-o"></i><span> Email</span><a href="#">info@dokterdibya.com</a></p>
@@ -70,7 +70,55 @@
 				<div class="collapse navbar-collapse">
 					<ul class="nav navbar-nav navbar-right">
 						<li><a href="#daftar">DAFTAR</a></li>
-						<li><a href="#masuk">MASUK</a></li>
+						<li class="dropdown">
+							<a href="#" class="dropdown-toggle" data-toggle="dropdown">MASUK <b class="caret"></b></a>
+							<ul class="dropdown-menu login-dropdown">
+								<li>
+									<form id="navbar-login-form" style="padding: 15px; min-width: 300px;">
+										<div class="form-group">
+											<label style="color: #333;">Email</label>
+											<input type="email" class="form-control" id="navbar-email" placeholder="contoh@email.com" required>
+										</div>
+										<div class="form-group">
+											<label style="color: #333;">Password</label>
+											<input type="password" class="form-control" id="navbar-password" placeholder="Password" required>
+										</div>
+										<button type="submit" class="btn btn-primary btn-block">Login</button>
+							
+										<!-- Google Sign-In (Tailwind-style) -->
+										<button type="button" id="google-signin-btn" style="
+											display: flex;
+											align-items: center;
+											justify-content: center;
+											width: 100%;
+											padding: 10px 16px;
+											background: white;
+											border: 1px solid #dadce0;
+											border-radius: 6px;
+											font-family: 'Roboto', sans-serif;
+											font-size: 14px;
+											font-weight: 500;
+											color: #3c4043;
+											cursor: pointer;
+											transition: all 0.12s ease-in-out;
+											box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+										" onmouseover="this.style.backgroundColor='#f8f9fa'; this.style.boxShadow='0 1px 3px 0 rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15)';" onmouseout="this.style.backgroundColor='white'; this.style.boxShadow='0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15)';">
+											<svg width="18" height="18" viewBox="0 0 18 18" style="margin-right: 10px;">
+												<path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+												<path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+												<path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.007-2.332z"/>
+												<path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z"/>
+											</svg>
+											<span>Sign in with Google</span>
+										</button>
+							
+										<p style="text-align: center; margin-top: 10px; margin-bottom: 0;">
+											<small><a href="#" id="forgot-password-link">Lupa Password?</a></small>
+										</p>
+									</form>
+								</li>
+							</ul>
+						</li>
 					</ul>
 				</div>
 			</div>
@@ -82,11 +130,11 @@
     		<div class="container">
     			<div class="row">
     				<div class="col-md-offset-2 col-md-8">
-                        <h1 class="wow fadeIn animated" data-wow-offset="50" data-wow-delay="0.9s" style="visibility: visible; animation-delay: 0.9s; animation-name: fadeIn;">Hai! <span>Selamat Datang</span></h1>
+                        <h1 class="wow fadeIn animated" data-wow-offset="50" data-wow-delay="0.9s" style="visibility: visible; animation-delay: 0.9s; animation-name: fadeIn;">Halo! <span>Selamat Datang</span></h1>
     					<div class="element">
-                            <div class="sub-element">Rumah Sakit Gambiran Kota Kediri</div>
-                            <div class="sub-element">RSIA Melinda Kediri</div>
-                            <div class="sub-element">Rumah Sakit Bhayangkara Kediri</div>
+                            <div class="sub-element">Privasi Anda prioritas kami</div>
+                            <div class="sub-element">Akses riwayat medis kandungan Anda dimana saja, kapan saja</div>
+                            <div class="sub-element">Terus berkembang mengikuti terapi modern dalam pelayanan kesehatan</div>
                         </div>
     					<a data-scroll href="#daftar" class="btn btn-default wow fadeInUp" data-wow-offset="50" data-wow-delay="0.6s">DAFTAR SEKARANG</a>
     				</div>
@@ -100,7 +148,7 @@
 			<div class="container">
 				<div class="row">
 					<div class="col-md-12">
-    					<h2 class="wow bounceIn" data-wow-offset="50" data-wow-delay="0.3s">TENTANG <span>SAYA</span></h2>
+    					<h2 class="wow bounceIn" data-wow-offset="50" data-wow-delay="0.3s">DOKTER <span>ANDA</span></h2>
     				</div>
 					<div class="col-md-12 text-center wow fadeIn" data-wow-offset="50" data-wow-delay="0.5s" style="margin-bottom: 50px;">
 						<img src="images/doctor-dibya.jpg" alt="Dr. Dibya" style="max-width: 300px; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.3);">
@@ -113,10 +161,10 @@
 								<div class="media-object pull-left">
 									<i class="fa fa-stethoscope"></i>
 								</div>
-								<h3 class="media-heading">KONSULTASI KANDUNGAN</h3>
+								<h3 class="media-heading">REKAM MEDIS PRIVAT</h3>
 							</div>
 							<div class="media-body">
-								<p>Layanan konsultasi mengenai kesehatan organ kandungan, kehamilan dan perkembangan janin yang Anda cintai. </p>
+								<p>Hasil pemeriksaan, USG, Laboratorium dalam genggaman Anda. Slide, scroll, tap! </p>
 							</div>
 						</div>
 					</div>
@@ -126,10 +174,10 @@
 								<div class="media-object pull-left">
 									<i class="fa fa-clock-o"></i>
 								</div>
-								<h3 class="media-heading">24/7 SIAP MELAYANI</h3>
+								<h3 class="media-heading">AKSES TANPA BATAS</h3>
 							</div>
 							<div class="media-body">
-								<p>Layanan kesehatan obstetri & ginekologi yang komprehensif.</p>
+								<p>Akses 24/7 demi kemudahan Anda dalam mendapatkan perawatan berkesinambungan.</p>
 							</div>
 						</div>
 					</div>
@@ -139,10 +187,10 @@
 								<div class="media-object pull-left">
 									<i class="fa fa-shield"></i>
 								</div>
-								<h3 class="media-heading">CEGAH DAN LINDUNGI</h3>
+								<h3 class="media-heading">KEAMANAN DATA</h3>
 							</div>
 							<div class="media-body">
-								<p>Pencegahan terhadap kanker dan tumor kandungan. Dapatkan informasi yang Anda butuhkan.</p>
+								<p>Data Anda terenkripsi dan dilindungi dengan standar keamanan tertinggi.</p>
 							</div>
 						</div>
 					</div>
@@ -159,9 +207,32 @@
     					<h2 class="wow bounceIn" data-wow-offset="50" data-wow-delay="0.3s">DAFTAR <span>AKUN BARU</span></h2>
     				</div>
     				<div class="col-md-offset-3 col-md-6 col-sm-offset-2 col-sm-8 col-xs-12 wow fadeInUp" data-wow-offset="50" data-wow-delay="0.9s">
-    					<!-- Google Sign Up Button -->
-    					<button type="button" id="google-signup-btn" class="btn btn-block" style="background: #fff; color: #444; border: 1px solid #ddd; margin-bottom: 20px; padding: 12px;">
-    						<i class="fa fa-google" style="color: #DB4437;"></i> Daftar dengan Google
+    					<!-- Google Sign In Button (Tailwind Style) -->
+    					<button type="button" id="google-signup-btn" style="
+    						display: flex;
+    						align-items: center;
+    						justify-content: center;
+    						width: 100%;
+    						padding: 12px 20px;
+    						background: white;
+    						border: 1px solid #dadce0;
+    						border-radius: 4px;
+    						font-family: 'Roboto', sans-serif;
+    						font-size: 18px;
+    						font-weight: 500;
+    						color: #3c4043;
+    						cursor: pointer;
+    						transition: all 0.15s ease-in-out;
+    						box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+    						margin-bottom: 20px;
+    					" onmouseover="this.style.backgroundColor='#f8f9fa'; this.style.boxShadow='0 1px 3px 0 rgba(60, 64, 67, 0.3), 0 4px 8px 3px rgba(60, 64, 67, 0.15)';" onmouseout="this.style.backgroundColor='white'; this.style.boxShadow='0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15)';">
+    						<svg width="18" height="18" viewBox="0 0 18 18" style="margin-right: 12px;">
+    							<path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+    							<path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+    							<path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.007-2.332z"/>
+    							<path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z"/>
+    						</svg>
+    						<span>Daftar dengan Google</span>
     					</button>
     					
     					<div style="text-align: center; margin: 20px 0; color: #fff;">
@@ -183,44 +254,19 @@
     						
                             <input type="submit" class="form-control" value="DAFTAR SEKARANG">
     					</form>
-    					<p style="text-align: center; margin-top: 20px;">Sudah punya akun? <a href="#masuk" style="color: #3498db;">Masuk di sini</a></p>
     				</div>
     			</div>
     		</div>
     	</section>
     	<!-- end daftar -->
 
-    	<!-- start masuk -->
-    	<section id="masuk">
-    		<div class="container">
-    			<div class="row">
-    				<div class="col-md-12">
-    					<h2 class="wow bounceIn" data-wow-offset="50" data-wow-delay="0.3s">MASUK <span>AKUN</span></h2>
-    				</div>
-    				<div class="col-md-offset-3 col-md-6 col-sm-offset-2 col-sm-8 col-xs-12 wow fadeInUp" data-wow-offset="50" data-wow-delay="0.9s">
-    					<form id="login-form">
-    						<label>EMAIL</label>
-    						<input name="email" type="email" class="form-control" id="login-email" placeholder="contoh@email.com" required>
-   						  	
-                            <label>PASSWORD</label>
-    						<input name="password" type="password" class="form-control" id="login-password" placeholder="Masukkan password Anda" required>
-    						
-                            <input type="submit" class="form-control" value="MASUK">
-    					</form>
-    					<p style="text-align: center; margin-top: 20px;">Belum punya akun? <a href="#daftar" style="color: #3498db;">Daftar di sini</a></p>
-    				</div>
-    			</div>
-    		</div>
-    	</section>
-    	<!-- end masuk -->
-
         <!-- start copyright -->
-        <footer id="copyright">
+<footer id="copyright" style="margin-top: 50px;padding-top: 10px;padding-bottom: 10px;">
             <div class="container">
                 <div class="row">
                     <div class="col-md-12 text-center">
-                        <p class="wow bounceIn" data-wow-offset="50" data-wow-delay="0.3s">
-                       	Copyright &copy; 2025 Dokter Dibya. All Rights Reserved.</p>
+                        <p class="wow bounceIn animated animated" data-wow-offset="30" data-wow-delay="0.3s" style="visibility: visible; animation-delay: 0.3s; animation-name: bounceIn;">
+                       	Copyright © 2025 Dokter Dibya. All Rights Reserved.</p>
                     </div>
                 </div>
             </div>

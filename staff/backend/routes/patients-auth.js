@@ -125,10 +125,10 @@ router.post('/register', async (req, res) => {
             
             await getNotificationService().sendEmail({
                 to: email,
-                subject: 'Verifikasi Email - Klinik Dr. Dibya',
+                subject: 'Verifikasi Email - dokterDIBYA',
                 html: `
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                        <h2 style="color: #28a7e9;">Selamat Datang di Klinik Dr. Dibya!</h2>
+                        <h2 style="color: #28a7e9;">Selamat Datang di dokterDIBYA!</h2>
                         <p>Halo <strong>${fullname}</strong>,</p>
                         <p>Terima kasih telah mendaftar. Silakan verifikasi email Anda dengan menggunakan kode berikut:</p>
                         <div style="background-color: #f5f5f5; padding: 20px; text-align: center; margin: 20px 0;">
@@ -141,7 +141,7 @@ router.post('/register', async (req, res) => {
                         <p style="color: #666; font-size: 12px;">Kode verifikasi ini berlaku selama 24 jam.</p>
                         <p style="color: #666; font-size: 12px;">Jika Anda tidak mendaftar, abaikan email ini.</p>
                         <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-                        <p style="color: #999; font-size: 11px; text-align: center;">Klinik Dr. Dibya - Layanan Kesehatan Terpercaya</p>
+                        <p style="color: #999; font-size: 11px; text-align: center;">dokterDIBYA - Modern therapy without boundary</p>
                     </div>
                 `
             });
@@ -297,16 +297,23 @@ router.post('/auth/google', async (req, res) => {
             if (!patient.id) {
                 const medicalRecordId = await generateUniqueMedicalRecordId();
                 await db.query(
-                    'UPDATE patients SET id = ?, google_id = ?, photo_url = ? WHERE id = ?',
+                    'UPDATE patients SET id = ?, google_id = ?, photo_url = ?, email_verified = 1 WHERE id = ?',
                     [medicalRecordId, googleId, picture, patient.id]
                 );
                 patient.id = medicalRecordId;
             } else if (!patient.google_id) {
                 await db.query(
-                    'UPDATE patients SET google_id = ?, photo_url = ? WHERE id = ?',
+                    'UPDATE patients SET google_id = ?, photo_url = ?, email_verified = 1 WHERE id = ?',
                     [googleId, picture, patient.id]
                 );
+            } else {
+                // Just ensure email is verified for existing Google users
+                await db.query(
+                    'UPDATE patients SET email_verified = 1, photo_url = ? WHERE id = ?',
+                    [picture, patient.id]
+                );
             }
+            patient.email_verified = 1;
         } else {
             // Create new patient with medical record ID
             const medicalRecordId = await generateUniqueMedicalRecordId();
@@ -353,6 +360,8 @@ router.post('/auth/google', async (req, res) => {
                 email: patient.email,
                 phone: patient.phone,
                 photo_url: patient.photo_url,
+                email_verified: 1,
+                google_id: patient.google_id || googleId,
                 role: 'patient'
             }
         });
@@ -375,7 +384,7 @@ router.get('/verify', verifyToken, (req, res) => {
 router.get('/profile', verifyToken, async (req, res) => {
     try {
         const [patients] = await db.query(
-            'SELECT id, full_name, email, phone, photo_url, birth_date, age, registration_date, profile_completed, email_verified FROM patients WHERE id = ?',
+            'SELECT id, full_name, email, phone, photo_url, birth_date, age, registration_date, profile_completed, email_verified, google_id, intake_completed FROM patients WHERE id = ?',
             [req.user.id]
         );
         
@@ -680,7 +689,7 @@ router.post('/resend-verification', async (req, res) => {
             
             await getNotificationService().sendEmail({
                 to: email,
-                subject: 'Verifikasi Email - Klinik Dr. Dibya',
+                subject: 'Verifikasi Email - dokterDIBYA',
                 html: `
                     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                         <h2 style="color: #28a7e9;">Verifikasi Email Anda</h2>
@@ -695,7 +704,7 @@ router.post('/resend-verification', async (req, res) => {
                         </div>
                         <p style="color: #666; font-size: 12px;">Kode verifikasi ini berlaku selama 24 jam.</p>
                         <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-                        <p style="color: #999; font-size: 11px; text-align: center;">Klinik Dr. Dibya - Layanan Kesehatan Terpercaya</p>
+                        <p style="color: #999; font-size: 11px; text-align: center;">dokterDIBYA - Modern therapy without boundary</p>
                     </div>
                 `
             });
@@ -770,6 +779,94 @@ router.post('/update-birthdate', async (req, res) => {
     } catch (error) {
         console.error('Update birthdate error:', error);
         res.status(500).json({ message: 'Terjadi kesalahan saat menyimpan tanggal lahir' });
+    }
+});
+
+// POST /api/patients/forgot-password - Request password reset
+router.post('/forgot-password', async (req, res) => {
+    try {
+        const { email } = req.body;
+        
+        if (!email) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Email harus diisi' 
+            });
+        }
+        
+        // Check if email exists
+        const [patients] = await db.query(
+            'SELECT id, full_name, email FROM patients WHERE email = ?',
+            [email]
+        );
+        
+        if (patients.length === 0) {
+            return res.status(404).json({ 
+                success: false,
+                message: 'Email tidak terdaftar dalam sistem kami' 
+            });
+        }
+        
+        const patient = patients[0];
+        
+        // Generate reset token (6 digit code)
+        const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
+        const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+        
+        // Save reset token to database
+        await db.query(
+            'UPDATE patients SET reset_token = ?, reset_token_expires = ? WHERE id = ?',
+            [resetToken, tokenExpires, patient.id]
+        );
+        
+        // Send reset password email
+        try {
+            const resetUrl = `${process.env.FRONTEND_URL || 'https://dokterdibya.com'}/reset-password.html?token=${resetToken}&email=${encodeURIComponent(email)}`;
+            
+            await getNotificationService().sendEmail({
+                to: email,
+                subject: 'Reset Password - Klinik Dr. Dibya',
+                html: `
+                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                        <h2 style="color: #28a7e9;">Reset Password Anda</h2>
+                        <p>Halo <strong>${patient.full_name}</strong>,</p>
+                        <p>Anda telah meminta untuk mereset password. Gunakan kode berikut untuk mereset password Anda:</p>
+                        <div style="background-color: #f5f5f5; padding: 20px; text-align: center; margin: 20px 0;">
+                            <h1 style="color: #28a7e9; letter-spacing: 5px; margin: 0;">${resetToken}</h1>
+                        </div>
+                        <p>Atau klik tombol di bawah ini:</p>
+                        <div style="text-align: center; margin: 30px 0;">
+                            <a href="${resetUrl}" style="background-color: #28a7e9; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">Reset Password</a>
+                        </div>
+                        <p style="color: #666; font-size: 12px;">Kode ini berlaku selama 24 jam.</p>
+                        <p style="color: #666; font-size: 12px;">Jika Anda tidak meminta reset password, abaikan email ini.</p>
+                        <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
+                        <p style="color: #999; font-size: 11px; text-align: center;">Klinik Dr. Dibya - Layanan Kesehatan Terpercaya</p>
+                    </div>
+                `
+            });
+            
+            console.log(`Password reset email sent to ${email} with token: ${resetToken}`);
+            
+            res.json({ 
+                success: true,
+                message: 'Link reset password telah dikirim ke email Anda. Silakan cek inbox atau folder spam.'
+            });
+            
+        } catch (emailError) {
+            console.error('Failed to send reset password email:', emailError);
+            res.status(500).json({ 
+                success: false,
+                message: 'Gagal mengirim email reset password. Silakan coba lagi.' 
+            });
+        }
+        
+    } catch (error) {
+        console.error('Forgot password error:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Terjadi kesalahan. Silakan coba lagi.' 
+        });
     }
 });
 
