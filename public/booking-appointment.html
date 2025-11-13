@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buat Janji Konsultasi - Klinik Dr. Dibya</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+        .booking-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            overflow: hidden;
+        }
+        .booking-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .booking-header h1 {
+            margin: 0 0 10px 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+        .booking-header p {
+            margin: 0;
+            opacity: 0.9;
+        }
+        .booking-content {
+            padding: 30px;
+        }
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            position: relative;
+        }
+        .step-indicator::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #e0e0e0;
+            z-index: 0;
+        }
+        .step {
+            flex: 1;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            color: #999;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-bottom: 10px;
+            border: 3px solid white;
+        }
+        .step.active .step-circle {
+            background: #667eea;
+            color: white;
+        }
+        .step.completed .step-circle {
+            background: #4caf50;
+            color: white;
+        }
+        .step-label {
+            font-size: 12px;
+            color: #666;
+        }
+        .step.active .step-label {
+            color: #667eea;
+            font-weight: 600;
+        }
+        .booking-step {
+            display: none;
+        }
+        .booking-step.active {
+            display: block;
+        }
+        .date-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .date-card {
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: center;
+        }
+        .date-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+        }
+        .date-card.selected {
+            border-color: #667eea;
+            background: #f3f5ff;
+        }
+        .date-card .day {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        .date-card .date {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        .session-card {
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .session-card:hover {
+            border-color: #667eea;
+        }
+        .session-card.selected {
+            border-color: #667eea;
+            background: #f3f5ff;
+        }
+        .session-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .session-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        .session-time {
+            font-size: 14px;
+            color: #666;
+        }
+        .session-badge {
+            display: inline-block;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-available {
+            background: #e8f5e9;
+            color: #4caf50;
+        }
+        .badge-limited {
+            background: #fff3e0;
+            color: #ff9800;
+        }
+        .badge-full {
+            background: #ffebee;
+            color: #f44336;
+        }
+        .slot-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+            gap: 10px;
+        }
+        .slot-btn {
+            padding: 12px 5px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 13px;
+            text-align: center;
+        }
+        .slot-btn:hover:not(.disabled) {
+            border-color: #667eea;
+            background: #f3f5ff;
+        }
+        .slot-btn.selected {
+            border-color: #667eea;
+            background: #667eea;
+            color: white;
+        }
+        .slot-btn.disabled {
+            background: #f5f5f5;
+            color: #999;
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+        .form-group label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        textarea.form-control {
+            resize: vertical;
+            min-height: 120px;
+        }
+        .btn-navigation {
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        .btn-primary {
+            background: #667eea;
+            border: none;
+        }
+        .btn-primary:hover {
+            background: #5568d3;
+        }
+        .btn-default {
+            background: #f5f5f5;
+            border: none;
+            color: #666;
+        }
+        .btn-default:hover {
+            background: #e0e0e0;
+        }
+        .summary-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .summary-row:last-child {
+            border-bottom: none;
+        }
+        .summary-label {
+            color: #666;
+        }
+        .summary-value {
+            font-weight: 600;
+            color: #333;
+        }
+        .alert {
+            border-radius: 8px;
+        }
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="booking-container">
+        <div class="booking-header">
+            <h1><i class="fa fa-calendar-check-o"></i> Buat Janji Konsultasi</h1>
+            <p>Pilih tanggal dan waktu yang sesuai untuk konsultasi Anda</p>
+        </div>
+
+        <div class="booking-content">
+            <!-- Step Indicator -->
+            <div class="step-indicator">
+                <div class="step active" data-step="1">
+                    <div class="step-circle">1</div>
+                    <div class="step-label">Pilih Tanggal</div>
+                </div>
+                <div class="step" data-step="2">
+                    <div class="step-circle">2</div>
+                    <div class="step-label">Pilih Sesi & Slot</div>
+                </div>
+                <div class="step" data-step="3">
+                    <div class="step-circle">3</div>
+                    <div class="step-label">Keluhan Utama</div>
+                </div>
+                <div class="step" data-step="4">
+                    <div class="step-circle">4</div>
+                    <div class="step-label">Konfirmasi</div>
+                </div>
+            </div>
+
+            <!-- Alert Messages -->
+            <div id="alert-container"></div>
+
+            <!-- Step 1: Select Date -->
+            <div class="booking-step active" id="step-1">
+                <h3>Pilih Tanggal Konsultasi</h3>
+                <p class="text-muted">Janji temu hanya tersedia di hari Minggu</p>
+                <div id="date-loading" class="loading">
+                    <div class="spinner"></div>
+                    <p>Memuat tanggal tersedia...</p>
+                </div>
+                <div id="date-grid" class="date-grid" style="display:none;"></div>
+            </div>
+
+            <!-- Step 2: Select Session & Slot -->
+            <div class="booking-step" id="step-2">
+                <h3>Pilih Sesi dan Slot Waktu</h3>
+                <p class="text-muted">Pilih salah satu sesi, kemudian pilih slot waktu yang tersedia</p>
+                <div id="session-loading" class="loading">
+                    <div class="spinner"></div>
+                    <p>Memuat slot tersedia...</p>
+                </div>
+                <div id="session-container" style="display:none;"></div>
+            </div>
+
+            <!-- Step 3: Chief Complaint -->
+            <div class="booking-step" id="step-3">
+                <h3>Keluhan Utama</h3>
+                <p class="text-muted">Ceritakan keluhan atau tujuan konsultasi Anda</p>
+                <div class="form-group">
+                    <label for="chief-complaint">Keluhan / Tujuan Konsultasi <span class="text-danger">*</span></label>
+                    <textarea id="chief-complaint" class="form-control" placeholder="Contoh: Kontrol kehamilan rutin, konsultasi masalah haid, dll..." required></textarea>
+                    <small class="help-block">Informasi ini membantu dokter mempersiapkan konsultasi Anda</small>
+                </div>
+            </div>
+
+            <!-- Step 4: Confirmation -->
+            <div class="booking-step" id="step-4">
+                <h3>Konfirmasi Janji Temu</h3>
+                <p class="text-muted">Pastikan data Anda sudah benar sebelum konfirmasi</p>
+                <div class="summary-card">
+                    <div class="summary-row">
+                        <span class="summary-label">Tanggal:</span>
+                        <span class="summary-value" id="summary-date">-</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Sesi:</span>
+                        <span class="summary-value" id="summary-session">-</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Waktu:</span>
+                        <span class="summary-value" id="summary-time">-</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Keluhan:</span>
+                        <span class="summary-value" id="summary-complaint">-</span>
+                    </div>
+                </div>
+                <div class="alert alert-info">
+                    <i class="fa fa-info-circle"></i> Setelah konfirmasi, Anda akan menerima detail janji temu. Mohon datang 10 menit lebih awal.
+                </div>
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div style="margin-top: 30px; text-align: right;">
+                <button id="btn-back" class="btn btn-default btn-navigation" style="display:none;">
+                    <i class="fa fa-arrow-left"></i> Kembali
+                </button>
+                <button id="btn-next" class="btn btn-primary btn-navigation" disabled>
+                    Lanjut <i class="fa fa-arrow-right"></i>
+                </button>
+                <button id="btn-submit" class="btn btn-primary btn-navigation" style="display:none;">
+                    <i class="fa fa-check"></i> Konfirmasi Booking
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="/scripts/booking-appointment.js"></script>
+</body>
+</html>

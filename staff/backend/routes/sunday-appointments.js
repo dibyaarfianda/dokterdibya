@@ -24,18 +24,21 @@ const verifyToken = (req, res, next) => {
 // Helper function to get next Sundays
 function getNextSundays(count = 8) {
     const sundays = [];
+    // Use UTC to avoid timezone issues
     const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const year = today.getFullYear();
+    const month = today.getMonth();
+    const day = today.getDate();
     
-    // Start from today or next day
-    let current = new Date(today);
-    current.setDate(current.getDate() + 1);
+    // Create date at midnight UTC
+    let current = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
+    current.setUTCDate(current.getUTCDate() + 1); // Start from tomorrow
     
     while (sundays.length < count) {
-        if (current.getDay() === 0) { // Sunday
+        if (current.getUTCDay() === 0) { // Sunday in UTC
             sundays.push(new Date(current));
         }
-        current.setDate(current.getDate() + 1);
+        current.setUTCDate(current.getUTCDate() + 1);
     }
     
     return sundays;
@@ -73,16 +76,23 @@ router.get('/available', verifyToken, async (req, res) => {
             return res.status(400).json({ message: 'Tanggal harus diisi' });
         }
         
-        const appointmentDate = new Date(date);
+        // Parse date in UTC to avoid timezone issues
+        const appointmentDate = new Date(date + 'T00:00:00Z');
+        const dayOfWeek = appointmentDate.getUTCDay();
         
-        // Check if it's a Sunday
-        if (appointmentDate.getDay() !== 0) {
-            return res.status(400).json({ message: 'Janji temu hanya tersedia di hari Minggu' });
+        console.log('Available slots request:', { date, dayOfWeek, dateObj: appointmentDate });
+        
+        // Check if it's a Sunday (0 = Sunday)
+        if (dayOfWeek !== 0) {
+            return res.status(400).json({ 
+                message: 'Janji temu hanya tersedia di hari Minggu',
+                debug: { date, dayOfWeek, dateObj: appointmentDate.toISOString() }
+            });
         }
         
         // Get booked slots for this date
         const [bookedSlots] = await db.query(
-            `SELECT session, slot_number FROM appointments 
+            `SELECT session, slot_number FROM sunday_appointments 
              WHERE appointment_date = ? AND status NOT IN ('cancelled', 'no_show')`,
             [date]
         );
@@ -132,10 +142,13 @@ router.get('/sundays', verifyToken, async (req, res) => {
                 weekday: 'long', 
                 year: 'numeric', 
                 month: 'long', 
-                day: 'numeric' 
-            })
+                day: 'numeric',
+                timeZone: 'UTC'
+            }),
+            dayOfWeek: date.getUTCDay() // Should be 0 for Sunday
         }));
         
+        console.log('Sundays generated:', formattedSundays);
         res.json({ sundays: formattedSundays });
     } catch (error) {
         console.error('Error getting sundays:', error);
@@ -183,7 +196,7 @@ router.post('/book', verifyToken, async (req, res) => {
         
         // Check if slot is already booked
         const [existingBooking] = await db.query(
-            `SELECT id FROM appointments 
+            `SELECT id FROM sunday_appointments 
              WHERE appointment_date = ? AND session = ? AND slot_number = ? 
              AND status NOT IN ('cancelled', 'no_show')`,
             [appointment_date, session, slot_number]
@@ -195,7 +208,7 @@ router.post('/book', verifyToken, async (req, res) => {
         
         // Check if patient already has appointment on this date
         const [patientExisting] = await db.query(
-            `SELECT id FROM appointments 
+            `SELECT id FROM sunday_appointments 
              WHERE patient_id = ? AND appointment_date = ? 
              AND status NOT IN ('cancelled', 'no_show')`,
             [req.user.id, appointment_date]
@@ -209,7 +222,7 @@ router.post('/book', verifyToken, async (req, res) => {
         
         // Create appointment
         const [result] = await db.query(
-            `INSERT INTO appointments 
+            `INSERT INTO sunday_appointments 
              (patient_id, patient_name, patient_phone, appointment_date, session, slot_number, chief_complaint, status)
              VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
             [patient.id, patient.full_name, patient.phone, appointment_date, session, slot_number, chief_complaint]
@@ -248,7 +261,7 @@ router.get('/patient', verifyToken, async (req, res) => {
     try {
         const [appointments] = await db.query(
             `SELECT id, appointment_date, session, slot_number, chief_complaint, status, notes, created_at
-             FROM appointments
+             FROM sunday_appointments
              WHERE patient_id = ?
              ORDER BY appointment_date DESC, session ASC, slot_number ASC`,
             [req.user.id]
@@ -285,7 +298,7 @@ router.put('/:id/cancel', verifyToken, async (req, res) => {
         
         // Check if appointment exists and belongs to patient
         const [appointments] = await db.query(
-            'SELECT * FROM appointments WHERE id = ? AND patient_id = ?',
+            'SELECT * FROM sunday_appointments WHERE id = ? AND patient_id = ?',
             [id, req.user.id]
         );
         
@@ -305,7 +318,7 @@ router.put('/:id/cancel', verifyToken, async (req, res) => {
         
         // Update status to cancelled
         await db.query(
-            'UPDATE appointments SET status = "cancelled", updated_at = NOW() WHERE id = ?',
+            'UPDATE sunday_appointments SET status = "cancelled", updated_at = NOW() WHERE id = ?',
             [id]
         );
         
@@ -327,7 +340,7 @@ router.get('/list', verifyToken, async (req, res) => {
         
         let query = `
             SELECT a.*, p.full_name, p.phone, p.email
-            FROM appointments a
+            FROM sunday_appointments a
             LEFT JOIN patients p ON a.patient_id = p.id
             WHERE 1=1
         `;
@@ -387,7 +400,7 @@ router.put('/:id/status', verifyToken, async (req, res) => {
         }
         
         await db.query(
-            'UPDATE appointments SET status = ?, notes = ?, updated_at = NOW() WHERE id = ?',
+            'UPDATE sunday_appointments SET status = ?, notes = ?, updated_at = NOW() WHERE id = ?',
             [status, notes || null, id]
         );
         
