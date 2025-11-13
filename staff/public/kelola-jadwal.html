@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kelola Jadwal Praktik - Sistem Klinik</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
+    <style>
+        .location-badge {
+            padding: 5px 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .location-klinik_privat { background: #d4edda; color: #155724; }
+        .location-rsud_gambiran { background: #d1ecf1; color: #0c5460; }
+        .location-rsia_melinda { background: #fff3cd; color: #856404; }
+        .location-rs_bhayangkara { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body class="hold-transition sidebar-mini">
+<div class="wrapper">
+    <!-- Navbar -->
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a>
+            </li>
+        </ul>
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <button class="btn btn-sm btn-outline-danger" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Sidebar -->
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+        <a href="index-adminlte.html" class="brand-link">
+            <span class="brand-text font-weight-light">Sistem Klinik</span>
+        </a>
+        <div class="sidebar">
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+                    <li class="nav-item">
+                        <a href="index-adminlte.html" class="nav-link">
+                            <i class="nav-icon fas fa-tachometer-alt"></i>
+                            <p>Dashboard</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="kelola-pasien.html" class="nav-link">
+                            <i class="nav-icon fas fa-users"></i>
+                            <p>Kelola Pasien</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="kelola-appointment.html" class="nav-link">
+                            <i class="nav-icon fas fa-calendar-check"></i>
+                            <p>Kelola Appointment</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="kelola-jadwal.html" class="nav-link active">
+                            <i class="nav-icon fas fa-calendar-alt"></i>
+                            <p>Kelola Jadwal Praktik</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="kelola-obat.html" class="nav-link">
+                            <i class="nav-icon fas fa-pills"></i>
+                            <p>Kelola Obat</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="kelola-tindakan.html" class="nav-link">
+                            <i class="nav-icon fas fa-cogs"></i>
+                            <p>Kelola Tindakan</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="finance-analysis.html" class="nav-link">
+                            <i class="nav-icon fas fa-chart-line"></i>
+                            <p>Finance Analysis</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="role-management.html" class="nav-link">
+                            <i class="nav-icon fas fa-user-shield"></i>
+                            <p>Role Management</p>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Content -->
+    <div class="content-wrapper">
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1 class="m-0"><i class="fas fa-calendar-alt mr-2"></i>Kelola Jadwal Praktik</h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section class="content">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-header">
+                                <h3 class="card-title">Jadwal Praktik di Berbagai Lokasi</h3>
+                                <div class="card-tools">
+                                    <button class="btn btn-success btn-sm" onclick="showAddModal()">
+                                        <i class="fas fa-plus"></i> Tambah Jadwal
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <table id="schedules-table" class="table table-bordered table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th width="5%">ID</th>
+                                            <th width="20%">Lokasi</th>
+                                            <th width="15%">Hari</th>
+                                            <th width="20%">Waktu</th>
+                                            <th width="25%">Keterangan</th>
+                                            <th width="8%">Status</th>
+                                            <th width="12%">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="schedules-tbody">
+                                        <tr>
+                                            <td colspan="7" class="text-center">Memuat data...</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer class="main-footer">
+        <strong>&copy; 2024 Sistem Klinik.</strong> All rights reserved.
+    </footer>
+</div>
+
+<!-- Modal Add/Edit -->
+<div class="modal fade" id="scheduleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Tambah Jadwal</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="schedule-id">
+                <div class="form-group">
+                    <label>Lokasi <span class="text-danger">*</span></label>
+                    <select class="form-control" id="schedule-location">
+                        <option value="">-- Pilih Lokasi --</option>
+                        <option value="klinik_privat">Klinik Privat Minggu</option>
+                        <option value="rsud_gambiran">Poli RSUD Gambiran Kediri</option>
+                        <option value="rsia_melinda">Poli RSIA Melinda Kediri</option>
+                        <option value="rs_bhayangkara">Poli RS Bhayangkara Kediri</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Hari <span class="text-danger">*</span></label>
+                    <select class="form-control" id="schedule-day">
+                        <option value="">-- Pilih Hari --</option>
+                        <option value="0">Minggu</option>
+                        <option value="1">Senin</option>
+                        <option value="2">Selasa</option>
+                        <option value="3">Rabu</option>
+                        <option value="4">Kamis</option>
+                        <option value="5">Jumat</option>
+                        <option value="6">Sabtu</option>
+                    </select>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Jam Mulai <span class="text-danger">*</span></label>
+                            <input type="time" class="form-control" id="schedule-start">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Jam Selesai <span class="text-danger">*</span></label>
+                            <input type="time" class="form-control" id="schedule-end">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Keterangan</label>
+                    <textarea class="form-control" id="schedule-notes" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <div class="custom-control custom-switch">
+                        <input type="checkbox" class="custom-control-input" id="schedule-active" checked>
+                        <label class="custom-control-label" for="schedule-active">Aktif</label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" onclick="saveSchedule()">Simpan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
+<script src="scripts/kelola-jadwal.js"></script>
+</body>
+</html>

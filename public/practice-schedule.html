@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jadwal Praktik - Dokter Dibya</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .container {
+            max-width: 900px;
+        }
+        
+        .page-header {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+        
+        .page-header h1 {
+            color: #333;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .page-header p {
+            color: #666;
+            margin: 0;
+        }
+        
+        .location-icon-large {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+        
+        .location-icon-large i {
+            font-size: 36px;
+            color: white;
+        }
+        
+        .schedule-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .schedule-card h3 {
+            color: #333;
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .schedule-table {
+            width: 100%;
+        }
+        
+        .schedule-row {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .schedule-row:last-child {
+            border-bottom: none;
+        }
+        
+        .schedule-day {
+            flex: 0 0 120px;
+            font-weight: 600;
+            color: #667eea;
+            font-size: 15px;
+        }
+        
+        .schedule-time {
+            flex: 1;
+            color: #333;
+            font-size: 16px;
+        }
+        
+        .schedule-time i {
+            color: #28a745;
+            margin-right: 8px;
+        }
+        
+        .schedule-notes {
+            color: #999;
+            font-size: 13px;
+            margin-top: 5px;
+        }
+        
+        .no-schedule {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+        }
+        
+        .no-schedule i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            display: block;
+        }
+        
+        .alert-info-custom {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-info-custom i {
+            color: #17a2b8;
+            margin-right: 10px;
+        }
+        
+        .back-link {
+            text-align: center;
+            margin-top: 30px;
+        }
+        
+        .back-link a {
+            color: white;
+            text-decoration: none;
+            font-size: 16px;
+            opacity: 0.9;
+            transition: opacity 0.3s;
+        }
+        
+        .back-link a:hover {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <div class="location-icon-large" id="location-icon">
+                <i class="fas fa-hospital-alt"></i>
+            </div>
+            <h1 id="location-name">Jadwal Praktik</h1>
+            <p id="location-desc">Jadwal praktik dokter</p>
+        </div>
+        
+        <div class="schedule-card">
+            <div class="alert-info-custom">
+                <i class="fas fa-info-circle"></i>
+                <strong>Informasi:</strong> Untuk lokasi ini, Anda tidak dapat melakukan booking online. Silakan datang langsung sesuai jadwal praktik atau hubungi rumah sakit untuk informasi lebih lanjut.
+            </div>
+            
+            <h3><i class="fas fa-calendar-week"></i> Jadwal Praktik</h3>
+            
+            <div id="schedule-container">
+                <div class="no-schedule">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    <p>Memuat jadwal...</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="back-link">
+            <a href="/practice-locations.html"><i class="fas fa-arrow-left"></i> Kembali ke Pilihan Lokasi</a>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        const locationData = {
+            'rsud_gambiran': {
+                name: 'Poli RSUD Gambiran Kediri',
+                desc: 'Poli Kebidanan RSUD Gambiran',
+                icon: 'fa-hospital-alt'
+            },
+            'rsia_melinda': {
+                name: 'Poli RSIA Melinda Kediri',
+                desc: 'Poli Kandungan RSIA Melinda',
+                icon: 'fa-baby'
+            },
+            'rs_bhayangkara': {
+                name: 'Poli RS Bhayangkara Kediri',
+                desc: 'Poli Kandungan RS Bhayangkara',
+                icon: 'fa-shield-alt'
+            }
+        };
+
+        const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+
+        $(document).ready(function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const location = urlParams.get('location');
+            
+            if (!location || !locationData[location]) {
+                window.location.href = '/practice-locations.html';
+                return;
+            }
+            
+            // Update page header
+            const locData = locationData[location];
+            $('#location-name').text(locData.name);
+            $('#location-desc').text(locData.desc);
+            $('#location-icon i').removeClass().addClass('fas ' + locData.icon);
+            
+            // Load schedules
+            loadSchedules(location);
+        });
+
+        async function loadSchedules(location) {
+            try {
+                const token = localStorage.getItem('patient_token');
+                const response = await fetch(`/api/practice-schedules?location=${location}`, {
+                    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+                });
+
+                if (!response.ok) throw new Error('Failed to load schedules');
+
+                const data = await response.json();
+                renderSchedules(data.schedules);
+
+            } catch (error) {
+                console.error('Error loading schedules:', error);
+                $('#schedule-container').html(`
+                    <div class="no-schedule">
+                        <i class="fas fa-exclamation-circle"></i>
+                        <p>Gagal memuat jadwal. Silakan coba lagi.</p>
+                    </div>
+                `);
+            }
+        }
+
+        function renderSchedules(schedules) {
+            if (!schedules || schedules.length === 0) {
+                $('#schedule-container').html(`
+                    <div class="no-schedule">
+                        <i class="fas fa-calendar-times"></i>
+                        <p>Belum ada jadwal praktik yang ditetapkan.</p>
+                    </div>
+                `);
+                return;
+            }
+
+            let html = '<div class="schedule-table">';
+            
+            schedules.forEach(schedule => {
+                html += `
+                    <div class="schedule-row">
+                        <div class="schedule-day">
+                            ${dayNames[schedule.day_of_week]}
+                        </div>
+                        <div class="schedule-time">
+                            <i class="fas fa-clock"></i>
+                            ${formatTime(schedule.start_time)} - ${formatTime(schedule.end_time)}
+                            ${schedule.notes ? `<div class="schedule-notes">${schedule.notes}</div>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            html += '</div>';
+            $('#schedule-container').html(html);
+        }
+
+        function formatTime(time) {
+            // Format HH:MM:SS to HH:MM
+            return time.substring(0, 5);
+        }
+    </script>
+</body>
+</html>
