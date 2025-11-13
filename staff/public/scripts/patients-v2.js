@@ -187,7 +187,6 @@ async function showDetails(p) {
     // Tombol delete dihapus dari detail pasien
     // Penghapusan hanya bisa dilakukan dari halaman Kelola Pasien
 }
-}
 
 async function loadPatientHistory(patient) {
     const historyListEl = document.getElementById('patient-history-list');

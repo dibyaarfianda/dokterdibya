@@ -490,7 +490,19 @@ router.delete('/api/admin/web-patients/:id', verifyToken, asyncHandler(async (re
             deletionLog.deleted_data.patient_intake_submissions = 0;
         }
         
-        // 10. TERAKHIR: Hapus patients
+        // 10. Hapus web_patients_archive jika ada
+        try {
+            const [archiveResult] = await connection.query(
+                'DELETE FROM web_patients_archive WHERE id = ?',
+                [patientId]
+            );
+            deletionLog.deleted_data.web_patients_archive = archiveResult.affectedRows;
+        } catch (archiveError) {
+            // Table might not exist, skip
+            deletionLog.deleted_data.web_patients_archive = 0;
+        }
+        
+        // 11. TERAKHIR: Hapus patients
         await connection.query('DELETE FROM patients WHERE id = ?', [patientId]);
         
         await connection.commit();

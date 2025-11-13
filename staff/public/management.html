@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Management - Sistem Klinik</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .content-wrapper {
+            min-height: calc(100vh - 110px);
+        }
+        .menu-card {
+            transition: all 0.3s;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+        .menu-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            border-color: #007bff;
+        }
+        .menu-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body class="hold-transition sidebar-mini">
+<div class="wrapper">
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="index-adminlte.html" class="nav-link">Dashboard</a>
+            </li>
+        </ul>
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <button class="btn btn-sm btn-outline-danger" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </li>
+        </ul>
+    </nav>
+
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+        <a href="index-adminlte.html" class="brand-link">
+            <span class="brand-text font-weight-light">Sistem Klinik</span>
+        </a>
+        <div class="sidebar">
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+                    <li class="nav-item">
+                        <a href="index-adminlte.html" class="nav-link">
+                            <i class="nav-icon fas fa-tachometer-alt"></i>
+                            <p>Dashboard</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="management.html" class="nav-link active">
+                            <i class="nav-icon fas fa-cogs"></i>
+                            <p>Management</p>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </aside>
+
+    <div class="content-wrapper">
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1 class="m-0"><i class="fas fa-cogs mr-2"></i>Management</h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="content">
+            <div class="container-fluid">
+                <div class="row">
+                    <!-- Finance Analysis -->
+                    <div class="col-lg-4 col-md-6 col-12 mb-4">
+                        <div class="card menu-card" onclick="location.href='finance-analysis.html'">
+                            <div class="card-body text-center">
+                                <i class="fas fa-chart-line menu-icon text-primary"></i>
+                                <h4 class="card-title">Finance Analysis</h4>
+                                <p class="text-muted">Analisis keuangan dan laporan</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kelola Pasien -->
+                    <div class="col-lg-4 col-md-6 col-12 mb-4">
+                        <div class="card menu-card" onclick="location.href='kelola-pasien.html'">
+                            <div class="card-body text-center">
+                                <i class="fas fa-users menu-icon text-success"></i>
+                                <h4 class="card-title">Kelola Pasien</h4>
+                                <p class="text-muted">Manajemen data pasien</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kelola Tindakan -->
+                    <div class="col-lg-4 col-md-6 col-12 mb-4">
+                        <div class="card menu-card" onclick="location.href='kelola-tindakan.html'">
+                            <div class="card-body text-center">
+                                <i class="fas fa-stethoscope menu-icon text-info"></i>
+                                <h4 class="card-title">Kelola Tindakan</h4>
+                                <p class="text-muted">Manajemen layanan tindakan</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Kelola Obat -->
+                    <div class="col-lg-4 col-md-6 col-12 mb-4">
+                        <div class="card menu-card" onclick="location.href='kelola-obat.html'">
+                            <div class="card-body text-center">
+                                <i class="fas fa-pills menu-icon text-warning"></i>
+                                <h4 class="card-title">Kelola Obat</h4>
+                                <p class="text-muted">Manajemen obat dan stok</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Role Management -->
+                    <div class="col-lg-4 col-md-6 col-12 mb-4">
+                        <div class="card menu-card" onclick="location.href='role-management.html'">
+                            <div class="card-body text-center">
+                                <i class="fas fa-user-shield menu-icon text-danger"></i>
+                                <h4 class="card-title">Role Management</h4>
+                                <p class="text-muted">Kelola role dan permission</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="main-footer">
+        <strong>&copy; 2024 Sistem Klinik.</strong> All rights reserved.
+    </footer>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+
+<script type="module">
+    import { getIdToken } from './scripts/vps-auth-v2.js';
+
+    window.logout = function() {
+        localStorage.removeItem('vps_auth_token');
+        sessionStorage.removeItem('vps_auth_token');
+        localStorage.removeItem('idToken');
+        localStorage.removeItem('userProfile');
+        window.location.href = 'login.html';
+    };
+
+    // Check auth on page load
+    document.addEventListener('DOMContentLoaded', async () => {
+        const token = await getIdToken();
+        if (!token) {
+            window.location.href = 'login.html';
+            return;
+        }
+    });
+</script>
+</body>
+</html>

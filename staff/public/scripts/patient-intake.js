@@ -21,9 +21,10 @@ const paraField = document.getElementById('para');
 const abortusField = document.getElementById('abortus');
 const livingChildrenField = document.getElementById('living_children');
 const pregnanciesTable = document.querySelector('table[data-collection="pregnancies"]');
-const prenatalTable = document.querySelector('table[data-collection="prenatal"]');
+// Prenatal table removed from form
+// const prenatalTable = document.querySelector('table[data-collection="prenatal"]');
 const labTable = document.querySelector('table[data-collection="labs"]');
-const addPrenatalRowBtn = document.getElementById('add-prenatal-row');
+// const addPrenatalRowBtn = document.getElementById('add-prenatal-row');
 const addLabRowBtn = document.getElementById('add-lab-row');
 const patientSignatureField = document.getElementById('patient_signature');
 let currentStep = 0;
@@ -86,20 +87,21 @@ function setTableNextIndex(table, nextIndex) {
     }
 }
 
-function createPrenatalRow(index) {
-    const tr = document.createElement('tr');
-    tr.dataset.index = String(index);
-    tr.innerHTML = `
-        <td class="row-number">${index}</td>
-        <td><input type="date" name="visit_date_${index}"></td>
-        <td><input type="number" name="visit_ga_${index}" min="0" max="45"></td>
-        <td><input type="number" name="visit_weight_${index}" step="0.1"></td>
-        <td><input type="text" name="visit_bp_${index}" placeholder="120/80"></td>
-        <td><input type="number" name="visit_fhr_${index}" min="60" max="220"></td>
-        <td><textarea name="visit_note_${index}" rows="1" placeholder="opsional"></textarea></td>
-    `;
-    return tr;
-}
+// Prenatal row function removed - section deleted from form
+// function createPrenatalRow(index) {
+//     const tr = document.createElement('tr');
+//     tr.dataset.index = String(index);
+//     tr.innerHTML = `
+//         <td class="row-number">${index}</td>
+//         <td><input type="date" name="visit_date_${index}"></td>
+//         <td><input type="number" name="visit_ga_${index}" min="0" max="45"></td>
+//         <td><input type="number" name="visit_weight_${index}" step="0.1"></td>
+//         <td><input type="text" name="visit_bp_${index}" placeholder="120/80"></td>
+//         <td><input type="number" name="visit_fhr_${index}" min="60" max="220"></td>
+//         <td><textarea name="visit_note_${index}" rows="1" placeholder="opsional"></textarea></td>
+//     `;
+//     return tr;
+// }
 
 function createLabRow(index) {
     const tr = document.createElement('tr');
@@ -640,12 +642,13 @@ function syncMaritalFields() {
     toggleFieldAvailability(husbandJobField, disableSpouseFields);
 }
 
-if (addPrenatalRowBtn) {
-    addPrenatalRowBtn.addEventListener('click', () => {
-        addDynamicRow(prenatalTable, createPrenatalRow);
-        computeObstetricTotals();
-    });
-}
+// Prenatal row button removed - section deleted from form
+// if (addPrenatalRowBtn) {
+//     addPrenatalRowBtn.addEventListener('click', () => {
+//         addDynamicRow(prenatalTable, createPrenatalRow);
+//         computeObstetricTotals();
+//     });
+// }
 
 if (addLabRowBtn) {
     addLabRowBtn.addEventListener('click', () => addDynamicRow(labTable, createLabRow));

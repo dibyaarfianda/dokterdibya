@@ -53,7 +53,7 @@
         }
         .stepper {
             display: grid;
-            grid-template-columns: repeat(6, minmax(0, 1fr));
+            grid-template-columns: repeat(4, minmax(0, 1fr));
             gap: 0.5rem;
             margin-top: 1rem;
         }
@@ -295,6 +295,32 @@
             th, td { padding: 0.45rem; }
         }
     </style>
+    
+    <!-- Cache Clear Script -->
+    <script>
+        // Force clear form cache and start fresh
+        (function() {
+            const FORM_VERSION = 'v2.0'; // Increment to force clear
+            const storedVersion = localStorage.getItem('intake_form_version');
+            
+            if (storedVersion !== FORM_VERSION) {
+                // Clear all intake form data
+                const keysToRemove = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && (key.includes('intake') || key.includes('dibya'))) {
+                        keysToRemove.push(key);
+                    }
+                }
+                keysToRemove.forEach(key => localStorage.removeItem(key));
+                
+                // Set new version
+                localStorage.setItem('intake_form_version', FORM_VERSION);
+                
+                console.log('Form cache cleared. Version updated to:', FORM_VERSION);
+            }
+        })();
+    </script>
 </head>
 <body>
     <div class="intake-shell">
@@ -303,11 +329,9 @@
             <p>Silakan lengkapi data berikut sebelum konsultasi. Data disimpan otomatis di perangkat Anda.</p>
             <div class="stepper" id="stepper">
                 <span data-step="1" class="active">Identitas</span>
-                <span data-step="2">Kehamilan Saat Ini</span>
-                <span data-step="3">Riwayat Medis</span>
-                <span data-step="4">Riwayat Obstetri</span>
-                <span data-step="5">Riwayat Prenatal</span>
-                <span data-step="6">Laboratorium</span>
+                <span data-step="2">Riwayat Medis</span>
+                <span data-step="3">Riwayat Obstetri</span>
+                <span data-step="4">Kehamilan Saat Ini</span>
             </div>
         </header>
         <main>
@@ -406,7 +430,7 @@
                         </div>
                     </section>
 
-                    <section class="intake-step" data-step="2">
+                    <section class="intake-step" data-step="4">
                         <div>
                             <h2 class="step-title">Konfirmasi Kehamilan</h2>
                             <div class="field-grid two">
@@ -441,45 +465,9 @@
                                 <label class="checkbox-item"><input type="checkbox" name="risk_factors" value="substance"> Merokok/alkohol/pernah memakai narkoba</label>
                             </div>
                         </div>
-                        <div class="divider"></div>
-                        <div>
-                            <h2 class="step-title">Pemeriksaan Fisik Awal</h2>
-                            <div class="field-grid two">
-                                <div class="field">
-                                    <label for="height">Tinggi Badan (cm)</label>
-                                    <input type="number" id="height" name="height" min="120" max="200">
-                                </div>
-                                <div class="field">
-                                    <label for="weight">Berat Badan (kg)</label>
-                                    <input type="number" id="weight" name="weight" step="0.1" min="35" max="200">
-                                </div>
-                                <div class="field">
-                                    <label for="bmi">BMI</label>
-                                    <input type="text" id="bmi" name="bmi" readonly placeholder="--">
-                                </div>
-                                <div class="field">
-                                    <label for="blood_pressure">Tekanan Darah (mmHg)</label>
-                                    <input type="text" id="blood_pressure" name="blood_pressure" placeholder="120/80">
-                                </div>
-                                <div class="field">
-                                    <label for="general_condition">Kondisi fisik secara umum</label>
-                                    <select id="general_condition" name="general_condition">
-                                        <option value="">Pilih</option>
-                                        <option value="baik">Baik</option>
-                                        <option value="cukup">Cukup</option>
-                                        <option value="lemah">Lemah</option>
-                                    </select>
-                                </div>
-                                <div class="field">
-                                    <label for="muac">Lingkar Lengan Atas (cm)</label>
-                                    <input type="number" id="muac" name="muac" min="15" max="40" step="0.1">
-                                </div>
-                            </div>
-                            <div class="summary" id="bmi-summary">Kategori BMI akan muncul otomatis setelah menulis tinggi dan berat badan.</div>
-                        </div>
                     </section>
 
-                    <section class="intake-step" data-step="3">
+                    <section class="intake-step" data-step="2">
                         <div>
                             <h2 class="step-title">Riwayat Medis Umum</h2>
                             <div class="field-grid two">
@@ -562,7 +550,7 @@
                         </div>
                     </section>
 
-                    <section class="intake-step" data-step="4">
+                    <section class="intake-step" data-step="3">
                         <div>
                             <h2 class="step-title">Riwayat Menstruasi</h2>
                             <div class="field-grid two">
@@ -677,169 +665,6 @@
                                     <input type="text" id="current_contraception" name="current_contraception">
                                 </div>
                             </div>
-                        </div>
-                    </section>
-
-                    <section class="intake-step" data-step="5">
-                        <div>
-                            <h2 class="step-title">Riwayat Prenatal Care</h2>
-                            <p class="table-note">Jika sudah melakukan kunjungan sebelumnya, isi data di bawah ini. Jika belum, lewati.</p>
-                            <table data-collection="prenatal" data-prefix="visit_" data-next-index="11">
-                                <thead>
-                                    <tr>
-                                        <th>Visit</th>
-                                        <th>Tanggal</th>
-                                        <th>Usia Kehamilan (minggu)</th>
-                                        <th>Berat Badan (kg)</th>
-                                        <th>Tekanan Darah</th>
-                                        <th>Detak Janin</th>
-                                        <th>Keterangan</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="prenatal-body">
-                                    <tr data-index="1">
-                                        <td class="row-number">1</td>
-                                        <td><input type="date" name="visit_date_1"></td>
-                                        <td><input type="number" name="visit_ga_1" min="0" max="45"></td>
-                                        <td><input type="number" name="visit_weight_1" step="0.1"></td>
-                                        <td><input type="text" name="visit_bp_1" placeholder="120/80"></td>
-                                        <td><input type="number" name="visit_fhr_1" min="60" max="220"></td>
-                                        <td><textarea name="visit_note_1" rows="1" placeholder="opsional"></textarea></td>
-                                    </tr>
-                                    <tr data-index="2">
-                                        <td class="row-number">2</td>
-                                        <td><input type="date" name="visit_date_2"></td>
-                                        <td><input type="number" name="visit_ga_2" min="0" max="45"></td>
-                                        <td><input type="number" name="visit_weight_2" step="0.1"></td>
-                                        <td><input type="text" name="visit_bp_2" placeholder="120/80"></td>
-                                        <td><input type="number" name="visit_fhr_2" min="60" max="220"></td>
-                                        <td><textarea name="visit_note_2" rows="1" placeholder="opsional"></textarea></td>
-                                    </tr>
-                                    <tr data-index="3">
-                                        <td class="row-number">3</td>
-                                        <td><input type="date" name="visit_date_3"></td>
-                                        <td><input type="number" name="visit_ga_3" min="0" max="45"></td>
-                                        <td><input type="number" name="visit_weight_3" step="0.1"></td>
-                                        <td><input type="text" name="visit_bp_3" placeholder="120/80"></td>
-                                        <td><input type="number" name="visit_fhr_3" min="60" max="220"></td>
-                                        <td><textarea name="visit_note_3" rows="1" placeholder="opsional"></textarea></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            <div class="table-actions">
-                                <button type="button" id="add-prenatal-row">Tambah Kunjungan</button>
-                            </div>
-                            <div class="summary" id="staff-prenatal-note">
-                                Data kunjungan yang dimasukkan pasien akan berstatus "patient-reported" hingga divalidasi petugas. Staf klinik dapat menambahkan baris baru setelah setiap kontrol.
-                            </div>
-                        </div>
-                    </section>
-
-                    <section class="intake-step" data-step="6">
-                        <div>
-                            <h2 class="step-title">Rekomendasi Laboratorium</h2>
-                            <p class="table-note">Isi jika sudah melakukan pemeriksaan.</p>
-                            <table data-collection="labs" data-prefix="lab_" data-next-index="10">
-                                <thead>
-                                    <tr>
-                                        <th>Tes</th>
-                                        <th>Waktu Direkomendasikan</th>
-                                        <th>Tanggal Diperiksa</th>
-                                        <th>Hasil</th>
-                                        <th>Follow Up</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="lab-body">
-                                    <tr data-index="1">
-                                        <td>Darah Lengkap</td>
-                                        <td>Kunjungan pertama</td>
-                                        <td><input type="date" name="lab_date_1"></td>
-                                        <td><textarea name="lab_result_1" rows="1" placeholder="hasil"></textarea></td>
-                                        <td><textarea name="lab_follow_1" rows="1" placeholder="tindak lanjut"></textarea></td>
-                                    </tr>
-                                    <tr data-index="2">
-                                        <td>Golongan darah &amp; Rhesus</td>
-                                        <td>Kunjungan pertama</td>
-                                        <td><input type="date" name="lab_date_2"></td>
-                                        <td><textarea name="lab_result_2" rows="1" placeholder="hasil"></textarea></td>
-                                        <td><textarea name="lab_follow_2" rows="1" placeholder="tindak lanjut"></textarea></td>
-                                    </tr>
-                                    <tr data-index="3">
-                                        <td>Hepatitis B (HBsAg)</td>
-                                        <td>Kunjungan pertama</td>
-                                        <td><input type="date" name="lab_date_3"></td>
-                                        <td><textarea name="lab_result_3" rows="1" placeholder="hasil"></textarea></td>
-                                        <td><textarea name="lab_follow_3" rows="1" placeholder="tindak lanjut"></textarea></td>
-                                    </tr>
-                                    <tr data-index="4">
-                                        <td>HIV Tes</td>
-                                        <td>Kunjungan pertama</td>
-                                        <td><input type="date" name="lab_date_4"></td>
-                                        <td><textarea name="lab_result_4" rows="1" placeholder="hasil"></textarea></td>
-                                        <td><textarea name="lab_follow_4" rows="1" placeholder="tindak lanjut"></textarea></td>
-                                    </tr>
-                                    <tr data-index="5">
-                                        <td>Sifilis Tes</td>
-                                        <td>Kunjungan pertama</td>
-                                        <td><input type="date" name="lab_date_5"></td>
-                                        <td><textarea name="lab_result_5" rows="1" placeholder="hasil"></textarea></td>
-                                        <td><textarea name="lab_follow_5" rows="1" placeholder="tindak lanjut"></textarea></td>
-                                    </tr>
-                                    <tr data-index="6">
-                                        <td>NIPT</td>
-                                        <td>11-14 minggu bila ditemukan kelainan</td>
-                                        <td><input type="date" name="lab_date_6"></td>
-                                        <td><textarea name="lab_result_6" rows="1" placeholder="hasil"></textarea></td>
-                                        <td><textarea name="lab_follow_6" rows="1" placeholder="tindak lanjut"></textarea></td>
-                                    </tr>
-                                    <tr data-index="7">
-                                        <td>Skrining Diabetes Gestasional</td>
-                                        <td>Trimester kedua (24-28 minggu)</td>
-                                        <td><input type="date" name="lab_date_7"></td>
-                                        <td><textarea name="lab_result_7" rows="1" placeholder="hasil"></textarea></td>
-                                        <td><textarea name="lab_follow_7" rows="1" placeholder="tindak lanjut"></textarea></td>
-                                    </tr>
-                                    <tr data-index="8">
-                                        <td>Tes Urin</td>
-                                        <td>Trimester ketiga</td>
-                                        <td><input type="date" name="lab_date_8"></td>
-                                        <td><textarea name="lab_result_8" rows="1" placeholder="hasil"></textarea></td>
-                                        <td><textarea name="lab_follow_8" rows="1" placeholder="tindak lanjut"></textarea></td>
-                                    </tr>
-                                    <tr data-index="9">
-                                        <td>Darah Lengkap</td>
-                                        <td>Trimester ketiga</td>
-                                        <td><input type="date" name="lab_date_9"></td>
-                                        <td><textarea name="lab_result_9" rows="1" placeholder="hasil"></textarea></td>
-                                        <td><textarea name="lab_follow_9" rows="1" placeholder="tindak lanjut"></textarea></td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                            <div class="table-actions">
-                                <button type="button" id="add-lab-row">Tambah Tes Lab</button>
-                            </div>
-                            <div class="summary" id="staff-lab-note">
-                                Staf dapat memperbarui tabel lab setiap kali hasil baru tersedia. Riwayat pasien dikunci sampai diverifikasi.
-                            </div>
-                        </div>
-                        <div class="divider"></div>
-                        <div class="alert">
-                            Setelah menekan "Kirim", data akan dikirim ke klinik dan Anda akan menerima salinan ringkas.
-                        </div>
-                        <div class="divider"></div>
-                        <div>
-                            <h2 class="step-title">Konfirmasi &amp; Persetujuan Akhir</h2>
-                            <div class="field">
-                                <label for="patient_signature">Tanda tangan digital (ketik nama lengkap) *</label>
-                                <input type="text" id="patient_signature" name="patient_signature" required>
-                            </div>
-                            <div class="field" style="margin-top:0.5rem;">
-                                <label class="checkbox-item">
-                                    <input type="checkbox" id="final_ack" name="final_ack" required>
-                                    <span>Saya menyatakan bahwa informasi di atas benar dan bersedia data ini diverifikasi oleh tim klinik.</span>
-                                </label>
-                            </div>
-                            <p class="table-note">Waktu pengiriman, alamat IP, dan perangkat akan tercatat otomatis untuk keamanan.</p>
                         </div>
                     </section>
 

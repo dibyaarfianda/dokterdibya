@@ -282,16 +282,19 @@
         
         /* Floating Kelola Pasien Panel */
         #floating-kelola-pasien {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            z-index: 1040;
+            position: fixed !important;
+            bottom: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100vw !important;
+            z-index: 1040 !important;
             background: white;
             box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
             transition: transform 0.3s ease;
             max-height: 50vh;
             overflow-y: auto;
+            margin: 0 !important;
+            padding: 0 !important;
         }
         
         #floating-kelola-pasien.collapsed {
@@ -588,6 +591,48 @@
             setupObserver();
         })();
     </script>
+    
+    <!-- Cache Clear Script -->
+    <script>
+        // Force clear cache on first load
+        (function() {
+            const CACHE_VERSION = 'v14'; // Increment this to force refresh
+            const currentVersion = localStorage.getItem('cache_version');
+            
+            if (currentVersion !== CACHE_VERSION) {
+                console.log('Cache version mismatch. Clearing cache...');
+                
+                // Clear localStorage patient data
+                const keysToKeep = ['vps_auth_token', 'user_role', 'user_email'];
+                const tempData = {};
+                keysToKeep.forEach(key => {
+                    const val = localStorage.getItem(key);
+                    if (val) tempData[key] = val;
+                });
+                
+                localStorage.clear();
+                
+                // Restore important keys
+                Object.keys(tempData).forEach(key => {
+                    localStorage.setItem(key, tempData[key]);
+                });
+                
+                // Set new version
+                localStorage.setItem('cache_version', CACHE_VERSION);
+                
+                // Clear sessionStorage
+                sessionStorage.clear();
+                
+                console.log('Cache cleared. Version updated to:', CACHE_VERSION);
+                
+                // Reload page once
+                if (!sessionStorage.getItem('reloaded')) {
+                    sessionStorage.setItem('reloaded', '1');
+                    window.location.reload(true);
+                }
+            }
+        })();
+    </script>
 </head>
 <body class="hold-transition sidebar-mini layout-fixed">
 <div class="wrapper" id="main-app">
@@ -681,50 +726,10 @@
                         </a>
                     </li>
 
-                    <li class="nav-item superadmin-exclusive d-none" id="nav-finance">
-                        <a href="#" class="nav-link" onclick="showFinancePage(); return false;">
-                            <i class="nav-icon fas fa-chart-line"></i>
-                            <p>Finance Analysis</p>
-                        </a>
-                    </li>
-
-                    <!-- Superadmin only -->
-                    <!-- HIDDEN: Stok Opname
-                    <li class="nav-item superadmin-only d-none" id="nav-admin">
-                        <a href="#" class="nav-link" onclick="showStokOpnamePage(); return false;">
-                            <i class="nav-icon fas fa-boxes"></i>
-                            <p>Stok Opname</p>
-                        </a>
-                    </li>
-                    -->
-                    <li class="nav-item superadmin-only d-none" id="nav-manage-patients">
-                        <a href="#" class="nav-link" onclick="showManagePatientsPage(); return false;">
-                            <i class="nav-icon fas fa-users"></i>
-                            <p>Kelola Pasien</p>
-                        </a>
-                    </li>
-                    <li class="nav-item superadmin-only d-none" id="nav-kelola-obat">
-                        <a href="#" class="nav-link" onclick="showKelolaObatPage(); return false;">
-                            <i class="nav-icon fas fa-pills"></i>
-                            <p>Kelola Obat</p>
-                        </a>
-                    </li>
-                    <li class="nav-item superadmin-only d-none" id="nav-pengaturan">
-                        <a href="#" class="nav-link" onclick="showPengaturanPage(); return false;">
+                    <li class="nav-item superadmin-only d-none" id="nav-management">
+                        <a href="management.html" class="nav-link">
                             <i class="nav-icon fas fa-cogs"></i>
-                            <p>Kelola Tindakan</p>
-                        </a>
-                    </li>
-                    <li class="nav-item superadmin-only d-none" id="nav-roles">
-                        <a href="role-management.html" class="nav-link">
-                            <i class="nav-icon fas fa-user-shield"></i>
-                            <p>Kelola Role</p>
-                        </a>
-                    </li>
-                    <li class="nav-item superadmin-only d-none" id="nav-patient-intake-review">
-                        <a href="patient-intake-review.html" class="nav-link">
-                            <i class="nav-icon fas fa-notes-medical"></i>
-                            <p>Review Intake Pasien</p>
+                            <p>Management</p>
                         </a>
                     </li>
                     <!-- HIDDEN: Log Aktivitas
@@ -2274,18 +2279,13 @@
                     </div>
                 </div>
 
-                <!-- Manage Web Patients Page (Superadmin Only) -->
+                <!-- Kelola Pasien Page (Superadmin Only) -->
                 <div id="manage-patients-page" class="d-none">
                     <div class="row">
                         <div class="col-12">
                             <div class="card card-primary">
                                 <div class="card-header">
-                                    <h3 class="card-title"><i class="fas fa-users mr-2"></i>Kelola Pasien</h3>
-                                    <div class="card-tools">
-                                        <button type="button" class="btn btn-success btn-sm" onclick="syncWebPatients()" id="sync-web-patients-btn">
-                                            <i class="fas fa-sync mr-1"></i> Sinkronisasi ke Data Pasien
-                                        </button>
-                                    </div>
+                                    <h3 class="card-title"><i class="fas fa-users mr-2"></i>Kelola Pasien (Web & Walk-in)</h3>
                                 </div>
                                 <div class="card-body">
                                     <div class="table-responsive">
@@ -2298,7 +2298,8 @@
                                                     <th>Telepon</th>
                                                     <th>Tanggal Lahir</th>
                                                     <th>Usia</th>
-                                                    <th>Profil Lengkap</th>
+                                                    <th>Tipe</th>
+                                                    <th>Kunjungan Terakhir</th>
                                                     <th>Tgl Registrasi</th>
                                                     <th>Status</th>
                                                     <th>Aksi</th>
@@ -2306,7 +2307,7 @@
                                             </thead>
                                             <tbody id="manage-patients-tbody">
                                                 <tr>
-                                                    <td colspan="10" class="text-center">Memuat data...</td>
+                                                    <td colspan="11" class="text-center">Memuat data...</td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -2739,7 +2740,8 @@
     // Global helper to hide floating panel
     window.hideFloatingPanel = function() {
         const floatingPanel = document.getElementById('floating-kelola-pasien');
-        if (floatingPanel) {
+        if (floatingPanel && !floatingPanel.classList.contains('d-none')) {
+            console.log('Hiding floating panel');
             floatingPanel.classList.add('d-none');
         }
     };
@@ -2751,10 +2753,31 @@
             const onclickValue = navLink.getAttribute('onclick');
             // Only hide if NOT navigating to Kelola Pasien page
             if (!onclickValue.includes('showManagePatientsPage')) {
-                hideFloatingPanel();
+                setTimeout(() => hideFloatingPanel(), 100);
             }
         }
     });
+    
+    // Watch for page changes and hide floating panel if not on Kelola Pasien page
+    const pageObserver = new MutationObserver(function(mutations) {
+        mutations.forEach(function(mutation) {
+            if (mutation.attributeName === 'class') {
+                const target = mutation.target;
+                // If manage-patients-page becomes hidden, hide the floating panel
+                if (target.id === 'manage-patients-page' && target.classList.contains('d-none')) {
+                    setTimeout(() => hideFloatingPanel(), 50);
+                }
+            }
+        });
+    });
+    
+    // Start observing when DOM is ready
+    setTimeout(() => {
+        const managePatientsPage = document.getElementById('manage-patients-page');
+        if (managePatientsPage) {
+            pageObserver.observe(managePatientsPage, { attributes: true, attributeFilter: ['class'] });
+        }
+    }, 1000);
     
     // Manage Web Patients Page Functions
     window.showManagePatientsPage = function() {
@@ -2768,10 +2791,13 @@
         document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
         document.querySelector('#nav-manage-patients .nav-link').classList.add('active');
         
-        // Show floating panel
-        const floatingPanel = document.getElementById('floating-kelola-pasien');
-        if (floatingPanel) {
-            floatingPanel.classList.remove('d-none');
+        // Show floating panel (only for superadmin)
+        const userRole = localStorage.getItem('vps_user_role');
+        if (userRole === 'superadmin') {
+            const floatingPanel = document.getElementById('floating-kelola-pasien');
+            if (floatingPanel) {
+                floatingPanel.classList.remove('d-none');
+            }
         }
         
         // Load patients data
@@ -2781,12 +2807,15 @@
     async function loadWebPatients() {
         try {
             const token = localStorage.getItem('vps_auth_token');
-            console.log('Loading web patients with token:', token ? 'Token exists' : 'No token found');
+            console.log('Loading all patients with token:', token ? 'Token exists' : 'No token found');
             console.log('Token length:', token ? token.length : 0);
             
-            const response = await fetch('/api/admin/web-patients', {
+            // Use unified patients endpoint (includes both web and walk-in)
+            const response = await fetch(`/api/patients?_=${Date.now()}`, {
                 headers: {
-                    'Authorization': `Bearer ${token}`
+                    'Authorization': `Bearer ${token}`,
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
                 }
             });
             
@@ -2802,42 +2831,44 @@
             console.log('Response data:', data);
             const tbody = document.getElementById('manage-patients-tbody');
             
-            if (!data.data || !data.data.patients || data.data.patients.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="10" class="text-center">Tidak ada pasien</td></tr>';
+            if (!data.data || data.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="11" class="text-center">Tidak ada pasien</td></tr>';
                 return;
             }
             
-            tbody.innerHTML = data.data.patients.map(patient => {
+            tbody.innerHTML = data.data.map(patient => {
                 const birthDate = patient.birth_date ? new Date(patient.birth_date).toLocaleDateString('id-ID') : '-';
-                const regDate = new Date(patient.registration_date).toLocaleDateString('id-ID');
-                const profileCompleted = patient.profile_completed ? 
-                    '<span class="badge badge-success">Ya</span>' : 
-                    '<span class="badge badge-warning">Belum</span>';
+                const regDate = patient.created_at ? new Date(patient.created_at).toLocaleDateString('id-ID') : '-';
+                const lastVisit = patient.last_visit ? new Date(patient.last_visit).toLocaleDateString('id-ID') : 'Belum ada';
                 const statusBadge = patient.status === 'active' ? 
                     '<span class="badge badge-success">Aktif</span>' : 
                     '<span class="badge badge-secondary">Nonaktif</span>';
+                const typeBadge = patient.patient_type === 'web' ? 
+                    '<span class="badge badge-info">Web</span>' : 
+                    '<span class="badge badge-primary">Walk-in</span>';
                 
                 return `
                     <tr>
                         <td>${patient.id}</td>
-                        <td>${patient.fullname}</td>
-                        <td>${patient.email}</td>
-                        <td>${patient.phone || '-'}</td>
+                        <td>${patient.full_name || '-'}</td>
+                        <td>${patient.email || '-'}</td>
+                        <td>${patient.whatsapp || patient.phone || '-'}</td>
                         <td>${birthDate}</td>
                         <td>${patient.age || '-'}</td>
-                        <td>${profileCompleted}</td>
+                        <td>${typeBadge}</td>
+                        <td>${lastVisit}</td>
                         <td>${regDate}</td>
                         <td>${statusBadge}</td>
                         <td class="text-nowrap">
-                            <button class="btn btn-sm btn-info" onclick="viewPatientDetail(${patient.id})" title="Detail">
+                            <button class="btn btn-sm btn-info" onclick="viewPatientDetail('${patient.id}')" title="Detail">
                                 <i class="fas fa-eye"></i>
                             </button>
                             <button class="btn btn-sm btn-${patient.status === 'active' ? 'warning' : 'success'}" 
-                                    onclick="togglePatientStatus(${patient.id}, '${patient.status}', '${patient.fullname}')" 
+                                    onclick="togglePatientStatus('${patient.id}', '${patient.status}', '${patient.full_name}')" 
                                     title="${patient.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}">
                                 <i class="fas fa-${patient.status === 'active' ? 'ban' : 'check'}"></i>
                             </button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteWebPatient(${patient.id}, '${patient.fullname}')" title="Hapus">
+                            <button class="btn btn-sm btn-danger" onclick="deletePatient('${patient.id}', '${patient.full_name}')" title="Hapus">
                                 <i class="fas fa-trash"></i>
                             </button>
                         </td>
@@ -2858,7 +2889,11 @@
         }
     }
     
-    window.deleteWebPatient = async function(patientId, patientName) {
+    window.deletePatient = async function(patientId, patientName, event) {
+        // Get button reference from event if provided
+        const deleteBtn = event ? event.target.closest('button') : null;
+        const originalHtml = deleteBtn ? deleteBtn.innerHTML : '';
+        
         // Konfirmasi dengan pesan detail tentang apa yang akan dihapus
         const confirmMessage = `⚠️ PERINGATAN: Hapus Pasien dan Semua Data Terkait
 
@@ -2890,10 +2925,6 @@ Apakah Anda yakin ingin melanjutkan?`;
             return;
         }
         
-        // Get button reference before try block
-        const deleteBtn = event.target.closest('button');
-        const originalHtml = deleteBtn ? deleteBtn.innerHTML : '';
-        
         try {
             // Show loading
             if (deleteBtn) {
@@ -2901,7 +2932,8 @@ Apakah Anda yakin ingin melanjutkan?`;
                 deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
             }
             
-            const response = await fetch(`/api/admin/web-patients/${patientId}`, {
+            // Use unified patients endpoint
+            const response = await fetch(`/api/patients/${patientId}`, {
                 method: 'DELETE',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('vps_auth_token')}`
@@ -2929,7 +2961,13 @@ Apakah Anda yakin ingin melanjutkan?`;
             }
             
             alert(successMessage);
-            loadWebPatients(); // Reload the list
+            loadWebPatients(); // Reload the main list
+            
+            // Also reload floating panel if visible
+            const floatingPanel = document.getElementById('floating-kelola-pasien');
+            if (floatingPanel && !floatingPanel.classList.contains('d-none') && typeof loadFloatingPanelPatients === 'function') {
+                loadFloatingPanelPatients();
+            }
             
         } catch (error) {
             console.error('Error deleting patient:', error);
@@ -2952,7 +2990,8 @@ Apakah Anda yakin ingin melanjutkan?`;
         }
         
         try {
-            const response = await fetch(`/api/admin/web-patients/${patientId}/status`, {
+            // Use unified patients endpoint
+            const response = await fetch(`/api/patients/${patientId}/status`, {
                 method: 'PATCH',
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('vps_auth_token')}`,
@@ -2966,7 +3005,13 @@ Apakah Anda yakin ingin melanjutkan?`;
             }
             
             alert(`Status pasien berhasil diubah menjadi ${newStatus === 'active' ? 'aktif' : 'nonaktif'}`);
-            loadWebPatients(); // Reload the list
+            loadWebPatients(); // Reload the main list
+            
+            // Also reload floating panel if visible
+            const floatingPanel = document.getElementById('floating-kelola-pasien');
+            if (floatingPanel && !floatingPanel.classList.contains('d-none') && typeof loadFloatingPanelPatients === 'function') {
+                loadFloatingPanelPatients();
+            }
             
         } catch (error) {
             console.error('Error updating patient status:', error);
@@ -3200,8 +3245,8 @@ Apakah Anda yakin ingin melanjutkan?`;
 
 </div><!-- /.wrapper -->
 
- <!-- Floating Kelola Pasien Panel (Superadmin only) - Outside wrapper for global visibility -->
- <div id="floating-kelola-pasien" class="superadmin-only d-none collapsed">
+ <!-- Floating Kelola Pasien Panel - Completely independent, outside all wrappers -->
+ <div id="floating-kelola-pasien" class="d-none collapsed" style="position: fixed; bottom: 0; left: 0; right: 0; z-index: 1040;">
     <div class="card card-primary">
         <div class="card-header" onclick="toggleFloatingPanel()">
             <h3 class="card-title">
@@ -3250,9 +3295,12 @@ Apakah Anda yakin ingin melanjutkan?`;
         }
         
         try {
-            const response = await fetch('/api/admin/web-patients', {
+            // Use unified patients endpoint
+            const response = await fetch(`/api/patients?_=${Date.now()}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('vps_auth_token')}`
+                    'Authorization': `Bearer ${localStorage.getItem('vps_auth_token')}`,
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
                 }
             });
             
@@ -3262,19 +3310,19 @@ Apakah Anda yakin ingin melanjutkan?`;
             const tbody = document.getElementById('floating-patients-tbody');
             const countBadge = document.getElementById('floating-patient-count');
             
-            if (!data.data || !data.data.patients || data.data.patients.length === 0) {
+            if (!data.data || data.data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Tidak ada pasien</td></tr>';
                 countBadge.textContent = '0';
                 return;
             }
             
-            const patients = data.data.patients;
+            const patients = data.data;
             countBadge.textContent = patients.length;
             
             tbody.innerHTML = patients.map(p => `
                 <tr>
                     <td><small>${p.id}</small></td>
-                    <td><strong>${p.fullname || '-'}</strong></td>
+                    <td><strong>${p.full_name || '-'}</strong></td>
                     <td><small>${p.email || '-'}</small></td>
                     <td>
                         <span class="badge badge-${p.status === 'active' ? 'success' : p.status === 'inactive' ? 'secondary' : 'warning'} badge-sm">
@@ -3285,7 +3333,7 @@ Apakah Anda yakin ingin melanjutkan?`;
                         <button class="btn btn-info btn-xs" onclick="showPatientDetail('${p.id}')" title="Detail">
                             <i class="fas fa-eye"></i>
                         </button>
-                        <button class="btn btn-danger btn-xs" onclick="deleteWebPatient('${p.id}', '${(p.fullname || '').replace(/'/g, "\\'")}', event)" title="Hapus">
+                        <button class="btn btn-danger btn-xs" onclick="deletePatient('${p.id}', '${(p.full_name || '').replace(/'/g, "\\'")}', event)" title="Hapus">
                             <i class="fas fa-trash"></i>
                         </button>
                     </td>
@@ -3307,6 +3355,34 @@ Apakah Anda yakin ingin melanjutkan?`;
     
     // Panel will be shown only when showManagePatientsPage() is called
     // No auto-load on page load - panel stays hidden by default
+    
+    // Hash Navigation Handler - Handle navigation from external pages with hash
+    window.addEventListener('DOMContentLoaded', function() {
+        const hash = window.location.hash;
+        if (hash) {
+            // Remove the # from hash
+            const page = hash.substring(1);
+            
+            // Map hash to page functions
+            const pageHandlers = {
+                'kelola-pasien': showManagePatientsPage,
+                'kelola-obat': showKelolaObatPage,
+                'kelola-tindakan': showPengaturanPage,
+                'manage-patients': showManagePatientsPage,
+                'manage-obat': showKelolaObatPage,
+                'pengaturan': showPengaturanPage
+            };
+            
+            // Call the appropriate page function if it exists
+            if (pageHandlers[page] && typeof pageHandlers[page] === 'function') {
+                setTimeout(() => {
+                    pageHandlers[page]();
+                    // Clear the hash after navigation
+                    history.replaceState(null, null, ' ');
+                }, 500);
+            }
+        }
+    });
  </script>
 
 </body>
