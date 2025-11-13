@@ -306,8 +306,6 @@
                 <span data-step="2">Kehamilan Saat Ini</span>
                 <span data-step="3">Riwayat Medis</span>
                 <span data-step="4">Riwayat Obstetri</span>
-                <span data-step="5">Riwayat Prenatal</span>
-                <span data-step="6">Laboratorium</span>
             </div>
         </header>
         <main>
@@ -320,10 +318,6 @@
                                 <div class="field">
                                     <label for="full_name">Nama Lengkap *</label>
                                     <input type="text" id="full_name" name="full_name" required>
-                                </div>
-                                <div class="field">
-                                    <label for="nik">Nomor Identitas (NIK)</label>
-                                    <input type="text" id="nik" name="nik" inputmode="numeric" minlength="8">
                                 </div>
                                 <div class="field">
                                     <label for="dob">Tanggal Lahir *</label>
@@ -339,11 +333,12 @@
                                 </div>
                                 <div class="field">
                                     <label for="phone">Telepon/HP *</label>
-                                    <input type="tel" id="phone" name="phone" required>
+                                    <input type="tel" id="phone" name="phone" required pattern="628[0-9]{9,12}" placeholder="628xxxxxxxxxx" title="Nomor harus dimulai dengan 628 (contoh: 628123456789)">
+                                    <small style="color: var(--muted); font-size: 0.85rem; margin-top: 0.25rem; display: block;">Format: 628xxxxxxxxxx (untuk integrasi WhatsApp API)</small>
                                 </div>
                                 <div class="field">
                                     <label for="emergency_contact">Kontak Darurat</label>
-                                    <input type="tel" id="emergency_contact" name="emergency_contact">
+                                    <input type="tel" id="emergency_contact" name="emergency_contact" pattern="628[0-9]{9,12}" placeholder="628xxxxxxxxxx">
                                 </div>
                             </div>
                         </div>
@@ -360,20 +355,20 @@
                                         <option value="cerai">Cerai</option>
                                     </select>
                                 </div>
-                                <div class="field">
+                                <div class="field husband-field">
                                     <label for="husband_name">Nama Suami</label>
                                     <input type="text" id="husband_name" name="husband_name">
                                 </div>
-                                <div class="field">
+                                <div class="field husband-field">
                                     <label for="husband_age">Umur Suami</label>
                                     <input type="number" id="husband_age" name="husband_age" min="15" max="80">
                                 </div>
-                                <div class="field">
+                                <div class="field husband-field">
                                     <label for="husband_job">Pekerjaan Suami</label>
                                     <input type="text" id="husband_job" name="husband_job">
                                 </div>
                                 <div class="field">
-                                    <label for="occupation">Pekerjaan Ibu</label>
+                                    <label for="occupation">Pekerjaan Anda</label>
                                     <input type="text" id="occupation" name="occupation">
                                 </div>
                                 <div class="field">
@@ -389,8 +384,22 @@
                                     </select>
                                 </div>
                                 <div class="field">
-                                    <label for="insurance">Asuransi</label>
-                                    <input type="text" id="insurance" name="insurance" placeholder="BPJS, Private, dll">
+                                    <label for="payment_method">Pembiayaan yang Dimiliki</label>
+                                    <div style="margin-top: 0.5rem;">
+                                        <label class="checkbox-item" style="margin-bottom: 0.5rem;">
+                                            <input type="checkbox" id="payment_self" name="payment_method" value="self">
+                                            <span>Biaya Sendiri</span>
+                                        </label>
+                                        <label class="checkbox-item" style="margin-bottom: 0.5rem;">
+                                            <input type="checkbox" id="payment_bpjs" name="payment_method" value="bpjs">
+                                            <span>BPJS</span>
+                                        </label>
+                                        <label class="checkbox-item" style="margin-bottom: 0.5rem;">
+                                            <input type="checkbox" id="payment_insurance" name="payment_method" value="insurance">
+                                            <span>Asuransi</span>
+                                        </label>
+                                    </div>
+                                    <input type="text" id="insurance_name" name="insurance_name" placeholder="Nama Asuransi (jika centang Asuransi)" style="margin-top: 0.5rem; display: none;">
                                 </div>
                             </div>
                         </div>
@@ -485,7 +494,14 @@
                             <div class="field-grid two">
                                 <div class="field">
                                     <label for="blood_type">Golongan Darah</label>
-                                    <input type="text" id="blood_type" name="blood_type" placeholder="A/B/AB/O">
+                                    <select id="blood_type" name="blood_type">
+                                        <option value="">Pilih</option>
+                                        <option value="A">A</option>
+                                        <option value="B">B</option>
+                                        <option value="AB">AB</option>
+                                        <option value="O">O</option>
+                                        <option value="unknown">Tidak Tahu</option>
+                                    </select>
                                 </div>
                                 <div class="field">
                                     <label for="rhesus">Rhesus</label>
@@ -550,6 +566,8 @@
                                 <label class="checkbox-item"><input type="checkbox" name="past_conditions" value="heart"> Sakit jantung</label>
                                 <label class="checkbox-item"><input type="checkbox" name="past_conditions" value="kidney"> Sakit ginjal</label>
                                 <label class="checkbox-item"><input type="checkbox" name="past_conditions" value="thyroid"> Sakit tiroid</label>
+                                <label class="checkbox-item"><input type="checkbox" name="past_conditions" value="cyst_myoma"> Kista/Myoma</label>
+                                <label class="checkbox-item"><input type="checkbox" name="past_conditions" value="asthma"> Asma</label>
                                 <label class="checkbox-item"><input type="checkbox" name="past_conditions" value="autoimmune"> Kondisi autoimun</label>
                                 <label class="checkbox-item"><input type="checkbox" name="past_conditions" value="mental"> Kondisi kejiwaan</label>
                                 <label class="checkbox-item"><input type="checkbox" name="past_conditions" value="surgery"> Operasi sebelumnya</label>
@@ -572,7 +590,8 @@
                                 </div>
                                 <div class="field">
                                     <label for="cycle_length">Lama siklus (hari)</label>
-                                    <input type="number" id="cycle_length" name="cycle_length" min="15" max="45">
+                                    <input type="number" id="cycle_length" name="cycle_length" min="15" max="45" placeholder="normal 21-35">
+                                    <small style="color: var(--muted); font-size: 0.8rem; margin-top: 0.25rem; display: block;">Siklus adalah hari pertama menstruasi bulan kemarin sampai pertama menstruasi bulan ini</small>
                                 </div>
                                 <div class="field">
                                     <label>Siklus teratur?</label>
@@ -678,9 +697,24 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="divider"></div>
+                        <div>
+                            <h2 class="step-title">Konfirmasi &amp; Persetujuan Akhir</h2>
+                            <div class="field">
+                                <label for="patient_signature">Tanda tangan digital (ketik nama lengkap) *</label>
+                                <input type="text" id="patient_signature" name="patient_signature" required>
+                            </div>
+                            <div class="field" style="margin-top:0.5rem;">
+                                <label class="checkbox-item">
+                                    <input type="checkbox" id="final_ack" name="final_ack" required>
+                                    <span>Saya menyatakan bahwa informasi di atas benar dan bersedia data ini diverifikasi oleh tim dr.Dibya.</span>
+                                </label>
+                            </div>
+                            <p class="table-note">Waktu pengiriman, alamat IP, dan perangkat akan tercatat otomatis untuk keamanan.</p>
+                        </div>
                     </section>
 
-                    <section class="intake-step" data-step="5">
+                    <div class="buttons">
                         <div>
                             <h2 class="step-title">Riwayat Prenatal Care</h2>
                             <p class="table-note">Jika sudah melakukan kunjungan sebelumnya, isi data di bawah ini. Jika belum, lewati.</p>

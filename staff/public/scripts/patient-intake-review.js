@@ -162,6 +162,9 @@ function renderTableRows(data) {
                     <button class="btn btn-outline-primary btn-sm btn-detail" data-id="${item.submissionId}">
                         <i class="fas fa-eye"></i> Detail
                     </button>
+                    <button class="btn btn-outline-danger btn-sm btn-delete ml-1" data-id="${item.submissionId}" data-name="${item.patientName || 'pasien'}" title="Hapus data intake">
+                        <i class="fas fa-trash"></i>
+                    </button>
                 </td>
             </tr>
         `;
@@ -273,14 +276,113 @@ function populateDetail(record) {
         detailRiskBadge.textContent = 'Normal Risk';
     }
 
+    // Basic identity
     detailName.textContent = payload.full_name || '-';
     detailDob.textContent = payload.dob ? `${payload.dob} (usia ${payload.age || '-'})` : '-';
     detailPhone.textContent = payload.phone || '-';
     detailAddress.textContent = payload.address || '-';
+    
+    // Family & Social Information
+    const familySocialContainer = document.getElementById('detail-family-social');
+    if (familySocialContainer) {
+        let familySocialHTML = '';
+        if (payload.marital_status) {
+            familySocialHTML += `<dt class="col-sm-4">Status Pernikahan</dt><dd class="col-sm-8">${payload.marital_status}</dd>`;
+        }
+        if (payload.husband_name) {
+            familySocialHTML += `<dt class="col-sm-4">Nama Suami</dt><dd class="col-sm-8">${payload.husband_name}</dd>`;
+        }
+        if (payload.husband_age) {
+            familySocialHTML += `<dt class="col-sm-4">Umur Suami</dt><dd class="col-sm-8">${payload.husband_age} tahun</dd>`;
+        }
+        if (payload.husband_job) {
+            familySocialHTML += `<dt class="col-sm-4">Pekerjaan Suami</dt><dd class="col-sm-8">${payload.husband_job}</dd>`;
+        }
+        if (payload.occupation) {
+            familySocialHTML += `<dt class="col-sm-4">Pekerjaan</dt><dd class="col-sm-8">${payload.occupation}</dd>`;
+        }
+        if (payload.education) {
+            familySocialHTML += `<dt class="col-sm-4">Pendidikan</dt><dd class="col-sm-8">${payload.education}</dd>`;
+        }
+        familySocialContainer.innerHTML = familySocialHTML || '<dd class="col-12 text-muted">Tidak ada data</dd>';
+    }
+    
+    // Pregnancy current
     detailLmp.textContent = payload.lmp || '-';
     detailEdd.textContent = metadata.edd?.value || payload.edd || '-';
     detailBmi.textContent = payload.bmi ? `${payload.bmi} (${metadata.bmiCategory || '-'})` : '-';
     detailObstetric.textContent = `G${totals.gravida ?? payload.gravida ?? '-'} P${totals.para ?? '-'} A${totals.abortus ?? '-'} L${totals.living ?? '-'}`;
+    
+    // Medical History & Risk
+    const medicalHistoryContainer = document.getElementById('detail-medical-history');
+    if (medicalHistoryContainer) {
+        let medicalHTML = '';
+        if (payload.height) {
+            medicalHTML += `<dt class="col-sm-4">Tinggi Badan</dt><dd class="col-sm-8">${payload.height} cm</dd>`;
+        }
+        if (payload.weight) {
+            medicalHTML += `<dt class="col-sm-4">Berat Badan</dt><dd class="col-sm-8">${payload.weight} kg</dd>`;
+        }
+        if (payload.risk_factors) {
+            medicalHTML += `<dt class="col-sm-4">Faktor Risiko</dt><dd class="col-sm-8">${payload.risk_factors}</dd>`;
+        }
+        if (payload.past_conditions) {
+            medicalHTML += `<dt class="col-sm-4">Riwayat Penyakit</dt><dd class="col-sm-8">${payload.past_conditions}</dd>`;
+        }
+        if (payload.allergies) {
+            medicalHTML += `<dt class="col-sm-4">Alergi</dt><dd class="col-sm-8">${payload.allergies}</dd>`;
+        }
+        if (payload.current_medications) {
+            medicalHTML += `<dt class="col-sm-4">Obat Saat Ini</dt><dd class="col-sm-8">${payload.current_medications}</dd>`;
+        }
+        if (payload.immunizations) {
+            medicalHTML += `<dt class="col-sm-4">Imunisasi</dt><dd class="col-sm-8">${payload.immunizations}</dd>`;
+        }
+        medicalHistoryContainer.innerHTML = medicalHTML || '<dd class="col-12 text-muted">Tidak ada data</dd>';
+    }
+    
+    // Prenatal/ANC visits
+    const prenatalSection = document.getElementById('detail-prenatal-section');
+    const prenatalTableContainer = document.getElementById('detail-prenatal-table');
+    if (prenatalTableContainer && payload.prenatal_visits && payload.prenatal_visits.length > 0) {
+        let tableHTML = '<table class="table table-sm table-bordered"><thead><tr><th>Tanggal</th><th>Tempat</th><th>Keluhan</th><th>Hasil</th><th>Tindakan</th></tr></thead><tbody>';
+        payload.prenatal_visits.forEach(visit => {
+            tableHTML += `<tr>
+                <td>${visit.date || '-'}</td>
+                <td>${visit.location || '-'}</td>
+                <td>${visit.complaint || '-'}</td>
+                <td>${visit.result || '-'}</td>
+                <td>${visit.action || '-'}</td>
+            </tr>`;
+        });
+        tableHTML += '</tbody></table>';
+        prenatalTableContainer.innerHTML = tableHTML;
+        prenatalSection.style.display = 'block';
+    } else if (prenatalSection) {
+        prenatalSection.style.display = 'none';
+    }
+    
+    // Lab tests
+    const labSection = document.getElementById('detail-lab-section');
+    const labTableContainer = document.getElementById('detail-lab-table');
+    if (labTableContainer && payload.lab_tests && payload.lab_tests.length > 0) {
+        let tableHTML = '<table class="table table-sm table-bordered"><thead><tr><th>Tanggal</th><th>Jenis Tes</th><th>Hasil</th><th>Satuan</th><th>Nilai Normal</th></tr></thead><tbody>';
+        payload.lab_tests.forEach(test => {
+            tableHTML += `<tr>
+                <td>${test.date || '-'}</td>
+                <td>${test.test_name || '-'}</td>
+                <td>${test.result || '-'}</td>
+                <td>${test.unit || '-'}</td>
+                <td>${test.normal_range || '-'}</td>
+            </tr>`;
+        });
+        tableHTML += '</tbody></table>';
+        labTableContainer.innerHTML = tableHTML;
+        labSection.style.display = 'block';
+    } else if (labSection) {
+        labSection.style.display = 'none';
+    }
+    
     renderRiskFlags(record.summary?.riskFlags || metadata.riskFlags || []);
     renderHistory(review.history || []);
 
@@ -357,6 +459,30 @@ async function saveReview() {
     }
 }
 
+async function deleteSubmission(submissionId, patientName) {
+    if (!confirm(`Apakah Anda yakin ingin menghapus data intake untuk pasien "${patientName}"?\n\nData yang dihapus:\n- Data intake di patient-intake-review\n- File data pasien di server\n\nTindakan ini tidak dapat dibatalkan.`)) {
+        return;
+    }
+
+    try {
+        const res = await authorizedFetch(`/api/patient-intake/${submissionId}`, {
+            method: 'DELETE',
+        });
+
+        const payload = await res.json();
+        
+        if (!payload.success) {
+            throw new Error(payload.message || 'Gagal menghapus data intake');
+        }
+
+        showAlert(`Data intake untuk pasien "${patientName}" berhasil dihapus.`, 'success');
+        await loadSubmissions();
+    } catch (error) {
+        console.error('deleteSubmission error:', error);
+        showAlert(error.message || 'Gagal menghapus data intake', 'danger', 6000);
+    }
+}
+
 function attachEventListeners() {
     if (refreshBtn) {
         refreshBtn.addEventListener('click', () => loadSubmissions());
@@ -381,9 +507,16 @@ function attachEventListeners() {
     }
     if (tableBody) {
         tableBody.addEventListener('click', (event) => {
-            const button = event.target.closest('.btn-detail');
-            if (button && button.dataset.id) {
-                openDetailModal(button.dataset.id);
+            const detailButton = event.target.closest('.btn-detail');
+            if (detailButton && detailButton.dataset.id) {
+                openDetailModal(detailButton.dataset.id);
+                return;
+            }
+            
+            const deleteButton = event.target.closest('.btn-delete');
+            if (deleteButton && deleteButton.dataset.id) {
+                deleteSubmission(deleteButton.dataset.id, deleteButton.dataset.name);
+                return;
             }
         });
     }

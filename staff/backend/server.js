@@ -105,6 +105,9 @@ const notificationRoutes = require('./routes/notifications');
 // Analytics routes
 const analyticsRoutes = require('./routes/analytics');
 const patientIntakeRoutes = require('./routes/patient-intake');
+const medicalRecordsRoutes = require('./routes/medical-records');
+const patientRecordsRoutes = require('./routes/patient-records');
+const billingsRoutes = require('./routes/billings');
 
 // Pass Socket.io to routes
 chatRoutes.setSocketIO(io);
@@ -149,6 +152,13 @@ app.use('/api/notifications', notificationRoutes);
 // Analytics routes
 app.use('/api/analytics', analyticsRoutes);
 app.use('/', patientIntakeRoutes);
+
+// Medical Records routes
+app.use('/', medicalRecordsRoutes);
+app.use('/', patientRecordsRoutes);
+
+// Billing routes
+app.use('/api/billings', billingsRoutes);
 
 // Role Management routes
 const rolesRoutes = require('./routes/roles');

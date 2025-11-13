@@ -6,6 +6,7 @@ const path = require('path');
 const crypto = require('crypto');
 const logger = require('../utils/logger');
 const PatientIntakeIntegrationService = require('../services/PatientIntakeIntegrationService');
+const { verifyToken } = require('../middleware/auth');
 
 const router = express.Router();
 const STORAGE_DIR = path.join(__dirname, '..', 'logs', 'patient-intake');
@@ -263,7 +264,7 @@ router.post('/api/patient-intake', async (req, res, next) => {
     }
 });
 
-router.get('/api/patient-intake', async (req, res, next) => {
+router.get('/api/patient-intake', verifyToken, async (req, res, next) => {
     try {
         await ensureDirectory();
         const files = await fs.readdir(STORAGE_DIR);
@@ -329,7 +330,7 @@ router.get('/api/patient-intake', async (req, res, next) => {
     }
 });
 
-router.get('/api/patient-intake/:submissionId', async (req, res, next) => {
+router.get('/api/patient-intake/:submissionId', verifyToken, async (req, res, next) => {
     try {
         const { submissionId } = req.params;
         const record = await loadRecordById(submissionId);
@@ -345,7 +346,7 @@ router.get('/api/patient-intake/:submissionId', async (req, res, next) => {
     }
 });
 
-router.put('/api/patient-intake/:submissionId/review', async (req, res, next) => {
+router.put('/api/patient-intake/:submissionId/review', verifyToken, async (req, res, next) => {
     try {
         const { submissionId } = req.params;
         const record = await loadRecordById(submissionId);
@@ -433,6 +434,62 @@ router.put('/api/patient-intake/:submissionId/review', async (req, res, next) =>
         if (/INTAKE_ENCRYPTION_KEY/.test(error.message)) {
             return res.status(500).json({ success: false, message: error.message });
         }
+        next(error);
+    }
+});
+
+/**
+ * DELETE /api/patient-intake/:submissionId
+ * Delete a patient intake submission
+ */
+router.delete('/api/patient-intake/:submissionId', verifyToken, async (req, res, next) => {
+    const { submissionId } = req.params;
+
+    if (!submissionId || typeof submissionId !== 'string') {
+        return res.status(400).json({
+            success: false,
+            message: 'Submission ID tidak valid.',
+        });
+    }
+
+    try {
+        await ensureDirectory();
+        const filePath = path.join(STORAGE_DIR, `${submissionId}.json`);
+
+        // Check if file exists
+        try {
+            await fs.access(filePath);
+        } catch (error) {
+            return res.status(404).json({
+                success: false,
+                message: 'Data intake tidak ditemukan.',
+            });
+        }
+
+        // Read the file to log before deletion
+        const fileContent = await fs.readFile(filePath, 'utf8');
+        const record = JSON.parse(fileContent);
+        
+        logger.info('Deleting patient intake submission', {
+            submissionId,
+            patientName: record.patientName || record.payload?.full_name,
+            status: record.status,
+            deletedBy: req.user?.username || 'unknown',
+        });
+
+        // Delete the file
+        await fs.unlink(filePath);
+
+        res.json({
+            success: true,
+            message: 'Data intake berhasil dihapus.',
+            submissionId,
+        });
+    } catch (error) {
+        logger.error('Failed to delete intake submission', {
+            submissionId,
+            error: error.message,
+        });
         next(error);
     }
 });

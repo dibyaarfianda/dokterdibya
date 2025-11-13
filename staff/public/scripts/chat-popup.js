@@ -52,9 +52,14 @@
               </div>
             </div>
           </div>
-          <button id="chat-close-btn" class="chat-close-btn" aria-label="Tutup">
-            <i class="fas fa-times"></i>
-          </button>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <button id="chat-clear-btn" class="chat-clear-btn" aria-label="Clear Chat" title="Clear Chat">
+              <i class="fas fa-trash-alt"></i>
+            </button>
+            <button id="chat-close-btn" class="chat-close-btn" aria-label="Tutup">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
         </div>
 
         <div class="chat-messages" id="chat-messages">
@@ -125,6 +130,15 @@
         display:flex; align-items:center; justify-content:center; transition: all .2s ease;
       }
       .chat-close-btn:hover { background: rgba(255,255,255,.3); transform: rotate(90deg); }
+
+      .chat-clear-btn {
+        background: rgba(220,38,38,.85); border: none; color: #fff;
+        width: 28px; height: 28px; border-radius: 50%; cursor: pointer;
+        display:flex; align-items:center; justify-content:center; transition: all .2s ease;
+        font-size: 12px;
+      }
+      .chat-clear-btn:hover { background: rgba(220,38,38,1); transform: scale(1.05); }
+      .chat-clear-btn:active { transform: scale(0.95); }
 
       /* Background di belakang bubble = abu-abu */
       .chat-messages {
@@ -284,6 +298,7 @@
         // Get elements
         const toggleBtn = document.getElementById('chat-toggle-btn');
         const closeBtn = document.getElementById('chat-close-btn');
+        const clearBtn = document.getElementById('chat-clear-btn');
         const chatBox = document.getElementById('chat-box');
         const chatInput = document.getElementById('chat-input');
         const sendBtn = document.getElementById('chat-send-btn');
@@ -297,6 +312,26 @@
   let isHistoryLoading = false;
   let lastSender = null; // Track last message sender for avatar grouping
   const userPhotoCache = new Map();
+  
+        // Show clear button only for superadmin
+        function checkClearButtonVisibility() {
+            if (!clearBtn) return;
+            
+            // Check multiple sources for user role
+            const authData = window.auth || {};
+            const currentUser = authData.currentUser || {};
+            const role = currentUser.role || authData.role || '';
+            
+            console.log('Checking clear button visibility - Role:', role);
+            
+            if (role === 'superadmin') {
+                clearBtn.style.display = 'flex';
+                console.log('Clear button shown for superadmin');
+            } else {
+                clearBtn.style.display = 'none';
+                console.log('Clear button hidden for role:', role);
+            }
+        }
 
         // Function to update online users
         function updateOnlineUsers(users) {
@@ -366,6 +401,8 @@
         chatInput.focus();
         chatBadge.style.display = 'none';
         chatBadge.textContent = '0';
+        // Check clear button visibility when chat opens
+        checkClearButtonVisibility();
       }
     });
 
@@ -533,6 +570,62 @@
                 }
             });
         }
+        
+        // Clear chat button handler
+        if (clearBtn) {
+            clearBtn.addEventListener('click', async function() {
+                if (!confirm('⚠️ Hapus SEMUA chat log?\n\nTindakan ini TIDAK DAPAT dibatalkan!\n\nKetik "HAPUS SEMUA" untuk konfirmasi.')) {
+                    return;
+                }
+                
+                const confirmation = prompt('Untuk konfirmasi, ketik: HAPUS SEMUA');
+                
+                if (confirmation !== 'HAPUS SEMUA') {
+                    alert('Konfirmasi tidak sesuai. Pembersihan chat log dibatalkan.');
+                    return;
+                }
+                
+                try {
+                    const token = localStorage.getItem('vps_auth_token');
+                    const response = await fetch('/api/admin/clear-chat-logs', {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json().catch(() => ({}));
+                        throw new Error(errorData.message || 'Failed to clear chat logs');
+                    }
+                    
+                    const data = await response.json();
+                    
+                    // Clear messages from UI
+                    messagesContainer.innerHTML = '';
+                    lastSender = null;
+                    
+                    alert(`✅ Chat logs berhasil dihapus!\n\nTotal pesan: ${data.data.deletedCount}`);
+                    
+                } catch (error) {
+                    console.error('Error clearing chat logs:', error);
+                    alert('❌ Gagal menghapus chat logs: ' + error.message);
+                }
+            });
+        }
+        
+        // Check clear button visibility after auth is loaded
+        checkClearButtonVisibility();
+        
+        // Re-check after a delay to ensure auth is fully loaded
+        setTimeout(() => {
+            checkClearButtonVisibility();
+        }, 1000);
+        
+        // Also check periodically
+        setInterval(() => {
+            checkClearButtonVisibility();
+        }, 5000);
 
         // Expose addMessage globally for external use
         window.addChatMessage = addMessage;

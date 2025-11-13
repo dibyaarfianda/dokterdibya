@@ -608,32 +608,6 @@
                         </a>
                     </li>
                     
-                    <!-- Medical Examination Menu (hidden until patient selected) -->
-                    <li class="nav-item medical-exam-menu d-none" id="nav-anamnesa">
-                        <a href="#" class="nav-link" onclick="showAnamnesa(); return false;">
-                            <i class="nav-icon fas fa-clipboard-list"></i>
-                            <p>Anamnesa</p>
-                        </a>
-                    </li>
-                    <li class="nav-item medical-exam-menu d-none" id="nav-physical">
-                        <a href="#" class="nav-link" onclick="showPhysicalExam(); return false;">
-                            <i class="nav-icon fas fa-stethoscope"></i>
-                            <p>Pemeriksaan Fisik</p>
-                        </a>
-                    </li>
-                    <li class="nav-item medical-exam-menu d-none" id="nav-usg">
-                        <a href="#" class="nav-link" onclick="showUSGExam(); return false;">
-                            <i class="nav-icon fas fa-baby"></i>
-                            <p>Pemeriksaan USG</p>
-                        </a>
-                    </li>
-                    <li class="nav-item medical-exam-menu d-none" id="nav-lab">
-                        <a href="#" class="nav-link" onclick="showLabExam(); return false;">
-                            <i class="nav-icon fas fa-flask"></i>
-                            <p>Pemeriksaan Penunjang</p>
-                        </a>
-                    </li>
-                    
                     <li class="nav-item" id="nav-tindakan">
                         <a href="#" class="nav-link" onclick="showTindakanPage(); return false;">
                             <i class="nav-icon fas fa-notes-medical"></i>
@@ -2259,6 +2233,11 @@
                             <div class="card card-primary">
                                 <div class="card-header">
                                     <h3 class="card-title"><i class="fas fa-users mr-2"></i>Kelola Pasien Web</h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-success btn-sm" onclick="syncWebPatients()" id="sync-web-patients-btn">
+                                            <i class="fas fa-sync mr-1"></i> Sinkronisasi ke Data Pasien
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="card-body">
                                     <div class="table-responsive">
@@ -2708,6 +2687,361 @@
     window.socket.on('disconnect', () => {
         console.log('Socket.IO disconnected');
     });
+    
+    // Manage Web Patients Page Functions
+    window.showManagePatientsPage = function() {
+        // Hide all pages
+        document.querySelectorAll('[id$="-page"]').forEach(page => page.classList.add('d-none'));
+        
+        // Show manage patients page
+        document.getElementById('manage-patients-page').classList.remove('d-none');
+        
+        // Update active nav
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        document.querySelector('#nav-manage-patients .nav-link').classList.add('active');
+        
+        // Load patients data
+        loadWebPatients();
+    };
+    
+    async function loadWebPatients() {
+        try {
+            const token = localStorage.getItem('vps_auth_token');
+            console.log('Loading web patients with token:', token ? 'Token exists' : 'No token found');
+            console.log('Token length:', token ? token.length : 0);
+            
+            const response = await fetch('/api/admin/web-patients', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            console.log('Response status:', response.status);
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                console.error('Error response:', errorData);
+                throw new Error('Failed to load patients');
+            }
+            
+            const data = await response.json();
+            console.log('Response data:', data);
+            const tbody = document.getElementById('manage-patients-tbody');
+            
+            if (!data.data || !data.data.patients || data.data.patients.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center">Tidak ada pasien web</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = data.data.patients.map(patient => {
+                const birthDate = patient.birth_date ? new Date(patient.birth_date).toLocaleDateString('id-ID') : '-';
+                const regDate = new Date(patient.registration_date).toLocaleDateString('id-ID');
+                const profileCompleted = patient.profile_completed ? 
+                    '<span class="badge badge-success">Ya</span>' : 
+                    '<span class="badge badge-warning">Belum</span>';
+                const statusBadge = patient.status === 'active' ? 
+                    '<span class="badge badge-success">Aktif</span>' : 
+                    '<span class="badge badge-secondary">Nonaktif</span>';
+                
+                return `
+                    <tr>
+                        <td>${patient.id}</td>
+                        <td>${patient.fullname}</td>
+                        <td>${patient.email}</td>
+                        <td>${patient.phone || '-'}</td>
+                        <td>${birthDate}</td>
+                        <td>${patient.age || '-'}</td>
+                        <td>${profileCompleted}</td>
+                        <td>${regDate}</td>
+                        <td>${statusBadge}</td>
+                        <td class="text-nowrap">
+                            <button class="btn btn-sm btn-info" onclick="viewPatientDetail(${patient.id})" title="Detail">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-${patient.status === 'active' ? 'warning' : 'success'}" 
+                                    onclick="togglePatientStatus(${patient.id}, '${patient.status}', '${patient.fullname}')" 
+                                    title="${patient.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}">
+                                <i class="fas fa-${patient.status === 'active' ? 'ban' : 'check'}"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteWebPatient(${patient.id}, '${patient.fullname}')" title="Hapus">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+        } catch (error) {
+            console.error('Error loading web patients:', error);
+            document.getElementById('manage-patients-tbody').innerHTML = 
+                '<tr><td colspan="10" class="text-center text-danger">Gagal memuat data pasien</td></tr>';
+        }
+    }
+    
+    window.deleteWebPatient = async function(patientId, patientName) {
+        if (!confirm(`Apakah Anda yakin ingin menghapus pasien "${patientName}"?`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/admin/web-patients/${patientId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('vps_auth_token')}`
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to delete patient');
+            }
+            
+            alert('Pasien berhasil dihapus');
+            loadWebPatients(); // Reload the list
+            
+        } catch (error) {
+            console.error('Error deleting patient:', error);
+            alert('Gagal menghapus pasien');
+        }
+    };
+    
+    window.togglePatientStatus = async function(patientId, currentStatus, patientName) {
+        const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+        const action = newStatus === 'active' ? 'mengaktifkan' : 'menonaktifkan';
+        
+        if (!confirm(`Apakah Anda yakin ingin ${action} pasien "${patientName}"?`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/admin/web-patients/${patientId}/status`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('vps_auth_token')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ status: newStatus })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to update status');
+            }
+            
+            alert(`Status pasien berhasil diubah menjadi ${newStatus === 'active' ? 'aktif' : 'nonaktif'}`);
+            loadWebPatients(); // Reload the list
+            
+        } catch (error) {
+            console.error('Error updating patient status:', error);
+            alert('Gagal mengubah status pasien');
+        }
+    };
+    
+    window.viewPatientDetail = async function(patientId) {
+        try {
+            const response = await fetch(`/api/admin/web-patients/${patientId}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('vps_auth_token')}`
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to load patient details');
+            }
+            
+            const data = await response.json();
+            const patient = data.data.patient;
+            
+            // Create modal for patient details
+            const modal = `
+                <div class="modal fade" id="patientDetailModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header bg-info">
+                                <h4 class="modal-title">
+                                    <i class="fas fa-user-circle"></i> Detail Pasien Web
+                                </h4>
+                                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <table class="table table-bordered">
+                                            <tr>
+                                                <th width="40%">ID Pasien</th>
+                                                <td>${patient.id}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Nama Lengkap</th>
+                                                <td><strong>${patient.fullname}</strong></td>
+                                            </tr>
+                                            <tr>
+                                                <th>Email</th>
+                                                <td>${patient.email}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Telepon</th>
+                                                <td>${patient.phone || '-'}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Tanggal Lahir</th>
+                                                <td>${patient.birth_date ? new Date(patient.birth_date).toLocaleDateString('id-ID', {year: 'numeric', month: 'long', day: 'numeric'}) : '-'}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Usia</th>
+                                                <td>${patient.age || '-'} tahun</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <table class="table table-bordered">
+                                            <tr>
+                                                <th width="40%">Foto Profil</th>
+                                                <td>
+                                                    ${patient.photo_url ? 
+                                                        `<img src="${patient.photo_url}" alt="Photo" style="max-width: 100px; border-radius: 50%;">` : 
+                                                        '<span class="text-muted">Tidak ada foto</span>'}
+                                                </td>
+                                            </tr>
+                                            <tr>
+                                                <th>Google ID</th>
+                                                <td>${patient.google_id || '<span class="text-muted">Email registration</span>'}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Profil Lengkap</th>
+                                                <td>${patient.profile_completed ? 
+                                                    '<span class="badge badge-success"><i class="fas fa-check"></i> Ya</span>' : 
+                                                    '<span class="badge badge-warning"><i class="fas fa-times"></i> Belum</span>'}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Status</th>
+                                                <td>${patient.status === 'active' ? 
+                                                    '<span class="badge badge-success">Aktif</span>' : 
+                                                    '<span class="badge badge-secondary">Nonaktif</span>'}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Tgl Registrasi</th>
+                                                <td>${new Date(patient.registration_date).toLocaleString('id-ID', {
+                                                    year: 'numeric', month: 'long', day: 'numeric',
+                                                    hour: '2-digit', minute: '2-digit'
+                                                })}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Terakhir Update</th>
+                                                <td>${patient.updated_at ? new Date(patient.updated_at).toLocaleString('id-ID', {
+                                                    year: 'numeric', month: 'long', day: 'numeric',
+                                                    hour: '2-digit', minute: '2-digit'
+                                                }) : '-'}</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // Remove existing modal if any
+            $('#patientDetailModal').remove();
+            
+            // Add and show modal
+            $('body').append(modal);
+            $('#patientDetailModal').modal('show');
+            
+            // Clean up modal after close
+            $('#patientDetailModal').on('hidden.bs.modal', function () {
+                $(this).remove();
+            });
+            
+        } catch (error) {
+            console.error('Error viewing patient detail:', error);
+            alert('Gagal memuat detail pasien');
+        }
+    };
+    
+    window.syncWebPatients = async function() {
+        if (!confirm('Apakah Anda yakin ingin menyinkronkan semua pasien web yang sudah lengkap profil ke tabel Data Pasien?\n\nIni akan membuat ID pasien baru (P###) untuk setiap pasien web yang belum ada di Data Pasien.')) {
+            return;
+        }
+        
+        const syncBtn = document.getElementById('sync-web-patients-btn');
+        const originalText = syncBtn.innerHTML;
+        
+        try {
+            // Disable button and show loading
+            syncBtn.disabled = true;
+            syncBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Menyinkronkan...';
+            
+            const response = await fetch('/api/admin/sync-web-patients', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('vps_auth_token')}`
+                }
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Failed to sync patients');
+            }
+            
+            const data = await response.json();
+            const result = data.data;
+            
+            let message = `Sinkronisasi selesai!\n\n`;
+            message += `✓ Berhasil disinkronkan: ${result.syncedCount} pasien\n`;
+            message += `⊘ Dilewati (sudah ada): ${result.skippedCount} pasien\n`;
+            if (result.errorsCount > 0) {
+                message += `✗ Gagal: ${result.errorsCount} pasien\n\n`;
+                if (result.errors && result.errors.length > 0) {
+                    message += 'Error pertama:\n';
+                    result.errors.slice(0, 3).forEach(err => {
+                        message += `- ${err.email}: ${err.error}\n`;
+                    });
+                }
+            }
+            
+            alert(message);
+            
+            // Reload the web patients list
+            loadWebPatients();
+            
+        } catch (error) {
+            console.error('Error syncing web patients:', error);
+            alert('Gagal menyinkronkan pasien: ' + error.message);
+        } finally {
+            // Re-enable button
+            syncBtn.disabled = false;
+            syncBtn.innerHTML = originalText;
+        }
+    };
+    
+    // Kelola Obat Page Function
+    window.showKelolaObatPage = function() {
+        // Hide all pages
+        document.querySelectorAll('[id$="-page"]').forEach(page => page.classList.add('d-none'));
+        
+        // Show kelola obat page
+        document.getElementById('kelola-obat-page').classList.remove('d-none');
+        
+        // Update active nav
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        document.querySelector('#nav-kelola-obat .nav-link').classList.add('active');
+    };
+    
+    // Kelola Tindakan (Pengaturan) Page Function
+    window.showPengaturanPage = function() {
+        // Hide all pages
+        document.querySelectorAll('[id$="-page"]').forEach(page => page.classList.add('d-none'));
+        
+        // Show pengaturan page
+        document.getElementById('pengaturan-page').classList.remove('d-none');
+        
+        // Update active nav
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        document.querySelector('#nav-pengaturan .nav-link').classList.add('active');
+    };
  </script>
 
  <!-- Chat Popup Widget -->

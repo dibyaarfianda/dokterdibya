@@ -209,18 +209,32 @@ router.patch('/api/patients/:id/visit', verifyToken, async (req, res) => {
 // DELETE PATIENT
 router.delete('/api/patients/:id', verifyToken, requirePermission('patients.delete'), async (req, res) => {
     try {
-        const [result] = await db.query('DELETE FROM patients WHERE id = ?', [req.params.id]);
+        console.log('DELETE request for patient ID:', req.params.id, 'Type:', typeof req.params.id);
         
-        if (result.affectedRows === 0) {
-            return res.status(404).json({ success: false, message: 'Patient not found' });
+        // First check if patient exists
+        const [checkResult] = await db.query('SELECT id, full_name FROM patients WHERE id = ?', [req.params.id]);
+        console.log('Patient check result:', checkResult);
+        
+        if (checkResult.length === 0) {
+            console.log('Patient not found in database');
+            return res.status(404).json({ success: false, message: 'Pasien tidak ditemukan' });
         }
         
-        res.json({ success: true, message: 'Patient deleted successfully' });
+        // Now delete
+        const [result] = await db.query('DELETE FROM patients WHERE id = ?', [req.params.id]);
+        console.log('Delete result:', result);
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'Pasien tidak ditemukan' });
+        }
+        
+        console.log(`Patient ${checkResult[0].full_name} (ID: ${req.params.id}) deleted successfully`);
+        res.json({ success: true, message: 'Pasien berhasil dihapus' });
     } catch (error) {
         console.error('Error deleting patient:', error);
         res.status(500).json({ 
             success: false, 
-            message: 'Failed to delete patient', 
+            message: 'Gagal menghapus pasien', 
             error: error.message 
         });
     }

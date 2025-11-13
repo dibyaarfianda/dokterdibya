@@ -197,6 +197,223 @@ router.post('/api/auth/change-password', verifyToken, validatePasswordChange, as
     sendSuccess(res, null, SUCCESS_MESSAGES.PASSWORD_CHANGED);
 }));
 
+// Get all web patients (Admin only)
+router.get('/api/admin/web-patients', verifyToken, asyncHandler(async (req, res) => {
+    // Log for debugging
+    logger.info(`Web patients request from user: ${req.user.email} (${req.user.role})`);
+    
+    // Check if user is admin/superadmin
+    if (!['superadmin', 'admin'].includes(req.user.role)) {
+        logger.warn(`Unauthorized web patients access attempt by ${req.user.email} (${req.user.role})`);
+        throw new AppError('Unauthorized access - Admin role required', HTTP_STATUS.FORBIDDEN);
+    }
+    
+    const [patients] = await db.query(
+        `SELECT id, fullname, email, phone, birth_date, age, photo_url, 
+                registration_date, status, profile_completed, created_at, updated_at 
+         FROM web_patients 
+         ORDER BY registration_date DESC`
+    );
+    
+    logger.info(`Returning ${patients.length} web patients to ${req.user.email}`);
+    sendSuccess(res, { patients });
+}));
+
+// Get single web patient detail (Admin only)
+router.get('/api/admin/web-patients/:id', verifyToken, asyncHandler(async (req, res) => {
+    // Check if user is admin/superadmin
+    if (!['superadmin', 'admin'].includes(req.user.role)) {
+        logger.warn(`Unauthorized web patient detail access attempt by ${req.user.email} (${req.user.role})`);
+        throw new AppError('Unauthorized access - Admin role required', HTTP_STATUS.FORBIDDEN);
+    }
+    
+    const patientId = req.params.id;
+    
+    const [patients] = await db.query(
+        `SELECT id, fullname, email, phone, birth_date, age, photo_url, google_id,
+                registration_date, status, profile_completed, created_at, updated_at 
+         FROM web_patients 
+         WHERE id = ?`,
+        [patientId]
+    );
+    
+    if (patients.length === 0) {
+        throw new AppError('Patient not found', HTTP_STATUS.NOT_FOUND);
+    }
+    
+    logger.info(`Patient detail retrieved: ${patients[0].fullname} (ID: ${patientId}) by ${req.user.email}`);
+    sendSuccess(res, { patient: patients[0] });
+}));
+
+// Update web patient status (Admin only)
+router.patch('/api/admin/web-patients/:id/status', verifyToken, asyncHandler(async (req, res) => {
+    // Check if user is admin/superadmin
+    if (!['superadmin', 'admin'].includes(req.user.role)) {
+        logger.warn(`Unauthorized web patient status update attempt by ${req.user.email} (${req.user.role})`);
+        throw new AppError('Unauthorized access - Admin role required', HTTP_STATUS.FORBIDDEN);
+    }
+    
+    const patientId = req.params.id;
+    const { status } = req.body;
+    
+    // Validate status
+    if (!['active', 'inactive', 'suspended'].includes(status)) {
+        throw new AppError('Invalid status value', HTTP_STATUS.BAD_REQUEST);
+    }
+    
+    // Check if patient exists
+    const [patients] = await db.query(
+        'SELECT id, fullname FROM web_patients WHERE id = ?',
+        [patientId]
+    );
+    
+    if (patients.length === 0) {
+        throw new AppError('Patient not found', HTTP_STATUS.NOT_FOUND);
+    }
+    
+    // Update status
+    await db.query(
+        'UPDATE web_patients SET status = ?, updated_at = NOW() WHERE id = ?',
+        [status, patientId]
+    );
+    
+    logger.info(`Patient status updated: ${patients[0].fullname} (ID: ${patientId}) to ${status} by ${req.user.email}`);
+    
+    sendSuccess(res, { patient: patients[0], newStatus: status }, `Patient status updated to ${status}`);
+}));
+
+// Clear all chat logs (Superadmin only)
+router.delete('/api/admin/clear-chat-logs', verifyToken, asyncHandler(async (req, res) => {
+    // Check if user is superadmin
+    if (req.user.role !== 'superadmin') {
+        logger.warn(`Unauthorized chat logs deletion attempt by ${req.user.email} (${req.user.role})`);
+        throw new AppError('Unauthorized access - Superadmin role required', HTTP_STATUS.FORBIDDEN);
+    }
+    
+    // Get count before deletion
+    const [countResult] = await db.query('SELECT COUNT(*) as total FROM chat_messages');
+    const totalMessages = countResult[0].total;
+    
+    // Delete all chat messages
+    await db.query('DELETE FROM chat_messages');
+    
+    logger.warn(`ALL CHAT LOGS DELETED by ${req.user.email} - ${totalMessages} messages removed`);
+    
+    sendSuccess(res, { deletedCount: totalMessages }, `Successfully deleted ${totalMessages} chat messages`);
+}));
+
+// Sync all web patients to patients table (Superadmin only)
+router.post('/api/admin/sync-web-patients', verifyToken, asyncHandler(async (req, res) => {
+    // Check if user is superadmin
+    if (req.user.role !== 'superadmin') {
+        logger.warn(`Unauthorized sync attempt by ${req.user.email} (${req.user.role})`);
+        throw new AppError('Unauthorized access - Superadmin role required', HTTP_STATUS.FORBIDDEN);
+    }
+    
+    // Get all completed web patients
+    const [webPatients] = await db.query(
+        `SELECT id, fullname, email, phone, birth_date, age, google_id, photo_url, password, registration_date, status 
+         FROM web_patients 
+         WHERE profile_completed = 1`
+    );
+    
+    let syncedCount = 0;
+    let skippedCount = 0;
+    let errors = [];
+    
+    for (const webPatient of webPatients) {
+        try {
+            // Check if already exists in patients table
+            const [existing] = await db.query(
+                'SELECT id FROM patients WHERE email = ? OR phone = ? LIMIT 1',
+                [webPatient.email, webPatient.phone]
+            );
+            
+            if (existing.length > 0) {
+                skippedCount++;
+                continue;
+            }
+            
+            // Get the next patient ID
+            const [maxId] = await db.query(
+                "SELECT id FROM patients WHERE id REGEXP '^P[0-9]+$' ORDER BY CAST(SUBSTRING(id, 2) AS UNSIGNED) DESC LIMIT 1"
+            );
+            
+            let nextNumber = 1;
+            if (maxId.length > 0 && maxId[0].id) {
+                const currentNumber = parseInt(maxId[0].id.substring(1));
+                nextNumber = currentNumber + 1;
+            }
+            
+            const newPatientId = 'P' + String(nextNumber).padStart(3, '0');
+            
+            // Insert into patients table
+            await db.query(
+                `INSERT INTO patients 
+                 (id, full_name, whatsapp, phone, birth_date, age, email, google_id, photo_url, password, registration_date, status, is_pregnant, visit_count) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, 0)`,
+                [
+                    newPatientId,
+                    webPatient.fullname,
+                    webPatient.phone,
+                    webPatient.phone,
+                    webPatient.birth_date,
+                    webPatient.age,
+                    webPatient.email,
+                    webPatient.google_id,
+                    webPatient.photo_url,
+                    webPatient.password,
+                    webPatient.registration_date,
+                    webPatient.status || 'active'
+                ]
+            );
+            
+            syncedCount++;
+            logger.info(`Synced web patient ${webPatient.email} to patients table with ID ${newPatientId}`);
+            
+        } catch (error) {
+            errors.push({ email: webPatient.email, error: error.message });
+            logger.error(`Error syncing web patient ${webPatient.email}:`, error);
+        }
+    }
+    
+    logger.info(`Web patients sync completed by ${req.user.email} - Synced: ${syncedCount}, Skipped: ${skippedCount}, Errors: ${errors.length}`);
+    
+    sendSuccess(res, { 
+        syncedCount, 
+        skippedCount, 
+        errorsCount: errors.length,
+        errors: errors.slice(0, 10) // Only return first 10 errors
+    }, `Sync completed: ${syncedCount} synced, ${skippedCount} skipped`);
+}));
+
+// Delete web patient (Admin only)
+router.delete('/api/admin/web-patients/:id', verifyToken, asyncHandler(async (req, res) => {
+    // Check if user is admin/superadmin
+    if (!['superadmin', 'admin'].includes(req.user.role)) {
+        throw new AppError('Unauthorized access', HTTP_STATUS.FORBIDDEN);
+    }
+    
+    const patientId = req.params.id;
+    
+    // Check if patient exists
+    const [patients] = await db.query(
+        'SELECT id, fullname FROM web_patients WHERE id = ?',
+        [patientId]
+    );
+    
+    if (patients.length === 0) {
+        throw new AppError('Patient not found', HTTP_STATUS.NOT_FOUND);
+    }
+    
+    // Delete patient
+    await db.query('DELETE FROM web_patients WHERE id = ?', [patientId]);
+    
+    logger.info(`Web patient deleted: ${patients[0].fullname} (ID: ${patientId}) by user: ${req.user.email}`);
+    
+    sendSuccess(res, { patient: patients[0] }, 'Patient deleted successfully');
+}));
+
 module.exports = router;
 
 

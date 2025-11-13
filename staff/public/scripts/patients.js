@@ -671,54 +671,9 @@ async function applyPatientSelection(patient, options = {}) {
         return;
     }
     
-    const patientId = String(patient.patientId || '').padStart(5, '0');
-    
-    // Update display
-    const billingPatientNameEl = document.getElementById('billing-patient-name');
-    const patientSelectedForBillingEl = document.getElementById('patient-selected-for-billing');
-    
-    if (billingPatientNameEl) {
-        billingPatientNameEl.innerHTML = `
-            <span class="badge badge-secondary mr-2">${patientId}</span>
-            ${patient.name}
-        `;
-    }
-    
-    if (patientSelectedForBillingEl) {
-        patientSelectedForBillingEl.classList.remove('d-none');
-        // Scroll to top to show selection
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-    
-    // Set selected patient in billing module
-    if (setSelectedPatientForBilling) {
-        setSelectedPatientForBilling(patient.name, patient);
-    }
-    
-    // Set patient for medical exam and show medical exam menu
-    setCurrentPatientForExam(patient);
-    toggleMedicalExamMenu(true);
-    
-    // Save to session
-    updateSessionPatient(patient);
-    
-    // Store globally for realtime sync
-    window.currentPatientId = patient.id || patient.patientId;
-    
-    // Update patient detail view if available
-    try {
-        await showDetails(patient);
-    } catch (err) {
-        console.warn('[PATIENTS] Failed to show details for auto-selected patient:', err);
-    }
-
-    if (broadcast) {
-        broadcastPatientSelection(patient.id || patient.patientId, patient.name);
-    }
-    
-    if (showToast) {
-        showSuccess(`Pasien "${patient.name}" (${patientId}) dipilih untuk billing`);
-    }
+    // Redirect to medical record page
+    const patientId = patient.id || patient.patientId;
+    window.location.href = `medical-record.html?patientId=${patientId}`;
 }
 
 // Function to select patient for billing
