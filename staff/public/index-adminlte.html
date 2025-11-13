@@ -675,6 +675,12 @@
                         </a>
                     </li>
                     -->
+                    <li class="nav-item superadmin-only d-none" id="nav-manage-patients">
+                        <a href="#" class="nav-link" onclick="showManagePatientsPage(); return false;">
+                            <i class="nav-icon fas fa-users"></i>
+                            <p>Kelola Pasien Web</p>
+                        </a>
+                    </li>
                     <li class="nav-item superadmin-only d-none" id="nav-kelola-obat">
                         <a href="#" class="nav-link" onclick="showKelolaObatPage(); return false;">
                             <i class="nav-icon fas fa-pills"></i>
@@ -2236,6 +2242,44 @@
                                                         <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
                                                         <p>Memuat data...</p>
                                                     </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Manage Web Patients Page (Superadmin Only) -->
+                <div id="manage-patients-page" class="d-none">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card card-primary">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-users mr-2"></i>Kelola Pasien Web</h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table id="manage-patients-table" class="table table-bordered table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>Nama Lengkap</th>
+                                                    <th>Email</th>
+                                                    <th>Telepon</th>
+                                                    <th>Tanggal Lahir</th>
+                                                    <th>Usia</th>
+                                                    <th>Profil Lengkap</th>
+                                                    <th>Tgl Registrasi</th>
+                                                    <th>Status</th>
+                                                    <th>Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="manage-patients-tbody">
+                                                <tr>
+                                                    <td colspan="10" class="text-center">Memuat data...</td>
                                                 </tr>
                                             </tbody>
                                         </table>
