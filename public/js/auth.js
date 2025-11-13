@@ -296,16 +296,20 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Disable submit button
-            const submitBtn = registerForm.querySelector('button[type="submit"]');
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Mendaftar...';
+            const submitBtn = registerForm.querySelector('input[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.value = 'Mendaftar...';
+            }
             
             try {
                 await signUpWithEmail(fullname, email, phone, password);
             } catch (error) {
                 // Re-enable submit button
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'DAFTAR SEKARANG';
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.value = 'DAFTAR SEKARANG';
+                }
             }
         });
     }
@@ -326,16 +330,20 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             // Disable submit button
-            const submitBtn = loginForm.querySelector('button[type="submit"]');
-            submitBtn.disabled = true;
-            submitBtn.textContent = 'Masuk...';
+            const submitBtn = loginForm.querySelector('input[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.value = 'Masuk...';
+            }
             
             try {
                 await signInWithEmail(email, password);
             } catch (error) {
                 // Re-enable submit button
-                submitBtn.disabled = false;
-                submitBtn.textContent = 'MASUK';
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.value = 'MASUK';
+                }
             }
         });
     }
