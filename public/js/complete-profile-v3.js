@@ -55,9 +55,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 const profile = data.user;
                 
                 // Pre-fill available data
-                if (profile.fullname) {
+                if (profile.full_name || profile.fullname) {
                     const fullnameInput = document.getElementById('fullname');
-                    if (fullnameInput) fullnameInput.value = profile.fullname;
+                    if (fullnameInput) fullnameInput.value = profile.full_name || profile.fullname;
                 }
                 if (profile.phone) {
                     const phoneInput = document.getElementById('phone');

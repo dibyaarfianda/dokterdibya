@@ -195,8 +195,8 @@ async function showDetails(p) {
         </div>
         <div class="mt-2">
             <button class="btn btn-sm btn-primary mr-2" id="btn-use-patient">Gunakan untuk Tagihan</button>
-            <button class="btn btn-sm btn-warning mr-2" id="btn-edit-patient">Edit Data</button>
-            <button class="btn btn-sm btn-danger" id="btn-delete-patient">Hapus Pasien</button>
+            <button class="btn btn-sm btn-warning" id="btn-edit-patient">Edit Data</button>
+            <!-- Tombol Hapus dihilangkan - hanya tersedia di Kelola Pasien -->
         </div>
     `;
     
@@ -215,10 +215,8 @@ async function showDetails(p) {
         btnEdit.addEventListener('click', () => editPatient(p));
     }
     
-    const btnDelete = document.getElementById('btn-delete-patient');
-    if (btnDelete) {
-        btnDelete.addEventListener('click', () => deletePatient(p));
-    }
+    // Tombol delete dihapus dari detail pasien
+    // Penghapusan hanya bisa dilakukan dari halaman Kelola Pasien
 }
 
 async function loadPatientHistory(patient) {
