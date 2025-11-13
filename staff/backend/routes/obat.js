@@ -16,7 +16,7 @@ router.get('/api/obat', verifyToken, requirePermission('medications.view'), asyn
         const { category, active } = req.query;
         
         // Generate cache key
-        const cacheKey = `obat:list:${category || 'all'}:${active || 'all'}`;
+        const cacheKey = `obat:list:${category || 'all'}:${active || 'active-only'}`;
         
         // Try to get from cache
         const cached = cache.get(cacheKey, 'medium');
@@ -32,9 +32,14 @@ router.get('/api/obat', verifyToken, requirePermission('medications.view'), asyn
             params.push(category);
         }
         
-        if (active !== undefined) {
-            query += ' AND is_active = ?';
-            params.push(active === 'true' ? 1 : 0);
+        // Default to showing only active items unless explicitly requested
+        if (active === 'false') {
+            query += ' AND is_active = 0';
+        } else if (active === 'all') {
+            // Show all items (active and inactive)
+        } else {
+            // Default: show only active items
+            query += ' AND is_active = 1';
         }
         
         query += ' ORDER BY category, name';
@@ -149,45 +154,59 @@ router.put('/api/obat/:id', verifyToken, requirePermission('settings.medications
     }
 });
 
-// UPDATE STOCK (for deducting after finalization)
+// UPDATE STOCK (for deducting after finalization or manual adjustment)
 router.patch('/api/obat/:id/stock', async (req, res) => {
     try {
-        const { quantity } = req.body;
+        const { quantity, adjustment } = req.body;
         
-        if (quantity === undefined) {
+        // Support both quantity (for deduction) and adjustment (for +/- changes)
+        if (quantity === undefined && adjustment === undefined) {
             return res.status(400).json({ 
                 success: false, 
-                message: 'Quantity is required' 
+                message: 'Quantity or adjustment is required' 
             });
         }
         
         // Get current stock
-        const [rows] = await db.query('SELECT stock FROM obat WHERE id = ?', [req.params.id]);
+        const [rows] = await db.query('SELECT stock, name FROM obat WHERE id = ?', [req.params.id]);
         
         if (rows.length === 0) {
             return res.status(404).json({ success: false, message: 'Obat not found' });
         }
         
         const currentStock = rows[0].stock;
-        const newStock = currentStock - quantity;
+        let newStock;
+        
+        if (adjustment !== undefined) {
+            // Manual adjustment: add or subtract
+            newStock = currentStock + parseInt(adjustment);
+        } else {
+            // Quantity deduction: subtract quantity
+            newStock = currentStock - quantity;
+        }
         
         if (newStock < 0) {
             return res.status(400).json({ 
                 success: false, 
                 message: 'Stok tidak mencukupi',
                 currentStock,
-                requested: quantity
+                requested: quantity || adjustment
             });
         }
         
         // Update stock
         await db.query('UPDATE obat SET stock = ? WHERE id = ?', [newStock, req.params.id]);
         
+        // Invalidate cache
+        cache.delPattern('obat:');
+        
         res.json({ 
             success: true, 
             message: 'Stock updated successfully',
+            obatName: rows[0].name,
             oldStock: currentStock,
-            newStock: newStock
+            newStock: newStock,
+            change: newStock - currentStock
         });
     } catch (error) {
         console.error('Error updating stock:', error);

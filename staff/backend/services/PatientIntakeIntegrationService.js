@@ -175,7 +175,7 @@ async function ensurePatient(connection, record, sanitizedPhone) {
     const nextId = rows[0]?.nextId || '00001';
 
     await connection.query(
-        'INSERT INTO patients (id, full_name, whatsapp, birth_date, age, is_pregnant, allergy, medical_history, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?, NOW(), NOW())',
+        'INSERT INTO patients (id, full_name, whatsapp, birth_date, age, is_pregnant, allergy, medical_history, patient_type, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?, NOW(), NOW())',
         [
             nextId,
             payload.full_name || 'Pasien Intake',
@@ -184,6 +184,7 @@ async function ensurePatient(connection, record, sanitizedPhone) {
             age,
             allergy,
             medicalHistory,
+            'web',
         ]
     );
 

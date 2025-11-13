@@ -21,11 +21,11 @@ const paraField = document.getElementById('para');
 const abortusField = document.getElementById('abortus');
 const livingChildrenField = document.getElementById('living_children');
 const pregnanciesTable = document.querySelector('table[data-collection="pregnancies"]');
-// Prenatal and Lab tables removed - will be filled by staff in medical-record.html
+// Prenatal and Lab sections removed - will be filled by staff
 // const prenatalTable = document.querySelector('table[data-collection="prenatal"]');
 // const labTable = document.querySelector('table[data-collection="labs"]');
-const addPrenatalRowBtn = document.getElementById('add-prenatal-row');
-const addLabRowBtn = document.getElementById('add-lab-row');
+// const addPrenatalRowBtn = document.getElementById('add-prenatal-row');
+// const addLabRowBtn = document.getElementById('add-lab-row');
 const patientSignatureField = document.getElementById('patient_signature');
 let currentStep = 0;
 let saveTimer;
@@ -104,18 +104,19 @@ function createPrenatalRow(index) {
     return tr;
 }
 
-function createLabRow(index) {
-    const tr = document.createElement('tr');
-    tr.dataset.index = String(index);
-    tr.innerHTML = `
-        <td><input type="text" name="lab_test_${index}" placeholder="Nama tes"></td>
-        <td><input type="text" name="lab_recommend_${index}" placeholder="Waktu rekomendasi"></td>
-        <td><input type="date" name="lab_date_${index}"></td>
-        <td><textarea name="lab_result_${index}" rows="1" placeholder="hasil"></textarea></td>
-        <td><textarea name="lab_follow_${index}" rows="1" placeholder="tindak lanjut"></textarea></td>
-    `;
-    return tr;
-}
+// Lab section removed - will be filled by staff in Data Pasien
+// function createLabRow(index) {
+//     const tr = document.createElement('tr');
+//     tr.dataset.index = String(index);
+//     tr.innerHTML = `
+//         <td><input type="text" name="lab_test_${index}" placeholder="Nama tes"></td>
+//         <td><input type="text" name="lab_recommend_${index}" placeholder="Waktu rekomendasi"></td>
+//         <td><input type="date" name="lab_date_${index}"></td>
+//         <td><textarea name="lab_result_${index}" rows="1" placeholder="hasil"></textarea></td>
+//         <td><textarea name="lab_follow_${index}" rows="1" placeholder="tindak lanjut"></textarea></td>
+//     `;
+//     return tr;
+// }
 
 function ensureTableRow(table, createRow, targetIndex) {
     if (!table) {

@@ -21,9 +21,14 @@ router.get('/api/tindakan', verifyToken, requirePermission('services.view'), asy
             params.push(category);
         }
         
-        if (active !== undefined) {
-            query += ' AND is_active = ?';
-            params.push(active === 'true' ? 1 : 0);
+        // Default to showing only active items unless explicitly requested
+        if (active === 'false') {
+            query += ' AND is_active = 0';
+        } else if (active === 'all') {
+            // Show all items (active and inactive)
+        } else {
+            // Default: show only active items
+            query += ' AND is_active = 1';
         }
         
         query += ' ORDER BY CASE category ' +

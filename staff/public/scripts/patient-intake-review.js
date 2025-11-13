@@ -98,7 +98,17 @@ async function authorizedFetch(path, options = {}) {
     if (options.body && !headers.has('Content-Type')) {
         headers.set('Content-Type', 'application/json');
     }
-    const response = await fetch(path.startsWith('http') ? path : `${API_BASE}${path}`, {
+    // Add cache-busting headers
+    headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    headers.set('Pragma', 'no-cache');
+    headers.set('Expires', '0');
+    
+    // Add timestamp to URL for cache-busting
+    const fullPath = path.startsWith('http') ? path : `${API_BASE}${path}`;
+    const separator = fullPath.includes('?') ? '&' : '?';
+    const cacheBustingUrl = `${fullPath}${separator}_=${Date.now()}`;
+    
+    const response = await fetch(cacheBustingUrl, {
         ...options,
         headers,
     });
