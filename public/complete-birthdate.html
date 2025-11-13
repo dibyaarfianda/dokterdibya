@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lengkapi Tanggal Lahir - Dokter Dibya</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,300,600,700' rel='stylesheet' type='text/css'>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Open Sans', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .birthdate-container {
+            background: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .birthdate-container h2 {
+            color: #667eea;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .birthdate-container p.subtitle {
+            color: #666;
+            font-size: 15px;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-group label {
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 8px;
+            display: block;
+        }
+        
+        .form-control {
+            height: 48px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 10px 15px;
+            font-size: 15px;
+            transition: all 0.3s;
+        }
+        
+        .form-control:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            outline: none;
+        }
+        
+        .btn-submit {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            padding: 14px 30px;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .icon-calendar {
+            color: #667eea;
+            font-size: 48px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .alert {
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .alert-success {
+            background: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        
+        .alert-danger {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
+        }
+        
+        .help-text {
+            font-size: 13px;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .required {
+            color: #e74c3c;
+        }
+        
+        @media (max-width: 576px) {
+            .birthdate-container {
+                padding: 30px 20px;
+            }
+            
+            .birthdate-container h2 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="birthdate-container">
+        <div class="icon-calendar">
+            <i class="fa fa-calendar"></i>
+        </div>
+        
+        <h2>Lengkapi Data Anda</h2>
+        <p class="subtitle">Mohon isi tanggal lahir Anda untuk melanjutkan</p>
+        
+        <div id="alert-message" class="alert"></div>
+        
+        <form id="birthdate-form">
+            <div class="form-group">
+                <label for="birth_date">
+                    Tanggal Lahir <span class="required">*</span>
+                </label>
+                <input 
+                    type="date" 
+                    class="form-control" 
+                    id="birth_date" 
+                    name="birth_date" 
+                    required
+                    max="<?php echo date('Y-m-d'); ?>"
+                >
+                <p class="help-text">
+                    <i class="fa fa-info-circle"></i> 
+                    Tanggal lahir diperlukan untuk keperluan rekam medis
+                </p>
+            </div>
+            
+            <button type="submit" class="btn-submit" id="submit-btn">
+                <i class="fa fa-check-circle"></i> Simpan & Lanjutkan
+            </button>
+        </form>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        const API_BASE_URL = '/api/patients';
+        
+        // Show message
+        function showMessage(message, type) {
+            const alertDiv = document.getElementById('alert-message');
+            alertDiv.className = 'alert alert-' + (type === 'error' ? 'danger' : 'success');
+            alertDiv.textContent = message;
+            alertDiv.style.display = 'block';
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    alertDiv.style.display = 'none';
+                }, 3000);
+            }
+        }
+        
+        // Set max date to today
+        document.getElementById('birth_date').setAttribute('max', new Date().toISOString().split('T')[0]);
+        
+        // Check authentication
+        const token = localStorage.getItem('patient_token');
+        if (!token) {
+            window.location.href = '/index.html';
+        }
+        
+        // Handle form submission
+        document.getElementById('birthdate-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const birthDate = document.getElementById('birth_date').value;
+            const submitBtn = document.getElementById('submit-btn');
+            
+            if (!birthDate) {
+                showMessage('Tanggal lahir harus diisi', 'error');
+                return;
+            }
+            
+            // Validate age (must be at least born, max 150 years old)
+            const birthDateObj = new Date(birthDate);
+            const today = new Date();
+            const age = Math.floor((today - birthDateObj) / (365.25 * 24 * 60 * 60 * 1000));
+            
+            if (age < 0) {
+                showMessage('Tanggal lahir tidak valid', 'error');
+                return;
+            }
+            
+            if (age > 150) {
+                showMessage('Tanggal lahir tidak valid', 'error');
+                return;
+            }
+            
+            // Disable button
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Menyimpan...';
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/update-birthdate`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ birth_date: birthDate })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.message || 'Gagal menyimpan tanggal lahir');
+                }
+                
+                showMessage('Tanggal lahir berhasil disimpan!', 'success');
+                
+                // Update localStorage if user data exists
+                const userData = localStorage.getItem('patient_user');
+                if (userData) {
+                    const user = JSON.parse(userData);
+                    user.birth_date = birthDate;
+                    localStorage.setItem('patient_user', JSON.stringify(user));
+                }
+                
+                // Redirect to profile completion
+                setTimeout(() => {
+                    window.location.href = '/complete-profile.html';
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Error:', error);
+                showMessage(error.message, 'error');
+                
+                // Re-enable button
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa fa-check-circle"></i> Simpan & Lanjutkan';
+            }
+        });
+    </script>
+</body>
+</html>

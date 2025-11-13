@@ -209,9 +209,9 @@ router.get('/api/admin/web-patients', verifyToken, asyncHandler(async (req, res)
     }
     
     const [patients] = await db.query(
-        `SELECT id, fullname, email, phone, birth_date, age, photo_url, 
+        `SELECT id, full_name AS fullname, email, phone, birth_date, age, photo_url, 
                 registration_date, status, profile_completed, created_at, updated_at 
-         FROM web_patients 
+         FROM patients 
          ORDER BY registration_date DESC`
     );
     
@@ -230,9 +230,9 @@ router.get('/api/admin/web-patients/:id', verifyToken, asyncHandler(async (req, 
     const patientId = req.params.id;
     
     const [patients] = await db.query(
-        `SELECT id, fullname, email, phone, birth_date, age, photo_url, google_id,
+        `SELECT id, full_name AS fullname, email, phone, birth_date, age, photo_url, google_id,
                 registration_date, status, profile_completed, created_at, updated_at 
-         FROM web_patients 
+         FROM patients 
          WHERE id = ?`,
         [patientId]
     );
@@ -263,7 +263,7 @@ router.patch('/api/admin/web-patients/:id/status', verifyToken, asyncHandler(asy
     
     // Check if patient exists
     const [patients] = await db.query(
-        'SELECT id, fullname FROM web_patients WHERE id = ?',
+        'SELECT id, full_name AS fullname FROM patients WHERE id = ?',
         [patientId]
     );
     
@@ -273,7 +273,7 @@ router.patch('/api/admin/web-patients/:id/status', verifyToken, asyncHandler(asy
     
     // Update status
     await db.query(
-        'UPDATE web_patients SET status = ?, updated_at = NOW() WHERE id = ?',
+        'UPDATE patients SET status = ?, updated_at = NOW() WHERE id = ?',
         [status, patientId]
     );
     
@@ -395,23 +395,119 @@ router.delete('/api/admin/web-patients/:id', verifyToken, asyncHandler(async (re
     }
     
     const patientId = req.params.id;
+    const connection = await db.getConnection();
     
-    // Check if patient exists
-    const [patients] = await db.query(
-        'SELECT id, fullname FROM web_patients WHERE id = ?',
-        [patientId]
-    );
-    
-    if (patients.length === 0) {
-        throw new AppError('Patient not found', HTTP_STATUS.NOT_FOUND);
+    try {
+        await connection.beginTransaction();
+        
+        // Check if patient exists
+        const [patients] = await connection.query(
+            'SELECT id, full_name, email FROM patients WHERE id = ?',
+            [patientId]
+        );
+        
+        if (patients.length === 0) {
+            await connection.rollback();
+            connection.release();
+            throw new AppError('Patient not found', HTTP_STATUS.NOT_FOUND);
+        }
+        
+        const patient = patients[0];
+        const deletionLog = {
+            patient_id: patientId,
+            patient_name: patient.full_name,
+            patient_email: patient.email,
+            deleted_data: {}
+        };
+        
+        // URUTAN PENGHAPUSAN (sama seperti di patients.js)
+        
+        // 1. Hapus billing_items
+        const [billingItemsResult] = await connection.query(
+            'DELETE FROM billing_items WHERE billing_id IN (SELECT id FROM billings WHERE patient_id = ?)',
+            [patientId]
+        );
+        deletionLog.deleted_data.billing_items = billingItemsResult.affectedRows;
+        
+        // 2. Hapus payment_transactions
+        const [paymentResult] = await connection.query(
+            'DELETE FROM payment_transactions WHERE billing_id IN (SELECT id FROM billings WHERE patient_id = ?)',
+            [patientId]
+        );
+        deletionLog.deleted_data.payment_transactions = paymentResult.affectedRows;
+        
+        // 3. Hapus billings
+        const [billingsResult] = await connection.query(
+            'DELETE FROM billings WHERE patient_id = ?',
+            [patientId]
+        );
+        deletionLog.deleted_data.billings = billingsResult.affectedRows;
+        
+        // 4. Hapus patient_records
+        const [recordsResult] = await connection.query(
+            'DELETE FROM patient_records WHERE patient_id = ?',
+            [patientId]
+        );
+        deletionLog.deleted_data.patient_records = recordsResult.affectedRows;
+        
+        // 5. Hapus medical_records
+        const [medicalResult] = await connection.query(
+            'DELETE FROM medical_records WHERE patient_id = ?',
+            [patientId]
+        );
+        deletionLog.deleted_data.medical_records = medicalResult.affectedRows;
+        
+        // 6. Hapus medical_exams
+        const [examsResult] = await connection.query(
+            'DELETE FROM medical_exams WHERE patient_id = ?',
+            [patientId]
+        );
+        deletionLog.deleted_data.medical_exams = examsResult.affectedRows;
+        
+        // 7. Hapus visits
+        const [visitsResult] = await connection.query(
+            'DELETE FROM visits WHERE patient_id = ?',
+            [patientId]
+        );
+        deletionLog.deleted_data.visits = visitsResult.affectedRows;
+        
+        // 8. Hapus appointments
+        const [appointmentsResult] = await connection.query(
+            'DELETE FROM appointments WHERE patient_id = ?',
+            [patientId]
+        );
+        deletionLog.deleted_data.appointments = appointmentsResult.affectedRows;
+        
+        // 9. Hapus patient intake submissions (skip if table doesn't exist)
+        try {
+            const [intakeResult] = await connection.query(
+                'DELETE FROM patient_intake_submissions WHERE patient_id = ?',
+                [patientId]
+            );
+            deletionLog.deleted_data.patient_intake_submissions = intakeResult.affectedRows;
+        } catch (intakeError) {
+            // Table might not exist, skip
+            deletionLog.deleted_data.patient_intake_submissions = 0;
+        }
+        
+        // 10. TERAKHIR: Hapus patients
+        await connection.query('DELETE FROM patients WHERE id = ?', [patientId]);
+        
+        await connection.commit();
+        connection.release();
+        
+        logger.info(`Patient deleted: ${patient.full_name} (ID: ${patientId}) by user: ${req.user.email}`, deletionLog.deleted_data);
+        
+        sendSuccess(res, { 
+            patient: patient,
+            deleted_data: deletionLog.deleted_data
+        }, `Patient ${patient.full_name} and all related data deleted successfully`);
+        
+    } catch (error) {
+        await connection.rollback();
+        connection.release();
+        throw error;
     }
-    
-    // Delete patient
-    await db.query('DELETE FROM web_patients WHERE id = ?', [patientId]);
-    
-    logger.info(`Web patient deleted: ${patients[0].fullname} (ID: ${patientId}) by user: ${req.user.email}`);
-    
-    sendSuccess(res, { patient: patients[0] }, 'Patient deleted successfully');
 }));
 
 module.exports = router;

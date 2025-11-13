@@ -279,6 +279,54 @@
             font-size: 0.7rem;
             padding: 2px 6px;
         }
+        
+        /* Floating Kelola Pasien Panel */
+        #floating-kelola-pasien {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 1040;
+            background: white;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+        
+        #floating-kelola-pasien.collapsed {
+            transform: translateY(calc(100% - 50px));
+        }
+        
+        #floating-kelola-pasien .card {
+            margin-bottom: 0;
+            border-radius: 0;
+        }
+        
+        #floating-kelola-pasien .card-header {
+            cursor: pointer;
+            user-select: none;
+        }
+        
+        #floating-kelola-pasien .toggle-icon {
+            transition: transform 0.3s ease;
+        }
+        
+        #floating-kelola-pasien.collapsed .toggle-icon {
+            transform: rotate(180deg);
+        }
+        
+        /* Adjust main content for floating panel */
+        body:not(.sidebar-collapse) .content-wrapper {
+            padding-bottom: 60px;
+        }
+        
+        /* Hide on mobile */
+        @media (max-width: 768px) {
+            #floating-kelola-pasien {
+                display: none;
+            }
+        }
     </style>
 
         <!-- Mobile Responsive Styles -->
@@ -652,7 +700,7 @@
                     <li class="nav-item superadmin-only d-none" id="nav-manage-patients">
                         <a href="#" class="nav-link" onclick="showManagePatientsPage(); return false;">
                             <i class="nav-icon fas fa-users"></i>
-                            <p>Kelola Pasien Web</p>
+                            <p>Kelola Pasien</p>
                         </a>
                     </li>
                     <li class="nav-item superadmin-only d-none" id="nav-kelola-obat">
@@ -2232,7 +2280,7 @@
                         <div class="col-12">
                             <div class="card card-primary">
                                 <div class="card-header">
-                                    <h3 class="card-title"><i class="fas fa-users mr-2"></i>Kelola Pasien Web</h3>
+                                    <h3 class="card-title"><i class="fas fa-users mr-2"></i>Kelola Pasien</h3>
                                     <div class="card-tools">
                                         <button type="button" class="btn btn-success btn-sm" onclick="syncWebPatients()" id="sync-web-patients-btn">
                                             <i class="fas fa-sync mr-1"></i> Sinkronisasi ke Data Pasien
@@ -2688,6 +2736,26 @@
         console.log('Socket.IO disconnected');
     });
     
+    // Global helper to hide floating panel
+    window.hideFloatingPanel = function() {
+        const floatingPanel = document.getElementById('floating-kelola-pasien');
+        if (floatingPanel) {
+            floatingPanel.classList.add('d-none');
+        }
+    };
+    
+    // Intercept all navigation clicks to hide floating panel except Kelola Pasien
+    document.addEventListener('click', function(e) {
+        const navLink = e.target.closest('.nav-link');
+        if (navLink && navLink.getAttribute('onclick')) {
+            const onclickValue = navLink.getAttribute('onclick');
+            // Only hide if NOT navigating to Kelola Pasien page
+            if (!onclickValue.includes('showManagePatientsPage')) {
+                hideFloatingPanel();
+            }
+        }
+    });
+    
     // Manage Web Patients Page Functions
     window.showManagePatientsPage = function() {
         // Hide all pages
@@ -2699,6 +2767,12 @@
         // Update active nav
         document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
         document.querySelector('#nav-manage-patients .nav-link').classList.add('active');
+        
+        // Show floating panel
+        const floatingPanel = document.getElementById('floating-kelola-pasien');
+        if (floatingPanel) {
+            floatingPanel.classList.remove('d-none');
+        }
         
         // Load patients data
         loadWebPatients();
@@ -2729,7 +2803,7 @@
             const tbody = document.getElementById('manage-patients-tbody');
             
             if (!data.data || !data.data.patients || data.data.patients.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="10" class="text-center">Tidak ada pasien web</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center">Tidak ada pasien</td></tr>';
                 return;
             }
             
@@ -2771,6 +2845,12 @@
                 `;
             }).join('');
             
+            // Also update floating panel if it's visible
+            const floatingPanel = document.getElementById('floating-kelola-pasien');
+            if (floatingPanel && !floatingPanel.classList.contains('d-none') && typeof loadFloatingPanelPatients === 'function') {
+                loadFloatingPanelPatients();
+            }
+            
         } catch (error) {
             console.error('Error loading web patients:', error);
             document.getElementById('manage-patients-tbody').innerHTML = 
@@ -2779,11 +2859,48 @@
     }
     
     window.deleteWebPatient = async function(patientId, patientName) {
-        if (!confirm(`Apakah Anda yakin ingin menghapus pasien "${patientName}"?`)) {
+        // Konfirmasi dengan pesan detail tentang apa yang akan dihapus
+        const confirmMessage = `⚠️ PERINGATAN: Hapus Pasien dan Semua Data Terkait
+
+Anda akan menghapus pasien: "${patientName}"
+
+Data yang akan DIHAPUS PERMANEN:
+✗ Data pasien (profil, email, nomor telepon)
+✗ Riwayat billing dan invoice
+✗ Detail item billing
+✗ Transaksi pembayaran
+✗ Rekam medis (medical records)
+✗ Data pemeriksaan medis
+✗ Riwayat kunjungan
+✗ Janji temu (appointments)
+✗ Form patient intake
+
+⚠️ TINDAKAN INI TIDAK DAPAT DIBATALKAN!
+
+Apakah Anda yakin ingin melanjutkan?`;
+
+        if (!confirm(confirmMessage)) {
             return;
         }
         
+        // Konfirmasi kedua untuk keamanan
+        const secondConfirm = prompt('Ketik "HAPUS" (huruf besar) untuk konfirmasi penghapusan:');
+        if (secondConfirm !== 'HAPUS') {
+            alert('Penghapusan dibatalkan');
+            return;
+        }
+        
+        // Get button reference before try block
+        const deleteBtn = event.target.closest('button');
+        const originalHtml = deleteBtn ? deleteBtn.innerHTML : '';
+        
         try {
+            // Show loading
+            if (deleteBtn) {
+                deleteBtn.disabled = true;
+                deleteBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            }
+            
             const response = await fetch(`/api/admin/web-patients/${patientId}`, {
                 method: 'DELETE',
                 headers: {
@@ -2791,16 +2908,38 @@
                 }
             });
             
+            const result = await response.json();
+            
             if (!response.ok) {
-                throw new Error('Failed to delete patient');
+                throw new Error(result.message || 'Failed to delete patient');
             }
             
-            alert('Pasien berhasil dihapus');
+            // Show success message with details
+            let successMessage = `✅ Pasien "${patientName}" berhasil dihapus!\n\nData yang dihapus:`;
+            if (result.deleted_data) {
+                successMessage += `\n- Billing Items: ${result.deleted_data.billing_items || 0}`;
+                successMessage += `\n- Payment Transactions: ${result.deleted_data.payment_transactions || 0}`;
+                successMessage += `\n- Billings: ${result.deleted_data.billings || 0}`;
+                successMessage += `\n- Patient Records: ${result.deleted_data.patient_records || 0}`;
+                successMessage += `\n- Medical Records: ${result.deleted_data.medical_records || 0}`;
+                successMessage += `\n- Medical Exams: ${result.deleted_data.medical_exams || 0}`;
+                successMessage += `\n- Visits: ${result.deleted_data.visits || 0}`;
+                successMessage += `\n- Appointments: ${result.deleted_data.appointments || 0}`;
+                successMessage += `\n- Intake Submissions: ${result.deleted_data.patient_intake_submissions || 0}`;
+            }
+            
+            alert(successMessage);
             loadWebPatients(); // Reload the list
             
         } catch (error) {
             console.error('Error deleting patient:', error);
-            alert('Gagal menghapus pasien');
+            alert('❌ Gagal menghapus pasien:\n' + error.message);
+            
+            // Restore button
+            if (deleteBtn) {
+                deleteBtn.disabled = false;
+                deleteBtn.innerHTML = originalHtml;
+            }
         }
     };
     
@@ -2857,7 +2996,7 @@
                         <div class="modal-content">
                             <div class="modal-header bg-info">
                                 <h4 class="modal-title">
-                                    <i class="fas fa-user-circle"></i> Detail Pasien Web
+                                    <i class="fas fa-user-circle"></i> Detail Pasien
                                 </h4>
                                 <button type="button" class="close" data-dismiss="modal">&times;</button>
                             </div>
@@ -3028,6 +3167,12 @@
         // Update active nav
         document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
         document.querySelector('#nav-kelola-obat .nav-link').classList.add('active');
+        
+        // Hide floating panel
+        const floatingPanel = document.getElementById('floating-kelola-pasien');
+        if (floatingPanel) {
+            floatingPanel.classList.add('d-none');
+        }
     };
     
     // Kelola Tindakan (Pengaturan) Page Function
@@ -3041,11 +3186,128 @@
         // Update active nav
         document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
         document.querySelector('#nav-pengaturan .nav-link').classList.add('active');
+        
+        // Hide floating panel
+        const floatingPanel = document.getElementById('floating-kelola-pasien');
+        if (floatingPanel) {
+            floatingPanel.classList.add('d-none');
+        }
     };
  </script>
 
  <!-- Chat Popup Widget -->
  <script src="./scripts/chat-popup.js"></script>
+
+</div><!-- /.wrapper -->
+
+ <!-- Floating Kelola Pasien Panel (Superadmin only) - Outside wrapper for global visibility -->
+ <div id="floating-kelola-pasien" class="superadmin-only d-none collapsed">
+    <div class="card card-primary">
+        <div class="card-header" onclick="toggleFloatingPanel()">
+            <h3 class="card-title">
+                <i class="fas fa-users mr-2"></i>Kelola Pasien
+                <span class="badge badge-light ml-2" id="floating-patient-count">0</span>
+            </h3>
+            <div class="card-tools">
+                <i class="fas fa-chevron-up toggle-icon"></i>
+            </div>
+        </div>
+        <div class="card-body p-2">
+            <div class="table-responsive" style="max-height: 40vh; overflow-y: auto;">
+                <table class="table table-sm table-hover">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Nama</th>
+                            <th>Email</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="floating-patients-tbody">
+                        <tr><td colspan="5" class="text-center">Loading...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+ </div>
+
+ <script>
+    // Toggle floating panel
+    window.toggleFloatingPanel = function() {
+        const panel = document.getElementById('floating-kelola-pasien');
+        panel.classList.toggle('collapsed');
+    };
+    
+    // Load floating panel patients
+    async function loadFloatingPanelPatients() {
+        // Only load if panel is visible
+        const panel = document.getElementById('floating-kelola-pasien');
+        if (!panel || panel.classList.contains('d-none')) {
+            console.log('Floating panel not visible, skipping load');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/admin/web-patients', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('vps_auth_token')}`
+                }
+            });
+            
+            if (!response.ok) return;
+            
+            const data = await response.json();
+            const tbody = document.getElementById('floating-patients-tbody');
+            const countBadge = document.getElementById('floating-patient-count');
+            
+            if (!data.data || !data.data.patients || data.data.patients.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Tidak ada pasien</td></tr>';
+                countBadge.textContent = '0';
+                return;
+            }
+            
+            const patients = data.data.patients;
+            countBadge.textContent = patients.length;
+            
+            tbody.innerHTML = patients.map(p => `
+                <tr>
+                    <td><small>${p.id}</small></td>
+                    <td><strong>${p.fullname || '-'}</strong></td>
+                    <td><small>${p.email || '-'}</small></td>
+                    <td>
+                        <span class="badge badge-${p.status === 'active' ? 'success' : p.status === 'inactive' ? 'secondary' : 'warning'} badge-sm">
+                            ${p.status || 'active'}
+                        </span>
+                    </td>
+                    <td>
+                        <button class="btn btn-info btn-xs" onclick="showPatientDetail('${p.id}')" title="Detail">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-danger btn-xs" onclick="deleteWebPatient('${p.id}', '${(p.fullname || '').replace(/'/g, "\\'")}', event)" title="Hapus">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+            
+        } catch (error) {
+            console.error('Error loading floating panel patients:', error);
+        }
+    }
+    
+    // Auto-refresh floating panel every 30 seconds
+    setInterval(() => {
+        const panel = document.getElementById('floating-kelola-pasien');
+        if (panel && !panel.classList.contains('d-none')) {
+            loadFloatingPanelPatients();
+        }
+    }, 30000);
+    
+    // Panel will be shown only when showManagePatientsPage() is called
+    // No auto-load on page load - panel stays hidden by default
+ </script>
 
 </body>
 </html>

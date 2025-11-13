@@ -90,11 +90,11 @@ async function signUpWithEmail(fullname, email, phone, password) {
         localStorage.setItem('patient_user', JSON.stringify(data.user));
         
         // Show success message
-        showMessage('Registrasi berhasil! Mengalihkan...', 'success');
+        showMessage('Registrasi berhasil! Silakan cek email Anda untuk verifikasi.', 'success');
         
-        // Check profile completion and redirect accordingly
-        setTimeout(async () => {
-            await checkProfileCompletionAndRedirect();
+        // Redirect to email verification page
+        setTimeout(() => {
+            window.location.href = '/verify-email.html';
         }, 1500);
         
     } catch (error) {
@@ -221,6 +221,19 @@ async function checkProfileCompletionAndRedirect() {
         const data = await res.json();
         const profile = data.user;
 
+        // Check email verification FIRST (most important)
+        if (profile.email_verified === 0 || profile.email_verified === false) {
+            console.log('Email not verified, redirecting to verify-email');
+            window.location.href = '/verify-email.html';
+            return;
+        }
+
+        // Check birth_date second (required for all patients)
+        if (!profile.birth_date) {
+            window.location.href = '/complete-birthdate.html';
+            return;
+        }
+
         // Check if profile is completed
         if (profile.profile_completed === 1) {
             window.location.href = REDIRECT_AFTER_LOGIN;
@@ -229,8 +242,8 @@ async function checkProfileCompletionAndRedirect() {
         }
     } catch (error) {
         console.error('Profile check error:', error);
-        // On error, redirect to complete profile to be safe
-        window.location.href = '/complete-profile.html';
+        // On error, redirect to verify email to be safe
+        window.location.href = '/verify-email.html';
     }
 }
 
