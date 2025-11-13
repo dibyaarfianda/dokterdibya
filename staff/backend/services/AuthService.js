@@ -20,25 +20,31 @@ const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '24h';
 
 class AuthService {
     /**
-     * Authenticate user with username and password
+     * Authenticate user with email and password
      */
-    async login(username, password) {
-        // Find user
+    async login(email, password) {
+        // Find user by email
+        console.log('Login attempt with email:', email);
         const user = await db.queryOne(
-            'SELECT * FROM users WHERE username = ?',
-            [username]
+            'SELECT * FROM users WHERE email = ?',
+            [email]
         );
         
+        console.log('User found:', user ? 'YES' : 'NO');
+        
         if (!user) {
-            logger.warn('Login failed: user not found', { username });
+            logger.warn('Login failed: user not found', { email });
             throw new AppError(ERROR_MESSAGES.INVALID_CREDENTIALS, HTTP_STATUS.UNAUTHORIZED);
         }
         
         // Verify password
-        const isValidPassword = await bcrypt.compare(password, user.password);
+        console.log('Comparing passwords...');
+        const isValidPassword = await bcrypt.compare(password, user.password_hash);
+        
+        console.log('Password valid:', isValidPassword);
         
         if (!isValidPassword) {
-            logger.warn('Login failed: invalid password', { username, userId: user.id });
+            logger.warn('Login failed: invalid password', { email, userId: user.id });
             throw new AppError(ERROR_MESSAGES.INVALID_CREDENTIALS, HTTP_STATUS.UNAUTHORIZED);
         }
         
@@ -46,9 +52,9 @@ class AuthService {
         const token = this._generateToken(user);
         
         // Remove password from response
-        const { password: _, ...userWithoutPassword } = user;
+        const { password_hash: _, ...userWithoutPassword } = user;
         
-        logger.info('User logged in successfully', { username, userId: user.id });
+        logger.info('User logged in successfully', { email, userId: user.id });
         
         return {
             token,
@@ -61,7 +67,7 @@ class AuthService {
      */
     async getUserById(userId) {
         const user = await db.queryOne(
-            'SELECT id, username, full_name, role FROM users WHERE id = ?',
+            'SELECT id, name, email, role FROM users WHERE id = ?',
             [userId]
         );
         
@@ -87,7 +93,7 @@ class AuthService {
         }
         
         // Verify old password
-        const isValidPassword = await bcrypt.compare(oldPassword, user.password);
+        const isValidPassword = await bcrypt.compare(oldPassword, user.password_hash);
         
         if (!isValidPassword) {
             logger.warn('Password change failed: invalid old password', { userId });
@@ -98,9 +104,9 @@ class AuthService {
         const hashedPassword = await bcrypt.hash(newPassword, 10);
         
         // Update password
-        await db.updateById('users', userId, { password: hashedPassword });
+        await db.updateById('users', userId, { password_hash: hashedPassword });
         
-        logger.info('Password changed successfully', { userId, username: user.username });
+        logger.info('Password changed successfully', { userId, email: user.email });
     }
     
     /**

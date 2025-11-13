@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Riwayat Kontrol - Dokter Dibya</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,300,600,700' rel='stylesheet' type='text/css'>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: #303030;
+            color: #ffffff;
+            font-family: 'Open Sans', sans-serif;
+            font-weight: 300;
+            margin: 0;
+            padding: 0;
+        }
+        
+        a {
+            color: #47C6F8;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            color: #0FF;
+            text-decoration: none;
+        }
+        
+        /* Header */
+        header {
+            background: #202020;
+            padding: 20px 0;
+            border-bottom: 1px solid #404040;
+        }
+        
+        header .phone,
+        header .email {
+            color: #ffffff;
+            font-size: 14px;
+            margin-bottom: 0;
+        }
+        
+        header .phone i,
+        header .email i {
+            color: #28a7e9;
+            margin-right: 5px;
+        }
+        
+        header h1 {
+            color: #28a7e9;
+            font-size: 28px;
+            font-weight: 700;
+            margin: 20px 0 10px;
+        }
+        
+        header p.subtitle {
+            color: #cccccc;
+            font-size: 14px;
+            margin: 0;
+        }
+        
+        /* Navigation */
+        .nav-bar {
+            background: #1a1a1a;
+            border-bottom: 1px solid #404040;
+            padding: 0;
+            margin: 0;
+        }
+        
+        .nav-bar a {
+            display: inline-block;
+            padding: 15px 20px;
+            color: #ffffff;
+            transition: all 0.3s;
+        }
+        
+        .nav-bar a:hover,
+        .nav-bar a.active {
+            background: #28a7e9;
+            color: #ffffff;
+        }
+        
+        .nav-bar a i {
+            margin-right: 5px;
+        }
+        
+        /* Main Content */
+        .main-content {
+            padding: 30px 15px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .page-header {
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #404040;
+        }
+        
+        .page-header h2 {
+            color: #28a7e9;
+            font-size: 32px;
+            font-weight: 600;
+            margin: 0 0 10px;
+        }
+        
+        .page-header p {
+            color: #cccccc;
+            font-size: 16px;
+            margin: 0;
+        }
+        
+        /* Visit Card */
+        .visit-card {
+            background: #202020;
+            border: 1px solid #404040;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+        
+        .visit-card:hover {
+            border-color: #28a7e9;
+            box-shadow: 0 5px 20px rgba(40, 167, 233, 0.2);
+        }
+        
+        .visit-card-header {
+            background: linear-gradient(135deg, #28a7e9 0%, #1e7db0 100%);
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+        
+        .visit-card-header:hover {
+            background: linear-gradient(135deg, #2bb5f8 0%, #2390c7 100%);
+        }
+        
+        .visit-date-info {
+            flex: 1;
+        }
+        
+        .visit-date {
+            font-size: 20px;
+            font-weight: 600;
+            color: #ffffff;
+            margin: 0 0 5px;
+        }
+        
+        .visit-meta {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.9);
+            margin: 0;
+        }
+        
+        .visit-status {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+        
+        .status-paid {
+            background: #27ae60;
+            color: #ffffff;
+        }
+        
+        .status-unpaid {
+            background: #e74c3c;
+            color: #ffffff;
+        }
+        
+        .status-partial {
+            background: #f39c12;
+            color: #ffffff;
+        }
+        
+        .visit-toggle {
+            color: #ffffff;
+            font-size: 24px;
+            transition: transform 0.3s;
+        }
+        
+        .visit-toggle.rotated {
+            transform: rotate(180deg);
+        }
+        
+        .visit-card-body {
+            padding: 0;
+            display: none;
+            background: #1a1a1a;
+        }
+        
+        .visit-card-body.show {
+            display: block;
+        }
+        
+        /* Tabs */
+        .visit-tabs {
+            background: #252525;
+            border-bottom: 1px solid #404040;
+            padding: 0;
+            margin: 0;
+            display: flex;
+        }
+        
+        .visit-tab {
+            flex: 1;
+            padding: 15px 20px;
+            text-align: center;
+            color: #cccccc;
+            cursor: pointer;
+            border-right: 1px solid #404040;
+            transition: all 0.3s;
+            font-weight: 500;
+        }
+        
+        .visit-tab:last-child {
+            border-right: none;
+        }
+        
+        .visit-tab:hover {
+            background: #2a2a2a;
+            color: #ffffff;
+        }
+        
+        .visit-tab.active {
+            background: #28a7e9;
+            color: #ffffff;
+        }
+        
+        .visit-tab i {
+            margin-right: 5px;
+        }
+        
+        .tab-content-panel {
+            display: none;
+            padding: 25px;
+        }
+        
+        .tab-content-panel.active {
+            display: block;
+        }
+        
+        /* Medical Record Section */
+        .record-section {
+            margin-bottom: 25px;
+        }
+        
+        .record-section h4 {
+            color: #28a7e9;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0 0 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #404040;
+        }
+        
+        .record-item {
+            background: #252525;
+            padding: 15px;
+            margin-bottom: 12px;
+            border-radius: 6px;
+            border-left: 3px solid #28a7e9;
+        }
+        
+        .record-label {
+            color: #28a7e9;
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+        
+        .record-value {
+            color: #ffffff;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        
+        .vital-signs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 12px;
+        }
+        
+        .vital-item {
+            background: #252525;
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        
+        .vital-label {
+            color: #28a7e9;
+            font-size: 13px;
+            margin-bottom: 5px;
+        }
+        
+        .vital-value {
+            color: #ffffff;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        /* Items Table */
+        .items-table {
+            width: 100%;
+            background: #252525;
+            border-radius: 6px;
+            overflow: hidden;
+        }
+        
+        .items-table thead {
+            background: #28a7e9;
+        }
+        
+        .items-table th {
+            color: #ffffff;
+            font-weight: 600;
+            padding: 12px;
+            text-align: left;
+            font-size: 14px;
+        }
+        
+        .items-table td {
+            padding: 12px;
+            border-bottom: 1px solid #404040;
+            color: #ffffff;
+        }
+        
+        .items-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .items-table tbody tr:hover {
+            background: #2a2a2a;
+        }
+        
+        .item-type-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .type-consultation {
+            background: #3498db;
+            color: #ffffff;
+        }
+        
+        .type-service {
+            background: #9b59b6;
+            color: #ffffff;
+        }
+        
+        .type-medication {
+            background: #2ecc71;
+            color: #ffffff;
+        }
+        
+        .type-procedure {
+            background: #e67e22;
+            color: #ffffff;
+        }
+        
+        .type-lab {
+            background: #1abc9c;
+            color: #ffffff;
+        }
+        
+        .text-right {
+            text-align: right;
+        }
+        
+        .price {
+            font-weight: 600;
+            white-space: nowrap;
+        }
+        
+        /* Invoice Section */
+        .invoice-summary {
+            background: #252525;
+            padding: 20px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+        
+        .invoice-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid #404040;
+        }
+        
+        .invoice-row:last-child {
+            border-bottom: none;
+        }
+        
+        .invoice-label {
+            color: #cccccc;
+            font-size: 15px;
+        }
+        
+        .invoice-value {
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 15px;
+        }
+        
+        .invoice-total {
+            background: #28a7e9;
+            margin: 15px -20px -20px;
+            padding: 15px 20px;
+            font-size: 18px;
+        }
+        
+        .invoice-total .invoice-label,
+        .invoice-total .invoice-value {
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: 700;
+        }
+        
+        /* Buttons */
+        .btn-print {
+            background: #27ae60;
+            color: #ffffff;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 5px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 15px;
+        }
+        
+        .btn-print:hover {
+            background: #229954;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(39, 174, 96, 0.4);
+        }
+        
+        .btn-print i {
+            margin-right: 8px;
+        }
+        
+        .btn-back {
+            background: #6c757d;
+            color: #ffffff;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 5px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 20px;
+        }
+        
+        .btn-back:hover {
+            background: #5a6268;
+        }
+        
+        /* Loading & Empty States */
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #28a7e9;
+            font-size: 18px;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            background: #202020;
+            border: 1px solid #404040;
+            border-radius: 8px;
+        }
+        
+        .empty-state i {
+            font-size: 64px;
+            color: #404040;
+            margin-bottom: 20px;
+        }
+        
+        .empty-state h3 {
+            color: #cccccc;
+            font-size: 22px;
+            margin-bottom: 10px;
+        }
+        
+        .empty-state p {
+            color: #888888;
+            font-size: 16px;
+        }
+        
+        /* Medication Label (Etiket) */
+        .medication-label {
+            background: #ffffff;
+            color: #000000;
+            padding: 15px;
+            border-radius: 6px;
+            border: 2px solid #28a7e9;
+            margin-bottom: 15px;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .label-header {
+            text-align: center;
+            border-bottom: 2px solid #000000;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .label-header h5 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 700;
+        }
+        
+        .label-body {
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        
+        .label-row {
+            margin-bottom: 5px;
+        }
+        
+        .label-row strong {
+            display: inline-block;
+            width: 120px;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-bar a {
+                font-size: 13px;
+                padding: 12px 15px;
+            }
+            
+            .page-header h2 {
+                font-size: 24px;
+            }
+            
+            .visit-card-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .visit-status {
+                margin-top: 10px;
+            }
+            
+            .visit-tabs {
+                flex-direction: column;
+            }
+            
+            .visit-tab {
+                border-right: none;
+                border-bottom: 1px solid #404040;
+            }
+            
+            .items-table {
+                font-size: 13px;
+            }
+            
+            .items-table th,
+            .items-table td {
+                padding: 8px;
+            }
+            
+            .vital-signs-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="nav-bar">
+        <div class="container">
+            <a href="patient-dashboard.html"><i class="fa fa-home"></i> Dashboard</a>
+            <a href="patient-visit-history.html" class="active"><i class="fa fa-history"></i> Riwayat Kontrol</a>
+            <a href="#" id="logout-link"><i class="fa fa-sign-out"></i> Keluar</a>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <div class="row">
+                <div class="col-md-6 col-sm-6 col-xs-12">
+                    <p class="phone"><i class="fa fa-phone"></i> +62 822-2950-9661</p>
+                </div>
+                <div class="col-md-6 col-sm-6 col-xs-12 text-right">
+                    <p class="email"><i class="fa fa-envelope"></i> dokter.dibya@gmail.com</p>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-md-12 text-center">
+                    <h1>Dokter Dibya SpOG MHST</h1>
+                    <p class="subtitle">Spesialis Obstetri dan Ginekologi</p>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="container">
+            <button class="btn-back" onclick="window.location.href='patient-dashboard.html'">
+                <i class="fa fa-arrow-left"></i> Kembali ke Dashboard
+            </button>
+            
+            <div class="page-header">
+                <h2><i class="fa fa-history"></i> Riwayat Kontrol</h2>
+                <p id="patient-name-header">Memuat data...</p>
+            </div>
+
+            <div id="loading" class="loading">
+                <i class="fa fa-spinner fa-spin"></i> Memuat riwayat kontrol...
+            </div>
+
+            <div id="visits-container"></div>
+
+            <div id="empty-state" class="empty-state" style="display: none;">
+                <i class="fa fa-folder-open-o"></i>
+                <h3>Belum Ada Riwayat Kontrol</h3>
+                <p>Anda belum memiliki riwayat kunjungan di klinik kami.</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script>
+        const API_URL = 'http://localhost:3001';
+        
+        // Check authentication
+        const patientData = JSON.parse(localStorage.getItem('patientData') || '{}');
+        
+        if (!patientData.id) {
+            window.location.href = 'index.html';
+        }
+
+        // Format currency
+        function formatRupiah(amount) {
+            return 'Rp ' + parseFloat(amount).toLocaleString('id-ID', {
+                minimumFractionDigits: 0,
+                maximumFractionDigits: 0
+            });
+        }
+
+        // Format date
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const options = { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            };
+            return date.toLocaleDateString('id-ID', options);
+        }
+
+        // Format date short
+        function formatDateShort(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+        }
+
+        // Get item type badge
+        function getItemTypeBadge(type) {
+            const badges = {
+                'consultation': '<span class="item-type-badge type-consultation">Konsultasi</span>',
+                'service': '<span class="item-type-badge type-service">Layanan</span>',
+                'medication': '<span class="item-type-badge type-medication">Obat</span>',
+                'procedure': '<span class="item-type-badge type-procedure">Tindakan</span>',
+                'lab': '<span class="item-type-badge type-lab">Laboratorium</span>'
+            };
+            return badges[type] || '<span class="item-type-badge">' + type + '</span>';
+        }
+
+        // Get payment status badge
+        function getPaymentStatusBadge(status) {
+            const badges = {
+                'paid': '<span class="visit-status status-paid">Lunas</span>',
+                'unpaid': '<span class="visit-status status-unpaid">Belum Bayar</span>',
+                'partial': '<span class="visit-status status-partial">Belum Lunas</span>'
+            };
+            return badges[status] || '<span class="visit-status">' + status + '</span>';
+        }
+
+        // Toggle visit card
+        function toggleVisitCard(visitId) {
+            const body = document.getElementById('visit-body-' + visitId);
+            const toggle = document.getElementById('visit-toggle-' + visitId);
+            
+            if (body.classList.contains('show')) {
+                body.classList.remove('show');
+                toggle.classList.remove('rotated');
+            } else {
+                body.classList.add('show');
+                toggle.classList.add('rotated');
+                
+                // Load full details if not loaded yet
+                if (!body.dataset.loaded) {
+                    loadVisitDetails(visitId);
+                }
+            }
+        }
+
+        // Switch tab
+        function switchTab(visitId, tabName) {
+            // Hide all tabs
+            document.querySelectorAll(`#visit-body-${visitId} .visit-tab`).forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll(`#visit-body-${visitId} .tab-content-panel`).forEach(panel => {
+                panel.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(`tab-${tabName}-${visitId}`).classList.add('active');
+            document.getElementById(`panel-${tabName}-${visitId}`).classList.add('active');
+        }
+
+        // Load visit details
+        async function loadVisitDetails(visitId) {
+            const billingId = visitId; // In this case, visitId is billingId
+            
+            try {
+                // Get billing details (using patient-specific endpoint)
+                const billingResponse = await fetch(`${API_URL}/api/billings/${billingId}/details`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('patientToken')
+                    }
+                });
+                
+                if (!billingResponse.ok) throw new Error('Failed to load billing details');
+                
+                const billingData = await billingResponse.json();
+                const billing = billingData.data;
+                
+                // Get patient record if exists
+                if (billing.patient_record_id) {
+                    const recordResponse = await fetch(`${API_URL}/api/patient-records/${billing.patient_record_id}`, {
+                        headers: {
+                            'Authorization': 'Bearer ' + localStorage.getItem('patientToken')
+                        }
+                    });
+                    
+                    if (recordResponse.ok) {
+                        const recordData = await recordResponse.json();
+                        renderMedicalRecord(visitId, recordData.data);
+                    }
+                }
+                
+                // Render items and invoice
+                renderBillingItems(visitId, billing.items);
+                renderInvoice(visitId, billing);
+                
+                // Mark as loaded
+                document.getElementById('visit-body-' + visitId).dataset.loaded = 'true';
+                
+            } catch (error) {
+                console.error('Error loading visit details:', error);
+                alert('Gagal memuat detail kunjungan');
+            }
+        }
+
+        // Render medical record
+        function renderMedicalRecord(visitId, record) {
+            const panel = document.getElementById(`panel-medical-${visitId}`);
+            
+            let html = '';
+            
+            // Keluhan Utama
+            if (record.chief_complaint) {
+                html += `
+                    <div class="record-section">
+                        <h4><i class="fa fa-stethoscope"></i> Keluhan Utama</h4>
+                        <div class="record-item">
+                            <div class="record-value">${record.chief_complaint}</div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Vital Signs
+            if (record.vital_signs) {
+                const vitals = typeof record.vital_signs === 'string' 
+                    ? JSON.parse(record.vital_signs) 
+                    : record.vital_signs;
+                
+                html += `
+                    <div class="record-section">
+                        <h4><i class="fa fa-heartbeat"></i> Tanda Vital</h4>
+                        <div class="vital-signs-grid">
+                            ${vitals.bloodPressure ? `
+                                <div class="vital-item">
+                                    <div class="vital-label">Tekanan Darah</div>
+                                    <div class="vital-value">${vitals.bloodPressure}</div>
+                                </div>
+                            ` : ''}
+                            ${vitals.pulse ? `
+                                <div class="vital-item">
+                                    <div class="vital-label">Nadi</div>
+                                    <div class="vital-value">${vitals.pulse}</div>
+                                </div>
+                            ` : ''}
+                            ${vitals.temperature ? `
+                                <div class="vital-item">
+                                    <div class="vital-label">Suhu</div>
+                                    <div class="vital-value">${vitals.temperature}</div>
+                                </div>
+                            ` : ''}
+                            ${vitals.weight ? `
+                                <div class="vital-item">
+                                    <div class="vital-label">Berat Badan</div>
+                                    <div class="vital-value">${vitals.weight}</div>
+                                </div>
+                            ` : ''}
+                            ${vitals.height ? `
+                                <div class="vital-item">
+                                    <div class="vital-label">Tinggi Badan</div>
+                                    <div class="vital-value">${vitals.height}</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Diagnosis
+            if (record.diagnosis) {
+                html += `
+                    <div class="record-section">
+                        <h4><i class="fa fa-file-text-o"></i> Diagnosis</h4>
+                        <div class="record-item">
+                            <div class="record-value">${record.diagnosis}</div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Treatment Plan
+            if (record.treatment_plan) {
+                html += `
+                    <div class="record-section">
+                        <h4><i class="fa fa-medkit"></i> Rencana Perawatan</h4>
+                        <div class="record-item">
+                            <div class="record-value">${record.treatment_plan}</div>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            // Obstetric Exam
+            if (record.obstetric_exam) {
+                const obstetric = typeof record.obstetric_exam === 'string' 
+                    ? JSON.parse(record.obstetric_exam) 
+                    : record.obstetric_exam;
+                
+                html += `
+                    <div class="record-section">
+                        <h4><i class="fa fa-female"></i> Pemeriksaan Obstetri</h4>
+                `;
+                
+                if (obstetric.fundalHeight) {
+                    html += `
+                        <div class="record-item">
+                            <div class="record-label">Tinggi Fundus</div>
+                            <div class="record-value">${obstetric.fundalHeight}</div>
+                        </div>
+                    `;
+                }
+                
+                if (obstetric.fetalHeartRate) {
+                    html += `
+                        <div class="record-item">
+                            <div class="record-label">Denyut Jantung Janin</div>
+                            <div class="record-value">${obstetric.fetalHeartRate}</div>
+                        </div>
+                    `;
+                }
+                
+                if (obstetric.fetalPresentation) {
+                    html += `
+                        <div class="record-item">
+                            <div class="record-label">Presentasi Janin</div>
+                            <div class="record-value">${obstetric.fetalPresentation}</div>
+                        </div>
+                    `;
+                }
+                
+                html += `</div>`;
+            }
+            
+            // Doctor and Date
+            html += `
+                <div class="record-section">
+                    <h4><i class="fa fa-user-md"></i> Informasi Pemeriksaan</h4>
+                    <div class="record-item">
+                        <div class="record-label">Dokter Pemeriksa</div>
+                        <div class="record-value">${record.doctor_name || 'dr. Dibya SpOG'}</div>
+                    </div>
+                    <div class="record-item">
+                        <div class="record-label">Tanggal Pemeriksaan</div>
+                        <div class="record-value">${formatDate(record.examined_at || record.reported_at)}</div>
+                    </div>
+                </div>
+            `;
+            
+            panel.innerHTML = html || '<p style="color: #888;">Data rekam medis tidak tersedia</p>';
+        }
+
+        // Render billing items
+        function renderBillingItems(visitId, items) {
+            const itemsPanel = document.getElementById(`panel-items-${visitId}`);
+            const etiketPanel = document.getElementById(`panel-etiket-${visitId}`);
+            
+            // Items table
+            let itemsHtml = `
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th width="15%">Jenis</th>
+                            <th>Nama Item</th>
+                            <th>Keterangan</th>
+                            <th width="10%" class="text-right">Jumlah</th>
+                            <th width="15%" class="text-right">Harga</th>
+                            <th width="15%" class="text-right">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            // Medication labels
+            let etiketHtml = '';
+            
+            items.forEach(item => {
+                itemsHtml += `
+                    <tr>
+                        <td>${getItemTypeBadge(item.item_type)}</td>
+                        <td><strong>${item.item_name}</strong></td>
+                        <td>${item.description || '-'}</td>
+                        <td class="text-right">${parseFloat(item.quantity)}</td>
+                        <td class="text-right price">${formatRupiah(item.unit_price)}</td>
+                        <td class="text-right price">${formatRupiah(item.total_amount)}</td>
+                    </tr>
+                `;
+                
+                // Generate medication label
+                if (item.item_type === 'medication') {
+                    etiketHtml += `
+                        <div class="medication-label">
+                            <div class="label-header">
+                                <h5>ETIKET OBAT</h5>
+                                <p style="margin: 5px 0 0; font-size: 12px;">KLINIK DOKTER DIBYA SpOG</p>
+                            </div>
+                            <div class="label-body">
+                                <div class="label-row">
+                                    <strong>Nama Obat:</strong> ${item.item_name}
+                                </div>
+                                <div class="label-row">
+                                    <strong>Jumlah:</strong> ${parseFloat(item.quantity)} ${item.description?.includes('tablet') ? 'tablet' : 'unit'}
+                                </div>
+                                <div class="label-row">
+                                    <strong>Aturan Pakai:</strong> Sesuai petunjuk dokter
+                                </div>
+                                <div class="label-row">
+                                    <strong>Keterangan:</strong> ${item.description || '-'}
+                                </div>
+                                <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #000;">
+                                    <div class="label-row">
+                                        <strong>Pasien:</strong> ${patientData.full_name}
+                                    </div>
+                                    <div class="label-row">
+                                        <strong>Tanggal:</strong> ${formatDateShort(new Date())}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                }
+            });
+            
+            itemsHtml += `
+                    </tbody>
+                </table>
+            `;
+            
+            itemsPanel.innerHTML = itemsHtml;
+            
+            if (etiketHtml) {
+                etiketPanel.innerHTML = `
+                    <p style="color: #cccccc; margin-bottom: 20px;">
+                        <i class="fa fa-info-circle"></i> 
+                        Etiket obat dapat dicetak untuk ditempelkan pada kemasan obat
+                    </p>
+                    ${etiketHtml}
+                    <button class="btn-print" onclick="printEtiket(${visitId})">
+                        <i class="fa fa-print"></i> Cetak Etiket
+                    </button>
+                `;
+            } else {
+                etiketPanel.innerHTML = `
+                    <p style="color: #888; text-align: center; padding: 40px;">
+                        Tidak ada obat yang diresepkan pada kunjungan ini
+                    </p>
+                `;
+            }
+        }
+
+        // Render invoice
+        function renderInvoice(visitId, billing) {
+            const panel = document.getElementById(`panel-invoice-${visitId}`);
+            
+            const html = `
+                <div class="invoice-summary">
+                    <div class="invoice-row">
+                        <div class="invoice-label">Nomor Invoice:</div>
+                        <div class="invoice-value">${billing.billing_number}</div>
+                    </div>
+                    <div class="invoice-row">
+                        <div class="invoice-label">Tanggal:</div>
+                        <div class="invoice-value">${formatDate(billing.billing_date)}</div>
+                    </div>
+                    <div class="invoice-row">
+                        <div class="invoice-label">Status Pembayaran:</div>
+                        <div>${getPaymentStatusBadge(billing.payment_status)}</div>
+                    </div>
+                </div>
+                
+                <div class="invoice-summary">
+                    <div class="invoice-row">
+                        <div class="invoice-label">Subtotal:</div>
+                        <div class="invoice-value">${formatRupiah(billing.subtotal)}</div>
+                    </div>
+                    ${parseFloat(billing.discount_amount) > 0 ? `
+                        <div class="invoice-row">
+                            <div class="invoice-label">Diskon (${billing.discount_percent}%):</div>
+                            <div class="invoice-value">- ${formatRupiah(billing.discount_amount)}</div>
+                        </div>
+                    ` : ''}
+                    ${parseFloat(billing.tax_amount) > 0 ? `
+                        <div class="invoice-row">
+                            <div class="invoice-label">Pajak (${billing.tax_percent}%):</div>
+                            <div class="invoice-value">${formatRupiah(billing.tax_amount)}</div>
+                        </div>
+                    ` : ''}
+                    <div class="invoice-total">
+                        <div class="invoice-row">
+                            <div class="invoice-label">TOTAL:</div>
+                            <div class="invoice-value">${formatRupiah(billing.total_amount)}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                ${billing.payment_status !== 'unpaid' ? `
+                    <div class="invoice-summary">
+                        <div class="invoice-row">
+                            <div class="invoice-label">Jumlah Dibayar:</div>
+                            <div class="invoice-value">${formatRupiah(billing.paid_amount)}</div>
+                        </div>
+                        ${parseFloat(billing.paid_amount) < parseFloat(billing.total_amount) ? `
+                            <div class="invoice-row">
+                                <div class="invoice-label">Sisa Tagihan:</div>
+                                <div class="invoice-value" style="color: #e74c3c;">
+                                    ${formatRupiah(parseFloat(billing.total_amount) - parseFloat(billing.paid_amount))}
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                ` : ''}
+                
+                ${billing.notes ? `
+                    <div class="record-item" style="margin-top: 15px;">
+                        <div class="record-label">Catatan:</div>
+                        <div class="record-value">${billing.notes}</div>
+                    </div>
+                ` : ''}
+                
+                <button class="btn-print" onclick="printInvoice(${visitId})">
+                    <i class="fa fa-print"></i> Cetak Invoice
+                </button>
+            `;
+            
+            panel.innerHTML = html;
+        }
+
+        // Load visits
+        async function loadVisits() {
+            try {
+                const response = await fetch(`${API_URL}/api/billings/my-billings`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + localStorage.getItem('patientToken')
+                    }
+                });
+                
+                if (!response.ok) throw new Error('Failed to load visits');
+                
+                const data = await response.json();
+                
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('patient-name-header').textContent = 
+                    'Riwayat kunjungan: ' + patientData.full_name;
+                
+                if (data.data.length === 0) {
+                    document.getElementById('empty-state').style.display = 'block';
+                    return;
+                }
+                
+                const container = document.getElementById('visits-container');
+                let html = '';
+                
+                data.data.forEach(visit => {
+                    html += `
+                        <div class="visit-card">
+                            <div class="visit-card-header" onclick="toggleVisitCard(${visit.id})">
+                                <div class="visit-date-info">
+                                    <h3 class="visit-date">
+                                        <i class="fa fa-calendar"></i> 
+                                        ${formatDate(visit.billing_date)}
+                                    </h3>
+                                    <p class="visit-meta">
+                                        Invoice: ${visit.billing_number} • 
+                                        Total: ${formatRupiah(visit.total_amount)}
+                                    </p>
+                                </div>
+                                <div>
+                                    ${getPaymentStatusBadge(visit.payment_status)}
+                                </div>
+                                <div>
+                                    <i class="fa fa-chevron-down visit-toggle" id="visit-toggle-${visit.id}"></i>
+                                </div>
+                            </div>
+                            
+                            <div class="visit-card-body" id="visit-body-${visit.id}">
+                                <div class="visit-tabs">
+                                    <div class="visit-tab active" id="tab-medical-${visit.id}" 
+                                         onclick="switchTab(${visit.id}, 'medical')">
+                                        <i class="fa fa-stethoscope"></i> Rekam Medis
+                                    </div>
+                                    <div class="visit-tab" id="tab-items-${visit.id}" 
+                                         onclick="switchTab(${visit.id}, 'items')">
+                                        <i class="fa fa-list"></i> Rincian Tindakan & Obat
+                                    </div>
+                                    <div class="visit-tab" id="tab-etiket-${visit.id}" 
+                                         onclick="switchTab(${visit.id}, 'etiket')">
+                                        <i class="fa fa-tags"></i> Etiket Obat
+                                    </div>
+                                    <div class="visit-tab" id="tab-invoice-${visit.id}" 
+                                         onclick="switchTab(${visit.id}, 'invoice')">
+                                        <i class="fa fa-file-text"></i> Invoice
+                                    </div>
+                                </div>
+                                
+                                <div class="tab-content-panel active" id="panel-medical-${visit.id}">
+                                    <p style="color: #888; text-align: center;">
+                                        <i class="fa fa-spinner fa-spin"></i> Memuat data...
+                                    </p>
+                                </div>
+                                
+                                <div class="tab-content-panel" id="panel-items-${visit.id}">
+                                    <p style="color: #888; text-align: center;">
+                                        <i class="fa fa-spinner fa-spin"></i> Memuat data...
+                                    </p>
+                                </div>
+                                
+                                <div class="tab-content-panel" id="panel-etiket-${visit.id}">
+                                    <p style="color: #888; text-align: center;">
+                                        <i class="fa fa-spinner fa-spin"></i> Memuat data...
+                                    </p>
+                                </div>
+                                
+                                <div class="tab-content-panel" id="panel-invoice-${visit.id}">
+                                    <p style="color: #888; text-align: center;">
+                                        <i class="fa fa-spinner fa-spin"></i> Memuat data...
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = html;
+                
+            } catch (error) {
+                console.error('Error loading visits:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('visits-container').innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa fa-exclamation-triangle"></i>
+                        <h3>Gagal Memuat Data</h3>
+                        <p>Terjadi kesalahan saat memuat riwayat kontrol. Silakan coba lagi.</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Print invoice
+        function printInvoice(visitId) {
+            window.print();
+        }
+
+        // Print etiket
+        function printEtiket(visitId) {
+            window.print();
+        }
+
+        // Logout
+        document.getElementById('logout-link').addEventListener('click', function(e) {
+            e.preventDefault();
+            localStorage.removeItem('patientData');
+            localStorage.removeItem('patientToken');
+            window.location.href = 'index.html';
+        });
+
+        // Load data on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadVisits();
+        });
+    </script>
+</body>
+</html>

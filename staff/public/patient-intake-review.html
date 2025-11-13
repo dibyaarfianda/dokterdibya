@@ -207,6 +207,7 @@
                         <span id="detail-risk-badge" class="badge"></span>
                         <span id="detail-status-badge" class="badge badge-secondary ml-2"></span>
                     </div>
+                    
                     <h6>Identitas Pasien</h6>
                     <dl class="row mb-3">
                         <dt class="col-sm-4">Nama</dt>
@@ -217,6 +218,11 @@
                         <dd class="col-sm-8" id="detail-phone">-</dd>
                         <dt class="col-sm-4">Alamat</dt>
                         <dd class="col-sm-8" id="detail-address">-</dd>
+                    </dl>
+                    
+                    <h6>Informasi Keluarga & Sosial</h6>
+                    <dl class="row mb-3" id="detail-family-social">
+                        <!-- Will be populated dynamically -->
                     </dl>
 
                     <h6>Kehamilan Saat Ini</h6>
@@ -230,6 +236,25 @@
                         <dt class="col-sm-4">Total Gravida/Para</dt>
                         <dd class="col-sm-8" id="detail-obstetric">-</dd>
                     </dl>
+                    
+                    <h6>Riwayat Medis & Risiko</h6>
+                    <dl class="row mb-3" id="detail-medical-history">
+                        <!-- Will be populated dynamically -->
+                    </dl>
+                    
+                    <div class="mb-3" id="detail-prenatal-section">
+                        <h6>Riwayat ANC/Prenatal</h6>
+                        <div id="detail-prenatal-table" class="table-responsive">
+                            <!-- Will be populated dynamically -->
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3" id="detail-lab-section">
+                        <h6>Pemeriksaan Lab</h6>
+                        <div id="detail-lab-table" class="table-responsive">
+                            <!-- Will be populated dynamically -->
+                        </div>
+                    </div>
 
                     <div class="mb-3">
                         <h6>Risk Flags</h6>

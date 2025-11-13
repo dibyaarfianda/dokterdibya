@@ -14,8 +14,8 @@ const { HTTP_STATUS, SUCCESS_MESSAGES } = require('../../config/constants');
 
 // LOGIN
 router.post('/login', validateLogin, asyncHandler(async (req, res) => {
-    const { username, password } = req.body;
-    const result = await AuthService.login(username, password);
+    const { email, password } = req.body;
+    const result = await AuthService.login(email, password);
     sendSuccess(res, result, SUCCESS_MESSAGES.LOGIN_SUCCESS);
 }));
 
