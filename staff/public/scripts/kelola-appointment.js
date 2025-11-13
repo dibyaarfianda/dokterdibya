@@ -11,6 +11,9 @@ $(document).ready(function() {
         return;
     }
 
+    // Clear tbody before initializing DataTable
+    $('#appointments-tbody').html('');
+
     // Initialize DataTable
     appointmentsTable = $('#appointments-table').DataTable({
         paging: true,
@@ -21,6 +24,17 @@ $(document).ready(function() {
         autoWidth: false,
         responsive: true,
         order: [[1, 'desc']],
+        columns: [
+            { title: "ID", width: "5%" },
+            { title: "Tanggal", width: "15%" },
+            { title: "Sesi", width: "10%" },
+            { title: "Slot", width: "8%" },
+            { title: "Pasien", width: "15%" },
+            { title: "Telepon", width: "12%" },
+            { title: "Keluhan", width: "25%" },
+            { title: "Status", width: "10%" },
+            { title: "Aksi", width: "10%", orderable: false }
+        ],
         language: {
             url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json'
         }
