@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Lengkapi Profil - Dokter Dibya</title>
     
     <!-- Bootstrap CSS -->
@@ -189,8 +192,8 @@
             
             <div class="form-group">
                 <label for="phone">Nomor Telepon/WhatsApp <span class="required-field">*</span></label>
-                <input type="tel" class="form-control" id="phone" placeholder="Contoh: 08123456789" required>
-                <p class="help-text">Format: 08xxxxxxxxxx (nomor aktif yang dapat dihubungi)</p>
+                <input type="tel" class="form-control" id="phone" placeholder="Contoh: 628123456789" required pattern="628[0-9]{9,12}">
+                <p class="help-text">Format: 6281xxxxxxxxxx (gunakan kode negara 62, nomor aktif yang dapat dihubungi)</p>
             </div>
             
             <div class="form-group">
@@ -214,123 +217,7 @@
     <!-- Bootstrap JS -->
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
     
-    <script>
-        const token = localStorage.getItem('patient_token');
-        
-        // Redirect if not logged in
-        if (!token) {
-            window.location.href = '/index.html';
-        }
-        
-        // Auto-calculate age from birth date
-        document.getElementById('birthdate').addEventListener('change', function() {
-            const birthDate = new Date(this.value);
-            const today = new Date();
-            let age = today.getFullYear() - birthDate.getFullYear();
-            const monthDiff = today.getMonth() - birthDate.getMonth();
-            
-            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-                age--;
-            }
-            
-            document.getElementById('age').value = age >= 0 ? age : '';
-        });
-        
-        // Load current profile data
-        async function loadCurrentData() {
-            try {
-                const response = await fetch('/api/patients/profile', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    const profile = data.user;
-                    
-                    // Pre-fill available data
-                    if (profile.fullname) document.getElementById('fullname').value = profile.fullname;
-                    if (profile.phone) document.getElementById('phone').value = profile.phone;
-                    if (profile.birth_date) {
-                        const birthDate = new Date(profile.birth_date);
-                        document.getElementById('birthdate').value = birthDate.toISOString().split('T')[0];
-                        document.getElementById('age').value = profile.age || '';
-                    }
-                }
-            } catch (error) {
-                console.error('Error loading profile:', error);
-            }
-        }
-        
-        loadCurrentData();
-        
-        // Handle form submission
-        document.getElementById('complete-profile-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const fullname = document.getElementById('fullname').value.trim();
-            const phone = document.getElementById('phone').value.trim();
-            const birthdate = document.getElementById('birthdate').value;
-            const age = document.getElementById('age').value;
-            
-            // Validation
-            if (!fullname || !phone || !birthdate) {
-                showError('Semua field yang bertanda (*) harus diisi!');
-                return;
-            }
-            
-            // Validate phone format
-            const phoneRegex = /^08\d{8,12}$/;
-            if (!phoneRegex.test(phone)) {
-                showError('Format nomor telepon tidak valid. Harus dimulai dengan 08 dan 10-14 digit.');
-                return;
-            }
-            
-            // Disable submit button
-            const submitBtn = document.getElementById('submit-btn');
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Menyimpan...';
-            
-            try {
-                const response = await fetch('/api/patients/complete-profile', {
-                    method: 'POST',
-                    headers: {
-                        'Authorization': `Bearer ${token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        fullname,
-                        phone,
-                        birth_date: birthdate,
-                        age: age ? parseInt(age) : null
-                    })
-                });
-                
-                const data = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(data.message || 'Gagal menyimpan profil');
-                }
-                
-                // Success - redirect to dashboard
-                window.location.href = '/patient-dashboard.html';
-                
-            } catch (error) {
-                showError(error.message);
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="fa fa-check-circle"></i> Simpan & Lanjutkan';
-            }
-        });
-        
-        function showError(message) {
-            const errorDiv = document.getElementById('error-message');
-            errorDiv.textContent = message;
-            errorDiv.style.display = 'block';
-            
-            // Scroll to error
-            errorDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-        }
-    </script>
+    <!-- Complete Profile Handler V3 -->
+    <script src="/js/complete-profile-v3.js?t=20251113"></script>
 </body>
 </html>

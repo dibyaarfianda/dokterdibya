@@ -15,11 +15,7 @@ const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
 
 /**
  * Generate unique 5-digit medical record ID
- * Ensures no collision with existing patients or patients
- */
-/**
- * Generate unique 5-digit medical record ID
- * Ensures no collision with existing patients
+ * Ensures no collision with existing patients or web_patients
  */
 async function generateUniqueMedicalRecordId() {
     const maxAttempts = 100;
@@ -34,16 +30,25 @@ async function generateUniqueMedicalRecordId() {
             [randomId]
         );
         
-        // If ID is unique, return it
-        if (existingPatient.length === 0) {
+        // Check if ID exists in web_patients table
+        const [existingWebPatient] = await db.query(
+            'SELECT medical_record_id FROM web_patients WHERE medical_record_id = ?',
+            [randomId]
+        );
+        
+        // If ID is unique in both tables, return it
+        if (existingPatient.length === 0 && existingWebPatient.length === 0) {
             return randomId;
         }
     }
     
     // Fallback: use sequential ID if random generation fails
     const [rows] = await db.query(
-        `SELECT LPAD(COALESCE(MAX(CAST(id AS UNSIGNED)), 0) + 1, 5, '0') AS nextId
-        FROM patients`
+        `SELECT LPAD(COALESCE(MAX(GREATEST(
+            CAST(p.id AS UNSIGNED), 
+            CAST(wp.medical_record_id AS UNSIGNED)
+        )), 0) + 1, 5, '0') AS nextId
+        FROM patients p, web_patients wp`
     );
     
     return rows[0]?.nextId || '10000';
@@ -82,7 +87,7 @@ router.post('/register', async (req, res) => {
         
         // Check if email already exists
         const [existingUsers] = await db.query(
-            'SELECT id FROM patients WHERE email = ?',
+            'SELECT id FROM web_patients WHERE email = ?',
             [email]
         );
         
@@ -98,18 +103,18 @@ router.post('/register', async (req, res) => {
         
         // Insert patient
         const [result] = await db.query(
-            `INSERT INTO patients (id, full_name, email, phone, password, registration_date, status) 
+            `INSERT INTO web_patients (medical_record_id, fullname, email, phone, password, registration_date, status) 
              VALUES (?, ?, ?, ?, ?, NOW(), 'active')`,
             [medicalRecordId, fullname, email, phone, hashedPassword]
         );
         
-        // For VARCHAR primary key, insertId is 0. Use medicalRecordId instead
-        const patientId = medicalRecordId;
+        const patientId = result.insertId;
         
         // Generate JWT token
         const token = jwt.sign(
             { 
                 id: patientId,
+                medicalRecordId,
                 email, 
                 fullname,
                 role: 'patient'
@@ -123,6 +128,7 @@ router.post('/register', async (req, res) => {
             token,
             user: {
                 id: patientId,
+                medicalRecordId,
                 fullname,
                 email,
                 phone,
@@ -148,18 +154,15 @@ router.post('/login', async (req, res) => {
         
         // Find patient by email
         const [patients] = await db.query(
-            'SELECT * FROM patients WHERE email = ? AND status = "active"',
+            'SELECT * FROM web_patients WHERE email = ? AND status = "active"',
             [email]
         );
-        
-        console.log('Patient login attempt:', email, 'Found:', patients.length);
         
         if (patients.length === 0) {
             return res.status(401).json({ message: 'Email atau password salah' });
         }
         
         const patient = patients[0];
-        console.log('Patient found:', patient.id, 'Has password:', !!patient.password);
         
         // Check if patient has a password (might be Google auth only)
         if (!patient.password) {
@@ -168,29 +171,28 @@ router.post('/login', async (req, res) => {
         
         // Verify password
         const isPasswordValid = await bcrypt.compare(password, patient.password);
-        console.log('Password valid:', isPasswordValid);
         
         if (!isPasswordValid) {
             return res.status(401).json({ message: 'Email atau password salah' });
         }
         
         // Generate medical record ID if not exists
-        if (!patient.id) {
+        if (!patient.medical_record_id) {
             const medicalRecordId = await generateUniqueMedicalRecordId();
             await db.query(
-                'UPDATE patients SET id = ? WHERE id = ?',
+                'UPDATE web_patients SET medical_record_id = ? WHERE id = ?',
                 [medicalRecordId, patient.id]
             );
-            patient.id = medicalRecordId;
+            patient.medical_record_id = medicalRecordId;
         }
         
         // Generate JWT token
         const token = jwt.sign(
             { 
                 id: patient.id,
-                medicalRecordId: patient.id,
+                medicalRecordId: patient.medical_record_id,
                 email: patient.email, 
-                full_name: patient.full_name,
+                fullname: patient.fullname,
                 role: 'patient'
             },
             JWT_SECRET,
@@ -202,8 +204,8 @@ router.post('/login', async (req, res) => {
             token,
             user: {
                 id: patient.id,
-                medicalRecordId: patient.id,
-                full_name: patient.full_name,
+                medicalRecordId: patient.medical_record_id,
+                fullname: patient.fullname,
                 email: patient.email,
                 phone: patient.phone,
                 role: 'patient'
@@ -232,7 +234,7 @@ router.post('/auth/google', async (req, res) => {
         
         // Check if patient exists
         const [existingPatients] = await db.query(
-            'SELECT * FROM patients WHERE email = ?',
+            'SELECT * FROM web_patients WHERE email = ?',
             [email]
         );
         
@@ -243,16 +245,16 @@ router.post('/auth/google', async (req, res) => {
             patient = existingPatients[0];
             
             // Generate medical record ID if not exists
-            if (!patient.id) {
+            if (!patient.medical_record_id) {
                 const medicalRecordId = await generateUniqueMedicalRecordId();
                 await db.query(
-                    'UPDATE patients SET id = ?, google_id = ?, photo_url = ? WHERE id = ?',
+                    'UPDATE web_patients SET medical_record_id = ?, google_id = ?, photo_url = ? WHERE id = ?',
                     [medicalRecordId, googleId, picture, patient.id]
                 );
-                patient.id = medicalRecordId;
+                patient.medical_record_id = medicalRecordId;
             } else if (!patient.google_id) {
                 await db.query(
-                    'UPDATE patients SET google_id = ?, photo_url = ? WHERE id = ?',
+                    'UPDATE web_patients SET google_id = ?, photo_url = ? WHERE id = ?',
                     [googleId, picture, patient.id]
                 );
             }
@@ -261,7 +263,7 @@ router.post('/auth/google', async (req, res) => {
             const medicalRecordId = await generateUniqueMedicalRecordId();
             
             const [result] = await db.query(
-                `INSERT INTO patients (id, full_name, email, google_id, photo_url, registration_date, status) 
+                `INSERT INTO web_patients (medical_record_id, fullname, email, google_id, photo_url, registration_date, status) 
                  VALUES (?, ?, ?, ?, ?, NOW(), 'active')`,
                 [medicalRecordId, name, email, googleId, picture]
             );
@@ -269,7 +271,7 @@ router.post('/auth/google', async (req, res) => {
             patient = {
                 id: result.insertId,
                 medical_record_id: medicalRecordId,
-                full_name: name,
+                fullname: name,
                 email,
                 phone: null,
                 google_id: googleId,
@@ -281,9 +283,9 @@ router.post('/auth/google', async (req, res) => {
         const token = jwt.sign(
             { 
                 id: patient.id,
-                medicalRecordId: patient.id,
+                medicalRecordId: patient.medical_record_id,
                 email: patient.email, 
-                full_name: patient.fullname,
+                fullname: patient.fullname,
                 role: 'patient'
             },
             JWT_SECRET,
@@ -295,8 +297,8 @@ router.post('/auth/google', async (req, res) => {
             token,
             user: {
                 id: patient.id,
-                medicalRecordId: patient.id,
-                full_name: patient.fullname,
+                medicalRecordId: patient.medical_record_id,
+                fullname: patient.fullname,
                 email: patient.email,
                 phone: patient.phone,
                 photo_url: patient.photo_url,
@@ -322,7 +324,7 @@ router.get('/verify', verifyToken, (req, res) => {
 router.get('/profile', verifyToken, async (req, res) => {
     try {
         const [patients] = await db.query(
-            'SELECT id, full_name, email, phone, photo_url, birth_date, age, registration_date, profile_completed FROM patients WHERE id = ?',
+            'SELECT id, fullname, email, phone, photo_url, birth_date, age, registration_date, profile_completed FROM web_patients WHERE id = ?',
             [req.user.id]
         );
         
@@ -341,10 +343,10 @@ router.get('/profile', verifyToken, async (req, res) => {
 // Update user profile
 router.put('/profile', verifyToken, async (req, res) => {
     try {
-        const { full_name, email, phone, birth_date, age } = req.body;
+        const { fullname, email, phone, birth_date, age } = req.body;
         
         // Validation
-        if (!full_name || !email || !phone) {
+        if (!fullname || !email || !phone) {
             return res.status(400).json({ message: 'Nama, email, dan nomor telepon harus diisi' });
         }
         
@@ -356,7 +358,7 @@ router.put('/profile', verifyToken, async (req, res) => {
         
         // Check if email is taken by another user
         const [existingUsers] = await db.query(
-            'SELECT id FROM patients WHERE email = ? AND id != ?',
+            'SELECT id FROM web_patients WHERE email = ? AND id != ?',
             [email, req.user.id]
         );
         
@@ -366,15 +368,15 @@ router.put('/profile', verifyToken, async (req, res) => {
         
         // Update patient data
         await db.query(
-            `UPDATE patients 
-             SET full_name = ?, email = ?, phone = ?, birth_date = ?, age = ?, updated_at = NOW()
+            `UPDATE web_patients 
+             SET fullname = ?, email = ?, phone = ?, birth_date = ?, age = ?, updated_at = NOW()
              WHERE id = ?`,
-            [full_name, email, phone, birth_date || null, age || null, req.user.id]
+            [fullname, email, phone, birth_date || null, age || null, req.user.id]
         );
         
         // Fetch updated profile
         const [updatedPatient] = await db.query(
-            'SELECT id, full_name, email, phone, photo_url, birth_date, age, registration_date FROM patients WHERE id = ?',
+            'SELECT id, fullname, email, phone, photo_url, birth_date, age, registration_date FROM web_patients WHERE id = ?',
             [req.user.id]
         );
         
@@ -407,36 +409,81 @@ router.post('/complete-profile', verifyToken, async (req, res) => {
         
         // Update patient data and mark profile as completed
         await db.query(
-            `UPDATE patients 
-             SET full_name = ?, phone = ?, birth_date = ?, age = ?, profile_completed = 1
+            `UPDATE web_patients 
+             SET fullname = ?, phone = ?, birth_date = ?, age = ?, profile_completed = 1, updated_at = NOW()
              WHERE id = ?`,
             [fullname, phone, birth_date, age || null, req.user.id]
         );
         
         // Fetch updated profile
         const [updatedPatient] = await db.query(
-            'SELECT id, full_name, email, phone, photo_url, birth_date, age, registration_date, profile_completed FROM patients WHERE id = ?',
+            'SELECT id, fullname, email, phone, photo_url, birth_date, age, registration_date, profile_completed, google_id, password FROM web_patients WHERE id = ?',
             [req.user.id]
         );
         
-        if (updatedPatient.length === 0) {
-            return res.status(404).json({ message: 'Pasien tidak ditemukan' });
-        }
+        const webPatient = updatedPatient[0];
         
-        const patient = updatedPatient[0];
+        // Sync to patients table - Generate new patient ID
+        try {
+            // Check if already synced to patients table (by email or phone)
+            const [existing] = await db.query(
+                'SELECT id FROM patients WHERE email = ? OR phone = ? LIMIT 1',
+                [webPatient.email, phone]
+            );
+            
+            if (existing.length === 0) {
+                // Get the next patient ID
+                const [maxId] = await db.query(
+                    "SELECT id FROM patients WHERE id REGEXP '^P[0-9]+$' ORDER BY CAST(SUBSTRING(id, 2) AS UNSIGNED) DESC LIMIT 1"
+                );
+                
+                let nextNumber = 1;
+                if (maxId.length > 0 && maxId[0].id) {
+                    const currentNumber = parseInt(maxId[0].id.substring(1));
+                    nextNumber = currentNumber + 1;
+                }
+                
+                const newPatientId = 'P' + String(nextNumber).padStart(3, '0');
+                
+                // Insert into patients table
+                await db.query(
+                    `INSERT INTO patients 
+                     (id, full_name, whatsapp, phone, birth_date, age, email, google_id, photo_url, password, registration_date, status, is_pregnant, visit_count) 
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', 0, 0)`,
+                    [
+                        newPatientId,
+                        fullname,
+                        phone,  // whatsapp
+                        phone,  // phone
+                        birth_date,
+                        age || null,
+                        webPatient.email,
+                        webPatient.google_id || null,
+                        webPatient.photo_url || null,
+                        webPatient.password || null,
+                        webPatient.registration_date
+                    ]
+                );
+                
+                console.log(`Web patient ${webPatient.id} synced to patients table with ID ${newPatientId}`);
+            }
+        } catch (syncError) {
+            console.error('Error syncing to patients table:', syncError);
+            // Don't fail the request if sync fails, just log it
+        }
         
         res.json({ 
             message: 'Profil berhasil dilengkapi',
             user: {
-                id: patient.id,
-                fullname: patient.full_name,
-                email: patient.email,
-                phone: patient.phone,
-                photo_url: patient.photo_url,
-                birth_date: patient.birth_date,
-                age: patient.age,
-                registration_date: patient.registration_date,
-                profile_completed: patient.profile_completed
+                id: webPatient.id,
+                fullname: webPatient.fullname,
+                email: webPatient.email,
+                phone: webPatient.phone,
+                photo_url: webPatient.photo_url,
+                birth_date: webPatient.birth_date,
+                age: webPatient.age,
+                registration_date: webPatient.registration_date,
+                profile_completed: webPatient.profile_completed
             }
         });
         
@@ -451,9 +498,9 @@ router.get('/all', verifyToken, async (req, res) => {
     try {
         // Check if user has permission (you may want to add role check here)
         const [patients] = await db.query(
-            `SELECT id, full_name, email, phone, birth_date, age, photo_url, 
+            `SELECT id, fullname, email, phone, birth_date, age, photo_url, 
                     registration_date, status, profile_completed, created_at, updated_at 
-             FROM patients 
+             FROM web_patients 
              ORDER BY registration_date DESC`
         );
         
@@ -470,15 +517,15 @@ router.delete('/:id', verifyToken, async (req, res) => {
     try {
         const patientId = req.params.id;
         
-        // Check if patient exists in patients table
+        // Check if patient exists in web_patients table
         const [webPatients] = await db.query(
-            'SELECT id, full_name FROM patients WHERE id = ?',
+            'SELECT id, fullname FROM web_patients WHERE id = ?',
             [patientId]
         );
         
         if (webPatients.length > 0) {
-            // Delete from patients table
-            await db.query('DELETE FROM patients WHERE id = ?', [patientId]);
+            // Delete from web_patients table
+            await db.query('DELETE FROM web_patients WHERE id = ?', [patientId]);
             
             return res.json({ 
                 message: 'Pasien berhasil dihapus',
@@ -486,9 +533,9 @@ router.delete('/:id', verifyToken, async (req, res) => {
             });
         }
         
-        // If not found in patients, check in patients table
+        // If not found in web_patients, check in patients table
         const [regularPatients] = await db.query(
-            'SELECT id, full_name as full_name FROM patients WHERE id = ?',
+            'SELECT id, full_name as fullname FROM patients WHERE id = ?',
             [patientId]
         );
         

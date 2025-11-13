@@ -21,8 +21,9 @@ const paraField = document.getElementById('para');
 const abortusField = document.getElementById('abortus');
 const livingChildrenField = document.getElementById('living_children');
 const pregnanciesTable = document.querySelector('table[data-collection="pregnancies"]');
-const prenatalTable = document.querySelector('table[data-collection="prenatal"]');
-const labTable = document.querySelector('table[data-collection="labs"]');
+// Prenatal and Lab tables removed - will be filled by staff in medical-record.html
+// const prenatalTable = document.querySelector('table[data-collection="prenatal"]');
+// const labTable = document.querySelector('table[data-collection="labs"]');
 const addPrenatalRowBtn = document.getElementById('add-prenatal-row');
 const addLabRowBtn = document.getElementById('add-lab-row');
 const patientSignatureField = document.getElementById('patient_signature');
@@ -48,6 +49,8 @@ const pastConditionLabels = {
     heart: 'Penyakit jantung',
     kidney: 'Gangguan ginjal',
     thyroid: 'Gangguan tiroid',
+    cyst_myoma: 'Kista/Myoma',
+    asthma: 'Asma',
     autoimmune: 'Penyakit autoimun',
     mental: 'Kondisi kesehatan mental',
     surgery: 'Riwayat operasi mayor',
@@ -143,11 +146,12 @@ function ensureDynamicField(name) {
     if (!Number.isFinite(index)) {
         return;
     }
-    if (group === 'visit') {
-        ensureTableRow(prenatalTable, createPrenatalRow, index);
-    } else if (group === 'lab') {
-        ensureTableRow(labTable, createLabRow, index);
-    }
+    // Tables removed - data will be filled by staff
+    // if (group === 'visit') {
+    //     ensureTableRow(prenatalTable, createPrenatalRow, index);
+    // } else if (group === 'lab') {
+    //     ensureTableRow(labTable, createLabRow, index);
+    // }
 }
 
 function addDynamicRow(table, createRow) {
@@ -634,22 +638,23 @@ function toggleFieldAvailability(field, shouldDisable) {
 
 function syncMaritalFields() {
     const status = maritalStatusField ? maritalStatusField.value : '';
-    const disableSpouseFields = status === 'cerai';
+    const disableSpouseFields = status === 'cerai' || status === 'single';
     toggleFieldAvailability(husbandNameField, disableSpouseFields);
     toggleFieldAvailability(husbandAgeField, disableSpouseFields);
     toggleFieldAvailability(husbandJobField, disableSpouseFields);
 }
 
-if (addPrenatalRowBtn) {
-    addPrenatalRowBtn.addEventListener('click', () => {
-        addDynamicRow(prenatalTable, createPrenatalRow);
-        computeObstetricTotals();
-    });
-}
+// Prenatal and Lab buttons removed - tables will be filled by staff
+// if (addPrenatalRowBtn) {
+//     addPrenatalRowBtn.addEventListener('click', () => {
+//         addDynamicRow(prenatalTable, createPrenatalRow);
+//         computeObstetricTotals();
+//     });
+// }
 
-if (addLabRowBtn) {
-    addLabRowBtn.addEventListener('click', () => addDynamicRow(labTable, createLabRow));
-}
+// if (addLabRowBtn) {
+//     addLabRowBtn.addEventListener('click', () => addDynamicRow(labTable, createLabRow));
+// }
 
 totalFields.forEach((field) => {
     if (!field) {
@@ -710,13 +715,27 @@ submitBtn.addEventListener('click', () => {
     form.requestSubmit();
 });
 
+let isSubmitting = false;
+
 form.addEventListener('submit', async (event) => {
     event.preventDefault();
+    
+    // Prevent double submission
+    if (isSubmitting) {
+        console.log('Form is already being submitted, ignoring duplicate request');
+        return;
+    }
+    
     const isValid = form.checkValidity();
     if (!isValid) {
         form.reportValidity();
         return;
     }
+    
+    isSubmitting = true;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Mengirim...';
+    
     const payload = buildPayload();
     try {
         const response = await fetch('/api/patient-intake', {
@@ -745,6 +764,10 @@ form.addEventListener('submit', async (event) => {
     } catch (error) {
         console.error('Submit intake gagal', error);
         showToast('Gagal mengirim data. Coba lagi atau simpan screenshot.', 'error');
+    } finally {
+        isSubmitting = false;
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Kirim Data';
     }
 });
 
@@ -775,3 +798,20 @@ restoreDraft();
 refreshButtons();
 updateDerived();
 syncMaritalFields();
+
+// Payment method checkbox logic
+const paymentInsuranceCheckbox = document.getElementById('payment_insurance');
+const insuranceNameField = document.getElementById('insurance_name');
+
+if (paymentInsuranceCheckbox && insuranceNameField) {
+    paymentInsuranceCheckbox.addEventListener('change', function() {
+        if (this.checked) {
+            insuranceNameField.style.display = 'block';
+            insuranceNameField.required = true;
+        } else {
+            insuranceNameField.style.display = 'none';
+            insuranceNameField.required = false;
+            insuranceNameField.value = '';
+        }
+    });
+}
