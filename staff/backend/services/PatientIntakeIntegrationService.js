@@ -328,6 +328,12 @@ async function process(record, context = {}) {
         const visitInfo = await upsertVisit(connection, patientInfo.patientId, record, context);
         const examInfo = await upsertMedicalExam(connection, patientInfo.patientId, visitInfo.visitId, record, context);
 
+        // Mark intake as completed for this patient
+        await connection.query(
+            'UPDATE patients SET intake_completed = 1 WHERE id = ?',
+            [patientInfo.patientId]
+        );
+
         return {
             status: 'completed',
             integratedAt: new Date().toISOString(),

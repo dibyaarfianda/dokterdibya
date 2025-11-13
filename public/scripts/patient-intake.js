@@ -753,15 +753,17 @@ form.addEventListener('submit', async (event) => {
         const submissionId = result && typeof result === 'object' ? result.submissionId : undefined;
         clearDraft();
         showToast('Data berhasil dikirim. Terima kasih!', 'info');
-        form.reset();
-        resetDerivedFlags();
-        updateDerived();
-        updateStep(0);
-        syncMaritalFields();
+        
+        // Show success message briefly before redirect
         statusMessage.hidden = false;
         statusMessage.textContent = submissionId
-            ? `Data berhasil dikirim. Mohon simpan kode referensi ini: ${submissionId}.`
-            : 'Data berhasil dikirim. Mohon tunjukkan bukti ini saat tiba di klinik.';
+            ? `Data berhasil dikirim dengan kode: ${submissionId}. Mengalihkan ke dashboard...`
+            : 'Data berhasil dikirim. Mengalihkan ke dashboard...';
+        
+        // Redirect to dashboard after 2 seconds
+        setTimeout(() => {
+            window.location.href = '/patient-dashboard.html';
+        }, 2000);
     } catch (error) {
         console.error('Submit intake gagal', error);
         showToast('Gagal mengirim data. Coba lagi atau simpan screenshot.', 'error');
