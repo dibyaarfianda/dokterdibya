@@ -24,8 +24,8 @@ router.get('/api/patients', verifyToken, requirePermission('patients.view'), asy
             return res.json(cached);
         }
         
-        let query = 'SELECT * FROM patients WHERE 1=1';
-        const params = [];
+        let query = 'SELECT * FROM patients WHERE patient_type = ?';
+        const params = ['walk-in'];
         
         if (search) {
             query += ' AND (full_name LIKE ? OR id LIKE ? OR whatsapp LIKE ?)';
@@ -42,10 +42,16 @@ router.get('/api/patients', verifyToken, requirePermission('patients.view'), asy
         
         const [rows] = await db.query(query, params);
         
+        // Map phone to whatsapp if whatsapp is null (for backward compatibility)
+        const mappedRows = rows.map(patient => ({
+            ...patient,
+            whatsapp: patient.whatsapp || patient.phone || null
+        }));
+        
         const response = {
             success: true,
-            data: rows,
-            count: rows.length
+            data: mappedRows,
+            count: mappedRows.length
         };
         
         // Cache the result
@@ -112,8 +118,8 @@ router.post('/api/patients', verifyToken, requirePermission('patients.create'), 
         }
         
         const [result] = await db.query(
-            'INSERT INTO patients (id, full_name, whatsapp, birth_date, age) VALUES (?, ?, ?, ?, ?)',
-            [id, full_name, whatsapp || null, birth_date || null, age]
+            'INSERT INTO patients (id, full_name, whatsapp, birth_date, age, patient_type) VALUES (?, ?, ?, ?, ?, ?)',
+            [id, full_name, whatsapp || null, birth_date || null, age, 'walk-in']
         );
         
         // Invalidate patient list cache
@@ -208,33 +214,140 @@ router.patch('/api/patients/:id/visit', verifyToken, async (req, res) => {
 
 // DELETE PATIENT
 router.delete('/api/patients/:id', verifyToken, requirePermission('patients.delete'), async (req, res) => {
+    const connection = await db.getConnection();
+    
     try {
-        console.log('DELETE request for patient ID:', req.params.id, 'Type:', typeof req.params.id);
+        await connection.beginTransaction();
+        
+        const patientId = req.params.id;
+        console.log('DELETE request for patient ID:', patientId, 'Type:', typeof patientId);
         
         // First check if patient exists
-        const [checkResult] = await db.query('SELECT id, full_name FROM patients WHERE id = ?', [req.params.id]);
+        const [checkResult] = await connection.query('SELECT id, full_name, email FROM patients WHERE id = ?', [patientId]);
         console.log('Patient check result:', checkResult);
         
         if (checkResult.length === 0) {
             console.log('Patient not found in database');
+            await connection.rollback();
+            connection.release();
             return res.status(404).json({ success: false, message: 'Pasien tidak ditemukan' });
         }
         
-        // Now delete
-        const [result] = await db.query('DELETE FROM patients WHERE id = ?', [req.params.id]);
-        console.log('Delete result:', result);
+        const patient = checkResult[0];
+        const deletionLog = {
+            patient_id: patientId,
+            patient_name: patient.full_name,
+            patient_email: patient.email,
+            deleted_data: {}
+        };
         
-        if (result.affectedRows === 0) {
+        // URUTAN PENGHAPUSAN (PENTING!)
+        // Hapus dari tabel child terlebih dahulu, baru tabel parent
+        
+        // 1. Hapus billing_items (child dari billings)
+        const [billingItemsResult] = await connection.query(
+            'DELETE FROM billing_items WHERE billing_id IN (SELECT id FROM billings WHERE patient_id = ?)',
+            [patientId]
+        );
+        deletionLog.deleted_data.billing_items = billingItemsResult.affectedRows;
+        console.log(`Deleted ${billingItemsResult.affectedRows} billing items`);
+        
+        // 2. Hapus payment_transactions (child dari billings)
+        const [paymentResult] = await connection.query(
+            'DELETE FROM payment_transactions WHERE billing_id IN (SELECT id FROM billings WHERE patient_id = ?)',
+            [patientId]
+        );
+        deletionLog.deleted_data.payment_transactions = paymentResult.affectedRows;
+        console.log(`Deleted ${paymentResult.affectedRows} payment transactions`);
+        
+        // 3. Hapus billings (parent, ada FK ke patients)
+        const [billingsResult] = await connection.query(
+            'DELETE FROM billings WHERE patient_id = ?',
+            [patientId]
+        );
+        deletionLog.deleted_data.billings = billingsResult.affectedRows;
+        console.log(`Deleted ${billingsResult.affectedRows} billings`);
+        
+        // 4. Hapus patient_records (ada FK ke patients)
+        const [recordsResult] = await connection.query(
+            'DELETE FROM patient_records WHERE patient_id = ?',
+            [patientId]
+        );
+        deletionLog.deleted_data.patient_records = recordsResult.affectedRows;
+        console.log(`Deleted ${recordsResult.affectedRows} patient records`);
+        
+        // 5. Hapus medical_records (ada patient_id)
+        const [medicalResult] = await connection.query(
+            'DELETE FROM medical_records WHERE patient_id = ?',
+            [patientId]
+        );
+        deletionLog.deleted_data.medical_records = medicalResult.affectedRows;
+        console.log(`Deleted ${medicalResult.affectedRows} medical records`);
+        
+        // 6. Hapus medical_exams (ada patient_id)
+        const [examsResult] = await connection.query(
+            'DELETE FROM medical_exams WHERE patient_id = ?',
+            [patientId]
+        );
+        deletionLog.deleted_data.medical_exams = examsResult.affectedRows;
+        console.log(`Deleted ${examsResult.affectedRows} medical exams`);
+        
+        // 7. Hapus visits (ada patient_id)
+        const [visitsResult] = await connection.query(
+            'DELETE FROM visits WHERE patient_id = ?',
+            [patientId]
+        );
+        deletionLog.deleted_data.visits = visitsResult.affectedRows;
+        console.log(`Deleted ${visitsResult.affectedRows} visits`);
+        
+        // 8. Hapus appointments (ada patient_id)
+        const [appointmentsResult] = await connection.query(
+            'DELETE FROM appointments WHERE patient_id = ?',
+            [patientId]
+        );
+        deletionLog.deleted_data.appointments = appointmentsResult.affectedRows;
+        console.log(`Deleted ${appointmentsResult.affectedRows} appointments`);
+        
+        // 9. Hapus patient intake submissions (jika ada)
+        const [intakeResult] = await connection.query(
+            'DELETE FROM patient_intake_submissions WHERE patient_id = ?',
+            [patientId]
+        );
+        deletionLog.deleted_data.patient_intake_submissions = intakeResult.affectedRows;
+        console.log(`Deleted ${intakeResult.affectedRows} patient intake submissions`);
+        
+        // 10. TERAKHIR: Hapus patients (parent table)
+        const [patientResult] = await connection.query(
+            'DELETE FROM patients WHERE id = ?',
+            [patientId]
+        );
+        deletionLog.deleted_data.patient = patientResult.affectedRows;
+        console.log(`Deleted ${patientResult.affectedRows} patient`);
+        
+        if (patientResult.affectedRows === 0) {
+            await connection.rollback();
+            connection.release();
             return res.status(404).json({ success: false, message: 'Pasien tidak ditemukan' });
         }
         
-        console.log(`Patient ${checkResult[0].full_name} (ID: ${req.params.id}) deleted successfully`);
-        res.json({ success: true, message: 'Pasien berhasil dihapus' });
+        await connection.commit();
+        connection.release();
+        
+        console.log(`Patient ${patient.full_name} (ID: ${patientId}) deleted successfully with all related data:`, deletionLog.deleted_data);
+        
+        res.json({ 
+            success: true, 
+            message: `Pasien ${patient.full_name} dan semua data terkait berhasil dihapus`,
+            deleted_data: deletionLog.deleted_data
+        });
+        
     } catch (error) {
+        await connection.rollback();
+        connection.release();
         console.error('Error deleting patient:', error);
         res.status(500).json({ 
             success: false, 
-            message: 'Gagal menghapus pasien', 
+            message: 'Gagal menghapus pasien: ' + error.message, 
             error: error.message 
         });
     }
