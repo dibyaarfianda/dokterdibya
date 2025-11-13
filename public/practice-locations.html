@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pilih Lokasi Praktik - Dokter Dibya</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .container {
+            max-width: 1100px;
+        }
+        
+        .page-header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+        
+        .page-header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+        
+        .page-header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .location-card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: all 0.3s;
+            cursor: pointer;
+            border: 3px solid transparent;
+        }
+        
+        .location-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+            border-color: #667eea;
+        }
+        
+        .location-card.booking-available {
+            border-color: #28a745;
+        }
+        
+        .location-card.booking-available:hover {
+            border-color: #218838;
+        }
+        
+        .location-icon {
+            width: 70px;
+            height: 70px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+        
+        .location-card.booking-available .location-icon {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+        
+        .location-icon i {
+            font-size: 32px;
+            color: white;
+        }
+        
+        .location-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .location-desc {
+            color: #666;
+            text-align: center;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+        
+        .badge-booking {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        
+        .badge-booking.available {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .badge-booking.schedule-only {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .btn-action {
+            width: 100%;
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 16px;
+            border: none;
+            transition: all 0.3s;
+            margin-top: 15px;
+        }
+        
+        .btn-booking {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+            color: white;
+        }
+        
+        .btn-booking:hover {
+            background: linear-gradient(135deg, #218838 0%, #1ea87a 100%);
+            transform: scale(1.02);
+        }
+        
+        .btn-schedule {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-schedule:hover {
+            background: linear-gradient(135deg, #5568d3 0%, #6a4093 100%);
+            transform: scale(1.02);
+        }
+        
+        .back-link {
+            text-align: center;
+            margin-top: 30px;
+        }
+        
+        .back-link a {
+            color: white;
+            text-decoration: none;
+            font-size: 16px;
+            opacity: 0.9;
+            transition: opacity 0.3s;
+        }
+        
+        .back-link a:hover {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="page-header">
+            <h1><i class="fas fa-hospital"></i> Pilih Lokasi Praktik</h1>
+            <p>Silakan pilih lokasi praktik untuk melihat jadwal atau membuat janji konsultasi</p>
+        </div>
+        
+        <div class="row">
+            <!-- Klinik Privat Minggu -->
+            <div class="col-md-6">
+                <div class="location-card booking-available" onclick="window.location.href='/booking-appointment.html'">
+                    <div class="location-icon">
+                        <i class="fas fa-home"></i>
+                    </div>
+                    <h3 class="location-title">Klinik Privat Minggu</h3>
+                    <p class="location-desc">Praktik privat setiap hari Minggu dengan sistem booking online</p>
+                    <div class="text-center">
+                        <span class="badge-booking available">
+                            <i class="fas fa-calendar-check"></i> Booking Online Tersedia
+                        </span>
+                    </div>
+                    <button class="btn btn-booking">
+                        <i class="fas fa-calendar-plus"></i> Buat Janji Konsultasi
+                    </button>
+                </div>
+            </div>
+            
+            <!-- RSUD Gambiran Kediri -->
+            <div class="col-md-6">
+                <div class="location-card" onclick="window.location.href='/practice-schedule.html?location=rsud_gambiran'">
+                    <div class="location-icon">
+                        <i class="fas fa-hospital-alt"></i>
+                    </div>
+                    <h3 class="location-title">Poli RSUD Gambiran Kediri</h3>
+                    <p class="location-desc">Praktik di Poli Kebidanan RSUD Gambiran</p>
+                    <div class="text-center">
+                        <span class="badge-booking schedule-only">
+                            <i class="fas fa-clock"></i> Lihat Jadwal Saja
+                        </span>
+                    </div>
+                    <button class="btn btn-schedule">
+                        <i class="fas fa-calendar"></i> Lihat Jadwal Praktik
+                    </button>
+                </div>
+            </div>
+            
+            <!-- RSIA Melinda Kediri -->
+            <div class="col-md-6">
+                <div class="location-card" onclick="window.location.href='/practice-schedule.html?location=rsia_melinda'">
+                    <div class="location-icon">
+                        <i class="fas fa-baby"></i>
+                    </div>
+                    <h3 class="location-title">Poli RSIA Melinda Kediri</h3>
+                    <p class="location-desc">Praktik di Poli Kandungan RSIA Melinda</p>
+                    <div class="text-center">
+                        <span class="badge-booking schedule-only">
+                            <i class="fas fa-clock"></i> Lihat Jadwal Saja
+                        </span>
+                    </div>
+                    <button class="btn btn-schedule">
+                        <i class="fas fa-calendar"></i> Lihat Jadwal Praktik
+                    </button>
+                </div>
+            </div>
+            
+            <!-- RS Bhayangkara Kediri -->
+            <div class="col-md-6">
+                <div class="location-card" onclick="window.location.href='/practice-schedule.html?location=rs_bhayangkara'">
+                    <div class="location-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3 class="location-title">Poli RS Bhayangkara Kediri</h3>
+                    <p class="location-desc">Praktik di Poli Kandungan RS Bhayangkara</p>
+                    <div class="text-center">
+                        <span class="badge-booking schedule-only">
+                            <i class="fas fa-clock"></i> Lihat Jadwal Saja
+                        </span>
+                    </div>
+                    <button class="btn btn-schedule">
+                        <i class="fas fa-calendar"></i> Lihat Jadwal Praktik
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="back-link">
+            <a href="/patient-dashboard.html"><i class="fas fa-arrow-left"></i> Kembali ke Dashboard</a>
+        </div>
+    </div>
+</body>
+</html>

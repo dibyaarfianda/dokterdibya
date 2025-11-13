@@ -141,6 +141,10 @@ app.use('/api/appointments', appointmentsRoutes);
 const sundayAppointmentsRoutes = require('./routes/sunday-appointments');
 app.use('/api/sunday-appointments', sundayAppointmentsRoutes);
 
+// Practice schedules routes
+const practiceSchedulesRoutes = require('./routes/practice-schedules');
+app.use('/api/practice-schedules', practiceSchedulesRoutes);
+
 // Real-time routes
 app.use('/', chatRoutes);
 app.use('/', logsRoutes);
