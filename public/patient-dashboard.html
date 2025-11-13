@@ -624,15 +624,17 @@
                 // Store profile data for editing
                 window.currentProfile = profile;
 
-                // Check if first time user (registered within last 24 hours)
-                const hoursSinceReg = (Date.now() - regDate.getTime()) / (1000 * 60 * 60);
-                if (hoursSinceReg < 24) {
-                    document.getElementById('first-time-alert').style.display = 'block';
-                }
-
-                // Update intake button appearance if completed
+                // Update intake button appearance and hide alert if completed
                 if (profile.intake_completed === 1) {
                     updateIntakeButtonCompleted();
+                    // Hide "Langkah Selanjutnya" alert if intake is completed
+                    document.getElementById('first-time-alert').style.display = 'none';
+                } else {
+                    // Check if first time user (registered within last 24 hours) and intake not completed
+                    const hoursSinceReg = (Date.now() - regDate.getTime()) / (1000 * 60 * 60);
+                    if (hoursSinceReg < 24) {
+                        document.getElementById('first-time-alert').style.display = 'block';
+                    }
                 }
 
             } catch (error) {
