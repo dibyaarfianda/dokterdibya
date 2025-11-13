@@ -137,6 +137,10 @@ app.use('/api/visits', visitsRoutes);
 app.use('/api/medical-exams', medicalExamsRoutes);
 app.use('/api/appointments', appointmentsRoutes);
 
+// Sunday appointments routes (patient booking system)
+const sundayAppointmentsRoutes = require('./routes/sunday-appointments');
+app.use('/api/sunday-appointments', sundayAppointmentsRoutes);
+
 // Real-time routes
 app.use('/', chatRoutes);
 app.use('/', logsRoutes);
