@@ -213,12 +213,16 @@ router.post('/api/patient-intake', async (req, res, next) => {
         await ensureDirectory();
         const submissionId = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
         const filePath = path.join(STORAGE_DIR, `${submissionId}.json`);
-        const status = 'patient_reported';
+        // Auto-verify: set status directly to 'verified' instead of 'patient_reported'
+        const status = 'verified';
         const timestamp = new Date().toISOString();
         const signatureValue = payload.signature?.value || payload.patient_signature || null;
         payload.metadata = payload.metadata || {};
         payload.review = payload.review || {};
-        payload.review.status = payload.review.status || status;
+        payload.review.status = status;
+        payload.review.verifiedBy = 'auto_system';
+        payload.review.verifiedAt = timestamp;
+        
         const record = {
             submissionId,
             receivedAt: timestamp,
@@ -226,13 +230,19 @@ router.post('/api/patient-intake', async (req, res, next) => {
             payload,
             review: {
                 status,
-                verifiedBy: null,
-                verifiedAt: null,
+                verifiedBy: 'auto_system',
+                verifiedAt: timestamp,
                 sections: payload.review?.sections || {},
                 history: [
                     {
-                        status,
+                        status: 'patient_reported',
                         actor: 'patient',
+                        timestamp,
+                    },
+                    {
+                        status,
+                        actor: 'auto_system',
+                        notes: 'Auto-verified and integrated on submission',
                         timestamp,
                     },
                 ],
@@ -258,7 +268,41 @@ router.post('/api/patient-intake', async (req, res, next) => {
         await fs.writeFile(filePath, JSON.stringify(storagePayload, null, 2), 'utf8');
         logger.info(`Patient intake stored: ${submissionId} (status: ${status})`);
 
-        res.status(201).json({ success: true, submissionId, status });
+        // Auto-integrate to EMR system
+        let integrationResult = null;
+        try {
+            integrationResult = await PatientIntakeIntegrationService.process(record, {
+                reviewer: 'auto_system',
+                notes: 'Auto-integrated on submission',
+                reviewedAt: timestamp,
+            });
+            
+            if (integrationResult) {
+                record.integration = integrationResult;
+                // Update file with integration result
+                const updatedStoragePayload = wrapRecordForStorage(record);
+                await fs.writeFile(filePath, JSON.stringify(updatedStoragePayload, null, 2), 'utf8');
+                logger.info(`Patient intake auto-integrated: ${submissionId}, Patient ID: ${integrationResult.patientId}`);
+            }
+        } catch (integrationError) {
+            logger.error('Failed to auto-integrate intake submission', {
+                submissionId,
+                error: integrationError.message,
+            });
+            // Don't fail the whole request, just log the error
+            integrationResult = {
+                error: integrationError.message,
+                status: 'failed',
+            };
+        }
+
+        res.status(201).json({ 
+            success: true, 
+            submissionId, 
+            status,
+            autoVerified: true,
+            integration: integrationResult,
+        });
     } catch (error) {
         next(error);
     }

@@ -24,11 +24,11 @@ router.get('/api/patients', verifyToken, requirePermission('patients.view'), asy
             return res.json(cached);
         }
         
-        let query = 'SELECT * FROM patients WHERE patient_type = ?';
-        const params = ['walk-in'];
+        let query = 'SELECT * FROM patients';
+        const params = [];
         
         if (search) {
-            query += ' AND (full_name LIKE ? OR id LIKE ? OR whatsapp LIKE ?)';
+            query += ' WHERE (full_name LIKE ? OR id LIKE ? OR whatsapp LIKE ?)';
             const searchTerm = `%${search}%`;
             params.push(searchTerm, searchTerm, searchTerm);
         }
@@ -212,6 +212,45 @@ router.patch('/api/patients/:id/visit', verifyToken, async (req, res) => {
     }
 });
 
+// UPDATE PATIENT STATUS
+router.patch('/api/patients/:id/status', verifyToken, requirePermission('patients.edit'), async (req, res) => {
+    try {
+        const { status } = req.body;
+        
+        if (!status || !['active', 'inactive'].includes(status)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Invalid status. Must be "active" or "inactive"' 
+            });
+        }
+        
+        const [result] = await db.query(
+            'UPDATE patients SET status = ?, updated_at = NOW() WHERE id = ?',
+            [status, req.params.id]
+        );
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'Patient not found' });
+        }
+        
+        // Invalidate cache
+        cache.invalidatePattern('patients:');
+        
+        res.json({ 
+            success: true, 
+            message: `Patient status updated to ${status}`,
+            data: { id: req.params.id, status }
+        });
+    } catch (error) {
+        console.error('Error updating patient status:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to update patient status', 
+            error: error.message 
+        });
+    }
+});
+
 // DELETE PATIENT
 router.delete('/api/patients/:id', verifyToken, requirePermission('patients.delete'), async (req, res) => {
     const connection = await db.getConnection();
@@ -308,13 +347,19 @@ router.delete('/api/patients/:id', verifyToken, requirePermission('patients.dele
         deletionLog.deleted_data.appointments = appointmentsResult.affectedRows;
         console.log(`Deleted ${appointmentsResult.affectedRows} appointments`);
         
-        // 9. Hapus patient intake submissions (jika ada)
-        const [intakeResult] = await connection.query(
-            'DELETE FROM patient_intake_submissions WHERE patient_id = ?',
-            [patientId]
-        );
-        deletionLog.deleted_data.patient_intake_submissions = intakeResult.affectedRows;
-        console.log(`Deleted ${intakeResult.affectedRows} patient intake submissions`);
+        // 9. Hapus patient intake submissions (jika ada, skip if table doesn't exist)
+        try {
+            const [intakeResult] = await connection.query(
+                'DELETE FROM patient_intake_submissions WHERE patient_id = ?',
+                [patientId]
+            );
+            deletionLog.deleted_data.patient_intake_submissions = intakeResult.affectedRows;
+            console.log(`Deleted ${intakeResult.affectedRows} patient intake submissions`);
+        } catch (intakeError) {
+            // Table might not exist, skip
+            deletionLog.deleted_data.patient_intake_submissions = 0;
+            console.log('patient_intake_submissions table does not exist, skipping');
+        }
         
         // 10. TERAKHIR: Hapus patients (parent table)
         const [patientResult] = await connection.query(
