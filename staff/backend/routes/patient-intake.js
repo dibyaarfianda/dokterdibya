@@ -374,13 +374,171 @@ router.get('/api/patient-intake', verifyToken, async (req, res, next) => {
     }
 });
 
-router.get('/api/patient-intake/:submissionId', verifyToken, async (req, res, next) => {
+/**
+ * GET /api/patient-intake/my-intake
+ * Get patient's own intake data (for patient self-service)
+ */
+router.get('/api/patient-intake/my-intake', verifyToken, async (req, res, next) => {
     try {
-        const { submissionId } = req.params;
+        await ensureDirectory();
+        const files = await fs.readdir(STORAGE_DIR);
+        const jsonFiles = files.filter((file) => file.endsWith('.json'));
+        const patientPhone = req.user.phone || req.user.whatsapp;
+
+        for (const file of jsonFiles) {
+            const filePath = path.join(STORAGE_DIR, file);
+            const content = await fs.readFile(filePath, 'utf8');
+            const record = JSON.parse(content);
+
+            const phone = record.payload?.phone || record.summary?.phone;
+            if (!phone || !patientPhone) {
+                continue;
+            }
+
+            const normalizedPhone = phone.replace(/\D/g, '').slice(-10);
+            const normalizedPatientPhone = patientPhone.replace(/\D/g, '').slice(-10);
+
+            if (normalizedPhone !== normalizedPatientPhone || record.status !== 'verified') {
+                continue;
+            }
+
+            let payload = record.payload;
+            if (record.encrypted) {
+                try {
+                    const key = deriveEncryptionKey();
+                    if (key) {
+                        const decipher = crypto.createDecipheriv(
+                            record.encrypted.algorithm || 'aes-256-gcm',
+                            key,
+                            Buffer.from(record.encrypted.iv, 'base64')
+                        );
+                        decipher.setAuthTag(Buffer.from(record.encrypted.authTag, 'base64'));
+                        let decrypted = decipher.update(record.encrypted.data, 'base64', 'utf8');
+                        decrypted += decipher.final('utf8');
+                        const decryptedRecord = JSON.parse(decrypted);
+                        payload = decryptedRecord.payload;
+                    }
+                } catch (error) {
+                    logger.error('Failed to decrypt intake data', { error: error.message });
+                }
+            }
+
+            return res.json({
+                success: true,
+                data: {
+                    submissionId: record.submissionId,
+                    payload,
+                    receivedAt: record.receivedAt,
+                    status: record.status,
+                },
+            });
+        }
+
+        return res.json({ success: true, data: null });
+    } catch (error) {
+        logger.error('Failed to get patient intake', { error: error.message });
+        next(error);
+    }
+});
+
+/**
+ * PUT /api/patient-intake/my-intake
+ * Update patient's own intake data
+ */
+router.put('/api/patient-intake/my-intake', verifyToken, async (req, res, next) => {
+    try {
+        const patientId = req.user.id;
+        const payload = req.body;
+
+        const errors = validatePayload(payload);
+        if (errors.length) {
+            return res.status(422).json({ success: false, errors });
+        }
+
+        await ensureDirectory();
+        const files = await fs.readdir(STORAGE_DIR);
+        const jsonFiles = files.filter((file) => file.endsWith('.json'));
+
+        let existingFile = null;
+        let existingRecord = null;
+        const patientPhone = req.user.phone || req.user.whatsapp;
+
+        for (const file of jsonFiles) {
+            const filePath = path.join(STORAGE_DIR, file);
+            const content = await fs.readFile(filePath, 'utf8');
+            const record = JSON.parse(content);
+
+            const phone = record.payload?.phone || record.summary?.phone;
+            if (!phone || !patientPhone) {
+                continue;
+            }
+
+            const normalizedPhone = phone.replace(/\D/g, '').slice(-10);
+            const normalizedPatientPhone = patientPhone.replace(/\D/g, '').slice(-10);
+
+            if (normalizedPhone === normalizedPatientPhone && record.status === 'verified') {
+                existingFile = filePath;
+                existingRecord = record;
+                break;
+            }
+        }
+
+        if (!existingRecord) {
+            return res.status(404).json({ success: false, message: 'Data intake tidak ditemukan' });
+        }
+
+        const timestamp = new Date().toISOString();
+        payload.metadata = payload.metadata || {};
+        payload.metadata.updatedAt = timestamp;
+
+        existingRecord.payload = payload;
+        existingRecord.status = 'verified';
+        existingRecord.review = existingRecord.review || {};
+        existingRecord.review.history = existingRecord.review.history || [];
+        existingRecord.review.history.push({
+            status: 'updated',
+            actor: 'patient',
+            timestamp,
+            notes: 'Patient updated their intake form',
+        });
+
+        existingRecord.summary = {
+            phone: payload.phone,
+            name: payload.full_name,
+            dob: payload.dob,
+            age: payload.age,
+            highRisk: payload.metadata?.highRisk || false,
+        };
+
+        const wrapped = wrapRecordForStorage(existingRecord);
+        await fs.writeFile(existingFile, JSON.stringify(wrapped, null, 2), 'utf8');
+
+        logger.info('Patient intake updated', { submissionId: existingRecord.submissionId, patientId });
+
+        return res.json({
+            success: true,
+            message: 'Data berhasil diperbarui',
+            submissionId: existingRecord.submissionId,
+        });
+    } catch (error) {
+        logger.error('Failed to update patient intake', { error: error.message });
+        next(error);
+    }
+});
+
+router.get('/api/patient-intake/:submissionId', verifyToken, async (req, res, next) => {
+    const { submissionId } = req.params;
+
+    if (!submissionId || typeof submissionId !== 'string') {
+        return res.status(400).json({ success: false, message: 'Submission ID tidak valid.' });
+    }
+
+    try {
         const record = await loadRecordById(submissionId);
         if (!record) {
             return res.status(404).json({ success: false, message: 'Data intake tidak ditemukan.' });
         }
+
         res.json({ success: true, data: record });
     } catch (error) {
         if (/INTAKE_ENCRYPTION_KEY/.test(error.message)) {
@@ -391,8 +549,13 @@ router.get('/api/patient-intake/:submissionId', verifyToken, async (req, res, ne
 });
 
 router.put('/api/patient-intake/:submissionId/review', verifyToken, async (req, res, next) => {
+    const { submissionId } = req.params;
+
+    if (!submissionId || typeof submissionId !== 'string') {
+        return res.status(400).json({ success: false, message: 'Submission ID tidak valid.' });
+    }
+
     try {
-        const { submissionId } = req.params;
         const record = await loadRecordById(submissionId);
         if (!record) {
             return res.status(404).json({ success: false, message: 'Data intake tidak ditemukan.' });
@@ -466,7 +629,7 @@ router.put('/api/patient-intake/:submissionId/review', verifyToken, async (req, 
 
         await saveRecord(record);
 
-        res.json({
+        return res.json({
             success: true,
             submissionId: record.submissionId,
             status: desiredStatus,
@@ -482,38 +645,26 @@ router.put('/api/patient-intake/:submissionId/review', verifyToken, async (req, 
     }
 });
 
-/**
- * DELETE /api/patient-intake/:submissionId
- * Delete a patient intake submission
- */
 router.delete('/api/patient-intake/:submissionId', verifyToken, async (req, res, next) => {
     const { submissionId } = req.params;
 
     if (!submissionId || typeof submissionId !== 'string') {
-        return res.status(400).json({
-            success: false,
-            message: 'Submission ID tidak valid.',
-        });
+        return res.status(400).json({ success: false, message: 'Submission ID tidak valid.' });
     }
 
     try {
         await ensureDirectory();
         const filePath = path.join(STORAGE_DIR, `${submissionId}.json`);
 
-        // Check if file exists
         try {
             await fs.access(filePath);
         } catch (error) {
-            return res.status(404).json({
-                success: false,
-                message: 'Data intake tidak ditemukan.',
-            });
+            return res.status(404).json({ success: false, message: 'Data intake tidak ditemukan.' });
         }
 
-        // Read the file to log before deletion
         const fileContent = await fs.readFile(filePath, 'utf8');
         const record = JSON.parse(fileContent);
-        
+
         logger.info('Deleting patient intake submission', {
             submissionId,
             patientName: record.patientName || record.payload?.full_name,
@@ -521,194 +672,11 @@ router.delete('/api/patient-intake/:submissionId', verifyToken, async (req, res,
             deletedBy: req.user?.username || 'unknown',
         });
 
-        // Delete the file
         await fs.unlink(filePath);
 
-        res.json({
-            success: true,
-            message: 'Data intake berhasil dihapus.',
-            submissionId,
-        });
+        return res.json({ success: true, message: 'Data intake berhasil dihapus.', submissionId });
     } catch (error) {
-        logger.error('Failed to delete intake submission', {
-            submissionId,
-            error: error.message,
-        });
-        next(error);
-    }
-});
-
-/**
- * GET /api/patient-intake/my-intake
- * Get patient's own intake data (for patient to view/edit their own data)
- */
-router.get('/api/patient-intake/my-intake', verifyToken, async (req, res, next) => {
-    try {
-        const patientId = req.user.id;
-        
-        // Read all intake files
-        await ensureDirectory();
-        const files = await fs.readdir(STORAGE_DIR);
-        const jsonFiles = files.filter(f => f.endsWith('.json'));
-        
-        // Find patient's intake (verified status)
-        for (const file of jsonFiles) {
-            const filePath = path.join(STORAGE_DIR, file);
-            const content = await fs.readFile(filePath, 'utf8');
-            const record = JSON.parse(content);
-            
-            // Check if this intake belongs to this patient
-            const phone = record.payload?.phone || record.summary?.phone;
-            const patientPhone = req.user.phone || req.user.whatsapp;
-            
-            if (phone && patientPhone) {
-                const normalizedPhone = phone.replace(/\D/g, '').slice(-10);
-                const normalizedPatientPhone = patientPhone.replace(/\D/g, '').slice(-10);
-                
-                if (normalizedPhone === normalizedPatientPhone && record.status === 'verified') {
-                    // Decrypt if encrypted
-                    let payload = record.payload;
-                    if (record.encrypted) {
-                        try {
-                            const key = deriveEncryptionKey();
-                            if (key) {
-                                const decipher = crypto.createDecipheriv(
-                                    record.encrypted.algorithm || 'aes-256-gcm',
-                                    key,
-                                    Buffer.from(record.encrypted.iv, 'base64')
-                                );
-                                decipher.setAuthTag(Buffer.from(record.encrypted.authTag, 'base64'));
-                                let decrypted = decipher.update(record.encrypted.data, 'base64', 'utf8');
-                                decrypted += decipher.final('utf8');
-                                const decryptedRecord = JSON.parse(decrypted);
-                                payload = decryptedRecord.payload;
-                            }
-                        } catch (error) {
-                            logger.error('Failed to decrypt intake data', { error: error.message });
-                        }
-                    }
-                    
-                    return res.json({
-                        success: true,
-                        data: {
-                            submissionId: record.submissionId,
-                            payload: payload,
-                            receivedAt: record.receivedAt,
-                            status: record.status
-                        }
-                    });
-                }
-            }
-        }
-        
-        // No intake found
-        res.json({
-            success: true,
-            data: null
-        });
-        
-    } catch (error) {
-        logger.error('Failed to get patient intake', {
-            error: error.message,
-        });
-        next(error);
-    }
-});
-
-/**
- * PUT /api/patient-intake/my-intake
- * Update patient's own intake data
- */
-router.put('/api/patient-intake/my-intake', verifyToken, async (req, res, next) => {
-    try {
-        const patientId = req.user.id;
-        const payload = req.body;
-        
-        // Validate payload
-        const errors = validatePayload(payload);
-        if (errors.length) {
-            return res.status(422).json({ success: false, errors });
-        }
-        
-        // Read all intake files to find patient's existing intake
-        await ensureDirectory();
-        const files = await fs.readdir(STORAGE_DIR);
-        const jsonFiles = files.filter(f => f.endsWith('.json'));
-        
-        let existingFile = null;
-        let existingRecord = null;
-        
-        for (const file of jsonFiles) {
-            const filePath = path.join(STORAGE_DIR, file);
-            const content = await fs.readFile(filePath, 'utf8');
-            const record = JSON.parse(content);
-            
-            const phone = record.payload?.phone || record.summary?.phone;
-            const patientPhone = req.user.phone || req.user.whatsapp;
-            
-            if (phone && patientPhone) {
-                const normalizedPhone = phone.replace(/\D/g, '').slice(-10);
-                const normalizedPatientPhone = patientPhone.replace(/\D/g, '').slice(-10);
-                
-                if (normalizedPhone === normalizedPatientPhone && record.status === 'verified') {
-                    existingFile = filePath;
-                    existingRecord = record;
-                    break;
-                }
-            }
-        }
-        
-        if (!existingRecord) {
-            return res.status(404).json({
-                success: false,
-                message: 'Data intake tidak ditemukan'
-            });
-        }
-        
-        // Update the record
-        const timestamp = new Date().toISOString();
-        payload.metadata = payload.metadata || {};
-        payload.metadata.updatedAt = timestamp;
-        
-        existingRecord.payload = payload;
-        existingRecord.status = 'verified'; // Keep verified status
-        existingRecord.review = existingRecord.review || {};
-        existingRecord.review.history = existingRecord.review.history || [];
-        existingRecord.review.history.push({
-            status: 'updated',
-            actor: 'patient',
-            timestamp,
-            notes: 'Patient updated their intake form'
-        });
-        
-        // Update summary
-        existingRecord.summary = {
-            phone: payload.phone,
-            name: payload.full_name,
-            dob: payload.dob,
-            age: payload.age,
-            highRisk: payload.metadata?.highRisk || false,
-        };
-        
-        // Encrypt and save
-        const wrapped = wrapRecordForStorage(existingRecord);
-        await fs.writeFile(existingFile, JSON.stringify(wrapped, null, 2), 'utf8');
-        
-        logger.info('Patient intake updated', {
-            submissionId: existingRecord.submissionId,
-            patientId
-        });
-        
-        res.json({
-            success: true,
-            message: 'Data berhasil diperbarui',
-            submissionId: existingRecord.submissionId
-        });
-        
-    } catch (error) {
-        logger.error('Failed to update patient intake', {
-            error: error.message,
-        });
+        logger.error('Failed to delete intake submission', { submissionId, error: error.message });
         next(error);
     }
 });

@@ -12,20 +12,57 @@
 		<meta http-equiv="X-UA-Compatible" content="IE=Edge">
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		
-		<link rel="stylesheet" href="css/animate.min.css">
-		<link rel="stylesheet" href="css/bootstrap.min.css">
-		<link rel="stylesheet" href="css/font-awesome.min.css">
+		<!-- Cache-busted core styles -->
+		<link rel="stylesheet" href="css/animate.min.css?v=20251114">
+		<link rel="stylesheet" href="css/bootstrap.min.css?v=20251114">
+		<link rel="stylesheet" href="css/font-awesome.min.css?v=20251114">
 		<link href='https://fonts.googleapis.com/css?family=Open+Sans:400,300,600,700' rel='stylesheet' type='text/css'>
-		<link rel="stylesheet" href="css/templatemo-style.css">
-		<script src="js/jquery.js"></script>
-		<script src="js/bootstrap.min.js"></script>
-        <script src="js/jquery.singlePageNav.min.js"></script>
-		<script src="js/typed.js"></script>
-		<script src="js/wow.min.js"></script>
-		<script src="js/custom.js"></script>
+		<link rel="stylesheet" href="css/templatemo-style.css?v=20251114">
+		<!-- Cache-busted core scripts -->
+		<script src="js/jquery.js?v=20251114"></script>
+		<script src="js/bootstrap.min.js?v=20251114"></script>
+        <script src="js/jquery.singlePageNav.min.js?v=20251114"></script>
+		<script src="js/typed.js?v=20251114"></script>
+		<script src="js/wow.min.js?v=20251114"></script>
+		<script src="js/custom.js?v=20251114"></script>
 		<!-- Google Sign-In API -->
 		<script src="https://accounts.google.com/gsi/client" async defer></script>
-		<script src="js/auth.js"></script>
+		<script src="js/auth.js?v=20251114"></script>
+		<script>
+		// Fix dropdown in mobile collapsed navbar
+		$(document).ready(function() {
+			// When navbar is collapsed (mobile view)
+			$('.navbar-collapse').on('show.bs.collapse', function() {
+				// Enable dropdown toggle in mobile
+				$('.navbar-nav .dropdown > a').on('click', function(e) {
+					var $dropdown = $(this).parent();
+					var isOpen = $dropdown.hasClass('open');
+					
+					// Close all other dropdowns
+					$('.navbar-nav .dropdown').removeClass('open');
+					
+					// Toggle current dropdown
+					if (!isOpen) {
+						e.preventDefault();
+						e.stopPropagation();
+						$dropdown.addClass('open');
+					}
+				});
+			});
+			
+			// When navbar is expanded (desktop view), restore normal behavior
+			$('.navbar-collapse').on('hide.bs.collapse', function() {
+				$('.navbar-nav .dropdown > a').off('click');
+			});
+			
+			// Handle click outside to close dropdown in mobile
+			$(document).on('click', function(e) {
+				if (!$(e.target).closest('.navbar-nav .dropdown').length) {
+					$('.navbar-nav .dropdown').removeClass('open');
+				}
+			});
+		});
+		</script>
 	</head>
 	<body id="top">
 
@@ -71,21 +108,19 @@
 					<ul class="nav navbar-nav navbar-right">
 						<li><a href="#daftar">DAFTAR</a></li>
 						<li class="dropdown">
-							<a href="#" class="dropdown-toggle" data-toggle="dropdown">MASUK <b class="caret"></b></a>
-							<ul class="dropdown-menu login-dropdown">
-								<li>
-									<form id="navbar-login-form" style="padding: 15px; min-width: 300px;">
-										<div class="form-group">
-											<label style="color: #333;">Email</label>
-											<input type="email" class="form-control" id="navbar-email" placeholder="contoh@email.com" required>
-										</div>
-										<div class="form-group">
-											<label style="color: #333;">Password</label>
-											<input type="password" class="form-control" id="navbar-password" placeholder="Password" required>
-										</div>
-										<button type="submit" class="btn btn-primary btn-block">Login</button>
-							
-										<!-- Google Sign-In (Tailwind-style) -->
+					<a href="#" class="dropdown-toggle" data-toggle="dropdown">MASUK <b class="caret"></b></a>
+					<ul class="dropdown-menu login-dropdown">
+						<li>
+							<form id="navbar-login-form" style="padding: 15px;">
+								<div class="form-group">
+									<label style="color: #333;">Email</label>
+									<input type="email" class="form-control" id="navbar-email" placeholder="contoh@email.com" required>
+								</div>
+								<div class="form-group">
+									<label style="color: #333;">Password</label>
+									<input type="password" class="form-control" id="navbar-password" placeholder="Password" required>
+								</div>
+								<button type="submit" class="btn btn-primary btn-block">Login</button>										<!-- Google Sign-In (Tailwind-style) -->
 										<button type="button" id="google-signin-btn" style="
 											display: flex;
 											align-items: center;

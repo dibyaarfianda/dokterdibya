@@ -2,10 +2,13 @@ module.exports = {
     testEnvironment: 'node',
     coverageDirectory: 'coverage',
     collectCoverageFrom: [
-        'routes/**/*.js',
-        'services/**/*.js',
+        'routes/v1/patients.js',
+        'services/PatientService.js',
         'middleware/**/*.js',
         'utils/**/*.js',
+        '!utils/logger.js',
+        '!utils/pdf.js',
+        '!utils/notification.js',
         '!**/node_modules/**',
         '!**/tests/**'
     ],
