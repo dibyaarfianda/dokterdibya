@@ -38,7 +38,20 @@
     /* Adjust content wrapper */
     .content-wrapper {
         margin-left: 0 !important;
-        padding: 10px;
+        padding: 0;
+    }
+
+    .content-wrapper .content,
+    .content-header .container-fluid,
+    .content-wrapper .content .container-fluid {
+        padding-left: 0;
+        padding-right: 0;
+    }
+
+    .content-wrapper .content > .row,
+    .content-wrapper .content .container-fluid > .row {
+        margin-left: 0;
+        margin-right: 0;
     }
 
     .main-header {
@@ -104,6 +117,14 @@
 
     .card-body {
         padding: 1rem;
+    }
+
+    /* Reduce padding on dense cards */
+    #patient-page .card-body,
+    #anamnesa-page .card-body,
+    #tindakan-page .card-body,
+    #obat-page .card-body {
+        padding: 0.85rem 0.9rem;
     }
 
     /* Info boxes (KPI cards) */
@@ -176,6 +197,9 @@
     .btn-lg {
         padding: 0.75rem 1.5rem;
         font-size: 1rem;
+        width: 100%;
+        margin-right: 0 !important;
+        margin-left: 0 !important;
     }
 
     .btn-sm {
@@ -237,6 +261,30 @@
     #patient-form .col-md-3 {
         padding-left: 0;
         padding-right: 0;
+        width: 100%;
+    }
+
+    #patient-page .row > [class*='col-'] {
+        width: 100% !important;
+        max-width: 100% !important;
+    }
+
+    #patient-list,
+    #patient-details-content {
+        max-height: none !important;
+    }
+
+    #quick-add-patient {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    #quick-add-patient .form-group {
+        width: 100%;
+        margin-right: 0 !important;
+    }
+
+    #quick-add-patient .form-control {
         width: 100%;
     }
 
@@ -564,6 +612,82 @@
     .nav-link:active,
     .list-group-item:active {
         opacity: 0.7;
+    }
+}
+
+/* Mobile quick action bar */
+#mobile-action-bar {
+    display: none;
+}
+
+@media (max-width: 991.98px) {
+    html {
+        scroll-padding-bottom: 110px;
+    }
+
+    body.has-mobile-action-bar .content-wrapper {
+        padding-bottom: 96px;
+    }
+
+    body.has-mobile-action-bar .content-wrapper .content {
+        padding-bottom: 1.25rem;
+    }
+
+    body.has-mobile-action-bar .main-footer {
+        padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+    }
+
+    #mobile-action-bar {
+        display: flex;
+        align-items: stretch;
+        justify-content: space-between;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding: 0.35rem 0.45rem calc(0.55rem + env(safe-area-inset-bottom));
+        background: #ffffff;
+        box-shadow: 0 -6px 24px rgba(15, 23, 42, 0.15);
+        z-index: 1060;
+        border-top: 1px solid rgba(15, 23, 42, 0.08);
+        gap: 0.35rem;
+    }
+
+    #mobile-action-bar button {
+        flex: 1;
+        border: none;
+        background: transparent;
+        color: #6b7280;
+        font-size: 0.75rem;
+        font-weight: 600;
+        padding: 0.35rem 0.2rem;
+        border-radius: 0.9rem;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.25rem;
+        transition: color 0.2s ease;
+    }
+
+    #mobile-action-bar button .icon-wrapper {
+        width: 40px;
+        height: 40px;
+        border-radius: 14px;
+        background: rgba(13, 110, 253, 0.08);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.95rem;
+        color: inherit;
+        transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    #mobile-action-bar button.active {
+        color: #0d6efd;
+    }
+
+    #mobile-action-bar button.active .icon-wrapper {
+        background: rgba(13, 110, 253, 0.18);
     }
 }
 

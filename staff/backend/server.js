@@ -168,6 +168,10 @@ app.use('/', patientRecordsRoutes);
 // Billing routes
 app.use('/api/billings', billingsRoutes);
 
+// Announcements routes
+const announcementsRoutes = require('./routes/announcements');
+app.use('/api/announcements', announcementsRoutes);
+
 // Role Management routes
 const rolesRoutes = require('./routes/roles');
 app.use('/', rolesRoutes);
@@ -350,6 +354,13 @@ io.on('connection', (socket) => {
     socket.on('visit:complete', (data) => {
         logger.info(`Visit completed by ${data.userName} for ${data.patientName}`);
         socket.broadcast.emit('visit:completed', data);
+    });
+    
+    // Announcement broadcast (to all clients including patients)
+    socket.on('announcement:new', (data) => {
+        logger.info(`New announcement created: ${data.title} by ${data.created_by_name}`);
+        // Broadcast to all connected clients
+        io.emit('announcement:new', data);
     });
     
     // Get online users list

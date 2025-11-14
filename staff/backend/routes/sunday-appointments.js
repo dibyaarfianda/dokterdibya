@@ -206,17 +206,20 @@ router.post('/book', verifyToken, async (req, res) => {
             return res.status(409).json({ message: 'Slot ini sudah dibooking oleh pasien lain' });
         }
         
-        // Check if patient already has appointment on this date
+        // Check if patient already has any upcoming Sunday appointment
         const [patientExisting] = await db.query(
-            `SELECT id FROM sunday_appointments 
-             WHERE patient_id = ? AND appointment_date = ? 
-             AND status NOT IN ('cancelled', 'no_show')`,
-            [req.user.id, appointment_date]
+            `SELECT id, appointment_date, session, slot_number FROM sunday_appointments 
+             WHERE patient_id = ? 
+             AND appointment_date >= CURDATE()
+             AND status NOT IN ('cancelled', 'no_show', 'completed')`,
+            [req.user.id]
         );
         
         if (patientExisting.length > 0) {
+            const existingAppt = patientExisting[0];
+            const existingDate = new Date(existingAppt.appointment_date);
             return res.status(409).json({ 
-                message: 'Anda sudah memiliki janji temu di tanggal ini. Silakan pilih tanggal lain atau batalkan janji temu yang ada.' 
+                message: `Anda sudah memiliki janji temu di Klinik Privat Minggu pada ${existingDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })} sesi ${getSessionLabel(existingAppt.session)}. Anda hanya dapat membooking 1 slot. Silakan batalkan janji temu yang ada jika ingin mengubah jadwal.` 
             });
         }
         

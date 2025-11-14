@@ -54,7 +54,206 @@ export function setCurrentPatientForExam(patient) {
     
     // Show medical exam menu
     toggleMedicalExamMenu(true);
+    
+    // Auto-load intake data when patient is selected
+    if (typeof loadIntakeDataToAnamnesa === 'function') {
+        setTimeout(() => {
+            loadIntakeDataToAnamnesa();
+        }, 500);
+    }
 }
+
+// Load intake data and appointment data into Anamnesa form
+export async function loadIntakeDataToAnamnesa() {
+    if (!currentPatient || !currentPatient.patientId) {
+        showError('Tidak ada pasien yang dipilih');
+        return;
+    }
+    
+    try {
+        const token = await getIdToken();
+        
+        // Show loading indicator
+        const loadBtn = document.querySelector('button[onclick="loadIntakeDataToAnamnesa()"]');
+        if (loadBtn) {
+            loadBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Memuat Data...';
+            loadBtn.disabled = true;
+        }
+        
+        // Load intake data
+        const intakeResponse = await fetch(`${VPS_API_BASE}/api/patient-intake/patient/${currentPatient.patientId}/latest`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        let intakeData = null;
+        if (intakeResponse.ok) {
+            const intakeResult = await intakeResponse.json();
+            if (intakeResult.success && intakeResult.data) {
+                intakeData = intakeResult.data.payload || intakeResult.data;
+                console.log('[ANAMNESA] Intake data loaded:', intakeData);
+            }
+        }
+        
+        // Load appointment data
+        const appointmentResponse = await fetch(`${VPS_API_BASE}/api/appointments/patient/${currentPatient.patientId}/latest`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        let appointmentData = null;
+        if (appointmentResponse.ok) {
+            const appointmentResult = await appointmentResponse.json();
+            if (appointmentResult.success && appointmentResult.data) {
+                appointmentData = appointmentResult.data;
+                console.log('[ANAMNESA] Appointment data loaded:', appointmentData);
+            }
+        }
+        
+        // Populate Anamnesa form with loaded data
+        await populateAnamnesaWithIntakeData(intakeData, appointmentData);
+        
+        // Show success message
+        showSuccess('Data intake dan appointment berhasil dimuat');
+        
+    } catch (error) {
+        console.error('[ANAMNESA] Error loading intake data:', error);
+        showError('Gagal memuat data intake: ' + error.message);
+    } finally {
+        // Reset button
+        const loadBtn = document.querySelector('button[onclick="loadIntakeDataToAnamnesa()"]');
+        if (loadBtn) {
+            loadBtn.innerHTML = '<i class="fas fa-sync-alt mr-2"></i>Muat Data dari Intake';
+            loadBtn.disabled = false;
+        }
+    }
+}
+
+// Populate Anamnesa form with intake and appointment data
+async function populateAnamnesaWithIntakeData(intakeData, appointmentData) {
+    if (!intakeData && !appointmentData) {
+        console.log('[ANAMNESA] No data to populate');
+        return;
+    }
+    
+    console.log('[ANAMNESA] Populating form with data...');
+    
+    try {
+        // === Data Pasien Section ===
+        if (intakeData) {
+            // Patient basic info
+            setFieldValue('anamnesa-patient-fullname', intakeData.fullName);
+            setFieldValue('anamnesa-patient-dob', intakeData.dateOfBirth);
+            setFieldValue('anamnesa-patient-age', intakeData.age);
+            setFieldValue('anamnesa-patient-address', intakeData.address);
+            setFieldValue('anamnesa-patient-phone', intakeData.phoneNumber);
+            setFieldValue('anamnesa-patient-marital', intakeData.maritalStatus);
+            setFieldValue('anamnesa-patient-occupation', intakeData.occupation);
+            setFieldValue('anamnesa-patient-education', intakeData.education);
+            setFieldValue('anamnesa-patient-payment', intakeData.financingMethod);
+            
+            // Basic medical info
+            setFieldValue('anamnesa-pregnancy-test-date', intakeData.pregnancyTestDate);
+            setFieldValue('anamnesa-blood-type', intakeData.bloodType);
+            setFieldValue('anamnesa-rhesus', intakeData.rhesus);
+            
+            // Allergies
+            setFieldValue('anamnesa-allergy-drugs', intakeData.drugAllergies);
+            setFieldValue('anamnesa-allergy-food', intakeData.foodAllergies);
+            setFieldValue('anamnesa-allergy-others', intakeData.environmentalAllergies);
+            
+            // Current medications
+            setFieldValue('anamnesa-current-medications', intakeData.currentMedications);
+            
+            // Medical history
+            setFieldValue('anamnesa-past-conditions', intakeData.pastMedicalConditions);
+            setFieldValue('anamnesa-family-history', intakeData.familyMedicalHistory);
+            
+            // === Status Obstetri Section ===
+            // Menstrual history
+            setFieldValue('anamnesa-menarche-age', intakeData.menarcheAge);
+            setFieldValue('anamnesa-cycle-length', intakeData.menstrualCycleLength);
+            setFieldValue('anamnesa-cycle-regular', intakeData.menstrualCycleRegular ? 'Ya' : 'Tidak');
+            setFieldValue('anamnesa-lmp', intakeData.lastMenstrualPeriod);
+            
+            // Pregnancy history
+            setFieldValue('anamnesa-gravida', intakeData.gravida);
+            setFieldValue('anamnesa-para', intakeData.para);
+            setFieldValue('anamnesa-abortus', intakeData.abortus);
+            setFieldValue('anamnesa-living-children', intakeData.livingChildren);
+            setFieldValue('anamnesa-edd', intakeData.estimatedDueDate);
+            
+            // Contraception history
+            setFieldValue('anamnesa-previous-contraception', intakeData.contraceptionMethod);
+            setFieldValue('anamnesa-kb-failure', intakeData.contraceptionFailure ? 'Ya' : 'Tidak');
+            setFieldValue('anamnesa-failed-contraception', intakeData.failedContraceptionType);
+            
+            // Populate pregnancy history table
+            populatePregnancyHistoryTable(intakeData.pregnancyHistory);
+        }
+        
+        // === Keluhan Utama from Appointment ===
+        if (appointmentData && appointmentData.notes) {
+            setFieldValue('anamnesa-complaint', appointmentData.notes);
+        }
+        
+        // Auto-set pregnancy status based on intake data
+        if (intakeData && intakeData.pregnancyTestDate) {
+            setFieldValue('anamnesa-pregnant', 'ya');
+        }
+        
+        console.log('[ANAMNESA] Form population completed');
+        
+    } catch (error) {
+        console.error('[ANAMNESA] Error populating form:', error);
+        throw error;
+    }
+}
+
+// Helper function to safely set field values
+function setFieldValue(fieldId, value) {
+    const field = document.getElementById(fieldId);
+    if (field && value !== null && value !== undefined) {
+        field.value = String(value);
+        
+        // Trigger change event for select fields
+        if (field.tagName === 'SELECT') {
+            field.dispatchEvent(new Event('change'));
+        }
+    }
+}
+
+// Populate pregnancy history table
+function populatePregnancyHistoryTable(pregnancyHistory) {
+    const tbody = document.getElementById('anamnesa-pregnancy-history');
+    if (!tbody) return;
+    
+    // Clear existing rows
+    tbody.innerHTML = '';
+    
+    if (!pregnancyHistory || !Array.isArray(pregnancyHistory)) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Tidak ada data kehamilan sebelumnya</td></tr>';
+        return;
+    }
+    
+    pregnancyHistory.forEach((pregnancy, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td>${pregnancy.year || '-'}</td>
+            <td>${pregnancy.deliveryMode || '-'}</td>
+            <td>${pregnancy.complications || 'Tidak ada'}</td>
+            <td>${pregnancy.babyWeight || '-'}</td>
+            <td>${pregnancy.childAlive ? 'Ya' : 'Tidak'}</td>
+        `;
+        tbody.appendChild(row);
+    });
+}
+
+// Make function globally available
+window.loadIntakeDataToAnamnesa = loadIntakeDataToAnamnesa;
 
 // Load medical exam data from API for current patient
 export async function loadAnamnesaData() {
