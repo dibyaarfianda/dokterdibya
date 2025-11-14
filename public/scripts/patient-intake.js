@@ -255,6 +255,99 @@ function serializeFields() {
     return data;
 }
 
+// Load existing intake data from server
+async function loadExistingIntake() {
+    try {
+        const token = localStorage.getItem('patient_token');
+        if (!token) {
+            console.log('[Patient Intake] No patient token, skipping server load');
+            return null;
+        }
+        
+        console.log('[Patient Intake] Attempting to load existing intake from server...');
+        const response = await fetch('/api/patient-intake/my-intake', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        console.log('[Patient Intake] Server response status:', response.status);
+        
+        if (!response.ok) {
+            console.error('[Patient Intake] Failed to load intake from server, status:', response.status);
+            return null;
+        }
+        
+        const result = await response.json();
+        console.log('[Patient Intake] Server response:', result);
+        
+        if (result.success && result.data) {
+            console.log('[Patient Intake] ✅ Loaded existing intake from server:', result.data.submissionId);
+            return result.data;
+        }
+        
+        console.log('[Patient Intake] No existing intake data found');
+        return null;
+    } catch (error) {
+        console.error('[Patient Intake] ❌ Error loading existing intake:', error);
+        return null;
+    }
+}
+
+// Restore intake data into form
+function restoreIntakeData(payload) {
+    if (!payload) return;
+    
+    try {
+        // Restore all fields from payload
+        Object.entries(payload).forEach(([name, value]) => {
+            if (name === 'metadata' || name === 'review') return;
+            
+            ensureDynamicField(name);
+            const controls = form.querySelectorAll(`[name="${escapeName(name)}"]`);
+            if (!controls.length) {
+                return;
+            }
+            controls.forEach((control) => {
+                if (control.type === 'checkbox') {
+                    if (name === 'consent' || name === 'final_ack') {
+                        control.checked = Boolean(value);
+                    } else if (Array.isArray(value)) {
+                        control.checked = value.includes(control.value);
+                    } else {
+                        control.checked = false;
+                    }
+                    return;
+                }
+                if (control.type === 'radio') {
+                    control.checked = value === control.value;
+                    return;
+                }
+                if (Array.isArray(value)) {
+                    control.value = value[0] ?? '';
+                    return;
+                }
+                control.value = value;
+                if (['gravida', 'para', 'abortus', 'living_children'].includes(control.name) && value) {
+                    control.dataset.userEdited = 'true';
+                }
+                if (control.id === 'edd' && value) {
+                    control.dataset.userEdited = 'true';
+                }
+            });
+        });
+        
+        updateDerived();
+        syncMaritalFields();
+        statusMessage.hidden = false;
+        statusMessage.textContent = 'Data rekam medis awal Anda telah dimuat. Anda dapat memperbarui informasi jika diperlukan.';
+        showToast('Data rekam medis awal berhasil dimuat.', 'info');
+    } catch (error) {
+        console.error('Gagal restore intake data', error);
+    }
+}
+
 function restoreDraft() {
     try {
         const stored = localStorage.getItem(STORAGE_KEY);
@@ -717,6 +810,7 @@ submitBtn.addEventListener('click', () => {
 });
 
 let isSubmitting = false;
+let existingIntakeId = null; // Store existing intake submission ID
 
 form.addEventListener('submit', async (event) => {
     event.preventDefault();
@@ -735,15 +829,28 @@ form.addEventListener('submit', async (event) => {
     
     isSubmitting = true;
     submitBtn.disabled = true;
-    submitBtn.textContent = 'Mengirim...';
+    submitBtn.textContent = existingIntakeId ? 'Memperbarui...' : 'Mengirim...';
     
     const payload = buildPayload();
+    const token = localStorage.getItem('patient_token');
+    
     try {
-        const response = await fetch('/api/patient-intake', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+        // Use PUT if updating existing intake, POST if creating new
+        const url = existingIntakeId ? '/api/patient-intake/my-intake' : '/api/patient-intake';
+        const method = existingIntakeId ? 'PUT' : 'POST';
+        
+        const headers = {
+            'Content-Type': 'application/json',
+        };
+        
+        // Add token if available (for PUT request)
+        if (token && existingIntakeId) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
+        
+        const response = await fetch(url, {
+            method: method,
+            headers: headers,
             body: JSON.stringify(payload),
         });
         if (!response.ok) {
@@ -752,13 +859,21 @@ form.addEventListener('submit', async (event) => {
         const result = await response.json().catch(() => null);
         const submissionId = result && typeof result === 'object' ? result.submissionId : undefined;
         clearDraft();
-        showToast('Data berhasil dikirim. Terima kasih!', 'info');
+        
+        const successMessage = existingIntakeId 
+            ? 'Data berhasil diperbarui. Terima kasih!' 
+            : 'Data berhasil dikirim. Terima kasih!';
+        showToast(successMessage, 'info');
         
         // Show success message briefly before redirect
         statusMessage.hidden = false;
-        statusMessage.textContent = submissionId
-            ? `Data berhasil dikirim dengan kode: ${submissionId}. Mengalihkan ke dashboard...`
-            : 'Data berhasil dikirim. Mengalihkan ke dashboard...';
+        if (existingIntakeId) {
+            statusMessage.textContent = 'Data berhasil diperbarui. Mengalihkan ke dashboard...';
+        } else {
+            statusMessage.textContent = submissionId
+                ? `Data berhasil dikirim dengan kode: ${submissionId}. Mengalihkan ke dashboard...`
+                : 'Data berhasil dikirim. Mengalihkan ke dashboard...';
+        }
         
         // Redirect to dashboard after 2 seconds
         setTimeout(() => {
@@ -797,10 +912,26 @@ form.addEventListener('input', (event) => {
 
 prevBtn.disabled = true;
 resetDerivedFlags();
-restoreDraft();
-refreshButtons();
-updateDerived();
-syncMaritalFields();
+
+// Initialize: Load existing intake from server first, then fallback to draft
+(async function initializeForm() {
+    const existingIntake = await loadExistingIntake();
+    if (existingIntake && existingIntake.payload) {
+        existingIntakeId = existingIntake.submissionId;
+        restoreIntakeData(existingIntake.payload);
+        submitBtn.textContent = 'Perbarui Data';
+    } else {
+        restoreDraft();
+    }
+    refreshButtons();
+    updateDerived();
+    syncMaritalFields();
+})();
+
+//restoreDraft();
+//refreshButtons();
+//updateDerived();
+//syncMaritalFields();
 
 // Payment method checkbox logic
 const paymentInsuranceCheckbox = document.getElementById('payment_insurance');

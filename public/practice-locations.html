@@ -80,6 +80,12 @@
             color: white;
         }
         
+        .location-icon img {
+            width: 50px;
+            height: 50px;
+            object-fit: contain;
+        }
+        
         .location-title {
             font-size: 22px;
             font-weight: 700;
@@ -123,6 +129,11 @@
             border: none;
             transition: all 0.3s;
             margin-top: 15px;
+            display: block;
+        }
+        
+        .location-card .text-center {
+            text-align: center;
         }
         
         .btn-booking {
@@ -175,18 +186,20 @@
             <div class="col-md-6">
                 <div class="location-card booking-available" onclick="window.location.href='/booking-appointment.html'">
                     <div class="location-icon">
-                        <i class="fas fa-home"></i>
+                        <img src="images/dibya-logo.png" alt="Klinik Dr. Dibya" style="width: 100px; height: 100px;">
                     </div>
                     <h3 class="location-title">Klinik Privat Minggu</h3>
                     <p class="location-desc">Praktik privat setiap hari Minggu dengan sistem booking online</p>
                     <div class="text-center">
-                        <span class="badge-booking available">
+                        <span class="badge-booking available" style="margin-bottom: 8px;">
                             <i class="fas fa-calendar-check"></i> Booking Online Tersedia
                         </span>
                     </div>
-                    <button class="btn btn-booking">
-                        <i class="fas fa-calendar-plus"></i> Buat Janji Konsultasi
-                    </button>
+                    <div class="text-center">
+                        <button class="btn btn-booking">
+                            <i class="fas fa-calendar-plus"></i> Buat Janji Konsultasi
+                        </button>
+                    </div>
                 </div>
             </div>
             
@@ -194,18 +207,20 @@
             <div class="col-md-6">
                 <div class="location-card" onclick="window.location.href='/practice-schedule.html?location=rsud_gambiran'">
                     <div class="location-icon">
-                        <i class="fas fa-hospital-alt"></i>
+                        <img src="images/gambiran-logo.png" alt="RSUD Gambiran" style="width: 100px; height: 100px;">
                     </div>
                     <h3 class="location-title">Poli RSUD Gambiran Kediri</h3>
-                    <p class="location-desc">Praktik di Poli Kebidanan RSUD Gambiran</p>
-                    <div class="text-center">
+                    <p class="location-desc">Praktek di Poli Kandungan RSUD Gambiran</p>
+                       <div class="text-center" style="margin-bottom: 8px;">
                         <span class="badge-booking schedule-only">
                             <i class="fas fa-clock"></i> Lihat Jadwal Saja
                         </span>
                     </div>
-                    <button class="btn btn-schedule">
-                        <i class="fas fa-calendar"></i> Lihat Jadwal Praktik
-                    </button>
+                    <div class="text-center">
+                        <button class="btn btn-schedule">
+                            <i class="fas fa-calendar"></i> Lihat Jadwal Praktik
+                        </button>
+                    </div>
                 </div>
             </div>
             
@@ -213,18 +228,20 @@
             <div class="col-md-6">
                 <div class="location-card" onclick="window.location.href='/practice-schedule.html?location=rsia_melinda'">
                     <div class="location-icon">
-                        <i class="fas fa-baby"></i>
+                       <img src="images/melinda-logo.png" alt="RSIA Melinda" style="width: 100px; height: 100px;">
                     </div>
                     <h3 class="location-title">Poli RSIA Melinda Kediri</h3>
                     <p class="location-desc">Praktik di Poli Kandungan RSIA Melinda</p>
-                    <div class="text-center">
+                    <div class="text-center" style="margin-bottom: 8px;">
                         <span class="badge-booking schedule-only">
                             <i class="fas fa-clock"></i> Lihat Jadwal Saja
                         </span>
                     </div>
-                    <button class="btn btn-schedule">
-                        <i class="fas fa-calendar"></i> Lihat Jadwal Praktik
-                    </button>
+                    <div class="text-center">
+                        <button class="btn btn-schedule">
+                            <i class="fas fa-calendar"></i> Lihat Jadwal Praktik
+                        </button>
+                    </div>
                 </div>
             </div>
             
@@ -232,18 +249,20 @@
             <div class="col-md-6">
                 <div class="location-card" onclick="window.location.href='/practice-schedule.html?location=rs_bhayangkara'">
                     <div class="location-icon">
-                        <i class="fas fa-shield-alt"></i>
+                       <img src="images/bhayangkara-logo.png" alt="RS Bhayangkara" style="width: 100px; height: 100px;">
                     </div>
                     <h3 class="location-title">Poli RS Bhayangkara Kediri</h3>
                     <p class="location-desc">Praktik di Poli Kandungan RS Bhayangkara</p>
-                    <div class="text-center">
+                    <div class="text-center" style="margin-bottom: 8px;">
                         <span class="badge-booking schedule-only">
                             <i class="fas fa-clock"></i> Lihat Jadwal Saja
                         </span>
                     </div>
-                    <button class="btn btn-schedule">
-                        <i class="fas fa-calendar"></i> Lihat Jadwal Praktik
-                    </button>
+                    <div class="text-center">
+                        <button class="btn btn-schedule">
+                            <i class="fas fa-calendar"></i> Lihat Jadwal Praktik
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

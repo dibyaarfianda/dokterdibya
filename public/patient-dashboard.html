@@ -513,9 +513,14 @@
                             <span id="profile-registered">-</span>
                         </li>
                     </ul>
-                    <button class="action-btn action-btn-secondary" onclick="openProfileModal()">
-                        <i class="fa fa-edit"></i> Edit Profil
-                    </button>
+                    <div style="margin-top: 15px;">
+                        <button class="action-btn action-btn-secondary" onclick="openProfileModal()" style="margin-right: 10px;">
+                            <i class="fa fa-edit"></i> Edit Profil
+                        </button>
+                        <button class="action-btn action-btn-primary" onclick="openPasswordModal()" id="password-btn">
+                            <i class="fa fa-lock"></i> <span id="password-btn-text">Set Password</span>
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -606,6 +611,63 @@
         </div>
     </div>
 
+    <!-- Password Modal -->
+    <div class="modal fade" id="passwordModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="background: #202020; color: #ffffff; border: 1px solid #404040;">
+                <div class="modal-header" style="border-bottom: 1px solid #404040;">
+                    <button type="button" class="close" data-dismiss="modal" style="color: #ffffff; opacity: 0.8;">&times;</button>
+                    <h4 class="modal-title" style="color: #28a7e9;"><i class="fa fa-lock"></i> <span id="password-modal-title">Set Password</span></h4>
+                </div>
+                <div class="modal-body">
+                    <form id="password-form">
+                        <!-- Old Password (only for change password) -->
+                        <div class="form-group" id="old-password-group" style="display: none;">
+                            <label style="color: #28a7e9;">Password Lama *</label>
+                            <input type="password" class="form-control" id="old-password" 
+                                   style="background: #303030; border: 1px solid #404040; color: #ffffff;">
+                        </div>
+                        
+                        <!-- New Password -->
+                        <div class="form-group">
+                            <label style="color: #28a7e9;"><span id="new-pass-label">Password</span> *</label>
+                            <input type="password" class="form-control" id="new-password" required
+                                   placeholder="Minimal 6 karakter"
+                                   style="background: #303030; border: 1px solid #404040; color: #ffffff;">
+                            <small style="color: #999;">Minimal 6 karakter</small>
+                        </div>
+                        
+                        <!-- Confirm Password -->
+                        <div class="form-group">
+                            <label style="color: #28a7e9;">Konfirmasi Password *</label>
+                            <input type="password" class="form-control" id="confirm-password" required
+                                   placeholder="Ulangi password"
+                                   style="background: #303030; border: 1px solid #404040; color: #ffffff;">
+                        </div>
+
+                        <div class="alert" id="password-error" style="display: none; background: #3a1a1a; border: 1px solid #d9534f; color: #ffffff;"></div>
+                        <div class="alert" id="password-success" style="display: none; background: #1a3a2a; border: 1px solid #28a7e9; color: #ffffff;"></div>
+                        
+                        <div id="password-info" style="background: #1a2a3a; border: 1px solid #28a7e9; padding: 12px; border-radius: 4px; margin-top: 15px;">
+                            <p style="margin: 0; font-size: 0.9em; color: #28a7e9;">
+                                <i class="fa fa-info-circle"></i> 
+                                <span id="password-info-text">Setelah set password, Anda dapat login menggunakan email dan password.</span>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #404040;">
+                    <button type="button" class="btn btn-default" data-dismiss="modal" 
+                            style="background: #505050; color: #ffffff; border: none;">Batal</button>
+                    <button type="button" class="btn btn-primary" onclick="savePassword()" 
+                            style="background: #28a7e9; border: none;">
+                        <i class="fa fa-save"></i> <span id="save-password-btn-text">Set Password</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
@@ -671,6 +733,14 @@
 
                 // Store profile data for editing
                 window.currentProfile = profile;
+
+                // Check if user has password set
+                hasPassword = profile.has_password === 1 || profile.password !== null;
+                if (hasPassword) {
+                    document.getElementById('password-btn-text').textContent = 'Ubah Password';
+                } else {
+                    document.getElementById('password-btn-text').textContent = 'Set Password';
+                }
 
                 // Update intake button appearance and hide alert if completed
                 if (profile.intake_completed === 1) {
@@ -916,6 +986,118 @@
             e.preventDefault();
             logout();
         });
+
+        // Password Management Functions
+        let hasPassword = false; // Track if user has password set
+        
+        function openPasswordModal() {
+            // Clear form
+            document.getElementById('password-form').reset();
+            document.getElementById('password-error').style.display = 'none';
+            document.getElementById('password-success').style.display = 'none';
+            
+            // Check if user already has password
+            if (hasPassword) {
+                // Change Password mode
+                document.getElementById('password-modal-title').textContent = 'Ubah Password';
+                document.getElementById('old-password-group').style.display = 'block';
+                document.getElementById('new-pass-label').textContent = 'Password Baru';
+                document.getElementById('save-password-btn-text').textContent = 'Ubah Password';
+                document.getElementById('password-info-text').textContent = 'Masukkan password lama dan password baru untuk mengubah password Anda.';
+            } else {
+                // Set Password mode
+                document.getElementById('password-modal-title').textContent = 'Set Password';
+                document.getElementById('old-password-group').style.display = 'none';
+                document.getElementById('new-pass-label').textContent = 'Password';
+                document.getElementById('save-password-btn-text').textContent = 'Set Password';
+                document.getElementById('password-info-text').textContent = 'Setelah set password, Anda dapat login menggunakan email dan password.';
+            }
+            
+            $('#passwordModal').modal('show');
+        }
+        
+        async function savePassword() {
+            try {
+                // Hide previous messages
+                document.getElementById('password-error').style.display = 'none';
+                document.getElementById('password-success').style.display = 'none';
+                
+                const newPassword = document.getElementById('new-password').value;
+                const confirmPassword = document.getElementById('confirm-password').value;
+                
+                // Validation
+                if (!newPassword || !confirmPassword) {
+                    throw new Error('Semua field harus diisi');
+                }
+                
+                if (newPassword !== confirmPassword) {
+                    throw new Error('Password dan konfirmasi password tidak cocok');
+                }
+                
+                if (newPassword.length < 6) {
+                    throw new Error('Password minimal 6 karakter');
+                }
+                
+                let endpoint, body;
+                
+                if (hasPassword) {
+                    // Change Password
+                    const oldPassword = document.getElementById('old-password').value;
+                    if (!oldPassword) {
+                        throw new Error('Password lama harus diisi');
+                    }
+                    
+                    endpoint = '/api/patients/change-password';
+                    body = {
+                        old_password: oldPassword,
+                        new_password: newPassword,
+                        confirm_password: confirmPassword
+                    };
+                } else {
+                    // Set Password
+                    endpoint = '/api/patients/set-password';
+                    body = {
+                        password: newPassword,
+                        confirm_password: confirmPassword
+                    };
+                }
+                
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.message || 'Gagal menyimpan password');
+                }
+                
+                // Show success message
+                document.getElementById('password-success').textContent = result.message;
+                document.getElementById('password-success').style.display = 'block';
+                
+                // Update button text to "Ubah Password" if this was first set
+                if (!hasPassword) {
+                    hasPassword = true;
+                    document.getElementById('password-btn-text').textContent = 'Ubah Password';
+                }
+                
+                // Close modal after delay
+                setTimeout(() => {
+                    $('#passwordModal').modal('hide');
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Error saving password:', error);
+                document.getElementById('password-error').textContent = error.message;
+                document.getElementById('password-error').style.display = 'block';
+            }
+        }
 
         // Auto-refresh token verification every 5 minutes
         setInterval(async () => {

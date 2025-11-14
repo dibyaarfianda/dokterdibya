@@ -72,8 +72,13 @@ async function loadPatients() {
         }
         
         console.log('🔧 [DEBUG] Loading patients from:', `${VPS_API_BASE}/api/patients`);
-        const response = await fetch(`${VPS_API_BASE}/api/patients`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+        const response = await fetch(`${VPS_API_BASE}/api/patients?_=${Date.now()}`, {
+            headers: { 
+                'Authorization': `Bearer ${token}`,
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
         });
         
         if (!response.ok) {
@@ -718,4 +723,16 @@ window.debugAppointments = function() {
         appointmentsCount: allAppointments.length
     };
 };
+
+// Force reload patients (exposed globally for when patient is deleted)
+export async function reloadPatientsData() {
+    console.log('🔄 [APPOINTMENTS] Force reloading patients data...');
+    allPatients = []; // Clear cache
+    isLoadingPatients = false; // Reset loading flag
+    await loadPatients();
+    console.log('✅ [APPOINTMENTS] Patients reloaded:', allPatients.length);
+}
+
+// Expose to window for other scripts to call
+window.reloadAppointmentPatients = reloadPatientsData;
 
