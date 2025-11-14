@@ -7,6 +7,7 @@ const crypto = require('crypto');
 const logger = require('../utils/logger');
 const PatientIntakeIntegrationService = require('../services/PatientIntakeIntegrationService');
 const { verifyToken } = require('../middleware/auth');
+const db = require('../db');
 
 const router = express.Router();
 const STORAGE_DIR = path.join(__dirname, '..', 'logs', 'patient-intake');
@@ -16,6 +17,29 @@ let encryptionWarningLogged = false;
 
 async function ensureDirectory() {
     await fs.mkdir(STORAGE_DIR, { recursive: true });
+}
+
+/**
+ * Generate a unique 6-digit quick ID for patient intake
+ */
+async function generateQuickId() {
+    const maxAttempts = 10;
+    for (let i = 0; i < maxAttempts; i++) {
+        // Generate random 6-digit number (100000-999999)
+        const number = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        // Check if it already exists
+        const [existing] = await db.query(
+            'SELECT quick_id FROM patient_intake_submissions WHERE quick_id = ?',
+            [number]
+        );
+        
+        if (existing.length === 0) {
+            return number;
+        }
+    }
+    
+    throw new Error('Failed to generate unique quick ID after multiple attempts');
 }
 
 function validatePayload(body) {
@@ -158,11 +182,96 @@ async function loadRecordById(submissionId) {
     }
 }
 
+/**
+ * Convert ISO date to MySQL datetime format
+ */
+function toMySQLDatetime(isoString) {
+    if (!isoString) return null;
+    const date = new Date(isoString);
+    return date.toISOString().slice(0, 19).replace('T', ' ');
+}
+
+/**
+ * Save intake record to database
+ */
+async function saveRecordToDatabase(record) {
+    const payload = record.payload || {};
+    const metadata = payload.metadata || {};
+    const review = record.review || {};
+    
+    const data = {
+        submission_id: record.submissionId,
+        quick_id: record.quickId || null,
+        patient_id: record.integration?.patientId || null,
+        full_name: payload.full_name,
+        phone: payload.phone,
+        birth_date: payload.dob || null,
+        nik: payload.nik || null,
+        payload: JSON.stringify(payload),
+        status: record.status || 'verified',
+        high_risk: Boolean(metadata.highRisk),
+        reviewed_by: review.verifiedBy || null,
+        reviewed_at: toMySQLDatetime(review.verifiedAt),
+        review_notes: review.notes || null,
+        integrated_at: toMySQLDatetime(record.integration?.integratedAt),
+        integration_status: record.integration?.status === 'completed' ? 'success' : (record.integration?.status || 'pending'),
+        integration_result: record.integration ? JSON.stringify(record.integration) : null,
+    };
+    
+    const [existing] = await db.query(
+        'SELECT id FROM patient_intake_submissions WHERE submission_id = ?',
+        [record.submissionId]
+    );
+    
+    if (existing.length > 0) {
+        // Update existing record
+        await db.query(
+            `UPDATE patient_intake_submissions SET
+                quick_id = ?,
+                patient_id = ?,
+                full_name = ?,
+                phone = ?,
+                birth_date = ?,
+                nik = ?,
+                payload = ?,
+                status = ?,
+                high_risk = ?,
+                reviewed_by = ?,
+                reviewed_at = ?,
+                review_notes = ?,
+                integrated_at = ?,
+                integration_status = ?,
+                integration_result = ?
+            WHERE submission_id = ?`,
+            [
+                data.quick_id, data.patient_id, data.full_name, data.phone, data.birth_date,
+                data.nik, data.payload, data.status, data.high_risk,
+                data.reviewed_by, data.reviewed_at, data.review_notes,
+                data.integrated_at, data.integration_status, data.integration_result,
+                data.submission_id
+            ]
+        );
+    } else {
+        // Insert new record
+        await db.query(
+            `INSERT INTO patient_intake_submissions (
+                submission_id, quick_id, patient_id, full_name, phone, birth_date, nik,
+                payload, status, high_risk, reviewed_by, reviewed_at, review_notes,
+                integrated_at, integration_status, integration_result
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                data.submission_id, data.quick_id, data.patient_id, data.full_name, data.phone,
+                data.birth_date, data.nik, data.payload, data.status, data.high_risk,
+                data.reviewed_by, data.reviewed_at, data.review_notes,
+                data.integrated_at, data.integration_status, data.integration_result
+            ]
+        );
+    }
+}
+
 async function saveRecord(record) {
-    await ensureDirectory();
-    const filePath = path.join(STORAGE_DIR, `${record.submissionId}.json`);
-    const payload = wrapRecordForStorage(record);
-    await fs.writeFile(filePath, JSON.stringify(payload, null, 2), 'utf8');
+    // Save to database only
+    await saveRecordToDatabase(record);
 }
 
 function buildSummary(record) {
@@ -210,10 +319,47 @@ router.post('/api/patient-intake', async (req, res, next) => {
             return res.status(422).json({ success: false, errors });
         }
 
-        await ensureDirectory();
+        // Check if patient already has a submission by phone number (prevent duplicate submissions)
+        const patientPhone = payload.phone;
+        if (patientPhone) {
+            const normalizedPhone = patientPhone.replace(/\D/g, '').slice(-10);
+            
+            try {
+                const [existing] = await db.query(
+                    `SELECT submission_id, quick_id, status 
+                    FROM patient_intake_submissions 
+                    WHERE RIGHT(REPLACE(phone, '-', ''), 10) = ? 
+                    AND status IN ('verified', 'patient_reported', 'pending_review')
+                    LIMIT 1`,
+                    [normalizedPhone]
+                );
+                
+                if (existing.length > 0) {
+                    logger.info('Patient already has intake submission, rejecting duplicate', {
+                        phone: normalizedPhone,
+                        quickId: existing[0].quick_id,
+                        existingSubmissionId: existing[0].submission_id
+                    });
+                    
+                    return res.status(409).json({ 
+                        success: false, 
+                        code: 'DUPLICATE_SUBMISSION',
+                        message: 'Anda sudah memiliki formulir rekam medis. Silakan perbarui formulir yang ada.',
+                        existingSubmissionId: existing[0].submission_id,
+                        quickId: existing[0].quick_id,
+                        shouldUpdate: true
+                    });
+                }
+            } catch (dbError) {
+                logger.error('Failed to check for existing intake submission', { error: dbError.message });
+                // Continue with submission if DB check fails
+            }
+        }
+
+        // Generate unique quick_id for this submission
+        const quickId = await generateQuickId();
+        
         const submissionId = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
-        const filePath = path.join(STORAGE_DIR, `${submissionId}.json`);
-        // Auto-verify: set status directly to 'verified' instead of 'patient_reported'
         const status = 'verified';
         const timestamp = new Date().toISOString();
         const signatureValue = payload.signature?.value || payload.patient_signature || null;
@@ -225,6 +371,7 @@ router.post('/api/patient-intake', async (req, res, next) => {
         
         const record = {
             submissionId,
+            quickId,
             receivedAt: timestamp,
             status,
             payload,
@@ -264,9 +411,7 @@ router.post('/api/patient-intake', async (req, res, next) => {
             },
         };
 
-        const storagePayload = wrapRecordForStorage(record);
-        await fs.writeFile(filePath, JSON.stringify(storagePayload, null, 2), 'utf8');
-        logger.info(`Patient intake stored: ${submissionId} (status: ${status})`);
+        logger.info(`Patient intake submitted: ${submissionId} (status: ${status})`);
 
         // Auto-integrate to EMR system
         let integrationResult = null;
@@ -279,9 +424,6 @@ router.post('/api/patient-intake', async (req, res, next) => {
             
             if (integrationResult) {
                 record.integration = integrationResult;
-                // Update file with integration result
-                const updatedStoragePayload = wrapRecordForStorage(record);
-                await fs.writeFile(filePath, JSON.stringify(updatedStoragePayload, null, 2), 'utf8');
                 logger.info(`Patient intake auto-integrated: ${submissionId}, Patient ID: ${integrationResult.patientId}`);
             }
         } catch (integrationError) {
@@ -296,9 +438,30 @@ router.post('/api/patient-intake', async (req, res, next) => {
             };
         }
 
+        // Save to database
+        try {
+            await saveRecordToDatabase(record);
+            logger.info(`Patient intake saved to database: ${submissionId}`);
+        } catch (dbError) {
+            console.error('=== DATABASE SAVE ERROR ===');
+            console.error('Error:', dbError);
+            console.error('Message:', dbError.message);
+            console.error('Code:', dbError.code);
+            console.error('SQL:', dbError.sql);
+            logger.error('Failed to save intake to database', { 
+                submissionId, 
+                error: dbError.message,
+                stack: dbError.stack,
+                code: dbError.code,
+                sqlMessage: dbError.sqlMessage
+            });
+            // Don't fail the response, data is already integrated
+        }
+
         res.status(201).json({ 
             success: true, 
-            submissionId, 
+            submissionId,
+            quickId,
             status,
             autoVerified: true,
             integration: integrationResult,
@@ -380,58 +543,43 @@ router.get('/api/patient-intake', verifyToken, async (req, res, next) => {
  */
 router.get('/api/patient-intake/my-intake', verifyToken, async (req, res, next) => {
     try {
-        await ensureDirectory();
-        const files = await fs.readdir(STORAGE_DIR);
-        const jsonFiles = files.filter((file) => file.endsWith('.json'));
         const patientPhone = req.user.phone || req.user.whatsapp;
-
-        for (const file of jsonFiles) {
-            const filePath = path.join(STORAGE_DIR, file);
-            const content = await fs.readFile(filePath, 'utf8');
-            const record = JSON.parse(content);
-
-            const phone = record.payload?.phone || record.summary?.phone;
-            if (!phone || !patientPhone) {
-                continue;
+        
+        if (!patientPhone) {
+            return res.json({ success: true, data: null });
+        }
+        
+        const normalizedPatientPhone = patientPhone.replace(/\D/g, '').slice(-10);
+        
+        // Try to load from database first
+        try {
+            const [rows] = await db.query(
+                `SELECT submission_id, quick_id, payload, created_at as receivedAt, status 
+                FROM patient_intake_submissions 
+                WHERE RIGHT(REPLACE(phone, '-', ''), 10) = ? 
+                AND status = 'verified'
+                ORDER BY created_at DESC
+                LIMIT 1`,
+                [normalizedPatientPhone]
+            );
+            
+            if (rows.length > 0) {
+                const row = rows[0];
+                const payload = typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload;
+                
+                return res.json({
+                    success: true,
+                    data: {
+                        submissionId: row.submission_id,
+                        quickId: row.quick_id,
+                        payload: payload,
+                        receivedAt: row.receivedAt,
+                        status: row.status,
+                    },
+                });
             }
-
-            const normalizedPhone = phone.replace(/\D/g, '').slice(-10);
-            const normalizedPatientPhone = patientPhone.replace(/\D/g, '').slice(-10);
-
-            if (normalizedPhone !== normalizedPatientPhone || record.status !== 'verified') {
-                continue;
-            }
-
-            let payload = record.payload;
-            if (record.encrypted) {
-                try {
-                    const key = deriveEncryptionKey();
-                    if (key) {
-                        const decipher = crypto.createDecipheriv(
-                            record.encrypted.algorithm || 'aes-256-gcm',
-                            key,
-                            Buffer.from(record.encrypted.iv, 'base64')
-                        );
-                        decipher.setAuthTag(Buffer.from(record.encrypted.authTag, 'base64'));
-                        let decrypted = decipher.update(record.encrypted.data, 'base64', 'utf8');
-                        decrypted += decipher.final('utf8');
-                        const decryptedRecord = JSON.parse(decrypted);
-                        payload = decryptedRecord.payload;
-                    }
-                } catch (error) {
-                    logger.error('Failed to decrypt intake data', { error: error.message });
-                }
-            }
-
-            return res.json({
-                success: true,
-                data: {
-                    submissionId: record.submissionId,
-                    payload,
-                    receivedAt: record.receivedAt,
-                    status: record.status,
-                },
-            });
+        } catch (dbError) {
+            logger.error('Failed to load intake from database', { error: dbError.message });
         }
 
         return res.json({ success: true, data: null });
@@ -455,32 +603,41 @@ router.put('/api/patient-intake/my-intake', verifyToken, async (req, res, next) 
             return res.status(422).json({ success: false, errors });
         }
 
-        await ensureDirectory();
-        const files = await fs.readdir(STORAGE_DIR);
-        const jsonFiles = files.filter((file) => file.endsWith('.json'));
-
-        let existingFile = null;
-        let existingRecord = null;
         const patientPhone = req.user.phone || req.user.whatsapp;
-
-        for (const file of jsonFiles) {
-            const filePath = path.join(STORAGE_DIR, file);
-            const content = await fs.readFile(filePath, 'utf8');
-            const record = JSON.parse(content);
-
-            const phone = record.payload?.phone || record.summary?.phone;
-            if (!phone || !patientPhone) {
-                continue;
+        
+        if (!patientPhone) {
+            return res.status(400).json({ success: false, message: 'Nomor telepon tidak ditemukan' });
+        }
+        
+        const normalizedPatientPhone = patientPhone.replace(/\D/g, '').slice(-10);
+        let existingRecord = null;
+        
+        // Load from database
+        try {
+            const [rows] = await db.query(
+                `SELECT submission_id, payload, created_at as receivedAt, status, patient_id
+                FROM patient_intake_submissions 
+                WHERE RIGHT(REPLACE(phone, '-', ''), 10) = ? 
+                AND status = 'verified'
+                ORDER BY created_at DESC
+                LIMIT 1`,
+                [normalizedPatientPhone]
+            );
+            
+            if (rows.length > 0) {
+                const row = rows[0];
+                const storedPayload = typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload;
+                existingRecord = {
+                    submissionId: row.submission_id,
+                    payload: storedPayload,
+                    receivedAt: row.receivedAt,
+                    status: row.status,
+                    integration: row.patient_id ? { patientId: row.patient_id } : null,
+                    review: { history: [] }
+                };
             }
-
-            const normalizedPhone = phone.replace(/\D/g, '').slice(-10);
-            const normalizedPatientPhone = patientPhone.replace(/\D/g, '').slice(-10);
-
-            if (normalizedPhone === normalizedPatientPhone && record.status === 'verified') {
-                existingFile = filePath;
-                existingRecord = record;
-                break;
-            }
+        } catch (dbError) {
+            logger.error('Failed to load intake from database for update', { error: dbError.message });
         }
 
         if (!existingRecord) {
@@ -510,8 +667,8 @@ router.put('/api/patient-intake/my-intake', verifyToken, async (req, res, next) 
             highRisk: payload.metadata?.highRisk || false,
         };
 
-        const wrapped = wrapRecordForStorage(existingRecord);
-        await fs.writeFile(existingFile, JSON.stringify(wrapped, null, 2), 'utf8');
+        // Save to database (primary storage)
+        await saveRecord(existingRecord);
 
         logger.info('Patient intake updated', { submissionId: existingRecord.submissionId, patientId });
 
@@ -544,6 +701,148 @@ router.get('/api/patient-intake/:submissionId', verifyToken, async (req, res, ne
         if (/INTAKE_ENCRYPTION_KEY/.test(error.message)) {
             return res.status(500).json({ success: false, message: error.message });
         }
+        next(error);
+    }
+});
+
+// GET all intakes for a specific patient by patient ID
+router.get('/api/patient-intake/by-patient/:patientId', verifyToken, async (req, res, next) => {
+    const { patientId } = req.params;
+
+    if (!patientId || typeof patientId !== 'string') {
+        return res.status(400).json({ success: false, message: 'Patient ID tidak valid.' });
+    }
+
+    try {
+        // Get all intake submissions for this patient
+        let query = `
+            SELECT 
+                submission_id, 
+                quick_id, 
+                phone, 
+                status, 
+                payload, 
+                reviewed_by,
+                reviewed_at,
+                review_notes,
+                created_at,
+                updated_at
+            FROM patient_intake_submissions 
+            WHERE patient_id = ? OR phone = ?
+            ORDER BY created_at DESC
+        `;
+        
+        const [rows] = await db.query(query, [patientId, patientId]);
+        
+        if (rows.length === 0) {
+            return res.status(200).json({ 
+                success: true, 
+                data: [],
+                message: 'Tidak ada data intake untuk pasien ini.' 
+            });
+        }
+        
+        // Parse payloads for each record
+        const intakes = rows.map(record => {
+            let payload = null;
+            if (record.payload) {
+                try {
+                    payload = JSON.parse(record.payload);
+                } catch (parseError) {
+                    logger.error('Failed to parse intake payload', { 
+                        submissionId: record.submission_id,
+                        error: parseError.message 
+                    });
+                    payload = { error: 'Failed to parse payload' };
+                }
+            }
+
+            return {
+                submission_id: record.submission_id,
+                quick_id: record.quick_id,
+                phone: record.phone,
+                status: record.status,
+                reviewed_by: record.reviewed_by,
+                reviewed_at: record.reviewed_at,
+                review_notes: record.review_notes,
+                created_at: record.created_at,
+                updated_at: record.updated_at,
+                payload: payload
+            };
+        });
+
+        res.json({
+            success: true,
+            data: intakes,
+            count: intakes.length
+        });
+    } catch (error) {
+        logger.error('Error fetching patient intake submissions', { 
+            patientId,
+            error: error.message,
+            stack: error.stack 
+        });
+        next(error);
+    }
+});
+
+// GET latest intake for a specific patient by phone number/patient ID
+router.get('/api/patient-intake/patient/:patientId/latest', verifyToken, async (req, res, next) => {
+    const { patientId } = req.params;
+
+    if (!patientId || typeof patientId !== 'string') {
+        return res.status(400).json({ success: false, message: 'Patient ID tidak valid.' });
+    }
+
+    try {
+        // Try to find by patient_id first, then by phone number
+        let query = `
+            SELECT submission_id, quick_id, phone, status, payload, created_at
+            FROM patient_intake_submissions 
+            WHERE (patient_id = ? OR phone = ?)
+            AND status = 'verified'
+            ORDER BY created_at DESC 
+            LIMIT 1
+        `;
+        
+        const [rows] = await db.query(query, [patientId, patientId]);
+        
+        if (rows.length === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Tidak ada data intake yang terverifikasi untuk pasien ini.' 
+            });
+        }
+        
+        const record = rows[0];
+        
+        // Decrypt and parse payload
+        let payload = null;
+        if (record.payload) {
+            try {
+                // Parse JSON payload
+                payload = JSON.parse(record.payload);
+            } catch (parseError) {
+                logger.error('Failed to parse intake payload', { 
+                    submissionId: record.submission_id,
+                    error: parseError.message 
+                });
+                payload = { error: 'Failed to parse payload' };
+            }
+        }
+
+        const result = {
+            submission_id: record.submission_id,
+            quick_id: record.quick_id,
+            phone: record.phone,
+            status: record.status,
+            created_at: record.created_at,
+            payload: payload
+        };
+
+        res.json({ success: true, data: result });
+    } catch (error) {
+        logger.error('Failed to fetch latest patient intake', { error: error.message, patientId });
         next(error);
     }
 });
@@ -677,6 +976,51 @@ router.delete('/api/patient-intake/:submissionId', verifyToken, async (req, res,
         return res.json({ success: true, message: 'Data intake berhasil dihapus.', submissionId });
     } catch (error) {
         logger.error('Failed to delete intake submission', { submissionId, error: error.message });
+        next(error);
+    }
+});
+
+// GET verification status by phone number
+router.get('/api/patient-intake/status', async (req, res, next) => {
+    try {
+        const { phone } = req.query;
+        
+        if (!phone) {
+            return res.status(400).json({ success: false, message: 'Nomor telepon harus diisi' });
+        }
+        
+        const normalizedPhone = phone.replace(/\D/g, '').slice(-10);
+        
+        const [rows] = await db.query(
+            `SELECT submission_id, status, reviewed_by, reviewed_at, review_notes 
+            FROM patient_intake_submissions 
+            WHERE RIGHT(REPLACE(phone, '-', ''), 10) = ? 
+            AND status = 'verified'
+            AND reviewed_by IS NOT NULL
+            AND reviewed_by != 'auto_system'
+            ORDER BY reviewed_at DESC
+            LIMIT 1`,
+            [normalizedPhone]
+        );
+        
+        if (rows.length === 0) {
+            return res.json({ success: true, data: null });
+        }
+        
+        const verification = rows[0];
+        
+        return res.json({
+            success: true,
+            data: {
+                submission_id: verification.submission_id,
+                status: verification.status,
+                reviewed_by: verification.reviewed_by,
+                reviewed_at: verification.reviewed_at,
+                review_notes: verification.review_notes
+            }
+        });
+    } catch (error) {
+        logger.error('Failed to check verification status', { error: error.message });
         next(error);
     }
 });

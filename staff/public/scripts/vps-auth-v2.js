@@ -100,6 +100,9 @@ export async function initAuth() {
     const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
     if (token) {
         const user = await fetchMe();
+        if (user) {
+            auth.currentUser = user;
+        }
     }
     notifyAuthChange();
 }

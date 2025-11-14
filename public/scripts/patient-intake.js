@@ -296,7 +296,7 @@ async function loadExistingIntake() {
 }
 
 // Restore intake data into form
-function restoreIntakeData(payload) {
+function restoreIntakeData(payload, intakeData = null) {
     if (!payload) return;
     
     try {
@@ -341,7 +341,10 @@ function restoreIntakeData(payload) {
         updateDerived();
         syncMaritalFields();
         statusMessage.hidden = false;
-        statusMessage.textContent = 'Data rekam medis awal Anda telah dimuat. Anda dapat memperbarui informasi jika diperlukan.';
+        statusMessage.className = 'summary alert-info';
+        const quickId = intakeData?.quickId;
+        const quickIdText = quickId ? ` (No. RM: ${quickId})` : '';
+        statusMessage.innerHTML = `<strong>📋 Mode Perbarui${quickIdText}:</strong> Data formulir rekam medis awal Anda telah dimuat. Anda dapat memperbarui informasi jika diperlukan. Tidak perlu membuat formulir baru.`;
         showToast('Data rekam medis awal berhasil dimuat.', 'info');
     } catch (error) {
         console.error('Gagal restore intake data', error);
@@ -853,11 +856,27 @@ form.addEventListener('submit', async (event) => {
             headers: headers,
             body: JSON.stringify(payload),
         });
+        
+        // Handle duplicate submission error (409 Conflict)
+        if (response.status === 409) {
+            const errorResult = await response.json().catch(() => null);
+            if (errorResult && errorResult.code === 'DUPLICATE_SUBMISSION' && errorResult.shouldUpdate) {
+                console.log('Duplicate submission detected, converting to update...');
+                showToast('Anda sudah memiliki formulir. Mengalihkan ke mode perbarui...', 'info');
+                
+                // Reload the page to load existing data
+                setTimeout(() => {
+                    window.location.reload();
+                }, 1500);
+                return;
+            }
+        }
+        
         if (!response.ok) {
             throw new Error(`Server responded with ${response.status}`);
         }
         const result = await response.json().catch(() => null);
-        const submissionId = result && typeof result === 'object' ? result.submissionId : undefined;
+        const quickId = result && typeof result === 'object' ? result.quickId : undefined;
         clearDraft();
         
         const successMessage = existingIntakeId 
@@ -870,8 +889,8 @@ form.addEventListener('submit', async (event) => {
         if (existingIntakeId) {
             statusMessage.textContent = 'Data berhasil diperbarui. Mengalihkan ke dashboard...';
         } else {
-            statusMessage.textContent = submissionId
-                ? `Data berhasil dikirim dengan kode: ${submissionId}. Mengalihkan ke dashboard...`
+            statusMessage.textContent = quickId
+                ? `Data berhasil dikirim dengan Nomor Rekam Medis: ${quickId}. Mengalihkan ke dashboard...`
                 : 'Data berhasil dikirim. Mengalihkan ke dashboard...';
         }
         
@@ -918,10 +937,31 @@ resetDerivedFlags();
     const existingIntake = await loadExistingIntake();
     if (existingIntake && existingIntake.payload) {
         existingIntakeId = existingIntake.submissionId;
-        restoreIntakeData(existingIntake.payload);
+        restoreIntakeData(existingIntake.payload, existingIntake);
         submitBtn.textContent = 'Perbarui Data';
+        
+        // Update header to show update mode
+        const formTitle = document.getElementById('form-title');
+        const formDescription = document.getElementById('form-description');
+        const quickIdDisplay = existingIntake.quickId ? ` (No. RM: ${existingIntake.quickId})` : '';
+        if (formTitle) {
+            formTitle.innerHTML = `Form Riwayat Antenatal <span style="color: #16a34a; font-size: 0.9em;">• Mode Perbarui${quickIdDisplay}</span>`;
+        }
+        if (formDescription) {
+            formDescription.textContent = 'Anda sudah memiliki formulir. Perbarui informasi jika ada perubahan.';
+        }
+        
+        // Scroll to top to show the info message
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     } else {
         restoreDraft();
+        // Show draft message if there's draft data
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+            statusMessage.hidden = false;
+            statusMessage.className = 'summary';
+            statusMessage.textContent = 'Data tersimpan sementara di perangkat Anda.';
+        }
     }
     refreshButtons();
     updateDerived();
