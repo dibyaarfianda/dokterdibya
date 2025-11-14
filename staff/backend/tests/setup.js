@@ -10,6 +10,22 @@ process.env.DB_PASSWORD = 'test_password';
 process.env.DB_NAME = 'dibyaklinik_test';
 process.env.PORT = '3001';
 
+// Mock mysql2/promise so db.js does not exit the process during tests
+const mockConnection = {
+    release: jest.fn(),
+    on: jest.fn()
+};
+
+const mockPool = {
+    getConnection: jest.fn(async () => mockConnection),
+    on: jest.fn(),
+    end: jest.fn().mockResolvedValue()
+};
+
+jest.mock('mysql2/promise', () => ({
+    createPool: jest.fn(() => mockPool)
+}));
+
 // Increase timeout for integration tests
 jest.setTimeout(10000);
 

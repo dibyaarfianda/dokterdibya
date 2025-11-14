@@ -2,9 +2,21 @@
  * Unit tests for Auth middleware
  */
 
+jest.mock('../../db', () => ({
+    query: jest.fn()
+}));
+
 const jwt = require('jsonwebtoken');
-const { verifyToken, requireRole } = require('../../middleware/auth');
-const { AppError } = require('../../middleware/errorHandler');
+const db = require('../../db');
+const {
+    verifyToken,
+    requireRole,
+    optionalAuth,
+    recordFailedAttempt,
+    isAccountLocked,
+    clearFailedAttempts,
+    requirePermission
+} = require('../../middleware/auth');
 
 describe('Auth Middleware', () => {
     describe('verifyToken', () => {
@@ -116,13 +128,14 @@ describe('Auth Middleware', () => {
             expect(res.status).not.toHaveBeenCalled();
         });
 
-        it('should allow access when user is admin', () => {
+        it('should deny access when user lacks required elevated role', () => {
             req.user.role = 'admin';
             const middleware = requireRole('superadmin');
             
             middleware(req, res, next);
 
-            expect(next).toHaveBeenCalled();
+            expect(res.status).toHaveBeenCalledWith(403);
+            expect(next).not.toHaveBeenCalled();
         });
 
         it('should deny access when user does not have required role', () => {
@@ -135,7 +148,7 @@ describe('Auth Middleware', () => {
             expect(res.json).toHaveBeenCalledWith(
                 expect.objectContaining({
                     success: false,
-                    message: expect.stringContaining('Access denied')
+                    message: expect.stringContaining('Insufficient permissions')
                 })
             );
             expect(next).not.toHaveBeenCalled();
@@ -150,5 +163,97 @@ describe('Auth Middleware', () => {
             expect(res.status).toHaveBeenCalledWith(403);
             expect(next).not.toHaveBeenCalled();
         });
+    });
+});
+
+describe('optionalAuth', () => {
+    it('skips when header missing', () => {
+        const req = { headers: {} };
+        const next = jest.fn();
+        optionalAuth(req, {}, next);
+        expect(next).toHaveBeenCalled();
+        expect(req.user).toBeUndefined();
+    });
+
+    it('attaches decoded user when token present', () => {
+        const token = jwt.sign({ id: 10, role: 'nurse' }, process.env.JWT_SECRET);
+        const req = {
+            headers: {
+                authorization: `Bearer ${token}`
+            }
+        };
+        const next = jest.fn();
+
+        optionalAuth(req, {}, next);
+
+        expect(req.user).toMatchObject({ id: 10, role: 'nurse' });
+        expect(next).toHaveBeenCalled();
+    });
+});
+
+describe('failed attempt tracking helpers', () => {
+    const email = 'lock@test.com';
+
+    afterEach(() => {
+        clearFailedAttempts(email);
+    });
+
+    it('locks account after repeated failures', () => {
+        for (let i = 0; i < 5; i++) {
+            recordFailedAttempt(email);
+        }
+
+        expect(isAccountLocked(email)).toBe(true);
+        clearFailedAttempts(email);
+        expect(isAccountLocked(email)).toBe(false);
+    });
+});
+
+describe('requirePermission', () => {
+    let req;
+    let res;
+    let next;
+
+    beforeEach(() => {
+        req = {
+            user: { id: 1, role: 'admin' },
+            context: { requestId: 'req-1' }
+        };
+        res = {
+            status: jest.fn().mockReturnThis(),
+            json: jest.fn()
+        };
+        next = jest.fn();
+        jest.clearAllMocks();
+    });
+
+    it('allows superadmin without querying DB', async () => {
+        req.user.role = 'superadmin';
+        const middleware = requirePermission('patients:read');
+
+        await middleware(req, res, next);
+
+        expect(db.query).not.toHaveBeenCalled();
+        expect(next).toHaveBeenCalled();
+    });
+
+    it('allows when user has required permission', async () => {
+        db.query.mockResolvedValueOnce([[{ name: 'patients:read' }]]);
+        const middleware = requirePermission('patients:read');
+
+        await middleware(req, res, next);
+
+        expect(next).toHaveBeenCalled();
+    });
+
+    it('denies when user lacks permission', async () => {
+        db.query.mockResolvedValueOnce([[{ name: 'patients:view' }]]);
+        const middleware = requirePermission('patients:write');
+
+        await middleware(req, res, next);
+
+        expect(res.status).toHaveBeenCalledWith(403);
+        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({ success: false }));
+        expect(next).not.toHaveBeenCalled();
     });
 });

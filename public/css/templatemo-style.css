@@ -572,7 +572,7 @@ header .social-icon li a
 		margin-top: 15px;
 	}
 	.navbar-collapse {
-		max-height: 300px;
+		max-height: 450px;
 		overflow-y: auto;
 	}
 	.navbar-default .navbar-nav li a {
@@ -580,6 +580,28 @@ header .social-icon li a
 		padding-top: 5px;
 		padding-bottom: 5px;
 		line-height: 35px;
+	}
+	/* Make dropdown work inside mobile collapsed navbar */
+	.navbar-collapse .dropdown-menu {
+		position: static !important;
+		float: none;
+		width: auto;
+		margin-top: 0;
+		background-color: #fff;
+		border: 0;
+		box-shadow: none;
+		display: none;
+	}
+	.navbar-collapse .dropdown.open .dropdown-menu {
+		display: block !important;
+	}
+	.navbar-collapse .login-dropdown {
+		position: static !important;
+		float: none;
+		width: 100%;
+		box-shadow: none;
+		border-top: 1px solid #e7e7e7;
+		margin-top: 5px;
 	}
 }
 /* end 768 media quires */
@@ -609,6 +631,10 @@ header .social-icon li a
     border-radius: 4px;
     box-shadow: 0 6px 12px rgba(0,0,0,0.175);
     padding: 0;
+    min-width: 320px;
+    max-width: 400px;
+    right: 0;
+    left: auto;
 }
 
 .login-dropdown li {
@@ -620,6 +646,7 @@ header .social-icon li a
     border: 1px solid #ddd;
     padding: 8px 12px;
     color: #333;
+    font-size: 14px;
 }
 
 .login-dropdown .form-control:focus {
@@ -631,12 +658,15 @@ header .social-icon li a
     color: #333;
     font-weight: 600;
     margin-bottom: 5px;
+    font-size: 13px;
 }
 
 .login-dropdown .btn-primary {
     background-color: #47C6F8;
     border-color: #47C6F8;
     font-weight: 600;
+    padding: 10px;
+    font-size: 14px;
 }
 
 .login-dropdown .btn-primary:hover {
@@ -651,5 +681,62 @@ header .social-icon li a
 .login-dropdown a:hover {
     color: #0FF;
     text-decoration: underline;
+}
+
+/* Mobile Responsive for Login Dropdown */
+@media (max-width: 767px) {
+    .login-dropdown {
+        min-width: 280px;
+        max-width: 90vw;
+        right: 10px;
+        left: auto;
+    }
+    
+    .login-dropdown form {
+        padding: 12px !important;
+    }
+    
+    .login-dropdown .form-control {
+        font-size: 16px;
+        padding: 10px;
+    }
+    
+    .login-dropdown label {
+        font-size: 13px;
+    }
+    
+    .login-dropdown .btn-primary,
+    .login-dropdown button {
+        padding: 12px;
+        font-size: 14px;
+    }
+    
+    .login-dropdown p,
+    .login-dropdown small {
+        font-size: 12px;
+    }
+}
+
+@media (max-width: 480px) {
+    .login-dropdown {
+        min-width: 260px;
+        max-width: calc(100vw - 20px);
+        right: 10px;
+    }
+    
+    .login-dropdown form {
+        padding: 10px !important;
+        min-width: auto !important;
+    }
+    
+    .login-dropdown .form-control {
+        font-size: 16px;
+    }
+    
+    .login-dropdown .btn-primary,
+    .login-dropdown button {
+        padding: 10px;
+        font-size: 13px;
+    }
 }
 

@@ -6,11 +6,13 @@ const request = require('supertest');
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const patientsRouter = require('../../routes/v1/patients');
+const { errorHandler } = require('../../middleware/errorHandler');
 
 // Create test app
 const app = express();
 app.use(express.json());
 app.use('/api/v1', patientsRouter);
+app.use(errorHandler);
 
 // Mock database and cache
 jest.mock('../../utils/database');
