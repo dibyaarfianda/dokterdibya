@@ -85,6 +85,38 @@ router.get('/:id', async (req, res) => {
     }
 });
 
+// GET latest appointment for a specific patient
+router.get('/patient/:patient_id/latest', verifyToken, requirePermission('appointments.view'), async (req, res) => {
+    try {
+        const [rows] = await pool.query(
+            `SELECT * FROM appointments 
+             WHERE patient_id = ? 
+             ORDER BY appointment_date DESC, appointment_time DESC 
+             LIMIT 1`,
+            [req.params.patient_id]
+        );
+        
+        if (rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'No appointments found for this patient'
+            });
+        }
+        
+        res.json({
+            success: true,
+            data: rows[0]
+        });
+    } catch (error) {
+        console.error('Error fetching latest appointment:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch latest appointment',
+            error: error.message
+        });
+    }
+});
+
 // ==================== PROTECTED ROUTES (require auth) ====================
 
 // POST new appointment

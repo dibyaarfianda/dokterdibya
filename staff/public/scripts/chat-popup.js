@@ -84,6 +84,16 @@
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       }
 
+      body.has-mobile-action-bar #chat-popup-container {
+        bottom: calc(110px + env(safe-area-inset-bottom));
+      }
+
+      @media (max-width: 991.98px) {
+        #chat-popup-container {
+          right: 12px;
+        }
+      }
+
       .chat-toggle-btn {
         width: 56px; height: 56px; border-radius: 50%;
         background: linear-gradient(135deg, #007BFF 0%, #007BFF 100%);

@@ -260,6 +260,16 @@
             background: rgba(254, 226, 226, 0.55);
             color: #991b1b;
         }
+        .alert-info {
+            border-color: rgba(22, 163, 74, 0.2);
+            background: rgba(187, 247, 208, 0.3);
+            color: #166534;
+        }
+        .alert-warning {
+            border-color: rgba(245, 158, 11, 0.2);
+            background: rgba(254, 243, 199, 0.5);
+            color: #92400e;
+        }
         .divider {
             height: 1px;
             background: var(--border);
@@ -328,8 +338,8 @@
 <body>
     <div class="intake-shell">
         <header>
-            <h1>Form Riwayat Antenatal</h1>
-            <p>Silakan lengkapi data berikut sebelum konsultasi. Data disimpan otomatis di perangkat Anda.</p>
+            <h1 id="form-title">Form Riwayat Antenatal</h1>
+            <p id="form-description">Silakan lengkapi data berikut sebelum konsultasi. Data disimpan otomatis di perangkat Anda.</p>
             <div class="stepper" id="stepper">
                 <span data-step="1" class="active">Identitas</span>
                 <span data-step="2">Riwayat Medis</span>
@@ -571,6 +581,27 @@
                                 <textarea id="past_conditions_detail" name="past_conditions_detail" placeholder="Tulis nama penyakit atau operasi dan tahun"></textarea>
                             </div>
                         </div>
+                        <div class="divider"></div>
+                        <div>
+                            <h2 class="step-title">Riwayat Penyakit Keluarga</h2>
+                            <div class="checkbox-list" data-collection="family-history">
+                                <label class="checkbox-item"><input type="checkbox" name="family_history" value="hipertensi"> Hipertensi</label>
+                                <label class="checkbox-item"><input type="checkbox" name="family_history" value="diabetes"> Diabetes</label>
+                                <label class="checkbox-item"><input type="checkbox" name="family_history" value="heart"> Sakit jantung</label>
+                                <label class="checkbox-item"><input type="checkbox" name="family_history" value="stroke"> Stroke</label>
+                                <label class="checkbox-item"><input type="checkbox" name="family_history" value="cancer"> Kanker</label>
+                                <label class="checkbox-item"><input type="checkbox" name="family_history" value="kidney"> Sakit ginjal</label>
+                                <label class="checkbox-item"><input type="checkbox" name="family_history" value="thyroid"> Sakit tiroid</label>
+                                <label class="checkbox-item"><input type="checkbox" name="family_history" value="asthma"> Asma</label>
+                                <label class="checkbox-item"><input type="checkbox" name="family_history" value="mental"> Kondisi kejiwaan</label>
+                                <label class="checkbox-item"><input type="checkbox" name="family_history" value="blood"> Kelainan darah</label>
+                                <label class="checkbox-item"><input type="checkbox" name="family_history" value="genetic"> Kelainan genetik</label>
+                            </div>
+                            <div class="field" style="margin-top:0.75rem;">
+                                <label for="family_history_detail">Rincian riwayat keluarga</label>
+                                <textarea id="family_history_detail" name="family_history_detail" placeholder="Tulis hubungan keluarga (ayah, ibu, kakek, nenek, dll) dan kondisi medis"></textarea>
+                            </div>
+                        </div>
                     </section>
 
                     <section class="intake-step" data-step="3">
@@ -674,7 +705,19 @@
                             <div class="field-grid two">
                                 <div class="field">
                                     <label for="previous_contraception">Metode sebelumnya</label>
-                                    <input type="text" id="previous_contraception" name="previous_contraception">
+                                    <select id="previous_contraception" name="previous_contraception">
+                                        <option value="">Pilih metode</option>
+                                        <option value="pil">Pil</option>
+                                        <option value="suntik_3_bulan">Suntik 3 bulan</option>
+                                        <option value="implan">Implan</option>
+                                        <option value="iud">IUD</option>
+                                        <option value="steril">Steril</option>
+                                        <option value="kondom">Kondom</option>
+                                        <option value="kb_kalender">KB Kalender</option>
+                                        <option value="senggama_terputus">Senggama terputus</option>
+                                        <option value="vasektomi">Vasektomi</option>
+                                        <option value="tidak_pernah">Tidak pernah KB</option>
+                                    </select>
                                 </div>
                                 <div class="field">
                                     <label>Kehamilan ini karena kegagalan KB?</label>

@@ -23,6 +23,9 @@ export function initRealtimeSync(user) {
         reconnectionAttempts: 5
     });
     
+    // Make socket globally available for other modules
+    window.socket = socket;
+    
     socket.on('connect', () => {
         console.log('🔄 [REALTIME] Connected to real-time sync server');
         console.log('🔄 [REALTIME] Current user:', user);
@@ -245,6 +248,31 @@ export function broadcastAnamnesaUpdate(patientId, patientName) {
     });
     
     console.log('📤 [REALTIME] Broadcasted anamnesa update:', patientName);
+}
+
+// Broadcast intake verification
+export function broadcastIntakeVerification(patientId, patientName, submissionId, reviewerName) {
+    if (!socket || !currentUser) return;
+    
+    const activity = `Memverifikasi intake: ${patientName}`;
+    
+    socket.emit('intake:verified', {
+        userId: currentUser.id,
+        userName: currentUser.name,
+        patientId: patientId,
+        patientName: patientName,
+        submissionId: submissionId,
+        reviewerName: reviewerName,
+        timestamp: new Date().toISOString()
+    });
+    
+    socket.emit('activity:update', {
+        userId: currentUser.id,
+        activity: activity,
+        timestamp: new Date().toISOString()
+    });
+    
+    console.log('📤 [REALTIME] Broadcasted intake verification:', patientName);
 }
 
 // Broadcast physical exam update

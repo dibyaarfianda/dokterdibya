@@ -1,4 +1,5 @@
 import { getIdToken, auth, signOut, initAuth } from './vps-auth-v2.js';
+import { broadcastIntakeVerification } from './realtime-sync.js';
 
 const API_BASE = (() => {
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -9,6 +10,7 @@ const API_BASE = (() => {
 
 let currentPatientId = null;
 let currentIntakeData = null;
+let currentAppointmentData = null;
 
 // Get patient ID from URL
 function getPatientIdFromURL() {
@@ -75,131 +77,78 @@ async function loadPatientData() {
 // Load verified intake data
 async function loadVerifiedIntakeData(patient) {
     try {
-        // Get all intake submissions
-        const response = await authorizedFetch(`/api/patient-intake?limit=500`);
-        if (!response.ok) throw new Error('Failed to load intake data');
+        console.log('Loading verified intake data for patient:', patient.id);
+        
+        // Use the correct endpoint for patient-specific intake data
+        const response = await authorizedFetch(`/api/patient-intake/by-patient/${patient.id}`);
+        if (!response.ok) {
+            throw new Error('Failed to load patient intake data');
+        }
         
         const result = await response.json();
-        if (!result.success) throw new Error(result.message);
+        if (!result.success) {
+            throw new Error(result.message || 'Failed to get patient intake data');
+        }
         
-        console.log('Total intake submissions:', result.data?.length);
-        console.log('Looking for patient:', patient);
+        console.log('Patient intake data response:', result);
         
-        // Find verified intake for this patient
         const intakes = result.data || [];
+        console.log('Found intakes for patient:', intakes.length);
         
-        // Try multiple matching strategies
-        let verifiedIntake = null;
+        // Find intake verified by staff (not auto_system)
+        const verifiedIntake = intakes.find(intake => 
+            intake.status === 'verified' && 
+            intake.reviewed_by && 
+            intake.reviewed_by !== 'auto_system'
+        );
         
-        // Strategy 1: Match by phone (normalize both numbers)
-        if (patient.whatsapp || patient.phone) {
-            const patientPhone = (patient.whatsapp || patient.phone || '').replace(/\D/g, '');
-            verifiedIntake = intakes.find(intake => {
-                const isVerified = intake.status === 'verified';
-                if (!isVerified) return false;
-                
-                // Check both summary phone and payload phone
-                const summaryPhone = (intake.phone || '').replace(/\D/g, '');
-                const payloadPhone = (intake.payload?.phone || '').replace(/\D/g, '');
-                
-                // Match last 10 digits (Indonesian phone numbers)
-                const phoneMatchSummary = summaryPhone && patientPhone && 
-                                        summaryPhone.slice(-10) === patientPhone.slice(-10);
-                const phoneMatchPayload = payloadPhone && patientPhone && 
-                                        payloadPhone.slice(-10) === patientPhone.slice(-10);
-                
-                if (phoneMatchSummary || phoneMatchPayload) {
-                    console.log('Found match by phone:', intake.submissionId, {
-                        summaryPhone,
-                        payloadPhone,
-                        patientPhone
-                    });
-                }
-                return phoneMatchSummary || phoneMatchPayload;
-            });
-        }
-        
-        // Strategy 2: Match by name (case insensitive, partial match)
-        if (!verifiedIntake && patient.full_name) {
-            const patientName = patient.full_name.toLowerCase().trim();
-            verifiedIntake = intakes.find(intake => {
-                const isVerified = intake.status === 'verified';
-                if (!isVerified) return false;
-                
-                // Check both summary name and payload name
-                const summaryName = (intake.patientName || '').toLowerCase().trim();
-                const payloadName = (intake.payload?.full_name || '').toLowerCase().trim();
-                
-                const nameMatchSummary = summaryName && patientName && 
-                                       (summaryName === patientName || 
-                                        summaryName.includes(patientName) || 
-                                        patientName.includes(summaryName));
-                const nameMatchPayload = payloadName && patientName && 
-                                       (payloadName === patientName || 
-                                        payloadName.includes(patientName) || 
-                                        patientName.includes(payloadName));
-                
-                if (nameMatchSummary || nameMatchPayload) {
-                    console.log('Found match by name:', intake.submissionId, {
-                        summaryName,
-                        payloadName,
-                        patientName
-                    });
-                }
-                return nameMatchSummary || nameMatchPayload;
-            });
-        }
-        
-        // Strategy 3: Show all verified intakes for debugging
-        const allVerified = intakes.filter(i => i.status === 'verified');
-        console.log('All verified intakes:', allVerified.length);
-        if (allVerified.length > 0) {
-            console.log('First verified intake:', allVerified[0]);
-        }
+        console.log('Staff verified intake found:', verifiedIntake);
         
         if (verifiedIntake) {
-            // Load full record with payload
-            console.log('Loading full record for:', verifiedIntake.submissionId);
-            try {
-                const detailResponse = await authorizedFetch(`/api/patient-intake/${verifiedIntake.submissionId}`);
-                if (detailResponse.ok) {
-                    const detailResult = await detailResponse.json();
-                    if (detailResult.success && detailResult.data) {
-                        currentIntakeData = detailResult.data;
-                        displayIntakeData(detailResult.data);
-                        return detailResult.data;
-                    }
-                }
-            } catch (err) {
-                console.error('Error loading full record:', err);
+            // Update title to show verified status
+            const titleElement = document.querySelector('.card-header .card-title');
+            if (titleElement) {
+                titleElement.innerHTML = '<i class="fas fa-file-medical"></i> Data Intake Pasien (Terverifikasi)';
             }
             
-            // Fallback to summary if detail load fails
-            currentIntakeData = verifiedIntake;
-            displayIntakeData(verifiedIntake);
-        } else {
-            const allVerifiedWithDetails = allVerified.map(v => ({
-                id: v.submissionId,
-                name: v.patientName,
-                phone: v.phone,
-                status: v.status
-            }));
+            // Load full record with payload if needed
+            let fullRecord = verifiedIntake;
+            if (!verifiedIntake.payload && verifiedIntake.submissionId) {
+                try {
+                    console.log('Loading full record for:', verifiedIntake.submissionId);
+                    const detailResponse = await authorizedFetch(`/api/patient-intake/${verifiedIntake.submissionId}`);
+                    if (detailResponse.ok) {
+                        const detailResult = await detailResponse.json();
+                        if (detailResult.success && detailResult.data) {
+                            fullRecord = detailResult.data;
+                        }
+                    }
+                } catch (err) {
+                    console.error('Error loading full record:', err);
+                }
+            }
             
+            currentIntakeData = fullRecord;
+            displayIntakeData(fullRecord);
+        } else {
+            // Update title to show not verified status
+            const titleElement = document.querySelector('.card-header .card-title');
+            if (titleElement) {
+                titleElement.innerHTML = '<i class="fas fa-file-medical"></i> Data Intake Pasien';
+            }
+            
+            // Show message to review intake through patient-intake-review.html
             document.getElementById('intake-data-container').innerHTML = 
                 `<div class="alert alert-info">
                     <i class="fas fa-info-circle"></i> Belum ada data intake yang terverifikasi untuk pasien ini.
-                    <br><small class="text-muted">Pasien: ${patient.full_name || patient.name} | Telepon: ${patient.whatsapp || patient.phone || '-'}</small>
-                    <br><small class="text-muted">Total intake terverifikasi: ${allVerified.length}</small>
-                    ${allVerifiedWithDetails.length > 0 ? `
-                        <br><br><strong>Data Verified Available:</strong>
-                        <ul class="mb-0 mt-2" style="font-size: 0.85rem;">
-                            ${allVerifiedWithDetails.map(v => `
-                                <li>${v.name || 'Unknown'} - ${v.phone || 'No phone'} (${v.id})</li>
-                            `).join('')}
-                        </ul>
-                    ` : ''}
+                    <br><br>
+                    <a href="patient-intake-review.html" class="btn btn-primary btn-sm">
+                        <i class="fas fa-clipboard-check"></i> Review Intake Pasien
+                    </a>
+                    <small class="text-muted d-block mt-2">
+                        Data intake harus diverifikasi melalui halaman Review Intake terlebih dahulu sebelum dapat ditampilkan di sini.
+                    </small>
                 </div>`;
-            console.log('Available verified intakes:', allVerifiedWithDetails);
         }
         
         return verifiedIntake;
@@ -228,19 +177,20 @@ function displayIntakeData(record) {
     if (payload.dob) html += `<dt class="col-sm-5">Tanggal Lahir:</dt><dd class="col-sm-7">${payload.dob} (${payload.age || '-'} tahun)</dd>`;
     if (payload.phone) html += `<dt class="col-sm-5">Telepon:</dt><dd class="col-sm-7">${payload.phone}</dd>`;
     if (payload.address) html += `<dt class="col-sm-5">Alamat:</dt><dd class="col-sm-7">${payload.address}</dd>`;
+    if (payload.blood_type) html += `<dt class="col-sm-5">Golongan Darah:</dt><dd class="col-sm-7">${payload.blood_type} (${payload.rhesus || '-'})</dd>`;
     html += '</dl></div></div>';
     
     // Family Info
-    if (payload.marital_status || payload.husband_name || payload.occupation) {
-        html += '<div class="col-md-6"><div class="intake-data-section">';
-        html += '<h6><i class="fas fa-users"></i> Keluarga & Sosial</h6>';
-        html += '<dl class="row mb-0">';
-        if (payload.marital_status) html += `<dt class="col-sm-5">Status:</dt><dd class="col-sm-7">${payload.marital_status}</dd>`;
-        if (payload.husband_name) html += `<dt class="col-sm-5">Suami:</dt><dd class="col-sm-7">${payload.husband_name}</dd>`;
-        if (payload.occupation) html += `<dt class="col-sm-5">Pekerjaan:</dt><dd class="col-sm-7">${payload.occupation}</dd>`;
-        if (payload.education) html += `<dt class="col-sm-5">Pendidikan:</dt><dd class="col-sm-7">${payload.education}</dd>`;
-        html += '</dl></div></div>';
-    }
+    html += '<div class="col-md-6"><div class="intake-data-section">';
+    html += '<h6><i class="fas fa-users"></i> Keluarga & Sosial</h6>';
+    html += '<dl class="row mb-0">';
+    if (payload.marital_status) html += `<dt class="col-sm-5">Status:</dt><dd class="col-sm-7">${payload.marital_status}</dd>`;
+    if (payload.husband_name) html += `<dt class="col-sm-5">Suami:</dt><dd class="col-sm-7">${payload.husband_name} (${payload.husband_age || '-'} tahun)</dd>`;
+    if (payload.husband_job) html += `<dt class="col-sm-5">Pekerjaan Suami:</dt><dd class="col-sm-7">${payload.husband_job}</dd>`;
+    if (payload.occupation) html += `<dt class="col-sm-5">Pekerjaan Ibu:</dt><dd class="col-sm-7">${payload.occupation}</dd>`;
+    if (payload.education) html += `<dt class="col-sm-5">Pendidikan:</dt><dd class="col-sm-7">${payload.education}</dd>`;
+    if (payload.payment_method) html += `<dt class="col-sm-5">Pembayaran:</dt><dd class="col-sm-7">${payload.payment_method}</dd>`;
+    html += '</dl></div></div>';
     
     // Pregnancy Info
     html += '<div class="col-md-6"><div class="intake-data-section">';
@@ -248,23 +198,55 @@ function displayIntakeData(record) {
     html += '<dl class="row mb-0">';
     if (payload.lmp) html += `<dt class="col-sm-5">HPHT:</dt><dd class="col-sm-7">${payload.lmp}</dd>`;
     if (metadata.edd?.value || payload.edd) html += `<dt class="col-sm-5">HPL:</dt><dd class="col-sm-7">${metadata.edd?.value || payload.edd}</dd>`;
-    if (payload.height) html += `<dt class="col-sm-5">TB:</dt><dd class="col-sm-7">${payload.height} cm</dd>`;
-    if (payload.weight) html += `<dt class="col-sm-5">BB:</dt><dd class="col-sm-7">${payload.weight} kg</dd>`;
-    if (payload.bmi) html += `<dt class="col-sm-5">BMI:</dt><dd class="col-sm-7">${payload.bmi}</dd>`;
+    if (payload.first_check_ga) html += `<dt class="col-sm-5">Usia Kehamilan:</dt><dd class="col-sm-7">${payload.first_check_ga} minggu</dd>`;
     const totals = metadata.obstetricTotals || {};
-    html += `<dt class="col-sm-5">G/P/A/L:</dt><dd class="col-sm-7">G${totals.gravida || '-'} P${totals.para || '-'} A${totals.abortus || '-'} L${totals.living || '-'}</dd>`;
+    html += `<dt class="col-sm-5">G/P/A/L:</dt><dd class="col-sm-7">G${totals.gravida || '0'} P${totals.para || '0'} A${totals.abortus || '0'} L${totals.living || '0'}</dd>`;
     html += '</dl></div></div>';
     
-    // Medical History
-    if (payload.risk_factors || payload.past_conditions || payload.allergies) {
+    // Menstrual History
+    html += '<div class="col-md-6"><div class="intake-data-section">';
+    html += '<h6><i class="fas fa-calendar-alt"></i> Riwayat Haid</h6>';
+    html += '<dl class="row mb-0">';
+    if (payload.menarche_age) html += `<dt class="col-sm-5">Menarche:</dt><dd class="col-sm-7">${payload.menarche_age} tahun</dd>`;
+    if (payload.cycle_length) html += `<dt class="col-sm-5">Siklus Haid:</dt><dd class="col-sm-7">${payload.cycle_length} hari</dd>`;
+    if (payload.cycle_regular) html += `<dt class="col-sm-5">Teratur:</dt><dd class="col-sm-7">${payload.cycle_regular}</dd>`;
+    if (payload.kb_failure) html += `<dt class="col-sm-5">Kegagalan KB:</dt><dd class="col-sm-7">${payload.kb_failure}</dd>`;
+    html += '</dl></div></div>';
+    
+    // Medical History & Allergies
+    html += '<div class="col-md-6"><div class="intake-data-section">';
+    html += '<h6><i class="fas fa-notes-medical"></i> Riwayat Medis & Alergi</h6>';
+    html += '<dl class="row mb-0">';
+    if (payload.past_conditions && Array.isArray(payload.past_conditions)) {
+        html += `<dt class="col-sm-5">Riwayat Penyakit:</dt><dd class="col-sm-7">${payload.past_conditions.join(', ')}</dd>`;
+    }
+    if (payload.family_history) html += `<dt class="col-sm-5">Riwayat Keluarga:</dt><dd class="col-sm-7">${payload.family_history} (${payload.family_history_detail || '-'})</dd>`;
+    if (payload.allergy_drugs) html += `<dt class="col-sm-5">Alergi Obat:</dt><dd class="col-sm-7">${payload.allergy_drugs}</dd>`;
+    if (payload.allergy_food) html += `<dt class="col-sm-5">Alergi Makanan:</dt><dd class="col-sm-7">${payload.allergy_food}</dd>`;
+    if (payload.allergy_env) html += `<dt class="col-sm-5">Alergi Lingkungan:</dt><dd class="col-sm-7">${payload.allergy_env}</dd>`;
+    html += '</dl></div></div>';
+    
+    // Current Medications
+    if (payload.medications && Array.isArray(payload.medications) && payload.medications.length > 0) {
         html += '<div class="col-md-6"><div class="intake-data-section">';
-        html += '<h6><i class="fas fa-notes-medical"></i> Riwayat Medis</h6>';
-        html += '<dl class="row mb-0">';
-        if (payload.risk_factors) html += `<dt class="col-sm-5">Faktor Risiko:</dt><dd class="col-sm-7">${payload.risk_factors}</dd>`;
-        if (payload.past_conditions) html += `<dt class="col-sm-5">Riwayat Penyakit:</dt><dd class="col-sm-7">${payload.past_conditions}</dd>`;
-        if (payload.allergies) html += `<dt class="col-sm-5">Alergi:</dt><dd class="col-sm-7">${payload.allergies}</dd>`;
-        if (payload.current_medications) html += `<dt class="col-sm-5">Obat Saat Ini:</dt><dd class="col-sm-7">${payload.current_medications}</dd>`;
-        html += '</dl></div></div>';
+        html += '<h6><i class="fas fa-pills"></i> Obat Saat Ini</h6>';
+        html += '<ul class="mb-0">';
+        payload.medications.forEach(med => {
+            html += `<li>${med.name} ${med.dose} - ${med.freq}</li>`;
+        });
+        html += '</ul></div></div>';
+    }
+    
+    // Risk Flags
+    if (metadata.riskFlags && Array.isArray(metadata.riskFlags) && metadata.riskFlags.length > 0) {
+        html += '<div class="col-12"><div class="intake-data-section">';
+        html += '<h6><i class="fas fa-exclamation-triangle text-warning"></i> Faktor Risiko</h6>';
+        html += '<div class="alert alert-warning mb-0">';
+        html += '<ul class="mb-0">';
+        metadata.riskFlags.forEach(flag => {
+            html += `<li>${flag}</li>`;
+        });
+        html += '</ul></div></div></div>';
     }
     
     html += '</div>';
@@ -315,10 +297,44 @@ async function loadMedicalRecords() {
         const anamnesaRecord = records.find(r => r.record_type === 'anamnesa');
         if (anamnesaRecord && anamnesaRecord.record_data) {
             const data = anamnesaRecord.record_data;
+            
+            // Load comprehensive Anamnesa data
+            if (data.patient_name) document.getElementById('patient_name').value = data.patient_name;
+            if (data.patient_dob) document.getElementById('patient_dob').value = data.patient_dob;
+            if (data.patient_age) document.getElementById('patient_age').value = data.patient_age;
+            if (data.patient_address) document.getElementById('patient_address').value = data.patient_address;
+            if (data.patient_phone) document.getElementById('patient_phone').value = data.patient_phone;
+            if (data.patient_marital_status) document.getElementById('patient_marital_status').value = data.patient_marital_status;
+            if (data.patient_occupation) document.getElementById('patient_occupation').value = data.patient_occupation;
+            if (data.patient_education) document.getElementById('patient_education').value = data.patient_education;
+            if (data.patient_husband_name) document.getElementById('patient_husband_name').value = data.patient_husband_name;
+            
             if (data.keluhan_utama) document.getElementById('keluhan_utama').value = data.keluhan_utama;
-            if (data.riwayat_penyakit_sekarang) document.getElementById('riwayat_penyakit_sekarang').value = data.riwayat_penyakit_sekarang;
-            if (data.riwayat_penyakit_dahulu) document.getElementById('riwayat_penyakit_dahulu').value = data.riwayat_penyakit_dahulu;
-            if (data.riwayat_keluarga) document.getElementById('riwayat_keluarga').value = data.riwayat_keluarga;
+            
+            if (data.pregnancy_test_date) document.getElementById('pregnancy_test_date').value = data.pregnancy_test_date;
+            if (data.blood_type) document.getElementById('blood_type').value = data.blood_type;
+            if (data.rhesus_factor) document.getElementById('rhesus_factor').value = data.rhesus_factor;
+            if (data.current_medical_conditions) document.getElementById('current_medical_conditions').value = data.current_medical_conditions;
+            if (data.drug_allergies) document.getElementById('drug_allergies').value = data.drug_allergies;
+            if (data.food_allergies) document.getElementById('food_allergies').value = data.food_allergies;
+            if (data.other_allergies) document.getElementById('other_allergies').value = data.other_allergies;
+            if (data.current_medications) document.getElementById('current_medications').value = data.current_medications;
+            if (data.past_medical_history) document.getElementById('past_medical_history').value = data.past_medical_history;
+            if (data.family_medical_history) document.getElementById('family_medical_history').value = data.family_medical_history;
+            
+            if (data.menarche_age) document.getElementById('menarche_age').value = data.menarche_age;
+            if (data.cycle_length) document.getElementById('cycle_length').value = data.cycle_length;
+            if (data.cycle_regular) document.getElementById('cycle_regular').value = data.cycle_regular;
+            if (data.lmp_date) document.getElementById('lmp_date').value = data.lmp_date;
+            if (data.gravida_count) document.getElementById('gravida_count').value = data.gravida_count;
+            if (data.para_count) document.getElementById('para_count').value = data.para_count;
+            if (data.abortus_count) document.getElementById('abortus_count').value = data.abortus_count;
+            if (data.living_children_count) document.getElementById('living_children_count').value = data.living_children_count;
+            if (data.previous_contraception) document.getElementById('previous_contraception').value = data.previous_contraception;
+            if (data.contraception_failure) document.getElementById('contraception_failure').value = data.contraception_failure;
+            if (data.failed_contraception_type) document.getElementById('failed_contraception_type').value = data.failed_contraception_type;
+            
+            if (data.pregnancy_history) loadPregnancyHistoryData(data.pregnancy_history);
             if (data.prenatal_care) loadPrenatalData(data.prenatal_care);
         }
         
@@ -365,22 +381,488 @@ async function loadMedicalRecords() {
     }
 }
 
+// Populate Enhanced Anamnesa Form with Integrated Data
+async function populateAnamnesaForm(patient, intakeData, chiefComplaint) {
+    console.log('Populating Anamnesa form with data:', { patient, intakeData, chiefComplaint });
+    
+    if (!patient) return;
+    
+    try {
+        // Data Pasien Section
+        if (patient.full_name || patient.name) {
+            document.getElementById('patient_name').value = patient.full_name || patient.name;
+        }
+        
+        if (patient.date_of_birth || patient.dob) {
+            document.getElementById('patient_dob').value = patient.date_of_birth || patient.dob || '';
+        }
+        
+        if (patient.age) {
+            document.getElementById('patient_age').value = patient.age + ' tahun';
+        }
+        
+        if (patient.address) {
+            document.getElementById('patient_address').value = patient.address;
+        }
+        
+        if (patient.whatsapp || patient.phone) {
+            document.getElementById('patient_phone').value = patient.whatsapp || patient.phone;
+        }
+        
+        // Load from intake data if available
+        if (intakeData && intakeData.payload) {
+            const payload = intakeData.payload;
+            
+            // Override with intake data if available
+            if (payload.full_name) document.getElementById('patient_name').value = payload.full_name;
+            if (payload.dob) document.getElementById('patient_dob').value = payload.dob;
+            if (payload.age) document.getElementById('patient_age').value = payload.age + ' tahun';
+            if (payload.address) document.getElementById('patient_address').value = payload.address;
+            if (payload.phone) document.getElementById('patient_phone').value = payload.phone;
+            if (payload.marital_status) document.getElementById('patient_marital_status').value = payload.marital_status;
+            if (payload.occupation) document.getElementById('patient_occupation').value = payload.occupation;
+            if (payload.education) document.getElementById('patient_education').value = payload.education;
+            if (payload.husband_name) document.getElementById('patient_husband_name').value = payload.husband_name;
+            
+            // Keluhan Utama - from appointment chief complaint
+            if (chiefComplaint) {
+                document.getElementById('keluhan_utama').value = chiefComplaint;
+            }
+            
+            // Riwayat Medis Section
+            if (payload.pregnancy_test_date) {
+                document.getElementById('pregnancy_test_date').value = payload.pregnancy_test_date;
+            }
+            if (payload.blood_type) {
+                document.getElementById('blood_type').value = payload.blood_type;
+            }
+            if (payload.rhesus_factor) {
+                document.getElementById('rhesus_factor').value = payload.rhesus_factor;
+            }
+            
+            // Current Medical Conditions
+            const conditions = [];
+            if (payload.medical_conditions && Array.isArray(payload.medical_conditions)) {
+                conditions.push(...payload.medical_conditions);
+            }
+            if (payload.other_conditions) {
+                conditions.push(payload.other_conditions);
+            }
+            if (conditions.length > 0) {
+                document.getElementById('current_medical_conditions').value = conditions.join('; ');
+            }
+            
+            // Allergies
+            if (payload.drug_allergies) {
+                document.getElementById('drug_allergies').value = payload.drug_allergies;
+            }
+            if (payload.food_allergies) {
+                document.getElementById('food_allergies').value = payload.food_allergies;
+            }
+            if (payload.other_allergies) {
+                document.getElementById('other_allergies').value = payload.other_allergies;
+            }
+            
+            // Current Medications
+            if (payload.current_medications) {
+                document.getElementById('current_medications').value = payload.current_medications;
+            }
+            
+            // Past Medical History
+            if (payload.past_medical_history) {
+                document.getElementById('past_medical_history').value = payload.past_medical_history;
+            }
+            
+            // Family Medical History
+            const familyHistory = [];
+            if (payload.family_medical_history && Array.isArray(payload.family_medical_history)) {
+                familyHistory.push(...payload.family_medical_history);
+            }
+            if (payload.family_history_details) {
+                familyHistory.push(payload.family_history_details);
+            }
+            if (familyHistory.length > 0) {
+                document.getElementById('family_medical_history').value = familyHistory.join('; ');
+            }
+            
+            // Status Obstetri Section
+            // Riwayat Menstruasi
+            if (payload.menarche_age) {
+                document.getElementById('menarche_age').value = payload.menarche_age + ' tahun';
+            }
+            if (payload.cycle_length) {
+                document.getElementById('cycle_length').value = payload.cycle_length;
+            }
+            if (payload.cycle_regular) {
+                document.getElementById('cycle_regular').value = payload.cycle_regular;
+            }
+            if (payload.lmp_date) {
+                document.getElementById('lmp_date').value = payload.lmp_date;
+            }
+            
+            // Obstetric Counts
+            if (payload.gravida_count) {
+                document.getElementById('gravida_count').value = payload.gravida_count;
+            }
+            if (payload.para_count) {
+                document.getElementById('para_count').value = payload.para_count;
+            }
+            if (payload.abortus_count) {
+                document.getElementById('abortus_count').value = payload.abortus_count;
+            }
+            if (payload.living_children_count) {
+                document.getElementById('living_children_count').value = payload.living_children_count;
+            }
+            
+            // Pregnancy History Table
+            if (payload.previous_pregnancies && Array.isArray(payload.previous_pregnancies)) {
+                populatePregnancyHistory(payload.previous_pregnancies);
+            }
+            
+            // Contraception History
+            if (payload.previous_contraception) {
+                document.getElementById('previous_contraception').value = payload.previous_contraception;
+            }
+            if (payload.contraception_failure) {
+                document.getElementById('contraception_failure').value = payload.contraception_failure;
+            }
+            if (payload.failed_contraception_type) {
+                document.getElementById('failed_contraception_type').value = payload.failed_contraception_type;
+            }
+        }
+        
+        console.log('Anamnesa form populated successfully');
+        
+    } catch (error) {
+        console.error('Error populating Anamnesa form:', error);
+    }
+}
+
+// Populate Pregnancy History Table
+function populatePregnancyHistory(pregnancies) {
+    const tableBody = document.getElementById('pregnancy-history-table');
+    if (!tableBody || !pregnancies || pregnancies.length === 0) return;
+    
+    tableBody.innerHTML = '';
+    
+    pregnancies.forEach((pregnancy, index) => {
+        const row = tableBody.insertRow();
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td><input type="number" class="form-control form-control-sm" value="${pregnancy.year || ''}" placeholder="Tahun"></td>
+            <td>
+                <select class="form-control form-control-sm">
+                    <option value="">Pilih Mode</option>
+                    <option value="Normal" ${pregnancy.delivery_mode === 'Normal' ? 'selected' : ''}>Normal</option>
+                    <option value="Sectio Caesarea" ${pregnancy.delivery_mode === 'Sectio Caesarea' ? 'selected' : ''}>Sectio Caesarea</option>
+                    <option value="Vakum" ${pregnancy.delivery_mode === 'Vakum' ? 'selected' : ''}>Vakum</option>
+                    <option value="Forceps" ${pregnancy.delivery_mode === 'Forceps' ? 'selected' : ''}>Forceps</option>
+                </select>
+            </td>
+            <td><input type="text" class="form-control form-control-sm" value="${pregnancy.complications || ''}" placeholder="Komplikasi"></td>
+            <td><input type="number" class="form-control form-control-sm" value="${pregnancy.baby_weight || ''}" placeholder="gram"></td>
+            <td>
+                <select class="form-control form-control-sm">
+                    <option value="">Pilih</option>
+                    <option value="Ya" ${pregnancy.child_alive === 'Ya' || pregnancy.child_alive === true ? 'selected' : ''}>Ya</option>
+                    <option value="Tidak" ${pregnancy.child_alive === 'Tidak' || pregnancy.child_alive === false ? 'selected' : ''}>Tidak</option>
+                </select>
+            </td>
+        `;
+    });
+    
+    // Add button to add more pregnancy history rows
+    if (pregnancies.length > 0) {
+        addPregnancyHistoryControls();
+    }
+}
+
+// Add controls for pregnancy history table
+function addPregnancyHistoryControls() {
+    const tableContainer = document.querySelector('#pregnancy-history-table').closest('.table-responsive');
+    if (tableContainer && !tableContainer.nextElementSibling?.classList.contains('pregnancy-controls')) {
+        const controlsDiv = document.createElement('div');
+        controlsDiv.className = 'pregnancy-controls mt-2';
+        controlsDiv.innerHTML = `
+            <button type="button" class="btn btn-sm btn-success" onclick="addPregnancyHistoryRow()">
+                <i class="fas fa-plus"></i> Tambah Kehamilan
+            </button>
+        `;
+        tableContainer.parentNode.insertBefore(controlsDiv, tableContainer.nextSibling);
+    }
+}
+
+// Add new pregnancy history row
+window.addPregnancyHistoryRow = function() {
+    const tableBody = document.getElementById('pregnancy-history-table');
+    const rowCount = tableBody.rows.length;
+    
+    const row = tableBody.insertRow();
+    row.innerHTML = `
+        <td>${rowCount + 1}</td>
+        <td><input type="number" class="form-control form-control-sm" placeholder="Tahun"></td>
+        <td>
+            <select class="form-control form-control-sm">
+                <option value="">Pilih Mode</option>
+                <option value="Normal">Normal</option>
+                <option value="Sectio Caesarea">Sectio Caesarea</option>
+                <option value="Vakum">Vakum</option>
+                <option value="Forceps">Forceps</option>
+            </select>
+        </td>
+        <td><input type="text" class="form-control form-control-sm" placeholder="Komplikasi"></td>
+        <td><input type="number" class="form-control form-control-sm" placeholder="gram"></td>
+        <td>
+            <select class="form-control form-control-sm">
+                <option value="">Pilih</option>
+                <option value="Ya">Ya</option>
+                <option value="Tidak">Tidak</option>
+            </select>
+        </td>
+    `;
+};
+
+// Load Appointment Chief Complaint and integrate into Anamnesa
+async function loadAppointmentData() {
+    try {
+        const response = await authorizedFetch(`/api/appointments?patientId=${currentPatientId}`);
+        if (!response.ok) return null;
+        
+        const result = await response.json();
+        if (!result.success || !result.data) return null;
+        
+        // Find most recent confirmed appointment
+        const appointments = result.data;
+        const confirmedAppointment = appointments
+            .filter(apt => apt.status === 'confirmed')
+            .sort((a, b) => new Date(b.appointment_date) - new Date(a.appointment_date))[0];
+        
+        if (confirmedAppointment) {
+            currentAppointmentData = confirmedAppointment;
+            // Use notes field as chief complaint
+            return confirmedAppointment.notes || null;
+        }
+        
+        return null;
+    } catch (error) {
+        console.error('Error loading appointment data:', error);
+        return null;
+    }
+}
+
 // Save Anamnesa
 window.saveAnamnesa = async function() {
     const data = {
         patientId: currentPatientId,
         type: 'anamnesa',
         data: {
+            // Data Pasien
+            patient_name: document.getElementById('patient_name').value,
+            patient_dob: document.getElementById('patient_dob').value,
+            patient_age: document.getElementById('patient_age').value,
+            patient_address: document.getElementById('patient_address').value,
+            patient_phone: document.getElementById('patient_phone').value,
+            patient_marital_status: document.getElementById('patient_marital_status').value,
+            patient_occupation: document.getElementById('patient_occupation').value,
+            patient_education: document.getElementById('patient_education').value,
+            patient_husband_name: document.getElementById('patient_husband_name').value,
+            
+            // Keluhan Utama
             keluhan_utama: document.getElementById('keluhan_utama').value,
-            riwayat_penyakit_sekarang: document.getElementById('riwayat_penyakit_sekarang').value,
-            riwayat_penyakit_dahulu: document.getElementById('riwayat_penyakit_dahulu').value,
-            riwayat_keluarga: document.getElementById('riwayat_keluarga').value,
+            
+            // Riwayat Medis
+            pregnancy_test_date: document.getElementById('pregnancy_test_date').value,
+            blood_type: document.getElementById('blood_type').value,
+            rhesus_factor: document.getElementById('rhesus_factor').value,
+            current_medical_conditions: document.getElementById('current_medical_conditions').value,
+            drug_allergies: document.getElementById('drug_allergies').value,
+            food_allergies: document.getElementById('food_allergies').value,
+            other_allergies: document.getElementById('other_allergies').value,
+            current_medications: document.getElementById('current_medications').value,
+            past_medical_history: document.getElementById('past_medical_history').value,
+            family_medical_history: document.getElementById('family_medical_history').value,
+            
+            // Status Obstetri
+            menarche_age: document.getElementById('menarche_age').value,
+            cycle_length: document.getElementById('cycle_length').value,
+            cycle_regular: document.getElementById('cycle_regular').value,
+            lmp_date: document.getElementById('lmp_date').value,
+            gravida_count: document.getElementById('gravida_count').value,
+            para_count: document.getElementById('para_count').value,
+            abortus_count: document.getElementById('abortus_count').value,
+            living_children_count: document.getElementById('living_children_count').value,
+            previous_contraception: document.getElementById('previous_contraception').value,
+            contraception_failure: document.getElementById('contraception_failure').value,
+            failed_contraception_type: document.getElementById('failed_contraception_type').value,
+            
+            // Pregnancy History
+            pregnancy_history: getPregnancyHistoryData(),
+            
+            // Prenatal Care
             prenatal_care: getPrenatalData()
         }
     };
     
-    await saveMedicalRecord(data, 'Anamnesa');
+    try {
+        // Save the medical record
+        await saveMedicalRecord(data, 'Anamnesa');
+        
+        // If there's intake data, mark it as reviewed by staff
+        if (currentIntakeData && currentIntakeData.submissionId) {
+            await markIntakeAsReviewed(currentIntakeData.submissionId);
+        }
+        
+        showAlert('Anamnesa berhasil disimpan dan formulir pasien telah diverifikasi!', 'success');
+    } catch (error) {
+        console.error('Error saving anamnesa:', error);
+        showAlert('Gagal menyimpan anamnesa: ' + error.message, 'danger');
+    }
 };
+
+// Get Pregnancy History Data
+function getPregnancyHistoryData() {
+    const tableBody = document.getElementById('pregnancy-history-table');
+    if (!tableBody) return [];
+    
+    const pregnancies = [];
+    const rows = tableBody.rows;
+    
+    for (let i = 0; i < rows.length; i++) {
+        const row = rows[i];
+        const cells = row.cells;
+        
+        const pregnancy = {
+            year: cells[1].querySelector('input').value,
+            delivery_mode: cells[2].querySelector('select').value,
+            complications: cells[3].querySelector('input').value,
+            baby_weight: cells[4].querySelector('input').value,
+            child_alive: cells[5].querySelector('select').value
+        };
+        
+        // Only add if at least year is filled
+        if (pregnancy.year) {
+            pregnancies.push(pregnancy);
+        }
+    }
+    
+    return pregnancies;
+}
+
+// Load Pregnancy History Data from saved records
+function loadPregnancyHistoryData(pregnancies) {
+    if (!pregnancies || pregnancies.length === 0) return;
+    
+    const tableBody = document.getElementById('pregnancy-history-table');
+    if (!tableBody) return;
+    
+    tableBody.innerHTML = '';
+    
+    pregnancies.forEach((pregnancy, index) => {
+        const row = tableBody.insertRow();
+        row.innerHTML = `
+            <td>${index + 1}</td>
+            <td><input type="number" class="form-control form-control-sm" value="${pregnancy.year || ''}" placeholder="Tahun"></td>
+            <td>
+                <select class="form-control form-control-sm">
+                    <option value="">Pilih Mode</option>
+                    <option value="Normal" ${pregnancy.delivery_mode === 'Normal' ? 'selected' : ''}>Normal</option>
+                    <option value="Sectio Caesarea" ${pregnancy.delivery_mode === 'Sectio Caesarea' ? 'selected' : ''}>Sectio Caesarea</option>
+                    <option value="Vakum" ${pregnancy.delivery_mode === 'Vakum' ? 'selected' : ''}>Vakum</option>
+                    <option value="Forceps" ${pregnancy.delivery_mode === 'Forceps' ? 'selected' : ''}>Forceps</option>
+                </select>
+            </td>
+            <td><input type="text" class="form-control form-control-sm" value="${pregnancy.complications || ''}" placeholder="Komplikasi"></td>
+            <td><input type="number" class="form-control form-control-sm" value="${pregnancy.baby_weight || ''}" placeholder="gram"></td>
+            <td>
+                <select class="form-control form-control-sm">
+                    <option value="">Pilih</option>
+                    <option value="Ya" ${pregnancy.child_alive === 'Ya' || pregnancy.child_alive === true ? 'selected' : ''}>Ya</option>
+                    <option value="Tidak" ${pregnancy.child_alive === 'Tidak' || pregnancy.child_alive === false ? 'selected' : ''}>Tidak</option>
+                </select>
+            </td>
+        `;
+    });
+    
+    addPregnancyHistoryControls();
+}
+
+// Mark patient intake as reviewed by staff
+async function markIntakeAsReviewed(submissionId) {
+    try {
+        // Get current user info for reviewer name
+        const userInfo = await getCurrentUserInfo();
+        const reviewerName = userInfo ? userInfo.name || userInfo.username : 'Staff Klinik';
+        
+        const response = await authorizedFetch(`/api/patient-intake/${submissionId}/review`, {
+            method: 'PUT',
+            body: JSON.stringify({
+                status: 'verified',
+                reviewedBy: reviewerName,
+                notes: 'Form telah direview dan diverifikasi oleh staff melalui sistem Anamnesa'
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to mark intake as reviewed');
+        }
+        
+        const result = await response.json();
+        console.log('Intake marked as reviewed:', result);
+        
+        // Broadcast intake verification to other staff
+        if (typeof broadcastIntakeVerification === 'function') {
+            broadcastIntakeVerification(
+                result.patient_info?.id || currentPatientId || 'unknown',
+                result.patient_info?.full_name || result.patient_info?.name || 'Unknown Patient',
+                submissionId,
+                reviewerName
+            );
+        }
+        
+        // Send notification to patient
+        await sendPatientNotification(submissionId, reviewerName);
+        
+    } catch (error) {
+        console.error('Error marking intake as reviewed:', error);
+        // Don't throw error here, as the medical record was already saved
+    }
+}
+
+// Get current user information
+async function getCurrentUserInfo() {
+    try {
+        const response = await authorizedFetch('/api/auth/me');
+        if (response.ok) {
+            const result = await response.json();
+            return result.user;
+        }
+    } catch (error) {
+        console.error('Error getting user info:', error);
+    }
+    return null;
+}
+
+// Send notification to patient about verification
+async function sendPatientNotification(submissionId, reviewerName) {
+    try {
+        // This is a placeholder - you can implement actual notification system
+        // For now, we'll just log it
+        console.log(`Patient notification: Form ${submissionId} verified by ${reviewerName}`);
+        
+        // In a real implementation, you might call:
+        // await authorizedFetch('/api/notifications/patient-verification', {
+        //     method: 'POST',
+        //     body: JSON.stringify({
+        //         submissionId,
+        //         reviewerName,
+        //         message: `Formulir rekam medis Anda telah diverifikasi oleh ${reviewerName}`
+        //     })
+        // });
+        
+    } catch (error) {
+        console.error('Error sending patient notification:', error);
+    }
+}
 
 // Save Physical Examination
 window.savePhysical = async function() {
@@ -525,19 +1007,16 @@ async function init() {
     
     // Then load intake data with patient info
     if (patient) {
-        await loadVerifiedIntakeData(patient);
-        // Load any saved medical records
-        await loadMedicalRecords();
+        const intakeData = await loadVerifiedIntakeData(patient);
         
-        // If keluhan_utama is still empty, try to load from appointment
-        const keluhanUtamaField = document.getElementById('keluhan_utama');
-        if (keluhanUtamaField && !keluhanUtamaField.value) {
-            const appointmentComplaint = await loadAppointmentChiefComplaint(patient);
-            if (appointmentComplaint) {
-                keluhanUtamaField.value = appointmentComplaint;
-                console.log('Auto-filled keluhan_utama from appointment:', appointmentComplaint);
-            }
-        }
+        // Load appointment data for chief complaint
+        const chiefComplaint = await loadAppointmentData();
+        
+        // Populate the enhanced Anamnesa form with integrated data
+        await populateAnamnesaForm(patient, intakeData, chiefComplaint);
+        
+        // Load any saved medical records (this will override populated data if records exist)
+        await loadMedicalRecords();
     }
     
     // Show main content

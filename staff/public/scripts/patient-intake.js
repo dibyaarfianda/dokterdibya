@@ -778,3 +778,79 @@ restoreDraft();
 refreshButtons();
 updateDerived();
 syncMaritalFields();
+
+// Check verification status on load
+checkVerificationStatus();
+
+// Verification Status Functions
+async function checkVerificationStatus() {
+    try {
+        // Get phone number from form if filled or from localStorage
+        const phoneField = document.getElementById('phone');
+        const phone = phoneField ? phoneField.value : '';
+        
+        if (!phone) {
+            // Try to get from saved draft
+            const draft = getDraft();
+            if (draft && draft.phone) {
+                await checkVerificationByPhone(draft.phone);
+            }
+            return;
+        }
+        
+        await checkVerificationByPhone(phone);
+    } catch (error) {
+        console.error('Error checking verification status:', error);
+    }
+}
+
+async function checkVerificationByPhone(phone) {
+    try {
+        const response = await fetch(`/api/patient-intake/status?phone=${encodeURIComponent(phone)}`);
+        if (!response.ok) return;
+        
+        const result = await response.json();
+        if (result.success && result.data && result.data.status === 'verified' && result.data.reviewed_by) {
+            showVerificationStatus(result.data);
+        }
+    } catch (error) {
+        console.error('Error checking verification status:', error);
+    }
+}
+
+function showVerificationStatus(verificationData) {
+    const verificationSection = document.getElementById('verification-status');
+    const verificationDetails = document.getElementById('verification-details');
+    const reviewerStamp = document.getElementById('reviewer-stamp');
+    
+    if (verificationSection && verificationDetails && reviewerStamp) {
+        const reviewDate = new Date(verificationData.reviewed_at);
+        const formattedDate = reviewDate.toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+        
+        verificationDetails.textContent = `Form rekam medis Anda telah diverifikasi pada ${formattedDate}`;
+        reviewerStamp.textContent = `Review oleh ${verificationData.reviewed_by}`;
+        
+        // Hide form and show verification status
+        const form = document.getElementById('intake-form');
+        const buttons = document.querySelector('.buttons');
+        if (form) form.style.display = 'none';
+        if (buttons) buttons.style.display = 'none';
+        verificationSection.style.display = 'block';
+    }
+}
+
+// Add phone field change listener to check verification when phone is entered
+const phoneField = document.getElementById('phone');
+if (phoneField) {
+    phoneField.addEventListener('blur', (event) => {
+        if (event.target.value) {
+            checkVerificationByPhone(event.target.value);
+        }
+    });
+}

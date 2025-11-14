@@ -5,6 +5,8 @@ const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
 const crypto = require('crypto');
 const db = require('../db');
+const cache = require('../utils/cache');
+const { deletePatientWithRelations } = require('../services/patientDeletion');
 
 // JWT Secret - Should be in environment variable in production
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -325,7 +327,7 @@ router.post('/auth/google', async (req, res) => {
             );
             
             patient = {
-                id: result.insertId,
+                id: medicalRecordId,
                 medical_record_id: medicalRecordId,
                 full_name: name,
                 email,
@@ -416,25 +418,42 @@ router.put('/profile', verifyToken, async (req, res) => {
     try {
         const { full_name, email, phone, birth_date, age } = req.body;
         
-        // Validation
-        if (!full_name || !email || !phone) {
+        // Get current patient data
+        const [currentPatient] = await db.query(
+            'SELECT full_name, email, phone FROM patients WHERE id = ?',
+            [req.user.id]
+        );
+        
+        if (currentPatient.length === 0) {
+            return res.status(404).json({ message: 'Pasien tidak ditemukan' });
+        }
+        
+        // Use existing values if new ones not provided
+        const updatedFullName = full_name || currentPatient[0].full_name;
+        const updatedEmail = email || currentPatient[0].email;
+        const updatedPhone = phone || currentPatient[0].phone;
+        
+        // Validation - only check if values exist (either new or existing)
+        if (!updatedFullName || !updatedEmail || !updatedPhone) {
             return res.status(400).json({ message: 'Nama, email, dan nomor telepon harus diisi' });
         }
         
-        // Validate email format
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(email)) {
-            return res.status(400).json({ message: 'Format email tidak valid' });
-        }
-        
-        // Check if email is taken by another user
-        const [existingUsers] = await db.query(
-            'SELECT id FROM patients WHERE email = ? AND id != ?',
-            [email, req.user.id]
-        );
-        
-        if (existingUsers.length > 0) {
-            return res.status(400).json({ message: 'Email sudah digunakan oleh pengguna lain' });
+        // Validate email format if email is being updated
+        if (email && email !== currentPatient[0].email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                return res.status(400).json({ message: 'Format email tidak valid' });
+            }
+            
+            // Check if email is taken by another user
+            const [existingUsers] = await db.query(
+                'SELECT id FROM patients WHERE email = ? AND id != ?',
+                [email, req.user.id]
+            );
+            
+            if (existingUsers.length > 0) {
+                return res.status(400).json({ message: 'Email sudah digunakan oleh pengguna lain' });
+            }
         }
         
         // Update patient data
@@ -442,7 +461,7 @@ router.put('/profile', verifyToken, async (req, res) => {
             `UPDATE patients 
              SET full_name = ?, email = ?, phone = ?, birth_date = ?, age = ?, updated_at = NOW()
              WHERE id = ?`,
-            [full_name, email, phone, birth_date || null, age || null, req.user.id]
+            [updatedFullName, updatedEmail, updatedPhone, birth_date || null, age || null, req.user.id]
         );
         
         // Fetch updated profile
@@ -673,43 +692,29 @@ router.get('/all', verifyToken, async (req, res) => {
 // Delete web patient (Admin/Superadmin only)
 router.delete('/:id', verifyToken, async (req, res) => {
     try {
+        if (!['admin', 'superadmin'].includes(req.user.role)) {
+            return res.status(403).json({ message: 'Unauthorized. Admin access required.' });
+        }
+
         const patientId = req.params.id;
-        
-        // Check if patient exists in patients table
-        const [webPatients] = await db.query(
-            'SELECT id, full_name FROM patients WHERE id = ?',
-            [patientId]
-        );
-        
-        if (webPatients.length > 0) {
-            // Delete from patients table
-            await db.query('DELETE FROM patients WHERE id = ?', [patientId]);
-            
-            return res.json({ 
-                message: 'Pasien berhasil dihapus',
-                patient: webPatients[0]
-            });
+        const { patient, deletedData } = await deletePatientWithRelations(patientId);
+
+        if (!patient) {
+            return res.status(404).json({ message: 'Pasien tidak ditemukan' });
         }
-        
-        // If not found in patients, check in patients table
-        const [regularPatients] = await db.query(
-            'SELECT id, full_name as full_name FROM patients WHERE id = ?',
-            [patientId]
-        );
-        
-        if (regularPatients.length > 0) {
-            // Delete from patients table
-            await db.query('DELETE FROM patients WHERE id = ?', [patientId]);
-            
-            return res.json({ 
-                message: 'Pasien berhasil dihapus',
-                patient: regularPatients[0]
-            });
+
+        cache.delPattern('patients:');
+        if (cache.keys?.patient) {
+            cache.del(cache.keys.patient(patientId));
+        } else {
+            cache.del(`patient:${patientId}`);
         }
-        
-        // Not found in either table
-        return res.status(404).json({ message: 'Pasien tidak ditemukan' });
-        
+
+        return res.json({
+            message: `Pasien ${patient.full_name} dan seluruh data terkait berhasil dihapus`,
+            patient,
+            deleted_data: deletedData
+        });
     } catch (error) {
         console.error('Delete patient error:', error);
         res.status(500).json({ message: 'Terjadi kesalahan saat menghapus pasien' });

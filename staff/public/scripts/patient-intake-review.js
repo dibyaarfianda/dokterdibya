@@ -1,4 +1,5 @@
 import { getIdToken, auth, onAuthStateChanged, signOut, initAuth } from './vps-auth-v2.js';
+import { initRealtimeSync } from './realtime-sync.js';
 
 const API_BASE = (() => {
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
@@ -541,6 +542,39 @@ function attachEventListeners() {
     }
 }
 
+// Initialize realtime sync for intake verification updates
+function setupRealtimeListeners() {
+    // Listen for intake verification events
+    if (typeof initRealtimeSync === 'function' && auth.currentUser) {
+        initRealtimeSync({
+            id: auth.currentUser.uid,
+            name: auth.currentUser.displayName || auth.currentUser.email,
+            role: 'staff'
+        });
+        
+        // Setup socket listeners after a short delay to ensure connection
+        setTimeout(() => {
+            if (window.socket) {
+                window.socket.on('intake:verified', (data) => {
+                    console.log('📨 [REALTIME] Intake verification received:', data);
+                    
+                    // Show notification
+                    showAlert(
+                        `<i class="fas fa-check-circle"></i> ${data.userName} telah memverifikasi intake untuk ${data.patientName}`,
+                        'success',
+                        5000
+                    );
+                    
+                    // Refresh the table to show updated status
+                    setTimeout(() => {
+                        loadSubmissions();
+                    }, 1000);
+                });
+            }
+        }, 2000);
+    }
+}
+
 async function bootstrap() {
     attachEventListeners();
 
@@ -553,6 +587,7 @@ async function bootstrap() {
     }
 
     loadSubmissions();
+    setupRealtimeListeners();
 
     onAuthStateChanged((user) => {
         if (!user) {

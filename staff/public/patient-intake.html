@@ -198,6 +198,32 @@
             opacity: 0.6;
             box-shadow: none;
         }
+        .btn-back {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1rem;
+            background: var(--bg);
+            color: var(--text);
+            border: 1px solid var(--border);
+            border-radius: 0.5rem;
+            font-size: 0.85rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            min-width: auto;
+            flex-shrink: 0;
+        }
+        .btn-back:hover {
+            background: var(--muted);
+            color: #fff;
+            border-color: var(--muted);
+            transform: translateY(-1px);
+        }
+        .btn-back svg {
+            flex-shrink: 0;
+        }
         .btn-secondary {
             background: #e2e8f0;
             color: var(--text);
@@ -294,6 +320,51 @@
             td input, td select, td textarea { font-size: 0.8rem; }
             th, td { padding: 0.45rem; }
         }
+        
+        /* Verification Status Styles */
+        .verification-status {
+            margin-top: 1.5rem;
+            padding: 1rem;
+        }
+        .status-card {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+            border: 2px solid #16a34a;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .status-icon {
+            flex-shrink: 0;
+            background: white;
+            border-radius: 50%;
+            padding: 0.5rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .status-content h3 {
+            margin: 0 0 0.5rem 0;
+            color: #065f46;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+        .status-content p {
+            margin: 0 0 1rem 0;
+            color: #047857;
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        .verification-stamp {
+            background: #059669;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            font-size: 0.85rem;
+            display: inline-block;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
     </style>
     
     <!-- Cache Clear Script -->
@@ -325,8 +396,19 @@
 <body>
     <div class="intake-shell">
         <header>
-            <h1>Form Riwayat Antenatal</h1>
-            <p>Silakan lengkapi data berikut sebelum konsultasi. Data disimpan otomatis di perangkat Anda.</p>
+            <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+                <button type="button" class="btn-back" id="btn-back-home" onclick="window.history.back()">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5"></path>
+                        <path d="M12 19l-7-7 7-7"></path>
+                    </svg>
+                    Kembali
+                </button>
+                <div>
+                    <h1 style="margin: 0;">Form Riwayat Antenatal</h1>
+                    <p style="margin: 0; font-size: 0.9rem;">Silakan lengkapi data berikut sebelum konsultasi. Data disimpan otomatis di perangkat Anda.</p>
+                </div>
+            </div>
             <div class="stepper" id="stepper">
                 <span data-step="1" class="active">Identitas</span>
                 <span data-step="2">Riwayat Medis</span>
@@ -363,7 +445,8 @@
                                 </div>
                                 <div class="field">
                                     <label for="phone">Telepon/HP *</label>
-                                    <input type="tel" id="phone" name="phone" required>
+                                    <input type="tel" id="phone" name="phone" required placeholder="081234567890">
+                                    <small style="color: var(--muted); font-size: 0.85rem; margin-top: 0.25rem; display: block;">Nomor dimulai 0 akan otomatis diubah ke 62</small>
                                 </div>
                                 <div class="field">
                                     <label for="emergency_contact">Kontak Darurat</label>
@@ -548,6 +631,27 @@
                                 <textarea id="past_conditions_detail" name="past_conditions_detail" placeholder="Tulis nama penyakit atau operasi dan tahun"></textarea>
                             </div>
                         </div>
+                        <div class="divider"></div>
+                        <div>
+                            <h2 class="step-title">Riwayat Penyakit Keluarga</h2>
+                            <div class="checkbox-list" data-collection="family-history">
+                                <label class="checkbox-item"><input type="checkbox" name="family_history" value="hipertensi"> Hipertensi</label>
+                                <label class="checkbox-item"><input type="checkbox" name="family_history" value="diabetes"> Diabetes</label>
+                                <label class="checkbox-item"><input type="checkbox" name="family_history" value="heart"> Sakit jantung</label>
+                                <label class="checkbox-item"><input type="checkbox" name="family_history" value="stroke"> Stroke</label>
+                                <label class="checkbox-item"><input type="checkbox" name="family_history" value="cancer"> Kanker</label>
+                                <label class="checkbox-item"><input type="checkbox" name="family_history" value="kidney"> Sakit ginjal</label>
+                                <label class="checkbox-item"><input type="checkbox" name="family_history" value="thyroid"> Sakit tiroid</label>
+                                <label class="checkbox-item"><input type="checkbox" name="family_history" value="asthma"> Asma</label>
+                                <label class="checkbox-item"><input type="checkbox" name="family_history" value="mental"> Kondisi kejiwaan</label>
+                                <label class="checkbox-item"><input type="checkbox" name="family_history" value="blood"> Kelainan darah</label>
+                                <label class="checkbox-item"><input type="checkbox" name="family_history" value="genetic"> Kelainan genetik</label>
+                            </div>
+                            <div class="field" style="margin-top:0.75rem;">
+                                <label for="family_history_detail">Rincian riwayat keluarga</label>
+                                <textarea id="family_history_detail" name="family_history_detail" placeholder="Tulis hubungan keluarga (ayah, ibu, kakek, nenek, dll) dan kondisi medis"></textarea>
+                            </div>
+                        </div>
                     </section>
 
                     <section class="intake-step" data-step="3">
@@ -650,7 +754,19 @@
                             <div class="field-grid two">
                                 <div class="field">
                                     <label for="previous_contraception">Metode sebelumnya</label>
-                                    <input type="text" id="previous_contraception" name="previous_contraception">
+                                    <select id="previous_contraception" name="previous_contraception">
+                                        <option value="">Pilih metode</option>
+                                        <option value="pil">Pil</option>
+                                        <option value="suntik_3_bulan">Suntik 3 bulan</option>
+                                        <option value="implan">Implan</option>
+                                        <option value="iud">IUD</option>
+                                        <option value="steril">Steril</option>
+                                        <option value="kondom">Kondom</option>
+                                        <option value="kb_kalender">KB Kalender</option>
+                                        <option value="senggama_terputus">Senggama terputus</option>
+                                        <option value="vasektomi">Vasektomi</option>
+                                        <option value="tidak_pernah">Tidak pernah KB</option>
+                                    </select>
                                 </div>
                                 <div class="field">
                                     <label>Kehamilan ini karena kegagalan KB?</label>
@@ -675,6 +791,25 @@
                     </div>
                 </form>
                 <div class="summary" id="status-message" hidden>Data tersimpan sementara di perangkat Anda.</div>
+                
+                <!-- Verification Status Section -->
+                <div class="verification-status" id="verification-status" style="display: none;">
+                    <div class="status-card">
+                        <div class="status-icon">
+                            <svg width="32" height="32" viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="10" stroke="#16a34a" stroke-width="2"/>
+                                <path d="M9 12l2 2 4-4" stroke="#16a34a" stroke-width="2"/>
+                            </svg>
+                        </div>
+                        <div class="status-content">
+                            <h3>Form Telah Diverifikasi</h3>
+                            <p id="verification-details"></p>
+                            <div class="verification-stamp">
+                                <span id="reviewer-stamp"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </main>
         <footer>
@@ -682,6 +817,140 @@
         </footer>
         <div class="toast" id="toast"></div>
     </div>
+    <script>
+        // Automatic phone number correction and name capitalization
+        document.addEventListener('DOMContentLoaded', function() {
+            const phoneInput = document.getElementById('phone');
+            const emergencyContactInput = document.getElementById('emergency_contact');
+            
+            // Name fields that should be auto-capitalized
+            const nameFields = [
+                document.getElementById('full_name'),
+                document.getElementById('husband_name'),
+                document.getElementById('occupation'),
+                document.getElementById('husband_job')
+            ];
+            
+            function formatPhoneNumber(input) {
+                let value = input.value.trim();
+                
+                // Remove any spaces, dashes, or other non-numeric characters except +
+                value = value.replace(/[^\d+]/g, '');
+                
+                // If number starts with 0, replace with 62
+                if (value.startsWith('0')) {
+                    value = '62' + value.substring(1);
+                    input.value = value;
+                    
+                    // Show a subtle feedback to user
+                    showFormatFeedback(input);
+                }
+                // If number starts with 8 (missing country code), add 62
+                else if (value.match(/^8\d/)) {
+                    value = '62' + value;
+                    input.value = value;
+                    showFormatFeedback(input);
+                }
+                // If number already has +62, remove the + 
+                else if (value.startsWith('+62')) {
+                    value = value.substring(1);
+                    input.value = value;
+                }
+            }
+            
+            function capitalizeName(input) {
+                let value = input.value.trim();
+                
+                if (value) {
+                    // Convert to proper case: capitalize first letter of each word
+                    value = value.toLowerCase().replace(/\b\w/g, function(letter) {
+                        return letter.toUpperCase();
+                    });
+                    
+                    // Handle special cases for Indonesian names
+                    value = value.replace(/\bDr\b/g, 'Dr')
+                             .replace(/\bDra\b/g, 'Dra')
+                             .replace(/\bIr\b/g, 'Ir')
+                             .replace(/\bSt\b/g, 'St')
+                             .replace(/\bMt\b/g, 'Mt')
+                             .replace(/\bBin\b/g, 'bin')
+                             .replace(/\bBinti\b/g, 'binti')
+                             .replace(/\bAl\b/g, 'Al')
+                             .replace(/\bVan\b/g, 'van')
+                             .replace(/\bDe\b/g, 'de');
+                    
+                    if (input.value !== value) {
+                        input.value = value;
+                        showFormatFeedback(input);
+                    }
+                }
+            }
+            
+            function showFormatFeedback(input) {
+                // Add temporary visual feedback
+                input.style.borderColor = '#16a34a';
+                input.style.backgroundColor = '#f0fdf4';
+                
+                setTimeout(() => {
+                    input.style.borderColor = '';
+                    input.style.backgroundColor = '';
+                }, 1500);
+            }
+            
+            // Apply formatting when user leaves the phone field
+            if (phoneInput) {
+                phoneInput.addEventListener('blur', function() {
+                    formatPhoneNumber(this);
+                });
+                
+                // Also format on input for real-time feedback
+                phoneInput.addEventListener('input', function() {
+                    // Only format if user hasn't typed for 500ms
+                    clearTimeout(this.formatTimeout);
+                    this.formatTimeout = setTimeout(() => {
+                        formatPhoneNumber(this);
+                    }, 500);
+                });
+            }
+            
+            // Apply same formatting to emergency contact
+            if (emergencyContactInput) {
+                emergencyContactInput.addEventListener('blur', function() {
+                    formatPhoneNumber(this);
+                });
+                
+                emergencyContactInput.addEventListener('input', function() {
+                    clearTimeout(this.formatTimeout);
+                    this.formatTimeout = setTimeout(() => {
+                        formatPhoneNumber(this);
+                    }, 500);
+                });
+            }
+            
+            // Apply name capitalization to all name fields
+            nameFields.forEach(function(nameField) {
+                if (nameField) {
+                    // Capitalize on blur (when user leaves field)
+                    nameField.addEventListener('blur', function() {
+                        capitalizeName(this);
+                    });
+                    
+                    // Also capitalize on scroll/hover away (using focusout)
+                    nameField.addEventListener('focusout', function() {
+                        capitalizeName(this);
+                    });
+                    
+                    // Optional: Real-time capitalization with delay
+                    nameField.addEventListener('input', function() {
+                        clearTimeout(this.capitalizeTimeout);
+                        this.capitalizeTimeout = setTimeout(() => {
+                            capitalizeName(this);
+                        }, 1000); // 1 second delay for real-time
+                    });
+                }
+            });
+        });
+    </script>
     <script type="module" src="./scripts/patient-intake.js?v=1"></script>
 </body>
 </html>

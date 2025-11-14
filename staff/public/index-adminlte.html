@@ -640,9 +640,6 @@
     <!-- Navbar -->
     <nav class="main-header navbar navbar-expand navbar-white navbar-light">
         <ul class="navbar-nav">
-            <li class="nav-item">
-                <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
-            </li>
             <li class="nav-item d-none d-sm-inline-block">
                 <span class="nav-link">
                     <i class="far fa-calendar-alt mr-1"></i>
@@ -723,6 +720,13 @@
                         <a href="#" class="nav-link" onclick="showAppointmentsPage(); return false;">
                             <i class="nav-icon fas fa-calendar-check"></i>
                             <p>Appointment</p>
+                        </a>
+                    </li>
+                    
+                    <li class="nav-item" id="nav-announcements">
+                        <a href="kelola-announcement.html" class="nav-link">
+                            <i class="nav-icon fas fa-bullhorn"></i>
+                            <p>Pengumuman</p>
                         </a>
                     </li>
 
@@ -1272,114 +1276,331 @@
                             <div class="alert alert-info">
                                 <i class="fas fa-info-circle mr-2"></i>
                                 Pasien: <strong id="anamnesa-patient-name">-</strong>
+                                <br><small>Data akan otomatis dimuat dari formulir intake dan booking appointment</small>
                             </div>
                             
                             <form id="anamnesa-form">
-                                <div class="row">
-                                    <div class="col-md-6">
-                                        <div class="form-group">
-                                            <label>Status Kehamilan</label>
-                                            <select id="anamnesa-pregnant" class="form-control">
-                                                <option value="">Hamil?</option>
-                                                <option value="ya">Ya</option>
-                                                <option value="tidak">Tidak</option>
-                                            </select>
-                                        </div>
-                                        
-                                        <!-- Section for Tidak Hamil -->
-                                        <div id="anamnesa-not-preg-section" class="d-none">
-                                            <div class="row">
-                                                <div class="col-md-6">
-                                                    <div class="form-group">
-                                                        <label class="small text-muted">Alergi obat/makanan</label>
-                                                        <textarea id="anamnesa-allergy-notpreg" class="form-control form-control-sm" rows="3" maxlength="500"></textarea>
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label class="small text-muted">Riwayat penyakit sebelumnya</label>
-                                                        <textarea id="anamnesa-history-notpreg" class="form-control form-control-sm" rows="3" maxlength="500"></textarea>
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label class="small text-muted">Hari Pertama Haid Terakhir (HPHT)</label>
-                                                        <input type="date" id="anamnesa-hpht-notpreg" class="form-control form-control-sm">
-                                                    </div>
+                                <!-- Data Pasien Section -->
+                                <div class="card mb-3">
+                                    <div class="card-header bg-light">
+                                        <h5 class="mb-0">Data Pasien</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Nama Lengkap</label>
+                                                    <input type="text" id="anamnesa-patient-fullname" class="form-control form-control-sm" readonly>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Tanggal Lahir</label>
+                                                    <input type="date" id="anamnesa-patient-dob" class="form-control form-control-sm" readonly>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Umur</label>
+                                                    <input type="text" id="anamnesa-patient-age" class="form-control form-control-sm" readonly>
                                                 </div>
                                             </div>
                                         </div>
-                                        
-                                        <!-- Section for Ya Hamil -->
-                                        <div id="anamnesa-preg-section" class="d-none">
-                                            <div class="h6 mb-2">Status Obstetri</div>
-                                            <div class="row">
-                                                <div class="col-md-6">
-                                                    <div class="form-group">
-                                                        <label class="small text-muted">Hamil ke</label>
-                                                        <select id="anamnesa-gravida" class="form-control form-control-sm">
-                                                            <option value="">Pilih</option>
-                                                            <option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label class="small text-muted">Lahir aterm</label>
-                                                        <select id="anamnesa-term" class="form-control form-control-sm">
-                                                            <option value="">Pilih</option>
-                                                            <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label class="small text-muted">Lahir prematur</label>
-                                                        <select id="anamnesa-preterm" class="form-control form-control-sm">
-                                                            <option value="">Pilih</option>
-                                                            <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label class="small text-muted">Abortus</label>
-                                                        <select id="anamnesa-abortion" class="form-control form-control-sm">
-                                                            <option value="">Pilih</option>
-                                                            <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label class="small text-muted">Anak hidup</label>
-                                                        <select id="anamnesa-living" class="form-control form-control-sm">
-                                                            <option value="">Pilih</option>
-                                                            <option value="0">0</option><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option><option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option><option value="9">9</option><option value="10">10</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="alert alert-secondary">
-                                                        <strong>Diagnosis sementara:</strong> <span id="anamnesa-diagnosis-display"></span>
-                                                    </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Alamat</label>
+                                                    <textarea id="anamnesa-patient-address" class="form-control form-control-sm" rows="2" readonly></textarea>
                                                 </div>
-                                                <div class="col-md-6">
-                                                    <div class="form-group">
-                                                        <label class="small text-muted">Alergi obat/makanan</label>
-                                                        <textarea id="anamnesa-allergy" class="form-control form-control-sm" rows="3" maxlength="500"></textarea>
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label class="small text-muted">Riwayat penyakit sebelumnya</label>
-                                                        <textarea id="anamnesa-history" class="form-control form-control-sm" rows="3" maxlength="500"></textarea>
-                                                    </div>
-                                                    <div class="form-group">
-                                                        <label class="small text-muted">Hari Pertama Haid Terakhir (HPHT)</label>
-                                                        <input type="date" id="anamnesa-hpht" class="form-control form-control-sm">
-                                                    </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Telepon</label>
+                                                    <input type="text" id="anamnesa-patient-phone" class="form-control form-control-sm" readonly>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Status Pernikahan</label>
+                                                    <input type="text" id="anamnesa-patient-marital" class="form-control form-control-sm" readonly>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Pekerjaan</label>
+                                                    <input type="text" id="anamnesa-patient-occupation" class="form-control form-control-sm" readonly>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Pendidikan</label>
+                                                    <input type="text" id="anamnesa-patient-education" class="form-control form-control-sm" readonly>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Pembiayaan</label>
+                                                    <input type="text" id="anamnesa-patient-payment" class="form-control form-control-sm" readonly>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+
+                                <!-- Keluhan Utama Section -->
+                                <div class="row">
                                     <div class="col-md-6">
                                         <div class="form-group">
                                             <label>Keluhan Utama</label>
-                                            <textarea id="anamnesa-complaint" class="form-control" rows="4" placeholder="Keluhan pasien saat ini..."></textarea>
+                                            <textarea id="anamnesa-complaint" class="form-control" rows="4" placeholder="Keluhan pasien dari appointment booking..."></textarea>
+                                            <small class="text-muted">Data diambil dari appointment booking</small>
                                         </div>
+                                    </div>
+                                    <div class="col-md-6">
                                         <div class="form-group">
                                             <label>Riwayat Penyakit Sekarang</label>
                                             <textarea id="anamnesa-current-illness" class="form-control" rows="4" placeholder="Detail keluhan dan riwayat penyakit saat ini..."></textarea>
                                         </div>
                                     </div>
                                 </div>
+
+                                <!-- Basic Medical Info Section -->
+                                <div class="card mb-3">
+                                    <div class="card-header bg-light">
+                                        <h5 class="mb-0">Informasi Medis Dasar</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Tes Hamil Positif</label>
+                                                    <input type="date" id="anamnesa-pregnancy-test-date" class="form-control form-control-sm">
+                                                    <small class="text-muted">Dari intake pasien</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Golongan Darah</label>
+                                                    <input type="text" id="anamnesa-blood-type" class="form-control form-control-sm" readonly>
+                                                    <small class="text-muted">Dari intake pasien</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Rhesus</label>
+                                                    <input type="text" id="anamnesa-rhesus" class="form-control form-control-sm" readonly>
+                                                    <small class="text-muted">Dari intake pasien</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Status Kehamilan</label>
+                                                    <select id="anamnesa-pregnant" class="form-control form-control-sm">
+                                                        <option value="">Hamil?</option>
+                                                        <option value="ya">Ya</option>
+                                                        <option value="tidak">Tidak</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Alergi Obat</label>
+                                                    <textarea id="anamnesa-allergy-drugs" class="form-control form-control-sm" rows="2" readonly placeholder="Dari intake pasien"></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Alergi Makanan</label>
+                                                    <textarea id="anamnesa-allergy-food" class="form-control form-control-sm" rows="2" readonly placeholder="Dari intake pasien"></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Alergi Lainnya</label>
+                                                    <textarea id="anamnesa-allergy-others" class="form-control form-control-sm" rows="2" readonly placeholder="Alergi lingkungan dari intake"></textarea>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-12">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Obat-obatan yang Sedang Diminum</label>
+                                                    <textarea id="anamnesa-current-medications" class="form-control form-control-sm" rows="2" readonly placeholder="Dari intake pasien"></textarea>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Riwayat Penyakit Section -->
+                                <div class="card mb-3">
+                                    <div class="card-header bg-light">
+                                        <h5 class="mb-0">Riwayat Penyakit</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Riwayat Penyakit Sebelumnya</label>
+                                                    <textarea id="anamnesa-past-conditions" class="form-control form-control-sm" rows="4" placeholder="Dari kondisi medis sebelumnya di intake"></textarea>
+                                                    <small class="text-muted">Data diambil dari intake pasien</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Riwayat Penyakit Keluarga</label>
+                                                    <textarea id="anamnesa-family-history" class="form-control form-control-sm" rows="4" placeholder="Dari riwayat penyakit keluarga di intake"></textarea>
+                                                    <small class="text-muted">Data diambil dari intake pasien</small>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Status Obstetri Section -->
+                                <div class="card mb-3" id="anamnesa-obstetri-section">
+                                    <div class="card-header bg-success">
+                                        <h5 class="mb-0 text-white">Status Obstetri</h5>
+                                    </div>
+                                    <div class="card-body">
+                                        <!-- Riwayat Menstruasi -->
+                                        <h6 class="text-muted mb-3">Riwayat Menstruasi</h6>
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Usia Menarche</label>
+                                                    <input type="text" id="anamnesa-menarche-age" class="form-control form-control-sm" readonly>
+                                                    <small class="text-muted">Dari intake</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Lama Siklus (hari)</label>
+                                                    <input type="text" id="anamnesa-cycle-length" class="form-control form-control-sm" readonly>
+                                                    <small class="text-muted">Dari intake</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Siklus Teratur</label>
+                                                    <input type="text" id="anamnesa-cycle-regular" class="form-control form-control-sm" readonly>
+                                                    <small class="text-muted">Dari intake</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">HPHT</label>
+                                                    <input type="date" id="anamnesa-lmp" class="form-control form-control-sm">
+                                                    <small class="text-muted">Dari intake</small>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <hr>
+
+                                        <!-- Kehamilan Sebelumnya -->
+                                        <h6 class="text-muted mb-3">Kehamilan Sebelumnya</h6>
+                                        <div class="row">
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Gravida</label>
+                                                    <input type="text" id="anamnesa-gravida" class="form-control form-control-sm" readonly>
+                                                    <small class="text-muted">Dari intake</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Para</label>
+                                                    <input type="text" id="anamnesa-para" class="form-control form-control-sm" readonly>
+                                                    <small class="text-muted">Dari intake</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Abortus</label>
+                                                    <input type="text" id="anamnesa-abortus" class="form-control form-control-sm" readonly>
+                                                    <small class="text-muted">Dari intake</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Anak Hidup</label>
+                                                    <input type="text" id="anamnesa-living-children" class="form-control form-control-sm" readonly>
+                                                    <small class="text-muted">Dari intake</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">HPL (Hari Perkiraan Lahir)</label>
+                                                    <input type="date" id="anamnesa-edd" class="form-control form-control-sm">
+                                                    <small class="text-muted">Dari intake</small>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Tabel Kehamilan Detail -->
+                                        <div class="table-responsive">
+                                            <table class="table table-sm table-bordered">
+                                                <thead class="thead-light">
+                                                    <tr>
+                                                        <th>No</th>
+                                                        <th>Tahun</th>
+                                                        <th>Mode Persalinan</th>
+                                                        <th>Komplikasi</th>
+                                                        <th>Berat Bayi (gr)</th>
+                                                        <th>Anak Hidup</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="anamnesa-pregnancy-history">
+                                                    <!-- Data dari intake akan dimuat di sini -->
+                                                </tbody>
+                                            </table>
+                                            <small class="text-muted">Data kehamilan sebelumnya diambil dari formulir intake pasien</small>
+                                        </div>
+
+                                        <hr>
+
+                                        <!-- Riwayat Kontrasepsi -->
+                                        <h6 class="text-muted mb-3">Riwayat Kontrasepsi</h6>
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Metode Sebelumnya</label>
+                                                    <input type="text" id="anamnesa-previous-contraception" class="form-control form-control-sm" readonly>
+                                                    <small class="text-muted">Dari intake</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Kegagalan KB</label>
+                                                    <input type="text" id="anamnesa-kb-failure" class="form-control form-control-sm" readonly>
+                                                    <small class="text-muted">Dari intake</small>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label class="small text-muted">Tipe Kontrasepsi Gagal</label>
+                                                    <input type="text" id="anamnesa-failed-contraception" class="form-control form-control-sm" readonly>
+                                                    <small class="text-muted">Dari intake</small>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="alert alert-info mt-3">
+                                            <strong>Diagnosis Sementara:</strong> <span id="anamnesa-diagnosis-display">-</span>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <button type="submit" class="btn btn-primary">
                                     <i class="fas fa-save mr-2"></i>Simpan Anamnesa
+                                </button>
+                                <button type="button" class="btn btn-info ml-2" onclick="loadIntakeDataToAnamnesa()">
+                                    <i class="fas fa-sync-alt mr-2"></i>Muat Data dari Intake
                                 </button>
                             </form>
                         </div>
@@ -2556,6 +2777,34 @@
 </div>
 
 
+<!-- Mobile quick action bar -->
+<div id="mobile-action-bar" class="d-md-none d-lg-none">
+    <button type="button" data-action="dashboard" class="active">
+        <span class="icon-wrapper"><i class="fas fa-home"></i></span>
+        <span>Dashboard</span>
+    </button>
+    <button type="button" data-action="patients">
+        <span class="icon-wrapper"><i class="fas fa-users"></i></span>
+        <span>Pasien</span>
+    </button>
+    <button type="button" data-action="tindakan">
+        <span class="icon-wrapper"><i class="fas fa-stethoscope"></i></span>
+        <span>Tindakan</span>
+    </button>
+    <button type="button" data-action="obat">
+        <span class="icon-wrapper"><i class="fas fa-pills"></i></span>
+        <span>Obat</span>
+    </button>
+    <button type="button" data-action="cashier">
+        <span class="icon-wrapper"><i class="fas fa-receipt"></i></span>
+        <span>Tagihan</span>
+    </button>
+    <button type="button" data-action="appointments">
+        <span class="icon-wrapper"><i class="fas fa-calendar-check"></i></span>
+        <span>Janji</span>
+    </button>
+</div>
+
 <!-- Chat sounds (always play) -->
 <audio id="chat-send-sound" src="/staff/public/sounds/send.mp3" preload="auto"></audio>
 <audio id="chat-incoming-sound" src="/staff/public/sounds/incoming.mp3" preload="auto"></audio>
@@ -2577,6 +2826,11 @@
     const script = document.createElement('script');
     script.src = `scripts/mobile-menu.js?v=${cacheBuster}`;
     document.head.appendChild(script);
+
+    // Load mobile action bar helper
+    const actionScript = document.createElement('script');
+    actionScript.src = `scripts/mobile-action-bar.js?v=${cacheBuster}`;
+    document.head.appendChild(actionScript);
 </script>
 
 <!-- Global Debug Function for Appointments - Available Immediately -->
@@ -2654,7 +2908,7 @@
     const v = Date.now();
     
     // Import modules with cache buster
-    const { auth, onAuthStateChanged, getIdToken } = await import('./scripts/vps-auth-v2.js?v=' + v);
+    const { auth, getIdToken } = await import('./scripts/vps-auth-v2.js?v=' + v);
     // Expose auth and getIdToken globally for chat-popup.js
     window.auth = auth;
     window.getIdToken = getIdToken;
@@ -2672,16 +2926,19 @@
     const { initSessionManager, restoreSessionOnLoad } = await import('./scripts/session-manager.js?v=' + v);
     const { initRealtimeSync } = await import('./scripts/realtime-sync.js?v=' + v);
     
-    // Check authentication before initializing app
-    onAuthStateChanged((user) => {
-        if (!user) {
-            // Not logged in, redirect to login page
-            window.location.replace('login.html');
-        } else {
-            // User is logged in, initialize app
-            initializeApp(user);
-        }
-    });
+    // Wait for auth to initialize before checking state
+    const { initAuth: initAuthLib, fetchMe } = await import('./scripts/vps-auth-v2.js?v=' + v);
+    await initAuthLib(); // Wait for auth initialization to complete
+    
+    // Now check authentication
+    const user = auth.currentUser; // Use the already set currentUser
+    if (!user) {
+        // Not logged in, redirect to login page
+        window.location.replace('login.html');
+    } else {
+        // User is logged in, initialize app
+        initializeApp(user);
+    }
     
     function initializeApp(user) {
         // Initialize core UI (pages, clock, navigation)
@@ -2860,7 +3117,7 @@
                         <td>${regDate}</td>
                         <td>${statusBadge}</td>
                         <td class="text-nowrap">
-                            <button class="btn btn-sm btn-info" onclick="viewPatientDetail('${patient.id}')" title="Detail">
+                            <button type="button" class="btn btn-sm btn-info btn-view-patient" data-patient-id="${patient.id}" title="Detail">
                                 <i class="fas fa-eye"></i>
                             </button>
                             <button class="btn btn-sm btn-${patient.status === 'active' ? 'warning' : 'success'}" 
@@ -2883,6 +3140,17 @@
             $('#manage-patients-table').DataTable({
                 "pageLength": 25,
                 "order": [[8, 'desc']] // Sort by registration date
+            });
+            
+            // Attach event listeners to view buttons
+            document.querySelectorAll('.btn-view-patient').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const patientId = this.getAttribute('data-patient-id');
+                    console.log('View button clicked for patient:', patientId);
+                    viewPatientDetail(patientId);
+                });
             });
             
             // Also update floating panel if it's visible
@@ -3038,6 +3306,10 @@ Apakah Anda yakin ingin melanjutkan?`;
     
     window.viewPatientDetail = async function(patientId) {
         try {
+            console.log('=== viewPatientDetail called ===');
+            console.log('Patient ID:', patientId);
+            console.log('Auth token exists:', !!localStorage.getItem('vps_auth_token'));
+            
             const response = await fetch(`/api/admin/web-patients/${patientId}`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('vps_auth_token')}`
@@ -3045,16 +3317,20 @@ Apakah Anda yakin ingin melanjutkan?`;
             });
             
             if (!response.ok) {
+                console.error('Failed to load patient details, status:', response.status);
                 throw new Error('Failed to load patient details');
             }
             
             const data = await response.json();
+            console.log('Patient data received:', data);
             const patient = data.data.patient;
+            const intake = data.data.intake;
+            console.log('Intake data:', intake);
             
             // Create modal for patient details
             const modal = `
-                <div class="modal fade" id="patientDetailModal" tabindex="-1">
-                    <div class="modal-dialog modal-lg">
+                <div class="modal fade" id="patientDetailModal" tabindex="-1" role="dialog">
+                    <div class="modal-dialog modal-xl" role="document">
                         <div class="modal-content">
                             <div class="modal-header bg-info">
                                 <h4 class="modal-title">
@@ -3135,6 +3411,100 @@ Apakah Anda yakin ingin melanjutkan?`;
                                         </table>
                                     </div>
                                 </div>
+                                
+                                ${intake ? `
+                                <hr>
+                                <h5 class="mb-3">
+                                    <i class="fas fa-file-medical"></i> Formulir Rekam Medis Awal
+                                    <span class="badge badge-${intake.highRisk ? 'danger' : 'success'} ml-2">
+                                        ${intake.highRisk ? 'High Risk' : 'Normal'}
+                                    </span>
+                                    ${intake.quickId ? `<span class="badge badge-info ml-1">RM: ${intake.quickId}</span>` : ''}
+                                </h5>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <table class="table table-sm table-bordered">
+                                            <tr>
+                                                <th width="40%">Nama Lengkap</th>
+                                                <td>${intake.payload.full_name || '-'}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Tanggal Lahir</th>
+                                                <td>${intake.payload.dob ? new Date(intake.payload.dob).toLocaleDateString('id-ID') : '-'}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Usia</th>
+                                                <td>${intake.payload.age || '-'} tahun</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Telepon</th>
+                                                <td>${intake.payload.phone || '-'}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>NIK</th>
+                                                <td>${intake.payload.nik || '-'}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Alamat</th>
+                                                <td>${intake.payload.address || '-'}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Status Pernikahan</th>
+                                                <td>${intake.payload.marital_status || '-'}</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <table class="table table-sm table-bordered">
+                                            <tr>
+                                                <th width="40%">Gravida</th>
+                                                <td>${intake.payload.gravida || '0'}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Para</th>
+                                                <td>${intake.payload.para || '0'}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Abortus</th>
+                                                <td>${intake.payload.abortus || '0'}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Anak Hidup</th>
+                                                <td>${intake.payload.living_children || '0'}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>HPHT</th>
+                                                <td>${intake.payload.lmp ? new Date(intake.payload.lmp).toLocaleDateString('id-ID') : '-'}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>HPL</th>
+                                                <td>${intake.payload.edd || '-'}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Status</th>
+                                                <td><span class="badge badge-${intake.status === 'verified' ? 'success' : 'warning'}">${intake.status}</span></td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                </div>
+                                ${intake.payload.medications && intake.payload.medications.length > 0 ? `
+                                <div class="mt-2">
+                                    <strong>Obat-obatan:</strong>
+                                    <ul class="mb-0">
+                                        ${intake.payload.medications.map(m => `<li>${m.name || m}</li>`).join('')}
+                                    </ul>
+                                </div>
+                                ` : ''}
+                                ${intake.payload.allergies ? `
+                                <div class="mt-2">
+                                    <strong>Alergi:</strong> ${intake.payload.allergies}
+                                </div>
+                                ` : ''}
+                                <div class="mt-2 text-muted small">
+                                    <i class="far fa-clock"></i> Diisi: ${new Date(intake.createdAt).toLocaleString('id-ID')}
+                                    ${intake.updatedAt ? ` | Diperbarui: ${new Date(intake.updatedAt).toLocaleString('id-ID')}` : ''}
+                                </div>
+                                ` : '<div class="alert alert-info"><i class="fas fa-info-circle"></i> Belum ada formulir rekam medis awal</div>'}
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
@@ -3158,7 +3528,8 @@ Apakah Anda yakin ingin melanjutkan?`;
             
         } catch (error) {
             console.error('Error viewing patient detail:', error);
-            alert('Gagal memuat detail pasien');
+            console.error('Error stack:', error.stack);
+            alert('Gagal memuat detail pasien: ' + error.message);
         }
     };
     

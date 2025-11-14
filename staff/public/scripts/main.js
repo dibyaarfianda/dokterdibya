@@ -52,19 +52,24 @@ function hideAllPages() {
     Object.values(pages).forEach(p => { if (p) p.classList.add('d-none'); });
     document.querySelectorAll('.nav-sidebar .nav-link').forEach(l => l.classList.remove('active'));
 }
-function setTitleAndActive(title, navId) {
+function setTitleAndActive(title, navId, mobileAction) {
     const titleEl = document.getElementById('page-title');
     if (titleEl) titleEl.textContent = title;
     if (navId) {
         const link = document.querySelector(`#${navId} .nav-link`);
         if (link) link.classList.add('active');
     }
+    if (mobileAction) {
+        document.dispatchEvent(new CustomEvent('page:changed', {
+            detail: { page: mobileAction }
+        }));
+    }
 }
-function showDashboardPage() { hideAllPages(); pages.dashboard?.classList.remove('d-none'); setTitleAndActive('Dashboard', 'nav-dashboard'); }
+function showDashboardPage() { hideAllPages(); pages.dashboard?.classList.remove('d-none'); setTitleAndActive('Dashboard', 'nav-dashboard', 'dashboard'); }
 function showTindakanPage() { 
     hideAllPages(); 
     pages.tindakan?.classList.remove('d-none'); 
-    setTitleAndActive('Tindakan', 'nav-tindakan');
+    setTitleAndActive('Tindakan', 'nav-tindakan', 'tindakan');
     updatePatientDisplay(); // Update patient display saat buka halaman Tindakan
     // Load billing module
     import('./billing.js').then(module => {
@@ -76,7 +81,7 @@ function showTindakanPage() {
 function showObatPage() {
     hideAllPages();
     pages.obat?.classList.remove('d-none');
-    setTitleAndActive('Obat & Alkes', 'nav-obat');
+    setTitleAndActive('Obat & Alkes', 'nav-obat', 'obat');
     
     // Load billing-obat module
     import('./billing-obat.js').then(module => {
@@ -107,7 +112,7 @@ function showCashierPage() {
         
         hideAllPages(); 
         pages.cashier?.classList.remove('d-none'); 
-        setTitleAndActive('Rincian Tagihan', 'nav-cashier');
+        setTitleAndActive('Rincian Tagihan', 'nav-cashier', 'cashier');
         
         // Load cashier summary with current billing data
         const patientData = billingModule.getCurrentPatientData();
@@ -125,14 +130,14 @@ function showCashierPage() {
         console.error('Failed to load billing modules:', error);
     });
 }
-function showPatientPage() { hideAllPages(); pages.patient?.classList.remove('d-none'); setTitleAndActive('Data Pasien', 'nav-patient'); }
+function showPatientPage() { hideAllPages(); pages.patient?.classList.remove('d-none'); setTitleAndActive('Data Pasien', 'nav-patient', 'patients'); }
 // Make function globally accessible for onclick handlers
 window.showPatientPage = showPatientPage;
 
 async function showAnamnesa() { 
     hideAllPages(); 
     pages.anamnesa?.classList.remove('d-none'); 
-    setTitleAndActive('Anamnesa', 'nav-anamnesa');
+    setTitleAndActive('Anamnesa', 'nav-anamnesa', 'anamnesa');
     
     // Load saved anamnesa data for current patient
     const { loadAnamnesaData } = await import('./medical-exam.js');
@@ -142,7 +147,7 @@ async function showAnamnesa() {
 async function showPhysicalExam() { 
     hideAllPages(); 
     pages.physical?.classList.remove('d-none'); 
-    setTitleAndActive('Pemeriksaan Fisik', 'nav-physical');
+    setTitleAndActive('Pemeriksaan Fisik', 'nav-physical', 'physical');
     
     // Load saved physical exam data for current patient
     const { loadPhysicalExamData } = await import('./medical-exam.js');
@@ -152,7 +157,7 @@ async function showPhysicalExam() {
 async function showUSGExam() { 
     hideAllPages(); 
     pages.usg?.classList.remove('d-none'); 
-    setTitleAndActive('Pemeriksaan USG', 'nav-usg');
+    setTitleAndActive('Pemeriksaan USG', 'nav-usg', 'usg');
     
     // Re-check pregnancy status when page opens
     const gynSection = document.getElementById('usg-gynecology-section');
@@ -183,7 +188,7 @@ async function showUSGExam() {
 async function showLabExam() { 
     hideAllPages(); 
     pages.lab?.classList.remove('d-none'); 
-    setTitleAndActive('Pemeriksaan Penunjang', 'nav-lab');
+    setTitleAndActive('Pemeriksaan Penunjang', 'nav-lab', 'lab');
     
     // Load saved lab exam data for current patient
     const { loadLabExamData } = await import('./medical-exam.js');
@@ -192,7 +197,7 @@ async function showLabExam() {
 function showStokOpnamePage() { 
     hideAllPages(); 
     pages.admin?.classList.remove('d-none'); 
-    setTitleAndActive('Stok Opname', 'nav-admin');
+    setTitleAndActive('Stok Opname', 'nav-admin', 'stok');
     // Load stok opname data
     import('./stok-opname.js').then(module => {
         if (module.initStokOpname) {
@@ -204,9 +209,8 @@ function showPengaturanPage() {
     console.log('🔧 showPengaturanPage called');
     hideAllPages();
     pages.pengaturan?.classList.remove('d-none');
-    setTitleAndActive('Pengaturan', 'nav-pengaturan');
+    setTitleAndActive('Pengaturan', 'nav-pengaturan', 'pengaturan');
     
-    // Load kelola-tindakan module
     import('./kelola-tindakan.js').then(module => {
         if (module.initKelolaTindakan) {
             module.initKelolaTindakan();
@@ -219,7 +223,7 @@ function showKelolaObatPage() {
     console.log('🔧 showKelolaObatPage called');
     hideAllPages();
     pages.kelolaObat?.classList.remove('d-none');
-    setTitleAndActive('Kelola Obat', 'nav-kelola-obat');
+    setTitleAndActive('Kelola Obat', 'nav-kelola-obat', 'kelolaObat');
     
     // Load kelola-obat module
     import('./kelola-obat.js').then(module => {
@@ -230,11 +234,11 @@ function showKelolaObatPage() {
         console.error('Failed to load kelola-obat.js:', error);
     });
 }
-function showLogPage() { hideAllPages(); pages.logs?.classList.remove('d-none'); setTitleAndActive('Log Aktivitas', 'nav-logs'); }
+function showLogPage() { hideAllPages(); pages.logs?.classList.remove('d-none'); setTitleAndActive('Log Aktivitas', 'nav-logs', 'logs'); }
 function showAppointmentsPage() { 
     hideAllPages(); 
     pages.appointments?.classList.remove('d-none'); 
-    setTitleAndActive('Appointment', 'nav-appointments');
+    setTitleAndActive('Appointment', 'nav-appointments', 'appointments');
     // Load appointments module dynamically
     console.log('🔧 Loading appointments module...');
     import('./appointments.js').then(module => {
@@ -249,12 +253,12 @@ function showAppointmentsPage() {
         console.error('❌ Failed to load appointments.js:', error);
     });
 }
-function showAnalyticsPage() { hideAllPages(); pages.analytics?.classList.remove('d-none'); setTitleAndActive('Analytics', 'nav-analytics'); }
-function showFinancePage() { hideAllPages(); pages.finance?.classList.remove('d-none'); setTitleAndActive('Finance Analysis', 'nav-finance'); }
+function showAnalyticsPage() { hideAllPages(); pages.analytics?.classList.remove('d-none'); setTitleAndActive('Analytics', 'nav-analytics', 'analytics'); }
+function showFinancePage() { hideAllPages(); pages.finance?.classList.remove('d-none'); setTitleAndActive('Finance Analysis', 'nav-finance', 'finance'); }
 function showProfileSettings() { 
     hideAllPages(); 
     pages.profile?.classList.remove('d-none'); 
-    setTitleAndActive('Profile Settings', null);
+    setTitleAndActive('Profile Settings', null, 'profile'); 
     // Load profile module and initialize
     import('./profile.js').then(module => {
         if (module.initProfile) {
@@ -376,6 +380,310 @@ if (document.readyState === 'loading') {
 } else {
     initMain();
 }
+
+// -------------------- PATIENT DETAIL MODAL --------------------
+async function showPatientDetail(patientId) {
+    try {
+        console.log('=== showPatientDetail called ===');
+        console.log('Patient ID:', patientId);
+        console.log('Auth token exists:', !!localStorage.getItem('vps_auth_token'));
+        
+        // Try the web-patients endpoint first as it includes intake data
+        let response = await fetch(`/api/admin/web-patients/${patientId}`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('vps_auth_token')}`
+            }
+        });
+        
+        let patient, intake;
+        
+        if (response.ok) {
+            // Web patient found (includes intake data)
+            const data = await response.json();
+            console.log('Patient data received from web-patients:', data);
+            patient = data.data.patient;
+            intake = data.data.intake;
+        } else {
+            // Try regular patients endpoint
+            response = await fetch(`/api/patients/${patientId}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('vps_auth_token')}`
+                }
+            });
+            
+            if (!response.ok) {
+                console.error('Failed to load patient details, status:', response.status);
+                throw new Error('Patient not found');
+            }
+            
+            const data = await response.json();
+            console.log('Patient data received from patients:', data);
+            patient = data.data;
+            
+            // Try to fetch intake data separately by phone
+            intake = null;
+            if (patient.whatsapp || patient.phone) {
+                try {
+                    const phoneToSearch = patient.whatsapp || patient.phone;
+                    const intakeResponse = await fetch('/api/patient-intake', {
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('vps_auth_token')}`
+                        }
+                    });
+                    
+                    if (intakeResponse.ok) {
+                        const intakeData = await intakeResponse.json();
+                        // Find intake matching this patient's phone
+                        const normalizedPatientPhone = phoneToSearch.replace(/\D/g, '').slice(-10);
+                        const matchingIntake = intakeData.data?.find(submission => {
+                            const submissionPhone = submission.phone?.replace(/\D/g, '').slice(-10);
+                            return submissionPhone === normalizedPatientPhone;
+                        });
+                        
+                        if (matchingIntake) {
+                            intake = {
+                                submissionId: matchingIntake.submission_id,
+                                quickId: matchingIntake.quick_id,
+                                payload: typeof matchingIntake.payload === 'string' ? JSON.parse(matchingIntake.payload) : matchingIntake.payload,
+                                status: matchingIntake.status,
+                                highRisk: matchingIntake.high_risk,
+                                createdAt: matchingIntake.created_at,
+                                updatedAt: matchingIntake.updated_at
+                            };
+                        }
+                    }
+                } catch (intakeError) {
+                    console.warn('Failed to fetch intake data:', intakeError);
+                }
+            }
+        }
+        
+        console.log('Final intake data:', intake);
+        
+        // Normalize patient data structure (handle differences between endpoints)
+        const normalizedPatient = {
+            id: patient.id,
+            fullname: patient.fullname || patient.full_name,
+            email: patient.email,
+            phone: patient.phone || patient.whatsapp,
+            birth_date: patient.birth_date,
+            age: patient.age,
+            photo_url: patient.photo_url,
+            google_id: patient.google_id,
+            profile_completed: patient.profile_completed,
+            status: patient.status,
+            registration_date: patient.registration_date || patient.created_at,
+            updated_at: patient.updated_at
+        };
+        
+        // Create modal for patient details
+        const modal = `
+            <div class="modal fade" id="patientDetailModal" tabindex="-1" role="dialog">
+                <div class="modal-dialog modal-xl" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header bg-info">
+                            <h4 class="modal-title">
+                                <i class="fas fa-user-circle"></i> Detail Pasien
+                            </h4>
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <table class="table table-bordered">
+                                        <tr>
+                                            <th width="40%">ID Pasien</th>
+                                            <td>${normalizedPatient.id}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Nama Lengkap</th>
+                                            <td><strong>${normalizedPatient.fullname}</strong></td>
+                                        </tr>
+                                        <tr>
+                                            <th>Email</th>
+                                            <td>${normalizedPatient.email}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Telepon</th>
+                                            <td>${normalizedPatient.phone || '-'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Tanggal Lahir</th>
+                                            <td>${normalizedPatient.birth_date ? new Date(normalizedPatient.birth_date).toLocaleDateString('id-ID', {year: 'numeric', month: 'long', day: 'numeric'}) : '-'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Usia</th>
+                                            <td>${normalizedPatient.age || '-'} tahun</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <table class="table table-bordered">
+                                        <tr>
+                                            <th width="40%">Foto Profil</th>
+                                            <td>
+                                                ${normalizedPatient.photo_url ? 
+                                                    `<img src="${normalizedPatient.photo_url}" alt="Photo" style="max-width: 100px; border-radius: 50%;">` : 
+                                                    '<span class="text-muted">Tidak ada foto</span>'}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <th>Google ID</th>
+                                            <td>${normalizedPatient.google_id || '<span class="text-muted">Email registration</span>'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Profil Lengkap</th>
+                                            <td>${normalizedPatient.profile_completed ? 
+                                                '<span class="badge badge-success"><i class="fas fa-check"></i> Ya</span>' : 
+                                                '<span class="badge badge-warning"><i class="fas fa-times"></i> Belum</span>'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Status</th>
+                                            <td>${normalizedPatient.status === 'active' ? 
+                                                '<span class="badge badge-success">Aktif</span>' : 
+                                                '<span class="badge badge-secondary">Nonaktif</span>'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Tgl Registrasi</th>
+                                            <td>${normalizedPatient.registration_date ? new Date(normalizedPatient.registration_date).toLocaleString('id-ID', {
+                                                year: 'numeric', month: 'long', day: 'numeric',
+                                                hour: '2-digit', minute: '2-digit'
+                                            }) : '-'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Terakhir Update</th>
+                                            <td>${normalizedPatient.updated_at ? new Date(normalizedPatient.updated_at).toLocaleString('id-ID', {
+                                                year: 'numeric', month: 'long', day: 'numeric',
+                                                hour: '2-digit', minute: '2-digit'
+                                            }) : '-'}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            ${intake ? `
+                            <hr>
+                            <h5 class="mb-3">
+                                <i class="fas fa-file-medical"></i> Formulir Rekam Medis Awal
+                                <span class="badge badge-${intake.highRisk ? 'danger' : 'success'} ml-2">
+                                    ${intake.highRisk ? 'High Risk' : 'Normal'}
+                                </span>
+                                ${intake.quickId ? `<span class="badge badge-info ml-1">RM: ${intake.quickId}</span>` : ''}
+                            </h5>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <table class="table table-sm table-bordered">
+                                        <tr>
+                                            <th width="40%">Nama Lengkap</th>
+                                            <td>${intake.payload.full_name || '-'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Tanggal Lahir</th>
+                                            <td>${intake.payload.dob ? new Date(intake.payload.dob).toLocaleDateString('id-ID') : '-'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Usia</th>
+                                            <td>${intake.payload.age || '-'} tahun</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Telepon</th>
+                                            <td>${intake.payload.phone || '-'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>NIK</th>
+                                            <td>${intake.payload.nik || '-'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Alamat</th>
+                                            <td>${intake.payload.address || '-'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Status Pernikahan</th>
+                                            <td>${intake.payload.marital_status || '-'}</td>
+                                        </tr>
+                                    </table>
+                                </div>
+                                <div class="col-md-6">
+                                    <table class="table table-sm table-bordered">
+                                        <tr>
+                                            <th width="40%">Gravida</th>
+                                            <td>${intake.payload.gravida || '0'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Para</th>
+                                            <td>${intake.payload.para || '0'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Abortus</th>
+                                            <td>${intake.payload.abortus || '0'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Anak Hidup</th>
+                                            <td>${intake.payload.living_children || '0'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>HPHT</th>
+                                            <td>${intake.payload.lmp ? new Date(intake.payload.lmp).toLocaleDateString('id-ID') : '-'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>HPL</th>
+                                            <td>${intake.payload.edd || '-'}</td>
+                                        </tr>
+                                        <tr>
+                                            <th>Status</th>
+                                            <td><span class="badge badge-${intake.status === 'verified' ? 'success' : 'warning'}">${intake.status}</span></td>
+                                        </tr>
+                                    </table>
+                                </div>
+                            </div>
+                            ${intake.payload.medications && intake.payload.medications.length > 0 ? `
+                            <div class="mt-2">
+                                <strong>Obat-obatan:</strong>
+                                <ul class="mb-0">
+                                    ${intake.payload.medications.map(m => `<li>${m.name || m}</li>`).join('')}
+                                </ul>
+                            </div>
+                            ` : ''}
+                            ${intake.payload.allergies ? `
+                            <div class="mt-2">
+                                <strong>Alergi:</strong> ${intake.payload.allergies}
+                            </div>
+                            ` : ''}
+                            <div class="mt-2 text-muted small">
+                                <i class="far fa-clock"></i> Diisi: ${new Date(intake.createdAt).toLocaleString('id-ID')}
+                                ${intake.updatedAt ? ` | Diperbarui: ${new Date(intake.updatedAt).toLocaleString('id-ID')}` : ''}
+                            </div>
+                            ` : '<div class="alert alert-info"><i class="fas fa-info-circle"></i> Belum ada formulir rekam medis awal</div>'}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        // Remove existing modal if any
+        $('#patientDetailModal').remove();
+        
+        // Add and show modal
+        $('body').append(modal);
+        $('#patientDetailModal').modal('show');
+        
+        // Clean up modal after close
+        $('#patientDetailModal').on('hidden.bs.modal', function () {
+            $(this).remove();
+        });
+        
+    } catch (error) {
+        console.error('Error viewing patient detail:', error);
+        console.error('Error stack:', error.stack);
+        alert('Gagal memuat detail pasien: ' + error.message);
+    }
+}
+
+// Export showPatientDetail to global scope for onclick handlers
+window.showPatientDetail = showPatientDetail;
 
 // Export for manual initialization if needed
 export { initMain };

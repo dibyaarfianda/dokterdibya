@@ -459,6 +459,18 @@
             Lengkapi formulir rekam medis awal Anda untuk memulai journey Anda.
         </div>
 
+        <!-- Announcements Section -->
+        <div class="dashboard-card" id="announcements-section" style="margin-bottom: 30px;">
+            <h3><i class="fa fa-bullhorn"></i> Pengumuman Dokter</h3>
+            <div id="announcements-container">
+                <!-- Announcements will be loaded here -->
+                <div style="text-align: center; padding: 20px; color: #999;">
+                    <i class="fa fa-spinner fa-spin fa-2x"></i>
+                    <p style="margin-top: 10px;">Memuat pengumuman...</p>
+                </div>
+            </div>
+        </div>
+
         <div class="row">
             <!-- Quick Actions -->
             <div class="col-md-12">
@@ -671,6 +683,9 @@
     <!-- Scripts -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <!-- Socket.io for real-time announcements -->
+    <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
+    <script src="js/announcements-dashboard.js?v=20251115"></script>
     <script>
         // Check authentication
         const token = localStorage.getItem('patient_token');
