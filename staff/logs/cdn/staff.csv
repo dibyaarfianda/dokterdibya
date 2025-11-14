@@ -1,0 +1,21 @@
+﻿id;email;;UID;role
+1;nanda.arfianda@gmail.com;;YANOh3ZXnGQQNmE0Ge0JngMhAgt1;
+2;ernanita.007@gmail.com;;LRyQHCG1fge8jXuDIzAb5905Fiu1;
+3;lizhaafirah@gmail.com;;S5WxNO2sxJO3NlfIdNDOqGDsz2J3;
+4;rizagood20@gmail.com;;KXFJzP2AR0Xk7FuUt5LlXnV1Gz93;
+5;lnur1862@gmail.com;;D2eeyVBMk7VfDPOrLSMqm8v7LDx2;
+6;destriapril014@gmail.com;;I6mvTe5WrZcIKOAnTf52McTmjf13;
+7;feby_mail@gmail.com;;D3LtzLno7dSdxSiMClvxkESKS8E3;}
+8;urfianita@gmail.com;;4KKleA63yJRj4hX5pqeo0qZtvI83;
+9;saputradwi598@gmail.com;;kvORIsDelxPBJWCISQY88BXBkHg1;
+10;konchelsky83@gmail.com;;5jbFcYZ4EcNBJjk5eesmqmzGKsE2;
+11;jimroatussolihah@gmail.com;;dnvgMRkpaTTVHKenB39dJ8kjZKE3;
+12;galerimahra@gmail.com;;5PTiuf6gyJR3trTB62v9Eo9fE3S2;
+;;;;
+;;;;
+;hash_config {;;;
+;  algorithm: SCRYPT,;;;
+;  base64_signer_key: UUJ45eRHBC2mBioesz5ryVDoDaf+6FFVqQrdNlJRF4WlnTWAo+3agKrf6btzgG1pUylYmg3SR1/2gnj4bm7HZQ==,;;;
+;  base64_salt_separator: Bw==,;;;
+;  rounds: 8,;;;
+;  mem_cost: 14,;;;

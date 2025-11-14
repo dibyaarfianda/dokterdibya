@@ -176,3 +176,13 @@ For future improvements:
 - No breaking changes to existing API endpoints
 - Validation provides clear error messages for debugging
 - Role-based access control ready to use with `requireRole()` middleware
+
+## 🔍 Firebase Decommission Audit (2025-11-14)
+
+- Backend request logs (`staff/backend/logs/combined.log`, `error.log`) covering 2025-11-05 → 2025-11-08 contain zero references to `firebaseio.com`, `firestore`, or `gstatic/firebasejs` after a repo-wide regex sweep.
+- Active frontend bundles now authenticate exclusively via `vps-auth-v2.js`; remaining Firebase mentions live only in historical backups under `backups/` and `unused/`.
+- Patient-intake submissions continue to land in `staff/backend/logs/patient-intake/` as encrypted JSON + derived CSV without external dependencies.
+- Next verification: export CDN or hosting provider access logs for the staff domain (≥30 days) and check for `firebaseio.com`, `firebaseapp.com`, or `gstatic/firebasejs` hits before shutting down the Firebase project.
+- Once CDN logs confirm zero traffic, disable Firebase Hosting/Firestore for `klinikprivatedrdibya`, update DNS as needed, and archive the final audit outcome here.
+- 2025-11-14: Cloudflare HTTP Requests export (`staff/logs/cdn/staff.csv`, last 30 days) scanned with `rg -i "firebaseio|firebaseapp|firebasestorage|gstatic\.com/firebasejs" staff/logs/cdn/staff.csv` → **no matches**.
+- 2025-11-14: Firebase Hosting + Firestore project `klinikprivatedrdibya` decommissioned (DNS detached, hosting disabled, Firestore export archived in shared vault). No further client traffic to Firebase endpoints is expected.

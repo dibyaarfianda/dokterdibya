@@ -550,9 +550,9 @@ export async function initPatients() {
             
             // More specific error messages
             if (err.code === 'permission-denied') {
-                showError('Akses ditolak. Periksa Firebase Security Rules.');
+                showError('Akses ditolak. Periksa role dan izin VPS API.');
             } else if (err.code === 'unavailable') {
-                showError('Koneksi Firebase terputus. Periksa internet Anda.');
+                showError('Koneksi ke server klinik terputus. Periksa jaringan Anda.');
             } else if (err.code === 'not-found') {
                 showError('Data pasien tidak ditemukan.');
             } else {
