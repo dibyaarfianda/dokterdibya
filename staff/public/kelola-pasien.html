@@ -305,7 +305,15 @@ Apakah Anda yakin ingin melanjutkan?`;
             }
             
             alert(successMessage);
-            loadPatients();
+            
+            // Clear patient cache and reload
+            await loadPatients();
+            
+            // Also reload patients in appointments if that module is loaded
+            if (typeof window.reloadAppointmentPatients === 'function') {
+                console.log('🔄 Reloading appointment patients...');
+                await window.reloadAppointmentPatients();
+            }
             
         } catch (error) {
             console.error('Error deleting patient:', error);

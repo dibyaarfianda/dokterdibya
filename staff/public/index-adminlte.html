@@ -2876,6 +2876,15 @@
                 `;
             }).join('');
             
+            // Destroy and reinitialize DataTable to clear cache
+            if ($.fn.DataTable.isDataTable('#manage-patients-table')) {
+                $('#manage-patients-table').DataTable().destroy();
+            }
+            $('#manage-patients-table').DataTable({
+                "pageLength": 25,
+                "order": [[8, 'desc']] // Sort by registration date
+            });
+            
             // Also update floating panel if it's visible
             const floatingPanel = document.getElementById('floating-kelola-pasien');
             if (floatingPanel && !floatingPanel.classList.contains('d-none') && typeof loadFloatingPanelPatients === 'function') {
@@ -2968,6 +2977,14 @@ Apakah Anda yakin ingin melanjutkan?`;
             if (floatingPanel && !floatingPanel.classList.contains('d-none') && typeof loadFloatingPanelPatients === 'function') {
                 loadFloatingPanelPatients();
             }
+            
+            // Reload patient list in appointments module
+            if (typeof window.reloadAppointmentPatients === 'function') {
+                console.log('🔄 Reloading appointment patients...');
+                await window.reloadAppointmentPatients();
+            }
+            
+            console.log('✅ All patient lists refreshed after deletion');
             
         } catch (error) {
             console.error('Error deleting patient:', error);
