@@ -43,12 +43,17 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Load current profile data
     async function loadCurrentData() {
+        console.log('Loading current profile data...');
+        console.log('Token for profile load:', token ? 'exists' : 'missing');
+        
         try {
             const response = await fetch('/api/patients/profile', {
                 headers: {
                     'Authorization': `Bearer ${token}`
                 }
             });
+            
+            console.log('Profile response status:', response.status);
             
             if (response.ok) {
                 const data = await response.json();
@@ -131,6 +136,12 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('Submit button not found!');
         }
         
+        // Debug: Log token and request details
+        console.log('Token exists:', !!token);
+        console.log('Token length:', token ? token.length : 0);
+        console.log('Submitting to /api/patients/complete-profile');
+        console.log('Data:', { fullname, phone, birthdate, age });
+        
         try {
             const response = await fetch('/api/patients/complete-profile', {
                 method: 'POST',
@@ -145,6 +156,9 @@ document.addEventListener('DOMContentLoaded', function() {
                     age: age ? parseInt(age) : null
                 })
             });
+            
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
             
             const data = await response.json();
             

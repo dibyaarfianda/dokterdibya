@@ -5,6 +5,20 @@ const API_BASE_URL = '/api/patients';
 const GOOGLE_CLIENT_ID = '738335602560-52as846lk2oo78fr38a86elu8888m7eh.apps.googleusercontent.com'; // TODO: Replace with actual Google Client ID from console.cloud.google.com
 const REDIRECT_AFTER_LOGIN = '/patient-dashboard.html'; // Change to '/patient-intake.html' if you want direct form access
 
+// Suppress Google Sign-In related errors globally
+window.addEventListener('error', function(event) {
+    if (event.message && (
+        event.message.includes('FedCM') || 
+        event.message.includes('Third-party') ||
+        event.message.includes('GSI_LOGGER') ||
+        event.filename?.includes('accounts.google.com')
+    )) {
+        event.preventDefault();
+        event.stopPropagation();
+        return false;
+    }
+});
+
 // Initialize Google Sign-In
 function initializeGoogleSignIn() {
     // Only initialize if Google Sign-In API is loaded AND client ID is configured
@@ -12,16 +26,86 @@ function initializeGoogleSignIn() {
         try {
             google.accounts.id.initialize({
                 client_id: GOOGLE_CLIENT_ID,
-                callback: handleGoogleSignIn
+                callback: handleGoogleSignIn,
+                // Add configuration to handle third-party cookie issues
+                ux_mode: 'redirect', // Use redirect instead of popup for better compatibility
+                redirect_uri: window.location.origin + '/google-callback.html'
             });
             console.log('Google Sign-In initialized successfully');
         } catch (error) {
             console.error('Google Sign-In initialization error:', error);
+            // Disable Google Sign-In buttons if initialization fails
+            disableGoogleSignInButtons('Google Sign-In tidak tersedia di browser ini.');
         }
     } else if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') {
         console.log('Google Sign-In: Client ID not configured. See GOOGLE_OAUTH_SETUP.md');
     } else {
         console.log('Google Sign-In: API not loaded yet, will retry...');
+    }
+}
+
+// Disable Google Sign-In buttons with message
+function disableGoogleSignInButtons(message) {
+    const buttons = ['google-signup-btn', 'google-signin-btn'];
+    buttons.forEach(btnId => {
+        const btn = document.getElementById(btnId);
+        if (btn) {
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
+            btn.title = message;
+            btn.onclick = (e) => {
+                e.preventDefault();
+                showMessage(message + ' Silakan gunakan email dan password.', 'warning');
+            };
+        }
+    });
+}
+
+// Handle Google Sign-In prompt with proper error handling
+function triggerGooglePrompt() {
+    if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') {
+        showMessage('Google Sign-In belum dikonfigurasi. Silakan gunakan email/password.', 'error');
+        return;
+    }
+    
+    if (typeof google === 'undefined' || !google.accounts) {
+        showMessage('Google Sign-In tidak tersedia saat ini. Silakan gunakan email dan password.', 'warning');
+        return;
+    }
+    
+    try {
+        google.accounts.id.prompt((notification) => {
+            // Handle prompt notification with null check
+            if (!notification) {
+                console.warn('[Google Sign-In] Notification callback received null/undefined');
+                showMessage('Google Sign-In tidak dapat ditampilkan. Silakan gunakan email dan password.', 'warning');
+                return;
+            }
+            
+            // Check if prompt was not displayed
+            if (typeof notification.isNotDisplayed === 'function' && notification.isNotDisplayed()) {
+                const reason = typeof notification.getNotDisplayedReason === 'function' 
+                    ? notification.getNotDisplayedReason() 
+                    : 'unknown';
+                
+                console.log('[Google Sign-In] Prompt not displayed. Reason:', reason);
+                
+                // User-friendly error messages based on reason
+                if (reason === 'opt_out_or_no_session' || reason === 'suppressed_by_user') {
+                    showMessage('Google Sign-In dinonaktifkan. Silakan gunakan email dan password.', 'warning');
+                } else if (reason === 'browser_not_supported') {
+                    showMessage('Browser Anda tidak mendukung Google Sign-In. Silakan gunakan email dan password.', 'warning');
+                } else {
+                    showMessage('Google Sign-In tidak dapat ditampilkan. Aktifkan third-party cookies atau gunakan email dan password.', 'warning');
+                }
+            } else if (typeof notification.isSkippedMoment === 'function' && notification.isSkippedMoment()) {
+                console.log('[Google Sign-In] Prompt skipped by user');
+                // Don't show message if user explicitly closed the prompt
+            }
+        });
+    } catch (error) {
+        console.error('[Google Sign-In] Prompt error:', error);
+        showMessage('Google Sign-In tidak tersedia di browser ini. Silakan gunakan email dan password.', 'warning');
     }
 }
 
@@ -271,6 +355,37 @@ function logout() {
     window.location.href = '/index.html';
 }
 
+// Suppress annoying FedCM console errors and warnings
+(function() {
+    const originalError = console.error;
+    const originalWarn = console.warn;
+    
+    console.error = function(...args) {
+        // Suppress specific FedCM errors
+        const message = args[0]?.toString() || '';
+        if (message.includes('Third-party sign in was disabled') || 
+            message.includes('FedCM') ||
+            message.includes('AbortError') ||
+            message.includes('GSI_LOGGER')) {
+            // Silently ignore these - they're expected when third-party cookies are blocked
+            return;
+        }
+        originalError.apply(console, args);
+    };
+    
+    console.warn = function(...args) {
+        // Suppress GSI_LOGGER warnings about FedCM migration
+        const message = args[0]?.toString() || '';
+        if (message.includes('GSI_LOGGER') || 
+            message.includes('FedCM') ||
+            message.includes('fedcm-migration')) {
+            // Silently ignore these migration warnings
+            return;
+        }
+        originalWarn.apply(console, args);
+    };
+})();
+
 // Event Listeners
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize Google Sign-In with delay to ensure API is loaded
@@ -286,18 +401,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (googleSignUpBtn) {
         googleSignUpBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            console.log('Google Sign-In button clicked');
-            console.log('Client ID:', GOOGLE_CLIENT_ID);
-            console.log('Google available:', typeof google !== 'undefined');
-            
-            if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') {
-                showMessage('Google Sign-In belum dikonfigurasi. Silakan gunakan email/password untuk mendaftar.', 'error');
-                alert('Google Sign-In belum dikonfigurasi.\n\nSilakan gunakan formulir email/password di bawah untuk mendaftar.');
-            } else if (typeof google !== 'undefined') {
-                google.accounts.id.prompt();
-            } else {
-                showMessage('Google Sign-In tidak tersedia. Silakan gunakan email.', 'error');
-            }
+            console.log('[Google Sign-In] Sign-up button clicked');
+            triggerGooglePrompt();
         });
     } else {
         console.log('Google signup button not found');
@@ -308,15 +413,8 @@ document.addEventListener('DOMContentLoaded', function() {
     if (googleSigninBtn) {
         googleSigninBtn.addEventListener('click', function(e) {
             e.preventDefault();
-            console.log('Google Sign-In (navbar) clicked');
-            if (GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID') {
-                showMessage('Google Sign-In belum dikonfigurasi. Silakan gunakan email/password.', 'error');
-                alert('Google Sign-In belum dikonfigurasi. Silakan gunakan email/password.');
-            } else if (typeof google !== 'undefined') {
-                google.accounts.id.prompt();
-            } else {
-                showMessage('Google Sign-In tidak tersedia saat ini.', 'error');
-            }
+            console.log('[Google Sign-In] Navbar sign-in button clicked');
+            triggerGooglePrompt();
         });
     } else {
         console.log('Google signin button (navbar) not found');

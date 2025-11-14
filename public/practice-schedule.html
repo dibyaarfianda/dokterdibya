@@ -55,6 +55,12 @@
             color: white;
         }
         
+        .location-icon-large img {
+            width: 60px;
+            height: 60px;
+            object-fit: contain;
+        }
+        
         .schedule-card {
             background: white;
             border-radius: 15px;
@@ -137,6 +143,38 @@
             margin-right: 10px;
         }
         
+        .whatsapp-btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            margin-top: 20px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(37, 211, 102, 0.3);
+        }
+        
+        .whatsapp-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(37, 211, 102, 0.4);
+            color: white;
+            text-decoration: none;
+        }
+        
+        .whatsapp-btn i {
+            margin-right: 8px;
+        }
+        
+        .contact-section {
+            text-align: center;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+        }
+        
         .back-link {
             text-align: center;
             margin-top: 30px;
@@ -179,6 +217,15 @@
                     <p>Memuat jadwal...</p>
                 </div>
             </div>
+            
+            <div id="whatsapp-section" class="contact-section" style="display: none;">
+                <p style="color: #666; margin-bottom: 15px;">Butuh informasi lebih lanjut atau ingin membuat janji?</p>
+                <a href="https://wa.me/628113650101?text=Halo%20kak%2C%20saya%20mau%20daftar%20Poli%20dr.%20Dibya" 
+                   class="whatsapp-btn" 
+                   target="_blank">
+                    <i class="fab fa-whatsapp"></i> Hubungi via WhatsApp
+                </a>
+            </div>
         </div>
         
         <div class="back-link">
@@ -192,17 +239,20 @@
             'rsud_gambiran': {
                 name: 'Poli RSUD Gambiran Kediri',
                 desc: 'Poli Kebidanan RSUD Gambiran',
-                icon: 'fa-hospital-alt'
+                icon: 'fa-hospital-alt',
+                logo: '/images/gambiran-logo.png'
             },
             'rsia_melinda': {
                 name: 'Poli RSIA Melinda Kediri',
                 desc: 'Poli Kandungan RSIA Melinda',
-                icon: 'fa-baby'
+                icon: 'fa-baby',
+                logo: '/images/melinda-logo.png'
             },
             'rs_bhayangkara': {
                 name: 'Poli RS Bhayangkara Kediri',
                 desc: 'Poli Kandungan RS Bhayangkara',
-                icon: 'fa-shield-alt'
+                icon: 'fa-shield-alt',
+                logo: '/images/bhayangkara-logo.png'
             }
         };
 
@@ -221,7 +271,18 @@
             const locData = locationData[location];
             $('#location-name').text(locData.name);
             $('#location-desc').text(locData.desc);
-            $('#location-icon i').removeClass().addClass('fas ' + locData.icon);
+            
+            // Use logo instead of icon
+            if (locData.logo) {
+                $('#location-icon').html(`<img src="${locData.logo}" alt="${locData.name}">`);
+            } else {
+                $('#location-icon i').removeClass().addClass('fas ' + locData.icon);
+            }
+            
+            // Show WhatsApp button only for RSIA Melinda
+            if (location === 'rsia_melinda') {
+                $('#whatsapp-section').show();
+            }
             
             // Load schedules
             loadSchedules(location);

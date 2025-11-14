@@ -272,6 +272,33 @@ function displayIntakeData(record) {
     document.getElementById('intake-data-container').innerHTML = html;
 }
 
+// Load appointment chief complaint
+async function loadAppointmentChiefComplaint(patient) {
+    try {
+        // Try to get latest confirmed appointment for this patient
+        const response = await authorizedFetch(`/api/sunday-appointments/patient-by-id?patientId=${patient.id}`);
+        if (!response.ok) return null;
+        
+        const result = await response.json();
+        if (!result.success || !result.appointments || result.appointments.length === 0) return null;
+        
+        // Find most recent confirmed appointment
+        const confirmedAppointment = result.appointments
+            .filter(apt => apt.status === 'confirmed')
+            .sort((a, b) => new Date(b.appointment_date) - new Date(a.appointment_date))[0];
+        
+        if (confirmedAppointment && confirmedAppointment.chief_complaint) {
+            console.log('Found appointment chief complaint:', confirmedAppointment.chief_complaint);
+            return confirmedAppointment.chief_complaint;
+        }
+        
+        return null;
+    } catch (error) {
+        console.error('Error loading appointment chief complaint:', error);
+        return null;
+    }
+}
+
 // Load saved medical records
 async function loadMedicalRecords() {
     try {
@@ -501,6 +528,16 @@ async function init() {
         await loadVerifiedIntakeData(patient);
         // Load any saved medical records
         await loadMedicalRecords();
+        
+        // If keluhan_utama is still empty, try to load from appointment
+        const keluhanUtamaField = document.getElementById('keluhan_utama');
+        if (keluhanUtamaField && !keluhanUtamaField.value) {
+            const appointmentComplaint = await loadAppointmentChiefComplaint(patient);
+            if (appointmentComplaint) {
+                keluhanUtamaField.value = appointmentComplaint;
+                console.log('Auto-filled keluhan_utama from appointment:', appointmentComplaint);
+            }
+        }
     }
     
     // Show main content

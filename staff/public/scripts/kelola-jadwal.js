@@ -20,6 +20,9 @@ $(document).ready(function() {
         return;
     }
 
+    // Clear tbody before initializing DataTable
+    $('#schedules-tbody').html('');
+
     // Initialize DataTable
     schedulesTable = $('#schedules-table').DataTable({
         paging: true,
@@ -30,6 +33,15 @@ $(document).ready(function() {
         autoWidth: false,
         responsive: true,
         order: [[1, 'asc'], [2, 'asc']],
+        columns: [
+            { title: "ID", width: "5%" },
+            { title: "Lokasi", width: "20%" },
+            { title: "Hari", width: "15%" },
+            { title: "Waktu", width: "20%" },
+            { title: "Keterangan", width: "25%" },
+            { title: "Status", width: "8%" },
+            { title: "Aksi", width: "12%", orderable: false }
+        ],
         language: {
             url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json'
         }

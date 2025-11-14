@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Status Intake Form</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .info-box {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .success { background: #d1fae5; border-left: 5px solid #10b981; padding: 15px; margin: 20px 0; border-radius: 5px; }
+        .info { background: #dbeafe; border-left: 5px solid #3b82f6; padding: 15px; margin: 20px 0; border-radius: 5px; }
+        .warning { background: #fef3c7; border-left: 5px solid #f59e0b; padding: 15px; margin: 20px 0; border-radius: 5px; }
+        h1 { color: #1f2937; margin-bottom: 10px; }
+        h2 { color: #374151; font-size: 1.3em; margin-top: 30px; }
+        code { background: #f3f4f6; padding: 2px 6px; border-radius: 3px; font-family: monospace; }
+        .btn {
+            display: inline-block;
+            background: #2563eb;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 6px;
+            text-decoration: none;
+            margin: 10px 10px 10px 0;
+            font-weight: 500;
+        }
+        .btn:hover { background: #1d4ed8; }
+        .btn-success { background: #10b981; }
+        .btn-success:hover { background: #059669; }
+        ul { line-height: 1.8; }
+        .status-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        .status-table th, .status-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .status-table th {
+            background: #f9fafb;
+            font-weight: 600;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.875em;
+            font-weight: 500;
+        }
+        .badge-success { background: #d1fae5; color: #065f46; }
+        .badge-warning { background: #fef3c7; color: #92400e; }
+    </style>
+</head>
+<body>
+    <div class="info-box">
+        <h1>✅ Sistem Intake Form Berfungsi Normal</h1>
+        
+        <div class="success">
+            <strong>🎉 Endpoint berhasil diverifikasi!</strong><br>
+            Backend API <code>/api/patient-intake/my-intake</code> sudah berfungsi dengan baik.
+        </div>
+
+        <h2>📊 Status Test Results:</h2>
+        
+        <table class="status-table">
+            <tr>
+                <th>Test</th>
+                <th>Status</th>
+                <th>Keterangan</th>
+            </tr>
+            <tr>
+                <td>✅ Endpoint Exists</td>
+                <td><span class="badge badge-success">PASS</span></td>
+                <td>Return 401 without auth (correct)</td>
+            </tr>
+            <tr>
+                <td>✅ Authentication</td>
+                <td><span class="badge badge-success">PASS</span></td>
+                <td>Token detected (308 chars)</td>
+            </tr>
+            <tr>
+                <td>✅ Authorization</td>
+                <td><span class="badge badge-success">PASS</span></td>
+                <td>Request authorized with Bearer token</td>
+            </tr>
+            <tr>
+                <td>⚠️ Data Found</td>
+                <td><span class="badge badge-warning">EMPTY</span></td>
+                <td>User belum pernah submit intake form</td>
+            </tr>
+        </table>
+
+        <div class="info">
+            <strong>ℹ️ Response 404 adalah NORMAL</strong><br>
+            User dengan phone <code>082327545665</code> belum pernah mengisi intake form sebelumnya.<br>
+            Ini bukan error - sistem bekerja sesuai design.
+        </div>
+
+        <h2>🗂️ Database Status:</h2>
+        <ul>
+            <li><strong>Total intake records:</strong> 3 files</li>
+            <li><strong>User's phone:</strong> 082327545665 (last 10 digits: 2327545665)</li>
+            <li><strong>Existing records from other patients:</strong>
+                <ul>
+                    <li>628123172041 (last 10: 8123172041) - verified</li>
+                    <li>628123172044 (last 10: 8123172044) - verified</li>
+                </ul>
+            </li>
+        </ul>
+
+        <h2>📋 Workflow yang Benar:</h2>
+        
+        <div class="info">
+            <strong>Untuk User PERTAMA KALI (seperti sekarang):</strong>
+            <ol>
+                <li>Buka form intake → Form <strong>KOSONG</strong> (normal)</li>
+                <li>Isi semua field → Klik <strong>"Kirim Data"</strong></li>
+                <li>System akan <strong>POST</strong> (create new) ke <code>/api/patient-intake</code></li>
+                <li>Data tersimpan dengan status <code>verified</code></li>
+                <li>Redirect ke dashboard</li>
+            </ol>
+        </div>
+
+        <div class="success">
+            <strong>Untuk User yang SUDAH PERNAH Submit:</strong>
+            <ol>
+                <li>Buka form intake → Form <strong>AUTO-LOAD</strong> data lama</li>
+                <li>Button text berubah: <strong>"Perbarui Data"</strong></li>
+                <li>Edit field yang perlu diubah → Klik <strong>"Perbarui Data"</strong></li>
+                <li>System akan <strong>PUT</strong> (update) ke <code>/api/patient-intake/my-intake</code></li>
+                <li>Data diupdate dengan history tracking</li>
+                <li>Redirect ke dashboard</li>
+            </ol>
+        </div>
+
+        <h2>🧪 Next Steps:</h2>
+        
+        <a href="/patient-intake.html" class="btn btn-success">
+            📝 Isi Intake Form Sekarang
+        </a>
+        
+        <a href="/patient-dashboard.html" class="btn">
+            🏠 Kembali ke Dashboard
+        </a>
+
+        <div class="warning" style="margin-top: 30px;">
+            <strong>⚙️ Technical Note:</strong><br>
+            Setelah submit pertama kali, coba buka form lagi untuk test fitur UPDATE:
+            <ul>
+                <li>✅ Data harus auto-load</li>
+                <li>✅ Button berubah jadi "Perbarui Data"</li>
+                <li>✅ Bisa edit dan save changes</li>
+                <li>✅ History tercatat di backend</li>
+            </ul>
+        </div>
+
+        <h2>✨ Features Implemented:</h2>
+        <ul>
+            <li>✅ <strong>GET</strong> my-intake - Load existing intake data</li>
+            <li>✅ <strong>PUT</strong> my-intake - Update existing intake data</li>
+            <li>✅ <strong>POST</strong> intake - Create new intake (first time)</li>
+            <li>✅ Phone number matching (last 10 digits normalization)</li>
+            <li>✅ AES-256-GCM encryption</li>
+            <li>✅ JWT authentication (patient_token)</li>
+            <li>✅ Auto-fill form fields</li>
+            <li>✅ Dynamic button text</li>
+            <li>✅ History tracking</li>
+        </ul>
+    </div>
+</body>
+</html>

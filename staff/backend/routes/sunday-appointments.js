@@ -341,7 +341,7 @@ router.get('/list', verifyToken, async (req, res) => {
         let query = `
             SELECT a.*, p.full_name, p.phone, p.email
             FROM sunday_appointments a
-            LEFT JOIN patients p ON a.patient_id = p.id
+            LEFT JOIN patients p ON CAST(a.patient_id AS CHAR) = CAST(p.id AS CHAR)
             WHERE 1=1
         `;
         const params = [];
@@ -382,6 +382,56 @@ router.get('/list', verifyToken, async (req, res) => {
     } catch (error) {
         console.error('Error getting appointments list:', error);
         res.status(500).json({ message: 'Terjadi kesalahan' });
+    }
+});
+
+/**
+ * GET /api/sunday-appointments/patient-by-id (STAFF ONLY)
+ * Get patient's appointments by patient ID (for staff use)
+ */
+router.get('/patient-by-id', verifyToken, async (req, res) => {
+    try {
+        const { patientId } = req.query;
+        
+        if (!patientId) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Patient ID required' 
+            });
+        }
+        
+        const [appointments] = await db.query(
+            `SELECT id, appointment_date, session, slot_number, chief_complaint, status, notes, created_at
+             FROM sunday_appointments
+             WHERE patient_id = ?
+             ORDER BY appointment_date DESC, session ASC, slot_number ASC`,
+            [patientId]
+        );
+        
+        const formatted = appointments.map(apt => ({
+            ...apt,
+            dateFormatted: new Date(apt.appointment_date).toLocaleDateString('id-ID', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            }),
+            sessionLabel: getSessionLabel(apt.session),
+            time: getSlotTime(apt.session, apt.slot_number),
+            isPast: new Date(apt.appointment_date) < new Date()
+        }));
+        
+        res.json({ 
+            success: true, 
+            appointments: formatted 
+        });
+        
+    } catch (error) {
+        console.error('Error getting patient appointments by ID:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Terjadi kesalahan' 
+        });
     }
 });
 

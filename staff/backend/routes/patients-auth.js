@@ -384,7 +384,7 @@ router.get('/verify', verifyToken, (req, res) => {
 router.get('/profile', verifyToken, async (req, res) => {
     try {
         const [patients] = await db.query(
-            'SELECT id, full_name, email, phone, photo_url, birth_date, age, registration_date, profile_completed, email_verified, google_id, intake_completed FROM patients WHERE id = ?',
+            'SELECT id, full_name, email, phone, photo_url, birth_date, age, registration_date, profile_completed, email_verified, google_id, intake_completed, password FROM patients WHERE id = ?',
             [req.user.id]
         );
         
@@ -396,8 +396,12 @@ router.get('/profile', verifyToken, async (req, res) => {
         const patient = patients[0];
         const mappedPatient = {
             ...patient,
-            fullname: patient.full_name
+            fullname: patient.full_name,
+            has_password: patient.password ? 1 : 0
         };
+        
+        // Remove password from response (security)
+        delete mappedPatient.password;
         
         res.json({ user: mappedPatient });
         
@@ -455,6 +459,138 @@ router.put('/profile', verifyToken, async (req, res) => {
     } catch (error) {
         console.error('Update profile error:', error);
         res.status(500).json({ message: 'Terjadi kesalahan saat menyimpan profil' });
+    }
+});
+
+// POST /api/patients/set-password - Set password for Google Sign-In users
+router.post('/set-password', verifyToken, async (req, res) => {
+    try {
+        const { password, confirm_password } = req.body;
+        
+        // Validation
+        if (!password || !confirm_password) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Password dan konfirmasi password harus diisi' 
+            });
+        }
+        
+        if (password !== confirm_password) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Password dan konfirmasi password tidak cocok' 
+            });
+        }
+        
+        if (password.length < 6) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Password minimal 6 karakter' 
+            });
+        }
+        
+        // Hash password
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        // Update patient password
+        await db.query(
+            'UPDATE patients SET password = ?, updated_at = NOW() WHERE id = ?',
+            [hashedPassword, req.user.id]
+        );
+        
+        res.json({ 
+            success: true,
+            message: 'Password berhasil diatur. Anda sekarang dapat login dengan email dan password.' 
+        });
+        
+    } catch (error) {
+        console.error('Set password error:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Terjadi kesalahan saat mengatur password' 
+        });
+    }
+});
+
+// POST /api/patients/change-password - Change password (requires old password)
+router.post('/change-password', verifyToken, async (req, res) => {
+    try {
+        const { old_password, new_password, confirm_password } = req.body;
+        
+        // Validation
+        if (!old_password || !new_password || !confirm_password) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Semua field harus diisi' 
+            });
+        }
+        
+        if (new_password !== confirm_password) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Password baru dan konfirmasi tidak cocok' 
+            });
+        }
+        
+        if (new_password.length < 6) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Password minimal 6 karakter' 
+            });
+        }
+        
+        // Get current patient data
+        const [patients] = await db.query(
+            'SELECT id, password FROM patients WHERE id = ?',
+            [req.user.id]
+        );
+        
+        if (patients.length === 0) {
+            return res.status(404).json({ 
+                success: false,
+                message: 'Akun tidak ditemukan' 
+            });
+        }
+        
+        const patient = patients[0];
+        
+        // Check if patient has password set
+        if (!patient.password) {
+            return res.status(400).json({ 
+                success: false,
+                message: 'Anda belum pernah set password. Gunakan fitur "Set Password" terlebih dahulu.' 
+            });
+        }
+        
+        // Verify old password
+        const isOldPasswordValid = await bcrypt.compare(old_password, patient.password);
+        if (!isOldPasswordValid) {
+            return res.status(401).json({ 
+                success: false,
+                message: 'Password lama tidak valid' 
+            });
+        }
+        
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(new_password, 10);
+        
+        // Update password
+        await db.query(
+            'UPDATE patients SET password = ?, updated_at = NOW() WHERE id = ?',
+            [hashedPassword, req.user.id]
+        );
+        
+        res.json({ 
+            success: true,
+            message: 'Password berhasil diubah' 
+        });
+        
+    } catch (error) {
+        console.error('Change password error:', error);
+        res.status(500).json({ 
+            success: false,
+            message: 'Terjadi kesalahan saat mengubah password' 
+        });
     }
 });
 
@@ -577,6 +713,57 @@ router.delete('/:id', verifyToken, async (req, res) => {
     } catch (error) {
         console.error('Delete patient error:', error);
         res.status(500).json({ message: 'Terjadi kesalahan saat menghapus pasien' });
+    }
+});
+
+// PATCH /api/patients/:id/status - Update patient status (Admin only)
+router.patch('/:id/status', verifyToken, async (req, res) => {
+    try {
+        const { status } = req.body;
+        const patientId = req.params.id;
+        
+        // Validate status
+        if (!status || !['active', 'inactive'].includes(status)) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Invalid status. Must be "active" or "inactive"' 
+            });
+        }
+        
+        // Check if user is admin/superadmin
+        if (!['admin', 'superadmin'].includes(req.user.role)) {
+            return res.status(403).json({ 
+                success: false, 
+                message: 'Unauthorized. Admin access required.' 
+            });
+        }
+        
+        // Update patient status
+        const [result] = await db.query(
+            'UPDATE patients SET status = ?, updated_at = NOW() WHERE id = ?',
+            [status, patientId]
+        );
+        
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ 
+                success: false, 
+                message: 'Patient not found' 
+            });
+        }
+        
+        res.json({ 
+            success: true, 
+            message: `Patient status updated to ${status}`,
+            data: { id: patientId, status }
+        });
+        
+    } catch (error) {
+        console.error('Error updating patient status:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to update patient status', 
+            error: error.message 
+        });
     }
 });
 
