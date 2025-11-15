@@ -745,7 +745,7 @@
                 // Get billing details (using patient-specific endpoint)
                 const billingResponse = await fetch(`${API_URL}/api/billings/${billingId}/details`, {
                     headers: {
-                        'Authorization': 'Bearer ' + localStorage.getItem('patientToken')
+                        'Authorization': 'Bearer ' + localStorage.getItem('patient_token')
                     }
                 });
                 
@@ -758,7 +758,7 @@
                 if (billing.patient_record_id) {
                     const recordResponse = await fetch(`${API_URL}/api/patient-records/${billing.patient_record_id}`, {
                         headers: {
-                            'Authorization': 'Bearer ' + localStorage.getItem('patientToken')
+                            'Authorization': 'Bearer ' + localStorage.getItem('patient_token')
                         }
                     });
                     
@@ -1107,7 +1107,7 @@
             try {
                 const response = await fetch(`${API_URL}/api/billings/my-billings`, {
                     headers: {
-                        'Authorization': 'Bearer ' + localStorage.getItem('patientToken')
+                        'Authorization': 'Bearer ' + localStorage.getItem('patient_token')
                     }
                 });
                 
@@ -1226,7 +1226,7 @@
         document.getElementById('logout-link').addEventListener('click', function(e) {
             e.preventDefault();
             localStorage.removeItem('patientData');
-            localStorage.removeItem('patientToken');
+            localStorage.removeItem('patient_token');
             window.location.href = 'index.html';
         });
 

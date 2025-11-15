@@ -26,6 +26,8 @@ function startClock() {
 
 // -------------------- PAGE SWITCHING --------------------
 const pages = {};
+const assetVersion = window.__assetVersion ? `?v=${window.__assetVersion}` : '';
+const importWithVersion = (path) => import(`${path}${assetVersion}`);
 function grab(id) { return document.getElementById(id); }
 function initPages() {
     pages.dashboard = grab('dashboard-page');
@@ -72,7 +74,7 @@ function showTindakanPage() {
     setTitleAndActive('Tindakan', 'nav-tindakan', 'tindakan');
     updatePatientDisplay(); // Update patient display saat buka halaman Tindakan
     // Load billing module
-    import('./billing.js').then(module => {
+    importWithVersion('./billing.js').then(module => {
         if (module.initBilling) {
             module.initBilling();
         }
@@ -84,7 +86,7 @@ function showObatPage() {
     setTitleAndActive('Obat & Alkes', 'nav-obat', 'obat');
     
     // Load billing-obat module
-    import('./billing-obat.js').then(module => {
+    importWithVersion('./billing-obat.js').then(module => {
         if (module.initObat) {
             module.initObat();
         }
@@ -93,11 +95,11 @@ function showObatPage() {
     });
 }
 function showCashierPage() { 
-    // Load all billing modules dynamically
+    // Load all billing modules dynamically with shared cache version
     Promise.all([
-        import('./billing.js'),
-        import('./billing-obat.js'),
-        import('./cashier.js')
+        importWithVersion('./billing.js'),
+        importWithVersion('./billing-obat.js'),
+        importWithVersion('./cashier.js')
     ]).then(async ([billingModule, billingObatModule, cashierModule]) => {
         // Validate patient before opening Rincian Tagihan
         if (!billingModule.validatePatient()) {
@@ -140,7 +142,7 @@ async function showAnamnesa() {
     setTitleAndActive('Anamnesa', 'nav-anamnesa', 'anamnesa');
     
     // Load saved anamnesa data for current patient
-    const { loadAnamnesaData } = await import('./medical-exam.js');
+    const { loadAnamnesaData } = await importWithVersion('./medical-exam.js');
     await loadAnamnesaData();
 }
 
@@ -150,7 +152,7 @@ async function showPhysicalExam() {
     setTitleAndActive('Pemeriksaan Fisik', 'nav-physical', 'physical');
     
     // Load saved physical exam data for current patient
-    const { loadPhysicalExamData } = await import('./medical-exam.js');
+    const { loadPhysicalExamData } = await importWithVersion('./medical-exam.js');
     await loadPhysicalExamData();
 }
 
@@ -181,7 +183,7 @@ async function showUSGExam() {
     }
     
     // Load saved USG data for current patient
-    const { loadUSGExamData } = await import('./medical-exam.js');
+    const { loadUSGExamData } = await importWithVersion('./medical-exam.js');
     await loadUSGExamData();
 }
 
@@ -191,7 +193,7 @@ async function showLabExam() {
     setTitleAndActive('Pemeriksaan Penunjang', 'nav-lab', 'lab');
     
     // Load saved lab exam data for current patient
-    const { loadLabExamData } = await import('./medical-exam.js');
+    const { loadLabExamData } = await importWithVersion('./medical-exam.js');
     await loadLabExamData();
 }
 function showStokOpnamePage() { 
@@ -199,7 +201,7 @@ function showStokOpnamePage() {
     pages.admin?.classList.remove('d-none'); 
     setTitleAndActive('Stok Opname', 'nav-admin', 'stok');
     // Load stok opname data
-    import('./stok-opname.js').then(module => {
+    importWithVersion('./stok-opname.js').then(module => {
         if (module.initStokOpname) {
             module.initStokOpname();
         }
@@ -211,7 +213,7 @@ function showPengaturanPage() {
     pages.pengaturan?.classList.remove('d-none');
     setTitleAndActive('Pengaturan', 'nav-pengaturan', 'pengaturan');
     
-    import('./kelola-tindakan.js').then(module => {
+    importWithVersion('./kelola-tindakan.js').then(module => {
         if (module.initKelolaTindakan) {
             module.initKelolaTindakan();
         }
@@ -226,7 +228,7 @@ function showKelolaObatPage() {
     setTitleAndActive('Kelola Obat', 'nav-kelola-obat', 'kelolaObat');
     
     // Load kelola-obat module
-    import('./kelola-obat.js').then(module => {
+    importWithVersion('./kelola-obat.js').then(module => {
         if (module.initKelolaObat) {
             module.initKelolaObat();
         }
@@ -241,7 +243,7 @@ function showAppointmentsPage() {
     setTitleAndActive('Appointment', 'nav-appointments', 'appointments');
     // Load appointments module dynamically
     console.log('🔧 Loading appointments module...');
-    import('./appointments.js').then(module => {
+    importWithVersion('./appointments.js').then(module => {
         console.log('✅ Appointments module loaded:', module);
         if (module && module.initAppointments) {
             module.initAppointments();
@@ -260,7 +262,7 @@ function showProfileSettings() {
     pages.profile?.classList.remove('d-none'); 
     setTitleAndActive('Profile Settings', null, 'profile'); 
     // Load profile module and initialize
-    import('./profile.js').then(module => {
+    importWithVersion('./profile.js').then(module => {
         if (module.initProfile) {
             module.initProfile();
         }

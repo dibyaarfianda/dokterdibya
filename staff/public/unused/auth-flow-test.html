@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Auth Flow Test</title>
+    <style>
+        body { font-family: Arial; margin: 20px; }
+        .test-section { border: 1px solid #ccc; padding: 15px; margin: 10px 0; }
+        .log { background: #f5f5f5; padding: 10px; border-radius: 4px; font-family: monospace; white-space: pre-wrap; max-height: 300px; overflow-y: auto; margin: 10px 0; }
+        button { padding: 8px 15px; background: #007bff; color: white; border: none; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>Authentication Flow Test</h1>
+    
+    <div class="test-section">
+        <h2>1. Test Login Endpoint</h2>
+        <button onclick="testLogin()">Test /api/auth/login</button>
+        <div id="loginLog" class="log"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Test /me Endpoint</h2>
+        <button onclick="testMe()">Test /api/auth/me</button>
+        <div id="meLog" class="log"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Test Auth Module Load</h2>
+        <button onclick="testAuthModule()">Import vps-auth-v2.js</button>
+        <div id="moduleLog" class="log"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Full Flow Simulation</h2>
+        <button onclick="testFullFlow()">Simulate Complete Login Flow</button>
+        <div id="flowLog" class="log"></div>
+    </div>
+
+    <script>
+        function log(elementId, message, isError = false) {
+            const elem = document.getElementById(elementId);
+            const time = new Date().toLocaleTimeString();
+            const className = isError ? 'error' : 'success';
+            elem.innerHTML += `<span class="${className}">[${time}] ${message}</span>\n`;
+            elem.scrollTop = elem.scrollHeight;
+        }
+
+        async function testLogin() {
+            const elemId = 'loginLog';
+            document.getElementById(elemId).innerHTML = '';
+            log(elemId, 'Starting login test...');
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'nanda.arfianda@gmail.com',
+                        password: 'superadmin123'
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    log(elemId, `✓ Login successful`);
+                    log(elemId, `✓ Token received: ${data.data.token.substring(0, 20)}...`);
+                    log(elemId, `✓ User: ${data.data.user.email}`);
+                    return data.data.token;
+                } else {
+                    log(elemId, `✗ Login failed: ${data.message}`, true);
+                    return null;
+                }
+            } catch (err) {
+                log(elemId, `✗ Error: ${err.message}`, true);
+                return null;
+            }
+        }
+
+        async function testMe() {
+            const elemId = 'meLog';
+            document.getElementById(elemId).innerHTML = '';
+            log(elemId, 'Getting fresh token...');
+            
+            try {
+                const loginRes = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: 'nanda.arfianda@gmail.com',
+                        password: 'superadmin123'
+                    })
+                });
+                
+                const loginData = await loginRes.json();
+                const token = loginData.data.token;
+                log(elemId, `✓ Got token`);
+                
+                log(elemId, 'Testing /api/auth/me...');
+                const meRes = await fetch('/api/auth/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                
+                const meData = await meRes.json();
+                if (meData.success) {
+                    log(elemId, `✓ /me endpoint successful`);
+                    log(elemId, `✓ User ID: ${meData.data.id}`);
+                    log(elemId, `✓ Email: ${meData.data.email}`);
+                    log(elemId, `✓ Role: ${meData.data.role}`);
+                } else {
+                    log(elemId, `✗ /me failed: ${meData.message}`, true);
+                }
+            } catch (err) {
+                log(elemId, `✗ Error: ${err.message}`, true);
+            }
+        }
+
+        async function testAuthModule() {
+            const elemId = 'moduleLog';
+            document.getElementById(elemId).innerHTML = '';
+            log(elemId, 'Importing vps-auth-v2.js...');
+            
+            try {
+                const auth = await import('./scripts/vps-auth-v2.js');
+                log(elemId, `✓ Module imported`);
+                log(elemId, `✓ signIn function: ${typeof auth.signIn}`);
+                log(elemId, `✓ fetchMe function: ${typeof auth.fetchMe}`);
+                log(elemId, `✓ getIdToken function: ${typeof auth.getIdToken}`);
+                log(elemId, `✓ onAuthStateChanged function: ${typeof auth.onAuthStateChanged}`);
+                log(elemId, `✓ All functions available`);
+            } catch (err) {
+                log(elemId, `✗ Error importing module: ${err.message}`, true);
+            }
+        }
+
+        async function testFullFlow() {
+            const elemId = 'flowLog';
+            document.getElementById(elemId).innerHTML = '';
+            log(elemId, '=== FULL AUTH FLOW TEST ===');
+            log(elemId, 'Step 1: Import auth module...');
+            
+            try {
+                const auth = await import('./scripts/vps-auth-v2.js');
+                log(elemId, '✓ Auth module imported');
+                
+                log(elemId, 'Step 2: Register onAuthStateChanged listener...');
+                let listenerFired = false;
+                let listenerUser = null;
+                
+                auth.onAuthStateChanged((user) => {
+                    listenerFired = true;
+                    listenerUser = user;
+                    if (user) {
+                        log(elemId, `✓ LISTENER FIRED: User logged in - ${user.email}`);
+                    } else {
+                        log(elemId, `✓ LISTENER FIRED: No user (logged out)`);
+                    }
+                });
+                
+                // Give listener a moment to fire if user already exists
+                await new Promise(r => setTimeout(r, 100));
+                
+                log(elemId, 'Step 3: Call signIn...');
+                const result = await auth.signIn('nanda.arfianda@gmail.com', 'superadmin123', false);
+                
+                if (result) {
+                    log(elemId, '✓ signIn returned success');
+                    
+                    // Give listener a moment to fire
+                    await new Promise(r => setTimeout(r, 500));
+                    
+                    if (listenerFired && listenerUser) {
+                        log(elemId, '✓ AUTH FLOW SUCCESS: Listener fired with user');
+                        log(elemId, `✓ User email: ${listenerUser.email}`);
+                        log(elemId, '✓ This means login.html would redirect to dashboard');
+                    } else {
+                        log(elemId, '✗ ISSUE: Listener did not fire or no user received', true);
+                    }
+                } else {
+                    log(elemId, '✗ signIn returned failure', true);
+                }
+            } catch (err) {
+                log(elemId, `✗ Error: ${err.message}`, true);
+                console.error(err);
+            }
+        }
+    </script>
+</body>
+</html>

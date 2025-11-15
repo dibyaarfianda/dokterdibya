@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Test Patient Delete Cache Fix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background: #1d4ed8;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .success { background: #d1fae5; border-left: 4px solid #10b981; }
+        .error { background: #fee2e2; border-left: 4px solid #ef4444; }
+        .info { background: #dbeafe; border-left: 4px solid #3b82f6; }
+        h1 { color: #1f2937; }
+        h2 { color: #374151; font-size: 1.2em; margin-top: 25px; }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.9em;
+            font-weight: 500;
+            margin: 2px;
+        }
+        .badge-success { background: #d1fae5; color: #065f46; }
+        .badge-error { background: #fee2e2; color: #991b1b; }
+    </style>
+</head>
+<body>
+    <div class="test-box">
+        <h1>🧪 Test Patient Cache Fix</h1>
+        <p>Test apakah setelah delete patient, data langsung hilang dari semua list (no cache)</p>
+        
+        <h2>📋 Cache-Busting Features:</h2>
+        <ul>
+            <li>✅ <code>?_=${Date.now()}</code> on all API calls</li>
+            <li>✅ <code>Cache-Control: no-cache</code> headers</li>
+            <li>✅ DataTable destroy & reinit after delete</li>
+            <li>✅ Force reload appointments patient list</li>
+            <li>✅ Reload floating panel</li>
+        </ul>
+    </div>
+
+    <div class="test-box">
+        <h2>🔍 Test 1: Load Patient List</h2>
+        <button onclick="testLoadPatients()">Load All Patients</button>
+        <div id="load-result"></div>
+    </div>
+
+    <div class="test-box">
+        <h2>🗑️ Test 2: Search for "Suryanti"</h2>
+        <button onclick="testSearchSuryanti()">Search Suryanti</button>
+        <div id="search-result"></div>
+    </div>
+
+    <div class="test-box">
+        <h2>📊 Test 3: Check Cache Headers</h2>
+        <button onclick="testCacheHeaders()">Check Response Headers</button>
+        <div id="headers-result"></div>
+    </div>
+
+    <script>
+        const token = localStorage.getItem('vps_auth_token');
+        
+        if (!token) {
+            document.body.innerHTML = '<div class="test-box"><div class="error">❌ No authentication token. Please login first at <a href="/">staff dashboard</a></div></div>';
+        }
+
+        async function testLoadPatients() {
+            const resultDiv = document.getElementById('load-result');
+            resultDiv.innerHTML = '<div class="result info">Loading...</div>';
+
+            try {
+                const timestamp = Date.now();
+                console.log('🔧 Fetching with timestamp:', timestamp);
+                
+                const response = await fetch(`/api/patients?_=${timestamp}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    }
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const data = await response.json();
+                const patients = data.data || [];
+                
+                const suryanti = patients.find(p => 
+                    p.full_name && p.full_name.toLowerCase().includes('suryanti')
+                );
+
+                const html = `
+✅ Success!
+
+Total Patients: ${patients.length}
+Timestamp: ${timestamp}
+Date: ${new Date(timestamp).toLocaleString('id-ID')}
+
+Suryanti Status: ${suryanti ? '<span class="badge badge-error">❌ STILL EXISTS</span>' : '<span class="badge badge-success">✅ NOT FOUND (Deleted)</span>'}
+
+${suryanti ? `
+⚠️ WARNING: Suryanti still found in database!
+ID: ${suryanti.id}
+Name: ${suryanti.full_name}
+Email: ${suryanti.email || 'N/A'}
+Phone: ${suryanti.whatsapp || suryanti.phone || 'N/A'}
+Status: ${suryanti.status}
+
+This might be:
+1. Database not deleted yet
+2. Backend cache issue
+3. Different patient with similar name
+` : '✅ Suryanti berhasil dihapus dari database'}
+
+First 10 patients:
+${patients.slice(0, 10).map((p, i) => 
+    `${i+1}. ${p.full_name || 'N/A'} (${p.id})`
+).join('\n')}
+                `;
+
+                resultDiv.innerHTML = `<div class="result ${suryanti ? 'error' : 'success'}">${html}</div>`;
+
+            } catch (error) {
+                console.error('Test error:', error);
+                resultDiv.innerHTML = `<div class="result error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testSearchSuryanti() {
+            const resultDiv = document.getElementById('search-result');
+            resultDiv.innerHTML = '<div class="result info">Searching...</div>';
+
+            try {
+                const timestamp = Date.now();
+                const response = await fetch(`/api/patients?_=${timestamp}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const data = await response.json();
+                const patients = data.data || [];
+                
+                const matches = patients.filter(p => 
+                    p.full_name && p.full_name.toLowerCase().includes('suryanti')
+                );
+
+                const html = `
+Search Results for "Suryanti":
+
+Total Matches: ${matches.length}
+
+${matches.length === 0 ? 
+    '✅ NO MATCHES - Patient successfully deleted!' :
+    `⚠️ FOUND ${matches.length} MATCH(ES):
+
+${matches.map((p, i) => `
+Match ${i+1}:
+  ID: ${p.id}
+  Name: ${p.full_name}
+  Email: ${p.email || 'N/A'}
+  Phone: ${p.whatsapp || p.phone || 'N/A'}
+  Status: ${p.status}
+  Created: ${p.created_at ? new Date(p.created_at).toLocaleString('id-ID') : 'N/A'}
+`).join('\n')}
+`}
+                `;
+
+                resultDiv.innerHTML = `<div class="result ${matches.length === 0 ? 'success' : 'error'}">${html}</div>`;
+
+            } catch (error) {
+                console.error('Search error:', error);
+                resultDiv.innerHTML = `<div class="result error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testCacheHeaders() {
+            const resultDiv = document.getElementById('headers-result');
+            resultDiv.innerHTML = '<div class="result info">Checking...</div>';
+
+            try {
+                const timestamp = Date.now();
+                const response = await fetch(`/api/patients?_=${timestamp}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache'
+                    }
+                });
+
+                const headers = {};
+                response.headers.forEach((value, key) => {
+                    headers[key] = value;
+                });
+
+                const cacheControl = headers['cache-control'] || 'N/A';
+                const etag = headers['etag'] || 'N/A';
+                const expires = headers['expires'] || 'N/A';
+                const pragma = headers['pragma'] || 'N/A';
+
+                const html = `
+Response Headers:
+
+Cache-Control: ${cacheControl}
+ETag: ${etag}
+Expires: ${expires}
+Pragma: ${pragma}
+Date: ${headers['date'] || 'N/A'}
+
+All Headers:
+${JSON.stringify(headers, null, 2)}
+
+Request Timestamp: ${timestamp}
+Request Date: ${new Date(timestamp).toLocaleString('id-ID')}
+                `;
+
+                resultDiv.innerHTML = `<div class="result info">${html}</div>`;
+
+            } catch (error) {
+                console.error('Headers error:', error);
+                resultDiv.innerHTML = `<div class="result error">❌ Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

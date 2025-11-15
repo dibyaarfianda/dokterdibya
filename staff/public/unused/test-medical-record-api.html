@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quick API Test</title>
+    <style>
+        body { font-family: monospace; padding: 20px; }
+        .test { margin: 10px 0; padding: 10px; border: 1px solid #ddd; }
+        .success { background: #d4edda; }
+        .error { background: #f8d7da; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Medical Record API Test</h1>
+    <button onclick="runTests()">Run All Tests</button>
+    <div id="results"></div>
+
+    <script type="module">
+        import { getIdToken, auth, initAuth } from 'https://dokterdibya.com/scripts/vps-auth-v2.js';
+        
+        window.runTests = async function() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>Initializing...</p>';
+            
+            try {
+                await initAuth();
+                
+                if (!auth.currentUser) {
+                    results.innerHTML = '<div class="test error">Please login first at <a href="https://dokterdibya.com/login.html">https://dokterdibya.com/login.html</a></div>';
+                    return;
+                }
+                
+                const token = await getIdToken();
+                results.innerHTML += `<div class="test success">✅ Logged in as: ${auth.currentUser.email}</div>`;
+                
+                // Test 1: Get Patient
+                try {
+                    const r1 = await fetch('https://dokterdibya.com/api/patients/P001', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    const d1 = await r1.json();
+                    results.innerHTML += `<div class="test ${d1.success ? 'success' : 'error'}">
+                        <strong>Test 1: GET /api/patients/P001</strong><br>
+                        Status: ${r1.status}<br>
+                        Success: ${d1.success}<br>
+                        Patient: ${d1.data?.full_name || 'N/A'}<br>
+                        Phone: ${d1.data?.whatsapp || 'N/A'}
+                    </div>`;
+                } catch (e) {
+                    results.innerHTML += `<div class="test error"><strong>Test 1 Error:</strong> ${e.message}</div>`;
+                }
+                
+                // Test 2: Get Intake List
+                try {
+                    const r2 = await fetch('https://dokterdibya.com/api/patient-intake?limit=10', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    const d2 = await r2.json();
+                    const verified = d2.data?.filter(x => x.status === 'verified') || [];
+                    results.innerHTML += `<div class="test ${d2.success ? 'success' : 'error'}">
+                        <strong>Test 2: GET /api/patient-intake</strong><br>
+                        Status: ${r2.status}<br>
+                        Success: ${d2.success}<br>
+                        Total: ${d2.data?.length || 0}<br>
+                        Verified: ${verified.length}<br>
+                        ${verified.length > 0 ? 'First: ' + verified[0].patientName + ' - ' + verified[0].phone : ''}
+                    </div>`;
+                } catch (e) {
+                    results.innerHTML += `<div class="test error"><strong>Test 2 Error:</strong> ${e.message}</div>`;
+                }
+                
+                // Test 3: Get Intake Detail
+                try {
+                    const r3 = await fetch('https://dokterdibya.com/api/patient-intake/1762969400775-09ad93', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+                    const d3 = await r3.json();
+                    results.innerHTML += `<div class="test ${d3.success ? 'success' : 'error'}">
+                        <strong>Test 3: GET /api/patient-intake/:id</strong><br>
+                        Status: ${r3.status}<br>
+                        Success: ${d3.success}<br>
+                        Has Payload: ${!!d3.data?.payload}<br>
+                        Patient: ${d3.data?.payload?.full_name || 'N/A'}<br>
+                        Phone: ${d3.data?.payload?.phone || 'N/A'}
+                    </div>`;
+                } catch (e) {
+                    results.innerHTML += `<div class="test error"><strong>Test 3 Error:</strong> ${e.message}</div>`;
+                }
+                
+                // Test 4: Phone Matching
+                const r1 = await fetch('https://dokterdibya.com/api/patients/P001', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const patient = (await r1.json()).data;
+                
+                const r2 = await fetch('https://dokterdibya.com/api/patient-intake?limit=10', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const intakes = (await r2.json()).data?.filter(x => x.status === 'verified') || [];
+                
+                const patientPhone = (patient?.whatsapp || '').replace(/\D/g, '');
+                const match = intakes.find(i => {
+                    const iphone = (i.phone || '').replace(/\D/g, '');
+                    return iphone.slice(-10) === patientPhone.slice(-10);
+                });
+                
+                results.innerHTML += `<div class="test ${match ? 'success' : 'error'}">
+                    <strong>Test 4: Phone Matching</strong><br>
+                    Patient Phone: ${patient?.whatsapp}<br>
+                    Match Found: ${match ? 'YES' : 'NO'}<br>
+                    ${match ? 'Matched: ' + match.patientName + ' - ' + match.submissionId : ''}
+                </div>`;
+                
+            } catch (error) {
+                results.innerHTML += `<div class="test error"><strong>Error:</strong> ${error.message}</div>`;
+            }
+        };
+    </script>
+</body>
+</html>
