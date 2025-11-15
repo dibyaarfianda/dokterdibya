@@ -1,8 +1,12 @@
 <!DOCTYPE html>
 <html lang="id">
-<head>
+    <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1d2e5b">
+    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="manifest" href="/staff/public/manifest.json">
+    <link rel="apple-touch-icon" href="/staff/public/images/logodpc.svg">
     <title>Rekam Medis Pasien - Sistem Klinik</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -16,6 +20,17 @@
             padding: 20px;
             border-radius: 5px;
             margin-bottom: 20px;
+        }
+        .patient-header .header-meta {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+        .patient-header .header-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 0.5rem;
+            flex-wrap: wrap;
         }
         .form-section {
             background: #f8f9fa;
@@ -37,6 +52,67 @@
         .nav-tabs .nav-link.active {
             background-color: #667eea;
             color: white;
+        }
+        .content-wrapper {
+            padding: 0;
+        }
+        .card.section-card {
+            margin-bottom: 1rem;
+        }
+        @media (max-width: 992px) {
+            .main-sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+                z-index: 1040;
+            }
+            body.sidebar-open .main-sidebar {
+                transform: translateX(0);
+            }
+            .content-wrapper,
+            .content,
+            .wrapper {
+                margin-left: 0;
+                padding-left: 0;
+            }
+        }
+        @media (max-width: 992px) {
+            .patient-header .row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .patient-header .header-actions {
+                justify-content: space-between;
+                width: 100%;
+            }
+            .patient-header .text-right {
+                text-align: left !important;
+                width: 100%;
+            }
+            .content-wrapper .col-md-8,
+            .content-wrapper .col-md-4 {
+                margin-bottom: 0.5rem;
+            }
+            .container-fluid {
+                padding: 0 1rem;
+            }
+            .nav-tabs {
+                flex-wrap: wrap;
+            }
+        }
+        @media (max-width: 576px) {
+            .patient-header {
+                padding: 15px;
+            }
+            .patient-header .header-actions {
+                justify-content: space-between;
+            }
+            .card-body {
+                padding: 1rem;
+            }
         }
     </style>
 </head>
@@ -104,18 +180,27 @@
                 <!-- Patient Header -->
                 <div class="patient-header" id="patient-header">
                     <div class="row">
+                        <div class="col-12 d-md-none mb-2">
+                            <button class="btn btn-outline-light btn-sm" data-widget="pushmenu" type="button">
+                                <i class="fas fa-bars"></i> Menu
+                            </button>
+                        </div>
                         <div class="col-md-8">
-                            <h3 id="patient-name-header">Loading...</h3>
-                            <p class="mb-0">
-                                <span id="patient-id-header"></span> | 
-                                <span id="patient-age-header"></span> | 
-                                <span id="patient-phone-header"></span>
-                            </p>
+                            <div class="header-meta">
+                                <h3 id="patient-name-header">Loading...</h3>
+                                <p class="mb-0">
+                                    <span id="patient-id-header"></span> | 
+                                    <span id="patient-age-header"></span> | 
+                                    <span id="patient-phone-header"></span>
+                                </p>
+                            </div>
                         </div>
                         <div class="col-md-4 text-right">
-                            <button class="btn btn-light btn-sm" onclick="window.print()">
+                            <div class="header-actions">
+                                <button class="btn btn-light btn-sm" onclick="window.print()">
                                 <i class="fas fa-print"></i> Cetak
-                            </button>
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -146,7 +231,7 @@
                             <ul class="nav nav-tabs" id="medical-tabs" role="tablist">
                                 <li class="nav-item">
                                     <a class="nav-link active" id="anamnesa-tab" data-toggle="pill" href="#anamnesa" role="tab">
-                                        <i class="fas fa-clipboard-list"></i> Anamnesa
+                                        <i class="fas fa-clipboard-list"></i> Patient Intake
                                     </a>
                                 </li>
                                 <li class="nav-item">
@@ -170,7 +255,7 @@
                             <div class="tab-content" id="medical-tabs-content">
                                 <!-- Anamnesa Tab -->
                                 <div class="tab-pane fade show active" id="anamnesa" role="tabpanel">
-                                    <h5>Anamnesa</h5>
+                                    <h5>Patient Intake</h5>
                                     <form id="anamnesa-form">
                                         
                                         <!-- Data Pasien Section -->
@@ -292,6 +377,7 @@
                                                         <option value="">Pilih Rhesus</option>
                                                         <option value="Positif">Positif (+)</option>
                                                         <option value="Negatif">Negatif (-)</option>
+                                                            <option value="Tidak tahu">Tidak tahu</option>
                                                     </select>
                                                 </div>
                                             </div>
@@ -304,20 +390,20 @@
 
                                         <div class="row">
                                             <div class="col-md-4">
-                                                <div class="form-group">
-                                                    <label>Alergi Obat</label>
+                                                    <div class="form-group">
+                                                        <label>Alergi obat</label>
                                                     <textarea class="form-control" id="drug_allergies" rows="2" placeholder="Contoh: Penisilin, Sulfa"></textarea>
                                                 </div>
                                             </div>
                                             <div class="col-md-4">
                                                 <div class="form-group">
-                                                    <label>Alergi Makanan</label>
+                                                        <label>alergi makanan</label>
                                                     <textarea class="form-control" id="food_allergies" rows="2" placeholder="Contoh: Udang, Kacang"></textarea>
                                                 </div>
                                             </div>
                                             <div class="col-md-4">
                                                 <div class="form-group">
-                                                    <label>Alergi Lainnya</label>
+                                                        <label>Alergi Lingkungan: Debu</label>
                                                     <textarea class="form-control" id="other_allergies" rows="2" placeholder="Contoh: Debu, Bulu kucing"></textarea>
                                                 </div>
                                             </div>
@@ -358,7 +444,7 @@
                                                 <div class="row">
                                                     <div class="col-md-3">
                                                         <div class="form-group">
-                                                            <label>Menarche (usia)</label>
+                                                            <label>Riwayat haid "Menarche"</label>
                                                             <input type="number" class="form-control" id="menarche_age" placeholder="Contoh: 13" min="8" max="20">
                                                         </div>
                                                     </div>
@@ -525,7 +611,7 @@
                                         
                                         <div class="mt-3">
                                             <button type="button" class="btn btn-primary" onclick="saveAnamnesa()">
-                                                <i class="fas fa-save"></i> Simpan Anamnesa & Riwayat Prenatal
+                                                <i class="fas fa-save"></i> Simpan Patient Intake & Riwayat Prenatal
                                             </button>
                                         </div>
                                     </form>
@@ -537,49 +623,53 @@
                                     <form id="physical-form">
                                         <div class="row">
                                             <div class="col-md-3">
-                                                <div class="form-group">
-                                                    <label>Tekanan Darah</label>
-                                                    <input type="text" class="form-control" id="tekanan_darah" placeholder="120/80 mmHg">
-                                                </div>
+                                                    <div class="form-group">
+                                                        <label>Tekanan Darah</label>
+                                                        <input type="text" class="form-control" id="tekanan_darah" placeholder="120/80 mmHg" value="120/80">
+                                                    </div>
                                             </div>
                                             <div class="col-md-3">
                                                 <div class="form-group">
                                                     <label>Nadi</label>
-                                                    <input type="text" class="form-control" id="nadi" placeholder="80 x/menit">
+                                                    <input type="text" class="form-control" id="nadi" placeholder="80 x/menit" value="88">
                                                 </div>
                                             </div>
                                             <div class="col-md-3">
                                                 <div class="form-group">
                                                     <label>Suhu</label>
-                                                    <input type="text" class="form-control" id="suhu" placeholder="36.5 °C">
+                                                    <input type="text" class="form-control" id="suhu" placeholder="36.5 °C" value="36,8">
                                                 </div>
                                             </div>
                                             <div class="col-md-3">
                                                 <div class="form-group">
                                                     <label>Respirasi</label>
-                                                    <input type="text" class="form-control" id="respirasi" placeholder="20 x/menit">
+                                                    <input type="text" class="form-control" id="respirasi" placeholder="20 x/menit" value="18">
                                                 </div>
                                             </div>
                                         </div>
                                         <div class="form-group">
                                             <label>Pemeriksaan Kepala & Leher</label>
-                                            <textarea class="form-control" id="kepala_leher" rows="2"></textarea>
+                                            <textarea class="form-control" id="kepala_leher" rows="2">Anemia/Icterus/Cyanosis/Dyspneu (-)</textarea>
                                         </div>
                                         <div class="form-group">
                                             <label>Pemeriksaan Thorax</label>
-                                            <textarea class="form-control" id="thorax" rows="2"></textarea>
+                                            <textarea class="form-control" id="thorax" rows="2">Simetris. Vesiculer/vesicular. Rhonki/Wheezing (-)
+S1 S2 tunggal, murmur (-), gallop (-)</textarea>
                                         </div>
                                         <div class="form-group">
                                             <label>Pemeriksaan Abdomen</label>
-                                            <textarea class="form-control" id="abdomen" rows="2"></textarea>
+                                            <textarea class="form-control" id="abdomen" rows="2">BU (+), Soepel
+Gravida tampak sesuai usia kehamilan / Massa abdomen</textarea>
                                         </div>
                                         <div class="form-group">
                                             <label>Pemeriksaan Ekstremitas</label>
-                                            <textarea class="form-control" id="ekstremitas" rows="2"></textarea>
+                                            <textarea class="form-control" id="ekstremitas" rows="2">Akral hangat, kering. CRT < 2 detik</textarea>
                                         </div>
                                         <div class="form-group">
                                             <label>Pemeriksaan Obstetri</label>
-                                            <textarea class="form-control" id="pemeriksaan_obstetri" rows="3" placeholder="Leopold I-IV, DJJ, TFU, dll"></textarea>
+                                            <textarea class="form-control" id="pemeriksaan_obstetri" rows="3">TFU:
+DJJ:
+VT: (tidak dilakukan)</textarea>
                                         </div>
                                         <button type="button" class="btn btn-primary" onclick="savePhysical()">
                                             <i class="fas fa-save"></i> Simpan Pemeriksaan Fisik
@@ -717,5 +807,14 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
 <script type="module" src="./scripts/medical-record.js"></script>
+<script>
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('sw.js').catch((error) => {
+                console.error('Service worker registration failed:', error);
+            });
+        });
+    }
+</script>
 </body>
 </html>

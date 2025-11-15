@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Pasien - Dokter Dibya</title>
+    <title>Portal Pasien - Dokter Dibya</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,300,600,700' rel='stylesheet' type='text/css'>
@@ -196,6 +196,58 @@
         .quick-action-btn div {
             font-size: 13px;
             line-height: 1.4;
+        }
+
+        /* Kunjunganku Visit Cards */
+        .visit-card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .visit-card {
+            border: 1px solid #404040;
+            border-radius: 8px;
+            padding: 18px;
+            background: #1e1e1e;
+            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
+        }
+
+        .visit-card h4 {
+            margin: 0;
+            color: #28a7e9;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .visit-card p {
+            margin: 5px 0;
+            color: #bfbfbf;
+            font-size: 14px;
+        }
+
+        .visit-card .visit-actions {
+            margin-top: 12px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .visit-card .visit-actions a {
+            background: #303030;
+            color: #28a7e9;
+            border: 1px solid #28a7e9;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            text-decoration: none;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .visit-card .visit-actions a:hover {
+            background: #28a7e9;
+            color: #020202;
         }
         
         /* Profile Info */
@@ -401,6 +453,7 @@
         <div class="container">
             <a href="#profile-section"><i class="fa fa-user"></i> Profil</a>
             <a href="patient-visit-history.html"><i class="fa fa-history"></i> Riwayat Kontrol</a>
+            <a href="#visits-history-section"><i class="fa fa-clipboard-list"></i> Kunjunganku</a>
             <a href="#" id="logout-link"><i class="fa fa-sign-out"></i> Keluar</a>
         </div>
     </nav>
@@ -417,7 +470,7 @@
                 </div>
                 <div class="col-md-12">
                     <h1>Selamat Datang, <span id="user-name">Pasien</span>!</h1>
-                    <p class="subtitle">Dashboard pribadi Anda untuk mengelola kesehatan</p>
+                    <p class="subtitle">Portal private Anda untuk mengelola kesehatan</p>
                 </div>
             </div>
         </div>
@@ -471,6 +524,17 @@
             </div>
         </div>
 
+        <!-- Kunjunganku Section -->
+        <div class="dashboard-card" id="visits-history-section" style="margin-bottom: 30px;">
+            <h3><i class="fa fa-clipboard-list"></i> Kunjunganku</h3>
+            <div id="visits-list-container">
+                <div class="empty-state" style="padding: 40px 20px;">
+                    <i class="fa fa-spinner fa-spin fa-2x"></i>
+                    <p style="margin-top: 10px; color: #999;">Memuat riwayat kunjungan dan invoice Anda...</p>
+                </div>
+            </div>
+        </div>
+
         <div class="row">
             <!-- Quick Actions -->
             <div class="col-md-12">
@@ -485,13 +549,13 @@
                             <i class="fa fa-calendar"></i>
                             <div>Jadwal &<br>Janji Konsultasi</div>
                         </a>
-                        <a href="#" class="quick-action-btn" onclick="alert('Fitur segera hadir!'); return false;">
-                            <i class="fa fa-stethoscope"></i>
-                            <div>Riwayat<br>Kesehatan</div>
+                        <a href="#" class="quick-action-btn" onclick="alert('Jadwal USG segera hadir!'); return false;">
+                            <i class="fa fa-heartbeat"></i>
+                            <div>USG &amp;<br>Imaging</div>
                         </a>
-                        <a href="#" class="quick-action-btn" onclick="alert('Fitur segera hadir!'); return false;">
-                            <i class="fa fa-comments"></i>
-                            <div>Chat dengan<br>Dokter</div>
+                        <a href="#" class="quick-action-btn" onclick="alert('Layanan Lab segera hadir!'); return false;">
+                            <i class="fa fa-flask"></i>
+                            <div>Lab &amp;<br>Hasil Tes</div>
                         </a>
                     </div>
                 </div>
@@ -777,6 +841,8 @@
                 // Check for confirmed appointments
                 checkConfirmedAppointments();
 
+                loadVisitInvoices();
+
             } catch (error) {
                 console.error('Error loading profile:', error);
                 // Token might be invalid, logout
@@ -829,6 +895,102 @@
                 icon.classList.remove('fa-chevron-down');
                 icon.classList.add('fa-chevron-up');
             }
+        }
+
+        async function loadVisitInvoices() {
+            const container = document.getElementById('visits-list-container');
+            if (!container) return;
+
+            const patientId = window.currentProfile?.id;
+            if (!patientId) {
+                container.innerHTML = `<div class="empty-state"><i class="fa fa-exclamation-circle"></i><p>Informasi pasien belum tersedia.</p></div>`;
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/visit-invoices/patient/${patientId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Gagal memuat kunjungan');
+                }
+
+                const { data } = await response.json();
+                renderVisitCards(data || []);
+            } catch (error) {
+                console.error('Error loading visit invoices:', error);
+                container.innerHTML = `<div class="empty-state"><i class="fa fa-exclamation-triangle"></i><p>Gagal memuat riwayat kunjungan.</p></div>`;
+            }
+        }
+
+        function renderVisitCards(visits) {
+            const container = document.getElementById('visits-list-container');
+            if (!container) return;
+
+            if (!visits || visits.length === 0) {
+                container.innerHTML = `<div class="empty-state"><i class="fa fa-info-circle"></i><p>Belum ada kunjungan atau invoice terkait.</p></div>`;
+                return;
+            }
+
+            const cardsHtml = visits.map(visit => {
+                const visitType = escapeText(visit.visit_type || 'Kunjungan Klinik');
+                const visitNotes = escapeText(visit.notes || '');
+                const invoiceNumber = escapeText(visit.invoice_number || '-');
+                const statusLabel = visit.invoice_status ? visit.invoice_status.charAt(0).toUpperCase() + visit.invoice_status.slice(1) : 'Pending';
+                const links = [];
+                if (visit.invoice_url) {
+                    links.push(`<a href="${visit.invoice_url}" target="_blank" rel="noreferrer">Lihat Invoice</a>`);
+                }
+                if (visit.etiket_url) {
+                    links.push(`<a href="${visit.etiket_url}" target="_blank" rel="noreferrer">Cetak Etiket</a>`);
+                }
+
+                const actionsHtml = links.length ? `<div class="visit-actions">${links.join(' ')}</div>` : '';
+
+                return `
+                    <div class="visit-card">
+                        <h4>${visitType}</h4>
+                        <p><strong>Tanggal:</strong> ${formatVisitDate(visit.visit_date)}</p>
+                        <p><strong>Nomor Invoice:</strong> ${invoiceNumber}</p>
+                        <p><strong>Total:</strong> ${formatCurrency(visit.total_amount)}</p>
+                        <p><strong>Status:</strong> ${statusLabel}</p>
+                        ${visitNotes ? `<p>${visitNotes}</p>` : ''}
+                        ${actionsHtml}
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = `<div class="visit-card-grid">${cardsHtml}</div>`;
+        }
+
+        function escapeText(value) {
+            if (!value) return '';
+            return value
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatCurrency(amount) {
+            if (typeof amount !== 'number') {
+                amount = parseFloat(amount) || 0;
+            }
+            return amount.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' });
+        }
+
+        function formatVisitDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('id-ID', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
         }
 
         function openProfileModal() {
