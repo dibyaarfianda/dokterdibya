@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Test Patient Intake API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-box {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #1d4ed8;
+        }
+        .result {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .success { background: #d1fae5; border-left: 4px solid #10b981; }
+        .error { background: #fee2e2; border-left: 4px solid #ef4444; }
+        .info { background: #dbeafe; border-left: 4px solid #3b82f6; }
+        .token-info {
+            background: #fef3c7;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Patient Intake API</h1>
+    
+    <div class="test-box">
+        <h2>Token Status</h2>
+        <div class="token-info" id="token-status"></div>
+    </div>
+
+    <div class="test-box">
+        <h2>Test: Load Existing Intake</h2>
+        <button onclick="testLoadIntake()">🔍 Test GET /api/patient-intake/my-intake</button>
+        <div id="load-result"></div>
+    </div>
+
+    <div class="test-box">
+        <h2>Test: Check Endpoint</h2>
+        <button onclick="testEndpoint()">🌐 Check Endpoint Without Auth</button>
+        <div id="endpoint-result"></div>
+    </div>
+
+    <div class="test-box">
+        <h2>Console Logs</h2>
+        <div id="console-logs" class="result info" style="max-height: 300px; overflow-y: auto;"></div>
+    </div>
+
+    <script>
+        // Display token status
+        function displayTokenStatus() {
+            const token = localStorage.getItem('patient_token');
+            const statusDiv = document.getElementById('token-status');
+            
+            if (token) {
+                statusDiv.innerHTML = `
+                    ✅ <strong>Token Found</strong><br>
+                    Length: ${token.length} characters<br>
+                    First 20 chars: ${token.substring(0, 20)}...<br>
+                    <small>Token is available for API calls</small>
+                `;
+            } else {
+                statusDiv.innerHTML = `
+                    ❌ <strong>No Token Found</strong><br>
+                    <small>Please login first at <a href="/index.html">Login Page</a></small>
+                `;
+            }
+        }
+
+        // Capture console logs
+        const originalLog = console.log;
+        const originalError = console.error;
+        const logs = [];
+
+        function addLog(type, ...args) {
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            logs.push(`[${type}] ${message}`);
+            updateConsoleLogs();
+        }
+
+        console.log = function(...args) {
+            addLog('LOG', ...args);
+            originalLog.apply(console, args);
+        };
+
+        console.error = function(...args) {
+            addLog('ERROR', ...args);
+            originalError.apply(console, args);
+        };
+
+        function updateConsoleLogs() {
+            document.getElementById('console-logs').textContent = logs.join('\n');
+        }
+
+        // Test load existing intake
+        async function testLoadIntake() {
+            const resultDiv = document.getElementById('load-result');
+            resultDiv.innerHTML = '<div class="result info">Testing...</div>';
+
+            try {
+                const token = localStorage.getItem('patient_token');
+                
+                if (!token) {
+                    resultDiv.innerHTML = '<div class="result error">❌ No token found. Please login first.</div>';
+                    return;
+                }
+
+                console.log('Testing GET /api/patient-intake/my-intake...');
+                console.log('Token length:', token.length);
+                
+                const response = await fetch('/api/patient-intake/my-intake', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                console.log('Response status:', response.status);
+                console.log('Response headers:', Object.fromEntries(response.headers.entries()));
+
+                const data = await response.json();
+                console.log('Response data:', data);
+
+                if (response.ok) {
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            ✅ <strong>Success!</strong><br><br>
+                            <strong>Status:</strong> ${response.status}<br>
+                            <strong>Has Data:</strong> ${data.data ? 'Yes' : 'No'}<br>
+                            ${data.data ? `<strong>Submission ID:</strong> ${data.data.submissionId}<br>` : ''}
+                            <br>
+                            <strong>Full Response:</strong><br>
+                            ${JSON.stringify(data, null, 2)}
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result error">
+                            ❌ <strong>Error</strong><br><br>
+                            <strong>Status:</strong> ${response.status}<br>
+                            <strong>Response:</strong><br>
+                            ${JSON.stringify(data, null, 2)}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Test error:', error);
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        ❌ <strong>Exception:</strong><br>
+                        ${error.message}<br><br>
+                        ${error.stack}
+                    </div>
+                `;
+            }
+        }
+
+        // Test endpoint without auth
+        async function testEndpoint() {
+            const resultDiv = document.getElementById('endpoint-result');
+            resultDiv.innerHTML = '<div class="result info">Testing...</div>';
+
+            try {
+                console.log('Testing endpoint without authentication...');
+                
+                const response = await fetch('/api/patient-intake/my-intake', {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                console.log('Response status:', response.status);
+                
+                const data = await response.json();
+                console.log('Response data:', data);
+
+                if (response.status === 401) {
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            ✅ <strong>Endpoint Found!</strong><br><br>
+                            Status: ${response.status} (Unauthorized - Expected)<br>
+                            This confirms the endpoint exists and requires authentication.<br><br>
+                            <strong>Response:</strong><br>
+                            ${JSON.stringify(data, null, 2)}
+                        </div>
+                    `;
+                } else if (response.status === 404) {
+                    resultDiv.innerHTML = `
+                        <div class="result error">
+                            ❌ <strong>Endpoint Not Found</strong><br><br>
+                            Status: 404<br>
+                            The endpoint does not exist or is not properly registered.<br><br>
+                            <strong>Response:</strong><br>
+                            ${JSON.stringify(data, null, 2)}
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `
+                        <div class="result info">
+                            ℹ️ <strong>Unexpected Status</strong><br><br>
+                            Status: ${response.status}<br><br>
+                            <strong>Response:</strong><br>
+                            ${JSON.stringify(data, null, 2)}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Test error:', error);
+                resultDiv.innerHTML = `
+                    <div class="result error">
+                        ❌ <strong>Exception:</strong><br>
+                        ${error.message}
+                    </div>
+                `;
+            }
+        }
+
+        // Initialize
+        displayTokenStatus();
+        console.log('Test page loaded. Version:', Date.now());
+    </script>
+</body>
+</html>

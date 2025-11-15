@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Avatar Test</title>
+    <style>
+        body { font-family: system-ui, sans-serif; padding: 20px; }
+        .debug-panel { background: #f0f0f0; padding: 15px; border-radius: 8px; margin: 20px 0; }
+        .debug-item { margin: 5px 0; font-family: monospace; }
+    </style>
+</head>
+<body>
+    <h1>Chat Avatar Debug Test</h1>
+    
+    <div class="debug-panel">
+        <h3>Authentication Debug</h3>
+        <div class="debug-item">User ID: <span id="userId">Not loaded</span></div>
+        <div class="debug-item">User Name: <span id="userName">Not loaded</span></div>
+        <div class="debug-item">User Email: <span id="userEmail">Not loaded</span></div>
+        <div class="debug-item">User Photo URL: <span id="userPhoto">Not loaded</span></div>
+        <div class="debug-item">User Photo Status: <span id="photoStatus">Not checked</span></div>
+    </div>
+
+    <button onclick="testSendMessage()">Send Test Message</button>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.2/socket.io.js"></script>
+    <script type="module">
+        import { auth, onAuthStateChanged, getIdToken } from './scripts/vps-auth-v2.js';
+
+        const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+            ? 'http://localhost:3001'
+            : window.location.origin.replace(/\/$/, '');
+
+        function renderPhotoStatus(photoUrl) {
+            const photoStatusEl = document.getElementById('photoStatus');
+            if (!photoUrl) {
+                photoStatusEl.textContent = 'No photo URL available';
+                photoStatusEl.style.color = 'orange';
+                return;
+            }
+
+            const img = new Image();
+            img.onload = () => {
+                photoStatusEl.textContent = 'Photo loads successfully';
+                photoStatusEl.style.color = 'green';
+            };
+            img.onerror = () => {
+                photoStatusEl.textContent = 'Photo failed to load';
+                photoStatusEl.style.color = 'red';
+            };
+            img.src = photoUrl;
+        }
+
+        function updateDebugInfo(user) {
+            document.getElementById('userId').textContent = user?.id || '—';
+            document.getElementById('userName').textContent = user?.full_name || user?.name || 'No display name';
+            document.getElementById('userEmail').textContent = user?.email || 'No email';
+
+            const photoUrl = user?.avatar_url || user?.photo_url || user?.photoURL || null;
+            document.getElementById('userPhoto').textContent = photoUrl || 'No photo URL';
+            renderPhotoStatus(photoUrl);
+        }
+
+        async function testSendMessage() {
+            const user = auth.currentUser;
+            if (!user) {
+                alert('Please log in first');
+                return;
+            }
+
+            try {
+                const token = await getIdToken();
+                if (!token) throw new Error('Missing auth token');
+
+                const response = await fetch(`${API_BASE}/api/chat/send`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        message: `Test message with avatar at ${new Date().toLocaleTimeString()}`,
+                        user_id: user.id,
+                        user_name: user.full_name || user.name || user.email,
+                        user_photo: user.avatar_url || user.photo_url || null
+                    })
+                });
+
+                const result = await response.json();
+                console.log('Send result:', result);
+
+                if (result.success) {
+                    alert('Test message sent successfully! Check console for details.');
+                } else {
+                    alert('Failed to send message: ' + (result.message || 'Unknown error'));
+                }
+            } catch (err) {
+                console.error('Error sending test message:', err);
+                alert('Error: ' + err.message);
+            }
+        }
+
+        window.testSendMessage = testSendMessage;
+
+        onAuthStateChanged((user) => {
+            if (user) {
+                console.log('User authenticated:', user);
+                updateDebugInfo(user);
+            } else {
+                console.log('User not authenticated');
+                window.location.href = '/login.html';
+            }
+        });
+    </script>
+
+    <!-- Chat popup -->
+    <script src="./scripts/chat-popup.js?v=20251114"></script>
+</body>
+</html>
