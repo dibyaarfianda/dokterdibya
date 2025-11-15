@@ -1,10 +1,13 @@
-const CACHE_NAME = 'dibya-staff-shell-v1';
+const CACHE_NAME = 'dibya-staff-shell-v3';
 const PRE_CACHE_URLS = [
   'medical-record.html',
   'manifest.json',
   'scripts/medical-record.js',
   'images/logodpc.svg',
-  'offline.html'
+  'offline.html',
+  'index-adminlte.html',
+  'management.html',
+  'login.html'
 ];
 
 self.addEventListener('install', (event) => {
