@@ -11,6 +11,68 @@ const API_BASE = (() => {
 let currentPatientId = null;
 let currentIntakeData = null;
 let currentAppointmentData = null;
+const MARITAL_STATUS_LABELS = {
+    single: 'Belum Menikah',
+    menikah: 'Menikah',
+    cerai: 'Cerai'
+};
+const CONTRACEPTION_LABELS = {
+    pil: 'Pil',
+    suntik_3_bulan: 'Suntik 3 bulan',
+    implan: 'Implan',
+    iud: 'IUD',
+    steril: 'Steril',
+    kondom: 'Kondom',
+    kb_kalender: 'KB Kalender',
+    senggama_terputus: 'Senggama terputus',
+    vasektomi: 'Vasektomi',
+    tidak_pernah: 'Tidak pernah'
+};
+const RH_LABELS = {
+    positive: 'Positif',
+    negative: 'Negatif',
+    unknown: 'Tidak tahu'
+};
+const PAYMENT_METHOD_LABELS = {
+    self: 'Mandiri',
+    bpjs: 'BPJS',
+    insurance: 'Asuransi'
+};
+
+function mapToLabel(value, dictionary) {
+    if (!value) return undefined;
+    const key = value.toString().trim().toLowerCase();
+    return dictionary[key] || value;
+}
+
+function normalizeYesNo(value) {
+    if (!value) return undefined;
+    const key = value.toString().trim().toLowerCase();
+    if (['ya', 'yes', 'true'].includes(key)) return 'Ya';
+    if (['tidak', 'no', 'false'].includes(key)) return 'Tidak';
+    return value;
+}
+
+function getPayloadValue(payload, ...keys) {
+    if (!payload) return undefined;
+    for (const key of keys) {
+        const value = payload[key];
+        if (value !== undefined && value !== null && value !== '') {
+            return value;
+        }
+    }
+    return undefined;
+}
+
+function ensureArray(value) {
+    if (!value) {
+        return [];
+    }
+    if (Array.isArray(value)) {
+        return value.filter(Boolean);
+    }
+    return [value];
+}
 
 // Get patient ID from URL
 function getPatientIdFromURL() {
@@ -166,6 +228,9 @@ async function loadVerifiedIntakeData(patient) {
 function displayIntakeData(record) {
     const payload = record.payload || {};
     const metadata = payload.metadata || {};
+    const bloodType = getPayloadValue(payload, 'blood_type');
+    const rhesusValue = mapToLabel(getPayloadValue(payload, 'rhesus_factor', 'rhesus'), RH_LABELS);
+    const lmpValue = getPayloadValue(payload, 'lmp_date', 'lmp');
     
     let html = '<div class="row">';
     
@@ -177,26 +242,36 @@ function displayIntakeData(record) {
     if (payload.dob) html += `<dt class="col-sm-5">Tanggal Lahir:</dt><dd class="col-sm-7">${payload.dob} (${payload.age || '-'} tahun)</dd>`;
     if (payload.phone) html += `<dt class="col-sm-5">Telepon:</dt><dd class="col-sm-7">${payload.phone}</dd>`;
     if (payload.address) html += `<dt class="col-sm-5">Alamat:</dt><dd class="col-sm-7">${payload.address}</dd>`;
-    if (payload.blood_type) html += `<dt class="col-sm-5">Golongan Darah:</dt><dd class="col-sm-7">${payload.blood_type} (${payload.rhesus || '-'})</dd>`;
+    if (bloodType || rhesusValue) html += `<dt class="col-sm-5">Golongan Darah:</dt><dd class="col-sm-7">${bloodType || '-'} (${rhesusValue || '-'})</dd>`;
     html += '</dl></div></div>';
     
     // Family Info
     html += '<div class="col-md-6"><div class="intake-data-section">';
     html += '<h6><i class="fas fa-users"></i> Keluarga & Sosial</h6>';
     html += '<dl class="row mb-0">';
-    if (payload.marital_status) html += `<dt class="col-sm-5">Status:</dt><dd class="col-sm-7">${payload.marital_status}</dd>`;
+    const maritalStatusShown = mapToLabel(payload.marital_status, MARITAL_STATUS_LABELS);
+    if (maritalStatusShown) html += `<dt class="col-sm-5">Status:</dt><dd class="col-sm-7">${maritalStatusShown}</dd>`;
     if (payload.husband_name) html += `<dt class="col-sm-5">Suami:</dt><dd class="col-sm-7">${payload.husband_name} (${payload.husband_age || '-'} tahun)</dd>`;
     if (payload.husband_job) html += `<dt class="col-sm-5">Pekerjaan Suami:</dt><dd class="col-sm-7">${payload.husband_job}</dd>`;
     if (payload.occupation) html += `<dt class="col-sm-5">Pekerjaan Ibu:</dt><dd class="col-sm-7">${payload.occupation}</dd>`;
     if (payload.education) html += `<dt class="col-sm-5">Pendidikan:</dt><dd class="col-sm-7">${payload.education}</dd>`;
-    if (payload.payment_method) html += `<dt class="col-sm-5">Pembayaran:</dt><dd class="col-sm-7">${payload.payment_method}</dd>`;
+    const paymentMethods = ensureArray(payload.payment_method);
+    if (paymentMethods.length) {
+        const labels = paymentMethods
+            .map((value) => mapToLabel(value, PAYMENT_METHOD_LABELS) || value.toString().trim())
+            .filter(Boolean);
+        if (labels.length) {
+            const prefix = labels.length > 1 ? `${labels.length}: ` : '';
+            html += `<dt class="col-sm-5">Pembayaran:</dt><dd class="col-sm-7">${prefix}${labels.join(', ')}</dd>`;
+        }
+    }
     html += '</dl></div></div>';
     
     // Pregnancy Info
     html += '<div class="col-md-6"><div class="intake-data-section">';
     html += '<h6><i class="fas fa-baby"></i> Kehamilan Saat Ini</h6>';
     html += '<dl class="row mb-0">';
-    if (payload.lmp) html += `<dt class="col-sm-5">HPHT:</dt><dd class="col-sm-7">${payload.lmp}</dd>`;
+    if (lmpValue) html += `<dt class="col-sm-5">HPHT:</dt><dd class="col-sm-7">${lmpValue}</dd>`;
     if (metadata.edd?.value || payload.edd) html += `<dt class="col-sm-5">HPL:</dt><dd class="col-sm-7">${metadata.edd?.value || payload.edd}</dd>`;
     if (payload.first_check_ga) html += `<dt class="col-sm-5">Usia Kehamilan:</dt><dd class="col-sm-7">${payload.first_check_ga} minggu</dd>`;
     const totals = metadata.obstetricTotals || {};
@@ -207,10 +282,11 @@ function displayIntakeData(record) {
     html += '<div class="col-md-6"><div class="intake-data-section">';
     html += '<h6><i class="fas fa-calendar-alt"></i> Riwayat Haid</h6>';
     html += '<dl class="row mb-0">';
-    if (payload.menarche_age) html += `<dt class="col-sm-5">Menarche:</dt><dd class="col-sm-7">${payload.menarche_age} tahun</dd>`;
+    if (payload.menarche_age) html += `<dt class="col-sm-5">Riwayat haid "Menarche"</dt><dd class="col-sm-7">${payload.menarche_age} tahun</dd>`;
     if (payload.cycle_length) html += `<dt class="col-sm-5">Siklus Haid:</dt><dd class="col-sm-7">${payload.cycle_length} hari</dd>`;
     if (payload.cycle_regular) html += `<dt class="col-sm-5">Teratur:</dt><dd class="col-sm-7">${payload.cycle_regular}</dd>`;
-    if (payload.kb_failure) html += `<dt class="col-sm-5">Kegagalan KB:</dt><dd class="col-sm-7">${payload.kb_failure}</dd>`;
+    const kbFailureDisplay = normalizeYesNo(getPayloadValue(payload, 'contraception_failure', 'kb_failure'));
+    if (kbFailureDisplay) html += `<dt class="col-sm-5">Kegagalan KB:</dt><dd class="col-sm-7">${kbFailureDisplay}</dd>`;
     html += '</dl></div></div>';
     
     // Medical History & Allergies
@@ -221,9 +297,9 @@ function displayIntakeData(record) {
         html += `<dt class="col-sm-5">Riwayat Penyakit:</dt><dd class="col-sm-7">${payload.past_conditions.join(', ')}</dd>`;
     }
     if (payload.family_history) html += `<dt class="col-sm-5">Riwayat Keluarga:</dt><dd class="col-sm-7">${payload.family_history} (${payload.family_history_detail || '-'})</dd>`;
-    if (payload.allergy_drugs) html += `<dt class="col-sm-5">Alergi Obat:</dt><dd class="col-sm-7">${payload.allergy_drugs}</dd>`;
-    if (payload.allergy_food) html += `<dt class="col-sm-5">Alergi Makanan:</dt><dd class="col-sm-7">${payload.allergy_food}</dd>`;
-    if (payload.allergy_env) html += `<dt class="col-sm-5">Alergi Lingkungan:</dt><dd class="col-sm-7">${payload.allergy_env}</dd>`;
+    if (payload.allergy_drugs) html += `<dt class="col-sm-5">Alergi obat:</dt><dd class="col-sm-7">${payload.allergy_drugs}</dd>`;
+    if (payload.allergy_food) html += `<dt class="col-sm-5">alergi makanan:</dt><dd class="col-sm-7">${payload.allergy_food}</dd>`;
+    if (payload.allergy_env) html += `<dt class="col-sm-5">Alergi Lingkungan: Debu</dt><dd class="col-sm-7">${payload.allergy_env}</dd>`;
     html += '</dl></div></div>';
     
     // Current Medications
@@ -419,7 +495,8 @@ async function populateAnamnesaForm(patient, intakeData, chiefComplaint) {
             if (payload.age) document.getElementById('patient_age').value = payload.age + ' tahun';
             if (payload.address) document.getElementById('patient_address').value = payload.address;
             if (payload.phone) document.getElementById('patient_phone').value = payload.phone;
-            if (payload.marital_status) document.getElementById('patient_marital_status').value = payload.marital_status;
+            const maritalValue = mapToLabel(payload.marital_status, MARITAL_STATUS_LABELS);
+            if (maritalValue) document.getElementById('patient_marital_status').value = maritalValue;
             if (payload.occupation) document.getElementById('patient_occupation').value = payload.occupation;
             if (payload.education) document.getElementById('patient_education').value = payload.education;
             if (payload.husband_name) document.getElementById('patient_husband_name').value = payload.husband_name;
@@ -430,20 +507,26 @@ async function populateAnamnesaForm(patient, intakeData, chiefComplaint) {
             }
             
             // Riwayat Medis Section
-            if (payload.pregnancy_test_date) {
-                document.getElementById('pregnancy_test_date').value = payload.pregnancy_test_date;
+            const pregnancyTestDate = getPayloadValue(payload, 'pregnancy_test_date', 'preg_test_date');
+            if (pregnancyTestDate) {
+                document.getElementById('pregnancy_test_date').value = pregnancyTestDate;
             }
-            if (payload.blood_type) {
-                document.getElementById('blood_type').value = payload.blood_type;
+            const bloodTypeValue = getPayloadValue(payload, 'blood_type');
+            if (bloodTypeValue) {
+                document.getElementById('blood_type').value = bloodTypeValue;
             }
-            if (payload.rhesus_factor) {
-                document.getElementById('rhesus_factor').value = payload.rhesus_factor;
+            const rhesusValue = mapToLabel(getPayloadValue(payload, 'rhesus_factor', 'rhesus'), RH_LABELS);
+            if (rhesusValue) {
+                document.getElementById('rhesus_factor').value = rhesusValue;
             }
             
             // Current Medical Conditions
             const conditions = [];
             if (payload.medical_conditions && Array.isArray(payload.medical_conditions)) {
                 conditions.push(...payload.medical_conditions);
+            }
+            if (!conditions.length && payload.past_conditions && Array.isArray(payload.past_conditions)) {
+                conditions.push(...payload.past_conditions);
             }
             if (payload.other_conditions) {
                 conditions.push(payload.other_conditions);
@@ -464,42 +547,72 @@ async function populateAnamnesaForm(patient, intakeData, chiefComplaint) {
             }
             
             // Current Medications
-            if (payload.current_medications) {
-                document.getElementById('current_medications').value = payload.current_medications;
+            let currentMedications = payload.current_medications;
+            if (!currentMedications && Array.isArray(payload.medications)) {
+                currentMedications = payload.medications
+                    .map((med) => {
+                        const parts = [];
+                        if (med.name) parts.push(med.name);
+                        if (med.dose) parts.push(med.dose);
+                        if (med.freq) parts.push(med.freq);
+                        return parts.join(' ').trim();
+                    })
+                    .filter(Boolean)
+                    .join('; ');
+            }
+            if (currentMedications) {
+                document.getElementById('current_medications').value = currentMedications;
             }
             
             // Past Medical History
-            if (payload.past_medical_history) {
-                document.getElementById('past_medical_history').value = payload.past_medical_history;
+            let pastHistoryValue = payload.past_medical_history;
+            if (!pastHistoryValue) {
+                const pastParts = [];
+                if (payload.past_conditions && Array.isArray(payload.past_conditions)) {
+                    pastParts.push(...payload.past_conditions);
+                }
+                if (payload.past_conditions_detail) {
+                    pastParts.push(payload.past_conditions_detail);
+                }
+                pastHistoryValue = pastParts.join('; ');
             }
-            
+            if (pastHistoryValue) {
+                document.getElementById('past_medical_history').value = pastHistoryValue;
+            }
+
             // Family Medical History
-            const familyHistory = [];
-            if (payload.family_medical_history && Array.isArray(payload.family_medical_history)) {
-                familyHistory.push(...payload.family_medical_history);
+            let familyHistoryValue = payload.family_medical_history;
+            if (!familyHistoryValue) {
+                const familyParts = [];
+                if (payload.family_history && Array.isArray(payload.family_history)) {
+                    familyParts.push(...payload.family_history);
+                }
+                if (payload.family_history_detail) {
+                    familyParts.push(payload.family_history_detail);
+                }
+                familyHistoryValue = familyParts.join('; ');
             }
-            if (payload.family_history_details) {
-                familyHistory.push(payload.family_history_details);
+            if (familyHistoryValue) {
+                document.getElementById('family_medical_history').value = familyHistoryValue;
             }
-            if (familyHistory.length > 0) {
-                document.getElementById('family_medical_history').value = familyHistory.join('; ');
-            }
-            
+
             // Status Obstetri Section
-            // Riwayat Menstruasi
-            if (payload.menarche_age) {
-                document.getElementById('menarche_age').value = payload.menarche_age + ' tahun';
+            const menarcheValue = getPayloadValue(payload, 'menarche_age');
+            if (menarcheValue) {
+                document.getElementById('menarche_age').value = `${menarcheValue} tahun`;
             }
             if (payload.cycle_length) {
                 document.getElementById('cycle_length').value = payload.cycle_length;
             }
-            if (payload.cycle_regular) {
-                document.getElementById('cycle_regular').value = payload.cycle_regular;
+            const cycleRegularValue = normalizeYesNo(getPayloadValue(payload, 'cycle_regular'));
+            if (cycleRegularValue) {
+                document.getElementById('cycle_regular').value = cycleRegularValue;
             }
-            if (payload.lmp_date) {
-                document.getElementById('lmp_date').value = payload.lmp_date;
+            const lmpDateValue = getPayloadValue(payload, 'lmp_date', 'lmp');
+            if (lmpDateValue) {
+                document.getElementById('lmp_date').value = lmpDateValue;
             }
-            
+
             // Obstetric Counts
             if (payload.gravida_count) {
                 document.getElementById('gravida_count').value = payload.gravida_count;
@@ -513,18 +626,27 @@ async function populateAnamnesaForm(patient, intakeData, chiefComplaint) {
             if (payload.living_children_count) {
                 document.getElementById('living_children_count').value = payload.living_children_count;
             }
-            
+
             // Pregnancy History Table
-            if (payload.previous_pregnancies && Array.isArray(payload.previous_pregnancies)) {
-                populatePregnancyHistory(payload.previous_pregnancies);
+            const pregnancyHistoryData = payload.pregnancy_history || payload.previous_pregnancies || payload.previousPregnancies;
+            if (pregnancyHistoryData && Array.isArray(pregnancyHistoryData)) {
+                populatePregnancyHistory(pregnancyHistoryData);
             }
-            
+
+            // Prenatal visits
+            const prenatalData = payload.prenatal_care || payload.prenatalVisits;
+            if (prenatalData && Array.isArray(prenatalData)) {
+                loadPrenatalData(prenatalData);
+            }
+
             // Contraception History
-            if (payload.previous_contraception) {
-                document.getElementById('previous_contraception').value = payload.previous_contraception;
+            const previousContraceptionValue = mapToLabel(getPayloadValue(payload, 'previous_contraception'), CONTRACEPTION_LABELS);
+            if (previousContraceptionValue) {
+                document.getElementById('previous_contraception').value = previousContraceptionValue;
             }
-            if (payload.contraception_failure) {
-                document.getElementById('contraception_failure').value = payload.contraception_failure;
+            const failureValue = normalizeYesNo(getPayloadValue(payload, 'contraception_failure', 'kb_failure'));
+            if (failureValue) {
+                document.getElementById('contraception_failure').value = failureValue;
             }
             if (payload.failed_contraception_type) {
                 document.getElementById('failed_contraception_type').value = payload.failed_contraception_type;
