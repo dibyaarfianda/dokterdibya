@@ -269,6 +269,36 @@ export function validateObatUsage() {
 export async function initObat() {
     console.log('🔷 Initializing Obat module (VPS Mode)...');
     
+    // Check if patient was passed via URL or sessionStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    const patientIdFromUrl = urlParams.get('patientId');
+    const patientIdFromSession = sessionStorage.getItem('selectedPatientId');
+    const patientNameFromSession = sessionStorage.getItem('selectedPatientName');
+    
+    if (patientIdFromUrl || patientIdFromSession) {
+        const patientId = patientIdFromUrl || patientIdFromSession;
+        console.log('📋 [OBAT] Patient ID from navigation:', patientId);
+        
+        // Show notification
+        if (patientNameFromSession) {
+            setTimeout(() => {
+                const notification = document.createElement('div');
+                notification.className = 'alert alert-success alert-dismissible fade show';
+                notification.style.position = 'fixed';
+                notification.style.top = '70px';
+                notification.style.right = '20px';
+                notification.style.zIndex = '9999';
+                notification.innerHTML = `
+                    <button type="button" class="close" data-dismiss="alert">&times;</button>
+                    <strong><i class="fas fa-user-check"></i> Pasien Terpilih:</strong><br>
+                    ${patientNameFromSession} (ID: ${patientId})
+                `;
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 4000);
+            }, 500);
+        }
+    }
+    
     // Get DOM elements
     drugsContainer = document.getElementById('drugs-container');
     ampulsContainer = document.getElementById('ampuls-container');

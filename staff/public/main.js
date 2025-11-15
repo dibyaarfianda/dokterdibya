@@ -98,6 +98,11 @@ function showCashierPage() {
         import('./scripts/billing-obat.js'),
         import('./scripts/cashier.js')
     ]).then(async ([billingModule, billingObatModule, cashierModule]) => {
+        // Initialize billing module if not already done (to load patient from sessionStorage)
+        if (billingModule.initBilling && !billingModule.getCurrentPatient()) {
+            await billingModule.initBilling();
+        }
+        
         // Validate patient before opening Rincian Tagihan
         if (!billingModule.validatePatient()) {
             showPatientPage();
@@ -320,14 +325,49 @@ function bindBasics() {
     backToTindakanBtn?.addEventListener('click', showTindakanPage);
 }
 
+// -------------------- HASH NAVIGATION --------------------
+function handleHashNavigation() {
+    const hash = window.location.hash.substring(1); // Remove #
+    console.log('🔗 [MAIN] Hash navigation:', hash);
+    
+    switch(hash) {
+        case 'tindakan':
+            showTindakanPage();
+            break;
+        case 'obat':
+            showObatPage();
+            break;
+        case 'cashier':
+        case 'billing':
+            showCashierPage();
+            break;
+        case 'patient':
+            showPatientPage();
+            break;
+        case 'dashboard':
+        default:
+            showDashboardPage();
+            break;
+    }
+}
+
 // -------------------- BOOT --------------------
 function initMain() {
     initPages();
     startClock();
     bindBasics();
     initMedicalExam(); // Initialize medical examination pages
-    // Default landing: Dashboard
-    showDashboardPage();
+    
+    // Check for hash navigation (from medical record page)
+    if (window.location.hash) {
+        handleHashNavigation();
+    } else {
+        // Default landing: Dashboard
+        showDashboardPage();
+    }
+    
+    // Listen for hash changes
+    window.addEventListener('hashchange', handleHashNavigation);
 }
 
 // Auto-init if DOM is ready, otherwise wait

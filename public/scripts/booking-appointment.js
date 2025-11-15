@@ -280,7 +280,11 @@ async function submitBooking() {
             Tanggal: ${data.details.date}<br>
             Waktu: ${data.details.time}<br>
             Sesi: ${data.details.session}<br><br>
-            Mohon datang 10 menit lebih awal. Anda akan dialihkan ke dashboard...
+            <div style="margin-top: 10px; padding: 10px; background: #FFF3E0; color: #E65100; border-radius: 5px; border-left: 4px solid #FF9800;">
+                <i class="fa fa-clock-o"></i> <strong>Status: Menunggu Konfirmasi</strong><br>
+                Staff klinik akan segera mengkonfirmasi janji temu Anda.
+            </div><br>
+            Anda akan dialihkan ke dashboard...
         `, 'success');
         
         setTimeout(() => {

@@ -200,6 +200,36 @@ async function loadServices() {
 export async function initBilling() {
     console.log('🚀 [BILLING] initBilling() called');
     
+    // Check if patient was passed via URL or sessionStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    const patientIdFromUrl = urlParams.get('patientId');
+    const patientIdFromSession = sessionStorage.getItem('selectedPatientId');
+    const patientNameFromSession = sessionStorage.getItem('selectedPatientName');
+    
+    if (patientIdFromUrl || patientIdFromSession) {
+        const patientId = patientIdFromUrl || patientIdFromSession;
+        console.log('📋 [BILLING] Patient ID from navigation:', patientId);
+        
+        // Show notification
+        if (patientNameFromSession) {
+            setTimeout(() => {
+                const notification = document.createElement('div');
+                notification.className = 'alert alert-success alert-dismissible fade show';
+                notification.style.position = 'fixed';
+                notification.style.top = '70px';
+                notification.style.right = '20px';
+                notification.style.zIndex = '9999';
+                notification.innerHTML = `
+                    <button type="button" class="close" data-dismiss="alert">&times;</button>
+                    <strong><i class="fas fa-user-check"></i> Pasien Terpilih:</strong><br>
+                    ${patientNameFromSession} (ID: ${patientId})
+                `;
+                document.body.appendChild(notification);
+                setTimeout(() => notification.remove(), 4000);
+            }, 500);
+        }
+    }
+    
     // Check if user has permission to select services
     canSelectServices = await hasPermission('services.select');
     console.log('🔐 [BILLING] User can select services:', canSelectServices);
@@ -208,6 +238,20 @@ export async function initBilling() {
     console.log('✅ [BILLING] loadServices() completed');
     await loadPatientsToSelect();
     console.log('✅ [BILLING] loadPatientsToSelect() completed');
+    
+    // Restore patient from sessionStorage if available
+    if (patientIdFromUrl || patientIdFromSession) {
+        const patientId = patientIdFromUrl || patientIdFromSession;
+        if (patientNameFromSession) {
+            currentPatient = patientNameFromSession;
+            currentPatientData = {
+                id: patientId,
+                name: patientNameFromSession
+            };
+            console.log('✅ [BILLING] Patient restored from session:', currentPatient);
+            updatePatientDisplay();
+        }
+    }
     
     // Disable service selection if no permission (but still show list in read-only mode)
     if (!canSelectServices) {
@@ -305,10 +349,25 @@ export function updatePatientDisplay() {
 }
 
 export function validatePatient() {
-    if (!currentPatient) {
+    // Check currentPatient or sessionStorage
+    const selectedPatientId = sessionStorage.getItem('selectedPatientId');
+    const selectedPatientName = sessionStorage.getItem('selectedPatientName');
+    
+    if (!currentPatient && !selectedPatientId) {
         showWarning('Harap pilih pasien di menu Data Pasien terlebih dahulu!');
         return false;
     }
+    
+    // If patient is in sessionStorage but not in currentPatient, restore it
+    if (!currentPatient && selectedPatientId && selectedPatientName) {
+        currentPatient = selectedPatientName;
+        currentPatientData = {
+            id: selectedPatientId,
+            name: selectedPatientName
+        };
+        updatePatientDisplay();
+    }
+    
     return true;
 }
 
@@ -342,6 +401,18 @@ export function getCurrentPatientData() {
         };
     }
     
+    // Check sessionStorage for patient info
+    const selectedPatientId = sessionStorage.getItem('selectedPatientId');
+    const selectedPatientName = sessionStorage.getItem('selectedPatientName');
+    
+    if (selectedPatientId && selectedPatientName) {
+        return {
+            id: selectedPatientId,
+            name: selectedPatientName,
+            whatsapp: '-'
+        };
+    }
+    
     // Fallback: Get patient data from select dropdown
     const select = document.getElementById('patient-select');
     if (select && select.value) {
@@ -371,7 +442,9 @@ export function setSelectedPatient(patientName, patientData) {
 export function clearSelectedPatient() {
     currentPatient = null;
     currentPatientData = null;
+    selectedServices = [];
     updatePatientDisplay();
+    updateSelectedList();
 }
 
 // Global functions for obat are now in billing-obat.js

@@ -5,7 +5,7 @@ import { auth, getIdToken } from './vps-auth-v2.js';
 import { showSuccess, showError, showConfirm, showWarning, showInfo } from './toast.js';
 import { askForNextPatient, clearSession, getCurrentSession } from './session-manager.js';
 import { getCurrentPatient } from './billing.js';
-import { broadcastVisitCompleted } from './realtime-sync.js';
+import { broadcastVisitCompleted, broadcastNewPatient } from './realtime-sync.js';
 
 // VPS API Configuration
 const VPS_API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
@@ -365,6 +365,10 @@ async function finalizeBill() {
     
     isFinalized = true;
     
+    // Get current user role
+    const userRole = auth.currentUser?.role || 'staff';
+    const isSuperAdmin = userRole === 'superadmin';
+    
     // Clear session and patient selection after successful finalization
     clearSession();
     
@@ -377,10 +381,21 @@ async function finalizeBill() {
         console.warn('Failed to clear patient selection:', err);
     });
     
-    // Show print buttons and new patient button
-    document.getElementById('print-etiket-btn').classList.remove('d-none');
-    document.getElementById('print-invoice-btn').classList.remove('d-none');
-    document.getElementById('new-patient-btn').classList.remove('d-none');
+    // Show buttons based on role
+    if (isSuperAdmin) {
+        // Superadmin can only view - show print buttons but not "Pasien Baru"
+        document.getElementById('print-etiket-btn').classList.remove('d-none');
+        document.getElementById('print-invoice-btn').classList.remove('d-none');
+        document.getElementById('new-patient-btn').classList.add('d-none');
+        
+        // Show waiting message
+        showInfo('Menunggu Manager/Asisten Dokter untuk konfirmasi pasien selanjutnya...');
+    } else {
+        // Manager/Asisten Dokter can proceed with new patient
+        document.getElementById('print-etiket-btn').classList.remove('d-none');
+        document.getElementById('print-invoice-btn').classList.remove('d-none');
+        document.getElementById('new-patient-btn').classList.remove('d-none');
+    }
     
     // Hide finalize button
     document.getElementById('finalize-bill-btn').classList.add('d-none');
@@ -388,16 +403,49 @@ async function finalizeBill() {
 
 async function startNewPatient() {
     const confirmed = await showConfirm(
-        'Apakah Anda yakin ingin memulai pemeriksaan pasien baru?<br><br>Data pemeriksaan saat ini akan dihapus.',
+        'Apakah Anda yakin ingin memulai pemeriksaan pasien baru?<br><br>Data pemeriksaan saat ini akan dihapus untuk SEMUA pengguna yang online.',
         'Periksa Pasien Baru'
     );
     
     if (confirmed) {
+        // Broadcast to all users to clear their patient selection
+        broadcastNewPatient();
+        
+        // Clear sessionStorage
+        sessionStorage.removeItem('selectedPatientId');
+        sessionStorage.removeItem('selectedPatientName');
+        
+        // Clear medical record form data
+        const medicalRecordKeys = Object.keys(sessionStorage).filter(key => 
+            key.startsWith('medicalRecordForm_')
+        );
+        medicalRecordKeys.forEach(key => sessionStorage.removeItem(key));
+        console.log('[CASHIER] Cleared', medicalRecordKeys.length, 'medical record form data');
+        
+        // Clear session data
         clearSession();
         
         // Reset cashier page
         isFinalized = false;
         currentBillingData = null;
+        
+        // Clear billing module patient selection and services
+        import('./billing.js').then(billingModule => {
+            if (billingModule.clearSelectedPatient) {
+                billingModule.clearSelectedPatient();
+            }
+        }).catch(err => {
+            console.warn('Failed to clear billing patient:', err);
+        });
+        
+        // Clear billing obat
+        import('./billing-obat.js').then(billingObatModule => {
+            if (billingObatModule.clearSelectedObat) {
+                billingObatModule.clearSelectedObat();
+            }
+        }).catch(err => {
+            console.warn('Failed to clear billing obat:', err);
+        });
         
         // Redirect to patient page
         if (window.showPatientPage) {
