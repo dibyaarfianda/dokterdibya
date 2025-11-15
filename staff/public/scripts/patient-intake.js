@@ -369,6 +369,23 @@ function buildPayload() {
             payload[key].push(value);
             return;
         }
+        if (key === 'family_history') {
+            if (!payload.family_history) {
+                payload.family_history = [];
+            }
+            payload.family_history.push(value);
+            return;
+        }
+        if (key === 'payment_method') {
+            if (!payload.payment_method) {
+                payload.payment_method = [];
+            }
+            const normalized = value.toString().trim().toLowerCase();
+            if (normalized && !payload.payment_method.includes(normalized)) {
+                payload.payment_method.push(normalized);
+            }
+            return;
+        }
         if (key.startsWith('med_') || key.startsWith('visit_') || key.startsWith('preg_') || key.startsWith('lab_')) {
             return;
         }
@@ -426,6 +443,180 @@ function buildPayload() {
         type: 'digital_name',
         value: patientSignatureField ? patientSignatureField.value : '',
     };
+
+    const aliasTargets = {
+        patient_name: 'full_name',
+        patient_dob: 'dob',
+        patient_phone: 'phone',
+        patient_address: 'address',
+        patient_marital_status: 'marital_status',
+        patient_occupation: 'occupation',
+        patient_education: 'education',
+        patient_husband_name: 'husband_name',
+        patient_insurance: 'insurance',
+    };
+    Object.entries(aliasTargets).forEach(([source, target]) => {
+        if (payload[source] && !payload[target]) {
+            payload[target] = payload[source];
+        }
+    });
+
+    if (payload.payment_method && payload.payment_method.length) {
+        payload.payment_method = Array.from(
+            new Set(
+                payload.payment_method
+                    .map((value) => value.toString().trim().toLowerCase())
+                    .filter(Boolean)
+            )
+        );
+    }
+
+    const normalizeYesNo = (value) => {
+        if (!value) {
+            return value;
+        }
+        const lowered = value.toString().trim().toLowerCase();
+        if (['ya', 'yes', 'true'].includes(lowered)) {
+            return 'Ya';
+        }
+        if (['tidak', 'no', 'false'].includes(lowered)) {
+            return 'Tidak';
+        }
+        return value;
+    };
+
+    const mapValueLabel = (value, dictionary) => {
+        if (!value) {
+            return value;
+        }
+        const key = value.toString().trim().toLowerCase();
+        return dictionary[key] || value;
+    };
+
+    const arrayify = (maybeArray) => {
+        if (Array.isArray(maybeArray)) {
+            return maybeArray.filter(Boolean);
+        }
+        if (maybeArray) {
+            return [maybeArray];
+        }
+        return [];
+    };
+
+    const joinValues = (items) => {
+        const normalized = (items || []).filter(Boolean);
+        return normalized.length ? normalized.join('; ') : '';
+    };
+
+    if (payload.marital_status) {
+        payload.marital_status = mapValueLabel(payload.marital_status, {
+            single: 'Belum Menikah',
+            menikah: 'Menikah',
+            cerai: 'Cerai',
+        });
+    }
+
+    if (payload.previous_contraception) {
+        payload.previous_contraception = mapValueLabel(payload.previous_contraception, {
+            pil: 'Pil',
+            suntik_3_bulan: 'Suntik 3 bulan',
+            implan: 'Implan',
+            iud: 'IUD',
+            steril: 'Steril',
+            kondom: 'Kondom',
+            kb_kalender: 'KB Kalender',
+            senggama_terputus: 'Senggama terputus',
+            vasektomi: 'Vasektomi',
+            tidak_pernah: 'Tidak pernah',
+        });
+    }
+
+    if (payload.kb_failure || payload.contraception_failure) {
+        payload.contraception_failure = normalizeYesNo(payload.kb_failure || payload.contraception_failure);
+    }
+
+    if (payload.cycle_regular) {
+        payload.cycle_regular = normalizeYesNo(payload.cycle_regular);
+    }
+
+    if (payload.current_contraception && !payload.failed_contraception_type) {
+        payload.failed_contraception_type = payload.current_contraception;
+    }
+
+    if (payload.preg_test_date) {
+        payload.pregnancy_test_date = payload.preg_test_date;
+    }
+
+    if (payload.lmp) {
+        payload.lmp_date = payload.lmp;
+    }
+
+    if (payload.gravida) {
+        payload.gravida_count = payload.gravida;
+    }
+    if (payload.para) {
+        payload.para_count = payload.para;
+    }
+    if (payload.abortus) {
+        payload.abortus_count = payload.abortus;
+    }
+    if (payload.living_children) {
+        payload.living_children_count = payload.living_children;
+    }
+
+    if (payload.previousPregnancies && payload.previousPregnancies.length) {
+        payload.previous_pregnancies = payload.previousPregnancies;
+        payload.pregnancy_history = payload.previousPregnancies;
+    }
+
+    if (payload.prenatalVisits && payload.prenatalVisits.length) {
+        payload.prenatal_care = payload.prenatalVisits;
+    }
+
+    if (payload.rhesus && !payload.rhesus_factor) {
+        payload.rhesus_factor = mapValueLabel(payload.rhesus, {
+            positive: 'Positif',
+            negative: 'Negatif',
+            unknown: 'Tidak tahu',
+        });
+    }
+
+    payload.drug_allergies = payload.drug_allergies || payload.allergy_drugs || '';
+    payload.food_allergies = payload.food_allergies || payload.allergy_food || '';
+    payload.other_allergies = payload.other_allergies || payload.allergy_env || '';
+
+    const pastConditions = arrayify(payload.past_conditions);
+    payload.medical_conditions = pastConditions;
+    const pastDetails = (payload.past_conditions_detail || '').trim();
+    if (pastDetails) {
+        payload.other_conditions = payload.other_conditions || pastDetails;
+    }
+    const pastHistorySummary = joinValues([...pastConditions, pastDetails]);
+    if (pastHistorySummary) {
+        payload.past_medical_history = payload.past_medical_history || pastHistorySummary;
+    }
+
+    const familyHistory = arrayify(payload.family_history);
+    const familyDetails = (payload.family_history_detail || '').trim();
+    const familySummary = joinValues([...familyHistory, familyDetails]);
+    if (familySummary) {
+        payload.family_medical_history = payload.family_medical_history || familySummary;
+    }
+
+    if (Array.isArray(payload.medications) && payload.medications.length) {
+        const medications = payload.medications
+            .map((med) => {
+                const parts = [];
+                if (med.name) parts.push(med.name);
+                if (med.dose) parts.push(med.dose);
+                if (med.freq) parts.push(med.freq);
+                return parts.join(' ').trim();
+            })
+            .filter(Boolean);
+        if (medications.length) {
+            payload.current_medications = payload.current_medications || medications.join('; ');
+        }
+    }
     return payload;
 }
 

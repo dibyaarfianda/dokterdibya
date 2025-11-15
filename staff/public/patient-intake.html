@@ -425,7 +425,7 @@
                             <div class="field-grid two">
                                 <div class="field">
                                     <label for="full_name">Nama Lengkap *</label>
-                                    <input type="text" id="full_name" name="full_name" required>
+                                    <input type="text" id="full_name" name="patient_name" required>
                                 </div>
                                 <div class="field">
                                     <label for="nik">Nomor Identitas (NIK)</label>
@@ -433,24 +433,24 @@
                                 </div>
                                 <div class="field">
                                     <label for="dob">Tanggal Lahir *</label>
-                                    <input type="date" id="dob" name="dob" required>
+                                    <input type="date" id="dob" name="patient_dob" required>
                                 </div>
                                 <div class="field">
                                     <label for="age">Usia</label>
-                                    <input type="number" id="age" name="age" readonly placeholder="--" min="10">
+                                    <input type="number" id="age" name="patient_age" readonly placeholder="--" min="10">
                                 </div>
                                 <div class="field">
                                     <label for="address">Alamat</label>
-                                    <textarea id="address" name="address" rows="3" placeholder="Tulis alamat lengkap"></textarea>
+                                    <textarea id="address" name="patient_address" rows="3" placeholder="Tulis alamat lengkap"></textarea>
                                 </div>
                                 <div class="field">
                                     <label for="phone">Telepon/HP *</label>
-                                    <input type="tel" id="phone" name="phone" required placeholder="081234567890">
+                                    <input type="tel" id="phone" name="patient_phone" required placeholder="081234567890">
                                     <small style="color: var(--muted); font-size: 0.85rem; margin-top: 0.25rem; display: block;">Nomor dimulai 0 akan otomatis diubah ke 62</small>
                                 </div>
                                 <div class="field">
                                     <label for="emergency_contact">Kontak Darurat</label>
-                                    <input type="tel" id="emergency_contact" name="emergency_contact">
+                                    <input type="tel" id="emergency_contact" name="patient_emergency_contact">
                                 </div>
                             </div>
                         </div>
@@ -460,7 +460,7 @@
                             <div class="field-grid two">
                                 <div class="field">
                                     <label>Status Pernikahan</label>
-                                    <select name="marital_status" id="marital_status">
+                                    <select name="patient_marital_status" id="marital_status">
                                         <option value="">Pilih status</option>
                                         <option value="single">Single</option>
                                         <option value="menikah">Menikah</option>
@@ -469,7 +469,7 @@
                                 </div>
                                 <div class="field">
                                     <label for="husband_name">Nama Suami</label>
-                                    <input type="text" id="husband_name" name="husband_name">
+                                    <input type="text" id="husband_name" name="patient_husband_name">
                                 </div>
                                 <div class="field">
                                     <label for="husband_age">Umur Suami</label>
@@ -481,11 +481,11 @@
                                 </div>
                                 <div class="field">
                                     <label for="occupation">Pekerjaan Ibu</label>
-                                    <input type="text" id="occupation" name="occupation">
+                                    <input type="text" id="occupation" name="patient_occupation">
                                 </div>
                                 <div class="field">
                                     <label for="education">Pendidikan Terakhir</label>
-                                    <select id="education" name="education">
+                                    <select id="education" name="patient_education">
                                         <option value="">Pilih</option>
                                         <option value="sd">SD/MI</option>
                                         <option value="smp">SMP/MTs</option>
@@ -497,7 +497,7 @@
                                 </div>
                                 <div class="field">
                                     <label for="insurance">Asuransi</label>
-                                    <input type="text" id="insurance" name="insurance" placeholder="BPJS, Private, dll">
+                                    <input type="text" id="insurance" name="patient_insurance" placeholder="BPJS, Private, dll">
                                 </div>
                             </div>
                         </div>
@@ -519,7 +519,7 @@
                             <div class="field-grid two">
                                 <div class="field">
                                     <label for="preg_test_date">Tanggal Tes Hamil Positif</label>
-                                    <input type="date" id="preg_test_date" name="preg_test_date">
+                                    <input type="date" id="preg_test_date" name="pregnancy_test_date">
                                 </div>
                                 <div class="field">
                                     <label for="edd">Hari Perkiraan Lahir (HPHT/USG)</label>
@@ -560,7 +560,7 @@
                                 </div>
                                 <div class="field">
                                     <label for="rhesus">Rhesus</label>
-                                    <select id="rhesus" name="rhesus">
+                                    <select id="rhesus" name="rhesus_factor">
                                         <option value="">Pilih</option>
                                         <option value="positive">Rh+</option>
                                         <option value="negative">Rh-</option>
@@ -676,7 +676,7 @@
                                 </div>
                                 <div class="field">
                                     <label for="lmp">HPHT (Hari Pertama Haid Terakhir)</label>
-                                    <input type="date" id="lmp" name="lmp">
+                                    <input type="date" id="lmp" name="lmp_date">
                                 </div>
                             </div>
                         </div>
@@ -732,19 +732,19 @@
                             <div class="field-grid three" style="margin-top:0.75rem;">
                                 <div class="field">
                                     <label for="gravida">Gravida</label>
-                                    <input type="number" id="gravida" name="gravida" min="0" max="20">
+                                    <input type="number" id="gravida" name="gravida_count" min="0" max="20">
                                 </div>
                                 <div class="field">
                                     <label for="para">Para</label>
-                                    <input type="number" id="para" name="para" min="0" max="20">
+                                    <input type="number" id="para" name="para_count" min="0" max="20">
                                 </div>
                                 <div class="field">
                                     <label for="abortus">Abortus</label>
-                                    <input type="number" id="abortus" name="abortus" min="0" max="20">
+                                    <input type="number" id="abortus" name="abortus_count" min="0" max="20">
                                 </div>
                                 <div class="field">
                                     <label for="living_children">Anak Hidup</label>
-                                    <input type="number" id="living_children" name="living_children" min="0" max="20">
+                                    <input type="number" id="living_children" name="living_children_count" min="0" max="20">
                                 </div>
                             </div>
                         </div>
@@ -770,7 +770,7 @@
                                 </div>
                                 <div class="field">
                                     <label>Kehamilan ini karena kegagalan KB?</label>
-                                    <select id="kb_failure" name="kb_failure">
+                                    <select id="kb_failure" name="contraception_failure">
                                         <option value="">Pilih</option>
                                         <option value="ya">Ya</option>
                                         <option value="tidak">Tidak</option>
@@ -778,7 +778,7 @@
                                 </div>
                                 <div class="field">
                                     <label for="current_contraception">Jika ya, tipe kontrasepsi</label>
-                                    <input type="text" id="current_contraception" name="current_contraception">
+                                    <input type="text" id="current_contraception" name="failed_contraception_type">
                                 </div>
                             </div>
                         </div>

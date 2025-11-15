@@ -1,4 +1,4 @@
-import { initAuth, getIdToken } from './vps-auth-v2.js';
+import { auth, initAuth, getIdToken, signOut } from './vps-auth-v2.js';
 
 const API_URL = window.location.hostname === 'localhost' 
     ? 'http://localhost:3000/api' 
@@ -11,7 +11,8 @@ let currentUser = null;
 document.addEventListener('DOMContentLoaded', async () => {
     try {
         // Initialize auth and wait for user
-        currentUser = await initAuth();
+        await initAuth();
+        currentUser = auth.currentUser;
         if (!currentUser) {
             window.location.href = 'login.html';
             return;
@@ -43,7 +44,6 @@ function setupEventListeners() {
     document.getElementById('btn-logout').addEventListener('click', async (e) => {
         e.preventDefault();
         try {
-            const { signOut } = await import('./vps-auth-v2.js');
             await signOut();
             window.location.href = 'login.html';
         } catch (err) {

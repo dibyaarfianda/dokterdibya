@@ -9,7 +9,7 @@
     "test": "jest --coverage --verbose",
     "test:watch": "jest --watch",
     "test:unit": "jest --testPathPattern=unit",
-    "test:integration": "jest --testPathPattern=integration"
+    "test:integration": "jest --testPathPatterns=integration"
   },
   "dependencies": {
     "@socket.io/redis-adapter": "^8.3.0",
