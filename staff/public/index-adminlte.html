@@ -611,10 +611,19 @@
                 margin: 0.25rem 0 0 0 !important;
             }
             
-            /* Bottom navigation optimization */
+            /* Bottom navigation optimization - FIXED POSITION */
             .bottom-nav {
-                height: 60px !important;
+                position: fixed !important;
+                bottom: 0 !important;
+                left: 0 !important;
+                right: 0 !important;
+                width: 100% !important;
+                height: 65px !important;
                 padding: 0 !important;
+                z-index: 1040 !important;
+                background: white !important;
+                border-top: 1px solid #dee2e6 !important;
+                box-shadow: 0 -2px 10px rgba(0,0,0,0.1) !important;
             }
             
             .bottom-nav-item {
@@ -630,6 +639,11 @@
                 font-size: 0.65rem !important;
                 margin-top: 0.2rem !important;
                 line-height: 1 !important;
+            }
+            
+            /* Add padding to body to prevent content being hidden behind bottom nav */
+            body {
+                padding-bottom: 65px !important;
             }
             
             /* Navbar optimization - FULL WIDTH NO HAMBURGER */
