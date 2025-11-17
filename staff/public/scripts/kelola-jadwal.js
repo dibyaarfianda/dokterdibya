@@ -1,6 +1,9 @@
 // Kelola Jadwal Praktik Script
 (function() {
-const API_BASE = '/api/practice-schedules';
+const VPS_API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+    ? 'http://localhost:3001'
+    : window.location.origin.replace(/\/$/, '');
+const API_BASE = `${VPS_API_BASE}/api/practice-schedules`;
 let schedulesTable;
 let allSchedules = [];
 
@@ -18,6 +21,12 @@ function initKelolaJadwal() {
     const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
     if (!token) {
         window.location.href = 'login.html';
+        return;
+    }
+
+    // Check if DataTables is available
+    if (typeof $ === 'undefined' || typeof $.fn.DataTable === 'undefined') {
+        console.error('DataTables library not loaded; Kelola Jadwal disabled on this page');
         return;
     }
 
@@ -55,14 +64,6 @@ function initKelolaJadwal() {
 
     // Load schedules
     loadSchedules();
-}
-
-// Initialize when DOM is ready (works in both standalone and SPA contexts)
-if (document.readyState === 'loading') {
-    $(document).ready(initKelolaJadwal);
-} else {
-    // DOM already loaded (SPA context)
-    initKelolaJadwal();
 }
 
 async function loadSchedules() {
@@ -242,3 +243,12 @@ function logout() {
     localStorage.removeItem('userProfile');
     window.location.href = 'login.html';
 }
+
+// Export functions for SPA usage
+window.initKelolaJadwal = initKelolaJadwal;
+window.showAddModal = showAddModal;
+window.editSchedule = editSchedule;
+window.deleteSchedule = deleteSchedule;
+window.logout = logout;
+
+})(); // End IIFE
