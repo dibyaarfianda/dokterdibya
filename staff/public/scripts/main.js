@@ -26,8 +26,25 @@ function startClock() {
 
 // -------------------- PAGE SWITCHING --------------------
 const pages = {};
-const assetVersion = window.__assetVersion ? `?v=${window.__assetVersion}` : '';
-const importWithVersion = (path) => import(`${path}${assetVersion}`);
+const moduleCache = new Map();
+// Modules listed here already have static imports elsewhere; skip cache busting
+// so we reuse the same evaluated instance across the app.
+const skipVersionModules = new Set(['./billing.js', './billing-obat.js', './medical-exam.js']);
+const PUBLIC_ASSET_ROOT = new URL('../', import.meta.url).pathname;
+function importWithVersion(path) {
+    if (moduleCache.has(path)) {
+        return moduleCache.get(path);
+    }
+    let specifier = path;
+    const version = window.__assetVersion;
+    if (version && !skipVersionModules.has(path)) {
+        const separator = path.includes('?') ? '&' : '?';
+        specifier = `${path}${separator}v=${version}`;
+    }
+    const promise = import(specifier);
+    moduleCache.set(path, promise);
+    return promise;
+}
 function grab(id) { return document.getElementById(id); }
 function initPages() {
     pages.dashboard = grab('dashboard-page');
@@ -48,7 +65,98 @@ function initPages() {
     pages.profile = grab('profile-settings-page');
     pages.stocks = grab('stocks-page');
     pages.finance = grab('finance-page');
+    pages.kelolaPasien = grab('manage-patients-page') || grab('kelola-pasien-page');
+    pages.kelolaPasienLegacy = grab('kelola-pasien-page');
+    pages.kelolaAppointment = grab('kelola-appointment-page');
+    pages.kelolaJadwal = grab('kelola-jadwal-page');
+    pages.kelolaTindakan = grab('kelola-tindakan-page');
+    pages.kelolaObatManagement = grab('kelola-obat-management-page');
+    pages.financeAnalysis = grab('finance-analysis-page');
+    pages.roleManagement = grab('role-management-page');
 
+}
+function loadExternalPage(containerId, htmlFile, options = {}) {
+    const { forceReload = false } = options;
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    const alreadyLoadedSameFile = container.dataset.loaded === 'true' && container.dataset.loadedHtml === htmlFile;
+    if (!forceReload && alreadyLoadedSameFile) return;
+    
+    container.innerHTML = '<div class="text-center p-5"><i class="fas fa-spinner fa-spin fa-2x"></i><p class="mt-2">Memuat...</p></div>';
+    
+    const fileUrl = new URL(htmlFile, window.location.origin + PUBLIC_ASSET_ROOT).href;
+    
+    fetch(fileUrl)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.text();
+        })
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const content = doc.querySelector('.content') || doc.querySelector('.content-wrapper') || doc.body;
+            container.innerHTML = content.innerHTML;
+            container.dataset.loaded = 'true';
+            container.dataset.loadedHtml = htmlFile;
+            container.dataset.lastLoaded = Date.now().toString();
+
+            // Execute scripts in the loaded content
+            executeLoadedScripts(doc, fileUrl);
+        })
+        .catch(error => {
+            console.error('Error loading page:', error, fileUrl);
+            container.innerHTML = '<div class="alert alert-danger">Gagal memuat halaman: ' + htmlFile + '</div>';
+        });
+}
+
+function executeLoadedScripts(doc, baseUrl) {
+    const scripts = Array.from(doc.querySelectorAll('script'));
+
+    function copyScriptAttributes(source, target) {
+        const typeAttr = source.getAttribute('type');
+        if (typeAttr) target.type = typeAttr;
+        if (source.getAttribute('nomodule') !== null) target.noModule = true;
+        const crossOrigin = source.getAttribute('crossorigin');
+        if (crossOrigin) target.crossOrigin = crossOrigin;
+        const referrerPolicy = source.getAttribute('referrerpolicy');
+        if (referrerPolicy) target.referrerPolicy = referrerPolicy;
+        const integrity = source.getAttribute('integrity');
+        if (integrity) target.integrity = integrity;
+    }
+
+    scripts.forEach(script => {
+        const srcAttr = script.getAttribute('src');
+        if (srcAttr) {
+            const resolvedSrc = new URL(srcAttr, baseUrl).href;
+            if (document.querySelector(`script[src="${resolvedSrc}"]`)) {
+                return;
+            }
+            const newScript = document.createElement('script');
+            copyScriptAttributes(script, newScript);
+            newScript.src = resolvedSrc;
+            // Preserve intended async/defer behavior when available
+            if (script.defer) newScript.defer = true;
+            if (script.async) {
+                newScript.async = true;
+            } else if (newScript.type !== 'module') {
+                newScript.async = false;
+            }
+            document.body.appendChild(newScript);
+            return;
+        }
+
+        const text = script.textContent?.trim();
+        if (!text) return;
+
+        const inlineScript = document.createElement('script');
+        copyScriptAttributes(script, inlineScript);
+        inlineScript.textContent = text;
+        document.body.appendChild(inlineScript);
+        setTimeout(() => inlineScript.remove(), 0);
+    });
 }
 function hideAllPages() {
     Object.values(pages).forEach(p => { if (p) p.classList.add('d-none'); });
@@ -257,6 +365,53 @@ function showAppointmentsPage() {
 }
 function showAnalyticsPage() { hideAllPages(); pages.analytics?.classList.remove('d-none'); setTitleAndActive('Analytics', 'nav-analytics', 'analytics'); }
 function showFinancePage() { hideAllPages(); pages.finance?.classList.remove('d-none'); setTitleAndActive('Finance Analysis', 'nav-finance', 'finance'); }
+function showKelolaPasienPage() {
+    if (typeof window.showManagePatientsPage === 'function') {
+        window.showManagePatientsPage();
+        return;
+    }
+
+    hideAllPages();
+    pages.kelolaPasienLegacy?.classList.remove('d-none');
+    setTitleAndActive('Kelola Pasien', 'nav-kelola-pasien', 'kelola-pasien');
+    loadExternalPage('kelola-pasien-page', 'kelola-pasien.html', { forceReload: true });
+}
+function showKelolaAppointmentPage() { 
+    hideAllPages(); 
+    pages.kelolaAppointment?.classList.remove('d-none'); 
+    setTitleAndActive('Kelola Appointment', 'nav-kelola-appointment', 'kelola-appointment');
+    loadExternalPage('kelola-appointment-page', 'kelola-appointment.html', { forceReload: true });
+}
+function showKelolaJadwalPage() { 
+    hideAllPages(); 
+    pages.kelolaJadwal?.classList.remove('d-none'); 
+    setTitleAndActive('Kelola Jadwal', 'nav-kelola-jadwal', 'kelola-jadwal');
+    loadExternalPage('kelola-jadwal-page', 'kelola-jadwal.html', { forceReload: true });
+}
+function showKelolaTindakanPage() {
+    showPengaturanPage();
+    setTitleAndActive('Kelola Tindakan', 'nav-kelola-tindakan', 'kelola-tindakan');
+}
+function showKelolaObatManagementPage() {
+    showKelolaObatPage();
+}
+function showFinanceAnalysisPage() { 
+    hideAllPages(); 
+    pages.financeAnalysis?.classList.remove('d-none'); 
+    setTitleAndActive('Finance Analysis', 'nav-finance-analysis', 'finance-analysis');
+    // Call embedded initialization function after page is visible
+    setTimeout(() => {
+        if (typeof window.initFinanceAnalysisPage === 'function') {
+            window.initFinanceAnalysisPage();
+        }
+    }, 100);
+}
+function showRoleManagementPage() { 
+    hideAllPages(); 
+    pages.roleManagement?.classList.remove('d-none'); 
+    setTitleAndActive('Role Management', 'nav-role-management', 'role-management');
+    loadExternalPage('role-management-page', 'role-management.html', { forceReload: true });
+}
 function showProfileSettings() { 
     hideAllPages(); 
     pages.profile?.classList.remove('d-none'); 
@@ -289,6 +444,13 @@ window.showAppointmentsPage = showAppointmentsPage;
 window.showAnalyticsPage = showAnalyticsPage;
 window.showFinancePage = showFinancePage;
 window.showDashboardPage = showDashboardPage;
+window.showKelolaPasienPage = showKelolaPasienPage;
+window.showKelolaAppointmentPage = showKelolaAppointmentPage;
+window.showKelolaJadwalPage = showKelolaJadwalPage;
+window.showKelolaTindakanPage = showKelolaTindakanPage;
+window.showKelolaObatManagementPage = showKelolaObatManagementPage;
+window.showFinanceAnalysisPage = showFinanceAnalysisPage;
+window.showRoleManagementPage = showRoleManagementPage;
 
 // -------------------- BASIC BINDINGS --------------------
 function bindBasics() {
@@ -567,7 +729,7 @@ async function showPatientDetail(patientId) {
                             <hr>
                             <h5 class="mb-3">
                                 <i class="fas fa-file-medical"></i> Formulir Rekam Medis Awal
-                                <span class="badge badge-${intake.highRisk ? 'danger' : 'success'} ml-2">
+                              ="badge badge-${intake.highRisk ? 'danger' : 'success'} ml-2">
                                     ${intake.highRisk ? 'High Risk' : 'Normal'}
                                 </span>
                                 ${intake.quickId ? `<span class="badge badge-info ml-1">RM: ${intake.quickId}</span>` : ''}
@@ -689,5 +851,3 @@ window.showPatientDetail = showPatientDetail;
 
 // Export for manual initialization if needed
 export { initMain };
-
-

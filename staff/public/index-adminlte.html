@@ -15,6 +15,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <!-- AdminLTE 3 CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+    <!-- DataTables CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
     <style>
         /* Sidebar color and width */
         .main-sidebar { 
@@ -329,6 +331,20 @@
             #floating-kelola-pasien {
                 display: none;
             }
+        }
+        
+        /* Finance Analysis Styles */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-bottom: 20px;
+        }
+        .stats-card {
+            transition: transform 0.2s;
+        }
+        .stats-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
     </style>
 
@@ -730,12 +746,57 @@
                         </a>
                     </li>
 
-                    <li class="nav-item superadmin-only d-none" id="nav-management">
-                        <a href="management.html" class="nav-link">
-                            <i class="nav-icon fas fa-cogs"></i>
-                            <p>Management</p>
+                    <li class="nav-header">MANAGEMENT</li>
+
+                    <li class="nav-item superadmin-only d-none" id="nav-finance-analysis">
+                        <a href="#" class="nav-link" onclick="showFinanceAnalysisPage(); return false;">
+                            <i class="nav-icon fas fa-chart-line"></i>
+                            <p>Finance Analysis</p>
                         </a>
                     </li>
+
+                    <li class="nav-item" id="nav-kelola-pasien">
+                        <a href="#" class="nav-link" onclick="showKelolaPasienPage(); return false;">
+                            <i class="nav-icon fas fa-users"></i>
+                            <p>Kelola Pasien</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-item" id="nav-kelola-appointment">
+                        <a href="#" class="nav-link" onclick="showKelolaAppointmentPage(); return false;">
+                            <i class="nav-icon fas fa-calendar-check"></i>
+                            <p>Kelola Appointment</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-item" id="nav-kelola-jadwal">
+                        <a href="#" class="nav-link" onclick="showKelolaJadwalPage(); return false;">
+                            <i class="nav-icon fas fa-calendar-alt"></i>
+                            <p>Kelola Jadwal</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-item" id="nav-kelola-tindakan">
+                        <a href="#" class="nav-link" onclick="showKelolaTindakanPage(); return false;">
+                            <i class="nav-icon fas fa-stethoscope"></i>
+                            <p>Kelola Tindakan</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-item" id="nav-kelola-obat">
+                        <a href="#" class="nav-link" onclick="showKelolaObatManagementPage(); return false;">
+                            <i class="nav-icon fas fa-pills"></i>
+                            <p>Kelola Obat</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-item superadmin-only d-none" id="nav-role-management">
+                        <a href="#" class="nav-link" onclick="showRoleManagementPage(); return false;">
+                            <i class="nav-icon fas fa-user-shield"></i>
+                            <p>Role Management</p>
+                        </a>
+                    </li>
+
                     <!-- HIDDEN: Log Aktivitas
                     <li class="nav-item superadmin-only d-none" id="nav-logs">
                         <a href="#" class="nav-link" onclick="showLogPage(); return false;">
@@ -1222,44 +1283,14 @@
                     
                     <div class="card">
                         <div class="card-body">
-                            <div class="border rounded p-3 mb-3 bg-light">
-                                <div class="h6 mb-2">Tambah Pasien Baru</div>
-                                <form id="quick-add-patient" class="form-inline flex-wrap">
-                                    <div class="form-group mr-2 mb-2">
-                                        <label for="quick-id" class="sr-only">ID</label>
-                                        <input type="text" id="quick-id" class="form-control form-control-sm" placeholder="ID (auto)" readonly style="width:110px;">
-                                    </div>
-                                    <div class="form-group mr-2 mb-2">
-                                        <label for="quick-name" class="sr-only">Nama Lengkap</label>
-                                        <input type="text" id="quick-name" class="form-control form-control-sm" placeholder="Nama lengkap tanpa gelar" required>
-                                    </div>
-                                    <div class="form-group mr-2 mb-2">
-                                        <label for="quick-whatsapp" class="sr-only">WhatsApp</label>
-                                        <input type="tel" id="quick-whatsapp" class="form-control form-control-sm" placeholder="No. WhatsApp">
-                                    </div>
-                                    <div class="form-group mr-2 mb-2">
-                                        <label for="quick-birthdate" class="sr-only">Tanggal Lahir</label>
-                                        <input type="date" id="quick-birthdate" class="form-control form-control-sm" placeholder="Tanggal Lahir">
-                                    </div>
-                                    <div class="form-group mr-2 mb-2">
-                                        <label for="quick-age" class="sr-only">Usia</label>
-                                        <input type="text" id="quick-age" class="form-control form-control-sm" placeholder="Usia" readonly style="width:90px;">
-                                    </div>
-                                    <button class="btn btn-sm btn-success mb-2" type="submit">Simpan</button>
-                                </form>
-                                <div class="small text-muted">Setelah menyimpan data pasien, lanjutkan ke menu Anamnesa untuk melengkapi data kehamilan dan pemeriksaan.</div>
-                            </div>
                             <div class="row mb-3">
                                 <div class="col-12">
                                     <input type="text" id="patient-search-input" class="form-control" placeholder="Cari nomor rekam medis (5 angka) atau nama pasien...">
                                 </div>
                             </div>
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-12">
                                     <div id="patient-list" style="max-height:70vh; overflow-y:auto;" class="mt-3"></div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div id="patient-details-content" class="mt-3" style="max-height:70vh; overflow-y:auto;"></div>
                                 </div>
                             </div>
                         </div>
@@ -2164,6 +2195,123 @@
                 </div>
 
                 <div id="role-management-page" class="d-none"></div>
+
+                <!-- KELOLA PASIEN PAGE -->
+                <div id="kelola-pasien-page" class="d-none"></div>
+
+                <!-- KELOLA APPOINTMENT PAGE -->
+                <div id="kelola-appointment-page" class="d-none"></div>
+
+                <!-- KELOLA JADWAL PAGE -->
+                <div id="kelola-jadwal-page" class="d-none"></div>
+
+                <!-- KELOLA TINDAKAN PAGE -->
+                <div id="kelola-tindakan-page" class="d-none"></div>
+
+                <!-- KELOLA OBAT MANAGEMENT PAGE -->
+                <div id="kelola-obat-management-page" class="d-none"></div>
+
+                <!-- FINANCE ANALYSIS PAGE -->
+                <div id="finance-analysis-page" class="d-none">
+                    <div class="container-fluid">
+                        <!-- KPI Cards -->
+                        <div class="row">
+                            <div class="col-lg-4 col-12">
+                                <div class="small-box bg-primary stats-card">
+                                    <div class="inner">
+                                        <h3 id="kpi-total-visits">...</h3>
+                                        <p>Kunjungan Hari Ini</p>
+                                    </div>
+                                    <div class="icon"><i class="fas fa-notes-medical"></i></div>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 col-12">
+                                <div class="small-box bg-success stats-card">
+                                    <div class="inner">
+                                        <h3 id="kpi-revenue">...</h3>
+                                        <p>Pendapatan Hari Ini</p>
+                                    </div>
+                                    <div class="icon"><i class="fas fa-dollar-sign"></i></div>
+                                </div>
+                            </div>
+                            <div class="col-lg-4 col-12">
+                                <div class="small-box bg-info stats-card">
+                                    <div class="inner">
+                                        <h3 id="kpi-avg-bill">...</h3>
+                                        <p>Rata-rata Tagihan</p>
+                                    </div>
+                                    <div class="icon"><i class="fas fa-receipt"></i></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Revenue Charts -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card card-primary">
+                                    <div class="card-header">
+                                        <h3 class="card-title">Pemasukan Mingguan (7 Hari Terakhir)</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="weekly-revenue-chart" class="chart-container"></div>
+                                        <div class="mt-3 text-center">
+                                            <strong>Total:</strong> <span id="weekly-total" class="text-success">-</span><br>
+                                            <small class="text-muted">Rata-rata/hari: <span id="weekly-avg">-</span></small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card card-success">
+                                    <div class="card-header">
+                                        <h3 class="card-title">Pemasukan Bulanan (30 Hari Terakhir)</h3>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="monthly-revenue-chart" class="chart-container"></div>
+                                        <div class="mt-3 text-center">
+                                            <strong>Total:</strong> <span id="monthly-total" class="text-success">-</span><br>
+                                            <small class="text-muted">Rata-rata/hari: <span id="monthly-avg">-</span></small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Top Items -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card card-info">
+                                    <div class="card-header">
+                                        <h3 class="card-title"><i class="fas fa-pills mr-2"></i>Top 10 Obat Terjual</h3>
+                                    </div>
+                                    <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                                        <div id="top-drugs-table">
+                                            <div class="text-center text-muted py-5">
+                                                <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+                                                <p>Memuat data...</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card card-warning">
+                                    <div class="card-header">
+                                        <h3 class="card-title"><i class="fas fa-notes-medical mr-2"></i>Top 10 Tindakan Dilakukan</h3>
+                                    </div>
+                                    <div class="card-body" style="max-height: 400px; overflow-y: auto;">
+                                        <div id="top-services-table">
+                                            <div class="text-center text-muted py-5">
+                                                <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+                                                <p>Memuat data...</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 
                 <!-- APPOINTMENTS PAGE -->
                 <div id="appointments-page" class="d-none">
@@ -2506,7 +2654,7 @@
                         <div class="col-12">
                             <div class="card card-primary">
                                 <div class="card-header">
-                                    <h3 class="card-title"><i class="fas fa-users mr-2"></i>Kelola Pasien (Web & Walk-in)</h3>
+                                    <h3 class="card-title"><i class="fas fa-users mr-2"></i>Kelola Pasien</h3>
                                 </div>
                                 <div class="card-body">
                                     <div class="table-responsive">
@@ -2519,7 +2667,6 @@
                                                     <th>Telepon</th>
                                                     <th>Tanggal Lahir</th>
                                                     <th>Usia</th>
-                                                    <th>Tipe</th>
                                                     <th>Kunjungan Terakhir</th>
                                                     <th>Tgl Registrasi</th>
                                                     <th>Status</th>
@@ -2814,6 +2961,11 @@
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+<!-- DataTables -->
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
+<!-- ApexCharts for Finance Analysis -->
+<script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 
 <!-- Core app modules -->
@@ -3009,8 +3161,9 @@
         const navLink = e.target.closest('.nav-link');
         if (navLink && navLink.getAttribute('onclick')) {
             const onclickValue = navLink.getAttribute('onclick');
+            const isKelolaPasienNav = onclickValue.includes('showManagePatientsPage') || onclickValue.includes('showKelolaPasienPage');
             // Only hide if NOT navigating to Kelola Pasien page
-            if (!onclickValue.includes('showManagePatientsPage')) {
+            if (!isKelolaPasienNav) {
                 setTimeout(() => hideFloatingPanel(), 100);
             }
         }
@@ -3047,7 +3200,18 @@
         
         // Update active nav
         document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-        document.querySelector('#nav-manage-patients .nav-link').classList.add('active');
+        const kelolaPasienNav = document.querySelector('#nav-kelola-pasien .nav-link');
+        if (kelolaPasienNav) {
+            kelolaPasienNav.classList.add('active');
+        }
+        
+        const titleEl = document.getElementById('page-title');
+        if (titleEl) {
+            titleEl.textContent = 'Kelola Pasien';
+        }
+        document.dispatchEvent(new CustomEvent('page:changed', {
+            detail: { page: 'kelola-pasien' }
+        }));
         
         // Show floating panel (only for superadmin)
         const userRole = localStorage.getItem('vps_user_role');
@@ -3068,7 +3232,7 @@
             console.log('Loading all patients with token:', token ? 'Token exists' : 'No token found');
             console.log('Token length:', token ? token.length : 0);
             
-            // Use unified patients endpoint (includes both web and walk-in)
+            // Use unified patients endpoint
             const response = await fetch(`/api/patients?_=${Date.now()}`, {
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -3101,9 +3265,6 @@
                 const statusBadge = patient.status === 'active' ? 
                     '<span class="badge badge-success">Aktif</span>' : 
                     '<span class="badge badge-secondary">Nonaktif</span>';
-                const typeBadge = patient.patient_type === 'web' ? 
-                    '<span class="badge badge-info">Web</span>' : 
-                    '<span class="badge badge-primary">Walk-in</span>';
                 
                 return `
                     <tr>
@@ -3113,7 +3274,6 @@
                         <td>${patient.whatsapp || patient.phone || '-'}</td>
                         <td>${birthDate}</td>
                         <td>${patient.age || '-'}</td>
-                        <td>${typeBadge}</td>
                         <td>${lastVisit}</td>
                         <td>${regDate}</td>
                         <td>${statusBadge}</td>
@@ -3772,6 +3932,496 @@ Apakah Anda yakin ingin melanjutkan?`;
             }
         }
     });
+ </script>
+
+ <!-- Finance Analysis Module -->
+ <script type="module">
+    import { getIdToken } from './scripts/vps-auth-v2.js';
+
+    const VPS_API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+        ? 'http://localhost:3001'
+        : window.location.origin.replace(/\/$/, '');
+
+    function formatCurrency(amount) {
+        return new Intl.NumberFormat('id-ID', {
+            style: 'currency',
+            currency: 'IDR',
+            minimumFractionDigits: 0
+        }).format(amount || 0);
+    }
+
+    function withCacheBuster(url) {
+        const cacheBuster = `_=${Date.now()}`;
+        return url.includes('?') ? `${url}&${cacheBuster}` : `${url}?${cacheBuster}`;
+    }
+
+    function formatDateLocal(date) {
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
+    async function fetchFinanceStats(token) {
+        const today = new Date();
+        const todayStr = formatDateLocal(today);
+
+        const url = withCacheBuster(`${VPS_API_BASE}/api/visits?exclude_dummy=true&start_date=${todayStr}&end_date=${todayStr}`);
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Cache-Control': 'no-cache'
+            },
+            cache: 'no-store'
+        });
+
+        if (!response.ok) {
+            const error = new Error('Failed to load finance stats');
+            error.status = response.status;
+            throw error;
+        }
+
+        const payload = await response.json();
+        const visits = Array.isArray(payload.data) ? payload.data : [];
+
+        let totalVisits = 0;
+        let totalRevenue = 0;
+
+        visits.forEach(visit => {
+            totalVisits += 1;
+            const total = Number(visit.grand_total ?? visit.grandTotal ?? visit.total_amount ?? 0);
+            if (Number.isFinite(total)) {
+                totalRevenue += total;
+            }
+        });
+
+        const averageBill = totalVisits > 0 ? Math.round(totalRevenue / totalVisits) : 0;
+
+        return {
+            totalVisits,
+            totalRevenue,
+            averageBill
+        };
+    }
+
+    async function loadKPIStats() {
+        const visitsEl = document.getElementById('kpi-total-visits');
+        const revenueEl = document.getElementById('kpi-revenue');
+        const avgBillEl = document.getElementById('kpi-avg-bill');
+
+        if (!visitsEl || !revenueEl || !avgBillEl) return;
+
+        try {
+            const token = await getIdToken();
+            if (!token) {
+                visitsEl.textContent = '0';
+                revenueEl.textContent = formatCurrency(0);
+                avgBillEl.textContent = formatCurrency(0);
+                return;
+            }
+
+            const { totalVisits, totalRevenue, averageBill } = await fetchFinanceStats(token);
+
+            visitsEl.textContent = totalVisits.toLocaleString('id-ID');
+            revenueEl.textContent = formatCurrency(totalRevenue);
+            avgBillEl.textContent = formatCurrency(averageBill);
+        } catch (error) {
+            console.error('Error loading KPI stats:', error);
+            visitsEl.textContent = '0';
+            revenueEl.textContent = formatCurrency(0);
+            avgBillEl.textContent = formatCurrency(0);
+        }
+    }
+
+    async function fetchAnalyticsData(token) {
+        const today = new Date();
+        const weekAgo = new Date(today);
+        weekAgo.setDate(weekAgo.getDate() - 6);
+        const monthAgo = new Date(today);
+        monthAgo.setDate(monthAgo.getDate() - 29);
+
+        const startDate = formatDateLocal(monthAgo);
+        const endDate = formatDateLocal(today);
+
+        const url = withCacheBuster(`${VPS_API_BASE}/api/visits?exclude_dummy=true&start_date=${startDate}&end_date=${endDate}`);
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Cache-Control': 'no-cache'
+            },
+            cache: 'no-store'
+        });
+
+        if (!response.ok) throw new Error('Failed to load analytics data');
+
+        const payload = await response.json();
+        const visits = Array.isArray(payload.data) ? payload.data : [];
+
+        return analyzeData(visits);
+    }
+
+    function analyzeData(visits) {
+        const today = new Date();
+        const weekAgo = new Date(today);
+        weekAgo.setDate(weekAgo.getDate() - 6);
+        const monthAgo = new Date(today);
+        monthAgo.setDate(monthAgo.getDate() - 29);
+
+        const weeklyData = [];
+        for (let i = 0; i < 7; i++) {
+            const date = new Date(weekAgo);
+            date.setDate(date.getDate() + i);
+            const dateStr = formatDateLocal(date);
+            
+            const dayVisits = visits.filter(v => {
+                const visitDate = new Date(v.visit_date || v.created_at);
+                return formatDateLocal(visitDate) === dateStr;
+            });
+
+            const revenue = dayVisits.reduce((sum, v) => {
+                const total = Number(v.grand_total ?? v.grandTotal ?? v.total_amount ?? 0);
+                return sum + (Number.isFinite(total) ? total : 0);
+            }, 0);
+
+            weeklyData.push({ date: dateStr, revenue });
+        }
+
+        const monthlyData = [];
+        for (let i = 0; i < 30; i++) {
+            const date = new Date(monthAgo);
+            date.setDate(date.getDate() + i);
+            const dateStr = formatDateLocal(date);
+            
+            const dayVisits = visits.filter(v => {
+                const visitDate = new Date(v.visit_date || v.created_at);
+                return formatDateLocal(visitDate) === dateStr;
+            });
+
+            const revenue = dayVisits.reduce((sum, v) => {
+                const total = Number(v.grand_total ?? v.grandTotal ?? v.total_amount ?? 0);
+                return sum + (Number.isFinite(total) ? total : 0);
+            }, 0);
+
+            monthlyData.push({ date: dateStr, revenue });
+        }
+
+        const drugStats = {};
+        visits.forEach(visit => {
+            let medications = [];
+            if (typeof visit.medications === 'string') {
+                try {
+                    medications = JSON.parse(visit.medications);
+                } catch (e) {
+                    console.error('Error parsing medications:', e);
+                }
+            } else if (Array.isArray(visit.medications)) {
+                medications = visit.medications;
+            }
+
+            if (Array.isArray(medications)) {
+                medications.forEach(drug => {
+                    const name = drug.name || 'Unknown';
+                    const qty = Number(drug.quantity) || 0;
+                    const price = Number(drug.price) || 0;
+                    const total = qty * price;
+
+                    if (!drugStats[name]) {
+                        drugStats[name] = { name, quantity: 0, revenue: 0 };
+                    }
+                    drugStats[name].quantity += qty;
+                    drugStats[name].revenue += total;
+                });
+            }
+        });
+
+        const topDrugs = Object.values(drugStats)
+            .sort((a, b) => b.revenue - a.revenue)
+            .slice(0, 10);
+
+        const serviceStats = {};
+        visits.forEach(visit => {
+            let services = [];
+            if (typeof visit.services === 'string') {
+                try {
+                    services = JSON.parse(visit.services);
+                } catch (e) {
+                    console.error('Error parsing services:', e);
+                }
+            } else if (Array.isArray(visit.services)) {
+                services = visit.services;
+            }
+
+            if (Array.isArray(services)) {
+                services.forEach(service => {
+                    const name = service.name || 'Unknown';
+                    const price = Number(service.price) || 0;
+
+                    if (!serviceStats[name]) {
+                        serviceStats[name] = { name, count: 0, revenue: 0 };
+                    }
+                    serviceStats[name].count += 1;
+                    serviceStats[name].revenue += price;
+                });
+            }
+        });
+
+        const topServices = Object.values(serviceStats)
+            .sort((a, b) => b.revenue - a.revenue)
+            .slice(0, 10);
+
+        return {
+            weeklyRevenue: weeklyData,
+            monthlyRevenue: monthlyData,
+            topDrugs,
+            topServices
+        };
+    }
+
+    function renderWeeklyRevenueChart(data) {
+        console.log('📊 Rendering weekly revenue chart with', data.length, 'data points');
+        const container = document.getElementById('weekly-revenue-chart');
+        if (!container) {
+            console.error('❌ weekly-revenue-chart container not found');
+            return;
+        }
+
+        container.innerHTML = '';
+
+        try {
+            const options = {
+            series: [{
+                name: 'Pemasukan',
+                data: data.map(d => d.revenue)
+            }],
+            chart: {
+                type: 'area',
+                height: 250,
+                toolbar: { show: false }
+            },
+            dataLabels: { enabled: false },
+            stroke: { curve: 'smooth', width: 2 },
+            xaxis: {
+                categories: data.map(d => {
+                    const date = new Date(d.date);
+                    return date.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' });
+                })
+            },
+            yaxis: {
+                labels: {
+                    formatter: function(val) {
+                        return formatCurrency(val);
+                    }
+                }
+            },
+            tooltip: {
+                y: {
+                    formatter: function(val) {
+                        return formatCurrency(val);
+                    }
+                }
+            },
+            fill: {
+                type: 'gradient',
+                gradient: {
+                    shadeIntensity: 1,
+                    opacityFrom: 0.7,
+                    opacityTo: 0.3
+                }
+            },
+            colors: ['#007bff']
+            };
+
+            const chart = new ApexCharts(container, options);
+            chart.render();
+            console.log('✅ Weekly chart rendered');
+
+            const total = data.reduce((sum, d) => sum + d.revenue, 0);
+            const avg = total / data.length;
+            const weeklyTotalEl = document.getElementById('weekly-total');
+            const weeklyAvgEl = document.getElementById('weekly-avg');
+            if (weeklyTotalEl) weeklyTotalEl.textContent = formatCurrency(total);
+            if (weeklyAvgEl) weeklyAvgEl.textContent = formatCurrency(avg);
+        } catch (error) {
+            console.error('❌ Error rendering weekly chart:', error);
+        }
+    }
+
+    function renderMonthlyRevenueChart(data) {
+        console.log('📊 Rendering monthly revenue chart with', data.length, 'data points');
+        const container = document.getElementById('monthly-revenue-chart');
+        if (!container) {
+            console.error('❌ monthly-revenue-chart container not found');
+            return;
+        }
+
+        container.innerHTML = '';
+
+        try {
+
+        const options = {
+            series: [{
+                name: 'Pemasukan',
+                data: data.map(d => d.revenue)
+            }],
+            chart: {
+                type: 'line',
+                height: 250,
+                toolbar: { show: false }
+            },
+            dataLabels: { enabled: false },
+            stroke: { curve: 'smooth', width: 2 },
+            xaxis: {
+                categories: data.map(d => {
+                    const date = new Date(d.date);
+                    return date.getDate();
+                }),
+                labels: {
+                    rotate: -45,
+                    rotateAlways: false
+                }
+            },
+            yaxis: {
+                labels: {
+                    formatter: function(val) {
+                        return formatCurrency(val);
+                    }
+                }
+            },
+            tooltip: {
+                y: {
+                    formatter: function(val) {
+                        return formatCurrency(val);
+                    }
+                }
+            },
+            colors: ['#28a745']
+            };
+
+            const chart = new ApexCharts(container, options);
+            chart.render();
+            console.log('✅ Monthly chart rendered');
+
+            const total = data.reduce((sum, d) => sum + d.revenue, 0);
+            const avg = total / data.length;
+            const monthlyTotalEl = document.getElementById('monthly-total');
+            const monthlyAvgEl = document.getElementById('monthly-avg');
+            if (monthlyTotalEl) monthlyTotalEl.textContent = formatCurrency(total);
+            if (monthlyAvgEl) monthlyAvgEl.textContent = formatCurrency(avg);
+        } catch (error) {
+            console.error('❌ Error rendering monthly chart:', error);
+        }
+    }
+
+    function renderTopDrugsTable(drugs) {
+        console.log('💊 Rendering top drugs table with', drugs.length, 'items');
+        const container = document.getElementById('top-drugs-table');
+        if (!container) {
+            console.error('❌ top-drugs-table container not found');
+            return;
+        }
+        
+        if (!drugs.length) {
+            container.innerHTML = '<div class="text-center text-muted py-3">Tidak ada data</div>';
+            console.log('ℹ️ No drugs data');
+            return;
+        }
+
+        let html = '<table class="table table-sm table-hover">';
+        html += '<thead><tr><th>#</th><th>Nama Obat</th><th>Qty</th><th>Revenue</th></tr></thead>';
+        html += '<tbody>';
+        drugs.forEach((drug, idx) => {
+            html += `<tr>
+                <td>${idx + 1}</td>
+                <td>${drug.name}</td>
+                <td>${drug.quantity}</td>
+                <td>${formatCurrency(drug.revenue)}</td>
+            </tr>`;
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
+    function renderTopServicesTable(services) {
+        console.log('🏥 Rendering top services table with', services.length, 'items');
+        const container = document.getElementById('top-services-table');
+        if (!container) {
+            console.error('❌ top-services-table container not found');
+            return;
+        }
+        
+        if (!services.length) {
+            container.innerHTML = '<div class="text-center text-muted py-3">Tidak ada data</div>';
+            console.log('ℹ️ No services data');
+            return;
+        }
+
+        let html = '<table class="table table-sm table-hover">';
+        html += '<thead><tr><th>#</th><th>Nama Tindakan</th><th>Jumlah</th><th>Revenue</th></tr></thead>';
+        html += '<tbody>';
+        services.forEach((service, idx) => {
+            html += `<tr>
+                <td>${idx + 1}</td>
+                <td>${service.name}</td>
+                <td>${service.count}</td>
+                <td>${formatCurrency(service.revenue)}</td>
+            </tr>`;
+        });
+        html += '</tbody></table>';
+        container.innerHTML = html;
+    }
+
+    async function loadAnalytics() {
+        try {
+            const token = await getIdToken();
+            if (!token) {
+                throw new Error('No token');
+            }
+
+            const data = await fetchAnalyticsData(token);
+
+            renderWeeklyRevenueChart(data.weeklyRevenue);
+            renderMonthlyRevenueChart(data.monthlyRevenue);
+            renderTopDrugsTable(data.topDrugs);
+            renderTopServicesTable(data.topServices);
+        } catch (error) {
+            console.error('Error loading analytics:', error);
+            const drugsTable = document.getElementById('top-drugs-table');
+            const servicesTable = document.getElementById('top-services-table');
+            if (drugsTable) drugsTable.innerHTML = '<div class="text-center text-danger py-3">Error loading data</div>';
+            if (servicesTable) servicesTable.innerHTML = '<div class="text-center text-danger py-3">Error loading data</div>';
+        }
+    }
+
+    async function initFinanceAnalysisPage() {
+        console.log('🔧 initFinanceAnalysisPage called');
+        
+        const page = document.getElementById('finance-analysis-page');
+        if (!page) {
+            console.error('❌ finance-analysis-page element not found');
+            return;
+        }
+        
+        console.log('✅ Page found, checking visibility...');
+        
+        const token = await getIdToken();
+        if (!token) {
+            console.error('❌ No auth token');
+            return;
+        }
+        
+        console.log('✅ Token obtained, loading data...');
+        
+        try {
+            await loadKPIStats();
+            await loadAnalytics();
+            console.log('✅ Finance Analysis data loaded successfully');
+        } catch (error) {
+            console.error('❌ Error in initFinanceAnalysisPage:', error);
+        }
+    }
+
+    // Export to window for manual calling
+    window.initFinanceAnalysisPage = initFinanceAnalysisPage;
  </script>
 
 </body>

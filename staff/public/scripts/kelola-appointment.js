@@ -1,9 +1,10 @@
 // Kelola Appointment Script
+(function() {
 const API_BASE = '/api/sunday-appointments';
 let appointmentsTable;
 let allAppointments = [];
 
-$(document).ready(function() {
+function initKelolaAppointment() {
     // Check authentication
     const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
     if (!token) {
@@ -11,8 +12,20 @@ $(document).ready(function() {
         return;
     }
 
+    // Check if DataTables is available
+    if (typeof $ === 'undefined' || typeof $.fn.DataTable === 'undefined') {
+        console.error('DataTables library not loaded yet');
+        setTimeout(initKelolaAppointment, 100);
+        return;
+    }
+
     // Clear tbody before initializing DataTable
     $('#appointments-tbody').html('');
+
+    // Destroy existing DataTable if it exists
+    if ($.fn.DataTable.isDataTable('#appointments-table')) {
+        $('#appointments-table').DataTable().destroy();
+    }
 
     // Initialize DataTable
     appointmentsTable = $('#appointments-table').DataTable({
@@ -46,7 +59,15 @@ $(document).ready(function() {
     // Set filter date to today
     const today = new Date().toISOString().split('T')[0];
     $('#filter-date').val(today);
-});
+}
+
+// Initialize when DOM is ready (works in both standalone and SPA contexts)
+if (document.readyState === 'loading') {
+    $(document).ready(initKelolaAppointment);
+} else {
+    // DOM already loaded (SPA context)
+    initKelolaAppointment();
+}
 
 async function loadAppointments() {
     try {
@@ -242,3 +263,13 @@ function logout() {
     localStorage.removeItem('userProfile');
     window.location.href = 'login.html';
 }
+
+// Export global functions
+window.openNewAppointmentForm = openNewAppointmentForm;
+window.openEditAppointmentForm = openEditAppointmentForm;
+window.deleteAppointment = deleteAppointment;
+window.applyFilters = applyFilters;
+window.resetFilters = resetFilters;
+window.logout = logout;
+
+})(); // End IIFE

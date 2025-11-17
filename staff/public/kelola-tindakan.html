@@ -261,7 +261,6 @@
             renderTindakanList(allTindakan);
             
         } catch (error) {
-            console.error('Error loading tindakan:', error);
             tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">Error: ${error.message}</td></tr>`;
         }
     }
@@ -328,7 +327,6 @@
             loadTindakan();
             
         } catch (error) {
-            console.error('Error saving tindakan:', error);
             alert('Error: ' + error.message);
         }
     });
@@ -389,7 +387,6 @@
             loadTindakan();
             
         } catch (error) {
-            console.error('Error deleting tindakan:', error);
             alert('Error: ' + error.message);
         }
     };

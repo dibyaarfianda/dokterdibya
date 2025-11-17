@@ -224,6 +224,11 @@
         }).format(amount || 0);
     }
 
+    function withCacheBuster(url) {
+        const cacheBuster = `_=${Date.now()}`;
+        return url.includes('?') ? `${url}&${cacheBuster}` : `${url}?${cacheBuster}`;
+    }
+
     function formatDateLocal(date) {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -235,8 +240,13 @@
         const today = new Date();
         const todayStr = formatDateLocal(today);
 
-        const response = await fetch(`${VPS_API_BASE}/api/visits?exclude_dummy=true&start_date=${todayStr}&end_date=${todayStr}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+        const url = withCacheBuster(`${VPS_API_BASE}/api/visits?exclude_dummy=true&start_date=${todayStr}&end_date=${todayStr}`);
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Cache-Control': 'no-cache'
+            },
+            cache: 'no-store'
         });
 
         if (!response.ok) {
@@ -305,8 +315,13 @@
         const startDate = formatDateLocal(monthAgo);
         const endDate = formatDateLocal(today);
 
-        const response = await fetch(`${VPS_API_BASE}/api/visits?exclude_dummy=true&start_date=${startDate}&end_date=${endDate}`, {
-            headers: { 'Authorization': `Bearer ${token}` }
+        const url = withCacheBuster(`${VPS_API_BASE}/api/visits?exclude_dummy=true&start_date=${startDate}&end_date=${endDate}`);
+        const response = await fetch(url, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Cache-Control': 'no-cache'
+            },
+            cache: 'no-store'
         });
 
         if (!response.ok) throw new Error('Failed to load analytics data');
@@ -622,8 +637,7 @@
         window.location.href = 'login.html';
     };
 
-    // Initialize on page load
-    document.addEventListener('DOMContentLoaded', async () => {
+    async function initFinanceAnalysisPage() {
         const token = await getIdToken();
         if (!token) {
             window.location.href = 'login.html';
@@ -631,7 +645,13 @@
         }
         await loadKPIStats();
         await loadAnalytics();
-    });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initFinanceAnalysisPage, { once: true });
+    } else {
+        initFinanceAnalysisPage();
+    }
 </script>
 </body>
 </html>
