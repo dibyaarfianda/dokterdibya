@@ -263,25 +263,50 @@ router.post('/book', verifyToken, async (req, res) => {
 router.get('/patient', verifyToken, async (req, res) => {
     try {
         const [appointments] = await db.query(
-            `SELECT id, appointment_date, session, slot_number, chief_complaint, status, notes, created_at
+            `SELECT id, appointment_date, session, slot_number, chief_complaint, status, notes,
+                    cancellation_reason, cancelled_by, cancelled_at, created_at
              FROM sunday_appointments
              WHERE patient_id = ?
              ORDER BY appointment_date DESC, session ASC, slot_number ASC`,
             [req.user.id]
         );
         
-        const formatted = appointments.map(apt => ({
-            ...apt,
-            dateFormatted: new Date(apt.appointment_date).toLocaleDateString('id-ID', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            }),
-            sessionLabel: getSessionLabel(apt.session),
-            time: getSlotTime(apt.session, apt.slot_number),
-            isPast: new Date(apt.appointment_date) < new Date()
-        }));
+        const formatted = appointments.map(apt => {
+            const slotTime = getSlotTime(apt.session, apt.slot_number);
+
+            let startDateTime = null;
+            let arrivalTime = null;
+            let arrivalTimeFormatted = null;
+            let isPast = new Date(apt.appointment_date) < new Date();
+
+            if (slotTime && /^\d{2}:\d{2}$/.test(slotTime)) {
+                const start = new Date(`${apt.appointment_date}T${slotTime}:00`);
+                if (!isNaN(start.getTime())) {
+                    startDateTime = start.toISOString();
+                    const arrival = new Date(start.getTime() - (15 * 60 * 1000));
+                    arrivalTime = arrival.toISOString();
+                    arrivalTimeFormatted = arrival.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                    isPast = start < new Date();
+                }
+            }
+
+                
+            return {
+                ...apt,
+                dateFormatted: new Date(apt.appointment_date).toLocaleDateString('id-ID', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                }),
+                sessionLabel: getSessionLabel(apt.session),
+                time: slotTime,
+                startDateTime,
+                arrivalTime,
+                arrivalTimeFormatted,
+                isPast
+            };
+        });
         
         res.json({ appointments: formatted });
         
@@ -298,6 +323,7 @@ router.get('/patient', verifyToken, async (req, res) => {
 router.put('/:id/cancel', verifyToken, async (req, res) => {
     try {
         const { id } = req.params;
+        const { reason } = req.body;
         
         // Check if appointment exists and belongs to patient
         const [appointments] = await db.query(
@@ -311,6 +337,11 @@ router.put('/:id/cancel', verifyToken, async (req, res) => {
         
         const appointment = appointments[0];
         
+        const cancellationReason = typeof reason === 'string' ? reason.trim() : '';
+        if (!cancellationReason || cancellationReason.length < 10) {
+            return res.status(400).json({ message: 'Mohon berikan alasan pembatalan minimal 10 karakter' });
+        }
+
         if (appointment.status === 'cancelled') {
             return res.status(400).json({ message: 'Janji temu sudah dibatalkan' });
         }
@@ -318,14 +349,28 @@ router.put('/:id/cancel', verifyToken, async (req, res) => {
         if (appointment.status === 'completed') {
             return res.status(400).json({ message: 'Janji temu yang sudah selesai tidak dapat dibatalkan' });
         }
+
+        const slotTime = getSlotTime(appointment.session, appointment.slot_number);
+        if (slotTime) {
+            const appointmentStart = new Date(`${appointment.appointment_date}T${slotTime}:00`);
+            if (!isNaN(appointmentStart.getTime()) && appointmentStart <= new Date()) {
+                return res.status(400).json({ message: 'Janji temu yang sudah berjalan atau lewat tidak dapat dibatalkan' });
+            }
+        }
         
         // Update status to cancelled
         await db.query(
-            'UPDATE sunday_appointments SET status = "cancelled", updated_at = NOW() WHERE id = ?',
-            [id]
+            `UPDATE sunday_appointments
+             SET status = 'cancelled',
+                 cancellation_reason = ?,
+                 cancelled_by = 'patient',
+                 cancelled_at = NOW(),
+                 updated_at = NOW()
+             WHERE id = ?`,
+            [cancellationReason, id]
         );
         
-        res.json({ message: 'Janji temu berhasil dibatalkan' });
+        res.json({ message: 'Janji temu berhasil dibatalkan', reason: cancellationReason });
         
     } catch (error) {
         console.error('Error cancelling appointment:', error);
@@ -404,7 +449,8 @@ router.get('/patient-by-id', verifyToken, async (req, res) => {
         }
         
         const [appointments] = await db.query(
-            `SELECT id, appointment_date, session, slot_number, chief_complaint, status, notes, created_at
+            `SELECT id, appointment_date, session, slot_number, chief_complaint, status, notes,
+                    cancellation_reason, cancelled_by, cancelled_at, created_at
              FROM sunday_appointments
              WHERE patient_id = ?
              ORDER BY appointment_date DESC, session ASC, slot_number ASC`,
@@ -445,16 +491,38 @@ router.get('/patient-by-id', verifyToken, async (req, res) => {
 router.put('/:id/status', verifyToken, async (req, res) => {
     try {
         const { id } = req.params;
-        const { status, notes } = req.body;
+        const { status, notes, cancellationReason } = req.body;
         
         const validStatuses = ['pending', 'confirmed', 'completed', 'cancelled', 'no_show'];
         if (!validStatuses.includes(status)) {
             return res.status(400).json({ message: 'Status tidak valid' });
         }
-        
+
+        let trimmedNotes = typeof notes === 'string' ? notes.trim() : null;
+        if (trimmedNotes === '') {
+            trimmedNotes = null;
+        }
+
+        let trimmedCancellation = typeof cancellationReason === 'string' ? cancellationReason.trim() : null;
+        if (trimmedCancellation === '') {
+            trimmedCancellation = null;
+        }
+        const cancellationReasonToSave = status === 'cancelled'
+            ? (trimmedCancellation || trimmedNotes || null)
+            : null;
+        const cancelledByValue = status === 'cancelled' ? 'staff' : null;
+        const cancelledAtClause = status === 'cancelled' ? 'NOW()' : 'NULL';
+
         await db.query(
-            'UPDATE sunday_appointments SET status = ?, notes = ?, updated_at = NOW() WHERE id = ?',
-            [status, notes || null, id]
+            `UPDATE sunday_appointments
+             SET status = ?,
+                 notes = ?,
+                 cancellation_reason = ?,
+                 cancelled_by = ?,
+                 cancelled_at = ${cancelledAtClause},
+                 updated_at = NOW()
+             WHERE id = ?`,
+            [status, trimmedNotes, cancellationReasonToSave, cancelledByValue, id]
         );
         
         res.json({ message: 'Status berhasil diupdate' });
