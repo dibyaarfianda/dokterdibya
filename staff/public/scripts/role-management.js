@@ -125,7 +125,19 @@ async function initRoleManagement() {
 
 // Initialize when DOM is ready (works in both standalone and SPA contexts)
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initRoleManagement, { once: true });
+    
+// Attach functions to window object for global access from HTML
+window.showRoleModal = showRoleModal;
+window.saveRole = saveRole;
+window.editRole = editRole;
+window.deleteRole = deleteRole;
+window.showAssignModal = showAssignModal;
+window.saveUserRoles = saveUserRoles;
+window.loadUserRoles = loadUserRoles; // Expose for search button
+window.initRoleManagement = initRoleManagement;
+
+// document.addEventListener('DOMContentLoaded', initRoleManagement);
+
 } else {
     // DOM already loaded (SPA context)
     initRoleManagement();

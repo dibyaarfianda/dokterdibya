@@ -376,17 +376,38 @@ function showKelolaPasienPage() {
     setTitleAndActive('Kelola Pasien', 'nav-kelola-pasien', 'kelola-pasien');
     loadExternalPage('kelola-pasien-page', 'kelola-pasien.html', { forceReload: true });
 }
-function showKelolaAppointmentPage() { 
-    hideAllPages(); 
-    pages.kelolaAppointment?.classList.remove('d-none'); 
-    setTitleAndActive('Kelola Appointment', 'nav-kelola-appointment', 'kelola-appointment');
-    loadExternalPage('kelola-appointment-page', 'kelola-appointment.html', { forceReload: true });
+function showKelolaAppointmentPage() {
+    console.log("showKelolaAppointmentPage called");
+    hideAllPages();
+    $('#kelola-appointment-page').removeClass('d-none');
+    updateActiveNav('kelola-appointment');
+
+    importWithVersion('./scripts/kelola-appointment.js')
+        .then(() => {
+            console.log('kelola-appointment.js loaded, calling initKelolaAppointment');
+            if (window.initKelolaAppointment) {
+                window.initKelolaAppointment();
+            } else {
+                console.error('initKelolaAppointment function not found');
+            }
+        })
+        .catch(error => console.error('Error loading kelola-appointment.js:', error));
 }
-function showKelolaJadwalPage() { 
-    hideAllPages(); 
-    pages.kelolaJadwal?.classList.remove('d-none'); 
+function showKelolaJadwalPage() {
+    hideAllPages();
+    pages.kelolaJadwal?.classList.remove('d-none');
     setTitleAndActive('Kelola Jadwal', 'nav-kelola-jadwal', 'kelola-jadwal');
-    loadExternalPage('kelola-jadwal-page', 'kelola-jadwal.html', { forceReload: true });
+    
+    // Dynamically import and initialize the Kelola Jadwal module
+    importWithVersion('./kelola-jadwal.js').then(module => {
+        if (typeof window.initKelolaJadwal === 'function') {
+            window.initKelolaJadwal();
+        } else {
+            console.error('Kelola Jadwal module loaded, but initKelolaJadwal function not found on window.');
+        }
+    }).catch(error => {
+        console.error('Failed to load kelola-jadwal.js:', error);
+    });
 }
 function showKelolaTindakanPage() {
     showPengaturanPage();
@@ -406,11 +427,22 @@ function showFinanceAnalysisPage() {
         }
     }, 100);
 }
-function showRoleManagementPage() { 
-    hideAllPages(); 
-    pages.roleManagement?.classList.remove('d-none'); 
-    setTitleAndActive('Role Management', 'nav-role-management', 'role-management');
-    loadExternalPage('role-management-page', 'role-management.html', { forceReload: true });
+function showRoleManagementPage() {
+    console.log("showRoleManagementPage called");
+    hideAllPages();
+    $('#role-management-page').removeClass('d-none');
+    updateActiveNav('role-management');
+
+    importWithVersion('./scripts/role-management.js')
+        .then(() => {
+            console.log('role-management.js loaded, calling initRoleManagement');
+            if (window.initRoleManagement) {
+                window.initRoleManagement();
+            } else {
+                console.error('initRoleManagement function not found');
+            }
+        })
+        .catch(error => console.error('Error loading role-management.js:', error));
 }
 function showProfileSettings() { 
     hideAllPages(); 

@@ -1966,7 +1966,7 @@
                                                 <input type="number" step="0.1" id="usg-ac" class="form-control">
                                                 <div class="input-group-append">
                                                     <span class="input-group-text">cm</span>
-                                                </div
+                                                </div>
                                             </div>
                                         </div>
                                         <div class="form-group">
@@ -2003,7 +2003,6 @@
                                         </div>
                                     </div>
                                 </div>
-                                </div>
                                 <!-- End USG Obstetri Section -->
                                 
                                 <button type="submit" class="btn btn-info">
@@ -2012,7 +2011,6 @@
                             </form>
                         </div>
                     </div>
-                </div>
                 </div>
                 <!-- END USG EXAM PAGE -->
 
@@ -2194,16 +2192,271 @@
                     </div>
                 </div>
 
-                <div id="role-management-page" class="d-none"></div>
+                <div id="role-management-page" class="content-wrapper page-content d-none">
+            <section class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-6">
+                            <h1><i class="fas fa-user-shield mr-2"></i>Role & Permission Management</h1>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section class="content">
+                <div class="container-fluid">
+                    <div class="card card-primary card-tabs">
+                        <div class="card-header p-0 pt-1">
+                            <ul class="nav nav-tabs" id="custom-tabs-one-tab" role="tablist">
+                                <li class="nav-item">
+                                    <a class="nav-link active" id="tab-roles" data-toggle="pill" href="#content-roles" role="tab">Roles</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="tab-permissions" data-toggle="pill" href="#content-permissions" role="tab">Permissions</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="tab-assignments" data-toggle="pill" href="#content-assignments" role="tab">User Assignments</a>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="card-body">
+                            <div class="tab-content" id="custom-tabs-one-tabContent">
+                                <!-- Roles Tab -->
+                                <div class="tab-pane fade show active" id="content-roles" role="tabpanel">
+                                    <button class="btn btn-primary mb-3" onclick="showRoleModal()">
+                                        <i class="fas fa-plus"></i> Add New Role
+                                    </button>
+                                    <div class="table-responsive">
+                                        <table id="roles-table" class="table table-bordered table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>Role Name</th>
+                                                    <th>Description</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <!-- Permissions Tab -->
+                                <div class="tab-pane fade" id="content-permissions" role="tabpanel">
+                                    <div class="table-responsive">
+                                        <table id="permissions-table" class="table table-bordered table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>Permission Name</th>
+                                                    <th>Description</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                                <!-- User Assignments Tab -->
+                                <div class="tab-pane fade" id="content-assignments" role="tabpanel">
+                                    <div class="row mb-3">
+                                        <div class="col-md-4">
+                                            <input type="text" id="user-search" class="form-control" placeholder="Search by user name or email...">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button class="btn btn-info" onclick="loadUserRoles()">Search</button>
+                                        </div>
+                                    </div>
+                                    <div class="table-responsive">
+                                        <table id="user-roles-table" class="table table-bordered table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>User ID</th>
+                                                    <th>User Name</th>
+                                                    <th>Email</th>
+                                                    <th>Roles</th>
+                                                    <th>Actions</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
 
                 <!-- KELOLA PASIEN PAGE -->
                 <div id="kelola-pasien-page" class="d-none"></div>
 
-                <!-- KELOLA APPOINTMENT PAGE -->
-                <div id="kelola-appointment-page" class="d-none"></div>
+                        <!-- KELOLA APPOINTMENT PAGE -->
+                        <div id="kelola-appointment-page" class="content-wrapper page-content d-none">
+                <section class="content-header">
+                    <div class="container-fluid">
+                        <div class="row mb-2">
+                            <div class="col-sm-6">
+                                <h1><i class="fas fa-calendar-check mr-2"></i>Kelola Appointment</h1>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+        
+                <section class="content">
+                    <div class="container-fluid">
+                        <!-- Statistics Row -->
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="stats-card pending">
+                                    <div class="stats-number" id="stats-pending">0</div>
+                                    <div class="stats-label">Pending</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stats-card confirmed">
+                                    <div class="stats-number" id="stats-confirmed">0</div>
+                                    <div class="stats-label">Confirmed</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stats-card completed">
+                                    <div class="stats-number" id="stats-completed">0</div>
+                                    <div class="stats-label">Completed</div>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="stats-card" style="border-left-color: #6c757d;">
+                                    <div class="stats-number" id="stats-total">0</div>
+                                    <div class="stats-label">Total Appointments</div>
+                                </div>
+                            </div>
+                        </div>
+        
+                        <!-- Filters -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="filter-card">
+                                    <div class="row">
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label>Tanggal</label>
+                                                <input type="date" id="filter-date" class="form-control form-control-sm">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label>Sesi</label>
+                                                <select id="filter-session" class="form-control form-control-sm">
+                                                    <option value="">Semua Sesi</option>
+                                                    <option value="1">Sesi 1 (09:00)</option>
+                                                    <option value="2">Sesi 2 (12:00)</option>
+                                                    <option value="3">Sesi 3 (15:00)</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label>Status</label>
+                                                <select id="filter-status" class="form-control form-control-sm">
+                                                    <option value="">Semua Status</option>
+                                                    <option value="pending">Pending</option>
+                                                    <option value="confirmed">Confirmed</option>
+                                                    <option value="completed">Completed</option>
+                                                    <option value="cancelled">Cancelled</option>
+                                                    <option value="no_show">No Show</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label>&nbsp;</label><br>
+                                                <button type="button" class="btn btn-primary btn-sm" onclick="loadAppointments()">
+                                                    <i class="fas fa-filter"></i> Filter
+                                                </button>
+                                                <button type="button" class="btn btn-secondary btn-sm" onclick="resetFilters()">
+                                                    <i class="fas fa-redo"></i> Reset
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+        
+                        <!-- Appointments Table -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card card-primary">
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table id="appointments-table" class="table table-bordered table-striped table-sm">
+                                                <thead>
+                                                    <tr>
+                                                        <th width="5%">ID</th>
+                                                        <th width="15%">Tanggal</th>
+                                                        <th width="10%">Sesi</th>
+                                                        <th width="8%">Slot</th>
+                                                        <th width="15%">Pasien</th>
+                                                        <th width="12%">Telepon</th>
+                                                        <th width="25%">Keluhan</th>
+                                                        <th width="10%">Status</th>
+                                                        <th width="10%">Aksi</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="appointments-tbody">
+                                                    <tr>
+                                                        <td colspan="9" class="text-center">Memuat data...</td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+                </div>
 
                 <!-- KELOLA JADWAL PAGE -->
-                <div id="kelola-jadwal-page" class="d-none"></div>
+                <div id="kelola-jadwal-page" class="d-none">
+                    <div class="container-fluid">
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h3 class="card-title">Jadwal Praktik di Berbagai Lokasi</h3>
+                                        <div class="card-tools">
+                                            <button class="btn btn-success btn-sm" onclick="showAddModal()">
+                                                <i class="fas fa-plus"></i> Tambah Jadwal
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <table id="schedules-table" class="table table-bordered table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th width="5%">ID</th>
+                                                    <th width="20%">Lokasi</th>
+                                                    <th width="15%">Hari</th>
+                                                    <th width="20%">Waktu</th>
+                                                    <th width="25%">Keterangan</th>
+                                                    <th width="8%">Status</th>
+                                                    <th width="12%">Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="schedules-tbody">
+                                                <tr>
+                                                    <td colspan="7" class="text-center">Memuat data...</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- KELOLA TINDAKAN PAGE -->
                 <div id="kelola-tindakan-page" class="d-none"></div>
@@ -2918,6 +3171,75 @@
                 <button type="button" class="btn btn-primary" onclick="window.saveAppointment()">
                     <i class="fas fa-save mr-1"></i>Simpan
                 </button>
+            </div>
+        </div>
+    </div>
+ </div>
+</div>
+
+<!-- Kelola Jadwal Modal Add/Edit -->
+<div class="modal fade" id="scheduleModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Tambah Jadwal</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="schedule-id">
+                <div class="form-group">
+                    <label>Lokasi <span class="text-danger">*</span></label>
+                    <select class="form-control" id="schedule-location">
+                        <option value="">-- Pilih Lokasi --</option>
+                        <option value="klinik_privat">Klinik Privat Minggu</option>
+                        <option value="rsud_gambiran">Poli RSUD Gambiran Kediri</option>
+                        <option value="rsia_melinda">Poli RSIA Melinda Kediri</option>
+                        <option value="rs_bhayangkara">Poli RS Bhayangkara Kediri</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Hari <span class="text-danger">*</span></label>
+                    <select class="form-control" id="schedule-day">
+                        <option value="">-- Pilih Hari --</option>
+                        <option value="0">Minggu</option>
+                        <option value="1">Senin</option>
+                        <option value="2">Selasa</option>
+                        <option value="3">Rabu</option>
+                        <option value="4">Kamis</option>
+                        <option value="5">Jumat</option>
+                        <option value="6">Sabtu</option>
+                    </select>
+                </div>
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Jam Mulai <span class="text-danger">*</span></label>
+                            <input type="time" class="form-control" id="schedule-start">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label>Jam Selesai <span class="text-danger">*</span></label>
+                            <input type="time" class="form-control" id="schedule-end">
+                        </div>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Keterangan</label>
+                    <textarea class="form-control" id="schedule-notes" rows="3"></textarea>
+                </div>
+                <div class="form-group">
+                    <div class="custom-control custom-switch">
+                        <input type="checkbox" class="custom-control-input" id="schedule-active" checked>
+                        <label class="custom-control-label" for="schedule-active">Aktif</label>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" onclick="saveSchedule()">Simpan</button>
             </div>
         </div>
     </div>

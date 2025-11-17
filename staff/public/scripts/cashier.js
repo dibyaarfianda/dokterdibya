@@ -5,7 +5,7 @@ import { auth, getIdToken } from './vps-auth-v2.js';
 import { showSuccess, showError, showConfirm, showWarning, showInfo } from './toast.js';
 import { askForNextPatient, clearSession, getCurrentSession } from './session-manager.js';
 import { getCurrentPatient } from './billing.js';
-import { broadcastVisitCompleted, broadcastNewPatient } from './realtime-sync.js';
+import { broadcastVisitCompleted } from './realtime-sync.js';
 
 // VPS API Configuration
 const VPS_API_BASE = ['localhost', '127.0.0.1'].includes(window.location.hostname)
