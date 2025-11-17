@@ -14,8 +14,7 @@ function initKelolaAppointment() {
 
     // Check if DataTables is available
     if (typeof $ === 'undefined' || typeof $.fn.DataTable === 'undefined') {
-        console.error('DataTables library not loaded yet');
-        setTimeout(initKelolaAppointment, 100);
+        console.error('DataTables library not loaded; Kelola Appointment disabled on this page');
         return;
     }
 
@@ -59,14 +58,6 @@ function initKelolaAppointment() {
     // Set filter date to today
     const today = new Date().toISOString().split('T')[0];
     $('#filter-date').val(today);
-}
-
-// Initialize when DOM is ready (works in both standalone and SPA contexts)
-if (document.readyState === 'loading') {
-    $(document).ready(initKelolaAppointment);
-} else {
-    // DOM already loaded (SPA context)
-    initKelolaAppointment();
 }
 
 async function loadAppointments() {
@@ -264,12 +255,22 @@ function logout() {
     window.location.href = 'login.html';
 }
 
-// Export global functions
-window.openNewAppointmentForm = openNewAppointmentForm;
-window.openEditAppointmentForm = openEditAppointmentForm;
-window.deleteAppointment = deleteAppointment;
-window.applyFilters = applyFilters;
+// Export global functions that are actually defined
+window.showDetail = showDetail;
+window.showStatusModal = showStatusModal;
+window.updateStatus = updateStatus;
 window.resetFilters = resetFilters;
 window.logout = logout;
+
+window.initKelolaAppointment = initKelolaAppointment;
+window.loadAppointments = loadAppointments;
+
+// Initialize when DOM is ready (works in both standalone and SPA contexts)
+// if (document.readyState === 'loading') {
+//     $(document).ready(initKelolaAppointment);
+// } else {
+//     // DOM already loaded (SPA context)
+//     setTimeout(initKelolaAppointment, 100);
+// }
 
 })(); // End IIFE
