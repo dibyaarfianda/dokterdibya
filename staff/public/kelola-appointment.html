@@ -1,0 +1,158 @@
+<!-- Kelola Appointment Page -->
+<div class="container-fluid">
+    <!-- Statistics -->
+    <div class="row">
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-info">
+                <div class="inner">
+                    <h3 id="stats-total">-</h3>
+                    <p>Total Appointments</p>
+                </div>
+                <div class="icon"><i class="fas fa-calendar-alt"></i></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-warning">
+                <div class="inner">
+                    <h3 id="stats-pending">-</h3>
+                    <p>Pending</p>
+                </div>
+                <div class="icon"><i class="fas fa-clock"></i></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-primary">
+                <div class="inner">
+                    <h3 id="stats-confirmed">-</h3>
+                    <p>Confirmed</p>
+                </div>
+                <div class="icon"><i class="fas fa-check-circle"></i></div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-6">
+            <div class="small-box bg-success">
+                <div class="inner">
+                    <h3 id="stats-completed">-</h3>
+                    <p>Completed</p>
+                </div>
+                <div class="icon"><i class="fas fa-user-check"></i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">Daftar Appointment (Khusus Hari Minggu)</h3>
+        </div>
+        <div class="card-body">
+            <!-- Filters -->
+            <div class="row mb-3">
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="filter-date">Tanggal:</label>
+                        <input type="date" id="filter-date" class="form-control">
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="filter-session">Sesi:</label>
+                        <select id="filter-session" class="form-control">
+                            <option value="">Semua Sesi</option>
+                            <option value="pagi">Pagi (09:00 - 12:00)</option>
+                            <option value="sore">Sore (15:00 - 18:00)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                        <label for="filter-status">Status:</label>
+                        <select id="filter-status" class="form-control">
+                            <option value="">Semua Status</option>
+                            <option value="pending">Pending</option>
+                            <option value="confirmed">Confirmed</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                            <option value="no_show">No Show</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="col-md-3 d-flex align-items-end">
+                    <div class="form-group">
+                        <button class="btn btn-primary" onclick="loadAppointments()">
+                            <i class="fas fa-filter"></i> Filter
+                        </button>
+                        <button class="btn btn-secondary" onclick="resetFilters()">
+                            <i class="fas fa-sync-alt"></i> Reset
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Appointments Table -->
+            <table id="appointments-table" class="table table-bordered table-striped" style="width:100%">
+                <thead id="appointments-thead">
+                    <!-- Headers will be set by DataTables -->
+                </thead>
+                <tbody id="appointments-tbody">
+                    <!-- Data will be loaded here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal fade" id="detailModal" tabindex="-1" role="dialog" aria-labelledby="detailModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="detailModalLabel">Detail Appointment</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body" id="detail-content">
+                <!-- Detail content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status Modal -->
+<div class="modal fade" id="statusModal" tabindex="-1" role="dialog" aria-labelledby="statusModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="statusModalLabel">Update Status Appointment</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="status-appointment-id">
+                <div class="form-group">
+                    <label for="status-select">Status</label>
+                    <select id="status-select" class="form-control">
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="completed">Completed</option>
+                        <option value="cancelled">Cancelled</option>
+                        <option value="no_show">No Show</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="status-notes">Catatan (Opsional)</label>
+                    <textarea id="status-notes" class="form-control" rows="3" placeholder="Contoh: Pasien konfirmasi via WhatsApp"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" onclick="updateStatus()">Simpan Perubahan</button>
+            </div>
+        </div>
+    </div>
+</div>

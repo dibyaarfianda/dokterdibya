@@ -256,21 +256,13 @@ function logout() {
 }
 
 // Export global functions that are actually defined
+window.initKelolaAppointment = initKelolaAppointment;
 window.showDetail = showDetail;
 window.showStatusModal = showStatusModal;
 window.updateStatus = updateStatus;
 window.resetFilters = resetFilters;
 window.logout = logout;
-
-window.initKelolaAppointment = initKelolaAppointment;
 window.loadAppointments = loadAppointments;
 
-// Initialize when DOM is ready (works in both standalone and SPA contexts)
-// if (document.readyState === 'loading') {
-//     $(document).ready(initKelolaAppointment);
-// } else {
-//     // DOM already loaded (SPA context)
-//     setTimeout(initKelolaAppointment, 100);
-// }
 
 })(); // End IIFE
