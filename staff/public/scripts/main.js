@@ -431,6 +431,16 @@ function showProfileSettings() {
     loadExternalPage('profile-settings-page', 'profile-settings.html');
 }
 
+function showEmailSettingsPage() {
+    hideAllPages();
+    const page = document.getElementById('email-settings-page');
+    if (page) {
+        page.classList.remove('d-none');
+    }
+    setTitleAndActive('Pengaturan Email', 'management-nav-email-settings', 'email-settings');
+    loadExternalPage('email-settings-page', 'email-settings.html');
+}
+
 // -------------------- BASIC BINDINGS --------------------
 function bindBasics() {
     const backFromLogBtn = grab('backFromLogBtn');
@@ -878,6 +888,7 @@ window.showKelolaTindakanPage = showKelolaTindakanPage;
 window.showKelolaObatManagementPage = showKelolaObatManagementPage;
 window.showFinanceAnalysisPage = showFinanceAnalysisPage;
 window.showProfileSettings = showProfileSettings;
+window.showEmailSettingsPage = showEmailSettingsPage;
 window.showStokOpnamePage = showStokOpnamePage;
 window.showPengaturanPage = showPengaturanPage;
 window.showKelolaObatPage = showKelolaObatPage;

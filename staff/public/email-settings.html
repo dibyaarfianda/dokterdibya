@@ -1,0 +1,80 @@
+<div class="card">
+    <div class="card-header">
+        <h3 class="card-title">Pengaturan Template Email</h3>
+    </div>
+    <div class="card-body">
+        <form id="email-settings-form">
+            <!-- Sender Name -->
+            <div class="form-group">
+                <label for="sender-name">Nama Pengirim</label>
+                <input type="text" class="form-control" id="sender-name" placeholder="Contoh: Klinik Dr. Dibya">
+                <small class="form-text text-muted">Nama yang akan muncul sebagai pengirim di email.</small>
+            </div>
+
+            <hr>
+
+            <!-- Email Verification Template -->
+            <h4>Template Verifikasi Email</h4>
+            <div class="form-group">
+                <label for="verification-subject">Subjek Email</label>
+                <input type="text" class="form-control" id="verification-subject" value="Verifikasi Alamat Email Anda">
+            </div>
+            <div class="form-group">
+                <label for="verification-body">Isi Email</label>
+                <textarea class="form-control" id="verification-body" rows="6">Halo {user_name},
+
+Terima kasih telah mendaftar. Silakan klik tautan di bawah ini untuk memverifikasi alamat email Anda:
+{verification_link}
+
+Jika Anda tidak meminta verifikasi ini, Anda bisa mengabaikan email ini.
+
+Terima kasih,
+Tim {clinic_name}</textarea>
+                <small class="form-text text-muted">Gunakan placeholder: <code>{user_name}</code>, <code>{verification_link}</code>, <code>{clinic_name}</code>.</small>
+            </div>
+
+            <hr>
+
+            <!-- Password Reset Template -->
+            <h4>Template Reset Password</h4>
+            <div class="form-group">
+                <label for="reset-subject">Subjek Email</label>
+                <input type="text" class="form-control" id="reset-subject" value="Permintaan Reset Password">
+            </div>
+            <div class="form-group">
+                <label for="reset-body">Isi Email</label>
+                <textarea class="form-control" id="reset-body" rows="6">Halo {user_name},
+
+Kami menerima permintaan untuk mereset password akun Anda. Klik tautan di bawah ini untuk melanjutkan:
+{reset_link}
+
+Tautan ini akan kedaluwarsa dalam 1 jam. Jika Anda tidak meminta reset password, silakan abaikan email ini.
+
+Terima kasih,
+Tim {clinic_name}</textarea>
+                <small class="form-text text-muted">Gunakan placeholder: <code>{user_name}</code>, <code>{reset_link}</code>, <code>{clinic_name}</code>.</small>
+            </div>
+            
+            <hr>
+
+            <!-- Announcement Template -->
+            <h4>Template Pengumuman</h4>
+            <div class="form-group">
+                <label for="announcement-subject">Subjek Email</label>
+                <input type="text" class="form-control" id="announcement-subject" value="Pengumuman dari {clinic_name}">
+            </div>
+            <div class="form-group">
+                <label for="announcement-body">Isi Email</label>
+                <textarea class="form-control" id="announcement-body" rows="6">Halo {user_name},
+
+{announcement_content}
+
+Terima kasih,
+Tim {clinic_name}</textarea>
+                <small class="form-text text-muted">Gunakan placeholder: <code>{user_name}</code>, <code>{announcement_content}</code>, <code>{clinic_name}</code>.</small>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Simpan Pengaturan</button>
+        </form>
+    </div>
+</div>
