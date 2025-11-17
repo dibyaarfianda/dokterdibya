@@ -157,6 +157,170 @@
         .appointment-info-box strong {
             color: #28e970;
         }
+
+        .cancel-appointment-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 15px;
+            padding: 10px 16px;
+            background: #d9534f;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.2s ease;
+        }
+
+        .cancel-appointment-btn:hover {
+            background: #c9302c;
+            transform: translateY(-2px);
+        }
+
+        .cancel-appointment-btn:disabled {
+            background: #7f8c8d;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .dashboard-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            z-index: 9999;
+        }
+
+        .dashboard-modal.active {
+            display: flex;
+        }
+
+        .dashboard-modal-content {
+            background: #202020;
+            border: 1px solid #404040;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 500px;
+            padding: 25px;
+            color: #ffffff;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .dashboard-modal-content h4 {
+            margin-top: 0;
+            color: #28a7e9;
+            font-weight: 600;
+        }
+
+        .dashboard-modal-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: transparent;
+            border: none;
+            color: #bbbbbb;
+            font-size: 22px;
+            cursor: pointer;
+        }
+
+        .dashboard-modal-close:hover {
+            color: #ffffff;
+        }
+
+        .cancel-summary {
+            background: #2a2a2a;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .cancel-summary strong {
+            color: #28a7e9;
+        }
+
+        .dashboard-modal textarea {
+            width: 100%;
+            min-height: 100px;
+            background: #303030;
+            border: 1px solid #404040;
+            border-radius: 5px;
+            padding: 10px;
+            color: #ffffff;
+            resize: vertical;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-actions button {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.2s ease;
+        }
+
+        .modal-actions .btn-secondary {
+            background: #505050;
+            color: #ffffff;
+        }
+
+        .modal-actions .btn-secondary:hover {
+            background: #666666;
+            transform: translateY(-1px);
+        }
+
+        .modal-actions .btn-danger {
+            background: #d9534f;
+            color: #ffffff;
+        }
+
+        .modal-actions .btn-danger:hover {
+            background: #c9302c;
+            transform: translateY(-1px);
+        }
+
+        .modal-error {
+            color: #ff6b6b;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        .dashboard-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #28a7e9;
+            color: #ffffff;
+            padding: 12px 18px;
+            border-radius: 6px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            z-index: 10000;
+        }
+
+        .dashboard-toast.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .dashboard-toast.error {
+            background: #d9534f;
+        }
         
         /* Quick Actions Grid */
         .quick-actions {
@@ -500,12 +664,6 @@
             </div>
         </div>
         
-        <!-- Alert for appointment confirmation -->
-        <div class="alert-success-custom" id="appointment-confirmed-alert" style="display: none;">
-            <i class="fa fa-check-circle"></i> <strong>Janji Konsultasi Dikonfirmasi!</strong>
-            <div id="appointment-details" style="margin-top: 10px;"></div>
-        </div>
-        
         <!-- Alert for first-time users -->
         <div class="alert-info-custom" id="first-time-alert" style="display: none;">
             <i class="fa fa-info-circle"></i> <strong>Langkah Selanjutnya:</strong> 
@@ -604,11 +762,13 @@
             <div class="col-md-6">
                 <div class="dashboard-card">
                     <h3><i class="fa fa-calendar-check-o"></i> Janji Temu Mendatang</h3>
-                    <p class="empty-state">
-                        <i class="fa fa-calendar-o"></i>
-                        Belum ada janji temu yang dijadwalkan
-                    </p>
-                    <a href="#" class="action-btn" onclick="alert('Fitur booking segera hadir!'); return false;">
+                    <div id="booking-status-container">
+                        <p class="empty-state">
+                            <i class="fa fa-calendar-o"></i>
+                            Belum ada janji temu yang dijadwalkan
+                        </p>
+                    </div>
+                    <a href="/booking-appointment.html" class="action-btn" id="booking-create-btn">
                         <i class="fa fa-plus"></i> Buat Janji Temu
                     </a>
                 </div>
@@ -744,6 +904,21 @@
         </div>
     </div>
 
+    <div class="dashboard-modal" id="cancel-appointment-modal" aria-hidden="true">
+        <div class="dashboard-modal-content" role="dialog" aria-modal="true" aria-labelledby="cancel-modal-title">
+            <button type="button" class="dashboard-modal-close" id="cancel-modal-close" aria-label="Tutup">&times;</button>
+            <h4 id="cancel-modal-title">Batalkan Janji Konsultasi</h4>
+            <div class="cancel-summary" id="cancel-modal-summary"></div>
+            <label for="cancel-reason-input" style="color: #28a7e9; font-weight: 600; display: block; margin-bottom: 8px;">Alasan Pembatalan *</label>
+            <textarea id="cancel-reason-input" placeholder="Tuliskan alasan pembatalan Anda (minimal 10 karakter)"></textarea>
+            <div id="cancel-modal-error" class="modal-error" style="display: none;"></div>
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" id="cancel-modal-cancel-btn">Batal</button>
+                <button type="button" class="btn-danger" id="cancel-modal-submit-btn">Ya, Batalkan</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
@@ -838,8 +1013,8 @@
                     }
                 }
 
-                // Check for confirmed appointments
-                checkConfirmedAppointments();
+                // Load booking status and appointment alerts
+                loadBookingStatus();
 
                 loadVisitInvoices();
 
@@ -850,36 +1025,345 @@
             }
         }
         
-        async function checkConfirmedAppointments() {
+        async function loadBookingStatus() {
+            const container = document.getElementById('booking-status-container');
+
+            if (!container) return;
+
+            container.innerHTML = `
+                <p style="text-align: center; color: #999;">
+                    <i class="fa fa-spinner fa-spin"></i> Memuat status booking...
+                </p>
+            `;
+
             try {
-                const token = localStorage.getItem('patient_token');
                 const response = await fetch('/api/sunday-appointments/patient', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-                if (!response.ok) return;
+                if (!response.ok) {
+                    throw new Error('Gagal memuat status booking');
+                }
 
                 const data = await response.json();
-                const confirmedAppointments = data.appointments.filter(apt => 
-                    apt.status === 'confirmed' && !apt.isPast
-                );
+                const appointments = Array.isArray(data.appointments) ? data.appointments : [];
 
-                if (confirmedAppointments.length > 0) {
-                    const apt = confirmedAppointments[0]; // Show latest confirmed
-                    const detailsHtml = `
-                        <div class="appointment-info-box">
-                            <p><strong>Tanggal:</strong> ${apt.dateFormatted}</p>
-                            <p><strong>Sesi:</strong> ${apt.sessionLabel}</p>
-                            <p><strong>Waktu:</strong> ${apt.time}</p>
-                            ${apt.notes ? `<p><strong>Catatan dari Staff:</strong><br>${apt.notes}</p>` : ''}
-                        </div>
-                    `;
-                    document.getElementById('appointment-details').innerHTML = detailsHtml;
-                    document.getElementById('appointment-confirmed-alert').style.display = 'block';
-                }
+                renderBookingStatus(appointments);
             } catch (error) {
-                console.error('Error checking appointments:', error);
+                console.error('Error loading appointments:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa fa-exclamation-triangle"></i>
+                        <p>Gagal memuat status booking. Silakan coba lagi.</p>
+                    </div>
+                `;
             }
+        }
+
+        function renderBookingStatus(appointments) {
+            const container = document.getElementById('booking-status-container');
+            if (!container) return;
+
+            const upcoming = (appointments || [])
+                .filter(apt => !apt.isPast && apt.status !== 'cancelled' && apt.status !== 'no_show')
+                .sort((a, b) => {
+                    const dateDiff = new Date(a.appointment_date) - new Date(b.appointment_date);
+                    if (dateDiff !== 0) return dateDiff;
+                    const sessionDiff = (a.session || 0) - (b.session || 0);
+                    if (sessionDiff !== 0) return sessionDiff;
+                    return (a.slot_number || 0) - (b.slot_number || 0);
+                });
+
+            if (upcoming.length === 0) {
+                container.innerHTML = `
+                    <p class="empty-state">
+                        <i class="fa fa-calendar-o"></i>
+                        Belum ada janji temu yang dijadwalkan
+                    </p>
+                `;
+                return;
+            }
+
+            const nextAppointment = upcoming[0];
+            const statusInfo = getBookingStatusInfo(nextAppointment.status);
+            const notes = nextAppointment.notes ? `<p style="margin-top: 10px;"><strong>Catatan Klinik:</strong><br>${escapeText(nextAppointment.notes)}</p>` : '';
+
+            const startDateObj = nextAppointment.startDateTime ? new Date(nextAppointment.startDateTime) : null;
+            const arrivalTime = nextAppointment.arrivalTimeFormatted
+                || (startDateObj && !isNaN(startDateObj.getTime())
+                    ? new Date(startDateObj.getTime() - (15 * 60 * 1000)).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+                    : null);
+
+            const arrivalInfo = arrivalTime
+                ? `Mohon hadir sekitar pukul ${arrivalTime} WIB (15 menit sebelum jadwal).`
+                : 'Mohon hadir 15 menit sebelum waktu yang dipilih.';
+
+            const slotNumber = Number(nextAppointment.slot_number);
+            const slotInfo = Number.isFinite(slotNumber) && slotNumber > 0
+                ? `<p><strong>Nomor Antrian:</strong> ${slotNumber}</p>`
+                : '';
+
+            const timeLabel = nextAppointment.time ? `${nextAppointment.time} WIB` : '-';
+
+            const canCancel = !nextAppointment.isPast && ['pending', 'confirmed'].includes((nextAppointment.status || '').toLowerCase());
+            const actionButtons = canCancel
+                ? `<button type="button" class="cancel-appointment-btn" data-appointment-id="${nextAppointment.id}"><i class="fa fa-times-circle"></i> Batalkan Janji</button>`
+                : '';
+
+            container.innerHTML = `
+                <div class="appointment-info-box">
+                    <p><strong>Status:</strong> <span style="color: ${statusInfo.color}; font-weight: 600;">${statusInfo.label}</span></p>
+                    <p><strong>Tanggal:</strong> ${nextAppointment.dateFormatted}</p>
+                    <p><strong>Jam Konsultasi:</strong> ${timeLabel}</p>
+                    <p><strong>Sesi:</strong> ${nextAppointment.sessionLabel || '-'}</p>
+                    ${slotInfo}
+                    <p>${statusInfo.message}</p>
+                    <p>${arrivalInfo}</p>
+                    ${notes}
+                    ${actionButtons}
+                </div>
+            `;
+
+            if (canCancel) {
+                const cancelBtn = container.querySelector('.cancel-appointment-btn');
+                if (cancelBtn) {
+                    cancelBtn.addEventListener('click', () => openCancelModal(nextAppointment));
+                }
+            }
+        }
+
+        const cancellationState = {
+            appointmentId: null
+        };
+
+        function openCancelModal(appointment) {
+            if (!appointment || !appointment.id) return;
+
+            cancellationState.appointmentId = appointment.id;
+
+            const summary = document.getElementById('cancel-modal-summary');
+            if (summary) {
+                const timeLabel = appointment.time ? `${escapeText(appointment.time)} WIB` : '-';
+                summary.innerHTML = `
+                    <p style="margin-top: 0; margin-bottom: 8px;">Anda akan membatalkan janji konsultasi berikut:</p>
+                    <p style="margin: 4px 0;"><strong>Tanggal:</strong> ${escapeText(appointment.dateFormatted)}</p>
+                    <p style="margin: 4px 0;"><strong>Sesi:</strong> ${escapeText(appointment.sessionLabel || '-')}</p>
+                    <p style="margin: 4px 0;"><strong>Jam:</strong> ${timeLabel}</p>
+                `;
+            }
+
+            const reasonInput = document.getElementById('cancel-reason-input');
+            if (reasonInput) {
+                reasonInput.value = '';
+            }
+
+            const errorEl = document.getElementById('cancel-modal-error');
+            if (errorEl) {
+                errorEl.textContent = '';
+                errorEl.style.display = 'none';
+            }
+
+            setCancelModalLoading(false);
+
+            const modal = document.getElementById('cancel-appointment-modal');
+            if (modal) {
+                modal.classList.add('active');
+                modal.setAttribute('aria-hidden', 'false');
+            }
+
+            if (reasonInput) {
+                setTimeout(() => {
+                    reasonInput.focus();
+                }, 50);
+            }
+        }
+
+        function closeCancelModal() {
+            const modal = document.getElementById('cancel-appointment-modal');
+            if (modal) {
+                modal.classList.remove('active');
+                modal.setAttribute('aria-hidden', 'true');
+            }
+            const errorEl = document.getElementById('cancel-modal-error');
+            if (errorEl) {
+                errorEl.textContent = '';
+                errorEl.style.display = 'none';
+            }
+            setCancelModalLoading(false);
+            cancellationState.appointmentId = null;
+        }
+
+        function setCancelModalLoading(isLoading) {
+            const submitBtn = document.getElementById('cancel-modal-submit-btn');
+            const cancelBtn = document.getElementById('cancel-modal-cancel-btn');
+            const closeBtn = document.getElementById('cancel-modal-close');
+
+            if (submitBtn) {
+                submitBtn.disabled = !!isLoading;
+                submitBtn.textContent = isLoading ? 'Memproses...' : 'Ya, Batalkan';
+            }
+
+            if (cancelBtn) {
+                cancelBtn.disabled = !!isLoading;
+            }
+
+            if (closeBtn) {
+                closeBtn.disabled = !!isLoading;
+            }
+        }
+
+        async function submitCancellation() {
+            if (!cancellationState.appointmentId) return;
+
+            const reasonInput = document.getElementById('cancel-reason-input');
+            const errorEl = document.getElementById('cancel-modal-error');
+
+            const reasonValue = reasonInput ? reasonInput.value.trim() : '';
+
+            if (reasonValue.length < 10) {
+                if (errorEl) {
+                    errorEl.textContent = 'Alasan pembatalan minimal 10 karakter.';
+                    errorEl.style.display = 'block';
+                }
+                if (reasonInput) {
+                    reasonInput.focus();
+                }
+                return;
+            }
+
+            if (errorEl) {
+                errorEl.textContent = '';
+                errorEl.style.display = 'none';
+            }
+
+            setCancelModalLoading(true);
+
+            try {
+                const response = await fetch(`/api/sunday-appointments/${cancellationState.appointmentId}/cancel`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ reason: reasonValue })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || 'Gagal membatalkan janji temu');
+                }
+
+                closeCancelModal();
+                showTemporaryAlert('Janji temu berhasil dibatalkan.');
+                loadBookingStatus();
+            } catch (error) {
+                if (errorEl) {
+                    errorEl.textContent = error.message || 'Terjadi kesalahan saat membatalkan janji temu.';
+                    errorEl.style.display = 'block';
+                }
+            } finally {
+                setCancelModalLoading(false);
+            }
+        }
+
+        function showTemporaryAlert(message, type = 'success') {
+            if (!message) return;
+
+            const existing = document.getElementById('dashboard-toast');
+            if (existing) {
+                existing.remove();
+            }
+
+            const toast = document.createElement('div');
+            toast.id = 'dashboard-toast';
+            toast.className = 'dashboard-toast';
+            if (type === 'error') {
+                toast.classList.add('error');
+            }
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.add('visible');
+            });
+
+            setTimeout(() => {
+                toast.classList.remove('visible');
+                toast.addEventListener('transitionend', () => {
+                    toast.remove();
+                }, { once: true });
+            }, 3200);
+        }
+
+        const cancelSubmitBtn = document.getElementById('cancel-modal-submit-btn');
+        if (cancelSubmitBtn) {
+            cancelSubmitBtn.addEventListener('click', submitCancellation);
+        }
+
+        const cancelCloseBtn = document.getElementById('cancel-modal-close');
+        if (cancelCloseBtn) {
+            cancelCloseBtn.addEventListener('click', closeCancelModal);
+        }
+
+        const cancelBackBtn = document.getElementById('cancel-modal-cancel-btn');
+        if (cancelBackBtn) {
+            cancelBackBtn.addEventListener('click', closeCancelModal);
+        }
+
+        const cancelModal = document.getElementById('cancel-appointment-modal');
+        if (cancelModal) {
+            cancelModal.addEventListener('click', (event) => {
+                if (event.target === cancelModal) {
+                    closeCancelModal();
+                }
+            });
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                const modalElement = document.getElementById('cancel-appointment-modal');
+                if (modalElement && modalElement.classList.contains('active')) {
+                    event.preventDefault();
+                    closeCancelModal();
+                }
+            }
+        });
+
+        function getBookingStatusInfo(status) {
+            const normalizedStatus = (status || '').toLowerCase();
+            const statusMap = {
+                confirmed: {
+                    label: 'Dikonfirmasi',
+                    color: '#28e970',
+                    message: 'Janji temu Anda telah dikonfirmasi. Tim klinik menunggu kehadiran Anda.'
+                },
+                pending: {
+                    label: 'Menunggu Konfirmasi',
+                    color: '#ffd166',
+                    message: 'Permintaan booking Anda sudah kami terima dan sedang menunggu konfirmasi dari admin.'
+                },
+                completed: {
+                    label: 'Selesai',
+                    color: '#7f8c8d',
+                    message: 'Janji temu ini telah selesai.'
+                },
+                cancelled: {
+                    label: 'Dibatalkan',
+                    color: '#d9534f',
+                    message: 'Janji temu ini telah dibatalkan.'
+                },
+                no_show: {
+                    label: 'Tidak Hadir',
+                    color: '#d9534f',
+                    message: 'Anda tidak hadir pada janji temu sebelumnya.'
+                }
+            };
+
+            return statusMap[normalizedStatus] || {
+                label: normalizedStatus || 'Tidak diketahui',
+                color: '#cccccc',
+                message: 'Status janji temu belum tersedia.'
+            };
         }
         
         function toggleWelcomeMessage() {
@@ -1292,6 +1776,26 @@
                 console.error('Token verification failed:', error);
             }
         }, 5 * 60 * 1000);
+
+        // Show "Atur Password" link for Google users
+        document.addEventListener('DOMContentLoaded', function() {
+            const googleUserPasswordSection = document.getElementById('google-user-password-section');
+            const emailInput = document.getElementById('edit-email');
+
+            if (googleUserPasswordSection && emailInput) {
+                const email = emailInput.value.trim();
+                
+                // Check if email is from Google (ends with @gmail.com or similar)
+                if (email && email.split('@')[1]) {
+                    const domain = email.split('@')[1].toLowerCase();
+                    const googleDomains = ['gmail.com', 'googlemail.com', 'yahoo.com', 'hotmail.com', 'live.com'];
+
+                    if (googleDomains.includes(domain)) {
+                        googleUserPasswordSection.style.display = 'block';
+                    }
+                }
+            }
+        });
     </script>
 </body>
 </html>

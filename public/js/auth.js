@@ -132,6 +132,7 @@ async function handleGoogleSignIn(response) {
         // Store JWT token
         localStorage.setItem('patient_token', data.token);
         localStorage.setItem('patient_user', JSON.stringify(data.user));
+        localStorage.setItem('auth_provider', 'google'); // Set auth_provider to google
         
         // Show success message
         showMessage('Login berhasil! Mengalihkan...', 'success');
@@ -172,6 +173,7 @@ async function signUpWithEmail(fullname, email, phone, password) {
         // Store JWT token
         localStorage.setItem('patient_token', data.token);
         localStorage.setItem('patient_user', JSON.stringify(data.user));
+        localStorage.setItem('auth_provider', 'email'); // Set auth_provider to email
         
         // Show success message
         showMessage('Registrasi berhasil! Silakan cek email Anda untuk verifikasi.', 'success');
@@ -211,6 +213,7 @@ async function signInWithEmail(email, password) {
         // Store JWT token
         localStorage.setItem('patient_token', data.token);
         localStorage.setItem('patient_user', JSON.stringify(data.user));
+        localStorage.setItem('auth_provider', 'email'); // Set auth_provider to email
         
         // Show success message
         showMessage('Login berhasil! Mengalihkan...', 'success');
@@ -352,6 +355,7 @@ async function checkProfileCompletionAndRedirect() {
 function logout() {
     localStorage.removeItem('patient_token');
     localStorage.removeItem('patient_user');
+    localStorage.removeItem('auth_provider'); // Clear auth_provider on logout
     window.location.href = '/index.html';
 }
 
@@ -504,13 +508,11 @@ document.addEventListener('DOMContentLoaded', function() {
             const email = document.getElementById('navbar-email').value.trim();
             const password = document.getElementById('navbar-password').value;
             
-            // Basic validation
             if (!email || !password) {
                 showMessage('Email dan password harus diisi!', 'error');
                 return;
             }
             
-            // Disable submit button
             const submitBtn = navbarLoginForm.querySelector('button[type="submit"]');
             if (submitBtn) {
                 submitBtn.disabled = true;
@@ -520,13 +522,22 @@ document.addEventListener('DOMContentLoaded', function() {
             try {
                 await signInWithEmail(email, password);
             } catch (error) {
-                // Re-enable submit button
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.textContent = 'Login';
                 }
             }
         });
+
+        // Add a specific listener for the forgot password link to ensure it works inside the dropdown
+        const forgotPasswordLink = navbarLoginForm.querySelector('a[href="reset-password.html"]');
+        if (forgotPasswordLink) {
+            forgotPasswordLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                window.location.href = this.href;
+            });
+        }
     }
     
     // Forgot Password Link
@@ -570,3 +581,45 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+// Function to check login status and update UI
+function checkLoginStatus() {
+    const token = localStorage.getItem('patient_token');
+    const userFullName = localStorage.getItem('patient_name');
+    const userEmail = localStorage.getItem('patient_email');
+    const authProvider = localStorage.getItem('auth_provider');
+
+    if (token && userFullName && userEmail) {
+        // User is logged in
+        if (window.location.pathname.endsWith('patient-dashboard.html')) {
+            $('#user-name').text(userFullName);
+            $('#user-email').text(userEmail);
+
+            // Show "Atur Password" link for Google users
+            if (authProvider === 'google') {
+                $('#google-user-password-section').show();
+            }
+        }
+    } else {
+        // User is not logged in
+        if (!window.location.pathname.endsWith('index.html')) {
+            window.location.href = '/index.html';
+        }
+    }
+}
+
+// Call checkLoginStatus on every page load
+checkLoginStatus();
+
+// ... existing code ...
+function onLoginSuccess(data) {
+    if (data.token) {
+        localStorage.setItem('patient_token', data.token);
+        localStorage.setItem('patient_name', data.user.full_name);
+        localStorage.setItem('patient_email', data.user.email);
+        localStorage.setItem('auth_provider', data.user.provider || 'email'); // Store auth provider
+        window.location.href = REDIRECT_AFTER_LOGIN;
+    } else {
+        showMessage('Login gagal. Silakan coba lagi.', 'error');
+    }
+}

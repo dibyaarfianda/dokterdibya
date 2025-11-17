@@ -4,6 +4,18 @@ const API_BASE = '/api/sunday-appointments';
 let appointmentsTable;
 let allAppointments = [];
 
+function escapeHtml(value) {
+    if (value === null || value === undefined) {
+        return '';
+    }
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
 function initKelolaAppointment() {
     // Check authentication
     const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
@@ -58,6 +70,12 @@ function initKelolaAppointment() {
     // Set filter date to today
     const today = new Date().toISOString().split('T')[0];
     $('#filter-date').val(today);
+
+    $('#status-select').off('change.kelola').on('change.kelola', function() {
+        toggleCancellationReasonField(this.value);
+    });
+
+    toggleCancellationReasonField($('#status-select').val());
 }
 
 async function loadAppointments() {
@@ -94,8 +112,11 @@ function renderAppointments(appointments) {
     appointmentsTable.clear();
 
     appointments.forEach(apt => {
-        const statusBadge = getStatusBadge(apt.status);
+        const statusBadge = getStatusBadge(apt.status, apt.cancellation_reason);
         const sessionBadge = `<span class="badge badge-info">${apt.sessionLabel}</span>`;
+        const complaintRaw = (apt.chief_complaint || '').trim();
+        const complaintPreview = complaintRaw.length > 80 ? `${complaintRaw.substring(0, 80)}...` : complaintRaw;
+        const complaintHtml = complaintRaw ? escapeHtml(complaintPreview) : '-';
         
         appointmentsTable.row.add([
             apt.id,
@@ -104,7 +125,7 @@ function renderAppointments(appointments) {
             `<strong>${apt.time}</strong><br><small>Slot ${apt.slot_number}</small>`,
             `<strong>${apt.patient_name}</strong><br><small>ID: ${apt.patient_id}</small>`,
             apt.patient_phone || '-',
-            `<small>${apt.chief_complaint.substring(0, 80)}${apt.chief_complaint.length > 80 ? '...' : ''}</small>`,
+            `<small>${complaintHtml}</small>`,
             statusBadge,
             `
                 <button class="btn btn-xs btn-info" onclick="showDetail(${apt.id})" title="Detail">
@@ -120,7 +141,7 @@ function renderAppointments(appointments) {
     appointmentsTable.draw();
 }
 
-function getStatusBadge(status) {
+function getStatusBadge(status, cancellationReason) {
     const labels = {
         'pending': 'Pending',
         'confirmed': 'Confirmed',
@@ -128,7 +149,21 @@ function getStatusBadge(status) {
         'cancelled': 'Cancelled',
         'no_show': 'No Show'
     };
-    return `<span class="status-badge status-${status}">${labels[status]}</span>`;
+    const label = labels[status] || status;
+    const tooltip = status === 'cancelled' && cancellationReason
+        ? ` title="${escapeHtml(cancellationReason)}"`
+        : '';
+    return `<span class="status-badge status-${status}"${tooltip}>${label}</span>`;
+}
+
+function toggleCancellationReasonField(status) {
+    const group = document.getElementById('status-cancel-reason-group');
+    if (!group) return;
+    if (status === 'cancelled') {
+        group.style.display = '';
+    } else {
+        group.style.display = 'none';
+    }
 }
 
 function updateStatistics(appointments) {
@@ -155,6 +190,12 @@ function showDetail(appointmentId) {
     const apt = allAppointments.find(a => a.id === appointmentId);
     if (!apt) return;
 
+    const complaintBlock = escapeHtml(apt.chief_complaint || '-').replace(/\n/g, '<br>');
+    const notesBlock = apt.notes ? escapeHtml(apt.notes).replace(/\n/g, '<br>') : '';
+    const cancellationReasonBlock = apt.cancellation_reason ? escapeHtml(apt.cancellation_reason).replace(/\n/g, '<br>') : '';
+    const cancelledByLabel = apt.cancelled_by === 'patient' ? 'Pasien' : apt.cancelled_by === 'staff' ? 'Staff Klinik' : apt.cancelled_by === 'system' ? 'Sistem' : '-';
+    const cancelledAtLabel = apt.cancelled_at ? new Date(apt.cancelled_at).toLocaleString('id-ID') : null;
+
     const detailHtml = `
         <div class="appointment-details">
             <div class="row">
@@ -170,15 +211,24 @@ function showDetail(appointmentId) {
                     <p><strong>ID Pasien:</strong> ${apt.patient_id}</p>
                     <p><strong>Telepon:</strong> ${apt.patient_phone || '-'}</p>
                     <p><strong>Email:</strong> ${apt.email || '-'}</p>
-                    <p><strong>Status:</strong> ${getStatusBadge(apt.status)}</p>
+                    <p><strong>Status:</strong> ${getStatusBadge(apt.status, apt.cancellation_reason)}</p>
                 </div>
             </div>
             <hr>
             <p><strong>Keluhan Utama / Tujuan Konsultasi:</strong></p>
-            <p style="background: #f8f9fa; padding: 10px; border-radius: 5px;">${apt.chief_complaint}</p>
-            ${apt.notes ? `
+            <p style="background: #f8f9fa; padding: 10px; border-radius: 5px;">${complaintBlock}</p>
+            ${notesBlock ? `
                 <p><strong>Catatan Staff:</strong></p>
-                <p style="background: #fff3cd; padding: 10px; border-radius: 5px;">${apt.notes}</p>
+                <p style="background: #fff3cd; padding: 10px; border-radius: 5px;">${notesBlock}</p>
+            ` : ''}
+            ${apt.status === 'cancelled' ? `
+                <hr>
+                <p><strong>Dibatalkan Oleh:</strong> ${escapeHtml(cancelledByLabel)}</p>
+                ${cancellationReasonBlock ? `
+                    <p><strong>Alasan Pembatalan:</strong></p>
+                    <p style="background: #fdecea; padding: 10px; border-radius: 5px;">${cancellationReasonBlock}</p>
+                ` : ''}
+                ${cancelledAtLabel ? `<p><small class="text-muted">Dibatalkan: ${escapeHtml(cancelledAtLabel)}</small></p>` : ''}
             ` : ''}
             <hr>
             <p><small class="text-muted">Dibuat: ${new Date(apt.created_at).toLocaleString('id-ID')}</small></p>
@@ -193,7 +243,10 @@ function showDetail(appointmentId) {
 function showStatusModal(appointmentId, currentStatus) {
     $('#status-appointment-id').val(appointmentId);
     $('#status-select').val(currentStatus);
-    $('#status-notes').val('');
+    const appointment = allAppointments.find(a => a.id === appointmentId);
+    $('#status-notes').val(appointment?.notes || '');
+    $('#status-cancel-reason').val(appointment?.cancellation_reason || '');
+    toggleCancellationReasonField(currentStatus);
     $('#statusModal').modal('show');
 }
 
@@ -203,6 +256,14 @@ async function updateStatus() {
         const appointmentId = $('#status-appointment-id').val();
         const status = $('#status-select').val();
         const notes = $('#status-notes').val();
+        const cancellationReasonInput = document.getElementById('status-cancel-reason');
+        const cancellationReasonValue = cancellationReasonInput ? cancellationReasonInput.value.trim() : '';
+
+        if (status === 'cancelled' && cancellationReasonValue.length < 10) {
+            showToast('Mohon isi alasan pembatalan minimal 10 karakter.', 'error');
+            cancellationReasonInput?.focus();
+            return;
+        }
 
         const response = await fetch(`${API_BASE}/${appointmentId}/status`, {
             method: 'PUT',
@@ -210,7 +271,7 @@ async function updateStatus() {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({ status, notes })
+            body: JSON.stringify({ status, notes, cancellationReason: status === 'cancelled' ? cancellationReasonValue : null })
         });
 
         if (!response.ok) throw new Error('Failed to update status');
