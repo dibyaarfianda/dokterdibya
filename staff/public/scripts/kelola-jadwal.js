@@ -1,4 +1,5 @@
 // Kelola Jadwal Praktik Script
+(function() {
 const API_BASE = '/api/practice-schedules';
 let schedulesTable;
 let allSchedules = [];
@@ -12,7 +13,7 @@ const locationNames = {
 
 const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
-$(document).ready(function() {
+function initKelolaJadwal() {
     // Check authentication
     const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
     if (!token) {
@@ -22,6 +23,11 @@ $(document).ready(function() {
 
     // Clear tbody before initializing DataTable
     $('#schedules-tbody').html('');
+
+    // Destroy existing DataTable if it exists
+    if ($.fn.DataTable.isDataTable('#schedules-table')) {
+        $('#schedules-table').DataTable().destroy();
+    }
 
     // Initialize DataTable
     schedulesTable = $('#schedules-table').DataTable({
@@ -49,7 +55,15 @@ $(document).ready(function() {
 
     // Load schedules
     loadSchedules();
-});
+}
+
+// Initialize when DOM is ready (works in both standalone and SPA contexts)
+if (document.readyState === 'loading') {
+    $(document).ready(initKelolaJadwal);
+} else {
+    // DOM already loaded (SPA context)
+    initKelolaJadwal();
+}
 
 async function loadSchedules() {
     try {

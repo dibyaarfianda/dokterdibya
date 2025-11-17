@@ -102,7 +102,7 @@
             <div class="container-fluid">
                 <div class="row mb-2">
                     <div class="col-sm-6">
-                        <h1><i class="fas fa-users mr-2"></i>Kelola Pasien (Web & Walk-in)</h1>
+                        <h1><i class="fas fa-users mr-2"></i>Kelola Pasien</h1>
                     </div>
                 </div>
             </div>
@@ -124,7 +124,6 @@
                                                 <th>Telepon</th>
                                                 <th>Tanggal Lahir</th>
                                                 <th>Usia</th>
-                                                <th>Tipe</th>
                                                 <th>Kunjungan Terakhir</th>
                                                 <th>Tgl Registrasi</th>
                                                 <th>Status</th>
@@ -189,7 +188,7 @@
             const tbody = document.getElementById('manage-patients-tbody');
             
             if (!data.data || data.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="11" class="text-center">Tidak ada pasien</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center">Tidak ada pasien</td></tr>';
                 return;
             }
             
@@ -200,9 +199,6 @@
                 const statusBadge = patient.status === 'active' ? 
                     '<span class="badge badge-success">Aktif</span>' : 
                     '<span class="badge badge-secondary">Nonaktif</span>';
-                const typeBadge = patient.patient_type === 'web' ? 
-                    '<span class="badge badge-info">Web</span>' : 
-                    '<span class="badge badge-primary">Walk-in</span>';
                 
                 return `
                     <tr>
@@ -212,7 +208,6 @@
                         <td>${patient.whatsapp || patient.phone || '-'}</td>
                         <td>${birthDate}</td>
                         <td>${patient.age || '-'}</td>
-                        <td>${typeBadge}</td>
                         <td>${lastVisit}</td>
                         <td>${regDate}</td>
                         <td>${statusBadge}</td>
@@ -224,6 +219,9 @@
                                     onclick="togglePatientStatus('${patient.id}', '${patient.status}', '${patient.full_name}')" 
                                     title="${patient.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}">
                                 <i class="fas fa-${patient.status === 'active' ? 'ban' : 'check'}"></i>
+                            </button>
+                            <button class="btn btn-sm btn-secondary" onclick="deletePatientAppointments('${patient.id}', '${patient.full_name}')" title="Hapus Appointment Pasien">
+                                <i class="fas fa-calendar-times"></i>
                             </button>
                             <button class="btn btn-sm btn-danger" onclick="deletePatient('${patient.id}', '${patient.full_name}')" title="Hapus">
                                 <i class="fas fa-trash"></i>
@@ -243,7 +241,6 @@
             });
             
         } catch (error) {
-            console.error('Error loading patients:', error);
             document.getElementById('manage-patients-tbody').innerHTML = 
                 '<tr><td colspan="11" class="text-center text-danger">Gagal memuat data pasien</td></tr>';
         }
@@ -302,6 +299,7 @@ Apakah Anda yakin ingin melanjutkan?`;
                 successMessage += `\n- Medical Exams: ${result.deleted_data.medical_exams || 0}`;
                 successMessage += `\n- Visits: ${result.deleted_data.visits || 0}`;
                 successMessage += `\n- Appointments: ${result.deleted_data.appointments || 0}`;
+                successMessage += `\n- Sunday Appointments: ${result.deleted_data.sunday_appointments || 0}`;
             }
             
             alert(successMessage);
@@ -311,13 +309,34 @@ Apakah Anda yakin ingin melanjutkan?`;
             
             // Also reload patients in appointments if that module is loaded
             if (typeof window.reloadAppointmentPatients === 'function') {
-                console.log('🔄 Reloading appointment patients...');
                 await window.reloadAppointmentPatients();
             }
             
         } catch (error) {
-            console.error('Error deleting patient:', error);
             alert('❌ Gagal menghapus pasien:\n' + error.message);
+        }
+    };
+    
+    window.deletePatientAppointments = async function(patientId, patientName) {
+        const confirmMessage = `Anda akan menghapus SEMUA appointment yang terkait dengan pasien:\n\n"${patientName}" (ID: ${patientId})\n\nTindakan ini tidak menghapus data pasien, hanya jadwal appointment-nya. Lanjutkan?`;
+        if (!confirm(confirmMessage)) return;
+        try {
+            const response = await fetch(`/api/appointments/patient/${patientId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Gagal menghapus appointment');
+            }
+            alert(`✅ Appointment pasien berhasil dihapus. Total entri dihapus: ${result.deleted || 0}`);
+            if (typeof window.reloadAppointmentPatients === 'function') {
+                await window.reloadAppointmentPatients();
+            }
+        } catch (error) {
+            alert('❌ Gagal menghapus appointment pasien:\n' + error.message);
         }
     };
     
@@ -344,7 +363,6 @@ Apakah Anda yakin ingin melanjutkan?`;
             loadPatients();
             
         } catch (error) {
-            console.error('Error updating patient status:', error);
             alert('Gagal mengubah status pasien');
         }
     };

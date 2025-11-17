@@ -109,7 +109,7 @@ async function apiFetch(path, options = {}, fallbackMessage = 'Permintaan gagal'
 }
 
 // Initialize - check authentication on load
-document.addEventListener('DOMContentLoaded', async () => {
+async function initRoleManagement() {
     try {
         await getToken(); // Will redirect to login if no token
         initRolesTable();
@@ -121,7 +121,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.error('Authentication error:', error);
         redirectToLogin();
     }
-});
+}
+
+// Initialize when DOM is ready (works in both standalone and SPA contexts)
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initRoleManagement, { once: true });
+} else {
+    // DOM already loaded (SPA context)
+    initRoleManagement();
+}
 
 // Initialize DataTables
 function initRolesTable() {
