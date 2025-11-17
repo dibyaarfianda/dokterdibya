@@ -113,8 +113,8 @@ router.post('/register', async (req, res) => {
             `INSERT INTO patients (
                 id, full_name, email, phone, password, 
                 email_verified, verification_token, verification_token_expires,
-                registration_date, status, patient_type
-            ) VALUES (?, ?, ?, ?, ?, 0, ?, ?, NOW(), 'active', 'web')`,
+                registration_date, status
+            ) VALUES (?, ?, ?, ?, ?, 0, ?, ?, NOW(), 'active')`,
             [medicalRecordId, fullname, email, phone, hashedPassword, verificationToken, tokenExpires]
         );
         
@@ -321,8 +321,8 @@ router.post('/auth/google', async (req, res) => {
             const medicalRecordId = await generateUniqueMedicalRecordId();
             
             const [result] = await db.query(
-                `INSERT INTO patients (id, full_name, email, google_id, photo_url, email_verified, registration_date, status, patient_type) 
-                 VALUES (?, ?, ?, ?, ?, 1, NOW(), 'active', 'web')`,
+                `INSERT INTO patients (id, full_name, email, google_id, photo_url, email_verified, registration_date, status) 
+                 VALUES (?, ?, ?, ?, ?, 1, NOW(), 'active')`,
                 [medicalRecordId, name, email, googleId, picture]
             );
             
