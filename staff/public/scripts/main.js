@@ -72,8 +72,6 @@ function initPages() {
     pages.kelolaTindakan = grab('kelola-tindakan-page');
     pages.kelolaObatManagement = grab('kelola-obat-management-page');
     pages.financeAnalysis = grab('finance-analysis-page');
-    pages.roleManagement = grab('role-management-page');
-
 }
 function loadExternalPage(containerId, htmlFile, options = {}) {
     const { forceReload = false } = options;
@@ -376,22 +374,20 @@ function showKelolaPasienPage() {
     setTitleAndActive('Kelola Pasien', 'nav-kelola-pasien', 'kelola-pasien');
     loadExternalPage('kelola-pasien-page', 'kelola-pasien.html', { forceReload: true });
 }
-function showKelolaAppointmentPage() {
-    console.log("showKelolaAppointmentPage called");
-    hideAllPages();
-    $('#kelola-appointment-page').removeClass('d-none');
-    updateActiveNav('kelola-appointment');
-
-    importWithVersion('./scripts/kelola-appointment.js')
-        .then(() => {
-            console.log('kelola-appointment.js loaded, calling initKelolaAppointment');
-            if (window.initKelolaAppointment) {
-                window.initKelolaAppointment();
-            } else {
-                console.error('initKelolaAppointment function not found');
-            }
-        })
-        .catch(error => console.error('Error loading kelola-appointment.js:', error));
+function showKelolaAppointmentPage() { 
+    hideAllPages(); 
+    pages.kelolaAppointment?.classList.remove('d-none'); 
+    setTitleAndActive('Kelola Appointment', 'nav-kelola-appointment', 'kelola-appointment');
+    
+    importWithVersion('./kelola-appointment.js').then(module => {
+        if (typeof window.initKelolaAppointment === 'function') {
+            window.initKelolaAppointment();
+        } else {
+            console.error('Kelola Appointment module loaded, but initKelolaAppointment function not found on window.');
+        }
+    }).catch(error => {
+        console.error('Failed to load kelola-appointment.js:', error);
+    });
 }
 function showKelolaJadwalPage() {
     hideAllPages();
@@ -427,62 +423,13 @@ function showFinanceAnalysisPage() {
         }
     }, 100);
 }
-function showRoleManagementPage() {
-    console.log("showRoleManagementPage called");
-    hideAllPages();
-    $('#role-management-page').removeClass('d-none');
-    updateActiveNav('role-management');
 
-    importWithVersion('./scripts/role-management.js')
-        .then(() => {
-            console.log('role-management.js loaded, calling initRoleManagement');
-            if (window.initRoleManagement) {
-                window.initRoleManagement();
-            } else {
-                console.error('initRoleManagement function not found');
-            }
-        })
-        .catch(error => console.error('Error loading role-management.js:', error));
+function showProfileSettings() {
+    hideAllPages();
+    pages.profile?.classList.remove('d-none');
+    setTitleAndActive('Pengaturan Profil', 'nav-profile-settings', 'profile');
+    loadExternalPage('profile-settings-page', 'profile-settings.html');
 }
-function showProfileSettings() { 
-    hideAllPages(); 
-    pages.profile?.classList.remove('d-none'); 
-    setTitleAndActive('Profile Settings', null, 'profile'); 
-    // Load profile module and initialize
-    importWithVersion('./profile.js').then(module => {
-        if (module.initProfile) {
-            module.initProfile();
-        }
-        if (module.loadProfileData) {
-            module.loadProfileData();
-        }
-    });
-}
-// Expose for inline onclicks already set in HTML
-window.showTindakanPage = showTindakanPage;
-window.showObatPage = showObatPage;
-window.showCashierPage = showCashierPage;
-window.showPatientPage = showPatientPage;
-window.showAnamnesa = showAnamnesa;
-window.showPhysicalExam = showPhysicalExam;
-window.showUSGExam = showUSGExam;
-window.showLabExam = showLabExam;
-window.showProfileSettings = showProfileSettings;
-window.showStokOpnamePage = showStokOpnamePage;
-window.showLogPage = showLogPage;
-window.showPengaturanPage = showPengaturanPage;
-window.showKelolaObatPage = showKelolaObatPage;
-window.showAppointmentsPage = showAppointmentsPage;
-window.showAnalyticsPage = showAnalyticsPage;
-window.showFinancePage = showFinancePage;
-window.showDashboardPage = showDashboardPage;
-window.showKelolaPasienPage = showKelolaPasienPage;
-window.showKelolaAppointmentPage = showKelolaAppointmentPage;
-window.showKelolaJadwalPage = showKelolaJadwalPage;
-window.showKelolaTindakanPage = showKelolaTindakanPage;
-window.showKelolaObatManagementPage = showKelolaObatManagementPage;
-window.showFinanceAnalysisPage = showFinanceAnalysisPage;
-window.showRoleManagementPage = showRoleManagementPage;
 
 // -------------------- BASIC BINDINGS --------------------
 function bindBasics() {
@@ -494,12 +441,39 @@ function bindBasics() {
     backToTindakanBtn?.addEventListener('click', showTindakanPage);
 }
 
+function initializeApp(user) {
+    if (user) {
+        // User is logged in, check roles
+        if (user.role !== 'superadmin') {
+            const managementHeader = document.getElementById('management-header');
+            const financeNav = document.getElementById('finance-analysis-nav');
+            const kelolaPasienNav = document.getElementById('management-nav-kelola-pasien');
+            const kelolaAppointmentNav = document.getElementById('management-nav-kelola-appointment');
+            const kelolaJadwalNav = document.getElementById('management-nav-kelola-jadwal');
+            const kelolaTindakanNav = document.getElementById('management-nav-kelola-tindakan');
+            const kelolaObatNav = document.getElementById('management-nav-kelola-obat');
+
+            if (managementHeader) managementHeader.style.display = 'none';
+            if (financeNav) financeNav.style.display = 'none';
+            if (kelolaPasienNav) kelolaPasienNav.style.display = 'none';
+            if (kelolaAppointmentNav) kelolaAppointmentNav.style.display = 'none';
+            if (kelolaJadwalNav) kelolaJadwalNav.style.display = 'none';
+            if (kelolaTindakanNav) kelolaTindakanNav.style.display = 'none';
+            if (kelolaObatNav) kelolaObatNav.style.display = 'none';
+        }
+    } else {
+        // User is not logged in, or session expired
+        // You might want to redirect to login page here
+    }
+}
+
 // -------------------- BOOT --------------------
 function initMain() {
     initPages();
     startClock();
     bindBasics();
     initMedicalExam(); // Initialize medical examination pages
+    onAuthStateChanged(initializeApp);
     
     // Set up global debug function for appointments
     window.debugAppointments = function() {
@@ -883,3 +857,27 @@ window.showPatientDetail = showPatientDetail;
 
 // Export for manual initialization if needed
 export { initMain };
+
+// Expose page switching functions to the global scope for onclick handlers
+window.showDashboardPage = showDashboardPage;
+window.showTindakanPage = showTindakanPage;
+window.showObatPage = showObatPage;
+window.showCashierPage = showCashierPage;
+window.showAnamnesa = showAnamnesa;
+window.showPhysicalExam = showPhysicalExam;
+window.showUSGExam = showUSGExam;
+window.showLabExam = showLabExam;
+window.showLogPage = showLogPage;
+window.showAppointmentsPage = showAppointmentsPage;
+window.showAnalyticsPage = showAnalyticsPage;
+window.showFinancePage = showFinancePage;
+window.showKelolaPasienPage = showKelolaPasienPage;
+window.showKelolaAppointmentPage = showKelolaAppointmentPage;
+window.showKelolaJadwalPage = showKelolaJadwalPage;
+window.showKelolaTindakanPage = showKelolaTindakanPage;
+window.showKelolaObatManagementPage = showKelolaObatManagementPage;
+window.showFinanceAnalysisPage = showFinanceAnalysisPage;
+window.showProfileSettings = showProfileSettings;
+window.showStokOpnamePage = showStokOpnamePage;
+window.showPengaturanPage = showPengaturanPage;
+window.showKelolaObatPage = showKelolaObatPage;
