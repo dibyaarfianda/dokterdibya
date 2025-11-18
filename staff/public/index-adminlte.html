@@ -19,36 +19,36 @@
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
     <style>
         /* Sidebar color and width */
-        .main-sidebar { 
-            background-color: #DEE0E3 !important;
+        .main-sidebar {
+            background-color: #FAFAFA !important;
         }
-        
+
         /* Sidebar width when expanded */
         body:not(.sidebar-collapse) .main-sidebar {
             width: 210px !important; /* Default 250px - 40px (5 spasi) */
         }
-        
+
         /* Sidebar width when collapsed */
         body.sidebar-collapse .main-sidebar {
             width: 4.6rem !important; /* AdminLTE default collapsed width */
         }
-        
-        .main-sidebar .brand-link { background-color: #DEE0E3 !important; }
-        .sidebar-logo { 
-            background-color: #DEE0E3; 
+
+        .main-sidebar .brand-link { background-color: #FAFAFA !important; }
+        .sidebar-logo {
+            background-color: #FAFAFA;
             border-bottom: 1px solid rgba(0,0,0,0.1);
             transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
             overflow: hidden; /* Keep logo within bounds */
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 88px; /* Fixed height to prevent jumping */
+            min-height: 130px; /* Fixed height to prevent jumping */
             padding: 0.5rem;
         }
-        
+
         /* Logo sizing */
         .sidebar-logo img {
-            max-height: 68px;
+            max-height: 112px;
             max-width: 100%; /* Prevent overflow */
             width: auto;
             height: auto;
@@ -57,16 +57,16 @@
             display: block;
             will-change: transform; /* Optimize for animation */
         }
-        
+
         /* Logo when sidebar collapsed - shrink to fit with smooth scale */
         body.sidebar-collapse .sidebar-logo {
-            min-height: 60px; /* Smaller container when collapsed */
+            min-height: 95px; /* Smaller container when collapsed */
             padding: 0.25rem;
         }
-        
+
         body.sidebar-collapse .sidebar-logo img {
-            max-height: 40px; /* Smaller max size */
-            max-width: 40px;
+            max-height: 78px; /* Smaller max size */
+            max-width: 78px;
         }
         
         /* Adjust content area to match sidebar width when expanded */
@@ -84,19 +84,19 @@
         }
 
         /* Default (not selected) link/icon color */
-        .sidebar .nav-sidebar .nav-link { color: #000 !important; }
-        .sidebar .nav-sidebar .nav-link .nav-icon { color: #000 !important; }
+        .sidebar .nav-sidebar .nav-link { color: #000000 !important; }
+        .sidebar .nav-sidebar .nav-link .nav-icon { color: #000000 !important; }
 
         /* Hover */
-        .sidebar .nav-sidebar .nav-link:hover { background-color: rgba(0,0,0,0.08) !important; color: #000 !important; }
-        .sidebar .nav-sidebar .nav-link:hover .nav-icon { color: #000 !important; }
+        .sidebar .nav-sidebar .nav-link:hover { background-color: rgba(0,0,0,0.08) !important; color: #000000 !important; }
+        .sidebar .nav-sidebar .nav-link:hover .nav-icon { color: #000000 !important; }
 
         /* Active (selected) */
-        .sidebar .nav-sidebar .nav-link.active { background-color: #007BFF !important; color: #fff !important; }
+        .sidebar .nav-sidebar .nav-link.active { background-color: #0d6efd !important; color: #fff !important; }
         .sidebar .nav-sidebar .nav-link.active .nav-icon { color: #fff !important; }
 
-        /* Nav section headers color to blue */
-        .sidebar .nav-header { color: #0d6efd !important; }
+        /* Nav section headers */
+        .sidebar .nav-header { color: rgba(0,0,0,0.6) !important; }
         
         /* Hide sidebar scrollbar */
         .main-sidebar,
@@ -697,7 +697,7 @@
     <aside class="main-sidebar sidebar-dark-primary elevation-4">
         <div class="sidebar">
             <div class="p-3 text-center sidebar-logo">
-                <img src="images/logodpc.svg" alt="Logo" class="sidebar-logo-img">
+                <img src="images/DIBYA.svg" alt="Logo" class="sidebar-logo-img">
             </div>
             <nav class="mt-2">
                 <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
@@ -725,7 +725,7 @@
                             <p>Data Pasien</p>
                         </a>
                     </li>
-                    
+
                     <li class="nav-item" id="nav-tindakan">
                         <a href="#" class="nav-link" onclick="showTindakanPage(); return false;">
                             <i class="nav-icon fas fa-notes-medical"></i>

@@ -584,3 +584,24 @@ body {
         }
     }
 
+/* Improve textarea readability across all staff pages */
+textarea.form-control,
+textarea,
+.form-control {
+    font-size: 15px !important;
+    font-weight: 500 !important;
+    line-height: 1.6 !important;
+    color: #1f2937 !important;
+}
+
+/* Specifically for planning/prescription textareas */
+#planning-tindakan,
+#planning-terapi,
+#planning-rencana {
+    font-size: 15px !important;
+    font-weight: 600 !important;
+    line-height: 1.65 !important;
+    color: #111827 !important;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+}
+
