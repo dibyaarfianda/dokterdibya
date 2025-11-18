@@ -3,7 +3,7 @@ const SECTION_DEFS = [
     { id: 'anamnesa', label: 'Anamnesa' },
     { id: 'pemeriksaan', label: 'Pemeriksaan Fisik' },
     { id: 'usg', label: 'USG' },
-    { id: 'penunjang', label: 'Pemeriksaan Penunjang' },
+    { id: 'penunjang', label: 'Laboratorium' },
     { id: 'diagnosis', label: 'Diagnosis' },
     { id: 'planning', label: 'Planning' },
     { id: 'tagihan', label: 'Tagihan' }
@@ -89,7 +89,7 @@ const RECORD_TYPE_LABELS = {
     anamnesa: 'Anamnesa',
     physical_exam: 'Pemeriksaan Fisik',
     usg: 'USG',
-    lab: 'Pemeriksaan Penunjang',
+    lab: 'Laboratorium',
     diagnosis: 'Diagnosis',
     planning: 'Planning',
     complete: 'Rekam Medis Lengkap'
@@ -1188,74 +1188,77 @@ function createSummaryCard(title, valueHtml, metaItems = []) {
     return card;
 }
 
+function createHeaderCard(title, valueHtml, metaHtml = '') {
+    const card = document.createElement('div');
+    card.className = 'sc-header-card';
+    card.innerHTML = `
+        <h6>${escapeHtml(title)}</h6>
+        <div class="value">${valueHtml}</div>
+        ${metaHtml ? `<div class="meta">${metaHtml}</div>` : ''}
+    `;
+    return card;
+}
+
 function createSummary() {
     if (!state.derived) {
         return null;
     }
     const derived = state.derived;
-    const summary = document.createElement('div');
-    summary.className = 'sc-summary';
+    const container = document.createElement('div');
+    container.className = 'd-flex flex-wrap';
 
-    const mrDisplay = (derived.mrId || routeMrSlug || '-').toUpperCase();
-    const riskBadge = derived.highRisk
-        ? '<span class="sc-pill sc-pill--danger">High Risk</span>'
-        : '<span class="sc-pill sc-pill--info">Low Risk</span>';
+    // Card 1: Pasien (without high risk badge)
+    const patientMeta = derived.quickId ? `Quick ID: ${escapeHtml(derived.quickId)}` : '';
+    container.appendChild(createHeaderCard(
+        'Pasien',
+        safeText(derived.patientName || '-'),
+        patientMeta
+    ));
 
-    const patientMeta = [
-        `MR ID: ${escapeHtml(mrDisplay)}`
-    ];
-    if (derived.quickId) {
-        patientMeta.push(`Quick ID: ${escapeHtml(derived.quickId)}`);
-    }
-    patientMeta.push(riskBadge);
-    summary.appendChild(createSummaryCard('Pasien', safeText(derived.patientName || '-'), patientMeta));
-
+    // Card 2: Usia
     const dobText = formatDate(derived.dob);
-    const ageMeta = [];
-    if (dobText) {
-        ageMeta.push(`Lahir ${escapeHtml(dobText)}`);
-    }
-    summary.appendChild(createSummaryCard('Usia', safeText(derived.age ? `${derived.age} th` : '-'), ageMeta));
+    const ageMeta = dobText ? `Lahir ${escapeHtml(dobText)}` : '';
+    container.appendChild(createHeaderCard(
+        'Usia',
+        safeText(derived.age ? `${derived.age} th` : '-'),
+        ageMeta
+    ));
 
+    // Card 3: Usia Kehamilan
     const gaText = formatGestationalAge(derived.gestationalAge) || '-';
-    const pregnancyMeta = [];
     const hphtText = formatDate(derived.lmp);
     const eddText = formatDate(derived.edd);
-    if (hphtText) {
-        pregnancyMeta.push(`HPHT ${escapeHtml(hphtText)}`);
-    }
-    if (eddText) {
-        pregnancyMeta.push(`HPL ${escapeHtml(eddText)}`);
-    }
-    if (derived.bmi) {
-        pregnancyMeta.push(`BMI ${escapeHtml(String(derived.bmi))}`);
-    }
-    summary.appendChild(createSummaryCard('Usia Kehamilan', safeText(gaText), pregnancyMeta));
+    const pregnancyMetaParts = [];
+    if (hphtText) pregnancyMetaParts.push(`HPHT ${escapeHtml(hphtText)}`);
+    if (eddText) pregnancyMetaParts.push(`HPL ${escapeHtml(eddText)}`);
+    container.appendChild(createHeaderCard(
+        'Usia Kehamilan',
+        safeText(gaText),
+        pregnancyMetaParts.join(' • ')
+    ));
 
-    const appointmentMeta = [];
+    // Card 4: Janji Temu
     let appointmentValue = 'Tidak terhubung';
+    let appointmentMeta = '';
     if (derived.appointment) {
         const appointmentDate = formatDate(derived.appointment.appointmentDate);
         appointmentValue = appointmentDate || 'Terhubung';
-        const timeLabel = [derived.appointment.slotTime ? `${derived.appointment.slotTime} WIB` : null, derived.appointment.sessionLabel || null]
-            .filter(Boolean)
-            .join(' • ');
-        if (timeLabel) {
-            appointmentMeta.push(`Waktu: ${escapeHtml(timeLabel)}`);
+        const metaParts = [];
+        if (derived.appointment.slotTime) {
+            metaParts.push(`${derived.appointment.slotTime} WIB`);
         }
-        const appointmentStatus = formatStatus(derived.appointment.status);
-        if (appointmentStatus) {
-            appointmentMeta.push(`Status: ${escapeHtml(appointmentStatus)}`);
+        if (derived.appointment.status) {
+            metaParts.push(formatStatus(derived.appointment.status));
         }
-        if (derived.appointment.chiefComplaint) {
-            appointmentMeta.push(`Keluhan: ${escapeHtml(derived.appointment.chiefComplaint)}`);
-        }
-    } else {
-        appointmentMeta.push('Gunakan daftar pasien Klinik Private untuk memulai pemeriksaan.');
+        appointmentMeta = metaParts.join(' • ');
     }
-    summary.appendChild(createSummaryCard('Janji Temu', safeText(appointmentValue), appointmentMeta));
+    container.appendChild(createHeaderCard(
+        'Janji Temu',
+        safeText(appointmentValue),
+        appointmentMeta
+    ));
 
-    return summary;
+    return container;
 }
 
 function buildPath(sectionId) {
@@ -1265,34 +1268,13 @@ function buildPath(sectionId) {
 }
 
 function createSidebar() {
-    const nav = document.createElement('nav');
-    nav.className = 'sc-sidebar';
-    SECTION_DEFS.forEach(section => {
-        const link = document.createElement('a');
-        link.href = buildPath(section.id);
-        link.className = 'sc-nav-link';
-        link.dataset.section = section.id;
-        link.textContent = section.label;
-        nav.appendChild(link);
-    });
-
-    nav.addEventListener('click', event => {
-        const target = event.target.closest('.sc-nav-link');
-        if (!target) {
-            return;
-        }
-        event.preventDefault();
-        handleSectionChange(target.dataset.section);
-    });
-
-    return nav;
+    // Return null since we're using the main sidebar now
+    return null;
 }
 
 function updateSidebarActive() {
-    if (!sidebarEl) {
-        return;
-    }
-    const links = sidebarEl.querySelectorAll('[data-section]');
+    // Update main sidebar navigation
+    const links = document.querySelectorAll('.main-sidebar .sc-nav-link[data-section]');
     links.forEach(link => {
         link.classList.toggle('active', link.dataset.section === activeSection);
     });
@@ -1306,14 +1288,9 @@ function renderIdentitas() {
 
     const primaryRows = [
         ['Nama Lengkap', safeText(derived.patientName || '-')],
-        ['Nomor MR', safeText((derived.mrId || '-').toUpperCase())],
         ['Quick ID Intake', safeText(derived.quickId || '-')],
         ['ID Pasien', safeText(derived.patientId || '-')],
-        ['Jenis Pasien', safeText(patient.patientType || '-')],
-        ['Usia', safeText(derived.age ? `${derived.age} tahun` : '-')]
-    ];
-
-    const contactRows = [
+        ['Usia', safeText(derived.age ? `${derived.age} tahun` : '-')],
         ['Telepon', safeText(formatPhone(derived.phone) || '-')],
         ['Kontak Darurat', safeText(formatPhone(derived.emergencyContact) || '-')],
         ['Email', safeText(patient.email || '-')],
@@ -1325,17 +1302,6 @@ function renderIdentitas() {
         ['Pekerjaan Ibu', safeText(derived.occupation || '-')],
         ['Pendidikan', safeText(derived.education || '-')],
         ['Asuransi', safeText(derived.insurance || '-')]
-    ];
-
-    const pregnancyRows = [
-        ['HPHT', safeText(formatDate(derived.lmp) || '-')],
-        ['HPL', safeText(formatDate(derived.edd) || '-')],
-        ['Usia Kehamilan', safeText(formatGestationalAge(derived.gestationalAge) || '-')],
-        ['BMI (Intake)', safeText(derived.bmi || '-')],
-        ['Gravida (G)', safeText(derived.gravida ?? '-')],
-        ['Para (P)', safeText(derived.para ?? '-')],
-        ['Abortus (A)', safeText(derived.abortus ?? '-')],
-        ['Anak Hidup (L)', safeText(derived.living ?? '-')]
     ];
 
     const intakeRows = [
@@ -1350,25 +1316,18 @@ function renderIdentitas() {
         ? `<div class="sc-note">Faktor Risiko Intake: ${renderChipList(derived.riskFlags)}</div>`
         : '';
 
+    const riskBadge = derived.highRisk
+        ? '<span class="sc-pill sc-pill--danger ml-3">High Risk</span>'
+        : '';
+
     section.innerHTML = `
         <div class="sc-section-header">
-            <h3>Identitas Pasien</h3>
-            ${derived.highRisk ? '<span class="sc-pill sc-pill--danger">High Risk</span>' : ''}
+            <h3>Identitas Pasien${riskBadge}</h3>
         </div>
         <div class="sc-grid two">
             <div class="sc-card">
                 <h4>Data Utama</h4>
                 ${buildInfoTable(primaryRows)}
-            </div>
-            <div class="sc-card">
-                <h4>Kontak & Sosial</h4>
-                ${buildInfoTable(contactRows)}
-            </div>
-        </div>
-        <div class="sc-grid two">
-            <div class="sc-card">
-                <h4>Kehamilan Saat Ini</h4>
-                ${buildInfoTable(pregnancyRows)}
             </div>
             <div class="sc-card">
                 <h4>Informasi Intake</h4>
@@ -1386,188 +1345,1766 @@ function renderAnamnesa() {
     section.className = 'sc-section';
     const derived = state.derived;
     const payload = derived.payload || {};
-    const riskFlags = derived.riskFlags && derived.riskFlags.length
-        ? derived.riskFlags
-        : mapRiskCodesToLabels(derived.riskFactorCodes);
 
-    const medicalConditions = mapMedicalConditionCodes(payload.medical_conditions);
-    const medications = buildMedicationsList(payload);
-    const allergies = {
-        drug: payload.drug_allergies || payload.allergy_drugs || '',
-        food: payload.food_allergies || payload.allergy_food || '',
-        other: payload.other_allergies || payload.allergy_env || ''
-    };
-    const familyHistory = payload.family_medical_history || payload.family_history_detail || '';
-    const complaintRows = [
-        ['Keluhan Utama', formatMultiline(derived.appointment?.chiefComplaint || payload.current_symptoms || payload.reason)],
-        ['Riwayat Kehamilan Saat Ini', formatMultiline(payload.current_pregnancy_history || payload.obstetric_history)],
-        ['HPHT', safeText(formatDate(derived.lmp) || '-')],
-        ['HPL', safeText(formatDate(derived.edd) || '-')],
-        ['Usia Kehamilan', safeText(formatGestationalAge(derived.gestationalAge) || '-')],
-        ['BMI (Intake)', safeText(derived.bmi || '-')],
-        ['Catatan Review Intake', formatMultiline(derived.intakeReviewNotes)]
-    ];
+    // Load saved anamnesa data from medical records
+    const context = getMedicalRecordContext('anamnesa');
+    const savedData = context?.data || {};
 
-    const medicalRows = [
-        ['Riwayat Penyakit', renderChipList(medicalConditions)],
-        ['Detail Riwayat Penyakit', formatMultiline(payload.past_medical_history || payload.other_conditions || payload.past_conditions_detail)],
-        ['Riwayat Keluarga', formatMultiline(familyHistory)],
-        ['Obat yang Sedang Dikonsumsi', renderChipList(medications)],
-        ['Alergi Obat', formatMultiline(allergies.drug)],
-        ['Alergi Makanan', formatMultiline(allergies.food)],
-        ['Alergi Lingkungan', formatMultiline(allergies.other)],
-        ['Faktor Risiko Intake', riskFlags.length ? renderChipList(riskFlags) : safeText('Tidak ada faktor risiko')]
-    ];
+    // Merge saved data with intake data (saved data takes priority)
+    const keluhanUtama = savedData.keluhan_utama || derived.appointment?.chiefComplaint || payload.current_symptoms || payload.reason || '';
+    const riwayatKehamilanSaatIni = savedData.riwayat_kehamilan_saat_ini || payload.current_pregnancy_history || payload.obstetric_history || '';
+    const hpht = savedData.hpht || derived.lmp || '';
+    const hpl = savedData.hpl || derived.edd || '';
+    const detailRiwayatPenyakit = savedData.detail_riwayat_penyakit || payload.past_medical_history || payload.other_conditions || payload.past_conditions_detail || '';
+    const riwayatKeluarga = savedData.riwayat_keluarga || payload.family_medical_history || payload.family_history_detail || '';
+    const alergiObat = savedData.alergi_obat || payload.drug_allergies || payload.allergy_drugs || '';
+    const alergiMakanan = savedData.alergi_makanan || payload.food_allergies || payload.allergy_food || '';
+    const alergiLingkungan = savedData.alergi_lingkungan || payload.other_allergies || payload.allergy_env || '';
+    const gravida = savedData.gravida ?? derived.gravida ?? '';
+    const para = savedData.para ?? derived.para ?? '';
+    const abortus = savedData.abortus ?? derived.abortus ?? '';
+    const anakHidup = savedData.anak_hidup ?? derived.living ?? '';
+    const usiaMenuarche = savedData.usia_menarche ?? derived.cycle.menarcheAge ?? '';
+    const lamaSiklus = savedData.lama_siklus ?? derived.cycle.cycleLength ?? '';
+    const siklusTeratur = savedData.siklus_teratur ?? (derived.cycle.regular !== undefined ? (derived.cycle.regular ? 'Ya' : 'Tidak') : '');
+    const metodeKBTerakhir = savedData.metode_kb_terakhir ?? derived.contraception.previous ?? '';
+    const kegagalanKB = savedData.kegagalan_kb ?? (derived.contraception.failure !== undefined ? (derived.contraception.failure ? 'Ya' : 'Tidak') : '');
+    const jenisKBGagal = savedData.jenis_kb_gagal ?? derived.contraception.failureType ?? '';
 
-    const obstetricRows = [
-        ['Gravida (G)', safeText(derived.gravida ?? '-')],
-        ['Para (P)', safeText(derived.para ?? '-')],
-        ['Abortus (A)', safeText(derived.abortus ?? '-')],
-        ['Anak Hidup (L)', safeText(derived.living ?? '-')]
-    ];
-
-    const cycleRows = [
-        ['Usia Menarche', safeText(derived.cycle.menarcheAge ? `${derived.cycle.menarcheAge} tahun` : '-')],
-        ['Lama Siklus', safeText(derived.cycle.cycleLength ? `${derived.cycle.cycleLength} hari` : '-')],
-        ['Siklus Teratur', safeText(formatYesNo(derived.cycle.regular) || '-')],
-        ['Metode KB Terakhir', safeText(derived.contraception.previous || '-')],
-        ['Kegagalan KB', safeText(formatYesNo(derived.contraception.failure) || (derived.contraception.failure ? derived.contraception.failure : '-'))],
-        ['Jenis KB saat gagal', safeText(derived.contraception.failureType || '-')]
-    ];
-
-    const pregnanciesTable = renderPreviousPregnanciesTable(payload.previous_pregnancies || payload.previousPregnancies);
+    // Verification banner
+    const verificationBanner = savedData.verified_by && savedData.verified_at
+        ? `<div class="alert alert-success mb-3">
+            <i class="fas fa-check-circle"></i> Diverifikasi oleh <strong>${escapeHtml(savedData.verified_by)}</strong> pada ${formatDateTime(savedData.verified_at)}
+           </div>`
+        : '';
 
     section.innerHTML = `
         <div class="sc-section-header">
             <h3>Anamnesa & Riwayat</h3>
+            <button class="btn btn-primary btn-sm" id="btn-update-anamnesa" style="display:none;">
+                <i class="fas fa-save"></i> Update
+            </button>
         </div>
+        ${verificationBanner}
         <div class="sc-grid two">
             <div class="sc-card">
                 <h4>Keluhan & Kehamilan Saat Ini</h4>
-                ${buildInfoTable(complaintRows)}
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">Keluhan Utama</label>
+                    <textarea class="form-control anamnesa-field" id="anamnesa-keluhan-utama" rows="2">${escapeHtml(keluhanUtama)}</textarea>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">Riwayat Kehamilan Saat Ini</label>
+                    <textarea class="form-control anamnesa-field" id="anamnesa-riwayat-kehamilan" rows="2">${escapeHtml(riwayatKehamilanSaatIni)}</textarea>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">HPHT</label>
+                    <input type="date" class="form-control anamnesa-field" id="anamnesa-hpht" value="${escapeHtml(hpht)}">
+                </div>
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">HPL</label>
+                    <input type="date" class="form-control anamnesa-field" id="anamnesa-hpl" value="${escapeHtml(hpl)}">
+                </div>
             </div>
             <div class="sc-card">
                 <h4>Riwayat Medis</h4>
-                ${buildInfoTable(medicalRows)}
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">Detail Riwayat Penyakit</label>
+                    <textarea class="form-control anamnesa-field" id="anamnesa-detail-riwayat" rows="2">${escapeHtml(detailRiwayatPenyakit)}</textarea>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">Riwayat Keluarga</label>
+                    <textarea class="form-control anamnesa-field" id="anamnesa-riwayat-keluarga" rows="2">${escapeHtml(riwayatKeluarga)}</textarea>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">Alergi Obat</label>
+                    <textarea class="form-control anamnesa-field" id="anamnesa-alergi-obat" rows="2">${escapeHtml(alergiObat)}</textarea>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">Alergi Makanan</label>
+                    <textarea class="form-control anamnesa-field" id="anamnesa-alergi-makanan" rows="2">${escapeHtml(alergiMakanan)}</textarea>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">Alergi Lingkungan</label>
+                    <textarea class="form-control anamnesa-field" id="anamnesa-alergi-lingkungan" rows="2">${escapeHtml(alergiLingkungan)}</textarea>
+                </div>
             </div>
         </div>
         <div class="sc-grid two">
             <div class="sc-card">
                 <h4>Ringkasan Obstetri</h4>
-                ${buildInfoTable(obstetricRows)}
+                <div class="row">
+                    <div class="col-md-6 form-group mb-3">
+                        <label class="font-weight-bold">Gravida (G)</label>
+                        <input type="number" class="form-control anamnesa-field" id="anamnesa-gravida" value="${escapeHtml(gravida)}">
+                    </div>
+                    <div class="col-md-6 form-group mb-3">
+                        <label class="font-weight-bold">Para (P)</label>
+                        <input type="number" class="form-control anamnesa-field" id="anamnesa-para" value="${escapeHtml(para)}">
+                    </div>
+                    <div class="col-md-6 form-group mb-3">
+                        <label class="font-weight-bold">Abortus (A)</label>
+                        <input type="number" class="form-control anamnesa-field" id="anamnesa-abortus" value="${escapeHtml(abortus)}">
+                    </div>
+                    <div class="col-md-6 form-group mb-3">
+                        <label class="font-weight-bold">Anak Hidup (L)</label>
+                        <input type="number" class="form-control anamnesa-field" id="anamnesa-anak-hidup" value="${escapeHtml(anakHidup)}">
+                    </div>
+                </div>
             </div>
             <div class="sc-card">
                 <h4>Siklus & Kontrasepsi</h4>
-                ${buildInfoTable(cycleRows)}
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">Usia Menarche (tahun)</label>
+                    <input type="number" class="form-control anamnesa-field" id="anamnesa-usia-menarche" value="${escapeHtml(usiaMenuarche)}">
+                </div>
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">Lama Siklus (hari)</label>
+                    <input type="number" class="form-control anamnesa-field" id="anamnesa-lama-siklus" value="${escapeHtml(lamaSiklus)}">
+                </div>
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">Siklus Teratur</label>
+                    <select class="form-control anamnesa-field" id="anamnesa-siklus-teratur">
+                        <option value="">-</option>
+                        <option value="Ya" ${siklusTeratur === 'Ya' ? 'selected' : ''}>Ya</option>
+                        <option value="Tidak" ${siklusTeratur === 'Tidak' ? 'selected' : ''}>Tidak</option>
+                    </select>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">Metode KB Terakhir</label>
+                    <input type="text" class="form-control anamnesa-field" id="anamnesa-metode-kb" value="${escapeHtml(metodeKBTerakhir)}">
+                </div>
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">Kegagalan KB</label>
+                    <select class="form-control anamnesa-field" id="anamnesa-kegagalan-kb">
+                        <option value="">-</option>
+                        <option value="Ya" ${kegagalanKB === 'Ya' ? 'selected' : ''}>Ya</option>
+                        <option value="Tidak" ${kegagalanKB === 'Tidak' ? 'selected' : ''}>Tidak</option>
+                    </select>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">Jenis KB saat gagal</label>
+                    <input type="text" class="form-control anamnesa-field" id="anamnesa-jenis-kb-gagal" value="${escapeHtml(jenisKBGagal)}">
+                </div>
             </div>
         </div>
-        <div class="sc-card">
-            <h4>Kehamilan Sebelumnya</h4>
-            ${pregnanciesTable}
-        </div>
     `;
+
+    // Add change detection
+    setTimeout(() => {
+        const fields = section.querySelectorAll('.anamnesa-field');
+        const updateBtn = document.getElementById('btn-update-anamnesa');
+
+        fields.forEach(field => {
+            field.addEventListener('input', () => {
+                if (updateBtn) updateBtn.style.display = 'inline-block';
+            });
+        });
+
+        if (updateBtn) {
+            updateBtn.addEventListener('click', saveAnamnesa);
+        }
+    }, 0);
 
     return section;
 }
 
 function renderPemeriksaan() {
     const context = getMedicalRecordContext('physical_exam');
-    if (!context) {
-        return renderPlaceholderSection(
-            'Pemeriksaan Fisik',
-            'Belum ada data pemeriksaan fisik.',
-            'Catat temuan fisik di modul pemeriksaan untuk menampilkan data di sini.'
-        );
-    }
+    const data = context?.data || {};
 
-    const data = context.data || {};
     const section = document.createElement('div');
     section.className = 'sc-section';
 
-    const vitalsRows = [
-        [PHYSICAL_LABELS.tekanan_darah, formatMultiline(data.tekanan_darah || '-')],
-        [PHYSICAL_LABELS.nadi, formatMultiline(data.nadi || '-')],
-        [PHYSICAL_LABELS.suhu, formatMultiline(data.suhu || '-')],
-        [PHYSICAL_LABELS.respirasi, formatMultiline(data.respirasi || '-')]
-    ];
+    const metaHtml = context ? renderRecordMeta(context, 'physical_exam') : '';
 
-    const findingsRows = [
-        [PHYSICAL_LABELS.kepala_leher, formatMultiline(data.kepala_leher || '-')],
-        [PHYSICAL_LABELS.thorax, formatMultiline(data.thorax || '-')],
-        [PHYSICAL_LABELS.abdomen, formatMultiline(data.abdomen || '-')],
-        [PHYSICAL_LABELS.ekstremitas, formatMultiline(data.ekstremitas || '-')],
-        [PHYSICAL_LABELS.pemeriksaan_obstetri, formatMultiline(data.pemeriksaan_obstetri || '-')]
-    ];
+    // Build vital signs in horizontal layout
+    const vitalsHtml = `
+        <div class="row mb-3">
+            <div class="col-md-3">
+                <label class="font-weight-bold">Tekanan Darah</label>
+                <input type="text" class="form-control" id="pe-tekanan-darah" value="${escapeHtml(data.tekanan_darah || '120/80')}">
+            </div>
+            <div class="col-md-3">
+                <label class="font-weight-bold">Nadi</label>
+                <input type="text" class="form-control" id="pe-nadi" value="${escapeHtml(data.nadi || '88')}">
+            </div>
+            <div class="col-md-3">
+                <label class="font-weight-bold">Suhu</label>
+                <input type="text" class="form-control" id="pe-suhu" value="${escapeHtml(data.suhu || '36.8')}">
+            </div>
+            <div class="col-md-3">
+                <label class="font-weight-bold">Respirasi</label>
+                <input type="text" class="form-control" id="pe-respirasi" value="${escapeHtml(data.respirasi || '18')}">
+            </div>
+        </div>
+    `;
 
-    const metaHtml = renderRecordMeta(context, 'physical_exam');
+    // Build examination findings
+    const findingsHtml = `
+        <div class="mb-3">
+            <label class="font-weight-bold">Pemeriksaan Kepala & Leher</label>
+            <textarea class="form-control" id="pe-kepala-leher" rows="2">${escapeHtml(data.kepala_leher || 'Anemia/Icterus/Cyanosis/Dyspneu (-)')}</textarea>
+        </div>
+        <div class="mb-3">
+            <label class="font-weight-bold">Pemeriksaan Thorax</label>
+            <textarea class="form-control" id="pe-thorax" rows="3">${escapeHtml(data.thorax || 'Simetris. Vesiculer/vesicular. Rhonki/Wheezing (-)\nS1 S2 tunggal, murmur (-), gallop (-)')}</textarea>
+        </div>
+        <div class="mb-3">
+            <label class="font-weight-bold">Pemeriksaan Abdomen</label>
+            <textarea class="form-control" id="pe-abdomen" rows="3">${escapeHtml(data.abdomen || 'BU (+), Soepel\nGravida tampak sesuai usia kehamilan / Massa abdomen')}</textarea>
+        </div>
+        <div class="mb-3">
+            <label class="font-weight-bold">Pemeriksaan Ekstremitas</label>
+            <textarea class="form-control" id="pe-ekstremitas" rows="2">${escapeHtml(data.ekstremitas || 'Akral hangat, kering. CRT < 2 detik')}</textarea>
+        </div>
+        <div class="mb-3">
+            <label class="font-weight-bold">Pemeriksaan Obstetri</label>
+            <textarea class="form-control" id="pe-obstetri" rows="4">${escapeHtml(data.pemeriksaan_obstetri || 'TFU:\nDJJ:\nVT: (tidak dilakukan)')}</textarea>
+        </div>
+    `;
+
+    const saveButton = `
+        <div class="text-right mt-3">
+            <button type="button" class="btn btn-primary" id="save-physical-exam">
+                <i class="fas fa-save mr-2"></i>Simpan Pemeriksaan Fisik
+            </button>
+        </div>
+    `;
 
     section.innerHTML = `
         <div class="sc-section-header">
             <h3>Pemeriksaan Fisik</h3>
         </div>
         ${metaHtml}
-        <div class="sc-grid two">
-            <div class="sc-card">
-                <h4>Tanda Vital</h4>
-                ${buildInfoTable(vitalsRows)}
-            </div>
-            <div class="sc-card">
-                <h4>Temuan Klinis</h4>
-                ${buildInfoTable(findingsRows)}
-            </div>
+        <div class="sc-card">
+            ${vitalsHtml}
+            ${findingsHtml}
+            ${saveButton}
         </div>
     `;
+
+    // Add save handler
+    setTimeout(() => {
+        const saveBtn = document.getElementById('save-physical-exam');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', savePhysicalExam);
+        }
+    }, 0);
 
     return section;
 }
 
-function renderUSG() {
-    const context = getMedicalRecordContext('usg');
-    if (!context) {
-        return renderPlaceholderSection(
-            'USG',
-            'Belum ada hasil USG yang tersimpan.',
-            'Unggah atau catat temuan USG untuk menampilkan ringkasan.'
-        );
+async function savePhysicalExam() {
+    try {
+        const data = {
+            tekanan_darah: document.getElementById('pe-tekanan-darah')?.value || '',
+            nadi: document.getElementById('pe-nadi')?.value || '',
+            suhu: document.getElementById('pe-suhu')?.value || '',
+            respirasi: document.getElementById('pe-respirasi')?.value || '',
+            kepala_leher: document.getElementById('pe-kepala-leher')?.value || '',
+            thorax: document.getElementById('pe-thorax')?.value || '',
+            abdomen: document.getElementById('pe-abdomen')?.value || '',
+            ekstremitas: document.getElementById('pe-ekstremitas')?.value || '',
+            pemeriksaan_obstetri: document.getElementById('pe-obstetri')?.value || ''
+        };
+
+        const token = await getToken();
+        if (!token) return;
+
+        const response = await fetch('/api/medical-records', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                patientId: routeMrSlug,
+                type: 'physical_exam',
+                data: data,
+                doctorName: 'Staff User',
+                timestamp: new Date().toISOString()
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+            console.error('Server error response:', errorData);
+            throw new Error(errorData.message || `Server error: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log('Save successful:', result);
+
+        showSuccess('Pemeriksaan Fisik berhasil disimpan!');
+
+        // Reload the record to show updated data
+        await fetchRecord(routeMrSlug);
+
+    } catch (error) {
+        console.error('Error saving physical exam:', error);
+        showError('Gagal menyimpan pemeriksaan fisik: ' + error.message);
+    }
+}
+
+async function saveDiagnosis() {
+    try {
+        const data = {
+            diagnosis_utama: document.getElementById('diagnosis-utama')?.value || '',
+            diagnosis_sekunder: document.getElementById('diagnosis-sekunder')?.value || ''
+        };
+
+        const patientId = state.derived?.patientId;
+        if (!patientId) {
+            showError('Patient ID tidak ditemukan');
+            return;
+        }
+
+        const token = await getToken();
+        if (!token) return;
+
+        const response = await fetch('/api/medical-records', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                patientId: patientId,
+                type: 'diagnosis',
+                data: data,
+                doctorName: 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.',
+                timestamp: new Date().toISOString()
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+            console.error('Server error response:', errorData);
+            throw new Error(errorData.message || `Server error: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log('Save successful:', result);
+
+        showSuccess('Diagnosis berhasil disimpan!');
+
+        // Reload the record to show updated data
+        await fetchRecord(routeMrSlug);
+
+    } catch (error) {
+        console.error('Error saving diagnosis:', error);
+        showError('Gagal menyimpan diagnosis: ' + error.message);
+    }
+}
+
+async function savePlanning() {
+    try {
+        const data = {
+            tindakan: document.getElementById('planning-tindakan')?.value || '',
+            terapi: document.getElementById('planning-terapi')?.value || '',
+            rencana: document.getElementById('planning-rencana')?.value || ''
+        };
+
+        const patientId = state.derived?.patientId;
+        if (!patientId) {
+            showError('Patient ID tidak ditemukan');
+            return;
+        }
+
+        const token = await getToken();
+        if (!token) return;
+
+        const response = await fetch('/api/medical-records', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                patientId: patientId,
+                type: 'planning',
+                data: data,
+                doctorName: 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.',
+                timestamp: new Date().toISOString()
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+            console.error('Server error response:', errorData);
+            throw new Error(errorData.message || `Server error: ${response.status}`);
+        }
+
+        const result = await response.json();
+        console.log('Save successful:', result);
+
+        showSuccess('Planning berhasil disimpan!');
+
+        // Reload the record to show updated data
+        await fetchRecord(routeMrSlug);
+
+    } catch (error) {
+        console.error('Error saving planning:', error);
+        showError('Gagal menyimpan planning: ' + error.message);
+    }
+}
+
+async function openTindakanModal() {
+    try {
+        const token = await getToken();
+        if (!token) return;
+
+        const response = await fetch('/api/tindakan?active=true', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) throw new Error('Failed to fetch tindakan');
+
+        const result = await response.json();
+        const tindakanList = result.data || result;
+
+        // Filter out ADMINISTRATIF category
+        const filteredTindakan = tindakanList.filter(item => item.category !== 'ADMINISTRATIF');
+
+        // Show modal with tindakan list
+        showTindakanModal(filteredTindakan);
+
+    } catch (error) {
+        console.error('Error loading tindakan:', error);
+        showError('Gagal memuat data tindakan: ' + error.message);
+    }
+}
+
+async function openTerapiModal() {
+    try {
+        const token = await getToken();
+        if (!token) return;
+
+        const response = await fetch('/api/obat?active=true', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!response.ok) throw new Error('Failed to fetch obat');
+
+        const result = await response.json();
+        const obatList = result.data || result;
+
+        // Show modal with obat list
+        showTerapiModal(obatList);
+
+    } catch (error) {
+        console.error('Error loading obat:', error);
+        showError('Gagal memuat data obat: ' + error.message);
+    }
+}
+
+function showTindakanModal(tindakanList) {
+    const modal = document.getElementById('tindakan-modal');
+    const tbody = document.getElementById('tindakan-modal-body');
+
+    if (!modal || !tbody) return;
+
+    // Clear existing content
+    tbody.innerHTML = '';
+
+    // Populate table
+    tindakanList.forEach(item => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${escapeHtml(item.code || '')}</td>
+            <td>${escapeHtml(item.name || '')}</td>
+            <td>${escapeHtml(item.category || '')}</td>
+            <td>
+                <button type="button" class="btn btn-sm btn-success" onclick="addTindakan('${escapeHtml(item.name || '')}')">
+                    <i class="fas fa-plus"></i> Tambah
+                </button>
+            </td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    // Show modal using Bootstrap
+    $('#tindakan-modal').modal('show');
+}
+
+function showTerapiModal(obatList) {
+    const modal = document.getElementById('terapi-modal');
+    const tbody = document.getElementById('terapi-modal-body');
+
+    if (!modal || !tbody) return;
+
+    // Clear existing content
+    tbody.innerHTML = '';
+
+    // Populate table with checkboxes
+    obatList.forEach((item, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>
+                <div class="custom-control custom-checkbox">
+                    <input type="checkbox" class="custom-control-input obat-checkbox" id="obat-${index}" data-obat-name="${escapeHtml(item.name || '')}" data-obat-id="${item.id || ''}">
+                    <label class="custom-control-label" for="obat-${index}"></label>
+                </div>
+            </td>
+            <td>${escapeHtml(item.code || '')}</td>
+            <td>${escapeHtml(item.name || '')}</td>
+            <td>${escapeHtml(item.category || '')}</td>
+            <td>${item.stock !== undefined ? item.stock : '-'}</td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    // Add select all functionality
+    const selectAllCheckbox = document.getElementById('select-all-obat');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.onchange = function() {
+            const checkboxes = document.querySelectorAll('.obat-checkbox');
+            checkboxes.forEach(cb => cb.checked = this.checked);
+        };
     }
 
-    const data = context.data || {};
+    // Show modal using Bootstrap
+    $('#terapi-modal').modal('show');
+}
+
+function proceedToCaraPakai() {
+    // Get all selected obat
+    const selectedCheckboxes = document.querySelectorAll('.obat-checkbox:checked');
+
+    if (selectedCheckboxes.length === 0) {
+        showError('Silakan pilih minimal satu obat');
+        return;
+    }
+
+    const selectedObat = Array.from(selectedCheckboxes).map(cb => ({
+        name: cb.dataset.obatName,
+        id: cb.dataset.obatId
+    }));
+
+    // Hide terapi modal
+    $('#terapi-modal').modal('hide');
+
+    // Show batch cara pakai modal
+    showBatchCaraPakaiModal(selectedObat);
+}
+
+function showBatchCaraPakaiModal(selectedObat) {
+    const modalBody = document.getElementById('batch-cara-pakai-body');
+    if (!modalBody) return;
+
+    // Build form for each selected obat
+    let formHtml = '';
+    selectedObat.forEach((obat, index) => {
+        formHtml += `
+            <div class="card mb-3">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0"><i class="fas fa-pills mr-2"></i>${escapeHtml(obat.name)}</h6>
+                </div>
+                <div class="card-body">
+                    <div class="form-row">
+                        <div class="form-group col-md-4">
+                            <label class="font-weight-bold">Jumlah:</label>
+                            <input type="number" class="form-control" id="jumlah-${index}" min="1" value="1" placeholder="Jumlah">
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label class="font-weight-bold">Satuan:</label>
+                            <select class="form-control" id="satuan-${index}">
+                                <option value="tablet">tablet</option>
+                                <option value="kapsul">kapsul</option>
+                                <option value="box">box</option>
+                                <option value="botol">botol</option>
+                                <option value="tube">tube</option>
+                                <option value="sachet">sachet</option>
+                                <option value="ampul">ampul</option>
+                                <option value="vial">vial</option>
+                            </select>
+                        </div>
+                        <div class="form-group col-md-4">
+                            <label class="font-weight-bold">Cara Pakai:</label>
+                            <input type="text" class="form-control" id="carapakai-${index}" placeholder="3x1 sebelum makan">
+                        </div>
+                    </div>
+                    <small class="form-text text-muted">
+                        Contoh: "3x1 sebelum makan", "2x1 setelah makan", "1x1 sehari"
+                    </small>
+                </div>
+            </div>
+        `;
+    });
+
+    modalBody.innerHTML = formHtml;
+
+    // Store selected obat data for later use
+    window.selectedObatForPrescription = selectedObat;
+
+    // Show modal
+    $('#cara-pakai-modal').modal('show');
+}
+
+function backToObatSelection() {
+    $('#cara-pakai-modal').modal('hide');
+    $('#terapi-modal').modal('show');
+}
+
+function addBatchTerapi() {
+    const selectedObat = window.selectedObatForPrescription;
+    if (!selectedObat || selectedObat.length === 0) return;
+
+    const textarea = document.getElementById('planning-terapi');
+    if (!textarea) return;
+
+    let allPrescriptions = [];
+
+    // Collect all prescriptions
+    selectedObat.forEach((obat, index) => {
+        const jumlah = document.getElementById(`jumlah-${index}`)?.value || '1';
+        const satuan = document.getElementById(`satuan-${index}`)?.value || 'tablet';
+        const caraPakai = document.getElementById(`carapakai-${index}`)?.value.trim() || '';
+
+        // Convert to Latin format
+        const romanQuantity = toRoman(parseInt(jumlah));
+        const latinSig = convertToLatinSig(caraPakai);
+
+        // Format: R/ [Drug] [Unit] No. [Roman] Sig. [Latin]
+        let prescription = `R/ ${obat.name} ${satuan} No. ${romanQuantity}`;
+        if (latinSig) {
+            prescription += ` Sig. ${latinSig}`;
+        }
+
+        allPrescriptions.push(prescription);
+    });
+
+    // Add all prescriptions to textarea
+    const currentValue = textarea.value.trim();
+    const newEntries = allPrescriptions.join('\n');
+
+    if (currentValue) {
+        textarea.value = currentValue + '\n' + newEntries;
+    } else {
+        textarea.value = newEntries;
+    }
+
+    // Hide modal
+    $('#cara-pakai-modal').modal('hide');
+
+    showSuccess(`${selectedObat.length} resep obat ditambahkan`);
+
+    // Clear stored data
+    window.selectedObatForPrescription = null;
+}
+
+function addTindakan(tindakanName) {
+    const textarea = document.getElementById('planning-tindakan');
+    if (!textarea) return;
+
+    const currentValue = textarea.value.trim();
+    const newEntry = `- ${tindakanName}`;
+
+    if (currentValue) {
+        textarea.value = currentValue + '\n' + newEntry;
+    } else {
+        textarea.value = newEntry;
+    }
+
+    showSuccess(`Tindakan "${tindakanName}" ditambahkan`);
+}
+
+
+// Convert Arabic number to Roman numerals
+function toRoman(num) {
+    const romanNumerals = [
+        { value: 1000, numeral: 'M' },
+        { value: 900, numeral: 'CM' },
+        { value: 500, numeral: 'D' },
+        { value: 400, numeral: 'CD' },
+        { value: 100, numeral: 'C' },
+        { value: 90, numeral: 'XC' },
+        { value: 50, numeral: 'L' },
+        { value: 40, numeral: 'XL' },
+        { value: 10, numeral: 'X' },
+        { value: 9, numeral: 'IX' },
+        { value: 5, numeral: 'V' },
+        { value: 4, numeral: 'IV' },
+        { value: 1, numeral: 'I' }
+    ];
+
+    let result = '';
+    let remaining = parseInt(num);
+
+    for (const { value, numeral } of romanNumerals) {
+        while (remaining >= value) {
+            result += numeral;
+            remaining -= value;
+        }
+    }
+
+    return result;
+}
+
+// Convert Indonesian usage instructions to Latin abbreviations
+// Based on staff/prescription.csv
+function convertToLatinSig(caraPakai) {
+    if (!caraPakai) return '';
+
+    let latinSig = caraPakai.toLowerCase();
+    let result = '';
+
+    // Extract frequency pattern (e.g., "3x1", "2x2", "1x1")
+    const frequencyMatch = latinSig.match(/(\d+)\s*x\s*(\d+)/);
+
+    if (frequencyMatch) {
+        const timesPerDay = frequencyMatch[1];
+        const doseAmount = frequencyMatch[2];
+        const doseRoman = toRoman(parseInt(doseAmount));
+
+        // Frequency mapping based on prescription.csv
+        const frequencyMap = {
+            '1': 'd.d',           // tiap hari (daily)
+            '2': 'b.d.d',         // dua kali sehari (twice daily) - line 11
+            '3': 'ter.d.d',       // tiga kali sehari (three times daily) - line 87
+            '4': 'q.d.d'          // empat kali sehari (four times daily) - line 74
+        };
+
+        const freqLatin = frequencyMap[timesPerDay] || `${timesPerDay} dd`;
+        result = `${freqLatin} ${doseRoman}`;
+    }
+
+    // Timing/meal-related conversions from prescription.csv
+    const timingConversions = {
+        'sebelum makan': 'a.c',           // line 3
+        'setelah makan': 'p.c',           // line 68
+        'pada saat makan': 'd.c',         // line 26
+        'saat makan': 'd.c',
+        'dengan makan': 'd.c',
+        'bila diperlukan': 'p.r.n',       // line 67
+        'bila perlu': 'p.r.n',
+        'jika perlu': 'p.r.n',
+        'pagi hari': 'h.m',               // line 42
+        'pagi': 'h.m',
+        'malam hari': 'h.v',              // line 43 (or 'n, noct' line 54)
+        'malam': 'h.v',
+        'sore': 'p.m',                    // line 69
+        'sebelum tidur': 'h.v',
+        'tiap jam': 'o.h',                // line 59
+        'tiap 2 jam': 'o.b.h',            // line 58
+        'tiap pagi': 'o.m',               // line 60
+        'tiap malam': 'o.n',              // line 61
+        'segera': 'cito',                 // line 18
+        'diminum sekaligus': 'haust'      // line 44
+    };
+
+    // Find timing conversion
+    let timing = '';
+    for (const [indonesian, latin] of Object.entries(timingConversions)) {
+        if (latinSig.includes(indonesian)) {
+            timing = latin;
+            break;
+        }
+    }
+
+    // Build final Latin Sig
+    if (timing) {
+        result = result ? `${result} ${timing}` : timing;
+    }
+
+    // If no conversion happened, preserve original
+    if (!result) {
+        result = caraPakai;
+    }
+
+    return result;
+}
+
+// Make functions globally accessible
+window.addTindakan = addTindakan;
+window.proceedToCaraPakai = proceedToCaraPakai;
+window.backToObatSelection = backToObatSelection;
+window.addBatchTerapi = addBatchTerapi;
+
+// USG Helper Functions
+function switchTrimester(trimester) {
+    // Hide all trimester contents
+    document.querySelectorAll('.trimester-content').forEach(content => {
+        content.style.display = 'none';
+    });
+
+    // Show selected trimester
+    const targetContent = document.getElementById(`usg-${trimester}-trimester`);
+    if (targetContent) {
+        targetContent.style.display = 'block';
+    }
+
+    // Update button states
+    document.querySelectorAll('.trimester-selector .btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    event.target.closest('.btn').classList.add('active');
+}
+
+// Expose globally for inline onclick
+window.switchTrimester = switchTrimester;
+
+async function saveUSGExam() {
+    const btn = document.getElementById('btn-save-usg');
+    if (!btn) return;
+
+    // Disable button
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+
+    try {
+        // Determine active trimester
+        const activeTrimester = document.querySelector('.trimester-selector .btn.active input')?.value || 'first';
+
+        let usgData = { trimester: activeTrimester };
+
+        // Collect data based on trimester
+        if (activeTrimester === 'first') {
+            const embryoCount = document.querySelector('input[name="first_embryo_count"]:checked')?.value || 'single';
+            const implantation = document.querySelector('input[name="first_implantation"]:checked')?.value || 'intrauterine';
+
+            usgData = {
+                ...usgData,
+                date: document.getElementById('usg-first-date')?.value || '',
+                embryo_count: embryoCount,
+                crl_cm: document.getElementById('usg-first-crl-cm')?.value || '',
+                crl_weeks: document.getElementById('usg-first-crl-weeks')?.value || '',
+                implantation: implantation,
+                heart_rate: document.getElementById('usg-first-heart-rate')?.value || '',
+                edd: document.getElementById('usg-first-edd')?.value || '',
+                nt: document.getElementById('usg-first-nt')?.value || '',
+                notes: 'Posisi janin harus menghadap kedepan dengan kepala sedikit menunduk untuk mendapatkan gambaran nuchal translucency (NT)'
+            };
+        } else if (activeTrimester === 'second') {
+            const fetusCount = document.querySelector('input[name="second_fetus_count"]:checked')?.value || 'single';
+            const gender = document.querySelector('input[name="second_gender"]:checked')?.value || '';
+            const fetusLie = document.querySelector('input[name="second_fetus_lie"]:checked')?.value || '';
+            const presentation = document.querySelector('input[name="second_presentation"]:checked')?.value || '';
+            const placenta = document.querySelector('input[name="second_placenta"]:checked')?.value || '';
+
+            usgData = {
+                ...usgData,
+                date: document.getElementById('usg-second-date')?.value || '',
+                fetus_count: fetusCount,
+                gender: gender,
+                fetus_lie: fetusLie,
+                presentation: presentation,
+                bpd: document.getElementById('usg-second-bpd')?.value || '',
+                ac: document.getElementById('usg-second-ac')?.value || '',
+                fl: document.getElementById('usg-second-fl')?.value || '',
+                heart_rate: document.getElementById('usg-second-heart-rate')?.value || '',
+                placenta: placenta,
+                placenta_previa: document.getElementById('usg-second-placenta-previa')?.value || '',
+                afi: document.getElementById('usg-second-afi')?.value || '',
+                efw: document.getElementById('usg-second-efw')?.value || '',
+                edd: document.getElementById('usg-second-edd')?.value || '',
+                notes: document.getElementById('usg-second-notes')?.value || ''
+            };
+        } else if (activeTrimester === 'third') {
+            const fetusCount = document.querySelector('input[name="third_fetus_count"]:checked')?.value || 'single';
+            const gender = document.querySelector('input[name="third_gender"]:checked')?.value || '';
+            const fetusLie = document.querySelector('input[name="third_fetus_lie"]:checked')?.value || '';
+            const presentation = document.querySelector('input[name="third_presentation"]:checked')?.value || '';
+            const placenta = document.querySelector('input[name="third_placenta"]:checked')?.value || '';
+            const membraneSweep = document.querySelector('input[name="third_membrane_sweep"]:checked')?.value || 'no';
+
+            // Get all selected contraception methods
+            const contraception = Array.from(document.querySelectorAll('input[name="third_contraception"]:checked'))
+                .map(cb => cb.value);
+
+            usgData = {
+                ...usgData,
+                date: document.getElementById('usg-third-date')?.value || '',
+                fetus_count: fetusCount,
+                gender: gender,
+                fetus_lie: fetusLie,
+                presentation: presentation,
+                bpd: document.getElementById('usg-third-bpd')?.value || '',
+                ac: document.getElementById('usg-third-ac')?.value || '',
+                fl: document.getElementById('usg-third-fl')?.value || '',
+                heart_rate: document.getElementById('usg-third-heart-rate')?.value || '',
+                placenta: placenta,
+                placenta_previa: document.getElementById('usg-third-placenta-previa')?.value || '',
+                afi: document.getElementById('usg-third-afi')?.value || '',
+                efw: document.getElementById('usg-third-efw')?.value || '',
+                edd: document.getElementById('usg-third-edd')?.value || '',
+                membrane_sweep: membraneSweep,
+                contraception: contraception
+            };
+        } else if (activeTrimester === 'screening') {
+            const gender = document.querySelector('input[name="screening_gender"]:checked')?.value || '';
+
+            usgData = {
+                ...usgData,
+                date: document.getElementById('usg-screening-date')?.value || '',
+                // Identifikasi
+                diameter_kepala: document.getElementById('scr-diameter-kepala-text')?.value || '',
+                lingkar_kepala: document.getElementById('scr-lingkar-kepala-text')?.value || '',
+                lingkar_perut: document.getElementById('scr-lingkar-perut-text')?.value || '',
+                panjang_tulang_paha: document.getElementById('scr-panjang-tulang-paha-text')?.value || '',
+                taksiran_berat_janin: document.getElementById('scr-taksiran-berat-janin-text')?.value || '',
+                // Kepala dan Otak
+                simetris_hemisfer: document.getElementById('scr-simetris-hemisfer')?.checked || false,
+                falx_bpd: document.getElementById('scr-falx-bpd')?.checked || false,
+                ventrikel: document.getElementById('scr-ventrikel')?.checked || false,
+                cavum_septum: document.getElementById('scr-cavum-septum')?.checked || false,
+                // Muka dan Leher
+                profil_muka: document.getElementById('scr-profil-muka')?.checked || false,
+                tulang_hidung: document.getElementById('scr-bibir-langit')?.checked || false,
+                garis_bibir: document.getElementById('scr-lens-bibir')?.checked || false,
+                // Jantung dan Rongga Dada
+                four_chamber: document.getElementById('scr-4chamber')?.checked || false,
+                jantung_kiri: document.getElementById('scr-jantung-kiri')?.checked || false,
+                septum_interv: document.getElementById('scr-septum-interv')?.checked || false,
+                besar_jantung: document.getElementById('scr-besar-jantung')?.checked || false,
+                dua_atrium: document.getElementById('scr-dua-atrium')?.checked || false,
+                katup_atrioventricular: document.getElementById('scr-irama-jantung')?.checked || false,
+                ritme_jantung: document.getElementById('scr-ritme-jantung')?.checked || false,
+                echogenic_pads: document.getElementById('scr-echogenic-pads')?.checked || false,
+                // Tulang Belakang
+                vertebra: document.getElementById('scr-vertebra')?.checked || false,
+                kulit_dorsal: document.getElementById('scr-kulit-dorsal')?.checked || false,
+                // Anggota Gerak
+                alat_gerak_atas: document.getElementById('scr-gerakan-lengan')?.checked || false,
+                alat_gerak_bawah: document.getElementById('scr-alat-gerak')?.checked || false,
+                visual_tangan: document.getElementById('scr-visual-tangan')?.checked || false,
+                // Rongga perut
+                lambung_kiri: document.getElementById('scr-lambung-kiri')?.checked || false,
+                posisi_liver: document.getElementById('scr-posisi-liver')?.checked || false,
+                ginjal_kiri_kanan: document.getElementById('scr-ginjal-kiri-kanan')?.checked || false,
+                ginjal_echohypoic: document.getElementById('scr-ginjal-echohypoic')?.checked || false,
+                kandung_kemih: document.getElementById('scr-kandung-kemih')?.checked || false,
+                insersi_tali_pusat: document.getElementById('scr-hawa-jantung')?.checked || false,
+                dinding_perut: document.getElementById('scr-masa-padat')?.checked || false,
+                // Plasenta dan Air Ketuban
+                lokasi_plasenta: document.getElementById('scr-lokasi-plasenta')?.checked || false,
+                lokasi_plasenta_text: document.getElementById('scr-lokasi-plasenta-text')?.value || '',
+                tekstur_plasenta: document.getElementById('scr-tekstur-plasenta')?.checked || false,
+                volume_ketuban: document.getElementById('scr-volume-ketuban')?.checked || false,
+                panjang_serviks: document.getElementById('scr-warna-jernih')?.checked || false,
+                panjang_serviks_text: document.getElementById('scr-panjang-serviks-text')?.value || '',
+                // Lainnya
+                gerak_janin_baik: document.getElementById('scr-gerak-janin-baik')?.checked || false,
+                gender: gender,
+                // Kesimpulan
+                tidak_kelainan: document.getElementById('scr-tidak-kelainan')?.checked || false,
+                kecurigaan: document.getElementById('scr-kecurigaan')?.checked || false,
+                kecurigaan_text: document.getElementById('usg-screening-kecurigaan-text')?.value || ''
+            };
+        }
+
+        // Get token
+        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+        if (!token) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        // Send to API
+        const response = await fetch('/api/medical-records', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                patientId: routeMrSlug,
+                type: 'usg',
+                data: usgData,
+                timestamp: new Date().toISOString()
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+            throw new Error(errorData.message || `Server error: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        // Show success message
+        showSuccess('Data USG berhasil disimpan!');
+
+        // Reload the record to show updated data
+        await fetchRecord(routeMrSlug);
+
+    } catch (error) {
+        console.error('Error saving USG record:', error);
+        showError('Gagal menyimpan USG: ' + error.message);
+
+        // Re-enable button
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> Simpan';
+    }
+}
+
+function renderUSG() {
     const section = document.createElement('div');
     section.className = 'sc-section';
 
-    const infoRows = [
-        [USG_LABELS.usg_date, safeText(formatDate(data.usg_date) || data.usg_date || '-')],
-        [USG_LABELS.usia_kehamilan, safeText(data.usia_kehamilan || '-')]
-    ];
+    // Load saved USG data from medical records
+    const context = getMedicalRecordContext('usg');
+    const savedData = context?.data || {};
 
-    const findingsRows = [
-        [USG_LABELS.biometri, formatMultiline(data.biometri || '-')],
-        [USG_LABELS.anatomi_janin, formatMultiline(data.anatomi_janin || '-')],
-        [USG_LABELS.plasenta_air_ketuban, formatMultiline(data.plasenta_air_ketuban || '-')]
-    ];
-
-    const metaHtml = renderRecordMeta(context, 'usg');
+    // Auto-populate today's date
+    const today = new Date().toISOString().split('T')[0];
+    const usgDate = savedData.date || today;
+    const trimester = savedData.trimester || 'first';
 
     section.innerHTML = `
         <div class="sc-section-header">
-            <h3>USG</h3>
+            <h3>USG Obstetri</h3>
+            <button class="btn btn-primary btn-sm" id="btn-save-usg" style="display:none;">
+                <i class="fas fa-save"></i> Simpan
+            </button>
         </div>
-        ${metaHtml}
-        <div class="sc-grid two">
-            <div class="sc-card">
-                <h4>Informasi Pemeriksaan</h4>
-                ${buildInfoTable(infoRows)}
-            </div>
-            <div class="sc-card">
-                <h4>Temuan USG</h4>
-                ${buildInfoTable(findingsRows)}
-            </div>
-        </div>
+
         <div class="sc-card">
-            <h4>${USG_LABELS.kesimpulan_usg}</h4>
-            <div>${formatMultiline(data.kesimpulan_usg || '-')}</div>
+            <div class="trimester-selector mb-4">
+                <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                    <label class="btn btn-outline-primary ${trimester === 'first' ? 'active' : ''}" onclick="switchTrimester('first')">
+                        <input type="radio" name="trimester" value="first" ${trimester === 'first' ? 'checked' : ''}> Trimester 1 (10-13w)
+                    </label>
+                    <label class="btn btn-outline-primary ${trimester === 'second' ? 'active' : ''}" onclick="switchTrimester('second')">
+                        <input type="radio" name="trimester" value="second" ${trimester === 'second' ? 'checked' : ''}> Trimester 2 (14-27w)
+                    </label>
+                    <label class="btn btn-outline-primary ${trimester === 'screening' ? 'active' : ''}" onclick="switchTrimester('screening')">
+                        <input type="radio" name="trimester" value="screening" ${trimester === 'screening' ? 'checked' : ''}> Skrining Kelainan Kongenital (18-23w)
+                    </label>
+                    <label class="btn btn-outline-primary ${trimester === 'third' ? 'active' : ''}" onclick="switchTrimester('third')">
+                        <input type="radio" name="trimester" value="third" ${trimester === 'third' ? 'checked' : ''}> Trimester 3 (28+w)
+                    </label>
+                </div>
+            </div>
+
+            <!-- First Trimester Form -->
+            <div id="usg-first-trimester" class="trimester-content" style="display: ${trimester === 'first' ? 'block' : 'none'};">
+                <h4 class="mb-3">JANIN (Fetus) - Trimester Pertama</h4>
+
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label class="font-weight-bold">Tanggal</label>
+                        <input type="date" class="form-control usg-field" id="usg-first-date" style="width: 150.923076px;" value="${escapeHtml(usgDate)}">
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label class="font-weight-bold">Jumlah Embrio/Janin</label>
+                        <div class="d-flex gap-3">
+                            <div class="custom-control custom-radio mr-4">
+                                <input type="radio" class="custom-control-input usg-field" name="first_embryo_count" id="first-single" value="single" ${(savedData.embryo_count || 'single') === 'single' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="first-single">Tunggal</label>
+                            </div>
+                            <div class="custom-control custom-radio mr-4">
+                                <input type="radio" class="custom-control-input usg-field" name="first_embryo_count" id="first-multiple" value="multiple" ${savedData.embryo_count === 'multiple' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="first-multiple">Multipel</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label class="font-weight-bold">Panjang Kepala-Ekor (CRL)</label>
+                        <div class="input-group">
+                            <input type="number" step="0.1" class="form-control usg-field" id="usg-first-crl-cm" placeholder="cm" value="${escapeHtml(savedData.crl_cm || '')}">
+                            <div class="input-group-append"><span class="input-group-text">cm ~</span></div>
+                            <input type="number" step="1" class="form-control usg-field" id="usg-first-crl-weeks" placeholder="minggu" value="${escapeHtml(savedData.crl_weeks || '')}">
+                            <div class="input-group-append"><span class="input-group-text">mgg</span></div>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label class="font-weight-bold">Lokasi Implantasi</label>
+                        <div class="d-flex gap-3">
+                            <div class="custom-control custom-radio mr-4">
+                                <input type="radio" class="custom-control-input usg-field" name="first_implantation" id="first-intrauterine" value="intrauterine" ${(savedData.implantation || 'intrauterine') === 'intrauterine' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="first-intrauterine">Dalam rahim</label>
+                            </div>
+                            <div class="custom-control custom-radio mr-4">
+                                <input type="radio" class="custom-control-input usg-field" name="first_implantation" id="first-ectopic" value="ectopic">
+                                <label class="custom-control-label" for="first-ectopic">Luar rahim / Ektopik</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label class="font-weight-bold">Detak Jantung</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control usg-field" id="usg-first-heart-rate" placeholder="x/menit" value="${escapeHtml(savedData.heart_rate || '')}">
+                            <div class="input-group-append"><span class="input-group-text">x/menit</span></div>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label class="font-weight-bold">Hari Perkiraan Lahir (HPL)</label>
+                        <input type="date" class="form-control usg-field" id="usg-first-edd" value="${escapeHtml(savedData.edd || '')}">
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label class="font-weight-bold">Cairan Tengkuk Janin (NT)</label>
+                        <div class="input-group">
+                            <input type="number" step="0.1" class="form-control usg-field" id="usg-first-nt" placeholder="mm" value="${escapeHtml(savedData.nt || '')}">
+                            <div class="input-group-append"><span class="input-group-text">mm (&lt;3.5)</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="font-weight-bold">Notes</label>
+                    <textarea class="form-control usg-field" id="usg-first-notes" rows="2" readonly>Posisi janin harus menghadap kedepan dengan kepala sedikit menunduk untuk mendapatkan gambaran nuchal translucency (NT)</textarea>
+                </div>
+            </div>
+
+            <!-- Second Trimester Form -->
+            <div id="usg-second-trimester" class="trimester-content" style="display: ${trimester === 'second' ? 'block' : 'none'};">
+                <h4 class="mb-3">BIOMETRI JANIN (Fetal Biometry) - Trimester Kedua</h4>
+
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label class="font-weight-bold">Tanggal</label>
+                        <input type="date" class="form-control usg-field" id="usg-second-date" value="${escapeHtml(usgDate)}">
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label class="font-weight-bold">Jumlah Janin</label>
+                        <div class="d-flex">
+                            <div class="custom-control custom-radio mr-3">
+                                <input type="radio" class="custom-control-input usg-field" name="second_fetus_count" id="second-single" value="single" ${(savedData.fetus_count || 'single') === 'single' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="second-single">Tunggal</label>
+                            </div>
+                            <div class="custom-control custom-radio">
+                                <input type="radio" class="custom-control-input usg-field" name="second_fetus_count" id="second-multiple" value="multiple" ${savedData.fetus_count === 'multiple' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="second-multiple">Multipel</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label class="font-weight-bold">Kelamin</label>
+                        <div class="d-flex">
+                            <div class="custom-control custom-radio mr-3">
+                                <input type="radio" class="custom-control-input usg-field" name="second_gender" id="second-male" value="male" ${savedData.gender === 'male' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="second-male">Laki-laki</label>
+                            </div>
+                            <div class="custom-control custom-radio">
+                                <input type="radio" class="custom-control-input usg-field" name="second_gender" id="second-female" value="female" ${savedData.gender === 'female' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="second-female">Perempuan</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label class="font-weight-bold">Letak Janin</label>
+                        <div class="d-flex flex-wrap">
+                            <div class="custom-control custom-radio mr-3">
+                                <input type="radio" class="custom-control-input usg-field" name="second_fetus_lie" id="second-longitudinal" value="longitudinal" ${savedData.fetus_lie === 'longitudinal' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="second-longitudinal">Membujur</label>
+                            </div>
+                            <div class="custom-control custom-radio mr-3">
+                                <input type="radio" class="custom-control-input usg-field" name="second_fetus_lie" id="second-transverse" value="transverse" ${savedData.fetus_lie === 'transverse' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="second-transverse">Melintang</label>
+                            </div>
+                            <div class="custom-control custom-radio">
+                                <input type="radio" class="custom-control-input usg-field" name="second_fetus_lie" id="second-oblique" value="oblique" ${savedData.fetus_lie === 'oblique' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="second-oblique">Oblique</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label class="font-weight-bold">Presentasi Janin</label>
+                        <div class="d-flex flex-wrap">
+                            <div class="custom-control custom-radio mr-3">
+                                <input type="radio" class="custom-control-input usg-field" name="second_presentation" id="second-cephalic" value="cephalic" ${savedData.presentation === 'cephalic' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="second-cephalic">Kepala</label>
+                            </div>
+                            <div class="custom-control custom-radio mr-3">
+                                <input type="radio" class="custom-control-input usg-field" name="second_presentation" id="second-breech" value="breech" ${savedData.presentation === 'breech' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="second-breech">Bokong</label>
+                            </div>
+                            <div class="custom-control custom-radio">
+                                <input type="radio" class="custom-control-input usg-field" name="second_presentation" id="second-shoulder" value="shoulder" ${savedData.presentation === 'shoulder' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="second-shoulder">Bahu/Punggung</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h5 class="mt-3 mb-2">Biometri</h5>
+                <div class="form-row">
+                    <div class="form-group col-md-3">
+                        <label>Diameter Parietal Kepala (BPD)</label>
+                        <div class="input-group">
+                            <input type="number" step="0.1" class="form-control usg-field" id="usg-second-bpd" value="${escapeHtml(savedData.bpd || '')}">
+                            <div class="input-group-append"><span class="input-group-text">mgg</span></div>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>Lingkar Perut Janin (AC)</label>
+                        <div class="input-group">
+                            <input type="number" step="0.1" class="form-control usg-field" id="usg-second-ac" value="${escapeHtml(savedData.ac || '')}">
+                            <div class="input-group-append"><span class="input-group-text">mgg</span></div>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>Panjang Tulang Paha (FL)</label>
+                        <div class="input-group">
+                            <input type="number" step="0.1" class="form-control usg-field" id="usg-second-fl" value="${escapeHtml(savedData.fl || '')}">
+                            <div class="input-group-append"><span class="input-group-text">mgg</span></div>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>Detak Jantung (HR)</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control usg-field" id="usg-second-heart-rate" value="${escapeHtml(savedData.heart_rate || '')}">
+                            <div class="input-group-append"><span class="input-group-text">x/menit</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <h5 class="mt-3 mb-2">Plasenta & Ketuban</h5>
+                <div class="form-row">
+                    <div class="form-group col-md-12">
+                        <label class="font-weight-bold">Lokasi Plasenta</label>
+                        <div class="d-flex flex-wrap">
+                            <div class="custom-control custom-radio mr-3">
+                                <input type="radio" class="custom-control-input usg-field" name="second_placenta" id="second-anterior" value="anterior" ${savedData.placenta === 'anterior' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="second-anterior">Anterior</label>
+                            </div>
+                            <div class="custom-control custom-radio mr-3">
+                                <input type="radio" class="custom-control-input usg-field" name="second_placenta" id="second-posterior" value="posterior" ${savedData.placenta === 'posterior' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="second-posterior">Posterior</label>
+                            </div>
+                            <div class="custom-control custom-radio mr-3">
+                                <input type="radio" class="custom-control-input usg-field" name="second_placenta" id="second-fundus" value="fundus" ${savedData.placenta === 'fundus' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="second-fundus">Fundus</label>
+                            </div>
+                            <div class="custom-control custom-radio">
+                                <input type="radio" class="custom-control-input usg-field" name="second_placenta" id="second-lateral" value="lateral" ${savedData.placenta === 'lateral' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="second-lateral">Lateral</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label>Plasenta Previa</label>
+                        <input type="text" class="form-control usg-field" id="usg-second-placenta-previa" placeholder="Jika ada, sebutkan..." value="${escapeHtml(savedData.placenta_previa || '')}">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label>AFI (Amniotic Fluid Index)</label>
+                        <div class="input-group">
+                            <input type="number" step="0.1" class="form-control usg-field" id="usg-second-afi" value="${escapeHtml(savedData.afi || '')}">
+                            <div class="input-group-append"><span class="input-group-text">cm (5-25)</span></div>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label>Taksiran Berat Janin (EFW)</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control usg-field" id="usg-second-efw" placeholder="gram" value="${escapeHtml(savedData.efw || '')}">
+                            <div class="input-group-append"><span class="input-group-text">gram</span></div>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label>Hari Perkiraan Lahir (HPL)</label>
+                        <input type="date" class="form-control usg-field" id="usg-second-edd" value="${escapeHtml(savedData.edd || '')}">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="font-weight-bold">Notes</label>
+                    <textarea class="form-control usg-field" id="usg-second-notes" rows="2" placeholder="Pemeriksaan skrining kelainan kongenital dilakukan di usia kehamilan 18-21 minggu. Bila ditemukan kelainan bawaan, dikonsulkan kepada Subspesialis Fetomaternal">${escapeHtml(savedData.notes || '')}</textarea>
+                </div>
+            </div>
+
+            <!-- Screening Trimester Form -->
+            <div id="usg-screening-trimester" class="trimester-content" style="display: ${trimester === 'screening' ? 'block' : 'none'};">
+                <h4 class="mb-3">SCREENING ULTRASONOGRAFI ABDOMINAL (Trimester Kedua)</h4>
+
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label class="font-weight-bold">Tanggal</label>
+                        <input type="date" class="form-control usg-field" id="usg-screening-date" style="width: 150.923076px;" value="${escapeHtml(usgDate)}">
+                    </div>
+                </div>
+
+                <h5 class="mt-3 mb-2">Biometri</h5>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label>Diameter Kepala</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control usg-field" id="scr-diameter-kepala-text" value="${escapeHtml(savedData.diameter_kepala || '')}">
+                            <div class="input-group-append"><span class="input-group-text">minggu</span></div>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label>Lingkar Kepala</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control usg-field" id="scr-lingkar-kepala-text" value="${escapeHtml(savedData.lingkar_kepala || '')}">
+                            <div class="input-group-append"><span class="input-group-text">minggu</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label>Lingkar Perut</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control usg-field" id="scr-lingkar-perut-text" value="${escapeHtml(savedData.lingkar_perut || '')}">
+                            <div class="input-group-append"><span class="input-group-text">minggu</span></div>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label>Panjang Tulang Paha</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control usg-field" id="scr-panjang-tulang-paha-text" value="${escapeHtml(savedData.panjang_tulang_paha || '')}">
+                            <div class="input-group-append"><span class="input-group-text">minggu</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label>Taksiran Berat Janin</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control usg-field" id="scr-taksiran-berat-janin-text" value="${escapeHtml(savedData.taksiran_berat_janin || '')}">
+                            <div class="input-group-append"><span class="input-group-text">gram</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <h5 class="mt-3 mb-2">Kepala dan Otak:</h5>
+                <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-simetris-hemisfer" ${savedData.simetris_hemisfer ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-simetris-hemisfer">Simetris hemisfer serebral</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-falx-bpd" ${savedData.falx_bpd ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-falx-bpd">Ventrikel lateral, Atrium < 10 mm</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-ventrikel" ${savedData.ventrikel ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-ventrikel">Ventrikel sereberal, cisterna magna</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-cavum-septum" ${savedData.cavum_septum ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-cavum-septum">Cavum septum pellucidum</label>
+                    </div>
+                </div>
+
+                <h5 class="mt-3 mb-2">Muka dan Leher:</h5>
+                <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-profil-muka" ${savedData.profil_muka ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-profil-muka">Profil muka normal</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-bibir-langit" ${savedData.tulang_hidung ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-bibir-langit">Tulang hidung tampak, ukuran normal</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-lens-bibir" ${savedData.garis_bibir ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-lens-bibir">Garis bibir atas menyambung</label>
+                    </div>
+                </div>
+
+                <h5 class="mt-3 mb-2">Jantung dan Rongga Dada:</h5>
+                <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-4chamber" ${savedData.four_chamber ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-4chamber">Gambaran jelas 4-chamber view</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-jantung-kiri" ${savedData.jantung_kiri ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-jantung-kiri">Jantung di sebelah kiri</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-septum-interv" ${savedData.septum_interv ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-septum-interv">Apex jantung kearah kiri (~45')</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-besar-jantung" ${savedData.besar_jantung ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-besar-jantung">Besar jantung <1/3 area dada</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-dua-atrium" ${savedData.dua_atrium ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-dua-atrium">Dua atrium dan dua ventrikel</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-irama-jantung" ${savedData.katup_atrioventricular ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-irama-jantung">Katup atrioventricular</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-ritme-jantung" ${savedData.ritme_jantung ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-ritme-jantung">Ritme jantung reguler</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-echogenic-pads" ${savedData.echogenic_pads ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-echogenic-pads">Echogenic pada lapang paru</label>
+                    </div>
+                </div>
+
+                <h5 class="mt-3 mb-2">Tulang Belakang:</h5>
+                <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-vertebra" ${savedData.vertebra ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-vertebra">Tidak tampak kelainan vertebra</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-kulit-dorsal" ${savedData.kulit_dorsal ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-kulit-dorsal">Garis kulit tampak baik</label>
+                    </div>
+                </div>
+
+                <h5 class="mt-3 mb-2">Anggota Gerak:</h5>
+                <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-gerakan-lengan" ${savedData.alat_gerak_atas ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-gerakan-lengan">Alat gerak kiri kanan atas normal</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-alat-gerak" ${savedData.alat_gerak_bawah ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-alat-gerak">Alat gerak kiri kanan bawah normal</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-visual-tangan" ${savedData.visual_tangan ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-visual-tangan">Visualisasi tangan dan kaki baik</label>
+                    </div>
+                </div>
+
+                <h5 class="mt-3 mb-2">Rongga perut:</h5>
+                <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-lambung-kiri" ${savedData.lambung_kiri ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-lambung-kiri">Lambung di sebelah kiri</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-posisi-liver" ${savedData.posisi_liver ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-posisi-liver">Posisi liver dan echogenocity normal</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-ginjal-kiri-kanan" ${savedData.ginjal_kiri_kanan ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-ginjal-kiri-kanan">Terlihat ginjal kiri & kanan</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-ginjal-echohypoic" ${savedData.ginjal_echohypoic ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-ginjal-echohypoic">Ginjal tampak hipoechoic dibanding usus</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-kandung-kemih" ${savedData.kandung_kemih ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-kandung-kemih">Kandung kemih terisi</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-hawa-jantung" ${savedData.insersi_tali_pusat ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-hawa-jantung">Insersi tali pusat baik</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-masa-padat" ${savedData.dinding_perut ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-masa-padat">Dinding perut tidak tampak defek</label>
+                    </div>
+                </div>
+
+                <h5 class="mt-3 mb-2">Plasenta dan Air Ketuban:</h5>
+                <div class="form-group">
+                    <div class="custom-control custom-checkbox mb-2">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-lokasi-plasenta" ${savedData.lokasi_plasenta ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-lokasi-plasenta">Lokasi plasenta</label>
+                    </div>
+                    <div class="form-row mb-2">
+                        <div class="form-group col-md-6 mb-0">
+                            <input type="text" class="form-control usg-field" id="scr-lokasi-plasenta-text" placeholder="Sebutkan lokasi plasenta..." value="${escapeHtml(savedData.lokasi_plasenta_text || '')}">
+                        </div>
+                    </div>
+                    <div class="custom-control custom-checkbox mb-2">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-tekstur-plasenta" ${savedData.tekstur_plasenta ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-tekstur-plasenta">Tekstur plasenta homogen</label>
+                    </div>
+                    <div class="custom-control custom-checkbox mb-2">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-volume-ketuban" ${savedData.volume_ketuban ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-volume-ketuban">Volume ketuban cukup</label>
+                    </div>
+                    <div class="custom-control custom-checkbox mb-2">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-warna-jernih" ${savedData.panjang_serviks ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-warna-jernih">Panjang serviks</label>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group col-md-4 mb-0">
+                            <div class="input-group">
+                                <input type="text" class="form-control usg-field" id="scr-panjang-serviks-text" placeholder="Panjang serviks" value="${escapeHtml(savedData.panjang_serviks_text || '')}">
+                                <div class="input-group-append"><span class="input-group-text">cm</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h5 class="mt-3 mb-2">Lainnya:</h5>
+                <div class="form-group">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-gerak-janin-baik" ${savedData.gerak_janin_baik ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-gerak-janin-baik">Gerak janin baik</label>
+                    </div>
+                    <div class="form-group mt-2">
+                        <label class="font-weight-bold">Jenis kelamin</label>
+                        <div class="d-flex gap-3">
+                            <div class="custom-control custom-radio mr-4">
+                                <input type="radio" class="custom-control-input usg-field" name="screening_gender" id="scr-gender-male" value="male" ${savedData.gender === 'male' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="scr-gender-male">Laki-laki</label>
+                            </div>
+                            <div class="custom-control custom-radio mr-4">
+                                <input type="radio" class="custom-control-input usg-field" name="screening_gender" id="scr-gender-female" value="female" ${savedData.gender === 'female' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="scr-gender-female">Perempuan</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h5 class="mt-3 mb-2">KESIMPULAN</h5>
+                <div class="form-group">
+                    <div class="custom-control custom-checkbox mb-3">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-tidak-kelainan" ${savedData.tidak_kelainan ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-tidak-kelainan">Tidak ditemukan kelainan</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input usg-field" id="scr-kecurigaan" ${savedData.kecurigaan ? 'checked' : ''}>
+                        <label class="custom-control-label" for="scr-kecurigaan">Kecurigaan</label>
+                    </div>
+                    <div class="mt-2">
+                        <textarea class="form-control usg-field" id="usg-screening-kecurigaan-text" style="width: 700px; height: 71px;">${escapeHtml(savedData.kecurigaan_text || '')}</textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Third Trimester Form -->
+            <div id="usg-third-trimester" class="trimester-content" style="display: ${trimester === 'third' ? 'block' : 'none'};">
+                <h4 class="mb-3">BIOMETRI JANIN (Fetal Biometry) - Trimester Ketiga</h4>
+
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label class="font-weight-bold">Tanggal</label>
+                        <input type="date" class="form-control usg-field" id="usg-third-date" style="width: 150.923076px;" value="${escapeHtml(usgDate)}">
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label class="font-weight-bold">Jumlah Janin</label>
+                        <div class="d-flex gap-3">
+                            <div class="custom-control custom-radio mr-4">
+                                <input type="radio" class="custom-control-input usg-field" name="third_fetus_count" id="third-single" value="single" ${(savedData.fetus_count || 'single') === 'single' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="third-single">Tunggal</label>
+                            </div>
+                            <div class="custom-control custom-radio mr-4">
+                                <input type="radio" class="custom-control-input usg-field" name="third_fetus_count" id="third-multiple" value="multiple" ${savedData.fetus_count === 'multiple' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="third-multiple">Multipel</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label class="font-weight-bold">Kelamin</label>
+                        <div class="d-flex gap-3">
+                            <div class="custom-control custom-radio mr-4">
+                                <input type="radio" class="custom-control-input usg-field" name="third_gender" id="third-male" value="male" ${savedData.gender === 'male' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="third-male">Laki/Laki</label>
+                            </div>
+                            <div class="custom-control custom-radio mr-4">
+                                <input type="radio" class="custom-control-input usg-field" name="third_gender" id="third-female" value="female" ${savedData.gender === 'female' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="third-female">Perempuan</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label class="font-weight-bold">Letak Janin</label>
+                        <div class="d-flex gap-3">
+                            <div class="custom-control custom-radio mr-4">
+                                <input type="radio" class="custom-control-input usg-field" name="third_fetus_lie" id="third-longitudinal" value="longitudinal" ${savedData.fetus_lie === 'longitudinal' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="third-longitudinal">Membujur</label>
+                            </div>
+                            <div class="custom-control custom-radio mr-4">
+                                <input type="radio" class="custom-control-input usg-field" name="third_fetus_lie" id="third-transverse" value="transverse" ${savedData.fetus_lie === 'transverse' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="third-transverse">Melintang</label>
+                            </div>
+                            <div class="custom-control custom-radio mr-4">
+                                <input type="radio" class="custom-control-input usg-field" name="third_fetus_lie" id="third-oblique" value="oblique" ${savedData.fetus_lie === 'oblique' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="third-oblique">Oblique</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label class="font-weight-bold">Presentasi Janin</label>
+                        <div class="d-flex gap-3">
+                            <div class="custom-control custom-radio mr-4">
+                                <input type="radio" class="custom-control-input usg-field" name="third_presentation" id="third-cephalic" value="cephalic" ${savedData.presentation === 'cephalic' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="third-cephalic">Kepala</label>
+                            </div>
+                            <div class="custom-control custom-radio mr-4">
+                                <input type="radio" class="custom-control-input usg-field" name="third_presentation" id="third-breech" value="breech" ${savedData.presentation === 'breech' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="third-breech">Bokong</label>
+                            </div>
+                            <div class="custom-control custom-radio mr-4">
+                                <input type="radio" class="custom-control-input usg-field" name="third_presentation" id="third-shoulder" value="shoulder" ${savedData.presentation === 'shoulder' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="third-shoulder">Bahu/Punggung</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <h5 class="mt-3 mb-2">Biometri</h5>
+                <div class="form-row">
+                    <div class="form-group col-md-3">
+                        <label>Diameter Parietal Kepala (BPD)</label>
+                        <div class="input-group">
+                            <input type="number" step="0.1" class="form-control usg-field" id="usg-third-bpd" value="${escapeHtml(savedData.bpd || '')}">
+                            <div class="input-group-append"><span class="input-group-text">mgg</span></div>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>Lingkar Perut Janin (AC)</label>
+                        <div class="input-group">
+                            <input type="number" step="0.1" class="form-control usg-field" id="usg-third-ac" value="${escapeHtml(savedData.ac || '')}">
+                            <div class="input-group-append"><span class="input-group-text">mgg</span></div>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>Panjang Tulang Paha (FL)</label>
+                        <div class="input-group">
+                            <input type="number" step="0.1" class="form-control usg-field" id="usg-third-fl" value="${escapeHtml(savedData.fl || '')}">
+                            <div class="input-group-append"><span class="input-group-text">mgg</span></div>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-3">
+                        <label>Detak Jantung (HR)</label>
+                        <div class="input-group">
+                            <input type="number" class="form-control usg-field" id="usg-third-heart-rate" value="${escapeHtml(savedData.heart_rate || '')}">
+                            <div class="input-group-append"><span class="input-group-text">x/menit</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <h5 class="mt-3 mb-2">Plasenta & Ketuban</h5>
+                <div class="form-row">
+                    <div class="form-group col-md-6">
+                        <label class="font-weight-bold">Plasenta</label>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <div class="custom-control custom-radio mr-4">
+                                <input type="radio" class="custom-control-input usg-field" name="third_placenta" id="third-anterior" value="anterior" ${savedData.placenta === 'anterior' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="third-anterior">Anterior</label>
+                            </div>
+                            <div class="custom-control custom-radio mr-4">
+                                <input type="radio" class="custom-control-input usg-field" name="third_placenta" id="third-posterior" value="posterior" ${savedData.placenta === 'posterior' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="third-posterior">Posterior</label>
+                            </div>
+                            <div class="custom-control custom-radio mr-4">
+                                <input type="radio" class="custom-control-input usg-field" name="third_placenta" id="third-fundus" value="fundus" ${savedData.placenta === 'fundus' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="third-fundus">Fundus</label>
+                            </div>
+                            <div class="custom-control custom-radio mr-4">
+                                <input type="radio" class="custom-control-input usg-field" name="third_placenta" id="third-lateral" value="lateral" ${savedData.placenta === 'lateral' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="third-lateral">Lateral</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <label>Plasenta Previa</label>
+                        <input type="text" class="form-control usg-field" id="usg-third-placenta-previa" placeholder="Jika ada, sebutkan..." value="${escapeHtml(savedData.placenta_previa || '')}">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group col-md-4">
+                        <label>AFI (Amniotic Fluid Index)</label>
+                        <div class="input-group">
+                            <input type="number" step="0.1" class="form-control usg-field" id="usg-third-afi" value="${escapeHtml(savedData.afi || '')}">
+                            <div class="input-group-append"><span class="input-group-text">cm (5-25)</span></div>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label>Taksiran Berat Janin (EFW)</label>
+                        <div class="input-group">
+                            <input type="text" class="form-control usg-field" id="usg-third-efw" placeholder="gram" value="${escapeHtml(savedData.efw || '')}">
+                            <div class="input-group-append"><span class="input-group-text">gram</span></div>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label>Hari Perkiraan Lahir (HPL)</label>
+                        <input type="date" class="form-control usg-field" id="usg-third-edd" value="${escapeHtml(savedData.edd || '')}">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="font-weight-bold">Stripping of membrane</label>
+                    <div class="d-flex gap-3">
+                        <div class="custom-control custom-radio mr-4">
+                            <input type="radio" class="custom-control-input usg-field" name="third_membrane_sweep" id="third-sweep-no" value="no" ${(savedData.membrane_sweep || 'no') === 'no' ? 'checked' : ''}>
+                            <label class="custom-control-label" for="third-sweep-no">Tidak</label>
+                        </div>
+                        <div class="custom-control custom-radio mr-4">
+                            <input type="radio" class="custom-control-input usg-field" name="third_membrane_sweep" id="third-sweep-success" value="successful" ${savedData.membrane_sweep === 'successful' ? 'checked' : ''}>
+                            <label class="custom-control-label" for="third-sweep-success">Berhasil</label>
+                        </div>
+                        <div class="custom-control custom-radio mr-4">
+                            <input type="radio" class="custom-control-input usg-field" name="third_membrane_sweep" id="third-sweep-fail" value="failed" ${savedData.membrane_sweep === 'failed' ? 'checked' : ''}>
+                            <label class="custom-control-label" for="third-sweep-fail">Gagal</label>
+                        </div>
+                    </div>
+                </div>
+
+                <h5 class="mt-4 mb-2">Rencana Kontrasepsi</h5>
+                <div class="row">
+                    ${['steril', 'iud', 'iud_mirena', 'implant', 'injection', 'pill', 'condom', 'vasectomy', 'none'].map(method => {
+                        const labels = {
+                            steril: 'Steril (Tubektomi Bilateral)',
+                            iud: 'Intra-Uterine Device (IUD)',
+                            iud_mirena: 'IUD Mirena (hormonal)',
+                            implant: 'Implant',
+                            injection: 'Suntik KB 3 bulan',
+                            pill: 'Pil KB',
+                            condom: 'Kondom',
+                            vasectomy: 'Vasektomi',
+                            none: 'Tanpa kontrasepsi (riwayat infertil)'
+                        };
+                        const checked = (savedData.contraception || []).includes(method) ? 'checked' : '';
+                        return `
+                            <div class="col-md-6">
+                                <div class="custom-control custom-checkbox">
+                                    <input type="checkbox" class="custom-control-input usg-field" name="third_contraception" id="third-contra-${method}" value="${method}" ${checked}>
+                                    <label class="custom-control-label" for="third-contra-${method}">${labels[method]}</label>
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+
+            <div class="mt-3 text-right">
+                <p class="mb-0"><strong>dr. Dibya Arfianda, SpOG, M.Ked.Klin.</strong></p>
+                <p class="text-muted small">Obstetrician Gynaecologist</p>
+            </div>
         </div>
     `;
+
+    // Add event listeners
+    setTimeout(() => {
+        // Show save button on any field change
+        document.querySelectorAll('.usg-field').forEach(field => {
+            field.addEventListener('input', () => {
+                document.getElementById('btn-save-usg').style.display = 'inline-block';
+            });
+            field.addEventListener('change', () => {
+                document.getElementById('btn-save-usg').style.display = 'inline-block';
+            });
+        });
+
+        // Attach save handler
+        const btnSave = document.getElementById('btn-save-usg');
+        if (btnSave) {
+            btnSave.onclick = saveUSGExam;
+        }
+    }, 100);
 
     return section;
 }
@@ -1576,7 +3113,7 @@ function renderPenunjang() {
     const context = getMedicalRecordContext('lab');
     if (!context) {
         return renderPlaceholderSection(
-            'Pemeriksaan Penunjang',
+            'Laboratorium',
             'Belum ada pemeriksaan penunjang.',
             'Hasil laboratorium atau penunjang lain akan muncul setelah ditambahkan.'
         );
@@ -1597,7 +3134,7 @@ function renderPenunjang() {
 
     section.innerHTML = `
         <div class="sc-section-header">
-            <h3>Pemeriksaan Penunjang</h3>
+            <h3>Laboratorium</h3>
         </div>
         ${metaHtml}
         <div class="sc-card">
@@ -1615,18 +3152,33 @@ function renderPenunjang() {
 
 function renderDiagnosisSection() {
     const context = getMedicalRecordContext('diagnosis');
-    if (!context) {
-        return renderPlaceholderSection(
-            'Diagnosis',
-            'Diagnosis kerja belum dicatat.',
-            'Gunakan formulir pencatatan pemeriksaan untuk menyimpan diagnosis pasien.'
-        );
-    }
-
-    const data = context.data || {};
+    const data = context?.data || {};
     const section = document.createElement('div');
     section.className = 'sc-section';
-    const metaHtml = renderRecordMeta(context, 'diagnosis');
+    const metaHtml = context ? renderRecordMeta(context, 'diagnosis') : '';
+
+    const diagnosisFormHtml = `
+        <div class="mb-3">
+            <label class="font-weight-bold">Diagnosis Utama</label>
+            <textarea class="form-control" id="diagnosis-utama" rows="1" style="height: 40px;" placeholder="Masukkan diagnosis utama">${escapeHtml(data.diagnosis_utama || '')}</textarea>
+        </div>
+        <div class="mb-3">
+            <label class="font-weight-bold">Diagnosis Sekunder (jika ada)</label>
+            <textarea class="form-control" id="diagnosis-sekunder" rows="1" style="height: 40px;" placeholder="Masukkan diagnosis sekunder jika ada">${escapeHtml(data.diagnosis_sekunder || '')}</textarea>
+        </div>
+        <div class="mb-4 mt-4">
+            <p class="mb-0"><strong>dr. Dibya Arfianda, SpOG, M.Ked.Klin.</strong></p>
+            <p class="text-muted mb-0">Obstetrician Gynaecologist</p>
+        </div>
+    `;
+
+    const saveButton = `
+        <div class="text-right mt-3">
+            <button type="button" class="btn btn-primary" id="save-diagnosis">
+                <i class="fas fa-save mr-2"></i>Simpan Diagnosis
+            </button>
+        </div>
+    `;
 
     section.innerHTML = `
         <div class="sc-section-header">
@@ -1634,34 +3186,57 @@ function renderDiagnosisSection() {
         </div>
         ${metaHtml}
         <div class="sc-card">
-            <h4>Diagnosis Klinis</h4>
-            <div>${formatMultiline(data.diagnosis || '-')}</div>
+            ${diagnosisFormHtml}
+            ${saveButton}
         </div>
     `;
+
+    // Add save handler
+    setTimeout(() => {
+        const saveBtn = document.getElementById('save-diagnosis');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', saveDiagnosis);
+        }
+    }, 0);
 
     return section;
 }
 
 function renderPlanning() {
-    const context = getMedicalRecordContext('planning', ['diagnosis']);
-    if (!context) {
-        return renderPlaceholderSection(
-            'Planning',
-            'Rencana tindak lanjut belum tersedia.',
-            'Susun rencana pengobatan atau kontrol untuk menampilkan ringkasan di sini.'
-        );
-    }
-
-    const data = context.data || {};
+    const context = getMedicalRecordContext('planning');
+    const data = context?.data || {};
     const section = document.createElement('div');
     section.className = 'sc-section';
-    const metaHtml = renderRecordMeta(context, 'planning');
+    const metaHtml = context ? renderRecordMeta(context, 'planning') : '';
 
-    const planRows = [
-        [PLANNING_LABELS.rencana_tindakan, formatMultiline(data.rencana_tindakan || '-')],
-        [PLANNING_LABELS.resep, formatMultiline(data.resep || '-')],
-        [PLANNING_LABELS.catatan, formatMultiline(data.catatan || '-')]
-    ];
+    const planningFormHtml = `
+        <div class="mb-3">
+            <label class="font-weight-bold">Tindakan</label>
+            <textarea class="form-control" id="planning-tindakan" rows="4" placeholder="Klik tombol 'Input Tindakan' untuk memilih dari daftar...">${escapeHtml(data.tindakan || '')}</textarea>
+            <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="btn-input-tindakan">
+                <i class="fas fa-plus-circle mr-1"></i>Input Tindakan
+            </button>
+        </div>
+        <div class="mb-3">
+            <label class="font-weight-bold">Terapi</label>
+            <textarea class="form-control" id="planning-terapi" rows="4" placeholder="Klik tombol 'Input Terapi' untuk memilih obat...">${escapeHtml(data.terapi || '')}</textarea>
+            <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="btn-input-terapi">
+                <i class="fas fa-plus-circle mr-1"></i>Input Terapi
+            </button>
+        </div>
+        <div class="mb-3">
+            <label class="font-weight-bold">Rencana</label>
+            <textarea class="form-control" id="planning-rencana" rows="4" placeholder="Masukkan rencana tindak lanjut...">${escapeHtml(data.rencana || '')}</textarea>
+        </div>
+    `;
+
+    const saveButton = `
+        <div class="text-right mt-3">
+            <button type="button" class="btn btn-primary" id="save-planning">
+                <i class="fas fa-save mr-2"></i>Simpan Planning
+            </button>
+        </div>
+    `;
 
     section.innerHTML = `
         <div class="sc-section-header">
@@ -1669,12 +3244,390 @@ function renderPlanning() {
         </div>
         ${metaHtml}
         <div class="sc-card">
-            <h4>Rencana & Tindak Lanjut</h4>
-            ${buildInfoTable(planRows)}
+            ${planningFormHtml}
+            ${saveButton}
         </div>
     `;
 
+    // Add event handlers
+    setTimeout(() => {
+        const savePlanningBtn = document.getElementById('save-planning');
+        const inputTindakanBtn = document.getElementById('btn-input-tindakan');
+        const inputTerapiBtn = document.getElementById('btn-input-terapi');
+
+        if (savePlanningBtn) {
+            savePlanningBtn.addEventListener('click', savePlanning);
+        }
+        if (inputTindakanBtn) {
+            inputTindakanBtn.addEventListener('click', openTindakanModal);
+        }
+        if (inputTerapiBtn) {
+            inputTerapiBtn.addEventListener('click', openTerapiModal);
+        }
+    }, 0);
+
     return section;
+}
+
+// ==================== BILLING / TAGIHAN FUNCTIONS ====================
+
+// Parse tindakan text and extract item names
+function parseTindakanItems(tindakanText) {
+    if (!tindakanText || typeof tindakanText !== 'string') return [];
+
+    return tindakanText
+        .split('\n')
+        .map(line => line.trim())
+        .filter(line => line.startsWith('-'))
+        .map(line => line.substring(1).trim())
+        .filter(Boolean);
+}
+
+// Parse terapi text and extract drug names
+function parseTerapiItems(terapiText) {
+    if (!terapiText || typeof terapiText !== 'string') return [];
+
+    const items = [];
+    const lines = terapiText.split('\n').filter(line => line.trim().startsWith('R/'));
+
+    for (const line of lines) {
+        // Extract drug name from "R/ DrugName unit No. X Sig. ..."
+        const match = line.match(/R\/\s*([^0-9]+?)\s+(tablet|botol|kapsul|tube|sachet|strip)/i);
+        if (match) {
+            const drugName = match[1].trim();
+
+            // Extract quantity from "No. X" (Roman numerals)
+            const qtyMatch = line.match(/No\.\s*([IVXLCDM]+)/i);
+            const quantity = qtyMatch ? romanToArabic(qtyMatch[1]) : 1;
+
+            // Extract cara pakai for item_data
+            const sigMatch = line.match(/Sig\.\s*(.+)$/i);
+            const caraPakai = sigMatch ? sigMatch[1].trim() : '';
+
+            items.push({
+                name: drugName,
+                quantity: quantity,
+                caraPakai: caraPakai,
+                originalLine: line
+            });
+        }
+    }
+
+    return items;
+}
+
+// Convert Roman numerals to Arabic numbers
+function romanToArabic(roman) {
+    const romanValues = { I: 1, V: 5, X: 10, L: 50, C: 100, D: 500, M: 1000 };
+    let result = 0;
+    for (let i = 0; i < roman.length; i++) {
+        const current = romanValues[roman[i]];
+        const next = romanValues[roman[i + 1]];
+        if (next && current < next) {
+            result -= current;
+        } else {
+            result += current;
+        }
+    }
+    return result;
+}
+
+// Format number to Rupiah
+function formatRupiah(amount) {
+    const number = Math.round(amount || 0);
+    return 'Rp. ' + number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+}
+
+// Load billing data
+async function loadBilling() {
+    try {
+        const token = await getToken();
+        if (!token) return null;
+
+        const response = await fetch(`/api/sunday-clinic/billing/${routeMrSlug}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            if (response.status === 404) return null;
+            throw new Error('Failed to load billing');
+        }
+
+        const result = await response.json();
+        return result.data;
+    } catch (error) {
+        console.error('Error loading billing:', error);
+        return null;
+    }
+}
+
+// Generate billing items from planning data
+async function generateBillingItemsFromPlanning() {
+    const planningContext = getMedicalRecordContext('planning');
+    if (!planningContext) return [];
+
+    const planningData = planningContext.data || {};
+    const items = [];
+
+    try {
+        const token = await getToken();
+        if (!token) return items;
+
+        // Parse tindakan
+        const tindakanNames = parseTindakanItems(planningData.tindakan || '');
+        if (tindakanNames.length > 0) {
+            // Fetch all tindakan to match by name
+            const tindakanResponse = await fetch('/api/tindakan?active=true', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (tindakanResponse.ok) {
+                const tindakanResult = await tindakanResponse.json();
+                const tindakanList = tindakanResult.data || tindakanResult;
+
+                for (const name of tindakanNames) {
+                    const found = tindakanList.find(t =>
+                        t.name && t.name.toLowerCase() === name.toLowerCase()
+                    );
+                    if (found) {
+                        items.push({
+                            item_type: 'tindakan',
+                            item_code: found.code,
+                            item_name: found.name,
+                            quantity: 1,
+                            price: parseFloat(found.price) || 0,
+                            item_data: {}
+                        });
+                    }
+                }
+            }
+        }
+
+        // Parse terapi
+        const terapiItems = parseTerapiItems(planningData.terapi || '');
+        if (terapiItems.length > 0) {
+            // Fetch all obat to match by name
+            const obatResponse = await fetch('/api/obat?active=true', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (obatResponse.ok) {
+                const obatResult = await obatResponse.json();
+                const obatList = obatResult.data || obatResult;
+
+                for (const item of terapiItems) {
+                    const found = obatList.find(o =>
+                        o.name && o.name.toLowerCase() === item.name.toLowerCase()
+                    );
+                    if (found) {
+                        items.push({
+                            item_type: 'obat',
+                            item_code: found.code,
+                            item_name: found.name,
+                            quantity: item.quantity,
+                            price: parseFloat(found.sell_price || found.price) || 0,
+                            item_data: {
+                                caraPakai: item.caraPakai,
+                                originalLine: item.originalLine
+                            }
+                        });
+                    }
+                }
+            }
+        }
+
+        // Always add Biaya Admin
+        items.push({
+            item_type: 'admin',
+            item_code: 'ADMIN',
+            item_name: 'Biaya Admin',
+            quantity: 1,
+            price: 5000,
+            item_data: {}
+        });
+
+    } catch (error) {
+        console.error('Error generating billing items:', error);
+    }
+
+    return items;
+}
+
+// Render Tagihan section
+async function renderTagihan() {
+    const section = document.createElement('div');
+    section.className = 'sc-section';
+
+    section.innerHTML = `
+        <div class="sc-section-header">
+            <h3>Tagihan & Pembayaran</h3>
+        </div>
+        <div class="sc-card">
+            <div class="text-center py-4">
+                <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+                <p class="mt-2 text-muted">Memuat data tagihan...</p>
+            </div>
+        </div>
+    `;
+
+    // Load billing data asynchronously
+    setTimeout(async () => {
+        try {
+            let billing = await loadBilling();
+
+            // If no billing exists, generate from planning
+            if (!billing) {
+                const items = await generateBillingItemsFromPlanning();
+                if (items.length > 0) {
+                    // Auto-save the generated billing
+                    const token = await getToken();
+                    if (token) {
+                        await fetch(`/api/sunday-clinic/billing/${routeMrSlug}`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({ items, status: 'draft' })
+                        });
+                        billing = await loadBilling();
+                    }
+                }
+            }
+
+            renderTagihanContent(section, billing);
+        } catch (error) {
+            console.error('Error rendering tagihan:', error);
+            section.querySelector('.sc-card').innerHTML = `
+                <div class="alert alert-danger">
+                    Gagal memuat data tagihan: ${error.message}
+                </div>
+            `;
+        }
+    }, 0);
+
+    return section;
+}
+
+// Render billing content
+function renderTagihanContent(container, billing) {
+    const items = billing?.items || [];
+    const status = billing?.status || 'draft';
+    const confirmedBy = billing?.confirmed_by;
+    const printedBy = billing?.printed_by;
+
+    let subtotal = 0;
+    const itemsHtml = items.map(item => {
+        const itemTotal = (item.quantity || 1) * (item.price || 0);
+        subtotal += itemTotal;
+        return `
+            <tr>
+                <td>${escapeHtml(item.item_name)}</td>
+                <td class="text-center">${item.quantity || 1}</td>
+                <td class="text-right">${formatRupiah(item.price)}</td>
+                <td class="text-right font-weight-bold">${formatRupiah(itemTotal)}</td>
+            </tr>
+        `;
+    }).join('');
+
+    const total = subtotal;
+
+    const statusBadge = status === 'confirmed'
+        ? '<span class="badge badge-success">Dikonfirmasi</span>'
+        : '<span class="badge badge-warning">Draft</span>';
+
+    const actionsHtml = status === 'draft'
+        ? `<button type="button" class="btn btn-primary" id="btn-confirm-billing">
+               <i class="fas fa-check mr-2"></i>Konfirmasi Tagihan
+           </button>`
+        : `<button type="button" class="btn btn-success mr-2" id="btn-print-etiket">
+               <i class="fas fa-tag mr-2"></i>Cetak Etiket
+           </button>
+           <button type="button" class="btn btn-info" id="btn-print-invoice">
+               <i class="fas fa-receipt mr-2"></i>Cetak Invoice
+           </button>`;
+
+    container.querySelector('.sc-card').innerHTML = `
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div>
+                <h4 class="mb-1">Rincian Tagihan</h4>
+                <div class="text-muted small">
+                    ${statusBadge}
+                    ${confirmedBy ? `<span class="ml-2">• Dikonfirmasi oleh: ${escapeHtml(confirmedBy)}</span>` : ''}
+                    ${printedBy ? `<span class="ml-2">• Dicetak oleh: ${escapeHtml(printedBy)}</span>` : ''}
+                </div>
+            </div>
+        </div>
+
+        <table class="table table-bordered">
+            <thead class="thead-light">
+                <tr>
+                    <th>Item</th>
+                    <th width="10%" class="text-center">Qty</th>
+                    <th width="20%" class="text-right">Harga</th>
+                    <th width="20%" class="text-right">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                ${itemsHtml}
+                <tr class="table-active font-weight-bold">
+                    <td colspan="3" class="text-right">GRAND TOTAL</td>
+                    <td class="text-right">${formatRupiah(total)}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <div class="text-right mt-3">
+            ${actionsHtml}
+        </div>
+    `;
+
+    // Add event listeners
+    setTimeout(() => {
+        const confirmBtn = document.getElementById('btn-confirm-billing');
+        const etiketBtn = document.getElementById('btn-print-etiket');
+        const invoiceBtn = document.getElementById('btn-print-invoice');
+
+        if (confirmBtn) {
+            confirmBtn.addEventListener('click', confirmBilling);
+        }
+        if (etiketBtn) {
+            etiketBtn.addEventListener('click', () => printEtiket(items));
+        }
+        if (invoiceBtn) {
+            etiketBtn.addEventListener('click', () => printInvoice(billing));
+        }
+    }, 0);
+}
+
+async function confirmBilling() {
+    try {
+        const token = await getToken();
+        if (!token) return;
+
+        const response = await fetch(`/api/sunday-clinic/billing/${routeMrSlug}/confirm`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('Failed to confirm billing');
+
+        showSuccess('Tagihan berhasil dikonfirmasi!');
+        await fetchRecord(routeMrSlug);
+    } catch (error) {
+        console.error('Error confirming billing:', error);
+        showError('Gagal mengkonfirmasi tagihan: ' + error.message);
+    }
+}
+
+function printEtiket(items) {
+    // TODO: Implement etiket printing
+    console.log('Print etiket:', items);
+    showSuccess('Etiket akan segera dicetak...');
+}
+
+function printInvoice(billing) {
+    // TODO: Implement invoice printing
+    console.log('Print invoice:', billing);
+    showSuccess('Invoice akan segera dicetak...');
 }
 
 function renderPlaceholderSection(title, description, note) {
@@ -1733,11 +3686,7 @@ function renderActiveSection() {
             element = renderPlanning();
             break;
         case 'tagihan':
-            element = renderPlaceholderSection(
-                'Tagihan & Biaya',
-                'Belum ada data tagihan untuk kunjungan ini.',
-                'Tagihan kunjungan akan otomatis muncul setelah dibuat melalui modul billing.'
-            );
+            element = renderTagihan();
             break;
         default:
             element = renderPlaceholderSection(
@@ -1750,6 +3699,23 @@ function renderActiveSection() {
     sectionOutlet.innerHTML = '';
     if (element) {
         sectionOutlet.appendChild(element);
+
+        // Add auto-capitalization for text inputs and textareas
+        const textFields = element.querySelectorAll('input[type="text"], textarea:not([readonly])');
+        textFields.forEach(field => {
+            field.addEventListener('input', (e) => {
+                const value = e.target.value;
+                if (value.length > 0) {
+                    const firstChar = value.charAt(0);
+                    if (firstChar !== firstChar.toUpperCase() && firstChar.toLowerCase() !== firstChar.toUpperCase()) {
+                        const start = e.target.selectionStart;
+                        const end = e.target.selectionEnd;
+                        e.target.value = firstChar.toUpperCase() + value.slice(1);
+                        e.target.setSelectionRange(start, end);
+                    }
+                }
+            });
+        });
     }
     applyPageTitle();
 }
@@ -1760,26 +3726,19 @@ function renderApp() {
     }
     DOM.content.innerHTML = '';
 
-    const layout = document.createElement('div');
-    layout.className = 'sc-layout';
-
-    sidebarEl = createSidebar();
-    layout.appendChild(sidebarEl);
-
-    const main = document.createElement('div');
-    main.className = 'sc-main';
-
-    const summary = createSummary();
-    if (summary) {
-        main.appendChild(summary);
+    // Render summary in header
+    const summaryContainer = document.getElementById('summary-cards-container');
+    if (summaryContainer) {
+        summaryContainer.innerHTML = '';
+        const summary = createSummary();
+        if (summary) {
+            summaryContainer.appendChild(summary);
+        }
     }
 
     sectionOutlet = document.createElement('div');
     sectionOutlet.className = 'sc-section-container';
-    main.appendChild(sectionOutlet);
-
-    layout.appendChild(main);
-    DOM.content.appendChild(layout);
+    DOM.content.appendChild(sectionOutlet);
 
     updateSidebarActive();
     renderActiveSection();
@@ -1839,6 +3798,9 @@ function handleSectionChange(sectionId, { pushHistory = true } = {}) {
     }
 }
 
+// Expose handleSectionChange globally for HTML inline script
+window.handleSectionChange = handleSectionChange;
+
 function getToken() {
     const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
     if (!token) {
@@ -1846,6 +3808,36 @@ function getToken() {
         return null;
     }
     return token;
+}
+
+function capitalizeFirstLetter(str) {
+    if (typeof str !== 'string' || str.length === 0) return str;
+    const firstChar = str.charAt(0);
+    if (firstChar.toLowerCase() === firstChar.toUpperCase()) return str; // Not a letter
+    return firstChar.toUpperCase() + str.slice(1);
+}
+
+function capitalizePatientData(data) {
+    if (!data || typeof data !== 'object') return data;
+
+    if (Array.isArray(data)) {
+        return data.map(item => capitalizePatientData(item));
+    }
+
+    const result = {};
+    for (const key in data) {
+        if (data.hasOwnProperty(key)) {
+            const value = data[key];
+            if (typeof value === 'string') {
+                result[key] = capitalizeFirstLetter(value);
+            } else if (typeof value === 'object' && value !== null) {
+                result[key] = capitalizePatientData(value);
+            } else {
+                result[key] = value;
+            }
+        }
+    }
+    return result;
 }
 
 async function fetchRecord(mrId = routeMrSlug, { skipSpinner = false } = {}) {
@@ -1894,8 +3886,9 @@ async function fetchRecord(mrId = routeMrSlug, { skipSpinner = false } = {}) {
             return;
         }
 
-        state.data = payload.data;
-        state.derived = computeDerived(payload.data);
+        // Capitalize first letter of all string fields in patient data
+        state.data = capitalizePatientData(payload.data);
+        state.derived = computeDerived(state.data);
 
         hideLoading();
         setMeta();
@@ -1919,6 +3912,24 @@ function showError(message) {
     `;
 }
 
+function showSuccess(message) {
+    // Create a temporary toast notification
+    const toast = document.createElement('div');
+    toast.className = 'alert alert-success position-fixed';
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        <i class="fas fa-check-circle mr-2"></i>${escapeHtml(message)}
+    `;
+    document.body.appendChild(toast);
+
+    // Remove after 3 seconds
+    setTimeout(() => {
+        toast.style.transition = 'opacity 0.3s';
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
 window.addEventListener('popstate', () => {
     const route = parseRoute();
     if (route.mrId !== routeMrSlug) {
@@ -1927,6 +3938,91 @@ window.addEventListener('popstate', () => {
     }
     handleSectionChange(SECTION_LOOKUP.has(route.section) ? route.section : SECTION_DEFS[0].id, { pushHistory: false });
 });
+
+// Save Anamnesa function
+async function saveAnamnesa() {
+    const btn = document.getElementById('btn-update-anamnesa');
+    if (!btn) return;
+
+    // Disable button
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+
+    try {
+        // Collect all field values
+        const data = {
+            keluhan_utama: document.getElementById('anamnesa-keluhan-utama')?.value || '',
+            riwayat_kehamilan_saat_ini: document.getElementById('anamnesa-riwayat-kehamilan')?.value || '',
+            hpht: document.getElementById('anamnesa-hpht')?.value || '',
+            hpl: document.getElementById('anamnesa-hpl')?.value || '',
+            detail_riwayat_penyakit: document.getElementById('anamnesa-detail-riwayat')?.value || '',
+            riwayat_keluarga: document.getElementById('anamnesa-riwayat-keluarga')?.value || '',
+            alergi_obat: document.getElementById('anamnesa-alergi-obat')?.value || '',
+            alergi_makanan: document.getElementById('anamnesa-alergi-makanan')?.value || '',
+            alergi_lingkungan: document.getElementById('anamnesa-alergi-lingkungan')?.value || '',
+            gravida: document.getElementById('anamnesa-gravida')?.value || '',
+            para: document.getElementById('anamnesa-para')?.value || '',
+            abortus: document.getElementById('anamnesa-abortus')?.value || '',
+            anak_hidup: document.getElementById('anamnesa-anak-hidup')?.value || '',
+            usia_menarche: document.getElementById('anamnesa-usia-menarche')?.value || '',
+            lama_siklus: document.getElementById('anamnesa-lama-siklus')?.value || '',
+            siklus_teratur: document.getElementById('anamnesa-siklus-teratur')?.value || '',
+            metode_kb_terakhir: document.getElementById('anamnesa-metode-kb')?.value || '',
+            kegagalan_kb: document.getElementById('anamnesa-kegagalan-kb')?.value || '',
+            jenis_kb_gagal: document.getElementById('anamnesa-jenis-kb-gagal')?.value || '',
+            verified_at: new Date().toISOString()
+        };
+
+        // Get patient ID from state
+        const patientId = state.data?.record?.patientId || state.data?.patient?.id;
+        if (!patientId) {
+            throw new Error('Patient ID tidak ditemukan');
+        }
+
+        // Get token
+        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+        if (!token) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        // Send to API
+        const response = await fetch('/api/medical-records', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                patientId: patientId,
+                type: 'anamnesa',
+                data: data,
+                timestamp: new Date().toISOString()
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+            throw new Error(errorData.message || `Server error: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        // Show success message
+        showSuccess('Anamnesa berhasil diperbarui');
+
+        // Reload the record to show updated data
+        await fetchRecord(routeMrSlug);
+
+    } catch (error) {
+        console.error('Error saving anamnesa:', error);
+        showError('Gagal menyimpan anamnesa: ' + error.message);
+
+        // Re-enable button
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> Update';
+    }
+}
 
 function init() {
     bindDirectoryDom();
