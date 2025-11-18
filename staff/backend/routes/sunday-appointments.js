@@ -22,26 +22,33 @@ const verifyToken = (req, res, next) => {
     }
 };
 
+// Helper function to get current date/time in GMT+7 (Jakarta/Indonesian time)
+function getGMT7Date() {
+    const now = new Date();
+    // Add 7 hours offset for GMT+7
+    return new Date(now.getTime() + (7 * 60 * 60 * 1000));
+}
+
 // Helper function to get next Sundays
 function getNextSundays(count = 8) {
     const sundays = [];
-    // Use UTC to avoid timezone issues
-    const today = new Date();
-    const year = today.getFullYear();
-    const month = today.getMonth();
-    const day = today.getDate();
-    
-    // Create date at midnight UTC
+    // Use GMT+7 (Jakarta/Indonesian time)
+    const today = getGMT7Date();
+    const year = today.getUTCFullYear();
+    const month = today.getUTCMonth();
+    const day = today.getUTCDate();
+
+    // Create date at midnight GMT+7
     let current = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
     current.setUTCDate(current.getUTCDate() + 1); // Start from tomorrow
-    
+
     while (sundays.length < count) {
-        if (current.getUTCDay() === 0) { // Sunday in UTC
+        if (current.getUTCDay() === 0) { // Sunday
             sundays.push(new Date(current));
         }
         current.setUTCDate(current.getUTCDate() + 1);
     }
-    
+
     return sundays;
 }
 
@@ -69,7 +76,7 @@ function calculateAge(birthDate) {
     if (!(birthDate instanceof Date) || isNaN(birthDate.getTime())) {
         return null;
     }
-    const today = new Date();
+    const today = getGMT7Date();
     let age = today.getFullYear() - birthDate.getFullYear();
     const monthDiff = today.getMonth() - birthDate.getMonth();
     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {

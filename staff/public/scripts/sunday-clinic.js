@@ -666,6 +666,15 @@ function setMeta() {
     updateSectionLabel();
 }
 
+// Generate ISO timestamp in GMT+7 (Jakarta/Indonesian time)
+function getGMT7Timestamp() {
+    const now = new Date();
+    // Get time in GMT+7 by adding 7 hours offset
+    const gmt7Time = new Date(now.getTime() + (7 * 60 * 60 * 1000));
+    // Return ISO string but replace Z with +07:00
+    return gmt7Time.toISOString().replace('Z', '+07:00');
+}
+
 function escapeHtml(value) {
     return String(value)
         .replace(/&/g, '&amp;')
@@ -706,7 +715,10 @@ function formatDate(value) {
     if (!date) {
         return null;
     }
-    return new Intl.DateTimeFormat('id-ID', { dateStyle: 'long' }).format(date);
+    return new Intl.DateTimeFormat('id-ID', {
+        dateStyle: 'long',
+        timeZone: 'Asia/Jakarta'
+    }).format(date);
 }
 
 function formatDateTime(value) {
@@ -716,7 +728,8 @@ function formatDateTime(value) {
     }
     return new Intl.DateTimeFormat('id-ID', {
         dateStyle: 'long',
-        timeStyle: 'short'
+        timeStyle: 'short',
+        timeZone: 'Asia/Jakarta'
     }).format(date);
 }
 
@@ -1371,12 +1384,8 @@ function renderAnamnesa() {
     const kegagalanKB = savedData.kegagalan_kb ?? (derived.contraception.failure !== undefined ? (derived.contraception.failure ? 'Ya' : 'Tidak') : '');
     const jenisKBGagal = savedData.jenis_kb_gagal ?? derived.contraception.failureType ?? '';
 
-    // Verification banner
-    const verificationBanner = savedData.verified_by && savedData.verified_at
-        ? `<div class="alert alert-success mb-3">
-            <i class="fas fa-check-circle"></i> Diverifikasi oleh <strong>${escapeHtml(savedData.verified_by)}</strong> pada ${formatDateTime(savedData.verified_at)}
-           </div>`
-        : '';
+    // Use standard record metadata display
+    const metaHtml = context ? renderRecordMeta(context, 'anamnesa') : '';
 
     section.innerHTML = `
         <div class="sc-section-header">
@@ -1385,7 +1394,7 @@ function renderAnamnesa() {
                 <i class="fas fa-save"></i> Update
             </button>
         </div>
-        ${verificationBanner}
+        ${metaHtml}
         <div class="sc-grid two">
             <div class="sc-card">
                 <h4>Keluhan & Kehamilan Saat Ini</h4>
@@ -1609,6 +1618,12 @@ async function savePhysicalExam() {
             pemeriksaan_obstetri: document.getElementById('pe-obstetri')?.value || ''
         };
 
+        const patientId = state.derived?.patientId;
+        if (!patientId) {
+            showError('Patient ID tidak ditemukan');
+            return;
+        }
+
         const token = await getToken();
         if (!token) return;
 
@@ -1619,11 +1634,11 @@ async function savePhysicalExam() {
                 'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
-                patientId: routeMrSlug,
+                patientId: patientId,
                 type: 'physical_exam',
                 data: data,
                 doctorName: 'Staff User',
-                timestamp: new Date().toISOString()
+                timestamp: getGMT7Timestamp()
             })
         });
 
@@ -1674,7 +1689,7 @@ async function saveDiagnosis() {
                 type: 'diagnosis',
                 data: data,
                 doctorName: 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.',
-                timestamp: new Date().toISOString()
+                timestamp: getGMT7Timestamp()
             })
         });
 
@@ -1726,7 +1741,7 @@ async function savePlanning() {
                 type: 'planning',
                 data: data,
                 doctorName: 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.',
-                timestamp: new Date().toISOString()
+                timestamp: getGMT7Timestamp()
             })
         });
 
@@ -2306,6 +2321,15 @@ async function saveUSGExam() {
             return;
         }
 
+        // Get correct patient ID
+        const patientId = state.derived?.patientId;
+        if (!patientId) {
+            showError('Patient ID tidak ditemukan');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save"></i> Simpan';
+            return;
+        }
+
         // Send to API
         const response = await fetch('/api/medical-records', {
             method: 'POST',
@@ -2314,10 +2338,10 @@ async function saveUSGExam() {
                 'Authorization': `Bearer ${token}`
             },
             body: JSON.stringify({
-                patientId: routeMrSlug,
+                patientId: patientId,
                 type: 'usg',
                 data: usgData,
-                timestamp: new Date().toISOString()
+                timestamp: getGMT7Timestamp()
             })
         });
 
@@ -2352,8 +2376,8 @@ function renderUSG() {
     const context = getMedicalRecordContext('usg');
     const savedData = context?.data || {};
 
-    // Auto-populate today's date
-    const today = new Date().toISOString().split('T')[0];
+    // Auto-populate today's date in GMT+7
+    const today = getGMT7Timestamp().split('T')[0];
     const usgDate = savedData.date || today;
     const trimester = savedData.trimester || 'first';
 
@@ -3494,6 +3518,11 @@ async function renderTagihan() {
             }
 
             renderTagihanContent(section, billing);
+
+            // Start real-time polling for change notifications
+            if (typeof startChangeNotificationPolling === 'function') {
+                startChangeNotificationPolling();
+            }
         } catch (error) {
             console.error('Error rendering tagihan:', error);
             section.querySelector('.sc-card').innerHTML = `
@@ -3513,6 +3542,9 @@ function renderTagihanContent(container, billing) {
     const status = billing?.status || 'draft';
     const confirmedBy = billing?.confirmed_by;
     const printedBy = billing?.printed_by;
+    const hasPendingChanges = billing?.pending_changes || false;
+    const changeRequests = billing?.change_requests || [];
+    const lastModifiedBy = billing?.last_modified_by;
 
     let subtotal = 0;
     const itemsHtml = items.map(item => {
@@ -3530,20 +3562,49 @@ function renderTagihanContent(container, billing) {
 
     const total = subtotal;
 
-    const statusBadge = status === 'confirmed'
-        ? '<span class="badge badge-success">Dikonfirmasi</span>'
-        : '<span class="badge badge-warning">Draft</span>';
+    // Determine status badge
+    let statusBadge = '';
+    if (hasPendingChanges) {
+        statusBadge = '<span class="badge badge-warning"><i class="fas fa-exclamation-triangle mr-1"></i>Menunggu Konfirmasi Dokter</span>';
+    } else if (status === 'confirmed') {
+        statusBadge = '<span class="badge badge-success">Dikonfirmasi</span>';
+    } else {
+        statusBadge = '<span class="badge badge-warning">Draft</span>';
+    }
 
-    const actionsHtml = status === 'draft'
-        ? `<button type="button" class="btn btn-primary" id="btn-confirm-billing">
-               <i class="fas fa-check mr-2"></i>Konfirmasi Tagihan
-           </button>`
-        : `<button type="button" class="btn btn-success mr-2" id="btn-print-etiket">
+    // Build action buttons based on status and user role
+    let actionsHtml = '';
+
+    if (status === 'draft') {
+        // Draft status - only show confirm button for doctor
+        actionsHtml = `<button type="button" class="btn btn-primary" id="btn-confirm-billing">
+               <i class="fas fa-check mr-2"></i>Konfirmasi Tagihan (Dokter)
+           </button>`;
+    } else if (status === 'confirmed' && hasPendingChanges) {
+        // Has pending changes - show review button for doctor, disable others
+        actionsHtml = `
+           <button type="button" class="btn btn-warning mr-2" id="btn-review-changes">
+               <i class="fas fa-clipboard-check mr-2"></i>Review & Konfirmasi Ulang (Dokter)
+           </button>
+           <button type="button" class="btn btn-secondary mr-2" disabled title="Menunggu konfirmasi dokter">
+               <i class="fas fa-tag mr-2"></i>Cetak Etiket
+           </button>
+           <button type="button" class="btn btn-secondary" disabled title="Menunggu konfirmasi dokter">
+               <i class="fas fa-receipt mr-2"></i>Cetak Invoice
+           </button>`;
+    } else if (status === 'confirmed') {
+        // Confirmed without pending changes - show all actions
+        actionsHtml = `
+           <button type="button" class="btn btn-primary mr-2" id="btn-request-change">
+               <i class="fas fa-edit mr-2"></i>Ajukan Perubahan
+           </button>
+           <button type="button" class="btn btn-success mr-2" id="btn-print-etiket">
                <i class="fas fa-tag mr-2"></i>Cetak Etiket
            </button>
            <button type="button" class="btn btn-info" id="btn-print-invoice">
                <i class="fas fa-receipt mr-2"></i>Cetak Invoice
            </button>`;
+    }
 
     container.querySelector('.sc-card').innerHTML = `
         <div class="d-flex justify-content-between align-items-center mb-3">
@@ -3583,19 +3644,156 @@ function renderTagihanContent(container, billing) {
     // Add event listeners
     setTimeout(() => {
         const confirmBtn = document.getElementById('btn-confirm-billing');
+        const requestChangeBtn = document.getElementById('btn-request-change');
+        const reviewChangesBtn = document.getElementById('btn-review-changes');
         const etiketBtn = document.getElementById('btn-print-etiket');
         const invoiceBtn = document.getElementById('btn-print-invoice');
 
         if (confirmBtn) {
             confirmBtn.addEventListener('click', confirmBilling);
         }
+        if (requestChangeBtn) {
+            requestChangeBtn.addEventListener('click', () => showRequestChangeModal(billing));
+        }
+        if (reviewChangesBtn) {
+            reviewChangesBtn.addEventListener('click', () => reviewAndApproveChanges(billing));
+        }
         if (etiketBtn) {
             etiketBtn.addEventListener('click', () => printEtiket(items));
         }
         if (invoiceBtn) {
-            etiketBtn.addEventListener('click', () => printInvoice(billing));
+            invoiceBtn.addEventListener('click', () => printInvoice(billing));
         }
     }, 0);
+}
+
+// Show modal to add administratif items
+async function showAddAdministratifModal(currentBilling) {
+    try {
+        const token = await getToken();
+        if (!token) return;
+
+        // Fetch administratif items from tindakan
+        const response = await fetch('/api/tindakan?active=true', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('Failed to fetch tindakan');
+
+        const result = await response.json();
+        const tindakanList = result.data || result;
+
+        // Filter only ADMINISTRATIF category
+        const adminItems = tindakanList.filter(item => item.category === 'ADMINISTRATIF');
+
+        if (adminItems.length === 0) {
+            showError('Tidak ada item administratif yang tersedia');
+            return;
+        }
+
+        // Show modal
+        const modal = document.createElement('div');
+        modal.className = 'modal fade';
+        modal.id = 'modal-add-admin';
+        modal.innerHTML = `
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title"><i class="fas fa-plus-circle mr-2"></i>Tambah Item Administratif</h5>
+                        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-muted mb-3">Pilih item administratif yang ingin ditambahkan ke tagihan:</p>
+                        <div class="list-group" id="admin-items-list">
+                            ${adminItems.map(item => `
+                                <div class="list-group-item list-group-item-action admin-item-card"
+                                     data-code="${escapeHtml(item.code)}"
+                                     data-name="${escapeHtml(item.name)}"
+                                     data-price="${item.price}">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">${escapeHtml(item.name)}</h6>
+                                            <small class="text-muted">Kode: ${escapeHtml(item.code)}</small>
+                                        </div>
+                                        <div class="text-right">
+                                            <strong class="text-primary">${formatRupiah(item.price)}</strong>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+        $(modal).modal('show');
+
+        // Remove modal from DOM when closed
+        $(modal).on('hidden.bs.modal', function () {
+            modal.remove();
+        });
+
+        // Add click handlers to items
+        modal.querySelectorAll('.admin-item-card').forEach(card => {
+            card.addEventListener('click', async () => {
+                const code = card.dataset.code;
+                const name = card.dataset.name;
+                const price = parseFloat(card.dataset.price);
+
+                await addAdministratifItem(currentBilling, { code, name, price });
+                $(modal).modal('hide');
+            });
+        });
+
+    } catch (error) {
+        console.error('Error showing administratif modal:', error);
+        showError('Gagal memuat item administratif: ' + error.message);
+    }
+}
+
+// Add administratif item to billing
+async function addAdministratifItem(currentBilling, newItem) {
+    try {
+        const token = await getToken();
+        if (!token) return;
+
+        // Get current items and add new one
+        const items = currentBilling?.items || [];
+        items.push({
+            item_type: 'admin',
+            item_code: newItem.code,
+            item_name: newItem.name,
+            quantity: 1,
+            price: newItem.price,
+            item_data: {}
+        });
+
+        // Save updated billing
+        const response = await fetch(`/api/sunday-clinic/billing/${routeMrSlug}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                items,
+                status: currentBilling?.status || 'confirmed'
+            })
+        });
+
+        if (!response.ok) throw new Error('Failed to add item');
+
+        showSuccess(`${newItem.name} berhasil ditambahkan!`);
+        await fetchRecord(routeMrSlug);
+    } catch (error) {
+        console.error('Error adding administratif item:', error);
+        showError('Gagal menambahkan item: ' + error.message);
+    }
 }
 
 async function confirmBilling() {
@@ -3618,16 +3816,433 @@ async function confirmBilling() {
     }
 }
 
-function printEtiket(items) {
-    // TODO: Implement etiket printing
-    console.log('Print etiket:', items);
-    showSuccess('Etiket akan segera dicetak...');
+// Print medication labels (etiket) in Bahasa
+async function printEtiket(items) {
+    try {
+        const token = await getToken();
+        if (!token) return;
+
+        // Record print action
+        await fetch(`/api/sunday-clinic/billing/${routeMrSlug}/print`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        // Filter only obat items
+        const obatItems = items.filter(item => item.item_type === 'obat');
+
+        if (obatItems.length === 0) {
+            showError('Tidak ada obat untuk dicetak etiket');
+            return;
+        }
+
+        const patientName = state.derived?.patientName || 'Pasien';
+
+        // Create print window
+        const printWindow = window.open('', '_blank', 'width=800,height=600');
+        if (!printWindow) {
+            showError('Popup diblokir. Mohon izinkan popup untuk mencetak.');
+            return;
+        }
+
+        // Convert Latin sig to Bahasa
+        const convertLatinToBahasa = (latinSig) => {
+            if (!latinSig) return '';
+
+            let bahasa = latinSig;
+
+            // Frequency conversions
+            bahasa = bahasa.replace(/\bd\.d\b/gi, 'sehari sekali');
+            bahasa = bahasa.replace(/\bb\.d\.d\b/gi, 'dua kali sehari');
+            bahasa = bahasa.replace(/\bter\.d\.d\b/gi, 'tiga kali sehari');
+            bahasa = bahasa.replace(/\bq\.d\.d\b/gi, 'empat kali sehari');
+
+            // Timing conversions
+            bahasa = bahasa.replace(/\ba\.c\b/gi, 'sebelum makan');
+            bahasa = bahasa.replace(/\bp\.c\b/gi, 'setelah makan');
+            bahasa = bahasa.replace(/\bd\.c\b/gi, 'pada saat makan');
+            bahasa = bahasa.replace(/\bh\.m\b/gi, 'pagi hari');
+            bahasa = bahasa.replace(/\bh\.v\b/gi, 'malam hari');
+            bahasa = bahasa.replace(/\bp\.r\.n\b/gi, 'bila diperlukan');
+            bahasa = bahasa.replace(/\bs\.o\.s\b/gi, 'bila diperlukan');
+
+            // Dose pattern (e.g., "I" -> "1")
+            bahasa = bahasa.replace(/\bI\b/g, '1');
+            bahasa = bahasa.replace(/\bII\b/g, '2');
+            bahasa = bahasa.replace(/\bIII\b/g, '3');
+
+            return bahasa;
+        };
+
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Etiket Obat - ${escapeHtml(patientName)}</title>
+                <style>
+                    * {
+                        margin: 0;
+                        padding: 0;
+                        box-sizing: border-box;
+                    }
+                    body {
+                        font-family: Arial, sans-serif;
+                        padding: 20px;
+                        background: #f5f5f5;
+                    }
+                    .etiket-container {
+                        display: grid;
+                        grid-template-columns: repeat(2, 1fr);
+                        gap: 15px;
+                        margin-bottom: 20px;
+                    }
+                    .etiket {
+                        background: white;
+                        border: 2px solid #333;
+                        padding: 15px;
+                        border-radius: 8px;
+                        page-break-inside: avoid;
+                        min-height: 120px;
+                    }
+                    .etiket-header {
+                        border-bottom: 2px solid #333;
+                        padding-bottom: 8px;
+                        margin-bottom: 10px;
+                    }
+                    .etiket-patient {
+                        font-size: 16px;
+                        font-weight: bold;
+                        color: #333;
+                    }
+                    .etiket-drug {
+                        font-size: 18px;
+                        font-weight: bold;
+                        color: #0066cc;
+                        margin: 10px 0 8px 0;
+                    }
+                    .etiket-qty {
+                        font-size: 14px;
+                        color: #666;
+                        margin-bottom: 10px;
+                    }
+                    .etiket-usage {
+                        font-size: 15px;
+                        font-weight: 600;
+                        color: #333;
+                        background: #fff3cd;
+                        border: 1px solid #ffc107;
+                        padding: 8px;
+                        border-radius: 4px;
+                        line-height: 1.5;
+                    }
+                    @media print {
+                        body {
+                            background: white;
+                            padding: 10px;
+                        }
+                        .no-print {
+                            display: none;
+                        }
+                        .etiket {
+                            box-shadow: none;
+                        }
+                    }
+                    .print-button {
+                        position: fixed;
+                        top: 20px;
+                        right: 20px;
+                        padding: 12px 24px;
+                        background: #28a745;
+                        color: white;
+                        border: none;
+                        border-radius: 5px;
+                        cursor: pointer;
+                        font-size: 16px;
+                        font-weight: bold;
+                        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                    }
+                    .print-button:hover {
+                        background: #218838;
+                    }
+                </style>
+            </head>
+            <body>
+                <button class="print-button no-print" onclick="window.print()">
+                    🖨️ Cetak Etiket
+                </button>
+                <div class="etiket-container">
+                    ${obatItems.map(item => {
+                        const caraPakai = item.item_data?.caraPakai || '';
+                        const bahasaUsage = convertLatinToBahasa(caraPakai);
+
+                        return `
+                            <div class="etiket">
+                                <div class="etiket-header">
+                                    <div class="etiket-patient">${escapeHtml(patientName)}</div>
+                                </div>
+                                <div class="etiket-drug">${escapeHtml(item.item_name)}</div>
+                                <div class="etiket-qty">Jumlah: ${item.quantity || 1}</div>
+                                <div class="etiket-usage">
+                                    ${escapeHtml(bahasaUsage || 'Sesuai petunjuk dokter')}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </body>
+            </html>
+        `);
+
+        printWindow.document.close();
+        showSuccess('Etiket siap untuk dicetak');
+
+    } catch (error) {
+        console.error('Error printing etiket:', error);
+        showError('Gagal mencetak etiket: ' + error.message);
+    }
 }
 
-function printInvoice(billing) {
-    // TODO: Implement invoice printing
-    console.log('Print invoice:', billing);
-    showSuccess('Invoice akan segera dicetak...');
+// Print invoice in A6 format
+async function printInvoice(billing) {
+    try {
+        const token = await getToken();
+        if (!token) return;
+
+        // Record print action
+        const printResponse = await fetch(`/api/sunday-clinic/billing/${routeMrSlug}/print`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const printResult = await printResponse.json();
+        const cashierName = printResult.cashierName || 'Kasir';
+
+        const items = billing?.items || [];
+        const patientName = state.derived?.patientName || 'Pasien';
+        const mrId = (state.derived?.mrId || routeMrSlug || '').toUpperCase();
+        const today = new Date().toLocaleDateString('id-ID', {
+            day: '2-digit',
+            month: 'long',
+            year: 'numeric'
+        });
+        const time = new Date().toLocaleTimeString('id-ID', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+
+        let subtotal = 0;
+        const itemsHtml = items.map((item, index) => {
+            const itemTotal = (item.quantity || 1) * (item.price || 0);
+            subtotal += itemTotal;
+            return `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${escapeHtml(item.item_name)}</td>
+                    <td class="text-center">${item.quantity || 1}</td>
+                    <td class="text-right">${formatRupiah(item.price)}</td>
+                    <td class="text-right">${formatRupiah(itemTotal)}</td>
+                </tr>
+            `;
+        }).join('');
+
+        // Create print window
+        const printWindow = window.open('', '_blank', 'width=400,height=600');
+        if (!printWindow) {
+            showError('Popup diblokir. Mohon izinkan popup untuk mencetak.');
+            return;
+        }
+
+        printWindow.document.write(`
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>Invoice - ${escapeHtml(mrId)}</title>
+                <style>
+                    @page {
+                        size: A6;
+                        margin: 10mm;
+                    }
+                    * {
+                        margin: 0;
+                        padding: 0;
+                        box-sizing: border-box;
+                    }
+                    body {
+                        font-family: 'Courier New', monospace;
+                        font-size: 11px;
+                        line-height: 1.4;
+                        padding: 10px;
+                        width: 105mm;
+                        min-height: 148mm;
+                    }
+                    .header {
+                        text-align: center;
+                        border-bottom: 2px dashed #333;
+                        padding-bottom: 8px;
+                        margin-bottom: 10px;
+                    }
+                    .clinic-name {
+                        font-size: 16px;
+                        font-weight: bold;
+                        margin-bottom: 3px;
+                    }
+                    .clinic-address {
+                        font-size: 9px;
+                        color: #666;
+                    }
+                    .info-section {
+                        margin-bottom: 10px;
+                        font-size: 10px;
+                    }
+                    .info-row {
+                        display: flex;
+                        justify-content: space-between;
+                        margin-bottom: 2px;
+                    }
+                    table {
+                        width: 100%;
+                        border-collapse: collapse;
+                        margin-bottom: 10px;
+                        font-size: 10px;
+                    }
+                    th {
+                        background: #f0f0f0;
+                        padding: 4px 2px;
+                        text-align: left;
+                        border-bottom: 1px solid #333;
+                        font-weight: bold;
+                    }
+                    td {
+                        padding: 3px 2px;
+                        border-bottom: 1px dashed #ddd;
+                    }
+                    .text-right {
+                        text-align: right;
+                    }
+                    .text-center {
+                        text-align: center;
+                    }
+                    .total-section {
+                        border-top: 2px solid #333;
+                        padding-top: 8px;
+                        margin-top: 10px;
+                    }
+                    .total-row {
+                        display: flex;
+                        justify-content: space-between;
+                        margin-bottom: 3px;
+                        font-size: 11px;
+                    }
+                    .grand-total {
+                        font-size: 14px;
+                        font-weight: bold;
+                        border-top: 1px solid #333;
+                        padding-top: 5px;
+                        margin-top: 5px;
+                    }
+                    .footer {
+                        margin-top: 15px;
+                        text-align: center;
+                        font-size: 9px;
+                        border-top: 2px dashed #333;
+                        padding-top: 8px;
+                    }
+                    .signature {
+                        margin-top: 15px;
+                        text-align: right;
+                        font-size: 10px;
+                    }
+                    @media print {
+                        .no-print {
+                            display: none;
+                        }
+                    }
+                    .print-button {
+                        position: fixed;
+                        top: 10px;
+                        right: 10px;
+                        padding: 8px 16px;
+                        background: #007bff;
+                        color: white;
+                        border: none;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-size: 12px;
+                        font-weight: bold;
+                    }
+                </style>
+            </head>
+            <body>
+                <button class="print-button no-print" onclick="window.print()">
+                    🖨️ Cetak Invoice
+                </button>
+
+                <div class="header">
+                    <div class="clinic-name">KLINIK DIBYA</div>
+                    <div class="clinic-address">
+                        Jl. Contoh No. 123, Jakarta<br>
+                        Telp: (021) 1234-5678
+                    </div>
+                </div>
+
+                <div class="info-section">
+                    <div class="info-row">
+                        <span>No. MR</span>
+                        <span><strong>${escapeHtml(mrId)}</strong></span>
+                    </div>
+                    <div class="info-row">
+                        <span>Pasien</span>
+                        <span><strong>${escapeHtml(patientName)}</strong></span>
+                    </div>
+                    <div class="info-row">
+                        <span>Tanggal</span>
+                        <span>${escapeHtml(today)} ${escapeHtml(time)}</span>
+                    </div>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th width="5%">No</th>
+                            <th width="40%">Item</th>
+                            <th width="10%" class="text-center">Qty</th>
+                            <th width="20%" class="text-right">Harga</th>
+                            <th width="25%" class="text-right">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${itemsHtml}
+                    </tbody>
+                </table>
+
+                <div class="total-section">
+                    <div class="total-row grand-total">
+                        <span>TOTAL PEMBAYARAN</span>
+                        <span>${formatRupiah(subtotal)}</span>
+                    </div>
+                </div>
+
+                <div class="signature">
+                    <p>Kasir,</p>
+                    <br><br>
+                    <p><strong>${escapeHtml(cashierName)}</strong></p>
+                </div>
+
+                <div class="footer">
+                    <p>Terima kasih atas kunjungan Anda</p>
+                    <p>Semoga lekas sembuh</p>
+                </div>
+            </body>
+            </html>
+        `);
+
+        printWindow.document.close();
+        showSuccess('Invoice siap untuk dicetak');
+
+    } catch (error) {
+        console.error('Error printing invoice:', error);
+        showError('Gagal mencetak invoice: ' + error.message);
+    }
 }
 
 function renderPlaceholderSection(title, description, note) {
@@ -3657,7 +4272,7 @@ function applyPageTitle() {
     document.title = `${sectionLabel} • ${patientName} • ${mrDisplay}`;
 }
 
-function renderActiveSection() {
+async function renderActiveSection() {
     if (!sectionOutlet || !state.data || !state.derived) {
         return;
     }
@@ -3686,7 +4301,7 @@ function renderActiveSection() {
             element = renderPlanning();
             break;
         case 'tagihan':
-            element = renderTagihan();
+            element = await renderTagihan();
             break;
         default:
             element = renderPlaceholderSection(
@@ -3789,6 +4404,14 @@ function handleSectionChange(sectionId, { pushHistory = true } = {}) {
     if (target === activeSection && pushHistory) {
         return;
     }
+
+    // Stop polling when leaving Tagihan section
+    if (activeSection === 'tagihan' && target !== 'tagihan') {
+        if (typeof stopChangeNotificationPolling === 'function') {
+            stopChangeNotificationPolling();
+        }
+    }
+
     activeSection = target;
     updateSectionLabel();
     updateSidebarActive();
@@ -3969,22 +4592,19 @@ async function saveAnamnesa() {
             siklus_teratur: document.getElementById('anamnesa-siklus-teratur')?.value || '',
             metode_kb_terakhir: document.getElementById('anamnesa-metode-kb')?.value || '',
             kegagalan_kb: document.getElementById('anamnesa-kegagalan-kb')?.value || '',
-            jenis_kb_gagal: document.getElementById('anamnesa-jenis-kb-gagal')?.value || '',
-            verified_at: new Date().toISOString()
+            jenis_kb_gagal: document.getElementById('anamnesa-jenis-kb-gagal')?.value || ''
         };
 
         // Get patient ID from state
-        const patientId = state.data?.record?.patientId || state.data?.patient?.id;
+        const patientId = state.derived?.patientId;
         if (!patientId) {
-            throw new Error('Patient ID tidak ditemukan');
+            showError('Patient ID tidak ditemukan');
+            return;
         }
 
         // Get token
-        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
-        if (!token) {
-            window.location.href = 'login.html';
-            return;
-        }
+        const token = await getToken();
+        if (!token) return;
 
         // Send to API
         const response = await fetch('/api/medical-records', {
@@ -3997,7 +4617,8 @@ async function saveAnamnesa() {
                 patientId: patientId,
                 type: 'anamnesa',
                 data: data,
-                timestamp: new Date().toISOString()
+                doctorName: 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.',
+                timestamp: getGMT7Timestamp()
             })
         });
 
@@ -4047,3 +4668,321 @@ function init() {
 }
 
 init();
+// Show modal to request billing changes
+async function showRequestChangeModal(billing) {
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'modal-request-change';
+
+    const items = billing?.items || [];
+    const itemsHtml = items.map((item, index) => `
+        <tr>
+            <td>
+                <input type="text" class="form-control form-control-sm" value="${escapeHtml(item.item_name)}"
+                       data-index="${index}" data-field="name">
+            </td>
+            <td>
+                <input type="number" class="form-control form-control-sm" value="${item.quantity || 1}"
+                       data-index="${index}" data-field="quantity" min="1">
+            </td>
+            <td>
+                <input type="number" class="form-control form-control-sm" value="${item.price || 0}"
+                       data-index="${index}" data-field="price" min="0">
+            </td>
+            <td>
+                <button type="button" class="btn btn-sm btn-danger" data-action="delete" data-index="${index}">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+
+    modal.innerHTML = `
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title"><i class="fas fa-edit mr-2"></i>Ajukan Perubahan Tagihan</h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Perubahan yang Anda ajukan akan dikirim ke dokter untuk ditinjau dan dikonfirmasi ulang.
+                    </div>
+                    <textarea class="form-control mb-3" id="change-note" placeholder="Catatan perubahan (opsional)" rows="2"></textarea>
+                    <table class="table table-bordered">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Item</th>
+                                <th width="15%">Qty</th>
+                                <th width="20%">Harga</th>
+                                <th width="10%">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody id="items-tbody">
+                            ${itemsHtml}
+                        </tbody>
+                    </table>
+                    <button type="button" class="btn btn-sm btn-success" id="btn-add-item">
+                        <i class="fas fa-plus mr-1"></i>Tambah Item
+                    </button>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-warning" id="btn-submit-change">
+                        <i class="fas fa-paper-plane mr-2"></i>Ajukan Perubahan
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    $(modal).modal('show');
+
+    $(modal).on('hidden.bs.modal', function() {
+        modal.remove();
+    });
+
+    // Handle add item
+    modal.querySelector('#btn-add-item').addEventListener('click', () => {
+        const tbody = modal.querySelector('#items-tbody');
+        const index = tbody.querySelectorAll('tr').length;
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td><input type="text" class="form-control form-control-sm" data-index="${index}" data-field="name" placeholder="Nama item"></td>
+            <td><input type="number" class="form-control form-control-sm" value="1" data-index="${index}" data-field="quantity" min="1"></td>
+            <td><input type="number" class="form-control form-control-sm" value="0" data-index="${index}" data-field="price" min="0"></td>
+            <td><button type="button" class="btn btn-sm btn-danger" data-action="delete" data-index="${index}"><i class="fas fa-trash"></i></button></td>
+        `;
+        tbody.appendChild(row);
+    });
+
+    // Handle delete
+    modal.addEventListener('click', (e) => {
+        if (e.target.closest('[data-action="delete"]')) {
+            e.target.closest('tr').remove();
+        }
+    });
+
+    // Handle submit
+    modal.querySelector('#btn-submit-change').addEventListener('click', async () => {
+        const rows = modal.querySelectorAll('#items-tbody tr');
+        const newItems = [];
+
+        rows.forEach(row => {
+            const name = row.querySelector('[data-field="name"]').value;
+            const quantity = parseInt(row.querySelector('[data-field="quantity"]').value) || 1;
+            const price = parseFloat(row.querySelector('[data-field="price"]').value) || 0;
+
+            if (name.trim()) {
+                newItems.push({
+                    item_name: name,
+                    item_type: 'admin',
+                    quantity: quantity,
+                    price: price
+                });
+            }
+        });
+
+        const changeNote = modal.querySelector('#change-note').value;
+
+        try {
+            const token = await getToken();
+            if (!token) return;
+
+            const response = await fetch(`/api/sunday-clinic/billing/${routeMrSlug}/request-change`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    items: newItems,
+                    changeNote: changeNote
+                })
+            });
+
+            if (!response.ok) throw new Error('Failed to request change');
+
+            showSuccess('Perubahan berhasil diajukan! Menunggu konfirmasi dokter.');
+            $(modal).modal('hide');
+
+            // Reload tagihan
+            setTimeout(() => {
+                handleSectionChange('tagihan', { pushHistory: false });
+            }, 1000);
+
+        } catch (error) {
+            console.error('Error requesting change:', error);
+            showError('Gagal mengajukan perubahan: ' + error.message);
+        }
+    });
+}
+
+// Review and approve changes (for doctor)
+async function reviewAndApproveChanges(billing) {
+    const changeRequests = billing?.change_requests || [];
+    const lastRequest = changeRequests[changeRequests.length - 1];
+
+    if (!lastRequest) {
+        showError('Tidak ada perubahan untuk ditinjau');
+        return;
+    }
+
+    // Show toast notification
+    showToastNotification(
+        'Perubahan Tagihan',
+        'Perubahan diajukan oleh: ' + lastRequest.requestedBy + '<br>Catatan: ' + (lastRequest.note || 'Tidak ada catatan'),
+        'warning'
+    );
+
+    // Confirm approval
+    if (confirm('Setujui perubahan yang diajukan oleh ' + lastRequest.requestedBy + '?\n\nCatatan: ' + (lastRequest.note || 'Tidak ada catatan'))) {
+        try {
+            const token = await getToken();
+            if (!token) return;
+
+            const response = await fetch(`/api/sunday-clinic/billing/${routeMrSlug}/approve-changes`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) throw new Error('Failed to approve changes');
+
+            showSuccess('Perubahan berhasil dikonfirmasi!');
+
+            // Reload tagihan
+            setTimeout(() => {
+                handleSectionChange('tagihan', { pushHistory: false });
+            }, 1000);
+
+        } catch (error) {
+            console.error('Error approving changes:', error);
+            showError('Gagal mengkonfirmasi perubahan: ' + error.message);
+        }
+    }
+}
+
+// Show toast notification (center of screen)
+function showToastNotification(title, message, type) {
+    type = type || 'info';
+    const toast = document.createElement('div');
+    toast.className = 'alert alert-' + type + ' shadow-lg';
+    toast.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 9999;
+        min-width: 400px;
+        max-width: 600px;
+        animation: fadeIn 0.3s;
+    `;
+
+    const iconClass = type === 'warning' ? 'exclamation-triangle' : 'info-circle';
+
+    toast.innerHTML = `
+        <div class="d-flex align-items-start">
+            <div class="mr-3">
+                <i class="fas fa-${iconClass} fa-2x"></i>
+            </div>
+            <div class="flex-grow-1">
+                <h5 class="mb-2">${title}</h5>
+                <p class="mb-0">${message}</p>
+            </div>
+            <button type="button" class="close ml-3" onclick="this.parentElement.parentElement.remove()">
+                <span>&times;</span>
+            </button>
+        </div>
+    `;
+
+    document.body.appendChild(toast);
+
+    // Auto remove after 10 seconds
+    setTimeout(function() {
+        if (toast.parentElement) {
+            toast.style.animation = 'fadeOut 0.3s';
+            setTimeout(function() { toast.remove(); }, 300);
+        }
+    }, 10000);
+}
+
+// Expose functions globally for event handlers
+window.showRequestChangeModal = showRequestChangeModal;
+window.reviewAndApproveChanges = reviewAndApproveChanges;
+window.showToastNotification = showToastNotification;
+
+// Real-time notification polling for pending changes
+let changeNotificationInterval = null;
+let lastNotifiedChangeCount = 0;
+
+function startChangeNotificationPolling() {
+    // Clear any existing interval
+    stopChangeNotificationPolling();
+    
+    // Only poll when viewing Tagihan section
+    if (activeSection !== 'tagihan') return;
+    
+    // Poll every 5 seconds
+    changeNotificationInterval = setInterval(async () => {
+        try {
+            const token = await getToken();
+            if (!token) return;
+            
+            const response = await fetch(`/api/sunday-clinic/billing/${routeMrSlug}/changes`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (!response.ok) return;
+            
+            const result = await response.json();
+            const data = result.data || {};
+            
+            // Check if there are pending changes
+            if (data.hasPendingChanges && data.changeRequests && data.changeRequests.length > 0) {
+                const currentChangeCount = data.changeRequests.length;
+                
+                // Only show notification if there's a new change request
+                if (currentChangeCount > lastNotifiedChangeCount) {
+                    const lastRequest = data.changeRequests[data.changeRequests.length - 1];
+                    
+                    // Show toast notification
+                    showToastNotification(
+                        '🔔 Permintaan Perubahan Tagihan',
+                        `<strong>${lastRequest.requestedBy}</strong> mengajukan perubahan tagihan.<br>` +
+                        `<em>Catatan: ${lastRequest.note || 'Tidak ada catatan'}</em><br><br>` +
+                        `<small>Klik "Review & Konfirmasi Ulang" untuk menyetujui.</small>`,
+                        'warning'
+                    );
+                    
+                    lastNotifiedChangeCount = currentChangeCount;
+                    
+                    // Reload the tagihan section to show updated UI
+                    setTimeout(() => {
+                        handleSectionChange('tagihan', { pushHistory: false });
+                    }, 500);
+                }
+            } else {
+                // Reset counter when no pending changes
+                lastNotifiedChangeCount = 0;
+            }
+        } catch (error) {
+            console.error('Error polling for changes:', error);
+        }
+    }, 5000); // Check every 5 seconds
+}
+
+function stopChangeNotificationPolling() {
+    if (changeNotificationInterval) {
+        clearInterval(changeNotificationInterval);
+        changeNotificationInterval = null;
+    }
+}
+
+// Expose globally
+window.startChangeNotificationPolling = startChangeNotificationPolling;
+window.stopChangeNotificationPolling = stopChangeNotificationPolling;
