@@ -708,81 +708,326 @@ router.post('/billing/:mrId', verifyToken, async (req, res, next) => {
 
         const { items = [], status = 'draft', billingData = {} } = req.body;
 
-        // Calculate totals
-        let subtotal = 0;
-        items.forEach(item => {
-            const itemTotal = (item.quantity || 1) * (item.price || 0);
-            subtotal += itemTotal;
-        });
+        const connection = await db.getConnection();
+        try {
+            await connection.beginTransaction();
 
-        const total = subtotal;
+            // Check if billing exists
+            const [existingRows] = await connection.query(
+                `SELECT id FROM sunday_clinic_billings WHERE mr_id = ?`,
+                [normalizedMrId]
+            );
 
-        // Check if billing exists
-        const [existingRows] = await db.query(
-            `SELECT id FROM sunday_clinic_billings WHERE mr_id = ?`,
-            [normalizedMrId]
-        );
+            let billingId;
 
-        let billingId;
+            if (existingRows.length > 0) {
+                // Update existing billing
+                billingId = existingRows[0].id;
 
-        if (existingRows.length > 0) {
-            // Update existing billing
-            billingId = existingRows[0].id;
-            await db.query(
+                // Delete existing items
+                await connection.query(
+                    `DELETE FROM sunday_clinic_billing_items WHERE billing_id = ?`,
+                    [billingId]
+                );
+            } else {
+                // Create new billing (will update totals later)
+                const [result] = await connection.query(
+                    `INSERT INTO sunday_clinic_billings (mr_id, patient_id, subtotal, total, status, billing_data, created_at, updated_at)
+                     VALUES (?, ?, 0, 0, ?, ?, NOW(), NOW())`,
+                    [normalizedMrId, recordRow.patient_id, status, JSON.stringify(billingData)]
+                );
+                billingId = result.insertId;
+            }
+
+            // Insert items with validated prices
+            let subtotal = 0;
+            for (const item of items) {
+                const quantity = item.quantity || 1;
+                const itemType = item.item_type || 'tindakan';
+                const itemName = item.item_name || '';
+                const itemCode = item.item_code || null;
+                let validatedPrice = 0;
+
+                // Validate price based on item type
+                if (itemType === 'obat') {
+                    // Look up obat price from database
+                    let obatRow = null;
+
+                    if (itemCode) {
+                        const [rows] = await connection.query(
+                            `SELECT id, code, name, price FROM obat WHERE code = ?`,
+                            [itemCode]
+                        );
+                        if (rows.length > 0) {
+                            obatRow = rows[0];
+                        }
+                    }
+
+                    if (!obatRow && itemName) {
+                        const [rows] = await connection.query(
+                            `SELECT id, code, name, price FROM obat WHERE LOWER(name) = ? LIMIT 1`,
+                            [itemName.toLowerCase()]
+                        );
+                        if (rows.length > 0) {
+                            obatRow = rows[0];
+                        }
+                    }
+
+                    if (obatRow) {
+                        validatedPrice = parseFloat(obatRow.price || 0);
+                    } else {
+                        logger.warn('Obat not found for billing item', { itemName, itemCode });
+                    }
+                } else if (itemType === 'tindakan') {
+                    // Look up tindakan price from database
+                    let tindakanRow = null;
+
+                    if (itemCode) {
+                        const [rows] = await connection.query(
+                            `SELECT id, code, name, price FROM tindakan WHERE code = ?`,
+                            [itemCode]
+                        );
+                        if (rows.length > 0) {
+                            tindakanRow = rows[0];
+                        }
+                    }
+
+                    if (!tindakanRow && itemName) {
+                        const [rows] = await connection.query(
+                            `SELECT id, code, name, price FROM tindakan WHERE LOWER(name) = ? LIMIT 1`,
+                            [itemName.toLowerCase()]
+                        );
+                        if (rows.length > 0) {
+                            tindakanRow = rows[0];
+                        }
+                    }
+
+                    if (tindakanRow) {
+                        validatedPrice = parseFloat(tindakanRow.price || 0);
+                    } else {
+                        logger.warn('Tindakan not found for billing item', { itemName, itemCode });
+                    }
+                } else if (itemType === 'admin') {
+                    // Use hardcoded admin fee
+                    validatedPrice = 5000;
+                }
+
+                const itemTotal = quantity * validatedPrice;
+                subtotal += itemTotal;
+
+                await connection.query(
+                    `INSERT INTO sunday_clinic_billing_items
+                     (billing_id, item_type, item_code, item_name, quantity, price, total, item_data)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                    [
+                        billingId,
+                        itemType,
+                        itemCode,
+                        itemName,
+                        quantity,
+                        validatedPrice,
+                        itemTotal,
+                        JSON.stringify(item.item_data || {})
+                    ]
+                );
+            }
+
+            // Update billing totals
+            const total = subtotal;
+            await connection.query(
                 `UPDATE sunday_clinic_billings
                  SET subtotal = ?, total = ?, status = ?, billing_data = ?, updated_at = NOW()
                  WHERE id = ?`,
                 [subtotal, total, status, JSON.stringify(billingData), billingId]
             );
 
-            // Delete existing items
-            await db.query(
-                `DELETE FROM sunday_clinic_billing_items WHERE billing_id = ?`,
-                [billingId]
-            );
-        } else {
-            // Create new billing
-            const [result] = await db.query(
-                `INSERT INTO sunday_clinic_billings (mr_id, patient_id, subtotal, total, status, billing_data, created_at, updated_at)
-                 VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
-                [normalizedMrId, recordRow.patient_id, subtotal, total, status, JSON.stringify(billingData)]
-            );
-            billingId = result.insertId;
-        }
+            await connection.commit();
 
-        // Insert items
-        for (const item of items) {
-            await db.query(
-                `INSERT INTO sunday_clinic_billing_items
-                 (billing_id, item_type, item_code, item_name, quantity, price, total, item_data)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-                [
+            res.json({
+                success: true,
+                message: 'Billing berhasil disimpan',
+                data: {
                     billingId,
-                    item.item_type || 'tindakan',
-                    item.item_code || null,
-                    item.item_name,
-                    item.quantity || 1,
-                    item.price || 0,
-                    (item.quantity || 1) * (item.price || 0),
-                    JSON.stringify(item.item_data || {})
-                ]
-            );
+                    mrId: normalizedMrId
+                }
+            });
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
         }
-
-        res.json({
-            success: true,
-            message: 'Billing berhasil disimpan',
-            data: {
-                billingId,
-                mrId: normalizedMrId
-            }
-        });
     } catch (error) {
         logger.error('Failed to save Sunday clinic billing', {
             mrId: normalizedMrId,
             error: error.message
         });
         next(error);
+    }
+});
+
+// Replace obat items in billing with structured terapi selections
+router.post('/billing/:mrId/obat', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+    const items = Array.isArray(req.body.items) ? req.body.items : null;
+
+    if (!normalizedMrId) {
+        return res.status(400).json({
+            success: false,
+            message: 'MR ID tidak valid.'
+        });
+    }
+
+    if (!items) {
+        return res.status(400).json({
+            success: false,
+            message: 'Payload items harus berupa array.'
+        });
+    }
+
+    let connection;
+
+    try {
+        const recordRow = await findRecordByMrId(normalizedMrId);
+        if (!recordRow) {
+            return res.status(404).json({
+                success: false,
+                message: 'Rekam medis Sunday Clinic tidak ditemukan.'
+            });
+        }
+
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        const [billingRows] = await connection.query(
+            `SELECT id FROM sunday_clinic_billings WHERE mr_id = ? FOR UPDATE`,
+            [normalizedMrId]
+        );
+
+        let billingId;
+
+        if (billingRows.length === 0) {
+            const [insertResult] = await connection.query(
+                `INSERT INTO sunday_clinic_billings (mr_id, patient_id, subtotal, total, status, billing_data, created_at, updated_at)
+                 VALUES (?, ?, 0, 0, 'draft', ?, NOW(), NOW())`,
+                [normalizedMrId, recordRow.patient_id, JSON.stringify({ source: 'therapy-modal' })]
+            );
+            billingId = insertResult.insertId;
+        } else {
+            billingId = billingRows[0].id;
+        }
+
+        await connection.query(
+            `DELETE FROM sunday_clinic_billing_items WHERE billing_id = ? AND item_type = 'obat'`,
+            [billingId]
+        );
+
+        for (const rawItem of items) {
+            const name = typeof rawItem.name === 'string' ? rawItem.name.trim() : '';
+            const quantity = Number(rawItem.quantity) > 0 ? Number(rawItem.quantity) : 1;
+            const unit = typeof rawItem.unit === 'string' && rawItem.unit.trim() ? rawItem.unit.trim() : 'tablet';
+            const caraPakai = typeof rawItem.caraPakai === 'string' ? rawItem.caraPakai.trim() : '';
+            const latinSig = typeof rawItem.latinSig === 'string' ? rawItem.latinSig.trim() : '';
+            const obatId = rawItem.obatId || rawItem.id || null;
+
+            let obatRow = null;
+
+            if (obatId) {
+                const [rows] = await connection.query(
+                    `SELECT id, code, name, price FROM obat WHERE id = ?`,
+                    [obatId]
+                );
+                if (rows.length > 0) {
+                    obatRow = rows[0];
+                }
+            }
+
+            if (!obatRow && name) {
+                const [rows] = await connection.query(
+                    `SELECT id, code, name, price FROM obat WHERE LOWER(name) = ? LIMIT 1`,
+                    [name.toLowerCase()]
+                );
+                if (rows.length > 0) {
+                    obatRow = rows[0];
+                }
+            }
+
+            if (!obatRow) {
+                throw new Error(`Obat tidak ditemukan: ${name || obatId || 'tanpa nama'}`);
+            }
+
+            const price = parseFloat(obatRow.price || 0);
+            const total = price * quantity;
+
+            await connection.query(
+                `INSERT INTO sunday_clinic_billing_items
+                 (billing_id, item_type, item_code, item_name, quantity, price, total, item_data)
+                 VALUES (?, 'obat', ?, ?, ?, ?, ?, ?)` ,
+                [
+                    billingId,
+                    obatRow.code || null,
+                    obatRow.name,
+                    quantity,
+                    price,
+                    total,
+                    JSON.stringify({
+                        caraPakai,
+                        latinSig,
+                        unit,
+                        obatId: obatRow.id,
+                        source: 'therapy-modal'
+                    })
+                ]
+            );
+        }
+
+        const [[totals]] = await connection.query(
+            `SELECT COALESCE(SUM(total), 0) AS subtotal FROM sunday_clinic_billing_items WHERE billing_id = ?`,
+            [billingId]
+        );
+
+        await connection.query(
+            `UPDATE sunday_clinic_billings
+             SET subtotal = ?, total = ?, pending_changes = FALSE,
+                 last_modified_by = ?, last_modified_at = NOW(), updated_at = NOW()
+             WHERE id = ?`,
+            [
+                totals.subtotal,
+                totals.subtotal,
+                req.user.name || req.user.email || req.user.id,
+                billingId
+            ]
+        );
+
+        await connection.commit();
+
+        res.json({
+            success: true,
+            message: 'Daftar obat berhasil diperbarui',
+            data: {
+                mrId: normalizedMrId,
+                billingId,
+                subtotal: totals.subtotal
+            }
+        });
+    } catch (error) {
+        if (connection) {
+            try {
+                await connection.rollback();
+            } catch (rollbackError) {
+                logger.error('Failed to rollback obat update', { error: rollbackError.message });
+            }
+        }
+
+        logger.error('Failed to update obat items for Sunday clinic billing', {
+            mrId: normalizedMrId,
+            error: error.message
+        });
+        next(error);
+    } finally {
+        if (connection) {
+            connection.release();
+        }
     }
 });
 
@@ -795,7 +1040,7 @@ router.post('/billing/:mrId/confirm', verifyToken, async (req, res, next) => {
             `UPDATE sunday_clinic_billings
              SET status = 'confirmed', confirmed_at = NOW(), confirmed_by = ?
              WHERE mr_id = ?`,
-            [req.user.email || req.user.id, normalizedMrId]
+            [req.user.name || req.user.email || 'Staff', normalizedMrId]
         );
 
         if (result.affectedRows === 0) {
@@ -824,17 +1069,112 @@ router.post('/billing/:mrId/print', verifyToken, async (req, res, next) => {
             `UPDATE sunday_clinic_billings
              SET printed_at = NOW(), printed_by = ?
              WHERE mr_id = ?`,
-            [req.user.email || req.user.id, normalizedMrId]
+            [req.user.name || req.user.email || 'Staff', normalizedMrId]
         );
 
         res.json({
             success: true,
             message: 'Invoice berhasil dicetak',
-            cashierName: req.user.email || req.user.id
+            cashierName: req.user.name || req.user.email || 'Staff'
         });
     } catch (error) {
         logger.error('Failed to record print', { error: error.message });
         next(error);
+    }
+});
+
+// Delete billing items by type
+router.delete('/billing/:mrId/items/:itemType', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+    const itemType = req.params.itemType;
+
+    // Validate item type
+    if (!['tindakan', 'obat', 'admin'].includes(itemType)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Tipe item tidak valid. Gunakan: tindakan, obat, atau admin'
+        });
+    }
+
+    let connection;
+
+    try {
+        const recordRow = await findRecordByMrId(normalizedMrId);
+        if (!recordRow) {
+            return res.status(404).json({
+                success: false,
+                message: 'Rekam medis Sunday Clinic tidak ditemukan.'
+            });
+        }
+
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        // Get billing record
+        const [billingRows] = await connection.query(
+            `SELECT id FROM sunday_clinic_billings WHERE mr_id = ? FOR UPDATE`,
+            [normalizedMrId]
+        );
+
+        if (billingRows.length === 0) {
+            await connection.rollback();
+            return res.json({
+                success: true,
+                message: `Tidak ada billing ditemukan. Tidak ada ${itemType} untuk dihapus.`
+            });
+        }
+
+        const billingId = billingRows[0].id;
+
+        // Delete items of specified type
+        await connection.query(
+            `DELETE FROM sunday_clinic_billing_items WHERE billing_id = ? AND item_type = ?`,
+            [billingId, itemType]
+        );
+
+        // Recalculate billing totals
+        const [[totals]] = await connection.query(
+            `SELECT COALESCE(SUM(total), 0) AS subtotal FROM sunday_clinic_billing_items WHERE billing_id = ?`,
+            [billingId]
+        );
+
+        await connection.query(
+            `UPDATE sunday_clinic_billings
+             SET subtotal = ?, total = ?, updated_at = NOW()
+             WHERE id = ?`,
+            [totals.subtotal, totals.subtotal, billingId]
+        );
+
+        await connection.commit();
+
+        res.json({
+            success: true,
+            message: `Semua ${itemType} berhasil dihapus`,
+            data: {
+                mrId: normalizedMrId,
+                billingId,
+                newSubtotal: totals.subtotal
+            }
+        });
+    } catch (error) {
+        if (connection) {
+            try {
+                await connection.rollback();
+            } catch (rollbackError) {
+                logger.error('Failed to rollback item deletion', { error: rollbackError.message });
+            }
+        }
+
+        logger.error('Failed to delete billing items by type', {
+            mrId: normalizedMrId,
+            itemType,
+            error: error.message
+        });
+        next(error);
+    } finally {
+        if (connection) {
+            connection.release();
+        }
     }
 });
 
@@ -887,11 +1227,81 @@ router.post('/billing/:mrId/request-change', verifyToken, async (req, res, next)
                 [billing.id]
             );
 
-            // Insert new items
+            // Insert new items with validated prices
             if (items && items.length > 0) {
                 let subtotal = 0;
                 for (const item of items) {
-                    const itemTotal = (item.quantity || 1) * (item.price || 0);
+                    const quantity = item.quantity || 1;
+                    const itemType = item.item_type || 'admin';
+                    const itemName = item.item_name || '';
+                    const itemCode = item.item_code || null;
+                    let validatedPrice = 0;
+
+                    // Validate price based on item type
+                    if (itemType === 'obat') {
+                        // Look up obat price from database
+                        let obatRow = null;
+
+                        if (itemCode) {
+                            const [rows] = await connection.query(
+                                `SELECT id, code, name, price FROM obat WHERE code = ?`,
+                                [itemCode]
+                            );
+                            if (rows.length > 0) {
+                                obatRow = rows[0];
+                            }
+                        }
+
+                        if (!obatRow && itemName) {
+                            const [rows] = await connection.query(
+                                `SELECT id, code, name, price FROM obat WHERE LOWER(name) = ? LIMIT 1`,
+                                [itemName.toLowerCase()]
+                            );
+                            if (rows.length > 0) {
+                                obatRow = rows[0];
+                            }
+                        }
+
+                        if (obatRow) {
+                            validatedPrice = parseFloat(obatRow.price || 0);
+                        } else {
+                            logger.warn('Obat not found for billing item', { itemName, itemCode });
+                        }
+                    } else if (itemType === 'tindakan') {
+                        // Look up tindakan price from database
+                        let tindakanRow = null;
+
+                        if (itemCode) {
+                            const [rows] = await connection.query(
+                                `SELECT id, code, name, price FROM tindakan WHERE code = ?`,
+                                [itemCode]
+                            );
+                            if (rows.length > 0) {
+                                tindakanRow = rows[0];
+                            }
+                        }
+
+                        if (!tindakanRow && itemName) {
+                            const [rows] = await connection.query(
+                                `SELECT id, code, name, price FROM tindakan WHERE LOWER(name) = ? LIMIT 1`,
+                                [itemName.toLowerCase()]
+                            );
+                            if (rows.length > 0) {
+                                tindakanRow = rows[0];
+                            }
+                        }
+
+                        if (tindakanRow) {
+                            validatedPrice = parseFloat(tindakanRow.price || 0);
+                        } else {
+                            logger.warn('Tindakan not found for billing item', { itemName, itemCode });
+                        }
+                    } else if (itemType === 'admin') {
+                        // Use hardcoded admin fee
+                        validatedPrice = 5000;
+                    }
+
+                    const itemTotal = quantity * validatedPrice;
                     subtotal += itemTotal;
 
                     await connection.query(
@@ -900,11 +1310,11 @@ router.post('/billing/:mrId/request-change', verifyToken, async (req, res, next)
                          VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
                         [
                             billing.id,
-                            item.item_type || 'admin',
-                            item.item_code || null,
-                            item.item_name,
-                            item.quantity || 1,
-                            item.price || 0,
+                            itemType,
+                            itemCode,
+                            itemName,
+                            quantity,
+                            validatedPrice,
                             itemTotal,
                             JSON.stringify(item.item_data || {})
                         ]
