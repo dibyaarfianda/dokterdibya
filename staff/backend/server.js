@@ -25,6 +25,8 @@ const io = new Server(server, {
 });
 const PORT = process.env.PORT || 3000;
 
+const sundayClinicPagePath = path.join(__dirname, '../public/sunday-clinic.html');
+
 // Trust proxy (for Nginx reverse proxy)
 app.set('trust proxy', 1);
 
@@ -101,6 +103,7 @@ const v1Routes = require('./routes/v1');
 // PDF and Notification routes
 const pdfRoutes = require('./routes/pdf');
 const notificationRoutes = require('./routes/notifications');
+const emailSettingsRoutes = require('./routes/email-settings');
 
 // Analytics routes
 const analyticsRoutes = require('./routes/analytics');
@@ -117,6 +120,11 @@ statusRoutes.setSocketIO(io);
 
 // Serve static staff assets directly from the merged repo
 app.use(express.static(path.join(__dirname, '../public')));
+
+// Sunday Clinic dynamic routes (e.g., /sunday-clinic/mr0001/identitas)
+app.get(/^\/sunday-clinic\/[\w-]+(?:\/.*)?$/, (req, res) => {
+    res.sendFile(sundayClinicPagePath);
+});
 
 // Use routes
 // API v1 (modern, service-based)
@@ -142,6 +150,10 @@ app.use('/api/appointments', appointmentsRoutes);
 const sundayAppointmentsRoutes = require('./routes/sunday-appointments');
 app.use('/api/sunday-appointments', sundayAppointmentsRoutes);
 
+// Sunday clinic record routes
+const sundayClinicRoutes = require('./routes/sunday-clinic');
+app.use('/api/sunday-clinic', sundayClinicRoutes);
+
 // Practice schedules routes
 const practiceSchedulesRoutes = require('./routes/practice-schedules');
 app.use('/api/practice-schedules', practiceSchedulesRoutes);
@@ -157,6 +169,7 @@ app.use('/', authRoutes);
 // PDF and Notification routes
 app.use('/api/pdf', pdfRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/email-settings', emailSettingsRoutes);
 
 // Analytics routes
 app.use('/api/analytics', analyticsRoutes);
