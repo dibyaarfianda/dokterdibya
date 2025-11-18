@@ -1,0 +1,586 @@
+:root {
+    --sc-bg: #f4f6f9;
+    --sc-border: #d2d6dc;
+    --sc-muted: #6b7280;
+    --sc-primary: #3c8dbc;
+    --sc-card-bg: #ffffff;
+}
+
+body {
+    background-color: var(--sc-bg);
+}
+
+#sunday-clinic-root {
+    min-height: 320px;
+}
+
+.loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 40px 20px;
+    color: #6c757d;
+}
+
+.sc-layout {
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+}
+
+.sc-sidebar {
+    flex: 0 0 220px;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.sc-nav-link {
+    display: flex;
+    align-items: center;
+    padding: 0.6rem 0.85rem;
+    border-radius: 0.75rem;
+    border: 1px solid var(--sc-border);
+    background-color: var(--sc-card-bg);
+    color: #374151;
+    font-weight: 500;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.sc-nav-link:hover {
+    border-color: var(--sc-primary);
+    color: var(--sc-primary);
+    box-shadow: 0 6px 16px rgba(60, 141, 188, 0.15);
+}
+
+.sc-nav-link.active {
+    background-color: var(--sc-primary);
+    border-color: var(--sc-primary);
+    color: #ffffff;
+    box-shadow: 0 10px 24px rgba(60, 141, 188, 0.25);
+}
+
+.sc-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.sc-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+}
+
+.sc-summary-card {
+    background-color: var(--sc-card-bg);
+    border: 1px solid var(--sc-border);
+    border-radius: 0.85rem;
+    padding: 1.1rem 1.25rem;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+.sc-summary-card h4 {
+    margin: 0 0 0.35rem;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.sc-summary-card .sc-summary-value {
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #111827;
+}
+
+.sc-summary-meta {
+    margin-top: 0.35rem;
+    font-size: 0.85rem;
+    color: var(--sc-muted);
+}
+
+.sc-pill {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    border: 1px solid transparent;
+    text-transform: uppercase;
+}
+
+.sc-pill--danger {
+    background-color: #fef2f2;
+    border-color: #fecaca;
+    color: #dc2626;
+}
+
+.sc-pill--info {
+    background-color: #e0f2fe;
+    border-color: #bae6fd;
+    color: #0369a1;
+}
+
+.sc-section-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+.sc-section {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+}
+
+.sc-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+}
+
+.sc-section-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.sc-grid {
+    display: grid;
+    gap: 1rem;
+}
+
+.sc-grid.two {
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.sc-grid.three {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.sc-card {
+    background-color: var(--sc-card-bg);
+    border: 1px solid var(--sc-border);
+    border-radius: 0.85rem;
+    padding: 1.25rem;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
+}
+
+.sc-card h4 {
+    margin: 0 0 0.75rem;
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+.sc-info-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.95rem;
+}
+
+.sc-info-table th,
+.sc-info-table td {
+    padding: 0.55rem 0.35rem;
+    vertical-align: top;
+}
+
+.sc-info-table th {
+    width: 42%;
+    color: var(--sc-muted);
+    font-weight: 600;
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+.sc-info-table td {
+    color: #1f2937;
+}
+
+.sc-info-table tbody tr + tr {
+    border-top: 1px solid #e5e7eb;
+}
+
+.sc-chip-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.sc-chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.25rem 0.6rem;
+    border-radius: 0.75rem;
+    background-color: #f3f4f6;
+    color: #374151;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.sc-data-table {
+    width: 100%;
+    border-collapse: collapse;
+    border: 1px solid var(--sc-border);
+    border-radius: 0.75rem;
+    overflow: hidden;
+    font-size: 0.9rem;
+}
+
+.sc-data-table th {
+    background-color: #f4f6f9;
+    color: #374151;
+    font-weight: 600;
+    padding: 0.65rem;
+}
+
+.sc-data-table td {
+    padding: 0.6rem;
+    border-top: 1px solid #e5e7eb;
+}
+
+.sc-note {
+    margin-top: 0.75rem;
+    font-size: 0.8rem;
+    color: var(--sc-muted);
+}
+
+.sc-empty {
+    border: 1px dashed var(--sc-border);
+    border-radius: 0.75rem;
+    padding: 1.2rem;
+    text-align: center;
+    color: var(--sc-muted);
+    background-color: rgba(255, 255, 255, 0.7);
+}
+
+.sc-empty strong {
+    display: block;
+    font-size: 0.95rem;
+    margin-bottom: 0.35rem;
+}
+
+@media (max-width: 992px) {
+    .sc-layout {
+        flex-direction: column;
+    }
+
+    .sc-sidebar {
+        flex-direction: row;
+        width: 100%;
+        overflow-x: auto;
+        padding-bottom: 0.5rem;
+    }
+
+    .sc-nav-link {
+        flex: 1 0 auto;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 576px) {
+    .sc-summary {
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    }
+
+    .route-meta {
+        margin-top: 1rem;
+        width: 100%;
+        text-align: left;
+    }
+}
+
+    .sc-directory-overlay {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 2.5rem 1.75rem;
+        background-color: rgba(17, 24, 39, 0.7);
+        backdrop-filter: blur(3px);
+        z-index: 2100;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+    }
+
+    .sc-directory-overlay.is-visible {
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .sc-directory {
+        width: min(1100px, 100%);
+        max-height: calc(100vh - 5rem);
+        background-color: #ffffff;
+        border-radius: 1rem;
+        border: 1px solid var(--sc-border);
+        box-shadow: 0 30px 80px rgba(15, 23, 42, 0.25);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .sc-directory-header {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1.5rem;
+        padding: 1.5rem 1.75rem 1rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+
+    .sc-directory-title {
+        margin: 0 0 0.35rem;
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #111827;
+    }
+
+    .sc-directory-subtitle {
+        margin: 0;
+        font-size: 0.9rem;
+        color: var(--sc-muted);
+    }
+
+    .sc-directory-body {
+        display: flex;
+        flex: 1;
+        min-height: 0;
+    }
+
+    .sc-directory-column {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+    }
+
+    .sc-directory-column--patients {
+        flex: 0 0 42%;
+        padding: 1.25rem 1.5rem;
+        border-right: 1px solid #e5e7eb;
+    }
+
+    .sc-directory-column--visits {
+        flex: 0 0 58%;
+        padding: 1.25rem 1.5rem;
+    }
+
+    .sc-directory-search {
+        margin-bottom: 1rem;
+    }
+
+    .sc-directory-patient-list,
+    .sc-directory-visit-list {
+        flex: 1;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 0.65rem;
+    }
+
+    .sc-directory-patient-list::-webkit-scrollbar,
+    .sc-directory-visit-list::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .sc-directory-patient-list::-webkit-scrollbar-thumb,
+    .sc-directory-visit-list::-webkit-scrollbar-thumb {
+        background-color: rgba(156, 163, 175, 0.6);
+        border-radius: 999px;
+    }
+
+    .sc-directory-patient {
+        display: flex;
+        flex-direction: column;
+        text-align: left;
+        background-color: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.85rem;
+        padding: 0.75rem 0.85rem;
+        cursor: pointer;
+        transition: all 0.16s ease;
+    }
+
+    .sc-directory-patient:hover {
+        border-color: var(--sc-primary);
+        box-shadow: 0 12px 24px rgba(60, 141, 188, 0.18);
+    }
+
+    .sc-directory-patient.is-active {
+        border-color: var(--sc-primary);
+        background-color: rgba(60, 141, 188, 0.08);
+        box-shadow: 0 16px 32px rgba(60, 141, 188, 0.2);
+    }
+
+    .sc-directory-patient-name {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 600;
+        color: #1f2937;
+    }
+
+    .sc-directory-patient-meta {
+        margin-top: 0.25rem;
+        color: var(--sc-muted);
+        font-size: 0.8rem;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem;
+    }
+
+    .sc-directory-visit {
+        text-align: left;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.85rem;
+        padding: 0.75rem 0.9rem;
+        background-color: #ffffff;
+        cursor: pointer;
+        transition: all 0.16s ease;
+    }
+
+    .sc-directory-visit:hover {
+        border-color: #34d399;
+        box-shadow: 0 12px 24px rgba(16, 185, 129, 0.18);
+    }
+
+    .sc-directory-visit.is-active {
+        border-color: #2563eb;
+        background-color: rgba(37, 99, 235, 0.08);
+        box-shadow: 0 14px 30px rgba(37, 99, 235, 0.22);
+    }
+
+    .sc-directory-visit strong {
+        display: block;
+        font-size: 0.95rem;
+        color: #065f46;
+        margin-bottom: 0.35rem;
+    }
+
+    .sc-directory-visit-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+        font-size: 0.8rem;
+        color: var(--sc-muted);
+    }
+
+    .sc-directory-visit-note {
+        margin-top: 0.35rem;
+        font-size: 0.82rem;
+        color: #374151;
+    }
+
+    .sc-directory-info {
+        margin-bottom: 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.85rem;
+        padding: 0.85rem 1rem;
+        background-color: #f9fafb;
+        min-height: 120px;
+        display: flex;
+        flex-direction: column;
+        gap: 0.35rem;
+    }
+
+    .sc-directory-info h3 {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 600;
+        color: #1f2937;
+    }
+
+    .sc-directory-info p {
+        margin: 0;
+        font-size: 0.85rem;
+        color: var(--sc-muted);
+    }
+
+    .sc-directory-placeholder {
+        border: 1px dashed #d1d5db;
+        border-radius: 0.75rem;
+        padding: 1.1rem;
+        text-align: center;
+        color: var(--sc-muted);
+        background-color: rgba(243, 244, 246, 0.6);
+        font-size: 0.85rem;
+    }
+
+    .sc-directory-empty,
+    .sc-directory-error {
+        border: 1px dashed #d1d5db;
+        border-radius: 0.75rem;
+        padding: 1.25rem;
+        text-align: center;
+        color: var(--sc-muted);
+        background-color: rgba(249, 250, 251, 0.7);
+        font-size: 0.85rem;
+    }
+
+    .sc-directory-error {
+        color: #b91c1c;
+        border-color: #fecaca;
+        background-color: #fef2f2;
+    }
+
+    .sc-directory-loader {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.75rem;
+        color: var(--sc-muted);
+        padding: 1.25rem;
+    }
+
+    @media (max-width: 1024px) {
+        .sc-directory-body {
+            flex-direction: column;
+        }
+
+        .sc-directory-column--patients,
+        .sc-directory-column--visits {
+            flex: 1 0 auto;
+            padding: 1.25rem 1.5rem;
+            border-right: none;
+        }
+
+        .sc-directory-column--patients {
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .sc-directory-patient-list,
+        .sc-directory-visit-list {
+            max-height: 280px;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .sc-directory {
+            border-radius: 0.75rem;
+        }
+
+        .sc-directory-header {
+            padding: 1.25rem;
+        }
+
+        .sc-directory-body {
+            padding: 0 0 1.25rem;
+        }
+
+        .sc-directory-column--patients,
+        .sc-directory-column--visits {
+            padding: 1rem 1.25rem 0;
+        }
+    }
+

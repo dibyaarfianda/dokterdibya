@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { createSundayClinicRecord } = require('../services/sundayClinicService');
 
 // Middleware to verify JWT token
 const verifyToken = (req, res, next) => {
@@ -62,6 +63,19 @@ function getSlotTime(session, slotNumber) {
     const hour = startHour + Math.floor(minutes / 60);
     const minute = minutes % 60;
     return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
+function calculateAge(birthDate) {
+    if (!(birthDate instanceof Date) || isNaN(birthDate.getTime())) {
+        return null;
+    }
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+    }
+    return age < 0 ? null : age;
 }
 
 /**
@@ -379,6 +393,65 @@ router.put('/:id/cancel', verifyToken, async (req, res) => {
 });
 
 /**
+ * POST /api/sunday-appointments/:id/start-clinic-record
+ * Ensure Sunday Clinic medical record exists for the appointment and return MR info
+ */
+router.post('/:id/start-clinic-record', verifyToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const [appointments] = await db.query(
+            `SELECT a.*, p.id AS patient_db_id, p.full_name
+             FROM sunday_appointments a
+             LEFT JOIN patients p ON CAST(a.patient_id AS CHAR) = CAST(p.id AS CHAR)
+             WHERE a.id = ?
+             LIMIT 1`,
+            [id]
+        );
+
+        if (appointments.length === 0) {
+            return res.status(404).json({ message: 'Janji temu tidak ditemukan' });
+        }
+
+        const appointment = appointments[0];
+
+        if (!appointment.patient_db_id) {
+            return res.status(400).json({ message: 'Data pasien belum tersedia untuk janji temu ini' });
+        }
+
+        const userId = req.user && req.user.id ? req.user.id : null;
+
+        const { record, created } = await createSundayClinicRecord({
+            appointmentId: appointment.id,
+            patientId: appointment.patient_db_id,
+            createdBy: userId
+        });
+
+        res.json({
+            success: true,
+            created,
+            record: {
+                id: record.id,
+                mrId: record.mr_id,
+                status: record.status,
+                folderPath: record.folder_path,
+                patientId: record.patient_id,
+                appointmentId: record.appointment_id,
+                createdAt: record.created_at,
+                updatedAt: record.updated_at,
+                lastActivityAt: record.last_activity_at,
+                finalizedAt: record.finalized_at,
+                finalizedBy: record.finalized_by
+            }
+        });
+
+    } catch (error) {
+        console.error('Error starting Sunday clinic record:', error);
+        res.status(500).json({ message: 'Terjadi kesalahan saat memulai rekam medis Klinik Private' });
+    }
+});
+
+/**
  * GET /api/sunday-appointments/list (STAFF ONLY)
  * Get all appointments with filters
  */
@@ -387,7 +460,7 @@ router.get('/list', verifyToken, async (req, res) => {
         const { date, status, session } = req.query;
         
         let query = `
-            SELECT a.*, p.full_name, p.phone, p.email
+            SELECT a.*, p.full_name, p.phone, p.email, p.birth_date AS patient_birth_date
             FROM sunday_appointments a
             LEFT JOIN patients p ON CAST(a.patient_id AS CHAR) = CAST(p.id AS CHAR)
             WHERE 1=1
@@ -413,17 +486,26 @@ router.get('/list', verifyToken, async (req, res) => {
         
         const [appointments] = await db.query(query, params);
         
-        const formatted = appointments.map(apt => ({
-            ...apt,
-            dateFormatted: new Date(apt.appointment_date).toLocaleDateString('id-ID', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            }),
-            sessionLabel: getSessionLabel(apt.session),
-            time: getSlotTime(apt.session, apt.slot_number)
-        }));
+        const formatted = appointments.map(apt => {
+            const birthDateSource = apt.patient_birth_date ? new Date(apt.patient_birth_date) : null;
+            const hasValidBirth = birthDateSource && !isNaN(birthDateSource.getTime());
+            const patientAge = hasValidBirth ? calculateAge(birthDateSource) : null;
+            const birthIso = hasValidBirth ? birthDateSource.toISOString() : null;
+
+            return {
+                ...apt,
+                patientAge,
+                patientBirthDate: birthIso,
+                dateFormatted: new Date(apt.appointment_date).toLocaleDateString('id-ID', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                }),
+                sessionLabel: getSessionLabel(apt.session),
+                time: getSlotTime(apt.session, apt.slot_number)
+            };
+        });
         
         res.json({ appointments: formatted });
         

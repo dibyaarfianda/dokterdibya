@@ -5,6 +5,7 @@ import { auth, onAuthStateChanged } from './vps-auth-v2.js';
 import { validatePatient, validateObatUsage, updatePatientDisplay, getCurrentPatientData, getSelectedServices, getSelectedObat } from './billing.js';
 import { showWarning } from './toast.js';
 import { initMedicalExam, setCurrentPatientForExam, toggleMedicalExamMenu } from './medical-exam.js';
+import { loadSession } from './session-manager.js';
 
 // -------------------- CLOCK --------------------
 let clockIntervalId = null;
@@ -48,6 +49,7 @@ function importWithVersion(path) {
 function grab(id) { return document.getElementById(id); }
 function initPages() {
     pages.dashboard = grab('dashboard-page');
+    pages.klinikPrivate = grab('klinik-private-page');
     pages.patient = grab('patient-page');
     pages.anamnesa = grab('anamnesa-page');
     pages.physical = grab('physical-exam-page');
@@ -174,6 +176,19 @@ function setTitleAndActive(title, navId, mobileAction) {
     }
 }
 function showDashboardPage() { hideAllPages(); pages.dashboard?.classList.remove('d-none'); setTitleAndActive('Dashboard', 'nav-dashboard', 'dashboard'); }
+function showKlinikPrivatePage() {
+    hideAllPages();
+    pages.klinikPrivate?.classList.remove('d-none');
+    setTitleAndActive('Klinik Private', 'nav-klinik-private', 'klinik-private');
+
+    importWithVersion('./klinik-private.js').then(module => {
+        if (module && typeof module.initKlinikPrivatePage === 'function') {
+            module.initKlinikPrivatePage();
+        }
+    }).catch(error => {
+        console.error('Failed to load klinik-private.js:', error);
+    });
+}
 function showTindakanPage() { 
     hideAllPages(); 
     pages.tindakan?.classList.remove('d-none'); 
@@ -451,6 +466,63 @@ function bindBasics() {
     backToTindakanBtn?.addEventListener('click', showTindakanPage);
 }
 
+function getSundayClinicMrFromSession() {
+    try {
+        const session = loadSession();
+        if (!session || !session.patient) {
+            return null;
+        }
+        if (session.patient.sundayClinic && session.patient.sundayClinic.mrId) {
+            return session.patient.sundayClinic.mrId;
+        }
+        return session.patient.mrId || session.patient.mrid || null;
+    } catch (error) {
+        console.warn('Unable to read session for Sunday Clinic MR:', error);
+        return null;
+    }
+}
+
+function normalizeMrSlug(value) {
+    if (!value) {
+        return '';
+    }
+    return String(value)
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '');
+}
+
+function openSundayClinicViewer() {
+    let mrId = getSundayClinicMrFromSession();
+    if (!mrId) {
+        const input = window.prompt('Masukkan MR ID Sunday Clinic yang ingin dibuka:');
+        if (!input) {
+            return;
+        }
+        mrId = input;
+    }
+
+    const slug = normalizeMrSlug(mrId);
+    if (!slug) {
+        showWarning('Tidak dapat membuka Sunday Clinic tanpa MR ID.');
+        return;
+    }
+
+    const targetUrl = `/sunday-clinic/${encodeURIComponent(slug)}/identitas`;
+    window.open(targetUrl, '_blank', 'noopener');
+}
+
+function bindSundayClinicLauncher() {
+    const navLink = document.getElementById('nav-open-sunday-clinic');
+    if (!navLink) {
+        return;
+    }
+    navLink.addEventListener('click', event => {
+        event.preventDefault();
+        openSundayClinicViewer();
+    });
+}
+
 function initializeApp(user) {
     if (user) {
         // User is logged in, check roles
@@ -482,6 +554,7 @@ function initMain() {
     initPages();
     startClock();
     bindBasics();
+    bindSundayClinicLauncher();
     initMedicalExam(); // Initialize medical examination pages
     onAuthStateChanged(initializeApp);
     
@@ -870,6 +943,7 @@ export { initMain };
 
 // Expose page switching functions to the global scope for onclick handlers
 window.showDashboardPage = showDashboardPage;
+window.showKlinikPrivatePage = showKlinikPrivatePage;
 window.showTindakanPage = showTindakanPage;
 window.showObatPage = showObatPage;
 window.showCashierPage = showCashierPage;
