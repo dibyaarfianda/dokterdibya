@@ -5,39 +5,193 @@
         <div class="container-fluid">
             <div class="row mb-2">
                 <div class="col-sm-6">
-                    <h1>Profile Settings</h1>
+                    <h1 style="font-family: 'Poppins', sans-serif;">Pengaturan Profil</h1>
                 </div>
                 <div class="col-sm-6">
-                    <ol class="breadcrumb float-sm-right">
-                        <li class="breadcrumb-item"><a href="#">Home</a></li>
-                        <li class="breadcrumb-item active">Profile Settings</li>
+                    <ol class="breadcrumb float-sm-right" style="font-family: 'Poppins', sans-serif;">
+                        <li class="breadcrumb-item"><a href="#" onclick="showDashboard(); return false;">Home</a></li>
+                        <li class="breadcrumb-item active">Pengaturan Profil</li>
                     </ol>
                 </div>
             </div>
-        </div><!-- /.container-fluid -->
+        </div>
     </section>
 
     <!-- Main content -->
     <section class="content">
         <div class="container-fluid">
             <div class="row">
+                <!-- Profile Information -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title" style="font-family: 'Poppins', sans-serif; font-weight: 600;">
+                                <i class="fas fa-user mr-2"></i>Informasi Profil
+                            </h3>
+                        </div>
+                        <div class="card-body" style="font-family: 'Poppins', sans-serif;">
+                            <form id="profile-info-form">
+                                <div class="form-group">
+                                    <label for="profile-name">Nama Lengkap</label>
+                                    <input type="text" class="form-control" id="profile-name" placeholder="Masukkan nama lengkap" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label for="profile-email">Email</label>
+                                    <input type="email" class="form-control" id="profile-email" placeholder="email@example.com" readonly>
+                                </div>
+                                <div class="form-group">
+                                    <label for="profile-role">Role</label>
+                                    <input type="text" class="form-control" id="profile-role" placeholder="Role" readonly>
+                                </div>
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle mr-2"></i>
+                                    Untuk mengubah informasi profil, silakan hubungi administrator.
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Change Password -->
+                <div class="col-md-6">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title" style="font-family: 'Poppins', sans-serif; font-weight: 600;">
+                                <i class="fas fa-lock mr-2"></i>Ubah Password
+                            </h3>
+                        </div>
+                        <div class="card-body" style="font-family: 'Poppins', sans-serif;">
+                            <form id="change-password-form">
+                                <div class="form-group">
+                                    <label for="current-password">Password Saat Ini</label>
+                                    <input type="password" class="form-control" id="current-password" placeholder="Masukkan password saat ini">
+                                </div>
+                                <div class="form-group">
+                                    <label for="new-password">Password Baru</label>
+                                    <input type="password" class="form-control" id="new-password" placeholder="Masukkan password baru">
+                                    <small class="form-text text-muted">Minimal 8 karakter</small>
+                                </div>
+                                <div class="form-group">
+                                    <label for="confirm-password">Konfirmasi Password Baru</label>
+                                    <input type="password" class="form-control" id="confirm-password" placeholder="Konfirmasi password baru">
+                                </div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-save mr-2"></i>Simpan Password
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Session Information -->
+            <div class="row">
                 <div class="col-md-12">
                     <div class="card">
                         <div class="card-header">
-                            <h3 class="card-title">Pengaturan Profil Pengguna</h3>
+                            <h3 class="card-title" style="font-family: 'Poppins', sans-serif; font-weight: 600;">
+                                <i class="fas fa-clock mr-2"></i>Informasi Sesi
+                            </h3>
                         </div>
-                        <!-- /.card-header -->
-                        <div class="card-body">
-                            <p>This page is under construction.</p>
-                            <!-- Profile settings form will go here -->
+                        <div class="card-body" style="font-family: 'Poppins', sans-serif;">
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p><strong>Login Terakhir:</strong> <span id="last-login">-</span></p>
+                                </div>
+                                <div class="col-md-6">
+                                    <p><strong>Sesi Aktif Sejak:</strong> <span id="session-start">-</span></p>
+                                </div>
+                            </div>
                         </div>
-                        <!-- /.card-body -->
                     </div>
-                    <!-- /.card -->
                 </div>
             </div>
         </div>
     </section>
-    <!-- /.content -->
 </div>
-<!-- /.content-wrapper -->
+
+<script>
+// Load user profile data
+document.addEventListener('DOMContentLoaded', function() {
+    loadUserProfile();
+    setupPasswordForm();
+});
+
+function loadUserProfile() {
+    try {
+        const userStr = localStorage.getItem('user');
+        if (userStr) {
+            const user = JSON.parse(userStr);
+            document.getElementById('profile-name').value = user.name || '-';
+            document.getElementById('profile-email').value = user.email || '-';
+            document.getElementById('profile-role').value = user.role || '-';
+        }
+
+        // Load session info
+        const loginTime = localStorage.getItem('loginTime');
+        if (loginTime) {
+            const date = new Date(loginTime);
+            document.getElementById('last-login').textContent = date.toLocaleString('id-ID');
+            document.getElementById('session-start').textContent = date.toLocaleString('id-ID');
+        }
+    } catch (error) {
+        console.error('Error loading profile:', error);
+    }
+}
+
+function setupPasswordForm() {
+    const form = document.getElementById('change-password-form');
+    if (form) {
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const currentPassword = document.getElementById('current-password').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+            // Validation
+            if (!currentPassword || !newPassword || !confirmPassword) {
+                alert('Semua field harus diisi');
+                return;
+            }
+
+            if (newPassword.length < 8) {
+                alert('Password baru minimal 8 karakter');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                alert('Password baru dan konfirmasi tidak cocok');
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/auth/change-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        currentPassword,
+                        newPassword
+                    })
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert('Password berhasil diubah');
+                    form.reset();
+                } else {
+                    alert(result.message || 'Gagal mengubah password');
+                }
+            } catch (error) {
+                console.error('Error changing password:', error);
+                alert('Terjadi kesalahan saat mengubah password');
+            }
+        });
+    }
+}
+</script>

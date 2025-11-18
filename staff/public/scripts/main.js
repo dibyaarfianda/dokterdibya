@@ -453,7 +453,121 @@ function showEmailSettingsPage() {
         page.classList.remove('d-none');
     }
     setTitleAndActive('Pengaturan Email', 'management-nav-email-settings', 'email-settings');
-    loadExternalPage('email-settings-page', 'email-settings.html');
+
+    // Initialize email settings form if not already done
+    if (!page.dataset.initialized) {
+        initializeEmailSettingsForm();
+        page.dataset.initialized = 'true';
+    }
+}
+
+async function initializeEmailSettingsForm() {
+    const form = document.getElementById('email-settings-form');
+    if (!form) return;
+
+    // Set up form submit handler
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+            alert('Sesi login berakhir. Silakan login ulang.');
+            return;
+        }
+
+        const payload = {
+            senderName: document.getElementById('sender-name')?.value?.trim() || '',
+            templates: {
+                verification: {
+                    subject: document.getElementById('verification-subject')?.value?.trim() || '',
+                    body: document.getElementById('verification-body')?.value || ''
+                },
+                password_reset: {
+                    subject: document.getElementById('reset-subject')?.value?.trim() || '',
+                    body: document.getElementById('reset-body')?.value || ''
+                },
+                announcement: {
+                    subject: document.getElementById('announcement-subject')?.value?.trim() || '',
+                    body: document.getElementById('announcement-body')?.value || ''
+                }
+            }
+        };
+
+        if (!payload.senderName) {
+            alert('Nama pengirim tidak boleh kosong.');
+            return;
+        }
+
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Menyimpan...';
+
+        try {
+            const res = await fetch('/api/email-settings', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await res.json().catch(() => ({ success: false, message: 'Gagal menyimpan pengaturan email.' }));
+
+            if (!res.ok || !result.success) {
+                throw new Error(result.message || `Gagal menyimpan pengaturan email (status ${res.status})`);
+            }
+
+            alert('Pengaturan email berhasil disimpan.');
+        } catch (error) {
+            console.error('Failed to save email settings:', error);
+            alert(error.message || 'Gagal menyimpan pengaturan email.');
+        } finally {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    });
+
+    // Load existing settings
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    try {
+        const res = await fetch('/api/email-settings', {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (res.ok) {
+            const result = await res.json();
+            if (result.success && result.data) {
+                const { senderName, templates } = result.data;
+
+                if (senderName) {
+                    document.getElementById('sender-name').value = senderName;
+                }
+
+                if (templates) {
+                    if (templates.verification) {
+                        document.getElementById('verification-subject').value = templates.verification.subject || '';
+                        document.getElementById('verification-body').value = templates.verification.body || '';
+                    }
+                    if (templates.password_reset) {
+                        document.getElementById('reset-subject').value = templates.password_reset.subject || '';
+                        document.getElementById('reset-body').value = templates.password_reset.body || '';
+                    }
+                    if (templates.announcement) {
+                        document.getElementById('announcement-subject').value = templates.announcement.subject || '';
+                        document.getElementById('announcement-body').value = templates.announcement.body || '';
+                    }
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load email settings:', error);
+    }
 }
 
 // -------------------- BASIC BINDINGS --------------------
