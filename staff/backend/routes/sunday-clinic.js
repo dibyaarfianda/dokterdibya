@@ -668,7 +668,8 @@ router.get('/billing/:mrId', verifyToken, async (req, res, next) => {
                     ...item,
                     item_data: parseJson(item.item_data, {})
                 })),
-                billing_data: parseJson(billingRow.billing_data, {})
+                billing_data: parseJson(billingRow.billing_data, {}),
+                change_requests: parseJson(billingRow.change_requests, [])
             };
         }
 
@@ -833,6 +834,175 @@ router.post('/billing/:mrId/print', verifyToken, async (req, res, next) => {
         });
     } catch (error) {
         logger.error('Failed to record print', { error: error.message });
+        next(error);
+    }
+});
+
+// Request change to billing (anyone can request)
+router.post('/billing/:mrId/request-change', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+    const { items, changeNote } = req.body;
+
+    try {
+        const recordRow = await findRecordByMrId(normalizedMrId);
+        if (!recordRow) {
+            return res.status(404).json({
+                success: false,
+                message: 'Rekam medis Sunday Clinic tidak ditemukan.'
+            });
+        }
+
+        // Get existing billing
+        const [billingRows] = await db.query(
+            `SELECT id, change_requests FROM sunday_clinic_billings WHERE mr_id = ?`,
+            [normalizedMrId]
+        );
+
+        if (billingRows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Billing tidak ditemukan'
+            });
+        }
+
+        const billing = billingRows[0];
+        const changeRequests = billing.change_requests ? JSON.parse(billing.change_requests) : [];
+
+        // Add new change request
+        changeRequests.push({
+            requestedBy: req.user.name || req.user.email || req.user.id,
+            requestedAt: new Date().toISOString(),
+            note: changeNote || 'Perubahan item tagihan',
+            items: items
+        });
+
+        // Update billing with new items and set pending_changes flag
+        const connection = await db.getConnection();
+        try {
+            await connection.beginTransaction();
+
+            // Delete existing items
+            await connection.query(
+                `DELETE FROM sunday_clinic_billing_items WHERE billing_id = ?`,
+                [billing.id]
+            );
+
+            // Insert new items
+            if (items && items.length > 0) {
+                let subtotal = 0;
+                for (const item of items) {
+                    const itemTotal = (item.quantity || 1) * (item.price || 0);
+                    subtotal += itemTotal;
+
+                    await connection.query(
+                        `INSERT INTO sunday_clinic_billing_items
+                         (billing_id, item_type, item_code, item_name, quantity, price, total, item_data)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                        [
+                            billing.id,
+                            item.item_type || 'admin',
+                            item.item_code || null,
+                            item.item_name,
+                            item.quantity || 1,
+                            item.price || 0,
+                            itemTotal,
+                            JSON.stringify(item.item_data || {})
+                        ]
+                    );
+                }
+
+                // Update billing totals and set pending_changes flag
+                await connection.query(
+                    `UPDATE sunday_clinic_billings
+                     SET subtotal = ?, total = ?, pending_changes = TRUE,
+                         change_requests = ?, last_modified_by = ?, last_modified_at = NOW()
+                     WHERE id = ?`,
+                    [subtotal, subtotal, JSON.stringify(changeRequests), req.user.name || req.user.email || req.user.id, billing.id]
+                );
+            }
+
+            await connection.commit();
+
+            res.json({
+                success: true,
+                message: 'Perubahan berhasil diajukan. Menunggu konfirmasi dokter.'
+            });
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            connection.release();
+        }
+    } catch (error) {
+        logger.error('Failed to request billing change', { error: error.message });
+        next(error);
+    }
+});
+
+// Approve changes and reconfirm billing (doctor only)
+router.post('/billing/:mrId/approve-changes', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+
+    try {
+        const [result] = await db.query(
+            `UPDATE sunday_clinic_billings
+             SET pending_changes = FALSE, status = 'confirmed',
+                 confirmed_at = NOW(), confirmed_by = ?
+             WHERE mr_id = ? AND pending_changes = TRUE`,
+            [req.user.name || req.user.email || req.user.id, normalizedMrId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Tidak ada perubahan yang perlu dikonfirmasi'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Perubahan berhasil dikonfirmasi'
+        });
+    } catch (error) {
+        logger.error('Failed to approve changes', { error: error.message });
+        next(error);
+    }
+});
+
+// Get billing with change request info
+router.get('/billing/:mrId/changes', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+
+    try {
+        const [rows] = await db.query(
+            `SELECT pending_changes, change_requests, last_modified_by, last_modified_at
+             FROM sunday_clinic_billings
+             WHERE mr_id = ?`,
+            [normalizedMrId]
+        );
+
+        if (rows.length === 0) {
+            return res.json({
+                success: true,
+                data: {
+                    hasPendingChanges: false,
+                    changeRequests: []
+                }
+            });
+        }
+
+        const billing = rows[0];
+        res.json({
+            success: true,
+            data: {
+                hasPendingChanges: billing.pending_changes || false,
+                changeRequests: billing.change_requests ? JSON.parse(billing.change_requests) : [],
+                lastModifiedBy: billing.last_modified_by,
+                lastModifiedAt: billing.last_modified_at
+            }
+        });
+    } catch (error) {
+        logger.error('Failed to get change requests', { error: error.message });
         next(error);
     }
 });

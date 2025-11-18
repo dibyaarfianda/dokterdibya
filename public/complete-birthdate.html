@@ -206,9 +206,16 @@
                 }, 3000);
             }
         }
-        
+
+        // Get today's date in GMT+7 (Jakarta/Indonesian time)
+        function getGMT7Date() {
+            const now = new Date();
+            const gmt7Time = new Date(now.getTime() + (7 * 60 * 60 * 1000));
+            return gmt7Time.toISOString().split('T')[0];
+        }
+
         // Set max date to today
-        document.getElementById('birth_date').setAttribute('max', new Date().toISOString().split('T')[0]);
+        document.getElementById('birth_date').setAttribute('max', getGMT7Date());
         
         // Check authentication
         const token = localStorage.getItem('patient_token');
