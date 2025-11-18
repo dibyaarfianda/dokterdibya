@@ -480,7 +480,10 @@ router.post('/api/auth/forgot-password', asyncHandler(async (req, res) => {
 
     // 5. Send the email with the plain token
     const notification = require('../utils/notification');
-    const emailResult = await notification.sendPasswordResetEmail(patient.email, token);
+    const emailResult = await notification.sendPasswordResetEmail(patient.email, token, {
+        patientName: patient.full_name,
+        email: patient.email
+    });
 
     if (!emailResult.success) {
         logger.error(`Failed to send password reset email to ${email}`, { error: emailResult.error });

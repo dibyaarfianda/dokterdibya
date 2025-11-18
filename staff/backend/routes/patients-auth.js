@@ -60,11 +60,11 @@ async function generateUniqueMedicalRecordId() {
 // Middleware to verify JWT token
 const verifyToken = (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
-    
+
     if (!token) {
         return res.status(401).json({ message: 'Token tidak ditemukan' });
     }
-    
+
     try {
         const decoded = jwt.verify(token, JWT_SECRET);
         req.user = decoded;
@@ -75,90 +75,76 @@ const verifyToken = (req, res, next) => {
 };
 
 // Register with email
-router.post('/register', async (req, res) => {
+async function handlePatientRegister(req, res) {
     try {
         const { fullname, email, phone, password } = req.body;
-        
+
         // Validation
         if (!fullname || !email || !phone || !password) {
             return res.status(400).json({ message: 'Semua field harus diisi' });
         }
-        
+
         if (password.length < 6) {
             return res.status(400).json({ message: 'Password minimal 6 karakter' });
         }
-        
+
         // Check if email already exists
         const [existingUsers] = await db.query(
             'SELECT id FROM patients WHERE email = ?',
             [email]
         );
-        
+
         if (existingUsers.length > 0) {
             return res.status(400).json({ message: 'Email sudah terdaftar' });
         }
-        
+
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
-        
+
         // Generate unique medical record ID
         const medicalRecordId = await generateUniqueMedicalRecordId();
-        
+
         // Generate verification token (6 digit code)
         const verificationToken = Math.floor(100000 + Math.random() * 900000).toString();
         const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-        
+
         // Insert patient with email_verified = 0
         const [result] = await db.query(
             `INSERT INTO patients (
-                id, full_name, email, phone, password, 
+                id, full_name, email, phone, password,
                 email_verified, verification_token, verification_token_expires,
-                registration_date, status
-            ) VALUES (?, ?, ?, ?, ?, 0, ?, ?, NOW(), 'active')`,
+                registration_date, status, patient_type
+            ) VALUES (?, ?, ?, ?, ?, 0, ?, ?, NOW(), 'active', 'web')`,
             [medicalRecordId, fullname, email, phone, hashedPassword, verificationToken, tokenExpires]
         );
-        
+
         // For VARCHAR primary key, insertId is 0. Use medicalRecordId instead
         const patientId = medicalRecordId;
-        
+
         // Send verification email
         try {
-            const verificationUrl = `${process.env.FRONTEND_URL || 'https://dokterdibya.com'}/verify-email.html?token=${verificationToken}&email=${encodeURIComponent(email)}`;
-            
-            await getNotificationService().sendEmail({
+            const emailResult = await getNotificationService().sendVerificationEmail({
                 to: email,
-                subject: 'Verifikasi Email - dokterDIBYA',
-                html: `
-                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                        <h2 style="color: #28a7e9;">Selamat Datang di dokterDIBYA!</h2>
-                        <p>Halo <strong>${fullname}</strong>,</p>
-                        <p>Terima kasih telah mendaftar. Silakan verifikasi email Anda dengan menggunakan kode berikut:</p>
-                        <div style="background-color: #f5f5f5; padding: 20px; text-align: center; margin: 20px 0;">
-                            <h1 style="color: #28a7e9; letter-spacing: 5px; margin: 0;">${verificationToken}</h1>
-                        </div>
-                        <p>Atau klik tombol di bawah ini:</p>
-                        <div style="text-align: center; margin: 30px 0;">
-                            <a href="${verificationUrl}" style="background-color: #28a7e9; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">Verifikasi Email</a>
-                        </div>
-                        <p style="color: #666; font-size: 12px;">Kode verifikasi ini berlaku selama 24 jam.</p>
-                        <p style="color: #666; font-size: 12px;">Jika Anda tidak mendaftar, abaikan email ini.</p>
-                        <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-                        <p style="color: #999; font-size: 11px; text-align: center;">dokterDIBYA - Modern therapy without boundary</p>
-                    </div>
-                `
+                userName: fullname,
+                email,
+                verificationCode: verificationToken
             });
-            
-            console.log(`Verification email sent to ${email} with token: ${verificationToken}`);
+
+            if (emailResult?.success) {
+                console.log(`Verification email sent to ${email} with token: ${verificationToken}`);
+            } else {
+                console.warn('Verification email dispatch did not succeed', { email, error: emailResult?.error });
+            }
         } catch (emailError) {
             console.error('Failed to send verification email:', emailError);
             // Continue even if email fails
         }
-        
+
         // Generate JWT token (but mark as unverified)
         const token = jwt.sign(
-            { 
+            {
                 id: patientId,
-                email, 
+                email,
                 fullname,
                 role: 'patient',
                 email_verified: false
@@ -166,14 +152,14 @@ router.post('/register', async (req, res) => {
             JWT_SECRET,
             { expiresIn: JWT_EXPIRES_IN }
         );
-        
+
         res.status(201).json({
             message: 'Registrasi berhasil. Silakan cek email Anda untuk verifikasi.',
             token,
             user: {
                 id: patientId,
                 fullname,
-                full_name: fullname,  // Database field name
+                full_name: fullname, // Database field name
                 email,
                 phone,
                 role: 'patient',
@@ -181,12 +167,14 @@ router.post('/register', async (req, res) => {
             },
             requires_verification: true
         });
-        
+
     } catch (error) {
         console.error('Registration error:', error);
         res.status(500).json({ message: 'Terjadi kesalahan saat registrasi' });
     }
-});
+}
+
+router.post('/register', handlePatientRegister);
 
 // Login with email
 router.post('/login', async (req, res) => {
@@ -877,32 +865,19 @@ router.post('/resend-verification', async (req, res) => {
         
         // Send verification email
         try {
-            const verificationUrl = `${process.env.FRONTEND_URL || 'https://dokterdibya.com'}/verify-email.html?token=${verificationToken}&email=${encodeURIComponent(email)}`;
-            
-            await getNotificationService().sendEmail({
+            const emailResult = await getNotificationService().sendVerificationEmail({
                 to: email,
-                subject: 'Verifikasi Email - dokterDIBYA',
-                html: `
-                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                        <h2 style="color: #28a7e9;">Verifikasi Email Anda</h2>
-                        <p>Halo <strong>${patient.full_name}</strong>,</p>
-                        <p>Anda meminta kode verifikasi baru. Silakan gunakan kode berikut:</p>
-                        <div style="background-color: #f5f5f5; padding: 20px; text-align: center; margin: 20px 0;">
-                            <h1 style="color: #28a7e9; letter-spacing: 5px; margin: 0;">${verificationToken}</h1>
-                        </div>
-                        <p>Atau klik tombol di bawah ini:</p>
-                        <div style="text-align: center; margin: 30px 0;">
-                            <a href="${verificationUrl}" style="background-color: #28a7e9; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">Verifikasi Email</a>
-                        </div>
-                        <p style="color: #666; font-size: 12px;">Kode verifikasi ini berlaku selama 24 jam.</p>
-                        <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-                        <p style="color: #999; font-size: 11px; text-align: center;">dokterDIBYA - Modern therapy without boundary</p>
-                    </div>
-                `
+                userName: patient.full_name,
+                email,
+                verificationCode: verificationToken
             });
-            
-            console.log(`Verification email resent to ${email} with new token: ${verificationToken}`);
-            
+
+            if (!emailResult?.success) {
+                console.warn('Verification email resend did not succeed', { email, error: emailResult?.error });
+            } else {
+                console.log(`Verification email resent to ${email} with new token: ${verificationToken}`);
+            }
+
             res.json({ 
                 success: true,
                 message: 'Kode verifikasi baru telah dikirim ke email Anda'
@@ -1013,33 +988,17 @@ router.post('/forgot-password', async (req, res) => {
         
         // Send reset password email
         try {
-            const resetUrl = `${process.env.FRONTEND_URL || 'https://dokterdibya.com'}/reset-password.html?token=${resetToken}&email=${encodeURIComponent(email)}`;
-            
-            await getNotificationService().sendEmail({
-                to: email,
-                subject: 'Reset Password - Klinik Dr. Dibya',
-                html: `
-                    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-                        <h2 style="color: #28a7e9;">Reset Password Anda</h2>
-                        <p>Halo <strong>${patient.full_name}</strong>,</p>
-                        <p>Anda telah meminta untuk mereset password. Gunakan kode berikut untuk mereset password Anda:</p>
-                        <div style="background-color: #f5f5f5; padding: 20px; text-align: center; margin: 20px 0;">
-                            <h1 style="color: #28a7e9; letter-spacing: 5px; margin: 0;">${resetToken}</h1>
-                        </div>
-                        <p>Atau klik tombol di bawah ini:</p>
-                        <div style="text-align: center; margin: 30px 0;">
-                            <a href="${resetUrl}" style="background-color: #28a7e9; color: white; padding: 12px 30px; text-decoration: none; border-radius: 5px; display: inline-block;">Reset Password</a>
-                        </div>
-                        <p style="color: #666; font-size: 12px;">Kode ini berlaku selama 24 jam.</p>
-                        <p style="color: #666; font-size: 12px;">Jika Anda tidak meminta reset password, abaikan email ini.</p>
-                        <hr style="border: none; border-top: 1px solid #ddd; margin: 30px 0;">
-                        <p style="color: #999; font-size: 11px; text-align: center;">Klinik Dr. Dibya - Layanan Kesehatan Terpercaya</p>
-                    </div>
-                `
+            const emailResult = await getNotificationService().sendPasswordResetEmail(email, resetToken, {
+                patientName: patient.full_name,
+                email
             });
-            
-            console.log(`Password reset email sent to ${email} with token: ${resetToken}`);
-            
+
+            if (!emailResult?.success) {
+                console.warn('Password reset email dispatch did not succeed', { email, error: emailResult?.error });
+            } else {
+                console.log(`Password reset email sent to ${email} with token: ${resetToken}`);
+            }
+
             res.json({ 
                 success: true,
                 message: 'Link reset password telah dikirim ke email Anda. Silakan cek inbox atau folder spam.'

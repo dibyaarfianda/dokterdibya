@@ -1,0 +1,578 @@
+'use strict';
+
+const express = require('express');
+const router = express.Router();
+const db = require('../db');
+const logger = require('../utils/logger');
+const { verifyToken } = require('../middleware/auth');
+const { findRecordByMrId } = require('../services/sundayClinicService');
+
+const INTAKE_SELECT = `
+    SELECT submission_id, quick_id, patient_id, phone, status, payload,
+           created_at, reviewed_at, reviewed_by, review_notes
+    FROM patient_intake_submissions
+    WHERE status = 'verified'
+`;
+
+function normalizeMrId(value) {
+    if (!value || typeof value !== 'string') {
+        return '';
+    }
+    return value.trim().toUpperCase();
+}
+
+function toDate(value) {
+    if (!value) {
+        return null;
+    }
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.valueOf())) {
+        return null;
+    }
+    return parsed;
+}
+
+function calculateAge(dateValue) {
+    const date = toDate(dateValue);
+    if (!date) {
+        return null;
+    }
+    const today = new Date();
+    let age = today.getFullYear() - date.getFullYear();
+    const monthDiff = today.getMonth() - date.getMonth();
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < date.getDate())) {
+        age -= 1;
+    }
+    return age >= 0 ? age : null;
+}
+
+function normalizePhone(phone) {
+    if (!phone) {
+        return null;
+    }
+    const digits = String(phone).replace(/\D+/g, '');
+    if (!digits) {
+        return null;
+    }
+    return digits.slice(-10); // use last 10 digits for loose matching
+}
+
+function calculateGestationalAge(lmpValue) {
+    const lmpDate = toDate(lmpValue);
+    if (!lmpDate) {
+        return null;
+    }
+    const diffMs = Date.now() - lmpDate.getTime();
+    if (diffMs < 0) {
+        return null;
+    }
+    const totalDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+    const weeks = Math.floor(totalDays / 7);
+    const days = totalDays % 7;
+    return {
+        weeks,
+        days,
+        reference: lmpDate.toISOString()
+    };
+}
+
+function parseJson(value, context) {
+    if (!value) {
+        return null;
+    }
+    try {
+        return JSON.parse(value);
+    } catch (error) {
+        logger.warn('Failed to parse JSON payload', {
+            context,
+            error: error.message
+        });
+        return null;
+    }
+}
+
+async function getPatient(patientId) {
+    if (!patientId) {
+        return null;
+    }
+    const [rows] = await db.query(
+        `SELECT id, full_name, whatsapp, phone, email, birth_date, age, patient_type,
+                medical_history, allergy
+         FROM patients
+         WHERE id = ?
+         LIMIT 1`,
+        [patientId]
+    );
+    return rows[0] || null;
+}
+
+function getSessionLabel(session) {
+    const map = {
+        1: '09:00 - 11:30 (Pagi)',
+        2: '12:00 - 14:30 (Siang)',
+        3: '15:00 - 17:30 (Sore)'
+    };
+    return map[session] || null;
+}
+
+function getSlotTime(session, slotNumber) {
+    const startHours = { 1: 9, 2: 12, 3: 15 };
+    const baseHour = startHours[session];
+    if (!baseHour || !Number.isFinite(Number(slotNumber))) {
+        return null;
+    }
+    const minutesOffset = (Number(slotNumber) - 1) * 15;
+    const hour = baseHour + Math.floor(minutesOffset / 60);
+    const minute = minutesOffset % 60;
+    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
+async function getAppointment(appointmentId) {
+    if (!appointmentId) {
+        return null;
+    }
+    const [rows] = await db.query(
+        `SELECT id, patient_id, patient_name, patient_phone, appointment_date,
+                session, slot_number, chief_complaint, status, notes, created_at
+         FROM sunday_appointments
+         WHERE id = ?
+         LIMIT 1`,
+        [appointmentId]
+    );
+
+    if (!rows.length) {
+        return null;
+    }
+
+    const row = rows[0];
+    return {
+        id: row.id,
+        patientId: row.patient_id,
+        patientName: row.patient_name,
+        patientPhone: row.patient_phone,
+        appointmentDate: row.appointment_date,
+        session: row.session,
+        sessionLabel: getSessionLabel(row.session),
+        slotNumber: row.slot_number,
+        slotTime: getSlotTime(row.session, row.slot_number),
+        chiefComplaint: row.chief_complaint,
+        status: row.status,
+        notes: row.notes,
+        createdAt: row.created_at
+    };
+}
+
+async function findLatestIntake(patientId, phoneCandidates) {
+    if (patientId) {
+        const [rows] = await db.query(
+            `${INTAKE_SELECT} AND patient_id = ?
+             ORDER BY created_at DESC
+             LIMIT 1`,
+            [patientId]
+        );
+        if (rows.length) {
+            return rows[0];
+        }
+    }
+
+    if (!phoneCandidates || phoneCandidates.length === 0) {
+        return null;
+    }
+
+    for (const phone of phoneCandidates) {
+        if (!phone) {
+            continue;
+        }
+        const [rows] = await db.query(
+            `${INTAKE_SELECT}
+             AND RIGHT(REPLACE(REPLACE(REPLACE(REPLACE(phone, '+', ''), '-', ''), ' ', ''), '.', ''), 10) = ?
+             ORDER BY created_at DESC
+             LIMIT 1`,
+            [phone]
+        );
+        if (rows.length) {
+            return rows[0];
+        }
+    }
+
+    return null;
+}
+
+function buildIntakeSummary(payload) {
+    if (!payload || typeof payload !== 'object') {
+        return null;
+    }
+
+    const metadata = payload.metadata && typeof payload.metadata === 'object'
+        ? payload.metadata
+        : {};
+    const obstetric = metadata.obstetricTotals && typeof metadata.obstetricTotals === 'object'
+        ? metadata.obstetricTotals
+        : {};
+
+    const eddValue = (metadata.edd && metadata.edd.value) || payload.edd || null;
+    const lmpValue = payload.lmp_date || payload.lmp || (metadata.edd && metadata.edd.lmpReference) || null;
+    const age = calculateAge(payload.dob || payload.patient_dob) ?? (
+        Number.isFinite(Number(payload.patient_age)) ? Number(payload.patient_age) : null
+    );
+
+    const riskFlags = Array.isArray(metadata.riskFlags) ? metadata.riskFlags : [];
+    const riskFactorCodes = Array.isArray(payload.risk_factors) ? payload.risk_factors : [];
+
+    return {
+        fullName: payload.full_name || payload.patient_name || null,
+        phone: payload.phone || payload.patient_phone || null,
+        dob: payload.dob || payload.patient_dob || null,
+        age,
+        edd: eddValue,
+        lmp: lmpValue,
+        bmi: metadata.bmiValue || payload.bmi || null,
+        gravida: obstetric.gravida ?? payload.gravida_count ?? payload.gravida ?? null,
+        para: obstetric.para ?? payload.para_count ?? payload.para ?? null,
+        abortus: obstetric.abortus ?? payload.abortus_count ?? payload.abortus ?? null,
+        living: obstetric.living ?? payload.living_children_count ?? payload.living ?? null,
+        riskFlags,
+        riskFactorCodes,
+        highRisk: Boolean(metadata.highRisk || (payload.flags && payload.flags.highRisk)),
+        gestationalAge: calculateGestationalAge(lmpValue)
+    };
+}
+
+function formatRecord(row) {
+    if (!row) {
+        return null;
+    }
+    return {
+        id: row.id,
+        mrId: row.mr_id,
+        patientId: row.patient_id,
+        appointmentId: row.appointment_id,
+        folderPath: row.folder_path,
+        status: row.status,
+        createdBy: row.created_by,
+        finalizedBy: row.finalized_by,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        lastActivityAt: row.last_activity_at,
+        finalizedAt: row.finalized_at
+    };
+}
+
+function formatPatient(row) {
+    if (!row) {
+        return null;
+    }
+    return {
+        id: row.id,
+        fullName: row.full_name,
+        whatsapp: row.whatsapp,
+        phone: row.phone,
+        email: row.email,
+        birthDate: row.birth_date,
+        age: row.age,
+        patientType: row.patient_type,
+        medicalHistory: row.medical_history,
+        allergy: row.allergy
+    };
+}
+
+function formatIntakeRow(row) {
+    if (!row) {
+        return null;
+    }
+    const payload = parseJson(row.payload, { submissionId: row.submission_id });
+    const summary = buildIntakeSummary(payload);
+    return {
+        submissionId: row.submission_id,
+        quickId: row.quick_id,
+        patientId: row.patient_id,
+        phone: row.phone,
+        status: row.status,
+        createdAt: row.created_at,
+        reviewedAt: row.reviewed_at,
+        reviewedBy: row.reviewed_by,
+        reviewNotes: row.review_notes,
+        payload,
+        metadata: payload && typeof payload.metadata === 'object' ? payload.metadata : null,
+        review: payload && typeof payload.review === 'object' ? payload.review : null,
+        summary
+    };
+}
+
+function formatMedicalRecordRow(row) {
+    if (!row) {
+        return null;
+    }
+    const data = parseJson(row.record_data, {
+        medicalRecordId: row.id,
+        recordType: row.record_type
+    }) || {};
+    return {
+        id: row.id,
+        patientId: row.patient_id,
+        visitId: row.visit_id,
+        doctorId: row.doctor_id,
+        doctorName: row.doctor_name,
+        recordType: row.record_type,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        data
+    };
+}
+
+async function loadMedicalRecordsBundle(patientId) {
+    if (!patientId) {
+        return null;
+    }
+
+    const [rows] = await db.query(
+        `SELECT id, patient_id, visit_id, doctor_id, doctor_name, record_type, record_data,
+                created_at, updated_at
+         FROM medical_records
+         WHERE patient_id = ?
+         ORDER BY created_at DESC
+         LIMIT 50`,
+        [patientId]
+    );
+
+    if (!rows.length) {
+        return null;
+    }
+
+    const byType = {};
+    let latestComplete = null;
+    let latestRecord = null;
+
+    rows.forEach((row) => {
+        const formatted = formatMedicalRecordRow(row);
+        if (!formatted) {
+            return;
+        }
+
+        if (!latestRecord) {
+            latestRecord = formatted;
+        }
+
+        if (row.record_type === 'complete' && !latestComplete) {
+            latestComplete = formatted;
+        }
+
+        if (!byType[row.record_type]) {
+            byType[row.record_type] = formatted;
+        }
+    });
+
+    return {
+        latestComplete,
+        byType,
+        latestRecord,
+        lastUpdatedAt: latestRecord?.updatedAt || latestRecord?.createdAt || null
+    };
+}
+
+function buildAggregateSummary(record, patient, appointment, intake) {
+    const base = intake && intake.summary ? { ...intake.summary } : {};
+    const patientName = base.fullName || (patient && patient.fullName) || (appointment && appointment.patientName) || null;
+    const age = base.age ?? (patient && patient.age) ?? null;
+    return {
+        patientName,
+        age,
+        mrId: record ? record.mrId || record.mr_id : null,
+        quickId: intake ? intake.quickId : null,
+        edd: base.edd || null,
+        lmp: base.lmp || null,
+        gestationalAge: base.gestationalAge || null,
+        highRisk: Boolean(base.highRisk),
+        riskFlags: base.riskFlags || [],
+        riskFactorCodes: base.riskFactorCodes || []
+    };
+}
+
+router.get('/directory', verifyToken, async (req, res, next) => {
+    const search = (req.query.search || '').trim();
+    const conditions = [];
+    const params = [];
+
+    if (search) {
+        const like = `%${search}%`;
+        conditions.push(`(
+            scr.mr_id LIKE ?
+            OR p.full_name LIKE ?
+            OR sa.patient_name LIKE ?
+            OR p.phone LIKE ?
+            OR p.whatsapp LIKE ?
+            OR sa.patient_phone LIKE ?
+        )`);
+        params.push(like, like, like, like, like, like);
+    }
+
+    const whereClause = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+    try {
+        const [rows] = await db.query(
+            `SELECT scr.mr_id,
+                    scr.patient_id,
+                    scr.appointment_id,
+                    scr.status AS record_status,
+                    scr.created_at AS record_created_at,
+                    scr.updated_at AS record_updated_at,
+                    p.full_name AS patient_name,
+                    p.whatsapp AS patient_whatsapp,
+                    p.phone AS patient_phone,
+                    p.age AS patient_age,
+                    p.birth_date AS patient_birth_date,
+                    sa.patient_name AS appointment_patient_name,
+                    sa.patient_phone AS appointment_patient_phone,
+                    sa.appointment_date,
+                    sa.session,
+                    sa.slot_number,
+                    sa.status AS appointment_status,
+                    sa.chief_complaint
+             FROM sunday_clinic_records scr
+             LEFT JOIN patients p ON p.id = scr.patient_id
+             LEFT JOIN sunday_appointments sa ON sa.id = scr.appointment_id
+             ${whereClause}
+             ORDER BY COALESCE(p.full_name, sa.patient_name, scr.mr_id) ASC,
+                      IFNULL(sa.appointment_date, scr.created_at) DESC,
+                      scr.created_at DESC
+             LIMIT 400`,
+            params
+        );
+
+        const patientsMap = new Map();
+
+        rows.forEach((row) => {
+            const patientId = row.patient_id || `unknown:${row.mr_id}`;
+            let entry = patientsMap.get(patientId);
+            if (!entry) {
+                entry = {
+                    patientId,
+                    fullName: row.patient_name || row.appointment_patient_name || row.mr_id,
+                    whatsapp: row.patient_whatsapp || null,
+                    phone: row.patient_phone || row.appointment_patient_phone || null,
+                    age: row.patient_age || null,
+                    birthDate: row.patient_birth_date || null,
+                    visits: []
+                };
+                patientsMap.set(patientId, entry);
+            }
+
+            entry.visits.push({
+                mrId: row.mr_id,
+                appointmentId: row.appointment_id,
+                appointmentDate: row.appointment_date,
+                session: row.session,
+                sessionLabel: getSessionLabel(row.session) || null,
+                slotNumber: row.slot_number,
+                slotTime: getSlotTime(row.session, row.slot_number),
+                recordStatus: row.record_status,
+                recordCreatedAt: row.record_created_at,
+                recordUpdatedAt: row.record_updated_at,
+                appointmentStatus: row.appointment_status,
+                chiefComplaint: row.chief_complaint || null
+            });
+        });
+
+        const patients = Array.from(patientsMap.values()).map((entry) => {
+            entry.visits.sort((a, b) => {
+                const aDate = toDate(a.recordUpdatedAt || a.recordCreatedAt || a.appointmentDate);
+                const bDate = toDate(b.recordUpdatedAt || b.recordCreatedAt || b.appointmentDate);
+                const aTime = aDate ? aDate.getTime() : 0;
+                const bTime = bDate ? bDate.getTime() : 0;
+                return bTime - aTime;
+            });
+
+            const latestVisit = entry.visits[0];
+            const latestVisitAt = latestVisit
+                ? toDate(latestVisit.recordUpdatedAt || latestVisit.recordCreatedAt || latestVisit.appointmentDate)
+                : null;
+
+            return {
+                patientId: entry.patientId,
+                fullName: entry.fullName,
+                whatsapp: entry.whatsapp,
+                phone: entry.phone,
+                age: entry.age,
+                birthDate: entry.birthDate,
+                totalVisits: entry.visits.length,
+                latestVisitAt: latestVisitAt ? latestVisitAt.toISOString() : null,
+                visits: entry.visits
+            };
+        });
+
+        res.json({
+            success: true,
+            data: {
+                patients,
+                totalPatients: patients.length,
+                totalRecords: rows.length
+            }
+        });
+    } catch (error) {
+        logger.error('Failed to load Sunday clinic directory', {
+            search,
+            error: error.message
+        });
+        next(error);
+    }
+});
+
+router.get('/records/:mrId', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+
+    if (!normalizedMrId) {
+        return res.status(400).json({
+            success: false,
+            message: 'MR ID tidak valid.'
+        });
+    }
+
+    try {
+        const recordRow = await findRecordByMrId(normalizedMrId);
+        if (!recordRow) {
+            return res.status(404).json({
+                success: false,
+                message: 'Rekam medis Sunday Clinic tidak ditemukan untuk MR ID tersebut.'
+            });
+        }
+
+        const record = formatRecord(recordRow);
+        const patientRow = await getPatient(record.patientId);
+        const patient = formatPatient(patientRow);
+        const appointment = await getAppointment(record.appointmentId);
+
+        const phoneCandidates = Array.from(new Set([
+            normalizePhone(patient && patient.whatsapp),
+            normalizePhone(patient && patient.phone),
+            normalizePhone(appointment && appointment.patientPhone)
+        ].filter(Boolean)));
+
+        const [intakeRow, medicalRecords] = await Promise.all([
+            findLatestIntake(record.patientId, phoneCandidates),
+            loadMedicalRecordsBundle(record.patientId)
+        ]);
+        const intake = formatIntakeRow(intakeRow);
+
+        const summary = buildAggregateSummary(record, patient, appointment, intake);
+
+        res.json({
+            success: true,
+            data: {
+                record,
+                patient,
+                appointment,
+                intake,
+                medicalRecords,
+                summary
+            }
+        });
+    } catch (error) {
+        logger.error('Failed to load Sunday clinic record', {
+            mrId: normalizedMrId,
+            error: error.message
+        });
+        next(error);
+    }
+});
+
+module.exports = router;

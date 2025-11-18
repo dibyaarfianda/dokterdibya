@@ -707,6 +707,18 @@
                             <p>Dashboard</p>
                         </a>
                     </li>
+                    <li class="nav-item" id="nav-klinik-private">
+                        <a href="#" class="nav-link" onclick="showKlinikPrivatePage(); return false;">
+                            <i class="nav-icon fas fa-clinic-medical"></i>
+                            <p>Klinik Private</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" id="nav-sunday-clinic-launcher">
+                        <a href="#" class="nav-link" id="nav-open-sunday-clinic" title="Buka rekam medis Sunday Clinic">
+                            <i class="nav-icon fas fa-notes-medical"></i>
+                            <p>Sunday Clinic Viewer</p>
+                        </a>
+                    </li>
                     <li class="nav-item" id="nav-patient">
                         <a href="#" class="nav-link" onclick="showPatientPage(); return false;">
                             <i class="nav-icon fas fa-user-injured"></i>
@@ -917,6 +929,53 @@
                                 <div class="card-body">
                                     <div id="visits-30-days-chart" class="text-center text-muted" style="min-height: 220px;">
                                         <small>Memuat data kunjungan...</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="klinik-private-page" class="d-none">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card card-primary card-outline">
+                                <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
+                                    <div class="mb-2 mb-md-0">
+                                        <h3 class="card-title mb-1"><i class="fas fa-clinic-medical mr-2"></i>Klinik Private Minggu</h3>
+                                        <div class="text-muted small"><span id="klinik-private-date-label">-</span></div>
+                                    </div>
+                                    <div class="d-flex align-items-center">
+                                        <span class="badge badge-primary mr-3" id="klinik-private-count">0 Pasien</span>
+                                        <button class="btn btn-sm btn-outline-primary" id="klinik-private-refresh-btn">
+                                            <i class="fas fa-sync-alt mr-1"></i>Refresh
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div id="klinik-private-loading" class="text-center py-5 text-muted">
+                                        <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                                        <p class="mb-0">Memuat daftar pasien Klinik Private...</p>
+                                    </div>
+                                    <div id="klinik-private-error" class="alert alert-danger m-3 d-none"></div>
+                                    <div id="klinik-private-empty" class="text-center py-5 text-muted d-none">
+                                        <i class="fas fa-calendar-times fa-2x mb-2"></i>
+                                        <p class="mb-0">Belum ada pasien yang terjadwal untuk Klinik Private Minggu ini.</p>
+                                    </div>
+                                    <div id="klinik-private-table-wrapper" class="table-responsive d-none">
+                                        <table class="table table-hover mb-0">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th style="width: 10%;">ID</th>
+                                                    <th style="width: 30%;">Nama Pasien</th>
+                                                    <th style="width: 10%;">Usia</th>
+                                                    <th style="width: 30%;">Alasan Kontrol</th>
+                                                    <th style="width: 12%;">Status</th>
+                                                    <th style="width: 8%;" class="text-center">Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="klinik-private-tbody"></tbody>
+                                        </table>
                                     </div>
                                 </div>
                             </div>
