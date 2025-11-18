@@ -7,6 +7,57 @@ const logger = require('../utils/logger');
 const { verifyToken } = require('../middleware/auth');
 const { findRecordByMrId } = require('../services/sundayClinicService');
 
+// Ensure billing tables exist
+async function ensureBillingTables() {
+    try {
+        // Create sunday_clinic_billings table
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS sunday_clinic_billings (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                mr_id VARCHAR(50) NOT NULL UNIQUE,
+                patient_id VARCHAR(10) NOT NULL,
+                subtotal DECIMAL(12, 2) NOT NULL DEFAULT 0,
+                total DECIMAL(12, 2) NOT NULL DEFAULT 0,
+                status ENUM('draft', 'confirmed', 'paid') NOT NULL DEFAULT 'draft',
+                billing_data JSON,
+                confirmed_at TIMESTAMP NULL,
+                confirmed_by VARCHAR(255),
+                printed_at TIMESTAMP NULL,
+                printed_by VARCHAR(255),
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                INDEX idx_mr_id (mr_id),
+                INDEX idx_patient_id (patient_id),
+                INDEX idx_status (status)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        `);
+
+        // Create sunday_clinic_billing_items table
+        await db.query(`
+            CREATE TABLE IF NOT EXISTS sunday_clinic_billing_items (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                billing_id INT NOT NULL,
+                item_type ENUM('tindakan', 'obat', 'admin') NOT NULL,
+                item_code VARCHAR(50),
+                item_name VARCHAR(255) NOT NULL,
+                quantity INT NOT NULL DEFAULT 1,
+                price DECIMAL(12, 2) NOT NULL DEFAULT 0,
+                total DECIMAL(12, 2) NOT NULL DEFAULT 0,
+                item_data JSON,
+                INDEX idx_billing_id (billing_id),
+                FOREIGN KEY (billing_id) REFERENCES sunday_clinic_billings(id) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        `);
+
+        logger.info('Sunday Clinic billing tables ensured');
+    } catch (error) {
+        logger.error('Failed to create billing tables:', error.message);
+    }
+}
+
+// Run table creation
+ensureBillingTables();
+
 const INTAKE_SELECT = `
     SELECT submission_id, quick_id, patient_id, phone, status, payload,
            created_at, reviewed_at, reviewed_by, review_notes
@@ -571,6 +622,217 @@ router.get('/records/:mrId', verifyToken, async (req, res, next) => {
             mrId: normalizedMrId,
             error: error.message
         });
+        next(error);
+    }
+});
+
+// ==================== BILLING ENDPOINTS ====================
+
+// Get billing for a Sunday Clinic record
+router.get('/billing/:mrId', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+
+    if (!normalizedMrId) {
+        return res.status(400).json({
+            success: false,
+            message: 'MR ID tidak valid.'
+        });
+    }
+
+    try {
+        const recordRow = await findRecordByMrId(normalizedMrId);
+        if (!recordRow) {
+            return res.status(404).json({
+                success: false,
+                message: 'Rekam medis Sunday Clinic tidak ditemukan.'
+            });
+        }
+
+        // Get billing record
+        const [billingRows] = await db.query(
+            `SELECT * FROM sunday_clinic_billings WHERE mr_id = ? ORDER BY created_at DESC LIMIT 1`,
+            [normalizedMrId]
+        );
+
+        let billing = null;
+        if (billingRows.length > 0) {
+            const billingRow = billingRows[0];
+            const [itemRows] = await db.query(
+                `SELECT * FROM sunday_clinic_billing_items WHERE billing_id = ? ORDER BY id`,
+                [billingRow.id]
+            );
+
+            billing = {
+                ...billingRow,
+                items: itemRows.map(item => ({
+                    ...item,
+                    item_data: parseJson(item.item_data, {})
+                })),
+                billing_data: parseJson(billingRow.billing_data, {})
+            };
+        }
+
+        res.json({
+            success: true,
+            data: billing
+        });
+    } catch (error) {
+        logger.error('Failed to load Sunday clinic billing', {
+            mrId: normalizedMrId,
+            error: error.message
+        });
+        next(error);
+    }
+});
+
+// Create or update billing
+router.post('/billing/:mrId', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+
+    if (!normalizedMrId) {
+        return res.status(400).json({
+            success: false,
+            message: 'MR ID tidak valid.'
+        });
+    }
+
+    try {
+        const recordRow = await findRecordByMrId(normalizedMrId);
+        if (!recordRow) {
+            return res.status(404).json({
+                success: false,
+                message: 'Rekam medis Sunday Clinic tidak ditemukan.'
+            });
+        }
+
+        const { items = [], status = 'draft', billingData = {} } = req.body;
+
+        // Calculate totals
+        let subtotal = 0;
+        items.forEach(item => {
+            const itemTotal = (item.quantity || 1) * (item.price || 0);
+            subtotal += itemTotal;
+        });
+
+        const total = subtotal;
+
+        // Check if billing exists
+        const [existingRows] = await db.query(
+            `SELECT id FROM sunday_clinic_billings WHERE mr_id = ?`,
+            [normalizedMrId]
+        );
+
+        let billingId;
+
+        if (existingRows.length > 0) {
+            // Update existing billing
+            billingId = existingRows[0].id;
+            await db.query(
+                `UPDATE sunday_clinic_billings
+                 SET subtotal = ?, total = ?, status = ?, billing_data = ?, updated_at = NOW()
+                 WHERE id = ?`,
+                [subtotal, total, status, JSON.stringify(billingData), billingId]
+            );
+
+            // Delete existing items
+            await db.query(
+                `DELETE FROM sunday_clinic_billing_items WHERE billing_id = ?`,
+                [billingId]
+            );
+        } else {
+            // Create new billing
+            const [result] = await db.query(
+                `INSERT INTO sunday_clinic_billings (mr_id, patient_id, subtotal, total, status, billing_data, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+                [normalizedMrId, recordRow.patient_id, subtotal, total, status, JSON.stringify(billingData)]
+            );
+            billingId = result.insertId;
+        }
+
+        // Insert items
+        for (const item of items) {
+            await db.query(
+                `INSERT INTO sunday_clinic_billing_items
+                 (billing_id, item_type, item_code, item_name, quantity, price, total, item_data)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    billingId,
+                    item.item_type || 'tindakan',
+                    item.item_code || null,
+                    item.item_name,
+                    item.quantity || 1,
+                    item.price || 0,
+                    (item.quantity || 1) * (item.price || 0),
+                    JSON.stringify(item.item_data || {})
+                ]
+            );
+        }
+
+        res.json({
+            success: true,
+            message: 'Billing berhasil disimpan',
+            data: {
+                billingId,
+                mrId: normalizedMrId
+            }
+        });
+    } catch (error) {
+        logger.error('Failed to save Sunday clinic billing', {
+            mrId: normalizedMrId,
+            error: error.message
+        });
+        next(error);
+    }
+});
+
+// Confirm billing (doctor action)
+router.post('/billing/:mrId/confirm', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+
+    try {
+        const [result] = await db.query(
+            `UPDATE sunday_clinic_billings
+             SET status = 'confirmed', confirmed_at = NOW(), confirmed_by = ?
+             WHERE mr_id = ?`,
+            [req.user.email || req.user.id, normalizedMrId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Billing tidak ditemukan'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Billing berhasil dikonfirmasi'
+        });
+    } catch (error) {
+        logger.error('Failed to confirm billing', { error: error.message });
+        next(error);
+    }
+});
+
+// Print invoice (cashier action)
+router.post('/billing/:mrId/print', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+
+    try {
+        await db.query(
+            `UPDATE sunday_clinic_billings
+             SET printed_at = NOW(), printed_by = ?
+             WHERE mr_id = ?`,
+            [req.user.email || req.user.id, normalizedMrId]
+        );
+
+        res.json({
+            success: true,
+            message: 'Invoice berhasil dicetak',
+            cashierName: req.user.email || req.user.id
+        });
+    } catch (error) {
+        logger.error('Failed to record print', { error: error.message });
         next(error);
     }
 });

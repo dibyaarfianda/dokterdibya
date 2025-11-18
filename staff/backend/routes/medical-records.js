@@ -13,7 +13,7 @@ async function ensureMedicalRecordsTable() {
             visit_id INT NULL,
             doctor_id INT,
             doctor_name VARCHAR(255),
-            record_type ENUM('anamnesa', 'physical_exam', 'usg', 'lab', 'complete') NOT NULL,
+            record_type ENUM('anamnesa', 'physical_exam', 'usg', 'lab', 'diagnosis', 'planning', 'complete') NOT NULL,
             record_data JSON NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -30,20 +30,34 @@ async function ensureMedicalRecordsTable() {
         
         // Check if visit_id column exists, if not add it
         const [columns] = await db.query(`
-            SELECT COLUMN_NAME 
-            FROM INFORMATION_SCHEMA.COLUMNS 
-            WHERE TABLE_SCHEMA = DATABASE() 
-            AND TABLE_NAME = 'medical_records' 
+            SELECT COLUMN_NAME
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'medical_records'
             AND COLUMN_NAME = 'visit_id'
         `);
-        
+
         if (columns.length === 0) {
             await db.query(`
-                ALTER TABLE medical_records 
+                ALTER TABLE medical_records
                 ADD COLUMN visit_id INT NULL AFTER patient_id,
                 ADD INDEX idx_visit_id (visit_id)
             `);
             logger.info('Added visit_id column to medical_records table');
+        }
+
+        // Update record_type ENUM to include diagnosis and planning
+        try {
+            await db.query(`
+                ALTER TABLE medical_records
+                MODIFY COLUMN record_type ENUM('anamnesa', 'physical_exam', 'usg', 'lab', 'diagnosis', 'planning', 'complete') NOT NULL
+            `);
+            logger.info('Updated record_type ENUM to include diagnosis and planning');
+        } catch (enumError) {
+            // Ignore if already updated
+            if (!enumError.message.includes('Duplicate')) {
+                logger.warn('Could not update record_type ENUM:', enumError.message);
+            }
         }
         
         // Try to add foreign key constraint if visits table exists
@@ -116,9 +130,14 @@ router.post('/api/medical-records', verifyToken, async (req, res) => {
         const finalDoctorId = doctorId || (req.user ? req.user.id : null);
         const finalDoctorName = doctorName || (req.user ? (req.user.name || req.user.email) : 'Unknown');
         
+        // Convert ISO timestamp to MySQL datetime format
+        const mysqlTimestamp = timestamp
+            ? new Date(timestamp).toISOString().slice(0, 19).replace('T', ' ')
+            : new Date().toISOString().slice(0, 19).replace('T', ' ');
+
         // Insert into database
         const [result] = await db.query(
-            `INSERT INTO medical_records (patient_id, visit_id, doctor_id, doctor_name, record_type, record_data, created_at) 
+            `INSERT INTO medical_records (patient_id, visit_id, doctor_id, doctor_name, record_type, record_data, created_at)
              VALUES (?, ?, ?, ?, ?, ?, ?)`,
             [
                 patientId,
@@ -127,7 +146,7 @@ router.post('/api/medical-records', verifyToken, async (req, res) => {
                 finalDoctorName,
                 recordType,
                 JSON.stringify(recordData),
-                timestamp || new Date().toISOString()
+                mysqlTimestamp
             ]
         );
         
