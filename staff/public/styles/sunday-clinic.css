@@ -1,3 +1,6 @@
+/* Import Poppins font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap');
+
 :root {
     --sc-bg: #f4f6f9;
     --sc-border: #d2d6dc;
@@ -8,6 +11,26 @@
 
 body {
     background-color: var(--sc-bg);
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+
+/* Apply Poppins to all content areas */
+#sunday-clinic-root,
+.sc-section,
+.sc-card,
+.content-wrapper,
+.form-control,
+textarea,
+input,
+select,
+button,
+.btn,
+.table,
+.modal-content,
+p,
+div,
+span {
+    font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
 }
 
 #sunday-clinic-root {
@@ -184,12 +207,14 @@ body {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.95rem;
+    font-family: 'Poppins', sans-serif !important;
 }
 
 .sc-info-table th,
 .sc-info-table td {
     padding: 0.55rem 0.35rem;
     vertical-align: top;
+    font-family: 'Poppins', sans-serif !important;
 }
 
 .sc-info-table th {
@@ -202,6 +227,7 @@ body {
 
 .sc-info-table td {
     color: #1f2937;
+    font-weight: 400;
 }
 
 .sc-info-table tbody tr + tr {
@@ -588,8 +614,9 @@ body {
 textarea.form-control,
 textarea,
 .form-control {
-    font-size: 15px !important;
-    font-weight: 500 !important;
+    font-family: 'Poppins', sans-serif !important;
+    font-size: 14.5px !important;
+    font-weight: 400 !important;
     line-height: 1.6 !important;
     color: #1f2937 !important;
 }
@@ -598,10 +625,11 @@ textarea,
 #planning-tindakan,
 #planning-terapi,
 #planning-rencana {
+    font-family: 'Poppins', sans-serif !important;
     font-size: 15px !important;
-    font-weight: 600 !important;
-    line-height: 1.65 !important;
+    font-weight: 500 !important;
+    line-height: 1.7 !important;
     color: #111827 !important;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif !important;
+    letter-spacing: 0.01em !important;
 }
 

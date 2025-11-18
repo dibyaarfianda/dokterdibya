@@ -1827,6 +1827,9 @@ function showTindakanModal(tindakanList) {
     // Clear existing content
     tbody.innerHTML = '';
 
+    // Store tindakan list for later use
+    window.availableTindakanList = tindakanList;
+
     // Populate table
     tindakanList.forEach(item => {
         const row = document.createElement('tr');
@@ -1835,7 +1838,7 @@ function showTindakanModal(tindakanList) {
             <td>${escapeHtml(item.name || '')}</td>
             <td>${escapeHtml(item.category || '')}</td>
             <td>
-                <button type="button" class="btn btn-sm btn-success" onclick="addTindakan('${escapeHtml(item.name || '')}')">
+                <button type="button" class="btn btn-sm btn-success" onclick="addTindakan('${escapeHtml(item.name || '')}', '${escapeHtml(item.code || '')}', ${item.id || 'null'})">
                     <i class="fas fa-plus"></i> Tambah
                 </button>
             </td>
@@ -1925,11 +1928,11 @@ function showBatchCaraPakaiModal(selectedObat) {
                     <div class="form-row">
                         <div class="form-group col-md-4">
                             <label class="font-weight-bold">Jumlah:</label>
-                            <input type="number" class="form-control" id="jumlah-${index}" min="1" value="1" placeholder="Jumlah">
+                            <input type="number" class="form-control draft-terapi-field" id="jumlah-${index}" min="1" value="1" placeholder="Jumlah">
                         </div>
                         <div class="form-group col-md-4">
                             <label class="font-weight-bold">Satuan:</label>
-                            <select class="form-control" id="satuan-${index}">
+                            <select class="form-control draft-terapi-field" id="satuan-${index}">
                                 <option value="tablet">tablet</option>
                                 <option value="kapsul">kapsul</option>
                                 <option value="box">box</option>
@@ -1942,7 +1945,7 @@ function showBatchCaraPakaiModal(selectedObat) {
                         </div>
                         <div class="form-group col-md-4">
                             <label class="font-weight-bold">Cara Pakai:</label>
-                            <input type="text" class="form-control" id="carapakai-${index}" placeholder="3x1 sebelum makan">
+                            <input type="text" class="form-control draft-terapi-field" id="carapakai-${index}" placeholder="3x1 sebelum makan">
                         </div>
                     </div>
                     <small class="form-text text-muted">
@@ -1958,8 +1961,42 @@ function showBatchCaraPakaiModal(selectedObat) {
     // Store selected obat data for later use
     window.selectedObatForPrescription = selectedObat;
 
+    // Add event listeners to update draft on field changes
+    setTimeout(() => {
+        document.querySelectorAll('.draft-terapi-field').forEach(field => {
+            field.addEventListener('input', updateDraftTerapiPreview);
+            field.addEventListener('change', updateDraftTerapiPreview);
+        });
+    }, 100);
+
     // Show modal
     $('#cara-pakai-modal').modal('show');
+}
+
+// Update draft terapi preview in sessionStorage as user types
+function updateDraftTerapiPreview() {
+    const selectedObat = window.selectedObatForPrescription;
+    if (!selectedObat || selectedObat.length === 0) return;
+
+    const structuredItems = [];
+    selectedObat.forEach((obat, index) => {
+        const jumlahValue = document.getElementById(`jumlah-${index}`)?.value || '1';
+        const jumlah = parseInt(jumlahValue, 10);
+        const satuan = document.getElementById(`satuan-${index}`)?.value || 'tablet';
+        const caraPakai = document.getElementById(`carapakai-${index}`)?.value.trim() || '';
+
+        structuredItems.push({
+            obatId: obat.id || null,
+            name: obat.name,
+            quantity: isNaN(jumlah) ? 1 : jumlah,
+            unit: satuan,
+            caraPakai,
+            latinSig: convertToLatinSig(caraPakai)
+        });
+    });
+
+    // Store draft for preview
+    storeDraftTerapi(structuredItems);
 }
 
 function backToObatSelection() {
@@ -1967,7 +2004,7 @@ function backToObatSelection() {
     $('#terapi-modal').modal('show');
 }
 
-function addBatchTerapi() {
+async function addBatchTerapi() {
     const selectedObat = window.selectedObatForPrescription;
     if (!selectedObat || selectedObat.length === 0) return;
 
@@ -1975,15 +2012,17 @@ function addBatchTerapi() {
     if (!textarea) return;
 
     let allPrescriptions = [];
+    const structuredItems = [];
 
     // Collect all prescriptions
     selectedObat.forEach((obat, index) => {
-        const jumlah = document.getElementById(`jumlah-${index}`)?.value || '1';
+        const jumlahValue = document.getElementById(`jumlah-${index}`)?.value || '1';
+        const jumlah = parseInt(jumlahValue, 10);
         const satuan = document.getElementById(`satuan-${index}`)?.value || 'tablet';
         const caraPakai = document.getElementById(`carapakai-${index}`)?.value.trim() || '';
 
         // Convert to Latin format
-        const romanQuantity = toRoman(parseInt(jumlah));
+        const romanQuantity = toRoman(isNaN(jumlah) ? 1 : jumlah);
         const latinSig = convertToLatinSig(caraPakai);
 
         // Format: R/ [Drug] [Unit] No. [Roman] Sig. [Latin]
@@ -1993,7 +2032,22 @@ function addBatchTerapi() {
         }
 
         allPrescriptions.push(prescription);
+
+        structuredItems.push({
+            obatId: obat.id || null,
+            name: obat.name,
+            quantity: isNaN(jumlah) ? 1 : jumlah,
+            unit: satuan,
+            caraPakai,
+            latinSig
+        });
     });
+
+    // Draft is already stored via updateDraftTerapiPreview, now save to database
+    const saved = await saveStructuredTerapi(structuredItems);
+    if (!saved) {
+        return;
+    }
 
     // Add all prescriptions to textarea
     const currentValue = textarea.value.trim();
@@ -2005,29 +2059,118 @@ function addBatchTerapi() {
         textarea.value = newEntries;
     }
 
+    // Clear draft AFTER adding to textarea (items are now saved to both database and Planning)
+    clearDraftTerapi();
+
     // Hide modal
     $('#cara-pakai-modal').modal('hide');
 
-    showSuccess(`${selectedObat.length} resep obat ditambahkan`);
+    showSuccess(`${selectedObat.length} resep obat disimpan ke Planning dan Tagihan`);
 
     // Clear stored data
     window.selectedObatForPrescription = null;
+
+    // Refresh tagihan section if currently active to show saved items without draft overlay
+    if (typeof activeSection !== 'undefined' && activeSection === 'tagihan') {
+        // Force complete re-render
+        const content = document.getElementById('content');
+        if (content && typeof renderTagihan === 'function') {
+            content.innerHTML = '';
+            const sectionElement = await renderTagihan();
+            content.appendChild(sectionElement);
+        }
+    }
 }
 
-function addTindakan(tindakanName) {
+async function saveStructuredTerapi(prescriptions) {
+    try {
+        const token = await getToken();
+        if (!token) {
+            return false;
+        }
+
+        const response = await fetch(`/api/sunday-clinic/billing/${routeMrSlug}/obat`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ items: prescriptions })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Gagal menyimpan terapi');
+        }
+
+        return true;
+    } catch (error) {
+        console.error('Error saving structured terapi:', error);
+        if (typeof showToastNotification === 'function') {
+            showToastNotification('Terapi', 'Gagal menyimpan terapi: ' + error.message, 'warning');
+        } else {
+            alert('Gagal menyimpan terapi: ' + error.message);
+        }
+        return false;
+    }
+}
+
+async function addTindakan(tindakanName, tindakanCode, tindakanId) {
     const textarea = document.getElementById('planning-tindakan');
     if (!textarea) return;
 
-    const currentValue = textarea.value.trim();
-    const newEntry = `- ${tindakanName}`;
+    try {
+        // Save to billing database first
+        const token = await getToken();
+        if (token) {
+            const response = await fetch(`/api/sunday-clinic/billing/${routeMrSlug}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    items: [{
+                        item_type: 'tindakan',
+                        item_code: tindakanCode || null,
+                        item_name: tindakanName,
+                        quantity: 1
+                    }],
+                    status: 'draft'
+                })
+            });
 
-    if (currentValue) {
-        textarea.value = currentValue + '\n' + newEntry;
-    } else {
-        textarea.value = newEntry;
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Gagal menyimpan tindakan ke billing');
+            }
+        }
+
+        // Add to textarea
+        const currentValue = textarea.value.trim();
+        const newEntry = `- ${tindakanName}`;
+
+        if (currentValue) {
+            textarea.value = currentValue + '\n' + newEntry;
+        } else {
+            textarea.value = newEntry;
+        }
+
+        showSuccess(`Tindakan "${tindakanName}" ditambahkan ke Planning dan Tagihan`);
+
+        // Refresh tagihan section if currently active
+        if (typeof activeSection !== 'undefined' && activeSection === 'tagihan') {
+            const content = document.getElementById('content');
+            if (content && typeof renderTagihan === 'function') {
+                content.innerHTML = '';
+                const sectionElement = await renderTagihan();
+                content.appendChild(sectionElement);
+            }
+        }
+    } catch (error) {
+        console.error('Error adding tindakan:', error);
+        showError('Gagal menambahkan tindakan: ' + error.message);
     }
-
-    showSuccess(`Tindakan "${tindakanName}" ditambahkan`);
 }
 
 
@@ -2136,11 +2279,45 @@ function convertToLatinSig(caraPakai) {
     return result;
 }
 
+// Draft terapi management functions
+function storeDraftTerapi(items) {
+    try {
+        const key = `draft_terapi_${routeMrSlug}`;
+        sessionStorage.setItem(key, JSON.stringify(items));
+    } catch (error) {
+        console.error('Error storing draft terapi:', error);
+    }
+}
+
+function getDraftTerapi() {
+    try {
+        const key = `draft_terapi_${routeMrSlug}`;
+        const data = sessionStorage.getItem(key);
+        return data ? JSON.parse(data) : null;
+    } catch (error) {
+        console.error('Error getting draft terapi:', error);
+        return null;
+    }
+}
+
+function clearDraftTerapi() {
+    try {
+        const key = `draft_terapi_${routeMrSlug}`;
+        sessionStorage.removeItem(key);
+    } catch (error) {
+        console.error('Error clearing draft terapi:', error);
+    }
+}
+
 // Make functions globally accessible
 window.addTindakan = addTindakan;
 window.proceedToCaraPakai = proceedToCaraPakai;
 window.backToObatSelection = backToObatSelection;
 window.addBatchTerapi = addBatchTerapi;
+window.updateDraftTerapiPreview = updateDraftTerapiPreview;
+window.storeDraftTerapi = storeDraftTerapi;
+window.getDraftTerapi = getDraftTerapi;
+window.clearDraftTerapi = clearDraftTerapi;
 
 // USG Helper Functions
 function switchTrimester(trimester) {
@@ -3237,16 +3414,26 @@ function renderPlanning() {
         <div class="mb-3">
             <label class="font-weight-bold">Tindakan</label>
             <textarea class="form-control" id="planning-tindakan" rows="4" placeholder="Klik tombol 'Input Tindakan' untuk memilih dari daftar...">${escapeHtml(data.tindakan || '')}</textarea>
-            <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="btn-input-tindakan">
-                <i class="fas fa-plus-circle mr-1"></i>Input Tindakan
-            </button>
+            <div class="mt-2">
+                <button type="button" class="btn btn-sm btn-outline-primary mr-2" id="btn-input-tindakan">
+                    <i class="fas fa-plus-circle mr-1"></i>Input Tindakan
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="btn-reset-tindakan">
+                    <i class="fas fa-trash mr-1"></i>Hapus Semua
+                </button>
+            </div>
         </div>
         <div class="mb-3">
             <label class="font-weight-bold">Terapi</label>
             <textarea class="form-control" id="planning-terapi" rows="4" placeholder="Klik tombol 'Input Terapi' untuk memilih obat...">${escapeHtml(data.terapi || '')}</textarea>
-            <button type="button" class="btn btn-sm btn-outline-primary mt-2" id="btn-input-terapi">
-                <i class="fas fa-plus-circle mr-1"></i>Input Terapi
-            </button>
+            <div class="mt-2">
+                <button type="button" class="btn btn-sm btn-outline-primary mr-2" id="btn-input-terapi">
+                    <i class="fas fa-plus-circle mr-1"></i>Input Terapi
+                </button>
+                <button type="button" class="btn btn-sm btn-outline-primary" id="btn-reset-terapi">
+                    <i class="fas fa-trash mr-1"></i>Hapus Semua
+                </button>
+            </div>
         </div>
         <div class="mb-3">
             <label class="font-weight-bold">Rencana</label>
@@ -3278,6 +3465,8 @@ function renderPlanning() {
         const savePlanningBtn = document.getElementById('save-planning');
         const inputTindakanBtn = document.getElementById('btn-input-tindakan');
         const inputTerapiBtn = document.getElementById('btn-input-terapi');
+        const resetTindakanBtn = document.getElementById('btn-reset-tindakan');
+        const resetTerapiBtn = document.getElementById('btn-reset-terapi');
 
         if (savePlanningBtn) {
             savePlanningBtn.addEventListener('click', savePlanning);
@@ -3288,9 +3477,124 @@ function renderPlanning() {
         if (inputTerapiBtn) {
             inputTerapiBtn.addEventListener('click', openTerapiModal);
         }
+        if (resetTindakanBtn) {
+            resetTindakanBtn.addEventListener('click', resetTindakan);
+        }
+        if (resetTerapiBtn) {
+            resetTerapiBtn.addEventListener('click', resetTerapi);
+        }
     }, 0);
 
     return section;
+}
+
+// Reset tindakan (clear textarea and delete from database)
+async function resetTindakan() {
+    if (!confirm('Hapus semua tindakan dari Planning dan Tagihan?\n\nTindakan ini akan menghapus semua item tindakan dari billing.')) {
+        return;
+    }
+
+    try {
+        const textarea = document.getElementById('planning-tindakan');
+        if (textarea) {
+            textarea.value = '';
+        }
+
+        // Delete tindakan items from billing database
+        const token = await getToken();
+        if (token) {
+            const response = await fetch(`/api/sunday-clinic/billing/${routeMrSlug}/items/tindakan`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Gagal menghapus tindakan dari billing');
+            }
+
+            const result = await response.json();
+            showSuccess(result.message || 'Tindakan berhasil dihapus');
+
+            // Refresh tagihan section if currently active
+            if (typeof activeSection !== 'undefined' && activeSection === 'tagihan') {
+                if (typeof renderTagihan === 'function') {
+                    const content = document.getElementById('content');
+                    if (content) {
+                        content.innerHTML = '';
+                        const sectionElement = await renderTagihan();
+                        content.appendChild(sectionElement);
+                    }
+                } else if (typeof handleSectionChange === 'function') {
+                    handleSectionChange('tagihan', { pushHistory: false });
+                }
+            }
+        } else {
+            showSuccess('Tindakan dihapus dari textarea');
+        }
+    } catch (error) {
+        console.error('Error resetting tindakan:', error);
+        showError('Error: ' + error.message);
+    }
+}
+
+// Reset terapi (clear textarea and delete from database)
+async function resetTerapi() {
+    if (!confirm('Hapus semua terapi dari Planning dan Tagihan?\n\nTindakan ini akan menghapus semua obat dari billing.')) {
+        return;
+    }
+
+    try {
+        const textarea = document.getElementById('planning-terapi');
+        if (textarea) {
+            textarea.value = '';
+        }
+
+        // Clear draft terapi from sessionStorage
+        clearDraftTerapi();
+
+        // Delete obat items from billing database
+        const token = await getToken();
+        if (token) {
+            const response = await fetch(`/api/sunday-clinic/billing/${routeMrSlug}/items/obat`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Gagal menghapus terapi dari billing');
+            }
+
+            const result = await response.json();
+            showSuccess(result.message || 'Terapi berhasil dihapus');
+
+            // Refresh tagihan section if currently active
+            if (typeof activeSection !== 'undefined' && activeSection === 'tagihan') {
+                if (typeof renderTagihan === 'function') {
+                    const content = document.getElementById('content');
+                    if (content) {
+                        content.innerHTML = '';
+                        const sectionElement = await renderTagihan();
+                        content.appendChild(sectionElement);
+                    }
+                } else if (typeof handleSectionChange === 'function') {
+                    handleSectionChange('tagihan', { pushHistory: false });
+                }
+            }
+        } else {
+            showSuccess('Terapi dihapus dari textarea');
+        }
+    } catch (error) {
+        console.error('Error resetting terapi:', error);
+        showError('Error: ' + error.message);
+    }
 }
 
 // ==================== BILLING / TAGIHAN FUNCTIONS ====================
@@ -3497,6 +3801,9 @@ async function renderTagihan() {
         try {
             let billing = await loadBilling();
 
+            // Check for draft terapi in sessionStorage
+            const draftTerapi = getDraftTerapi();
+
             // If no billing exists, generate from planning
             if (!billing) {
                 const items = await generateBillingItemsFromPlanning();
@@ -3515,6 +3822,13 @@ async function renderTagihan() {
                         billing = await loadBilling();
                     }
                 }
+            }
+
+            // Merge draft terapi items with billing if they exist
+            if (draftTerapi && draftTerapi.length > 0) {
+                billing = billing || { items: [], status: 'draft' };
+                billing.hasDraftItems = true;
+                billing.draftTerapi = draftTerapi;
             }
 
             renderTagihanContent(section, billing);
@@ -3545,8 +3859,12 @@ function renderTagihanContent(container, billing) {
     const hasPendingChanges = billing?.pending_changes || false;
     const changeRequests = billing?.change_requests || [];
     const lastModifiedBy = billing?.last_modified_by;
+    const hasDraftItems = billing?.hasDraftItems || false;
+    const draftTerapi = billing?.draftTerapi || [];
 
     let subtotal = 0;
+
+    // Render saved items
     const itemsHtml = items.map(item => {
         const itemTotal = (item.quantity || 1) * (item.price || 0);
         subtotal += itemTotal;
@@ -3559,6 +3877,31 @@ function renderTagihanContent(container, billing) {
             </tr>
         `;
     }).join('');
+
+    // Render draft terapi items with visual indicator
+    let draftItemsHtml = '';
+    let draftSubtotal = 0;
+    if (hasDraftItems && draftTerapi.length > 0) {
+        draftItemsHtml = draftTerapi.map(item => {
+            // We need to fetch price from database, for now use placeholder
+            // In real scenario, we'd need to look up prices
+            const price = 0; // Placeholder - will be calculated on save
+            const itemTotal = (item.quantity || 1) * price;
+            draftSubtotal += itemTotal;
+            return `
+                <tr class="table-info">
+                    <td>
+                        <i class="fas fa-clock mr-2 text-info" title="Belum disimpan"></i>
+                        ${escapeHtml(item.name)}
+                        <small class="text-muted d-block">${escapeHtml(item.caraPakai || '')}</small>
+                    </td>
+                    <td class="text-center">${item.quantity || 1} ${escapeHtml(item.unit || 'tablet')}</td>
+                    <td class="text-right text-muted"><em>Akan dihitung</em></td>
+                    <td class="text-right text-muted"><em>Akan dihitung</em></td>
+                </tr>
+            `;
+        }).join('');
+    }
 
     const total = subtotal;
 
@@ -3618,6 +3961,14 @@ function renderTagihanContent(container, billing) {
             </div>
         </div>
 
+        ${hasDraftItems && draftTerapi.length > 0 ? `
+            <div class="alert alert-info mb-3">
+                <i class="fas fa-info-circle mr-2"></i>
+                <strong>Preview Draft:</strong> Terdapat ${draftTerapi.length} item obat yang belum disimpan di Planning.
+                Harga akan dihitung setelah Planning disimpan.
+            </div>
+        ` : ''}
+
         <table class="table table-bordered">
             <thead class="thead-light">
                 <tr>
@@ -3629,6 +3980,7 @@ function renderTagihanContent(container, billing) {
             </thead>
             <tbody>
                 ${itemsHtml}
+                ${draftItemsHtml}
                 <tr class="table-active font-weight-bold">
                     <td colspan="3" class="text-right">GRAND TOTAL</td>
                     <td class="text-right">${formatRupiah(total)}</td>
@@ -3819,15 +4171,6 @@ async function confirmBilling() {
 // Print medication labels (etiket) in Bahasa
 async function printEtiket(items) {
     try {
-        const token = await getToken();
-        if (!token) return;
-
-        // Record print action
-        await fetch(`/api/sunday-clinic/billing/${routeMrSlug}/print`, {
-            method: 'POST',
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-
         // Filter only obat items
         const obatItems = items.filter(item => item.item_type === 'obat');
 
@@ -3837,12 +4180,28 @@ async function printEtiket(items) {
         }
 
         const patientName = state.derived?.patientName || 'Pasien';
-
-        // Create print window
         const printWindow = window.open('', '_blank', 'width=800,height=600');
+
         if (!printWindow) {
             showError('Popup diblokir. Mohon izinkan popup untuk mencetak.');
             return;
+        }
+
+        const token = await getToken();
+        if (!token) {
+            printWindow.close();
+            return;
+        }
+
+        // Record print action
+        const recordResponse = await fetch(`/api/sunday-clinic/billing/${routeMrSlug}/print`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!recordResponse.ok) {
+            printWindow.close();
+            throw new Error('Gagal mencatat aktivitas cetak');
         }
 
         // Convert Latin sig to Bahasa

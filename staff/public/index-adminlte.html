@@ -11,6 +11,11 @@
     <!-- Error Handler (load first) -->
     <script src="scripts/error-handler.js"></script>
 
+    <!-- Poppins Font -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
     <!-- Font & Icons (Font Awesome 5) -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <!-- AdminLTE 3 CSS -->
@@ -18,6 +23,30 @@
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
     <style>
+        /* Apply Poppins font globally */
+        body, .sidebar, .main-sidebar, .content-wrapper, .card, .btn, .nav-link, .brand-text, h1, h2, h3, h4, h5, h6, p, span, div, a, input, select, textarea, table, th, td, .small-box, .info-box {
+            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+        }
+
+        /* Smaller sidebar navigation font */
+        .sidebar .nav-sidebar .nav-link {
+            font-size: 13px !important;
+        }
+
+        .sidebar .nav-sidebar .nav-link .nav-icon {
+            font-size: 14px !important;
+        }
+
+        /* Tighter vertical spacing for sidebar menu items */
+        .sidebar .nav-sidebar .nav-item {
+            margin-bottom: 0 !important;
+        }
+
+        .sidebar .nav-sidebar .nav-link {
+            padding-top: 0.4rem !important;
+            padding-bottom: 0.4rem !important;
+        }
+
         /* Sidebar color and width */
         .main-sidebar {
             background-color: #FAFAFA !important;
@@ -719,38 +748,7 @@
                             <p>Sunday Clinic Viewer</p>
                         </a>
                     </li>
-                    <li class="nav-item" id="nav-patient">
-                        <a href="#" class="nav-link" onclick="showPatientPage(); return false;">
-                            <i class="nav-icon fas fa-user-injured"></i>
-                            <p>Data Pasien</p>
-                        </a>
-                    </li>
 
-                    <li class="nav-item" id="nav-tindakan">
-                        <a href="#" class="nav-link" onclick="showTindakanPage(); return false;">
-                            <i class="nav-icon fas fa-notes-medical"></i>
-                            <p>Tindakan</p>
-                        </a>
-                    </li>
-                    <li class="nav-item" id="nav-obat">
-                        <a href="#" class="nav-link" onclick="showObatPage(); return false;">
-                            <i class="nav-icon fas fa-pills"></i>
-                            <p>Obat</p>
-                        </a>
-                    </li>
-                    <li class="nav-item" id="nav-cashier">
-                        <a href="#" class="nav-link" onclick="showCashierPage(); return false;">
-                            <i class="nav-icon fas fa-file-invoice-dollar"></i>
-                            <p>Rincian Tagihan</p>
-                        </a>
-                    </li>
-                    <li class="nav-item" id="nav-appointments">
-                        <a href="#" class="nav-link" onclick="showAppointmentsPage(); return false;">
-                            <i class="nav-icon fas fa-calendar-check"></i>
-                            <p>Appointment</p>
-                        </a>
-                    </li>
-                    
                     <li class="nav-item" id="nav-announcements">
                         <a href="kelola-announcement.html" class="nav-link">
                             <i class="nav-icon fas fa-bullhorn"></i>
@@ -2412,7 +2410,94 @@
                 <div id="kelola-obat-management-page" class="d-none"></div>
 
                 <!-- EMAIL SETTINGS PAGE -->
-                <div id="email-settings-page" class="d-none"></div>
+                <div id="email-settings-page" class="d-none">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-envelope-open-text mr-2"></i>Pengaturan Template Email</h3>
+                                </div>
+                                <div class="card-body">
+                                        <form id="email-settings-form">
+                                            <!-- Sender Name -->
+                                            <div class="form-group">
+                                                <label for="sender-name">Nama Pengirim</label>
+                                                <input type="text" class="form-control" id="sender-name" placeholder="Contoh: Klinik Dr. Dibya">
+                                                <small class="form-text text-muted">Nama yang akan muncul sebagai pengirim di email.</small>
+                                            </div>
+
+                                            <hr>
+
+                                            <!-- Email Verification Template -->
+                                            <h4>Template Verifikasi Email</h4>
+                                            <div class="form-group">
+                                                <label for="verification-subject">Subjek Email</label>
+                                                <input type="text" class="form-control" id="verification-subject" value="Verifikasi Alamat Email Anda">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="verification-body">Isi Email</label>
+                                                <textarea class="form-control" id="verification-body" rows="6">Halo {user_name},
+
+Terima kasih telah mendaftar. Silakan klik tautan di bawah ini untuk memverifikasi alamat email Anda:
+{verification_link}
+
+Jika Anda tidak meminta verifikasi ini, Anda bisa mengabaikan email ini.
+
+Terima kasih,
+Tim {clinic_name}</textarea>
+                                                <small class="form-text text-muted">Gunakan placeholder: <code>{user_name}</code>, <code>{verification_code}</code>, <code>{verification_link}</code>, <code>{clinic_name}</code>.</small>
+                                            </div>
+
+                                            <hr>
+
+                                            <!-- Password Reset Template -->
+                                            <h4>Template Reset Password</h4>
+                                            <div class="form-group">
+                                                <label for="reset-subject">Subjek Email</label>
+                                                <input type="text" class="form-control" id="reset-subject" value="Permintaan Reset Password">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="reset-body">Isi Email</label>
+                                                <textarea class="form-control" id="reset-body" rows="6">Halo {user_name},
+
+Kami menerima permintaan untuk mereset password akun Anda. Klik tautan di bawah ini untuk melanjutkan:
+{reset_link}
+
+Tautan ini akan kedaluwarsa dalam 1 jam. Jika Anda tidak meminta reset password, silakan abaikan email ini.
+
+Terima kasih,
+Tim {clinic_name}</textarea>
+                                                <small class="form-text text-muted">Gunakan placeholder: <code>{user_name}</code>, <code>{reset_code}</code>, <code>{reset_link}</code>, <code>{clinic_name}</code>.</small>
+                                            </div>
+
+                                            <hr>
+
+                                            <!-- Announcement Template -->
+                                            <h4>Template Pengumuman</h4>
+                                            <div class="form-group">
+                                                <label for="announcement-subject">Subjek Email</label>
+                                                <input type="text" class="form-control" id="announcement-subject" value="Pengumuman dari {clinic_name}">
+                                            </div>
+                                            <div class="form-group">
+                                                <label for="announcement-body">Isi Email</label>
+                                                <textarea class="form-control" id="announcement-body" rows="6">Halo {user_name},
+
+{announcement_content}
+
+Terima kasih,
+Tim {clinic_name}</textarea>
+                                                <small class="form-text text-muted">Gunakan placeholder: <code>{user_name}</code>, <code>{announcement_content}</code>, <code>{clinic_name}</code>.</small>
+                                            </div>
+
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="fas fa-save mr-2"></i>Simpan Pengaturan
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                </div>
 
                 <!-- FINANCE ANALYSIS PAGE -->
                 <div id="finance-analysis-page" class="d-none">
