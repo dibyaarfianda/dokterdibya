@@ -15,6 +15,13 @@ const ENCRYPTION_KEY = process.env.INTAKE_ENCRYPTION_KEY || '';
 const ENCRYPTION_KEY_ID = process.env.INTAKE_ENCRYPTION_KEY_ID || 'default';
 let encryptionWarningLogged = false;
 
+// Helper function to get GMT+7 timestamp
+function getGMT7Timestamp() {
+    const now = new Date();
+    const gmt7Time = new Date(now.getTime() + (7 * 60 * 60 * 1000));
+    return gmt7Time.toISOString();
+}
+
 async function ensureDirectory() {
     await fs.mkdir(STORAGE_DIR, { recursive: true });
 }
@@ -183,12 +190,12 @@ async function loadRecordById(submissionId) {
 }
 
 /**
- * Convert ISO date to MySQL datetime format
+ * Convert ISO date to MySQL datetime format (preserve timezone)
  */
 function toMySQLDatetime(isoString) {
     if (!isoString) return null;
-    const date = new Date(isoString);
-    return date.toISOString().slice(0, 19).replace('T', ' ');
+    // Preserve the timezone by using the string directly instead of converting to UTC
+    return isoString.slice(0, 19).replace('T', ' ');
 }
 
 /**
@@ -361,7 +368,7 @@ router.post('/api/patient-intake', async (req, res, next) => {
         
         const submissionId = `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`;
         const status = 'verified';
-        const timestamp = new Date().toISOString();
+        const timestamp = getGMT7Timestamp();
         const signatureValue = payload.signature?.value || payload.patient_signature || null;
         payload.metadata = payload.metadata || {};
         payload.review = payload.review || {};
@@ -644,7 +651,7 @@ router.put('/api/patient-intake/my-intake', verifyToken, async (req, res, next) 
             return res.status(404).json({ success: false, message: 'Data intake tidak ditemukan' });
         }
 
-        const timestamp = new Date().toISOString();
+        const timestamp = getGMT7Timestamp();
         payload.metadata = payload.metadata || {};
         payload.metadata.updatedAt = timestamp;
 

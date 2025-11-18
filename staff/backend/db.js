@@ -14,7 +14,8 @@ const pool = mysql.createPool({
     keepAliveInitialDelay: 0,
     connectTimeout: 10000,
     acquireTimeout: 10000,
-    timeout: 30000
+    timeout: 30000,
+    timezone: '+07:00' // GMT+7 (Jakarta/Indonesian time)
 });
 
 // Connection health check

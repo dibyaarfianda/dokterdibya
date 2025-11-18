@@ -28,6 +28,15 @@ const pregnanciesTable = document.querySelector('table[data-collection="pregnanc
 // const addLabRowBtn = document.getElementById('add-lab-row');
 const patientSignatureField = document.getElementById('patient_signature');
 let currentStep = 0;
+
+// Generate ISO timestamp in GMT+7 (Jakarta/Indonesian time)
+function getGMT7Timestamp() {
+    const now = new Date();
+    // Get time in GMT+7 by adding 7 hours offset
+    const gmt7Time = new Date(now.getTime() + (7 * 60 * 60 * 1000));
+    // Return ISO string but replace Z with +07:00
+    return gmt7Time.toISOString().replace('Z', '+07:00');
+}
 let saveTimer;
 let currentRiskFlags = [];
 let currentBMICategory = null;
@@ -420,7 +429,7 @@ function saveDraft() {
         const fields = serializeFields();
         const payload = {
             version: 1,
-            updatedAt: new Date().toISOString(),
+            updatedAt: getGMT7Timestamp(),
             step: currentStep,
             fields,
         };
@@ -495,7 +504,7 @@ function buildPayload() {
         : (eddField?.dataset.userEdited === 'true' ? 'manual-entry' : 'user-entered');
     payload.metadata = {
         currentStep: currentStep + 1,
-        deviceTimestamp: new Date().toISOString(),
+        deviceTimestamp: getGMT7Timestamp(),
         bmiValue,
         bmiCategory: currentBMICategory,
         edd: {
