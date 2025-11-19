@@ -233,12 +233,13 @@ function requirePermission(...requiredPermissions) {
         try {
             // Get user's permissions from database
             const db = require('../db');
+
             const [rows] = await db.query(`
-                SELECT DISTINCT p.name 
+                SELECT DISTINCT p.name
                 FROM permissions p
                 INNER JOIN role_permissions rp ON p.id = rp.permission_id
                 INNER JOIN users u ON u.role_id = rp.role_id
-                WHERE u.id = ?
+                WHERE u.new_id = ?
             `, [req.user.id]);
 
             const userPermissions = rows.map(row => row.name);
