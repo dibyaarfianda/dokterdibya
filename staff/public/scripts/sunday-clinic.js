@@ -121,6 +121,13 @@ const state = {
     derived: null
 };
 
+const currentStaffIdentity = {
+    id: null,
+    name: null
+};
+
+const RECORD_CAPITALIZATION_SKIP_KEYS = new Set(['doctorName', 'doctor_id', 'doctorId', 'doctor_name']);
+
 const directoryState = {
     loading: false,
     patients: [],
@@ -375,9 +382,10 @@ function renderDirectoryPatients() {
         metaParts.push(`${totalVisits} kunjungan`);
         const metaHtml = metaParts.map((part) => `<span>${escapeHtml(part)}</span>`).join('');
         const isActive = directoryState.selectedPatientId === patient.patientId;
+        const displayName = patient.fullName ? titleCaseWords(patient.fullName) : patient.patientId;
         return `
             <button type="button" class="sc-directory-patient${isActive ? ' is-active' : ''}" data-patient-id="${escapeHtml(patient.patientId)}" role="option" aria-selected="${isActive}">
-                <span class="sc-directory-patient-name">${escapeHtml(patient.fullName || patient.patientId)}</span>
+                <span class="sc-directory-patient-name">${escapeHtml(displayName)}</span>
                 <div class="sc-directory-patient-meta">${metaHtml}</div>
             </button>
         `;
@@ -427,8 +435,10 @@ function renderDirectoryInfoPanel(patient) {
     const ageText = patient.age ? `${patient.age} tahun` : '-';
     const latestMr = latestVisit?.mrId ? latestVisit.mrId.toUpperCase() : '-';
 
+    const infoName = patient.fullName ? titleCaseWords(patient.fullName) : 'Pasien';
+
     DIRECTORY_DOM.infoPanel.innerHTML = `
-        <h3>${escapeHtml(patient.fullName || 'Pasien')}</h3>
+        <h3>${escapeHtml(infoName)}</h3>
         <p><strong>Total kunjungan:</strong> ${escapeHtml(String(totalVisits))}</p>
         <p><strong>MR terbaru:</strong> ${escapeHtml(latestMr)}</p>
         <p><strong>Kunjungan terakhir:</strong> ${escapeHtml(latestDate || '-')}</p>
@@ -497,8 +507,9 @@ function renderDirectoryVisits(patient) {
             metaParts.push(formatStatus(visit.recordStatus));
         }
         const metaHtml = metaParts.filter(Boolean).map((part) => `<span>${escapeHtml(part)}</span>`).join('');
-        const complaintHtml = visit.chiefComplaint
-            ? `<div class="sc-directory-visit-note">${escapeHtml(visit.chiefComplaint)}</div>`
+        const complaintText = visit.chiefComplaint ? capitalizeFirstWord(visit.chiefComplaint) : '';
+        const complaintHtml = complaintText
+            ? `<div class="sc-directory-visit-note">${escapeHtml(complaintText)}</div>`
             : '';
         const isActive = Boolean(visit.mrId && visit.mrId.toLowerCase() === activeMr);
         return `
@@ -1127,6 +1138,9 @@ function computeDerived(data) {
         : (payload.metadata && typeof payload.metadata === 'object' ? payload.metadata : {});
     const summary = intake.summary || {};
 
+    const normalizeText = (value, key) => (typeof value === 'string' ? formatValueForKey(value, key) : value);
+    const normalizeName = (value) => (typeof value === 'string' ? titleCaseWords(value) : value);
+
     const displayMrId = record.mrId || record.mr_id || routeMrSlug || null;
     const fullName = summary.fullName || payload.full_name || patient.fullName || appointment?.patientName || null;
     const dob = summary.dob || payload.dob || patient.birthDate || payload.patient_dob || null;
@@ -1148,6 +1162,23 @@ function computeDerived(data) {
         ? summary.riskFlags
         : mapRiskCodesToLabels(summary.riskFactorCodes || payload.risk_factors);
     const highRisk = Boolean(summary.highRisk || metadata.highRisk || (payload.flags && payload.flags.highRisk));
+    const reviewedBySource = intake.reviewedBy || (intake.review && (intake.review.verifiedBy || intake.review.reviewedBy)) || null;
+    const reviewNotesSource = intake.reviewNotes || (intake.review && intake.review.notes) || null;
+    const contraceptionPreviousSource = payload.previous_contraception || null;
+    const contraceptionFailureTypeSource = payload.failed_contraception_type || payload.current_contraception || null;
+
+    const normalizedPatientName = normalizeName(fullName);
+    const normalizedAddress = normalizeText(address, 'address');
+    const normalizedMaritalStatus = normalizeText(maritalStatus, 'marital_status');
+    const normalizedHusbandName = normalizeName(payload.husband_name || null);
+    const normalizedHusbandJob = normalizeText(payload.husband_job || null, 'husband_job');
+    const normalizedOccupation = normalizeText(payload.occupation || null, 'occupation');
+    const normalizedEducation = normalizeText(payload.education || null, 'education');
+    const normalizedInsurance = normalizeText(payload.insurance || null, 'insurance');
+    const normalizedContraceptionPrevious = normalizeText(contraceptionPreviousSource, 'previous_contraception');
+    const normalizedContraceptionFailureType = normalizeText(contraceptionFailureTypeSource, 'failed_contraception_type');
+    const normalizedReviewedBy = normalizeName(reviewedBySource);
+    const normalizedReviewNotes = normalizeText(reviewNotesSource, 'review_notes');
 
     return {
         record,
@@ -1158,21 +1189,21 @@ function computeDerived(data) {
         metadata,
         summary,
         mrId: displayMrId,
-        patientName: fullName,
+        patientName: normalizedPatientName,
         quickId: intake.quickId || intake.quick_id || null,
         patientId: record.patientId || record.patient_id || null,
         age: Number.isFinite(ageSource) ? Math.round(ageSource) : null,
         dob,
         phone,
         emergencyContact,
-        address,
-        maritalStatus,
-        husbandName: payload.husband_name || null,
+        address: normalizedAddress,
+        maritalStatus: normalizedMaritalStatus,
+        husbandName: normalizedHusbandName,
         husbandAge: payload.husband_age || null,
-        husbandJob: payload.husband_job || null,
-        occupation: payload.occupation || null,
-        education: payload.education || null,
-        insurance: payload.insurance || null,
+        husbandJob: normalizedHusbandJob,
+        occupation: normalizedOccupation,
+        education: normalizedEducation,
+        insurance: normalizedInsurance,
         edd,
         lmp,
         gestationalAge,
@@ -1190,15 +1221,15 @@ function computeDerived(data) {
             regular: payload.cycle_regular || null
         },
         contraception: {
-            previous: payload.previous_contraception || null,
+            previous: normalizedContraceptionPrevious,
             failure: payload.contraception_failure || payload.kb_failure || null,
-            failureType: payload.failed_contraception_type || payload.current_contraception || null
+            failureType: normalizedContraceptionFailureType
         },
         intakeCreatedAt: intake.createdAt || intake.created_at || null,
         intakeReviewedAt: intake.reviewedAt || intake.reviewed_at || (intake.review && (intake.review.verifiedAt || intake.review.reviewedAt)) || null,
-        intakeReviewedBy: intake.reviewedBy || (intake.review && (intake.review.verifiedBy || intake.review.reviewedBy)) || null,
+        intakeReviewedBy: normalizedReviewedBy,
         intakeStatus: intake.status || null,
-        intakeReviewNotes: intake.reviewNotes || (intake.review && intake.review.notes) || null,
+        intakeReviewNotes: normalizedReviewNotes,
         medicalRecords
     };
 }
@@ -1234,7 +1265,7 @@ function createSummary() {
     container.className = 'd-flex flex-wrap';
 
     // Card 1: Pasien (without high risk badge)
-    const patientMeta = derived.quickId ? `Quick ID: ${escapeHtml(derived.quickId)}` : '';
+    const patientMeta = derived.patientId ? `Patient ID: ${escapeHtml(derived.patientId)}` : '';
     container.appendChild(createHeaderCard(
         'Pasien',
         safeText(derived.patientName || '-'),
@@ -1314,7 +1345,6 @@ function renderIdentitas() {
 
     const primaryRows = [
         ['Nama Lengkap', safeText(derived.patientName || '-')],
-        ['Quick ID Intake', safeText(derived.quickId || '-')],
         ['ID Pasien', safeText(derived.patientId || '-')],
         ['Usia', safeText(derived.age ? `${derived.age} tahun` : '-')],
         ['Telepon', safeText(formatPhone(derived.phone) || '-')],
@@ -1374,7 +1404,7 @@ function renderAnamnesa() {
 
     // Load saved anamnesa data from medical records
     const context = getMedicalRecordContext('anamnesa');
-    const savedData = context?.data || {};
+    const savedData = capitalizePatientData(context?.data || {}, RECORD_CAPITALIZATION_SKIP_KEYS);
 
     // Merge saved data with intake data (saved data takes priority)
     const keluhanUtama = savedData.keluhan_utama || derived.appointment?.chiefComplaint || payload.current_symptoms || payload.reason || '';
@@ -1533,7 +1563,7 @@ function renderAnamnesa() {
 
 function renderPemeriksaan() {
     const context = getMedicalRecordContext('physical_exam');
-    const data = context?.data || {};
+    const data = capitalizePatientData(context?.data || {}, RECORD_CAPITALIZATION_SKIP_KEYS);
 
     const section = document.createElement('div');
     section.className = 'sc-section';
@@ -1640,19 +1670,27 @@ async function savePhysicalExam() {
         const token = await getToken();
         if (!token) return;
 
+        const recordPayload = {
+            patientId: patientId,
+            type: 'physical_exam',
+            data: data,
+            timestamp: getGMT7Timestamp()
+        };
+
+        if (currentStaffIdentity.name) {
+            recordPayload.doctorName = currentStaffIdentity.name;
+        }
+        if (currentStaffIdentity.id) {
+            recordPayload.doctorId = currentStaffIdentity.id;
+        }
+
         const response = await fetch('/api/medical-records', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({
-                patientId: patientId,
-                type: 'physical_exam',
-                data: data,
-                doctorName: 'Staff User',
-                timestamp: getGMT7Timestamp()
-            })
+            body: JSON.stringify(recordPayload)
         });
 
         if (!response.ok) {
@@ -1691,19 +1729,27 @@ async function saveDiagnosis() {
         const token = await getToken();
         if (!token) return;
 
+        const recordPayload = {
+            patientId: patientId,
+            type: 'diagnosis',
+            data: data,
+            timestamp: getGMT7Timestamp()
+        };
+
+        if (currentStaffIdentity.name) {
+            recordPayload.doctorName = currentStaffIdentity.name;
+        }
+        if (currentStaffIdentity.id) {
+            recordPayload.doctorId = currentStaffIdentity.id;
+        }
+
         const response = await fetch('/api/medical-records', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({
-                patientId: patientId,
-                type: 'diagnosis',
-                data: data,
-                doctorName: 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.',
-                timestamp: getGMT7Timestamp()
-            })
+            body: JSON.stringify(recordPayload)
         });
 
         if (!response.ok) {
@@ -1743,19 +1789,27 @@ async function savePlanning() {
         const token = await getToken();
         if (!token) return;
 
+        const recordPayload = {
+            patientId: patientId,
+            type: 'planning',
+            data: data,
+            timestamp: getGMT7Timestamp()
+        };
+
+        if (currentStaffIdentity.name) {
+            recordPayload.doctorName = currentStaffIdentity.name;
+        }
+        if (currentStaffIdentity.id) {
+            recordPayload.doctorId = currentStaffIdentity.id;
+        }
+
         const response = await fetch('/api/medical-records', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({
-                patientId: patientId,
-                type: 'planning',
-                data: data,
-                doctorName: 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.',
-                timestamp: getGMT7Timestamp()
-            })
+            body: JSON.stringify(recordPayload)
         });
 
         if (!response.ok) {
@@ -2395,6 +2449,10 @@ async function saveUSGExam() {
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
 
     try {
+        // Check if we're updating an existing record
+        const context = getMedicalRecordContext('usg');
+        const existingRecordId = context?.record?.id;
+
         // Determine active trimester
         const activeTrimester = document.querySelector('.trimester-selector .btn.active input')?.value || 'first';
 
@@ -2551,20 +2609,37 @@ async function saveUSGExam() {
             return;
         }
 
-        // Send to API
-        const response = await fetch('/api/medical-records', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                patientId: patientId,
-                type: 'usg',
-                data: usgData,
-                timestamp: getGMT7Timestamp()
-            })
-        });
+        // Determine if we're updating or creating
+        let response;
+        if (existingRecordId) {
+            // Update existing record
+            response = await fetch(`/api/medical-records/${existingRecordId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    type: 'usg',
+                    data: usgData
+                })
+            });
+        } else {
+            // Create new record
+            response = await fetch('/api/medical-records', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    patientId: patientId,
+                    type: 'usg',
+                    data: usgData,
+                    timestamp: getGMT7Timestamp()
+                })
+            });
+        }
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
@@ -2574,10 +2649,20 @@ async function saveUSGExam() {
         const result = await response.json();
 
         // Show success message
-        showSuccess('Data USG berhasil disimpan!');
+        showSuccess(existingRecordId ? 'Data USG berhasil diperbarui!' : 'Data USG berhasil disimpan!');
 
         // Reload the record to show updated data
         await fetchRecord(routeMrSlug);
+
+        // Hide the edit form after successful save
+        const editForm = document.getElementById('usg-edit-form');
+        if (editForm) {
+            editForm.style.display = 'none';
+        }
+
+        // Re-enable button for future edits
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> Simpan';
 
     } catch (error) {
         console.error('Error saving USG record:', error);
@@ -2595,12 +2680,157 @@ function renderUSG() {
 
     // Load saved USG data from medical records
     const context = getMedicalRecordContext('usg');
-    const savedData = context?.data || {};
+    const savedData = capitalizePatientData(context?.data || {}, RECORD_CAPITALIZATION_SKIP_KEYS);
+    const hasSavedRecord = context && context.record && context.record.id;
+
+    console.log('=== USG Debug ===');
+    console.log('Context:', context);
+    console.log('Saved Data:', savedData);
+    console.log('Has Saved Record:', hasSavedRecord);
 
     // Auto-populate today's date in GMT+7
     const today = getGMT7Timestamp().split('T')[0];
     const usgDate = savedData.date || today;
-    const trimester = savedData.trimester || 'first';
+    const trimester = (savedData.trimester || 'first').toLowerCase();
+    console.log('Trimester:', trimester);
+
+    // Trimester labels
+    const trimesterLabels = {
+        'first': 'Trimester 1 (1-13w)',
+        'second': 'Trimester 2 (14-27w)',
+        'screening': 'Skrining Kelainan Kongenital (18-23w)',
+        'third': 'Trimester 3 (28+w)'
+    };
+
+    // Build detailed summary of saved data
+    let savedSummaryHtml = '';
+    if (hasSavedRecord) {
+        const summaryItems = [];
+        const trimesterLabel = trimesterLabels[trimester] || `Trimester (${trimester})`;
+
+        if (trimester === 'first') {
+            if (savedData.date) summaryItems.push(`<strong>Tanggal:</strong> ${savedData.date}`);
+            if (savedData.embryo_count) summaryItems.push(`<strong>Jumlah Embrio:</strong> ${savedData.embryo_count === 'single' ? 'Tunggal' : 'Multipel'}`);
+            if (savedData.implantation) summaryItems.push(`<strong>Lokasi Implantasi:</strong> ${savedData.implantation === 'intrauterine' ? 'Dalam rahim' : 'Luar rahim/Ektopik'}`);
+            // Combine CRL cm and weeks in one line
+            if (savedData.crl_cm || savedData.crl_weeks) {
+                const crlParts = [];
+                if (savedData.crl_cm) crlParts.push(`${savedData.crl_cm} cm`);
+                if (savedData.crl_weeks) crlParts.push(`${savedData.crl_weeks} minggu`);
+                summaryItems.push(`<strong>CRL:</strong> ${crlParts.join(' / ')}`);
+            }
+            if (savedData.heart_rate) summaryItems.push(`<strong>Denyut Jantung:</strong> ${savedData.heart_rate} x/menit`);
+            if (savedData.edd) summaryItems.push(`<strong>HPL:</strong> ${savedData.edd}`);
+            if (savedData.nt) summaryItems.push(`<strong>NT:</strong> ${savedData.nt} mm`);
+        } else if (trimester === 'second') {
+            if (savedData.date) summaryItems.push(`<strong>Tanggal:</strong> ${savedData.date}`);
+            if (savedData.fetus_count) summaryItems.push(`<strong>Jumlah Janin:</strong> ${savedData.fetus_count === 'single' ? 'Tunggal' : 'Multipel'}`);
+            if (savedData.gender) summaryItems.push(`<strong>Jenis Kelamin:</strong> ${savedData.gender === 'male' ? 'Laki-laki' : 'Perempuan'}`);
+            if (savedData.fetus_lie) summaryItems.push(`<strong>Letak Janin:</strong> ${savedData.fetus_lie}`);
+            if (savedData.presentation) summaryItems.push(`<strong>Presentasi:</strong> ${savedData.presentation}`);
+            if (savedData.bpd) summaryItems.push(`<strong>BPD:</strong> ${savedData.bpd} cm`);
+            if (savedData.ac) summaryItems.push(`<strong>AC:</strong> ${savedData.ac} cm`);
+            if (savedData.fl) summaryItems.push(`<strong>FL:</strong> ${savedData.fl} cm`);
+            if (savedData.heart_rate) summaryItems.push(`<strong>Denyut Jantung:</strong> ${savedData.heart_rate} x/menit`);
+            if (savedData.placenta) summaryItems.push(`<strong>Plasenta:</strong> ${savedData.placenta}`);
+            if (savedData.placenta_previa) summaryItems.push(`<strong>Plasenta Previa:</strong> ${savedData.placenta_previa}`);
+            if (savedData.afi) summaryItems.push(`<strong>AFI:</strong> ${savedData.afi} cm`);
+            if (savedData.efw) summaryItems.push(`<strong>EFW:</strong> ${savedData.efw} gram`);
+            if (savedData.edd) summaryItems.push(`<strong>HPL:</strong> ${savedData.edd}`);
+            if (savedData.notes) summaryItems.push(`<strong>Catatan:</strong> ${savedData.notes}`);
+        } else if (trimester === 'third') {
+            if (savedData.date) summaryItems.push(`<strong>Tanggal:</strong> ${savedData.date}`);
+            if (savedData.fetus_count) summaryItems.push(`<strong>Jumlah Janin:</strong> ${savedData.fetus_count === 'single' ? 'Tunggal' : 'Multipel'}`);
+            if (savedData.gender) summaryItems.push(`<strong>Jenis Kelamin:</strong> ${savedData.gender === 'male' ? 'Laki-laki' : 'Perempuan'}`);
+            if (savedData.fetus_lie) summaryItems.push(`<strong>Letak Janin:</strong> ${savedData.fetus_lie}`);
+            if (savedData.presentation) summaryItems.push(`<strong>Presentasi:</strong> ${savedData.presentation}`);
+            if (savedData.bpd) summaryItems.push(`<strong>BPD:</strong> ${savedData.bpd} cm`);
+            if (savedData.ac) summaryItems.push(`<strong>AC:</strong> ${savedData.ac} cm`);
+            if (savedData.fl) summaryItems.push(`<strong>FL:</strong> ${savedData.fl} cm`);
+            if (savedData.heart_rate) summaryItems.push(`<strong>Denyut Jantung:</strong> ${savedData.heart_rate} x/menit`);
+            if (savedData.placenta) summaryItems.push(`<strong>Plasenta:</strong> ${savedData.placenta}`);
+            if (savedData.placenta_previa) summaryItems.push(`<strong>Plasenta Previa:</strong> ${savedData.placenta_previa}`);
+            if (savedData.afi) summaryItems.push(`<strong>AFI:</strong> ${savedData.afi} cm`);
+            if (savedData.efw) summaryItems.push(`<strong>EFW:</strong> ${savedData.efw} gram`);
+            if (savedData.edd) summaryItems.push(`<strong>HPL:</strong> ${savedData.edd}`);
+            if (savedData.membrane_sweep) summaryItems.push(`<strong>Pelepasan Selaput:</strong> ${savedData.membrane_sweep === 'yes' ? 'Ya' : 'Tidak'}`);
+            if (savedData.contraception && savedData.contraception.length > 0) summaryItems.push(`<strong>KB:</strong> ${savedData.contraception.join(', ')}`);
+        } else if (trimester === 'screening') {
+            if (savedData.date) summaryItems.push(`<strong>Tanggal:</strong> ${savedData.date}`);
+            if (savedData.gender) summaryItems.push(`<strong>Jenis Kelamin:</strong> ${savedData.gender === 'male' ? 'Laki-laki' : 'Perempuan'}`);
+            if (savedData.diameter_kepala) summaryItems.push(`<strong>Diameter Kepala:</strong> ${savedData.diameter_kepala}`);
+            if (savedData.lingkar_kepala) summaryItems.push(`<strong>Lingkar Kepala:</strong> ${savedData.lingkar_kepala}`);
+            if (savedData.lingkar_perut) summaryItems.push(`<strong>Lingkar Perut:</strong> ${savedData.lingkar_perut}`);
+            if (savedData.panjang_tulang_paha) summaryItems.push(`<strong>Panjang Tulang Paha:</strong> ${savedData.panjang_tulang_paha}`);
+            if (savedData.taksiran_berat_janin) summaryItems.push(`<strong>Taksiran Berat:</strong> ${savedData.taksiran_berat_janin}`);
+
+            // Add screening checkboxes that are checked
+            const checkedItems = [];
+            if (savedData.simetris_hemisfer) checkedItems.push('Simetris hemisfer');
+            if (savedData.falx_bpd) checkedItems.push('Falx cerebri & BPD');
+            if (savedData.ventrikel) checkedItems.push('Ventrikel lateral');
+            if (savedData.cavum_septum) checkedItems.push('Cavum septum');
+            if (savedData.profil_muka) checkedItems.push('Profil muka');
+            if (savedData.four_chamber) checkedItems.push('Four chamber');
+            if (savedData.tidak_kelainan) checkedItems.push('✓ Tidak ada kelainan');
+            if (savedData.kecurigaan) checkedItems.push('⚠ Ada kecurigaan');
+
+            if (checkedItems.length > 0) {
+                summaryItems.push(`<strong>Pemeriksaan:</strong> ${checkedItems.join(', ')}`);
+            }
+            if (savedData.kecurigaan_text) summaryItems.push(`<strong>Detail Kecurigaan:</strong> ${savedData.kecurigaan_text}`);
+        }
+
+        savedSummaryHtml = summaryItems.length > 0
+            ? `<div class="alert mb-3" style="background-color: #EDEDED; border-color: #DEDEDE;">
+                   <h5 style="cursor: pointer; margin-bottom: 0;" data-toggle="collapse" data-target="#usg-summary-collapse">
+                       <i class="fas fa-check-circle" style="color: #28a745;"></i> ${trimesterLabel} - <span style="color: #007bff;">Data Tersimpan</span>
+                       <i class="fas fa-chevron-down float-right" style="transition: transform 0.3s; transform: rotate(-90deg);"></i>
+                   </h5>
+                   <div id="usg-summary-collapse" class="collapse">
+                       <hr>
+                       <div class="row" style="font-size: 0.875rem; font-weight: 300;">
+                           ${summaryItems.map(item => `<div class="col-md-6 mb-2">${item}</div>`).join('')}
+                       </div>
+                       <hr>
+                       <button class="btn btn-warning btn-sm mr-2" id="btn-edit-usg">
+                           <i class="fas fa-edit"></i> Edit Data
+                       </button>
+                       <button class="btn btn-danger btn-sm" id="btn-reset-usg">
+                           <i class="fas fa-trash"></i> Reset
+                       </button>
+                   </div>
+               </div>`
+            : '';
+    }
+
+    // Use standard record metadata display
+    const metaHtml = context ? renderRecordMeta(context, 'usg') : '';
+
+    const signatureName = context?.record?.doctorName || currentStaffIdentity.name || 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.';
+
+    // Trimester selector HTML - hide other trimesters if data is saved
+    const trimesterLabel = trimesterLabels[trimester] || `Trimester (${trimester})`;
+    const trimesterSelectorHtml = hasSavedRecord
+        ? `<div class="alert alert-secondary mb-3">
+               <strong><i class="fas fa-calendar-check"></i> ${trimesterLabel}</strong>
+           </div>`
+        : `<div class="trimester-selector mb-4">
+               <div class="btn-group btn-group-toggle" data-toggle="buttons">
+                   <label class="btn btn-outline-primary ${trimester === 'first' ? 'active' : ''}" onclick="switchTrimester('first')">
+                       <input type="radio" name="trimester" value="first" ${trimester === 'first' ? 'checked' : ''}> Trimester 1 (1-13w)
+                   </label>
+                   <label class="btn btn-outline-primary ${trimester === 'second' ? 'active' : ''}" onclick="switchTrimester('second')">
+                       <input type="radio" name="trimester" value="second" ${trimester === 'second' ? 'checked' : ''}> Trimester 2 (14-27w)
+                   </label>
+                   <label class="btn btn-outline-primary ${trimester === 'screening' ? 'active' : ''}" onclick="switchTrimester('screening')">
+                       <input type="radio" name="trimester" value="screening" ${trimester === 'screening' ? 'checked' : ''}> Skrining Kelainan Kongenital (18-23w)
+                   </label>
+                   <label class="btn btn-outline-primary ${trimester === 'third' ? 'active' : ''}" onclick="switchTrimester('third')">
+                       <input type="radio" name="trimester" value="third" ${trimester === 'third' ? 'checked' : ''}> Trimester 3 (28+w)
+                   </label>
+               </div>
+           </div>`;
 
     section.innerHTML = `
         <div class="sc-section-header">
@@ -2609,24 +2839,13 @@ function renderUSG() {
                 <i class="fas fa-save"></i> Simpan
             </button>
         </div>
-
+        ${metaHtml}
         <div class="sc-card">
-            <div class="trimester-selector mb-4">
-                <div class="btn-group btn-group-toggle" data-toggle="buttons">
-                    <label class="btn btn-outline-primary ${trimester === 'first' ? 'active' : ''}" onclick="switchTrimester('first')">
-                        <input type="radio" name="trimester" value="first" ${trimester === 'first' ? 'checked' : ''}> Trimester 1 (10-13w)
-                    </label>
-                    <label class="btn btn-outline-primary ${trimester === 'second' ? 'active' : ''}" onclick="switchTrimester('second')">
-                        <input type="radio" name="trimester" value="second" ${trimester === 'second' ? 'checked' : ''}> Trimester 2 (14-27w)
-                    </label>
-                    <label class="btn btn-outline-primary ${trimester === 'screening' ? 'active' : ''}" onclick="switchTrimester('screening')">
-                        <input type="radio" name="trimester" value="screening" ${trimester === 'screening' ? 'checked' : ''}> Skrining Kelainan Kongenital (18-23w)
-                    </label>
-                    <label class="btn btn-outline-primary ${trimester === 'third' ? 'active' : ''}" onclick="switchTrimester('third')">
-                        <input type="radio" name="trimester" value="third" ${trimester === 'third' ? 'checked' : ''}> Trimester 3 (28+w)
-                    </label>
-                </div>
-            </div>
+            ${savedSummaryHtml}
+
+            <!-- USG Edit Form Container -->
+            <div id="usg-edit-form" style="display: ${hasSavedRecord ? 'none' : 'block'};">
+            ${trimesterSelectorHtml}
 
             <!-- First Trimester Form -->
             <div id="usg-first-trimester" class="trimester-content" style="display: ${trimester === 'first' ? 'block' : 'none'};">
@@ -3326,9 +3545,11 @@ function renderUSG() {
             </div>
 
             <div class="mt-3 text-right">
-                <p class="mb-0"><strong>dr. Dibya Arfianda, SpOG, M.Ked.Klin.</strong></p>
+                <p class="mb-0"><strong>${escapeHtml(signatureName)}</strong></p>
                 <p class="text-muted small">Obstetrician Gynaecologist</p>
             </div>
+            </div>
+            <!-- End USG Edit Form Container -->
         </div>
     `;
 
@@ -3349,6 +3570,71 @@ function renderUSG() {
         if (btnSave) {
             btnSave.onclick = saveUSGExam;
         }
+
+        // Attach edit button handler
+        const btnEdit = document.getElementById('btn-edit-usg');
+        if (btnEdit) {
+            btnEdit.onclick = () => {
+                const editForm = document.getElementById('usg-edit-form');
+                if (editForm) {
+                    editForm.style.display = 'block';
+                    btnEdit.textContent = '✓ Form ditampilkan';
+                    btnEdit.disabled = true;
+                }
+            };
+        }
+
+        // Attach reset button handler
+        const btnReset = document.getElementById('btn-reset-usg');
+        if (btnReset) {
+            btnReset.onclick = async () => {
+                if (!confirm('Apakah Anda yakin ingin menghapus data USG ini? Data yang dihapus tidak dapat dikembalikan.')) {
+                    return;
+                }
+
+                try {
+                    const context = getMedicalRecordContext('usg');
+                    if (!context || !context.record || !context.record.id) {
+                        showError('Tidak ada data USG untuk dihapus');
+                        return;
+                    }
+
+                    const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+                    if (!token) {
+                        window.location.href = 'login.html';
+                        return;
+                    }
+
+                    // Delete the record
+                    const response = await fetch(`/api/medical-records/${context.record.id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Gagal menghapus data USG');
+                    }
+
+                    showSuccess('Data USG berhasil dihapus!');
+
+                    // Reload the record to show fresh form
+                    await fetchRecord(routeMrSlug);
+
+                } catch (error) {
+                    console.error('Error deleting USG record:', error);
+                    showError('Gagal menghapus data USG: ' + error.message);
+                }
+            };
+        }
+
+        // Handle chevron rotation on collapse/expand
+        $('#usg-summary-collapse').on('show.bs.collapse', function () {
+            $(this).prev('h5').find('.fa-chevron-down').css('transform', 'rotate(0deg)');
+        }).on('hide.bs.collapse', function () {
+            $(this).prev('h5').find('.fa-chevron-down').css('transform', 'rotate(-90deg)');
+        });
     }, 100);
 
     return section;
@@ -3364,7 +3650,7 @@ function renderPenunjang() {
         );
     }
 
-    const data = context.data || {};
+    const data = capitalizePatientData(context.data || {}, RECORD_CAPITALIZATION_SKIP_KEYS);
     const section = document.createElement('div');
     section.className = 'sc-section';
 
@@ -3397,10 +3683,11 @@ function renderPenunjang() {
 
 function renderDiagnosisSection() {
     const context = getMedicalRecordContext('diagnosis');
-    const data = context?.data || {};
+    const data = capitalizePatientData(context?.data || {}, RECORD_CAPITALIZATION_SKIP_KEYS);
     const section = document.createElement('div');
     section.className = 'sc-section';
     const metaHtml = context ? renderRecordMeta(context, 'diagnosis') : '';
+    const signatureName = context?.record?.doctorName || currentStaffIdentity.name || 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.';
 
     const diagnosisFormHtml = `
         <div class="mb-3">
@@ -3412,7 +3699,7 @@ function renderDiagnosisSection() {
             <textarea class="form-control" id="diagnosis-sekunder" rows="1" style="height: 40px;" placeholder="Masukkan diagnosis sekunder jika ada">${escapeHtml(data.diagnosis_sekunder || '')}</textarea>
         </div>
         <div class="mb-4 mt-4">
-            <p class="mb-0"><strong>dr. Dibya Arfianda, SpOG, M.Ked.Klin.</strong></p>
+            <p class="mb-0"><strong>${escapeHtml(signatureName)}</strong></p>
             <p class="text-muted mb-0">Obstetrician Gynaecologist</p>
         </div>
     `;
@@ -3449,7 +3736,7 @@ function renderDiagnosisSection() {
 
 function renderPlanning() {
     const context = getMedicalRecordContext('planning');
-    const data = context?.data || {};
+    const data = capitalizePatientData(context?.data || {}, RECORD_CAPITALIZATION_SKIP_KEYS);
     const section = document.createElement('div');
     section.className = 'sc-section';
     const metaHtml = context ? renderRecordMeta(context, 'planning') : '';
@@ -5102,34 +5389,155 @@ async function getUserRole() {
     }
 }
 
-function capitalizeFirstLetter(str) {
-    if (typeof str !== 'string' || str.length === 0) return str;
-    const firstChar = str.charAt(0);
-    if (firstChar.toLowerCase() === firstChar.toUpperCase()) return str; // Not a letter
-    return firstChar.toUpperCase() + str.slice(1);
+function capitalizeFirstWord(str) {
+    if (typeof str !== 'string') {
+        return str;
+    }
+    const trimmed = str.trim();
+    if (!trimmed) {
+        return str;
+    }
+    const capitalized = trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+    return str.startsWith(trimmed) && str.endsWith(trimmed)
+        ? capitalized
+        : str.replace(trimmed, capitalized);
 }
 
-function capitalizePatientData(data) {
-    if (!data || typeof data !== 'object') return data;
+function titleCaseWords(str) {
+    if (typeof str !== 'string') {
+        return str;
+    }
+    const trimmed = str.trim();
+    if (!trimmed) {
+        return str;
+    }
+    const lower = trimmed.toLowerCase();
+    const transformed = lower
+        .split(/([\s'-]+)/)
+        .map((segment) => {
+            if (!segment || /[\s'-]+/.test(segment)) {
+                return segment;
+            }
+            return segment.charAt(0).toUpperCase() + segment.slice(1);
+        })
+        .join('');
+    return str.startsWith(trimmed) && str.endsWith(trimmed)
+        ? transformed
+        : str.replace(trimmed, transformed);
+}
+
+function isLikelyNameKey(key) {
+    if (!key) {
+        return false;
+    }
+    const normalized = String(key).toLowerCase();
+    if (normalized.includes('name')) {
+        return true;
+    }
+    if (normalized.endsWith('by')) {
+        return true;
+    }
+    return false;
+}
+
+function formatValueForKey(value, key) {
+    if (typeof value !== 'string') {
+        return value;
+    }
+    const normalizedKey = typeof key === 'string' ? key.toLowerCase() : '';
+    const trimmed = value.trim();
+
+    if (!trimmed) {
+        return value;
+    }
+
+    if (normalizedKey.includes('email') || normalizedKey.includes('url') || normalizedKey.includes('http')) {
+        return value;
+    }
+
+    if (/^https?:\/\//i.test(trimmed) || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+        return value;
+    }
+
+    if (isLikelyNameKey(key)) {
+        return titleCaseWords(value);
+    }
+    return capitalizeFirstWord(value);
+}
+
+function capitalizePatientData(data, skipKeys = new Set(), parentKey = '') {
+    if (!data || typeof data !== 'object') {
+        return data;
+    }
 
     if (Array.isArray(data)) {
-        return data.map(item => capitalizePatientData(item));
+        return data.map((item) => capitalizePatientData(item, skipKeys, parentKey));
     }
 
     const result = {};
-    for (const key in data) {
-        if (data.hasOwnProperty(key)) {
-            const value = data[key];
-            if (typeof value === 'string') {
-                result[key] = capitalizeFirstLetter(value);
-            } else if (typeof value === 'object' && value !== null) {
-                result[key] = capitalizePatientData(value);
-            } else {
-                result[key] = value;
-            }
+    Object.keys(data).forEach((key) => {
+        const value = data[key];
+        if (skipKeys.has(key)) {
+            result[key] = value;
+            return;
+        }
+        if (typeof value === 'string') {
+            result[key] = formatValueForKey(value, key || parentKey);
+            return;
+        }
+        if (typeof value === 'object' && value !== null) {
+            result[key] = capitalizePatientData(value, skipKeys, key);
+            return;
+        }
+        result[key] = value;
+    });
+    return result;
+}
+
+function resolveStaffIdentity(raw) {
+    if (!raw || typeof raw !== 'object') {
+        return { id: null, name: null };
+    }
+
+    const candidates = [];
+    if (raw.data && typeof raw.data === 'object') {
+        if (raw.data.user && typeof raw.data.user === 'object') {
+            candidates.push(raw.data.user);
+        }
+        candidates.push(raw.data);
+    }
+    candidates.push(raw);
+
+    let name = null;
+    let id = null;
+
+    for (const candidate of candidates) {
+        if (!candidate || typeof candidate !== 'object') {
+            continue;
+        }
+
+        if (!name) {
+            name = candidate.name
+                || candidate.fullName
+                || candidate.full_name
+                || candidate.displayName
+                || candidate.email
+                || null;
+        }
+
+        if (!id) {
+            id = candidate.id
+                || candidate.user_id
+                || candidate.uuid
+                || null;
+        }
+
+        if (name && id) {
+            break;
         }
     }
-    return result;
+
+    return { id: id || null, name: name || null };
 }
 
 async function fetchRecord(mrId = routeMrSlug, { skipSpinner = false } = {}) {
@@ -5178,8 +5586,16 @@ async function fetchRecord(mrId = routeMrSlug, { skipSpinner = false } = {}) {
             return;
         }
 
-        // Capitalize first letter of all string fields in patient data
-        state.data = capitalizePatientData(payload.data);
+        const rawData = payload.data;
+        const skipForCapitalization = new Set(['medicalRecords']);
+        const capitalizedPatient = capitalizePatientData(rawData.patient, skipForCapitalization);
+        const capitalizedSummary = capitalizePatientData(rawData.summary, skipForCapitalization);
+
+        state.data = {
+            ...rawData,
+            patient: capitalizedPatient,
+            summary: capitalizedSummary
+        };
         state.derived = computeDerived(state.data);
 
         hideLoading();
@@ -5276,19 +5692,27 @@ async function saveAnamnesa() {
         if (!token) return;
 
         // Send to API
+        const recordPayload = {
+            patientId: patientId,
+            type: 'anamnesa',
+            data: data,
+            timestamp: getGMT7Timestamp()
+        };
+
+        if (currentStaffIdentity.name) {
+            recordPayload.doctorName = currentStaffIdentity.name;
+        }
+        if (currentStaffIdentity.id) {
+            recordPayload.doctorId = currentStaffIdentity.id;
+        }
+
         const response = await fetch('/api/medical-records', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`
             },
-            body: JSON.stringify({
-                patientId: patientId,
-                type: 'anamnesa',
-                data: data,
-                doctorName: 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.',
-                timestamp: getGMT7Timestamp()
-            })
+            body: JSON.stringify(recordPayload)
         });
 
         if (!response.ok) {
@@ -5314,8 +5738,130 @@ async function saveAnamnesa() {
     }
 }
 
+// -------------------- CLOCK --------------------
+let clockIntervalId = null;
+function updateDateTime() {
+    const dateEl = document.getElementById('date-display');
+    const timeEl = document.getElementById('time-display');
+    if (!dateEl || !timeEl) return;
+    const now = new Date();
+    const dateOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Asia/Jakarta' };
+    const timeOptions = { hour: '2-digit', minute: '2-digit', second: '2-digit', timeZone: 'Asia/Jakarta', hour12: false };
+    dateEl.textContent = now.toLocaleDateString('id-ID', dateOptions);
+    timeEl.textContent = `${now.toLocaleTimeString('id-ID', timeOptions)} WIB`;
+}
+function startClock() {
+    updateDateTime();
+    clockIntervalId = setInterval(updateDateTime, 1000);
+}
+// -------------------- END CLOCK --------------------
+
+// -------------------- STAFF NAME DISPLAY --------------------
+async function loadStaffName() {
+    const staffNameEl = document.getElementById('staff-name-display');
+    if (!staffNameEl) return;
+
+    try {
+        const token = getToken();
+        if (!token) {
+            console.error('No token found');
+            staffNameEl.textContent = '[name]';
+            return;
+        }
+
+        console.log('Fetching staff name from /api/auth/me...');
+        const response = await fetch('/api/auth/me', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        console.log('Response status:', response.status);
+
+        if (response.ok) {
+            const userData = await response.json();
+            console.log('User data received:', userData);
+
+            // Check nested structure: userData.data.user.name
+            const identity = resolveStaffIdentity(userData);
+            currentStaffIdentity.id = identity.id;
+            currentStaffIdentity.name = identity.name;
+
+            if (identity.name) {
+                staffNameEl.textContent = identity.name;
+                console.log('Staff name set to:', identity.name);
+            } else {
+                console.error('No name field in userData:', userData);
+                staffNameEl.textContent = '[name]';
+            }
+        } else {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('API error:', response.status, errorData);
+            staffNameEl.textContent = '[name]';
+            currentStaffIdentity.id = null;
+            currentStaffIdentity.name = null;
+        }
+    } catch (error) {
+        console.error('Error loading staff name:', error);
+        staffNameEl.textContent = '[name]';
+        currentStaffIdentity.id = null;
+        currentStaffIdentity.name = null;
+    }
+}
+// -------------------- END STAFF NAME DISPLAY --------------------
+
+// -------------------- LOGO CLICK HANDLER --------------------
+function bindLogoClick() {
+    const logo = document.getElementById('sidebar-logo');
+    if (!logo) return;
+
+    let tooltipTimeout = null;
+    let tooltip = null;
+
+    // Click handler
+    logo.addEventListener('click', function() {
+        window.location.href = '/staff/public/index-adminlte.html';
+    });
+
+    // Tooltip with 0.1 second delay
+    logo.addEventListener('mouseenter', function(e) {
+        tooltipTimeout = setTimeout(() => {
+            tooltip = document.createElement('div');
+            tooltip.className = 'custom-tooltip';
+            tooltip.textContent = logo.getAttribute('data-tooltip') || '';
+            document.body.appendChild(tooltip);
+
+            const rect = logo.getBoundingClientRect();
+            tooltip.style.left = (rect.left + rect.width / 2 - tooltip.offsetWidth / 2) + 'px';
+            tooltip.style.top = (rect.bottom + 8) + 'px';
+
+            setTimeout(() => {
+                if (tooltip) tooltip.classList.add('show');
+            }, 10);
+        }, 100); // 0.1 second delay
+    });
+
+    logo.addEventListener('mouseleave', function() {
+        if (tooltipTimeout) {
+            clearTimeout(tooltipTimeout);
+            tooltipTimeout = null;
+        }
+        if (tooltip) {
+            tooltip.classList.remove('show');
+            setTimeout(() => {
+                if (tooltip && tooltip.parentNode) {
+                    tooltip.parentNode.removeChild(tooltip);
+                }
+                tooltip = null;
+            }, 200);
+        }
+    });
+}
+// -------------------- END LOGO CLICK HANDLER --------------------
+
 function init() {
     bindDirectoryDom();
+    startClock();
+    bindLogoClick();
+    loadStaffName();
 
     if (!routeMrSlug) {
         hideLoading();

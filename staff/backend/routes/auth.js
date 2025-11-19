@@ -70,7 +70,7 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
     const token = jwt.sign(
         {
             id: userId,
-            email: user.email,
+            name: user.name || 'Staff',
             role: roleForToken,
             user_type: user.user_type || 'patient',
             is_superadmin: user.is_superadmin || false
