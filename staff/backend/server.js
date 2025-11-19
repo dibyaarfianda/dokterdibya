@@ -88,6 +88,8 @@ const tindakanProtectedRoutes = require('./routes/02-tindakan-api');
 const visitsRoutes = require('./routes/visits');
 const medicalExamsRoutes = require('./routes/medical-exams');
 const appointmentsRoutes = require('./routes/appointments');
+const appointmentArchiveRoutes = require('./routes/appointment-archive');
+const dashboardStatsRoutes = require('./routes/dashboard-stats');
 
 // Real-time routes
 const chatRoutes = require('./routes/chat');
@@ -149,6 +151,12 @@ app.use('/api/appointments', appointmentsRoutes);
 // Sunday appointments routes (patient booking system)
 const sundayAppointmentsRoutes = require('./routes/sunday-appointments');
 app.use('/api/sunday-appointments', sundayAppointmentsRoutes);
+
+// Appointment archive routes
+app.use('/api/appointment-archive', appointmentArchiveRoutes);
+
+// Dashboard statistics routes
+app.use('/api/dashboard-stats', dashboardStatsRoutes);
 
 // Sunday clinic record routes
 const sundayClinicRoutes = require('./routes/sunday-clinic');
