@@ -107,6 +107,34 @@ async function deletePatientWithRelations(patientId) {
             'web_patients_archive'
         );
 
+        await deleteOptionalChild(connection,
+            'DELETE FROM sunday_clinic_billing_items WHERE billing_id IN (SELECT id FROM sunday_clinic_billings WHERE patient_id = ?)',
+            [patientId],
+            deletedData,
+            'sunday_clinic_billing_items'
+        );
+
+        await deleteOptionalChild(connection,
+            'DELETE FROM sunday_clinic_billings WHERE patient_id = ?',
+            [patientId],
+            deletedData,
+            'sunday_clinic_billings'
+        );
+
+        await deleteOptionalChild(connection,
+            'DELETE FROM sunday_clinic_records WHERE patient_id = ?',
+            [patientId],
+            deletedData,
+            'sunday_clinic_records'
+        );
+
+        await deleteOptionalChild(connection,
+            'DELETE FROM patient_password_reset_tokens WHERE patient_id = ?',
+            [patientId],
+            deletedData,
+            'patient_password_reset_tokens'
+        );
+
         const [patientResult] = await connection.query(
             'DELETE FROM patients WHERE id = ?',
             [patientId]

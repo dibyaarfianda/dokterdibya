@@ -669,10 +669,23 @@ function setMeta() {
 // Generate ISO timestamp in GMT+7 (Jakarta/Indonesian time)
 function getGMT7Timestamp() {
     const now = new Date();
-    // Get time in GMT+7 by adding 7 hours offset
-    const gmt7Time = new Date(now.getTime() + (7 * 60 * 60 * 1000));
-    // Return ISO string but replace Z with +07:00
-    return gmt7Time.toISOString().replace('Z', '+07:00');
+
+    // Get UTC time
+    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
+
+    // Add 7 hours to get GMT+7
+    const gmt7Time = new Date(utcTime + (7 * 60 * 60 * 1000));
+
+    // Format as YYYY-MM-DD HH:MM:SS for MySQL
+    const year = gmt7Time.getFullYear();
+    const month = String(gmt7Time.getMonth() + 1).padStart(2, '0');
+    const day = String(gmt7Time.getDate()).padStart(2, '0');
+    const hours = String(gmt7Time.getHours()).padStart(2, '0');
+    const minutes = String(gmt7Time.getMinutes()).padStart(2, '0');
+    const seconds = String(gmt7Time.getSeconds()).padStart(2, '0');
+
+    // Return in ISO format with GMT+7 timezone indicator
+    return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+07:00`;
 }
 
 function escapeHtml(value) {
@@ -2123,6 +2136,42 @@ async function addTindakan(tindakanName, tindakanCode, tindakanId) {
         // Save to billing database first
         const token = await getToken();
         if (token) {
+            // First, fetch existing billing items to append to them
+            let existingItems = [];
+            try {
+                const fetchResponse = await fetch(`/api/sunday-clinic/billing/${routeMrSlug}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (fetchResponse.ok) {
+                    const billingData = await fetchResponse.json();
+                    if (billingData.data && billingData.data.items) {
+                        // Keep all existing items
+                        existingItems = billingData.data.items.map(item => ({
+                            item_type: item.item_type,
+                            item_code: item.item_code,
+                            item_name: item.item_name,
+                            quantity: item.quantity,
+                            item_data: item.item_data
+                        }));
+                    }
+                }
+            } catch (fetchError) {
+                console.log('No existing billing found, creating new one');
+            }
+
+            // Append the new tindakan to existing items
+            const allItems = [...existingItems, {
+                item_type: 'tindakan',
+                item_code: tindakanCode || null,
+                item_name: tindakanName,
+                quantity: 1
+            }];
+
+            // Save all items together
             const response = await fetch(`/api/sunday-clinic/billing/${routeMrSlug}`, {
                 method: 'POST',
                 headers: {
@@ -2130,12 +2179,7 @@ async function addTindakan(tindakanName, tindakanCode, tindakanId) {
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    items: [{
-                        item_type: 'tindakan',
-                        item_code: tindakanCode || null,
-                        item_name: tindakanName,
-                        quantity: 1
-                    }],
+                    items: allItems,
                     status: 'draft'
                 })
             });
@@ -3762,13 +3806,13 @@ async function generateBillingItemsFromPlanning() {
             }
         }
 
-        // Always add Biaya Admin
+        // Always add Biaya Admin (price will be fetched from database)
         items.push({
             item_type: 'admin',
             item_code: 'ADMIN',
             item_name: 'Biaya Admin',
             quantity: 1,
-            price: 5000,
+            // Price removed - will be fetched from database
             item_data: {}
         });
 
@@ -3915,28 +3959,48 @@ function renderTagihanContent(container, billing) {
         statusBadge = '<span class="badge badge-warning">Draft</span>';
     }
 
+    // Get user role asynchronously
+    const userRole = await getUserRole();
+    const isDoctor = userRole === 'doctor';
+
     // Build action buttons based on status and user role
     let actionsHtml = '';
 
     if (status === 'draft') {
         // Draft status - only show confirm button for doctor
-        actionsHtml = `<button type="button" class="btn btn-primary" id="btn-confirm-billing">
-               <i class="fas fa-check mr-2"></i>Konfirmasi Tagihan (Dokter)
-           </button>`;
+        if (isDoctor) {
+            actionsHtml = `<button type="button" class="btn btn-primary" id="btn-confirm-billing">
+                   <i class="fas fa-check mr-2"></i>Konfirmasi Tagihan
+               </button>`;
+        } else {
+            actionsHtml = `<div class="alert alert-info mb-0">
+                <i class="fas fa-info-circle mr-2"></i>Menunggu konfirmasi dokter
+            </div>`;
+        }
     } else if (status === 'confirmed' && hasPendingChanges) {
-        // Has pending changes - show review button for doctor, disable others
-        actionsHtml = `
-           <button type="button" class="btn btn-warning mr-2" id="btn-review-changes">
-               <i class="fas fa-clipboard-check mr-2"></i>Review & Konfirmasi Ulang (Dokter)
-           </button>
-           <button type="button" class="btn btn-secondary mr-2" disabled title="Menunggu konfirmasi dokter">
-               <i class="fas fa-tag mr-2"></i>Cetak Etiket
-           </button>
-           <button type="button" class="btn btn-secondary" disabled title="Menunggu konfirmasi dokter">
-               <i class="fas fa-receipt mr-2"></i>Cetak Invoice
-           </button>`;
+        // Has pending changes - show review button for doctor only
+        if (isDoctor) {
+            actionsHtml = `
+               <button type="button" class="btn btn-warning mr-2" id="btn-review-changes">
+                   <i class="fas fa-clipboard-check mr-2"></i>Review & Konfirmasi Ulang
+               </button>
+               <div class="alert alert-warning mb-0 mt-2">
+                   <i class="fas fa-exclamation-triangle mr-2"></i>Ada permintaan perubahan yang perlu Anda review
+               </div>`;
+        } else {
+            actionsHtml = `
+               <button type="button" class="btn btn-secondary mr-2" disabled title="Menunggu konfirmasi dokter">
+                   <i class="fas fa-tag mr-2"></i>Cetak Etiket
+               </button>
+               <button type="button" class="btn btn-secondary" disabled title="Menunggu konfirmasi dokter">
+                   <i class="fas fa-receipt mr-2"></i>Cetak Invoice
+               </button>
+               <div class="alert alert-info mb-0 mt-2">
+                   <i class="fas fa-info-circle mr-2"></i>Menunggu konfirmasi dokter untuk perubahan
+               </div>`;
+        }
     } else if (status === 'confirmed') {
-        // Confirmed without pending changes - show all actions
+        // Confirmed without pending changes - show actions based on role
         actionsHtml = `
            <button type="button" class="btn btn-primary mr-2" id="btn-request-change">
                <i class="fas fa-edit mr-2"></i>Ajukan Perubahan
@@ -4017,6 +4081,206 @@ function renderTagihanContent(container, billing) {
             invoiceBtn.addEventListener('click', () => printInvoice(billing));
         }
     }, 0);
+}
+
+// Show modal for requesting changes to billing
+async function showRequestChangeModal(billing) {
+    if (!billing || !billing.items) return;
+
+    // Create modal
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'modal-request-change';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title"><i class="fas fa-edit mr-2"></i>Ajukan Perubahan Tagihan</h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Edit item tagihan di bawah ini. Perubahan akan menunggu persetujuan dokter.
+                    </div>
+                    <table class="table table-bordered" id="change-items-table">
+                        <thead>
+                            <tr>
+                                <th>Item</th>
+                                <th width="15%">Qty</th>
+                                <th width="20%">Harga</th>
+                                <th width="10%">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${billing.items.map((item, index) => `
+                                <tr data-index="${index}">
+                                    <td>${escapeHtml(item.item_name)}</td>
+                                    <td>
+                                        <input type="number" class="form-control form-control-sm qty-input"
+                                               value="${item.quantity}" min="1" data-original-qty="${item.quantity}">
+                                    </td>
+                                    <td class="text-right">${formatRupiah(item.price)}</td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-danger remove-item" data-index="${index}">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                    <div class="form-group">
+                        <label>Catatan Perubahan:</label>
+                        <textarea class="form-control" id="change-note" rows="2" placeholder="Jelaskan alasan perubahan..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-warning" id="btn-submit-change">
+                        <i class="fas fa-paper-plane mr-1"></i>Ajukan Perubahan
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.appendChild(modal);
+    const $modal = $(modal);
+
+    // Handle remove item
+    $modal.on('click', '.remove-item', function() {
+        $(this).closest('tr').remove();
+    });
+
+    // Handle submit
+    document.getElementById('btn-submit-change').addEventListener('click', async () => {
+        const note = document.getElementById('change-note').value.trim();
+        if (!note) {
+            showError('Catatan perubahan harus diisi');
+            return;
+        }
+
+        // Collect remaining items with updated quantities and preserved prices
+        const updatedItems = [];
+        const rows = document.querySelectorAll('#change-items-table tbody tr');
+
+        rows.forEach(row => {
+            const index = parseInt(row.dataset.index);
+            const originalItem = billing.items[index];
+            const qtyInput = row.querySelector('.qty-input');
+
+            if (originalItem && qtyInput) {
+                updatedItems.push({
+                    item_type: originalItem.item_type,
+                    item_code: originalItem.item_code,
+                    item_name: originalItem.item_name,
+                    quantity: parseInt(qtyInput.value) || 1,
+                    price: originalItem.price, // Preserve original price
+                    item_data: originalItem.item_data || {}
+                });
+            }
+        });
+
+        try {
+            const token = await getToken();
+            const response = await fetch(`/api/sunday-clinic/billing/${routeMrSlug}/request-change`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    items: updatedItems,
+                    changeNote: note
+                })
+            });
+
+            if (!response.ok) throw new Error('Gagal mengajukan perubahan');
+
+            showSuccess('Perubahan berhasil diajukan. Menunggu persetujuan dokter.');
+            $modal.modal('hide');
+
+            // Reload tagihan section
+            if (typeof renderTagihan === 'function') {
+                const content = document.getElementById('content');
+                if (content) {
+                    content.innerHTML = '';
+                    const sectionElement = await renderTagihan();
+                    content.appendChild(sectionElement);
+                }
+            }
+        } catch (error) {
+            showError('Gagal mengajukan perubahan: ' + error.message);
+        }
+    });
+
+    $modal.modal('show');
+    $modal.on('hidden.bs.modal', () => {
+        modal.remove();
+    });
+}
+
+// Review and approve changes (doctor only)
+async function reviewAndApproveChanges(billing) {
+    if (!billing) return;
+
+    // Check if user is a doctor
+    const userRole = await getUserRole();
+    if (userRole !== 'doctor') {
+        showError('Hanya dokter yang dapat menyetujui perubahan tagihan');
+        return;
+    }
+
+    const changeRequests = billing.change_requests || [];
+    const lastRequest = changeRequests[changeRequests.length - 1];
+
+    if (!lastRequest) {
+        showError('Tidak ada permintaan perubahan');
+        return;
+    }
+
+    // Show confirmation dialog
+    const confirmHtml = `
+        <div class="mb-3">
+            <strong>Permintaan dari:</strong> ${escapeHtml(lastRequest.requestedBy)}<br>
+            <strong>Waktu:</strong> ${new Date(lastRequest.requestedAt).toLocaleString('id-ID')}<br>
+            <strong>Catatan:</strong> ${escapeHtml(lastRequest.note)}
+        </div>
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle mr-2"></i>
+            Apakah Anda yakin ingin menyetujui perubahan tagihan ini?
+        </div>
+    `;
+
+    if (confirm(confirmHtml)) {
+        try {
+            const token = await getToken();
+            const response = await fetch(`/api/sunday-clinic/billing/${routeMrSlug}/approve-changes`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) throw new Error('Gagal menyetujui perubahan');
+
+            showSuccess('Perubahan tagihan berhasil disetujui');
+
+            // Reload tagihan section
+            if (typeof renderTagihan === 'function') {
+                const content = document.getElementById('content');
+                if (content) {
+                    content.innerHTML = '';
+                    const sectionElement = await renderTagihan();
+                    content.appendChild(sectionElement);
+                }
+            }
+        } catch (error) {
+            showError('Gagal menyetujui perubahan: ' + error.message);
+        }
+    }
 }
 
 // Show modal to add administratif items
@@ -4792,6 +5056,52 @@ function getToken() {
     return token;
 }
 
+// Get user role from JWT token
+async function getUserRole() {
+    try {
+        const token = getToken();
+        if (!token) return null;
+
+        // Try to decode JWT token
+        const parts = token.split('.');
+        if (parts.length !== 3) return null;
+
+        const payload = JSON.parse(atob(parts[1]));
+
+        // Check for role in token payload
+        if (payload.role) {
+            return payload.role.toLowerCase();
+        }
+
+        // Check for user type
+        if (payload.user_type) {
+            return payload.user_type.toLowerCase();
+        }
+
+        // Check for doctor flag
+        if (payload.is_doctor === true) {
+            return 'doctor';
+        }
+
+        // Try to fetch user info from API if not in token
+        const response = await fetch('/api/auth/me', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const userData = await response.json();
+            if (userData.role) return userData.role.toLowerCase();
+            if (userData.user_type) return userData.user_type.toLowerCase();
+            if (userData.is_doctor) return 'doctor';
+        }
+
+        return 'staff'; // Default to staff if role not found
+    } catch (error) {
+        console.error('Error getting user role:', error);
+        return 'staff'; // Default to staff on error
+    }
+}
+
 function capitalizeFirstLetter(str) {
     if (typeof str !== 'string' || str.length === 0) return str;
     const firstChar = str.charAt(0);
@@ -5304,26 +5614,32 @@ function startChangeNotificationPolling() {
             // Check if there are pending changes
             if (data.hasPendingChanges && data.changeRequests && data.changeRequests.length > 0) {
                 const currentChangeCount = data.changeRequests.length;
-                
-                // Only show notification if there's a new change request
+
+                // Only show notification if there's a new change request AND user is a doctor
                 if (currentChangeCount > lastNotifiedChangeCount) {
-                    const lastRequest = data.changeRequests[data.changeRequests.length - 1];
-                    
-                    // Show toast notification
-                    showToastNotification(
-                        '🔔 Permintaan Perubahan Tagihan',
-                        `<strong>${lastRequest.requestedBy}</strong> mengajukan perubahan tagihan.<br>` +
-                        `<em>Catatan: ${lastRequest.note || 'Tidak ada catatan'}</em><br><br>` +
-                        `<small>Klik "Review & Konfirmasi Ulang" untuk menyetujui.</small>`,
-                        'warning'
-                    );
-                    
+                    const userRole = await getUserRole();
+                    const isDoctor = userRole === 'doctor';
+
+                    // Only notify doctors
+                    if (isDoctor) {
+                        const lastRequest = data.changeRequests[data.changeRequests.length - 1];
+
+                        // Show toast notification
+                        showToastNotification(
+                            '🔔 Permintaan Perubahan Tagihan',
+                            `<strong>${lastRequest.requestedBy}</strong> mengajukan perubahan tagihan.<br>` +
+                            `<em>Catatan: ${lastRequest.note || 'Tidak ada catatan'}</em><br><br>` +
+                            `<small>Klik "Review & Konfirmasi Ulang" untuk menyetujui.</small>`,
+                            'warning'
+                        );
+
+                        // Reload the tagihan section to show updated UI
+                        setTimeout(() => {
+                            handleSectionChange('tagihan', { pushHistory: false });
+                        }, 500);
+                    }
+
                     lastNotifiedChangeCount = currentChangeCount;
-                    
-                    // Reload the tagihan section to show updated UI
-                    setTimeout(() => {
-                        handleSectionChange('tagihan', { pushHistory: false });
-                    }, 500);
                 }
             } else {
                 // Reset counter when no pending changes
