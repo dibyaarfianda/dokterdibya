@@ -15,6 +15,99 @@ const STORAGE_DIR = path.join(__dirname, '..', 'logs', 'patient-intake');
 const ENCRYPTION_KEY = process.env.INTAKE_ENCRYPTION_KEY || '';
 const ENCRYPTION_KEY_ID = process.env.INTAKE_ENCRYPTION_KEY_ID || 'default';
 let encryptionWarningLogged = false;
+const VALID_INTAKE_CATEGORIES = new Set(['obstetri', 'gyn_repro', 'gyn_special', 'admin_followup']);
+
+function trimToNull(value) {
+    if (value === null || value === undefined) {
+        return null;
+    }
+    const trimmed = String(value).trim();
+    return trimmed.length ? trimmed : null;
+}
+
+function normalizeChoice(value) {
+    const trimmed = trimToNull(value);
+    return trimmed ? trimmed.toLowerCase() : null;
+}
+
+function normalizeCategory(value) {
+    const normalized = normalizeChoice(value);
+    if (!normalized) {
+        return null;
+    }
+    return VALID_INTAKE_CATEGORIES.has(normalized) ? normalized : null;
+}
+
+function hasRoutingSignals(payload) {
+    if (!payload || typeof payload !== 'object') {
+        return false;
+    }
+    return [
+        'pregnant_status',
+        'needs_reproductive',
+        'has_gyn_issue',
+        'admin_followup_note',
+        'admin_followup_note_secondary',
+    ].some((key) => Object.prototype.hasOwnProperty.call(payload, key));
+}
+
+function deriveIntakeCategory(payload) {
+    if (!payload || typeof payload !== 'object') {
+        return null;
+    }
+    const direct = normalizeCategory(payload.intake_category || payload.metadata?.intakeCategory || null);
+    if (direct) {
+        return direct;
+    }
+    const pregnantStatus = normalizeChoice(payload.pregnant_status);
+    if (pregnantStatus === 'yes') {
+        return 'obstetri';
+    }
+    if (pregnantStatus === 'no') {
+        const reproductive = normalizeChoice(payload.needs_reproductive);
+        if (reproductive === 'yes') {
+            return 'gyn_repro';
+        }
+        if (reproductive === 'no') {
+            const gynIssue = normalizeChoice(payload.has_gyn_issue);
+            if (gynIssue === 'yes') {
+                return 'gyn_special';
+            }
+            if (gynIssue === 'no') {
+                const hasAdminNote = Boolean(trimToNull(payload.admin_followup_note) || trimToNull(payload.admin_followup_note_secondary));
+                return hasAdminNote ? 'admin_followup' : null;
+            }
+        }
+    }
+    return null;
+}
+
+function attachIntakeCategoryMetadata(payload) {
+    if (!payload || typeof payload !== 'object') {
+        return null;
+    }
+    const category = deriveIntakeCategory(payload);
+    const metadata = payload.metadata && typeof payload.metadata === 'object' ? payload.metadata : {};
+    metadata.intakeCategory = category || null;
+    metadata.routing = {
+        pregnantStatus: normalizeChoice(payload.pregnant_status),
+        needsReproductive: normalizeChoice(payload.needs_reproductive),
+        hasGynIssue: normalizeChoice(payload.has_gyn_issue),
+    };
+    const adminPrimary = trimToNull(payload.admin_followup_note);
+    const adminSecondary = trimToNull(payload.admin_followup_note_secondary);
+    if (adminPrimary || adminSecondary) {
+        metadata.adminFollowup = {
+            primaryNote: adminPrimary,
+            secondaryNote: adminSecondary,
+        };
+    } else if (metadata.adminFollowup) {
+        delete metadata.adminFollowup;
+    }
+    payload.metadata = metadata;
+    payload.intake_category = category || null;
+    return category;
+}
 
 async function ensureDirectory() {
     await fs.mkdir(STORAGE_DIR, { recursive: true });
@@ -70,6 +163,32 @@ function validatePayload(body) {
     }
     if (!body.metadata || typeof body.metadata !== 'object') {
         errors.push('Metadata tidak lengkap.');
+    }
+    const routingProvided = hasRoutingSignals(body);
+    const derivedCategory = deriveIntakeCategory(body);
+    const pregnantStatus = normalizeChoice(body?.pregnant_status);
+    const directCategory = body.intake_category ? normalizeCategory(body.intake_category) : null;
+    const metadataCategory = body.metadata?.intakeCategory ? normalizeCategory(body.metadata.intakeCategory) : null;
+    if (body.intake_category && !directCategory) {
+        errors.push('Kategori tujuan kunjungan tidak dikenal.');
+    }
+    if (body.metadata?.intakeCategory && !metadataCategory) {
+        errors.push('Metadata kategori intake tidak valid.');
+    }
+    if (directCategory && derivedCategory && directCategory !== derivedCategory) {
+        errors.push('Jawaban tujuan kunjungan tidak konsisten dengan pilihan sebelumnya.');
+    }
+    if (routingProvided && (!pregnantStatus || !['yes', 'no'].includes(pregnantStatus))) {
+        errors.push('Mohon pilih apakah Anda sedang hamil.');
+    }
+    if (routingProvided && !derivedCategory) {
+        errors.push('Kategori tujuan kunjungan tidak valid.');
+    }
+    if (derivedCategory === 'admin_followup') {
+        const adminNote = trimToNull(body.admin_followup_note) || trimToNull(body.admin_followup_note_secondary);
+        if (!adminNote) {
+            errors.push('Mohon tuliskan permintaan atau kebutuhan untuk tindak lanjut admin.');
+        }
     }
     return errors;
 }
@@ -283,6 +402,7 @@ function buildSummary(record) {
     const review = record.review || payload.review || {};
     const status = record.status || record.review?.status || payload.review?.status || 'patient_reported';
     const highRisk = Boolean(record.summary?.highRisk || metadata.highRisk);
+    const routing = metadata.routing || {};
     return {
         submissionId: record.submissionId,
         receivedAt: record.receivedAt,
@@ -301,6 +421,13 @@ function buildSummary(record) {
         reviewedBy: review.verifiedBy || review.reviewedBy || null,
         reviewedAt: review.verifiedAt || review.reviewedAt || null,
         notes: review.notes || null,
+        intakeCategory: metadata.intakeCategory || payload.intake_category || null,
+        routing: {
+            pregnantStatus: routing.pregnantStatus || null,
+            needsReproductive: routing.needsReproductive || null,
+            hasGynIssue: routing.hasGynIssue || null,
+        },
+        adminFollowup: metadata.adminFollowup || null,
     };
 }
 
@@ -319,6 +446,8 @@ router.post('/api/patient-intake', async (req, res, next) => {
         if (errors.length) {
             return res.status(422).json({ success: false, errors });
         }
+
+        const intakeCategory = attachIntakeCategoryMetadata(payload);
 
         // Check if patient already has a submission by phone number (prevent duplicate submissions)
         const patientPhone = payload.phone;
@@ -398,6 +527,8 @@ router.post('/api/patient-intake', async (req, res, next) => {
             summary: {
                 highRisk: Boolean(payload.metadata?.highRisk),
                 riskFlags: payload.metadata?.riskFlags || [],
+                intakeCategory: intakeCategory || null,
+                routing: payload.metadata?.routing || null,
             },
             client: {
                 ip: req.ip,
@@ -465,6 +596,7 @@ router.post('/api/patient-intake', async (req, res, next) => {
             quickId,
             status,
             autoVerified: true,
+            intakeCategory: intakeCategory || null,
             integration: integrationResult,
         });
     } catch (error) {
@@ -604,6 +736,8 @@ router.put('/api/patient-intake/my-intake', verifyToken, async (req, res, next) 
             return res.status(422).json({ success: false, errors });
         }
 
+        const intakeCategory = attachIntakeCategoryMetadata(payload);
+
         const patientPhone = req.user.phone || req.user.whatsapp;
         
         if (!patientPhone) {
@@ -666,6 +800,8 @@ router.put('/api/patient-intake/my-intake', verifyToken, async (req, res, next) 
             dob: payload.dob,
             age: payload.age,
             highRisk: payload.metadata?.highRisk || false,
+            intakeCategory: intakeCategory || null,
+            routing: payload.metadata?.routing || null,
         };
 
         // Save to database (primary storage)
@@ -677,6 +813,7 @@ router.put('/api/patient-intake/my-intake', verifyToken, async (req, res, next) 
             success: true,
             message: 'Data berhasil diperbarui',
             submissionId: existingRecord.submissionId,
+            intakeCategory: intakeCategory || null,
         });
     } catch (error) {
         logger.error('Failed to update patient intake', { error: error.message });

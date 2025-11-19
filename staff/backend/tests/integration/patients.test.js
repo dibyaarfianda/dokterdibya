@@ -145,7 +145,6 @@ describe('Patient API Integration Tests', () => {
         it('should reject invalid patient data', async () => {
             const invalidPatient = {
                 id: 'P003'
-                // Missing full_name
             };
 
             const response = await request(app)
