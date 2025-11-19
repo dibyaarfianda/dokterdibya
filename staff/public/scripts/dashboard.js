@@ -155,84 +155,103 @@ async function loadVisitSection() {
     }
 }
 
-async function loadAppointmentsOverview() {
+async function loadDashboardStats() {
     const container = document.getElementById('dashboard-today-appointments');
-    const totalBookingsEl = document.getElementById('stat-total-bookings');
-    const todayAppointmentsEl = document.getElementById('stat-appointments-today');
+    const totalPatientsEl = document.getElementById('stat-total-bookings');
+    const nextSundayAppointmentsEl = document.getElementById('stat-appointments-today');
+    const gynaeCasesEl = document.getElementById('stat-online-users');
 
-    if (!container || !totalBookingsEl || !todayAppointmentsEl) return;
+    if (!container) return;
 
-    const targetDate = getNextSundayDate(new Date());
-    const targetLabel = targetDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' });
-    const targetKey = formatDateLocal(targetDate);
-
-    container.innerHTML = `<p class="text-muted mb-0">Memuat appointment untuk ${targetLabel}...</p>`;
+    container.innerHTML = `<p class="text-muted mb-0">Memuat statistik dashboard...</p>`;
 
     try {
         const token = await getIdToken();
         if (!token) {
             container.innerHTML = '<p class="text-muted mb-0">Tidak terautentikasi.</p>';
-            totalBookingsEl.textContent = '0';
-            todayAppointmentsEl.textContent = '0';
+            if (totalPatientsEl) totalPatientsEl.textContent = '0';
+            if (nextSundayAppointmentsEl) nextSundayAppointmentsEl.textContent = '0';
+            if (gynaeCasesEl) gynaeCasesEl.textContent = '0';
             return;
         }
 
-        const response = await fetch(`${VPS_API_BASE}/api/appointments`, {
+        const response = await fetch(`${VPS_API_BASE}/api/dashboard-stats`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
         if (!response.ok) {
             if (response.status === 403) {
-                container.innerHTML = '<p class="text-muted mb-0">Akses appointment dibatasi.</p>';
+                container.innerHTML = '<p class="text-muted mb-0">Akses dashboard dibatasi.</p>';
             } else {
-                container.innerHTML = '<p class="text-danger mb-0">Gagal memuat data appointment.</p>';
+                container.innerHTML = '<p class="text-danger mb-0">Gagal memuat data dashboard.</p>';
             }
-            totalBookingsEl.textContent = '0';
-            todayAppointmentsEl.textContent = '0';
+            if (totalPatientsEl) totalPatientsEl.textContent = '0';
+            if (nextSundayAppointmentsEl) nextSundayAppointmentsEl.textContent = '0';
+            if (gynaeCasesEl) gynaeCasesEl.textContent = '0';
             return;
         }
 
         const result = await response.json();
-        const appointments = Array.isArray(result.data) ? result.data : [];
 
-        const activeStatuses = new Set(['scheduled', 'confirmed']);
+        if (!result.success) {
+            throw new Error(result.message || 'Failed to load dashboard stats');
+        }
 
-        const activeBookings = appointments.filter(apt => (apt.status || '').toLowerCase() !== 'cancelled');
-        const targetAppointments = appointments.filter(apt => {
-            const status = (apt.status || '').toLowerCase();
-            return activeStatuses.has(status) && apt.appointment_date === targetKey;
+        const { stats, appointments } = result;
+
+        // Update statistics boxes
+        if (totalPatientsEl) totalPatientsEl.textContent = stats.totalPatients.toLocaleString('id-ID');
+        if (nextSundayAppointmentsEl) nextSundayAppointmentsEl.textContent = stats.nextSundayAppointments.toLocaleString('id-ID');
+        if (gynaeCasesEl) gynaeCasesEl.textContent = stats.gynaeCases.toLocaleString('id-ID');
+
+        // Format next Sunday date for display
+        const nextSundayDate = new Date(stats.nextSundayDate);
+        const nextSundayLabel = nextSundayDate.toLocaleDateString('id-ID', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
         });
 
-        totalBookingsEl.textContent = activeBookings.length.toLocaleString('id-ID');
-        todayAppointmentsEl.textContent = targetAppointments.length.toLocaleString('id-ID');
-
-        if (targetAppointments.length === 0) {
-            container.innerHTML = `<p class="text-muted mb-0">Tidak ada appointment untuk ${targetLabel}.</p>`;
+        // Update appointments list
+        if (appointments.length === 0) {
+            container.innerHTML = `<p class="text-muted mb-0">Tidak ada appointment untuk ${nextSundayLabel}.</p>`;
             return;
         }
 
-        targetAppointments.sort((a, b) => (a.appointment_time || '').localeCompare(b.appointment_time || ''));
-
         container.innerHTML = `
-            <div class="small text-muted mb-2">Jadwal untuk ${targetLabel}</div>
-            <ul class="list-unstyled mb-0 small">
-                ${targetAppointments.slice(0, 5).map(apt => {
-                    const time = (apt.appointment_time || '').substring(0, 5) || '--:--';
-                    const type = apt.appointment_type || 'Tidak diketahui';
-                    const name = apt.patient_name || 'Pasien';
-                    return `<li class="d-flex justify-content-between mb-2">
-                        <span><strong>${name}</strong><br>
-                        <small class="text-muted">${type}</small></span>
-                        <span class="badge badge-primary">${time}</span>
-                    </li>`;
-                }).join('')}
-            </ul>
+            <div class="small text-muted mb-2">Jadwal Minggu Depan - ${nextSundayLabel}</div>
+            <div class="table-responsive">
+                <table class="table table-sm table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Nama</th>
+                            <th>WhatsApp</th>
+                            <th>Keluhan Utama</th>
+                            <th>Slot Waktu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${appointments.map(apt => `
+                            <tr>
+                                <td><small>#${apt.id}</small></td>
+                                <td><strong>${apt.nama}</strong></td>
+                                <td><small>${apt.whatsapp || '-'}</small></td>
+                                <td><small class="text-muted">${apt.keluhan ? apt.keluhan.substring(0, 50) + (apt.keluhan.length > 50 ? '...' : '') : '-'}</small></td>
+                                <td><span class="badge badge-primary">${apt.slotWaktu}</span></td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
         `;
     } catch (error) {
-        console.warn('loadAppointmentsOverview failed:', error);
-        container.innerHTML = '<p class="text-danger mb-0">Gagal memuat data appointment.</p>';
-        totalBookingsEl.textContent = '0';
-        todayAppointmentsEl.textContent = '0';
+        console.warn('loadDashboardStats failed:', error);
+        container.innerHTML = '<p class="text-danger mb-0">Gagal memuat data dashboard.</p>';
+        if (totalPatientsEl) totalPatientsEl.textContent = '0';
+        if (nextSundayAppointmentsEl) nextSundayAppointmentsEl.textContent = '0';
+        if (gynaeCasesEl) gynaeCasesEl.textContent = '0';
     }
 }
 
@@ -287,36 +306,24 @@ async function loadRecentActivity() {
 
 export async function initDashboard() {
     const visitsLastMonthEl = document.getElementById('stat-visits-last-month');
-    const totalBookingsEl = document.getElementById('stat-total-bookings');
-    const todayAppointmentsEl = document.getElementById('stat-appointments-today');
-    const onlineUsersEl = document.getElementById('stat-online-users');
+    const totalPatientsEl = document.getElementById('stat-total-bookings');
+    const nextSundayAppointmentsEl = document.getElementById('stat-appointments-today');
+    const gynaeCasesEl = document.getElementById('stat-online-users');
     const visits30DaysEl = document.getElementById('stat-visits-30days-total');
     const chartContainer = document.getElementById('visits-30-days-chart');
 
     if (visitsLastMonthEl) visitsLastMonthEl.textContent = '...';
-    if (totalBookingsEl) totalBookingsEl.textContent = '...';
-    if (todayAppointmentsEl) todayAppointmentsEl.textContent = '...';
+    if (totalPatientsEl) totalPatientsEl.textContent = '...';
+    if (nextSundayAppointmentsEl) nextSundayAppointmentsEl.textContent = '...';
+    if (gynaeCasesEl) gynaeCasesEl.textContent = '...';
     if (visits30DaysEl) visits30DaysEl.textContent = '...';
     if (chartContainer) chartContainer.innerHTML = '<p class="text-muted mb-0">Memuat data kunjungan...</p>';
 
-    const sidebarOnlineCount = document.getElementById('online-count');
-    if (onlineUsersEl) {
-        const initialCount = parseInt(sidebarOnlineCount?.textContent || '0', 10);
-        onlineUsersEl.textContent = Number.isFinite(initialCount) ? initialCount.toLocaleString('id-ID') : '0';
-    }
-
-    window.updateOnlineUsersStat = updateOnlineUsersStat;
-
     await Promise.all([
         loadVisitSection(),
-        loadAppointmentsOverview(),
+        loadDashboardStats(),
         loadRecentActivity()
     ]);
-
-    if (sidebarOnlineCount) {
-        const latestCount = parseInt(sidebarOnlineCount.textContent || '0', 10);
-        updateOnlineUsersStat(Number.isFinite(latestCount) ? latestCount : 0);
-    }
 
     if (window.socketIoInstance && !window.__dashboardActivityListenerAttached) {
         setupActivityLogUpdates();
