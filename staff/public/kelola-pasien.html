@@ -303,13 +303,18 @@ Apakah Anda yakin ingin melanjutkan?`;
             }
             
             alert(successMessage);
-            
+
             // Clear patient cache and reload
             await loadPatients();
-            
+
             // Also reload patients in appointments if that module is loaded
             if (typeof window.reloadAppointmentPatients === 'function') {
                 await window.reloadAppointmentPatients();
+            }
+
+            // Reload Klinik Private appointments if available
+            if (window.klinikPrivate && typeof window.klinikPrivate.reload === 'function') {
+                await window.klinikPrivate.reload();
             }
             
         } catch (error) {

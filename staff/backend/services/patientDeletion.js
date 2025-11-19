@@ -86,7 +86,7 @@ async function deletePatientWithRelations(patientId) {
             'sunday_appointments'
         );
 
-        await deleteChild(connection,
+        await deleteOptionalChild(connection,
             'DELETE FROM visit_invoices WHERE patient_id = ?',
             [patientId],
             deletedData,
