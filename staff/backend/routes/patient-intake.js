@@ -8,22 +8,13 @@ const logger = require('../utils/logger');
 const PatientIntakeIntegrationService = require('../services/PatientIntakeIntegrationService');
 const { verifyToken } = require('../middleware/auth');
 const db = require('../db');
+const { getGMT7Timestamp } = require('../utils/idGenerator');
 
 const router = express.Router();
 const STORAGE_DIR = path.join(__dirname, '..', 'logs', 'patient-intake');
 const ENCRYPTION_KEY = process.env.INTAKE_ENCRYPTION_KEY || '';
 const ENCRYPTION_KEY_ID = process.env.INTAKE_ENCRYPTION_KEY_ID || 'default';
 let encryptionWarningLogged = false;
-
-// Helper function to get GMT+7 timestamp
-function getGMT7Timestamp() {
-    const now = new Date();
-    // Get UTC time first
-    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
-    // Add 7 hours to get GMT+7 (Jakarta time)
-    const gmt7Time = new Date(utcTime + (7 * 60 * 60 * 1000));
-    return gmt7Time.toISOString();
-}
 
 async function ensureDirectory() {
     await fs.mkdir(STORAGE_DIR, { recursive: true });

@@ -14,9 +14,9 @@ const logger = require('../utils/logger');
 // GET /api/roles - Get all roles
 router.get('/api/roles', verifyToken, requirePermission('roles.view'), asyncHandler(async (req, res) => {
     const [roles] = await db.query(`
-        SELECT r.*, 
+        SELECT r.*,
             COUNT(DISTINCT rp.permission_id) as permission_count,
-            COUNT(DISTINCT u.id) as user_count
+            COUNT(DISTINCT u.new_id) as user_count
         FROM roles r
         LEFT JOIN role_permissions rp ON r.id = rp.role_id
         LEFT JOIN users u ON r.id = u.role_id
@@ -222,23 +222,23 @@ router.get('/api/permissions', verifyToken, requirePermission('roles.view'), asy
 router.get('/api/users/:userId/permissions', verifyToken, asyncHandler(async (req, res) => {
     const { userId } = req.params;
 
-    // Users can view their own permissions (match by Firebase UID or database ID)
+    // Users can view their own permissions
     // Admins can view anyone's permissions
-    const isOwnPermissions = req.user.id === userId || req.user.id === parseInt(userId);
+    const isOwnPermissions = req.user.id === userId;
     const isAdmin = ['superadmin', 'admin'].includes(req.user.role);
-    
+
     if (!isOwnPermissions && !isAdmin) {
         throw new AppError('Akses ditolak', HTTP_STATUS.FORBIDDEN);
     }
 
-    // Query using Firebase UID (users.id is varchar)
+    // Query using new_id
     const [permissions] = await db.query(`
         SELECT DISTINCT p.name, p.display_name, p.category, p.description
         FROM users u
         INNER JOIN roles r ON u.role_id = r.id
         INNER JOIN role_permissions rp ON r.id = rp.role_id
         INNER JOIN permissions p ON rp.permission_id = p.id
-        WHERE u.id = ?
+        WHERE u.new_id = ?
         ORDER BY p.category, p.name
     `, [userId]);
 
@@ -255,7 +255,7 @@ router.put('/api/users/:userId/role', verifyToken, requirePermission('roles.edit
     }
 
     // Check if user exists
-    const [userRows] = await db.query('SELECT id, name, email FROM users WHERE id = ?', [userId]);
+    const [userRows] = await db.query('SELECT new_id, name, email FROM users WHERE new_id = ?', [userId]);
     if (userRows.length === 0) {
         throw new AppError('User tidak ditemukan', HTTP_STATUS.NOT_FOUND);
     }
@@ -273,7 +273,7 @@ router.put('/api/users/:userId/role', verifyToken, requirePermission('roles.edit
         throw new AppError('Hanya super admin yang dapat menetapkan role super admin', HTTP_STATUS.FORBIDDEN);
     }
 
-    await db.query('UPDATE users SET role_id = ?, role = ? WHERE id = ?', [role_id, role.name, userId]);
+    await db.query('UPDATE users SET role_id = ?, role = ? WHERE new_id = ?', [role_id, role.name, userId]);
 
     logger.info(`User ${userId} assigned role ${role.name} by user ${req.user.id}`);
 
@@ -283,8 +283,8 @@ router.put('/api/users/:userId/role', verifyToken, requirePermission('roles.edit
 // GET /api/users - Get all users with roles (enhanced)
 router.get('/api/users', verifyToken, requireRole('superadmin', 'admin'), asyncHandler(async (req, res) => {
     const [users] = await db.query(`
-        SELECT u.id, u.name, u.email, u.is_active, 
-            u.created_at,
+        SELECT u.new_id as id, u.name, u.email, u.is_active,
+            u.created_at, u.user_type,
             r.id as role_id, r.name as role_name, r.display_name as role_display_name
         FROM users u
         LEFT JOIN roles r ON u.role_id = r.id
@@ -304,17 +304,17 @@ router.put('/api/users/:userId/status', verifyToken, requireRole('superadmin', '
     }
 
     // Check if user exists
-    const [userRows] = await db.query('SELECT id, name, email FROM users WHERE id = ?', [userId]);
+    const [userRows] = await db.query('SELECT new_id, name, email FROM users WHERE new_id = ?', [userId]);
     if (userRows.length === 0) {
         throw new AppError('User tidak ditemukan', HTTP_STATUS.NOT_FOUND);
     }
 
     // Don't allow deactivating yourself
-    if (parseInt(userId) === req.user.id) {
+    if (userId === req.user.id) {
         throw new AppError('Anda tidak dapat menonaktifkan akun sendiri', HTTP_STATUS.FORBIDDEN);
     }
 
-    await db.query('UPDATE users SET is_active = ? WHERE id = ?', [is_active, userId]);
+    await db.query('UPDATE users SET is_active = ? WHERE new_id = ?', [is_active, userId]);
 
     logger.info(`User ${userId} ${is_active ? 'activated' : 'deactivated'} by user ${req.user.id}`);
 

@@ -2,15 +2,16 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { createSundayClinicRecord } = require('../services/sundayClinicService');
+const { getGMT7Date, getGMT7Timestamp } = require('../utils/idGenerator');
 
 // Middleware to verify JWT token
 const verifyToken = (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
-    
+
     if (!token) {
         return res.status(401).json({ message: 'Token tidak ditemukan' });
     }
-    
+
     try {
         const jwt = require('jsonwebtoken');
         const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -21,15 +22,6 @@ const verifyToken = (req, res, next) => {
         return res.status(401).json({ message: 'Token tidak valid' });
     }
 };
-
-// Helper function to get current date/time in GMT+7 (Jakarta/Indonesian time)
-function getGMT7Date() {
-    const now = new Date();
-    // Get UTC time first
-    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
-    // Add 7 hours to get GMT+7 (Jakarta time)
-    return new Date(utcTime + (7 * 60 * 60 * 1000));
-}
 
 // Helper function to get next Sundays
 function getNextSundays(count = 8) {

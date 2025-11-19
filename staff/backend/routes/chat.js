@@ -55,7 +55,7 @@ router.post('/api/chat/send', verifyToken, validateChatMessage, async (req, res)
 
         try {
             const [userRows] = await db.query(
-                'SELECT name, email, photo_url FROM users WHERE id = ? LIMIT 1',
+                'SELECT name, email, photo_url FROM users WHERE new_id = ? LIMIT 1',
                 [userId]
             );
 

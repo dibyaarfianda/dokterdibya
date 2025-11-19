@@ -3,16 +3,7 @@ const router = express.Router();
 const db = require('../db');
 const { verifyToken } = require('../middleware/auth');
 const logger = require('../utils/logger');
-
-// Helper function to get GMT+7 timestamp
-function getGMT7Timestamp() {
-    const now = new Date();
-    // Get UTC time first
-    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
-    // Add 7 hours to get GMT+7 (Jakarta time)
-    const gmt7Time = new Date(utcTime + (7 * 60 * 60 * 1000));
-    return gmt7Time.toISOString();
-}
+const { getGMT7Timestamp, toMySQLTimestamp } = require('../utils/idGenerator');
 
 // Create medical_records table if not exists
 async function ensureMedicalRecordsTable() {
@@ -141,9 +132,7 @@ router.post('/api/medical-records', verifyToken, async (req, res) => {
         const finalDoctorName = doctorName || (req.user ? (req.user.name || req.user.email) : 'Unknown');
         
         // Convert ISO timestamp to MySQL datetime format (preserve GMT+7)
-        const mysqlTimestamp = timestamp
-            ? timestamp.slice(0, 19).replace('T', ' ')
-            : getGMT7Timestamp().slice(0, 19).replace('T', ' ');
+        const mysqlTimestamp = toMySQLTimestamp(timestamp);
 
         // Insert into database
         const [result] = await db.query(
