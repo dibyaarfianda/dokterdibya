@@ -45,6 +45,12 @@
             background: rgba(255,255,255,0.75);
             z-index: 10;
         }
+        .structured-section + .structured-section {
+            border-top: 1px solid #f1f1f1;
+            margin-top: 8px;
+            padding-top: 8px;
+        }
+        .structured-section dl { margin-bottom: 0; }
     </style>
 </head>
 <body class="hold-transition sidebar-mini">
@@ -228,6 +234,26 @@
                         <span id="detail-risk-badge" class="badge"></span>
                         <span id="detail-status-badge" class="badge badge-secondary ml-2"></span>
                     </div>
+
+                    <div class="mb-3" id="detail-intake-meta">
+                        <dl class="row mb-0">
+                            <dt class="col-sm-4">Kategori Intake</dt>
+                            <dd class="col-sm-8" id="detail-intake-category">-</dd>
+                            <dt class="col-sm-4">Alur Pertanyaan</dt>
+                            <dd class="col-sm-8" id="detail-intake-routing">-</dd>
+                        </dl>
+                    </div>
+
+                    <div class="mb-3 d-none" id="detail-admin-followup">
+                        <h6>Catatan Tindak Lanjut Admin</h6>
+                        <div class="alert alert-info mb-2" id="detail-admin-followup-primary"></div>
+                        <div class="text-muted" id="detail-admin-followup-secondary"></div>
+                    </div>
+
+                    <div class="mb-3 d-none" id="detail-anamnesa-wrapper">
+                        <h6>Anamnesa &amp; Riwayat</h6>
+                        <div id="detail-anamnesa-sections"></div>
+                    </div>
                     
                     <h6>Identitas Pasien</h6>
                     <dl class="row mb-3">
@@ -235,7 +261,7 @@
                         <dd class="col-sm-8" id="detail-name">-</dd>
                         <dt class="col-sm-4">Tanggal Lahir</dt>
                         <dd class="col-sm-8" id="detail-dob">-</dd>
-                        <dt class="col-sm-4">Telepon</dt>
+                        <dt class="col-sm-4">Telepon/Whatsapp</dt>
                         <dd class="col-sm-8" id="detail-phone">-</dd>
                         <dt class="col-sm-4">Alamat</dt>
                         <dd class="col-sm-8" id="detail-address">-</dd>
@@ -246,22 +272,26 @@
                         <!-- Will be populated dynamically -->
                     </dl>
 
-                    <h6>Kehamilan Saat Ini</h6>
-                    <dl class="row mb-3">
-                        <dt class="col-sm-4">LMP</dt>
-                        <dd class="col-sm-8" id="detail-lmp">-</dd>
-                        <dt class="col-sm-4">EDD</dt>
-                        <dd class="col-sm-8" id="detail-edd">-</dd>
-                        <dt class="col-sm-4">BMI</dt>
-                        <dd class="col-sm-8" id="detail-bmi">-</dd>
-                        <dt class="col-sm-4">Total Gravida/Para</dt>
-                        <dd class="col-sm-8" id="detail-obstetric">-</dd>
-                    </dl>
+                    <div class="mb-3" id="detail-pregnancy-section">
+                        <h6>Kehamilan Saat Ini</h6>
+                        <dl class="row mb-0">
+                            <dt class="col-sm-4">LMP</dt>
+                            <dd class="col-sm-8" id="detail-lmp">-</dd>
+                            <dt class="col-sm-4">EDD</dt>
+                            <dd class="col-sm-8" id="detail-edd">-</dd>
+                            <dt class="col-sm-4">BMI</dt>
+                            <dd class="col-sm-8" id="detail-bmi">-</dd>
+                            <dt class="col-sm-4">Total Gravida/Para</dt>
+                            <dd class="col-sm-8" id="detail-obstetric">-</dd>
+                        </dl>
+                    </div>
                     
-                    <h6>Riwayat Medis & Risiko</h6>
-                    <dl class="row mb-3" id="detail-medical-history">
-                        <!-- Will be populated dynamically -->
-                    </dl>
+                    <div class="mb-3" id="detail-medical-history-section">
+                        <h6>Riwayat Medis &amp; Risiko</h6>
+                        <dl class="row mb-0" id="detail-medical-history">
+                            <!-- Will be populated dynamically -->
+                        </dl>
+                    </div>
                     
                     <div class="mb-3" id="detail-prenatal-section">
                         <h6>Riwayat ANC/Prenatal</h6>
