@@ -14,6 +14,20 @@ function formatDateLocal(date) {
     return `${year}-${month}-${day}`;
 }
 
+function getNextSundayDate(referenceDate = new Date()) {
+    const base = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate());
+    const day = base.getDay();
+    const daysUntilSunday = day === 0 ? 7 : 7 - day;
+    base.setDate(base.getDate() + daysUntilSunday);
+    return base;
+}
+
+function getPreviousMonthRange(referenceDate = new Date()) {
+    const start = new Date(referenceDate.getFullYear(), referenceDate.getMonth() - 1, 1);
+    const end = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), 0);
+    return { start, end };
+}
+
 function renderVisitsChart(dailyData) {
     const container = document.getElementById('visits-30-days-chart');
     if (!container) return;
@@ -47,12 +61,13 @@ function renderVisitsChart(dailyData) {
 
 async function fetchVisitStats(token) {
     const today = new Date();
-    const start = new Date();
-    start.setDate(today.getDate() - 29);
+    const { start: prevMonthStart, end: prevMonthEnd } = getPreviousMonthRange(today);
+    const thirtyDayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate() - 29);
+    const queryStart = prevMonthStart < thirtyDayStart ? prevMonthStart : thirtyDayStart;
 
     const params = new URLSearchParams({
         exclude_dummy: 'true',
-        start_date: formatDateLocal(start),
+        start_date: formatDateLocal(queryStart),
         end_date: formatDateLocal(today)
     });
 
@@ -70,26 +85,32 @@ async function fetchVisitStats(token) {
     const visits = Array.isArray(payload.data) ? payload.data : [];
 
     const todayKey = formatDateLocal(today);
+    const thirtyDayStartKey = formatDateLocal(thirtyDayStart);
+    const prevMonthStartKey = formatDateLocal(prevMonthStart);
+    const prevMonthEndKey = formatDateLocal(prevMonthEnd);
+
     const counts = new Map();
-    let todayCount = 0;
+    let lastMonthCount = 0;
 
     visits.forEach(visit => {
         const rawDate = visit.visit_date || visit.visitDate || visit.created_at || visit.createdAt;
         if (!rawDate) return;
         const key = rawDate.substring(0, 10);
-        counts.set(key, (counts.get(key) || 0) + 1);
-        if (key === todayKey) {
-            todayCount += 1;
+        if (key >= thirtyDayStartKey && key <= todayKey) {
+            counts.set(key, (counts.get(key) || 0) + 1);
+        }
+        if (key >= prevMonthStartKey && key <= prevMonthEndKey) {
+            lastMonthCount += 1;
         }
     });
 
     const daily = [];
-    const cursor = new Date(start);
+    const cursor = new Date(thirtyDayStart);
     for (let i = 0; i < 30; i++) {
         const key = formatDateLocal(cursor);
         daily.push({
             date: key,
-            label: cursor.toLocaleDateString('id-ID', { day: '2-digit', month: 'short' }),
+            label: cursor.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
             count: counts.get(key) || 0
         });
         cursor.setDate(cursor.getDate() + 1);
@@ -97,31 +118,31 @@ async function fetchVisitStats(token) {
 
     const totalLast30Days = daily.reduce((sum, item) => sum + item.count, 0);
 
-    return { todayCount, totalLast30Days, daily };
+    return { lastMonthCount, totalLast30Days, daily };
 }
 
 async function loadVisitSection() {
-    const visitsTodayEl = document.getElementById('stat-visits-today');
+    const visitsLastMonthEl = document.getElementById('stat-visits-last-month');
     const visits30DaysEl = document.getElementById('stat-visits-30days-total');
     const chartContainer = document.getElementById('visits-30-days-chart');
-    if (!visitsTodayEl || !chartContainer) return;
+    if (!visitsLastMonthEl || !chartContainer) return;
 
     try {
         const token = await getIdToken();
         if (!token) {
-            visitsTodayEl.textContent = '0';
+            visitsLastMonthEl.textContent = '0';
             if (visits30DaysEl) visits30DaysEl.textContent = '0';
             chartContainer.innerHTML = '<p class="text-muted mb-0">Tidak terautentikasi.</p>';
             return;
         }
 
         const stats = await fetchVisitStats(token);
-        visitsTodayEl.textContent = stats.todayCount.toLocaleString('id-ID');
+        visitsLastMonthEl.textContent = stats.lastMonthCount.toLocaleString('id-ID');
         if (visits30DaysEl) visits30DaysEl.textContent = stats.totalLast30Days.toLocaleString('id-ID');
         renderVisitsChart(stats.daily);
     } catch (error) {
         console.warn('loadVisitSection failed:', error);
-        visitsTodayEl.textContent = '0';
+        visitsLastMonthEl.textContent = '0';
         if (visits30DaysEl) visits30DaysEl.textContent = '0';
 
         if (chartContainer) {
@@ -141,7 +162,11 @@ async function loadAppointmentsOverview() {
 
     if (!container || !totalBookingsEl || !todayAppointmentsEl) return;
 
-    container.innerHTML = '<p class="text-muted mb-0">Memuat data appointment...</p>';
+    const targetDate = getNextSundayDate(new Date());
+    const targetLabel = targetDate.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' });
+    const targetKey = formatDateLocal(targetDate);
+
+    container.innerHTML = `<p class="text-muted mb-0">Memuat appointment untuk ${targetLabel}...</p>`;
 
     try {
         const token = await getIdToken();
@@ -170,28 +195,28 @@ async function loadAppointmentsOverview() {
         const result = await response.json();
         const appointments = Array.isArray(result.data) ? result.data : [];
 
-        const todayKey = formatDateLocal(new Date());
         const activeStatuses = new Set(['scheduled', 'confirmed']);
 
         const activeBookings = appointments.filter(apt => (apt.status || '').toLowerCase() !== 'cancelled');
-        const todaysAppointments = appointments.filter(apt => {
+        const targetAppointments = appointments.filter(apt => {
             const status = (apt.status || '').toLowerCase();
-            return activeStatuses.has(status) && apt.appointment_date === todayKey;
+            return activeStatuses.has(status) && apt.appointment_date === targetKey;
         });
 
         totalBookingsEl.textContent = activeBookings.length.toLocaleString('id-ID');
-        todayAppointmentsEl.textContent = todaysAppointments.length.toLocaleString('id-ID');
+        todayAppointmentsEl.textContent = targetAppointments.length.toLocaleString('id-ID');
 
-        if (todaysAppointments.length === 0) {
-            container.innerHTML = '<p class="text-muted mb-0">Tidak ada appointment hari ini.</p>';
+        if (targetAppointments.length === 0) {
+            container.innerHTML = `<p class="text-muted mb-0">Tidak ada appointment untuk ${targetLabel}.</p>`;
             return;
         }
 
-        todaysAppointments.sort((a, b) => (a.appointment_time || '').localeCompare(b.appointment_time || ''));
+        targetAppointments.sort((a, b) => (a.appointment_time || '').localeCompare(b.appointment_time || ''));
 
         container.innerHTML = `
+            <div class="small text-muted mb-2">Jadwal untuk ${targetLabel}</div>
             <ul class="list-unstyled mb-0 small">
-                ${todaysAppointments.slice(0, 5).map(apt => {
+                ${targetAppointments.slice(0, 5).map(apt => {
                     const time = (apt.appointment_time || '').substring(0, 5) || '--:--';
                     const type = apt.appointment_type || 'Tidak diketahui';
                     const name = apt.patient_name || 'Pasien';
@@ -261,14 +286,14 @@ async function loadRecentActivity() {
 }
 
 export async function initDashboard() {
-    const visitsTodayEl = document.getElementById('stat-visits-today');
+    const visitsLastMonthEl = document.getElementById('stat-visits-last-month');
     const totalBookingsEl = document.getElementById('stat-total-bookings');
     const todayAppointmentsEl = document.getElementById('stat-appointments-today');
     const onlineUsersEl = document.getElementById('stat-online-users');
     const visits30DaysEl = document.getElementById('stat-visits-30days-total');
     const chartContainer = document.getElementById('visits-30-days-chart');
 
-    if (visitsTodayEl) visitsTodayEl.textContent = '...';
+    if (visitsLastMonthEl) visitsLastMonthEl.textContent = '...';
     if (totalBookingsEl) totalBookingsEl.textContent = '...';
     if (todayAppointmentsEl) todayAppointmentsEl.textContent = '...';
     if (visits30DaysEl) visits30DaysEl.textContent = '...';

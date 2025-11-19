@@ -381,8 +381,9 @@ function formatCurrency(amount) {
 function formatDate(dateString) {
     const date = new Date(dateString);
     return date.toLocaleDateString('id-ID', {
-        day: '2-digit',
-        month: 'short'
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric'
     });
 }
 
@@ -483,7 +484,7 @@ function analyzeWeeklyRevenue(visits) {
     
     return Object.entries(dailyRevenue).map(([date, revenue]) => ({
         date,
-        dateLabel: new Date(date).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' }),
+        dateLabel: new Date(date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
         revenue
     }));
 }
@@ -507,7 +508,7 @@ function analyzeMonthlyRevenue(visits) {
     
     return Object.entries(dailyRevenue).map(([date, revenue]) => ({
         date,
-        dateLabel: new Date(date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }),
+        dateLabel: new Date(date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
         revenue
     }));
 }

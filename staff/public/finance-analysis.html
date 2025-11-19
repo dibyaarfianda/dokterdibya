@@ -474,7 +474,7 @@
             xaxis: {
                 categories: data.map(d => {
                     const date = new Date(d.date);
-                    return date.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' });
+                    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
                 })
             },
             yaxis: {

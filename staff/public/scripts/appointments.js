@@ -240,10 +240,10 @@ function renderAppointmentsList(appointments) {
     tbody.innerHTML = appointments.map((apt, index) => {
         const statusBadge = getStatusBadge(apt.status);
         const appointmentDate = new Date(apt.appointment_date);
-        const dateStr = appointmentDate.toLocaleDateString('id-ID', { 
-            day: 'numeric', 
-            month: 'short', 
-            year: 'numeric' 
+        const dateStr = appointmentDate.toLocaleDateString('id-ID', {
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
         });
         
         return `
