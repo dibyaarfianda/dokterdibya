@@ -1,6 +1,8 @@
 const form = document.getElementById('intake-form');
-const steps = Array.from(document.querySelectorAll('.intake-step'));
-const stepIndicator = Array.from(document.querySelectorAll('#stepper span'));
+const stepper = document.getElementById('stepper');
+const allStepSections = Array.from(document.querySelectorAll('.intake-step'));
+let steps = [];
+let stepIndicator = [];
 const prevBtn = document.getElementById('btn-prev');
 const nextBtn = document.getElementById('btn-next');
 const submitBtn = document.getElementById('btn-submit');
@@ -8,6 +10,8 @@ const toast = document.getElementById('toast');
 const statusMessage = document.getElementById('status-message');
 const STORAGE_KEY = 'dibya-intake-draft-v1';
 const BMI_SUMMARY = document.getElementById('bmi-summary');
+const heightField = document.getElementById('height');
+const heightUnknownCheckbox = document.getElementById('height_unknown');
 const maritalStatusField = document.getElementById('marital_status');
 const husbandNameField = document.getElementById('husband_name');
 const husbandAgeField = document.getElementById('husband_age');
@@ -21,13 +25,30 @@ const paraField = document.getElementById('para');
 const abortusField = document.getElementById('abortus');
 const livingChildrenField = document.getElementById('living_children');
 const pregnanciesTable = document.querySelector('table[data-collection="pregnancies"]');
+const previousPregnancySection = document.getElementById('previous-pregnancy-section');
 // Prenatal and Lab sections removed - will be filled by staff
 // const prenatalTable = document.querySelector('table[data-collection="prenatal"]');
 // const labTable = document.querySelector('table[data-collection="labs"]');
 // const addPrenatalRowBtn = document.getElementById('add-prenatal-row');
 // const addLabRowBtn = document.getElementById('add-lab-row');
 const patientSignatureField = document.getElementById('patient_signature');
+const categoryField = document.getElementById('intake_category');
+const pregnantRadios = Array.from(document.querySelectorAll('input[name="pregnant_status"]'));
+const reproductiveRadios = Array.from(document.querySelectorAll('input[name="needs_reproductive"]'));
+const gynIssueRadios = Array.from(document.querySelectorAll('input[name="has_gyn_issue"]'));
+const nonPregnantFlow = document.getElementById('non-pregnant-flow');
+const gynIssueQuestion = document.getElementById('gyn-issue-question');
+const adminFollowupContainer = document.getElementById('admin-followup-container');
+const adminFollowupNote = document.getElementById('admin_followup_note');
+const adminFollowupAdditional = document.getElementById('admin_followup_note_secondary');
+const categorySummary = document.getElementById('category-summary');
+const categoryTag = document.getElementById('category-tag');
+const categoryDescription = document.getElementById('category-description');
+const categorySpecificBlocks = Array.from(document.querySelectorAll('[data-category-visible]'));
+const fertilityProgramSelect = document.getElementById('fertility_program_interest');
+const fertilityHistorySection = document.getElementById('fertility-history-section');
 let currentStep = 0;
+let activeCategory = normalizeCategory(categoryField && categoryField.value ? categoryField.value : null);
 
 // Generate ISO timestamp in GMT+7 (Jakarta/Indonesian time)
 function getGMT7Timestamp() {
@@ -68,6 +89,178 @@ const pastConditionLabels = {
 
 const totalFields = [gravidaField, paraField, abortusField, livingChildrenField];
 
+const CATEGORY_SUMMARY_COPY = {
+    obstetri: {
+        label: 'Pasien Obstetri',
+        description: 'Formulir fokus pada riwayat antenatal dan kehamilan yang sedang berlangsung.'
+    },
+    gyn_repro: {
+        label: 'Pasien Ginekologi Reproduktif',
+        description: 'Formulir untuk konsultasi promil, kontrasepsi, dan perencanaan reproduksi.'
+    },
+    gyn_special: {
+        label: 'Pasien Ginekologi Khusus',
+        description: 'Formulir untuk keluhan ginekologi spesifik seperti gangguan haid atau nyeri.'
+    },
+    admin_followup: {
+        label: 'Butuh Tindak Lanjut Admin',
+        description: 'Tim admin akan menghubungi Anda terlebih dahulu sebelum menjadwalkan konsultasi.'
+    }
+};
+
+function normalizeCategory(value) {
+    if (!value) {
+        return null;
+    }
+    const trimmed = String(value).trim();
+    return trimmed.length ? trimmed : null;
+}
+
+function getSelectedValue(inputs) {
+    return inputs.find((input) => input.checked)?.value || null;
+}
+
+function setRadioRequired(inputs, required) {
+    inputs.forEach((input, index) => {
+        if (index === 0) {
+            input.required = required;
+        } else {
+            input.required = false;
+        }
+    });
+}
+
+function toggleAdminNoteVisibility(shouldShow) {
+    if (!adminFollowupContainer) {
+        return;
+    }
+    adminFollowupContainer.hidden = !shouldShow;
+    if (adminFollowupNote) {
+        adminFollowupNote.required = shouldShow;
+    }
+}
+
+function applyHeightUnknownState() {
+    if (!heightField) {
+        return;
+    }
+    const unknown = Boolean(heightUnknownCheckbox?.checked);
+    if (unknown) {
+        heightField.value = '';
+        heightField.disabled = true;
+        heightField.placeholder = 'Tidak diketahui';
+    } else {
+        heightField.disabled = false;
+        heightField.placeholder = 'Contoh: 160';
+    }
+    updateBMI();
+}
+
+function updateCategorySummary() {
+    if (!categorySummary || !categoryTag || !categoryDescription) {
+        return;
+    }
+    if (!activeCategory) {
+        categorySummary.hidden = true;
+        categoryTag.textContent = '';
+        categoryDescription.textContent = '';
+        return;
+    }
+    const copy = CATEGORY_SUMMARY_COPY[activeCategory] || null;
+    if (!copy) {
+        categorySummary.hidden = true;
+        categoryTag.textContent = '';
+        categoryDescription.textContent = '';
+        return;
+    }
+    categoryTag.textContent = copy.label;
+    categoryDescription.textContent = copy.description;
+    categorySummary.hidden = false;
+}
+
+function toggleCategoryBlockInputs(element, shouldEnable) {
+    if (!element) {
+        return;
+    }
+    const controls = element.querySelectorAll('input, select, textarea');
+    controls.forEach((control) => {
+        if (!control.dataset.categoryOriginalDisabled) {
+            control.dataset.categoryOriginalDisabled = control.disabled ? 'true' : 'false';
+        }
+        if (shouldEnable) {
+            const wasDisabled = control.dataset.categoryOriginalDisabled === 'true';
+            control.disabled = wasDisabled;
+        } else {
+            control.disabled = true;
+        }
+    });
+}
+
+function clearSectionValues(section) {
+    if (!section) {
+        return;
+    }
+    const controls = section.querySelectorAll('input, select, textarea');
+    controls.forEach((control) => {
+        if (control.type === 'checkbox' || control.type === 'radio') {
+            control.checked = false;
+        } else {
+            control.value = '';
+        }
+    });
+}
+
+function updateCategorySpecificBlocks() {
+    if (!categorySpecificBlocks || categorySpecificBlocks.length === 0) {
+        return;
+    }
+    categorySpecificBlocks.forEach((element) => {
+        const categoriesAttr = element.dataset.categoryVisible || '';
+        const categories = categoriesAttr.split(',').map((value) => value.trim()).filter(Boolean);
+        let shouldShow = true;
+        if (categories.length) {
+            if (categories.includes('all')) {
+                shouldShow = true;
+            } else if (!activeCategory) {
+                shouldShow = false;
+            } else {
+                shouldShow = categories.includes(activeCategory);
+            }
+        }
+        element.hidden = !shouldShow;
+        toggleCategoryBlockInputs(element, shouldShow);
+    });
+    updateFertilitySectionVisibility();
+}
+
+function updateFertilitySectionVisibility() {
+    const programValue = (fertilityProgramSelect && fertilityProgramSelect.value) ? fertilityProgramSelect.value.toLowerCase() : '';
+    const isGynRepro = activeCategory === 'gyn_repro';
+
+    if (fertilityHistorySection) {
+        const showFertility = isGynRepro && programValue === 'ya';
+        fertilityHistorySection.hidden = !showFertility;
+        toggleCategoryBlockInputs(fertilityHistorySection, showFertility);
+        if (!showFertility && programValue !== 'ya') {
+            clearSectionValues(fertilityHistorySection);
+        }
+    }
+
+    if (previousPregnancySection) {
+        if (isGynRepro) {
+            const showPregnancyHistory = programValue !== 'ya';
+            previousPregnancySection.hidden = !showPregnancyHistory;
+            toggleCategoryBlockInputs(previousPregnancySection, showPregnancyHistory);
+            if (!showPregnancyHistory) {
+                clearSectionValues(previousPregnancySection);
+            }
+        } else {
+            previousPregnancySection.hidden = false;
+            toggleCategoryBlockInputs(previousPregnancySection, true);
+        }
+    }
+}
+
 function escapeName(name) {
     if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
         return CSS.escape(name);
@@ -96,6 +289,189 @@ function setTableNextIndex(table, nextIndex) {
     if (table && Number.isFinite(nextIndex)) {
         table.dataset.nextIndex = String(nextIndex);
     }
+}
+
+function sectionMatchesCategory(section) {
+    if (!section) {
+        return false;
+    }
+    const requiresCategory = section.dataset.requiresCategory !== 'false';
+    const categoriesAttr = section.dataset.categories || 'obstetri';
+    const categories = categoriesAttr.split(',').map((value) => value.trim()).filter(Boolean);
+    if (!activeCategory && requiresCategory) {
+        return false;
+    }
+    if (categories.includes('all')) {
+        return true;
+    }
+    if (!activeCategory) {
+        return false;
+    }
+    return categories.includes(activeCategory);
+}
+
+function applyStepVisibility() {
+    const activeSection = steps[currentStep] || null;
+    allStepSections.forEach((section) => {
+        if (!section) {
+            return;
+        }
+        const isVisible = steps.includes(section) && section === activeSection;
+        section.classList.toggle('active', isVisible);
+        if (!steps.includes(section)) {
+            section.classList.remove('active');
+        }
+    });
+    stepIndicator.forEach((indicator, index) => {
+        indicator.classList.toggle('active', index === currentStep);
+    });
+}
+
+function rebuildSteps() {
+    steps = allStepSections.filter((section) => sectionMatchesCategory(section));
+    if (stepper) {
+        const fragment = document.createDocumentFragment();
+        const indicators = [];
+        steps.forEach((section, index) => {
+            const span = document.createElement('span');
+            span.textContent = section.dataset.stepTitle || section.querySelector('.step-title')?.textContent || `Langkah ${index + 1}`;
+            fragment.appendChild(span);
+            indicators.push(span);
+        });
+        stepper.innerHTML = '';
+        stepper.appendChild(fragment);
+        stepIndicator = indicators;
+    }
+    if (steps.length === 0) {
+        currentStep = 0;
+    } else if (currentStep >= steps.length) {
+        currentStep = steps.length - 1;
+    }
+    applyStepVisibility();
+    refreshButtons();
+}
+
+function setActiveCategory(category) {
+    const normalized = normalizeCategory(category);
+    const previousCategory = activeCategory;
+    activeCategory = normalized;
+    if (categoryField) {
+        categoryField.value = normalized || '';
+    }
+    updateCategorySummary();
+    updateCategorySpecificBlocks();
+    if (normalized !== previousCategory) {
+        rebuildSteps();
+    } else {
+        if (!steps.length) {
+            rebuildSteps();
+        } else {
+            applyStepVisibility();
+            refreshButtons();
+        }
+    }
+}
+
+function deriveCategoryFromRouting() {
+    const pregnantValue = getSelectedValue(pregnantRadios);
+    if (pregnantValue === 'yes') {
+        return 'obstetri';
+    }
+    if (pregnantValue === 'no') {
+        const reproductiveValue = getSelectedValue(reproductiveRadios);
+        if (reproductiveValue === 'yes') {
+            return 'gyn_repro';
+        }
+        if (reproductiveValue === 'no') {
+            const issueValue = getSelectedValue(gynIssueRadios);
+            if (issueValue === 'yes') {
+                return 'gyn_special';
+            }
+            if (issueValue === 'no') {
+                if (adminFollowupNote && adminFollowupNote.value.trim().length > 0) {
+                    return 'admin_followup';
+                }
+                return null;
+            }
+            return null;
+        }
+        return null;
+    }
+    return null;
+}
+
+function updateRoutingVisibility() {
+    const pregnantValue = getSelectedValue(pregnantRadios);
+    if (pregnantValue === 'yes') {
+        if (nonPregnantFlow) {
+            nonPregnantFlow.hidden = true;
+        }
+        if (gynIssueQuestion) {
+            gynIssueQuestion.hidden = true;
+        }
+        setRadioRequired(reproductiveRadios, false);
+        setRadioRequired(gynIssueRadios, false);
+        toggleAdminNoteVisibility(false);
+        return;
+    }
+
+    if (pregnantValue === 'no') {
+        if (nonPregnantFlow) {
+            nonPregnantFlow.hidden = false;
+        }
+        const reproductiveValue = getSelectedValue(reproductiveRadios);
+        const reproductiveAnswered = reproductiveValue !== null;
+        setRadioRequired(reproductiveRadios, true);
+
+        if (reproductiveValue === 'yes') {
+            if (gynIssueQuestion) {
+                gynIssueQuestion.hidden = true;
+            }
+            setRadioRequired(gynIssueRadios, false);
+            toggleAdminNoteVisibility(false);
+            return;
+        }
+
+        if (reproductiveValue === 'no') {
+            if (gynIssueQuestion) {
+                gynIssueQuestion.hidden = false;
+            }
+            const issueValue = getSelectedValue(gynIssueRadios);
+            setRadioRequired(gynIssueRadios, true);
+            if (issueValue === 'no') {
+                toggleAdminNoteVisibility(true);
+            } else {
+                toggleAdminNoteVisibility(false);
+            }
+            return;
+        }
+
+        if (!reproductiveAnswered) {
+            if (gynIssueQuestion) {
+                gynIssueQuestion.hidden = true;
+            }
+            setRadioRequired(gynIssueRadios, false);
+            toggleAdminNoteVisibility(false);
+            return;
+        }
+    }
+
+    if (nonPregnantFlow) {
+        nonPregnantFlow.hidden = true;
+    }
+    if (gynIssueQuestion) {
+        gynIssueQuestion.hidden = true;
+    }
+    setRadioRequired(reproductiveRadios, false);
+    setRadioRequired(gynIssueRadios, false);
+    toggleAdminNoteVisibility(false);
+}
+
+function handleRoutingChange() {
+    updateRoutingVisibility();
+    const derived = deriveCategoryFromRouting();
+    setActiveCategory(derived);
+    scheduleSave();
 }
 
 function createPrenatalRow(index) {
@@ -183,19 +559,24 @@ function updateStep(target) {
     if (target < 0 || target >= steps.length) {
         return;
     }
-    steps[currentStep].classList.remove('active');
-    stepIndicator[currentStep].classList.remove('active');
     currentStep = target;
-    steps[currentStep].classList.add('active');
-    stepIndicator[currentStep].classList.add('active');
+    applyStepVisibility();
     window.scrollTo({ top: 0, behavior: 'smooth' });
     refreshButtons();
     scheduleSave();
 }
 
 function refreshButtons() {
+    const totalSteps = steps.length;
     prevBtn.disabled = currentStep === 0;
-    if (currentStep === steps.length - 1) {
+
+    if (totalSteps <= 1) {
+        nextBtn.style.display = 'none';
+        submitBtn.style.display = 'none';
+        return;
+    }
+
+    if (currentStep === totalSteps - 1) {
         nextBtn.style.display = 'none';
         submitBtn.style.display = 'block';
     } else {
@@ -206,6 +587,9 @@ function refreshButtons() {
 
 function validateStep(stepIndex) {
     const section = steps[stepIndex];
+    if (!section) {
+        return true;
+    }
     const fields = Array.from(section.querySelectorAll('input, select, textarea'));
     for (const field of fields) {
         if (!field.checkValidity()) {
@@ -346,9 +730,17 @@ function restoreIntakeData(payload, intakeData = null) {
                 }
             });
         });
+
+        updateRoutingVisibility();
+        const storedCategory = normalizeCategory(payload.intake_category || payload?.metadata?.intakeCategory || null);
+        const derivedCategory = deriveCategoryFromRouting();
+        setActiveCategory(storedCategory || derivedCategory);
+        applyStepVisibility();
+        refreshButtons();
         
         updateDerived();
         syncMaritalFields();
+        applyHeightUnknownState();
         statusMessage.hidden = false;
         statusMessage.className = 'summary alert-info';
         const quickId = intakeData?.quickId;
@@ -405,11 +797,21 @@ function restoreDraft() {
                 }
             });
         });
-        if (typeof step === 'number' && step >= 0 && step < steps.length) {
-            updateStep(step);
+        updateRoutingVisibility();
+        const storedCategory = normalizeCategory(draft.category || null);
+        const derivedCategory = deriveCategoryFromRouting();
+        setActiveCategory(storedCategory || derivedCategory);
+
+        if (typeof step === 'number' && steps.length) {
+            const targetStep = Math.max(0, Math.min(step, steps.length - 1));
+            updateStep(targetStep);
+        } else {
+            applyStepVisibility();
+            refreshButtons();
         }
         updateDerived();
         syncMaritalFields();
+        applyHeightUnknownState();
         statusMessage.hidden = false;
         statusMessage.textContent = 'Draft terakhir dipulihkan dari perangkat ini.';
         showToast('Draft intake dipulihkan.', 'info');
@@ -431,6 +833,7 @@ function saveDraft() {
             version: 1,
             updatedAt: getGMT7Timestamp(),
             step: currentStep,
+            category: activeCategory,
             fields,
         };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
@@ -573,10 +976,34 @@ function updateAge() {
 }
 
 function updateBMI() {
-    const heightField = document.getElementById('height');
-    const weightField = document.getElementById('weight');
     const bmiField = document.getElementById('bmi');
-    if (!heightField || !weightField || !bmiField) {
+    if (!bmiField) {
+        currentBMICategory = null;
+        return;
+    }
+    const defaultMessage = 'BMI akan dihitung oleh tim klinik saat kunjungan.';
+    if (!heightField) {
+        bmiField.value = '';
+        if (BMI_SUMMARY) {
+            BMI_SUMMARY.textContent = defaultMessage;
+        }
+        currentBMICategory = null;
+        return;
+    }
+    if (heightUnknownCheckbox?.checked) {
+        bmiField.value = '';
+        if (BMI_SUMMARY) {
+            BMI_SUMMARY.textContent = defaultMessage;
+        }
+        currentBMICategory = null;
+        return;
+    }
+    const weightField = document.getElementById('weight');
+    if (!weightField) {
+        bmiField.value = '';
+        if (BMI_SUMMARY) {
+            BMI_SUMMARY.textContent = defaultMessage;
+        }
         currentBMICategory = null;
         return;
     }
@@ -584,7 +1011,9 @@ function updateBMI() {
     const weight = Number(weightField.value);
     if (!height || !weight) {
         bmiField.value = '';
-        BMI_SUMMARY.textContent = 'Kategori BMI akan muncul otomatis setelah menulis tinggi dan berat badan.';
+        if (BMI_SUMMARY) {
+            BMI_SUMMARY.textContent = defaultMessage;
+        }
         currentBMICategory = null;
         return;
     }
@@ -599,7 +1028,9 @@ function updateBMI() {
     } else if (rounded >= 30) {
         category = 'Obesitas';
     }
-    BMI_SUMMARY.textContent = `BMI Anda ${rounded.toFixed(1)} (${category}).`;
+    if (BMI_SUMMARY) {
+        BMI_SUMMARY.textContent = `BMI Anda ${rounded.toFixed(1)} (${category}).`;
+    }
     currentBMICategory = category;
 }
 
@@ -938,7 +1369,53 @@ form.addEventListener('input', (event) => {
     }
 });
 
+if (heightUnknownCheckbox) {
+    heightUnknownCheckbox.addEventListener('change', () => {
+        applyHeightUnknownState();
+        scheduleSave();
+    });
+}
+
 prevBtn.disabled = true;
+
+pregnantRadios.forEach((radio) => {
+    radio.addEventListener('change', handleRoutingChange);
+});
+
+reproductiveRadios.forEach((radio) => {
+    radio.addEventListener('change', handleRoutingChange);
+});
+
+gynIssueRadios.forEach((radio) => {
+    radio.addEventListener('change', handleRoutingChange);
+});
+
+if (adminFollowupNote) {
+    adminFollowupNote.addEventListener('input', () => {
+        if (adminFollowupAdditional && !adminFollowupAdditional.dataset.userEdited) {
+            adminFollowupAdditional.value = adminFollowupNote.value;
+        }
+        handleRoutingChange();
+    });
+}
+
+if (adminFollowupAdditional) {
+    adminFollowupAdditional.addEventListener('input', () => {
+        adminFollowupAdditional.dataset.userEdited = 'true';
+    });
+}
+
+if (fertilityProgramSelect) {
+    fertilityProgramSelect.addEventListener('change', () => {
+        updateFertilitySectionVisibility();
+        scheduleSave();
+    });
+}
+
+updateRoutingVisibility();
+const initialCategory = deriveCategoryFromRouting() || activeCategory;
+setActiveCategory(initialCategory);
+
 resetDerivedFlags();
 
 // Initialize: Load existing intake from server first, then fallback to draft
@@ -975,6 +1452,8 @@ resetDerivedFlags();
     refreshButtons();
     updateDerived();
     syncMaritalFields();
+    applyHeightUnknownState();
+    updateFertilitySectionVisibility();
 })();
 
 //restoreDraft();

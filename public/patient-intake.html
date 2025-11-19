@@ -248,6 +248,81 @@
             font-size: 0.75rem;
             font-weight: 500;
         }
+        .step-description {
+            margin: 0 0 1rem;
+            color: var(--muted);
+            font-size: 0.9rem;
+        }
+        .option-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+        }
+        .option-chip {
+            position: relative;
+            display: inline-flex;
+            padding: 0;
+        }
+        .option-chip input {
+            position: absolute;
+            opacity: 0;
+            pointer-events: none;
+        }
+        .option-chip span {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.65rem 0.9rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border);
+            background: #f8fafc;
+            color: var(--text);
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .option-chip span::before {
+            content: '';
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 2px solid var(--muted);
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+        }
+        .option-chip input:checked + span {
+            background: rgba(37, 99, 235, 0.12);
+            border-color: var(--primary);
+            color: var(--primary-dark);
+        }
+        .option-chip input:checked + span::before {
+            background: var(--primary);
+            border-color: var(--primary);
+        }
+        .option-chip input:focus-visible + span {
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+        }
+        .category-summary {
+            margin-top: 1.25rem;
+            padding: 0.9rem 1rem;
+            border-radius: 0.75rem;
+            border: 1px dashed rgba(37, 99, 235, 0.35);
+            background: rgba(37, 99, 235, 0.08);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 0.88rem;
+            color: var(--primary-dark);
+        }
+        .category-summary .tag {
+            background: #dbeafe;
+            color: var(--primary);
+        }
+        .field-hint {
+            margin: 0.35rem 0 0;
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
         .alert {
             border-radius: 0.75rem;
             padding: 0.85rem;
@@ -306,6 +381,15 @@
             table { font-size: 0.85rem; }
             td input, td select, td textarea { font-size: 0.8rem; }
             th, td { padding: 0.45rem; }
+            .option-group { gap: 0.5rem; }
+            .option-chip span {
+                width: 100%;
+                justify-content: center;
+            }
+            .category-summary {
+                flex-direction: column;
+                align-items: flex-start;
+            }
         }
     </style>
     
@@ -340,17 +424,71 @@
         <header>
             <h1 id="form-title">Form Riwayat Antenatal</h1>
             <p id="form-description">Silakan lengkapi data berikut sebelum konsultasi. Data disimpan otomatis di perangkat Anda.</p>
-            <div class="stepper" id="stepper">
-                <span data-step="1" class="active">Identitas</span>
-                <span data-step="2">Riwayat Medis</span>
-                <span data-step="3">Riwayat Obstetri</span>
-                <span data-step="4">Kehamilan Saat Ini</span>
-            </div>
+            <div class="stepper" id="stepper"></div>
         </header>
         <main>
             <div class="card">
                 <form id="intake-form" novalidate>
-                    <section class="intake-step active" data-step="1">
+                    <section class="intake-step active" data-step-title="Tujuan Kunjungan" data-categories="all" data-requires-category="false">
+                        <input type="hidden" id="intake_category" name="intake_category">
+                        <div>
+                            <h2 class="step-title">Pilih Tujuan Kunjungan</h2>
+                            <p class="step-description">Jawaban Anda membantu kami menyiapkan formulir dan tim yang tepat sebelum konsultasi dimulai.</p>
+                            <div class="field">
+                                <label>Apakah Anda sedang hamil? *</label>
+                                <div class="option-group" role="radiogroup">
+                                    <label class="option-chip">
+                                        <input type="radio" name="pregnant_status" value="yes" required>
+                                        <span>Ya, saya sedang hamil</span>
+                                    </label>
+                                    <label class="option-chip">
+                                        <input type="radio" name="pregnant_status" value="no">
+                                        <span>Tidak / belum hamil</span>
+                                    </label>
+                                </div>
+                            </div>
+                            <div id="non-pregnant-flow" hidden>
+                                <div class="divider"></div>
+                                <div class="field">
+                                    <label>Apakah ingin konsultasi, tindakan atau cek organ kandungan?</label>
+                                    <div class="option-group" role="radiogroup">
+                                        <label class="option-chip">
+                                            <input type="radio" name="needs_reproductive" value="yes">
+                                            <span>Ya, ingin konsultasi/tindakan</span>
+                                        </label>
+                                        <label class="option-chip">
+                                            <input type="radio" name="needs_reproductive" value="no">
+                                            <span>Tidak untuk saat ini</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="field" id="gyn-issue-question" hidden>
+                                    <label>Apakah ada masalah kandungan?</label>
+                                    <div class="option-group" role="radiogroup">
+                                        <label class="option-chip">
+                                            <input type="radio" name="has_gyn_issue" value="yes">
+                                            <span>Ya, ada keluhan/masalah</span>
+                                        </label>
+                                        <label class="option-chip">
+                                            <input type="radio" name="has_gyn_issue" value="no">
+                                            <span>Tidak ada keluhan</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="field" id="admin-followup-container" hidden>
+                                    <label for="admin_followup_note">Mohon ketikkan tujuan Anda untuk bertemu dr. Dibya</label>
+                                    <textarea id="admin_followup_note" name="admin_followup_note" rows="4" placeholder="Contoh: ingin diskusi rencana operasi, konsultasi PMS, atau pertanyaan lainnya"></textarea>
+                                    <p class="field-hint">Tim admin akan meninjau dan menghubungi Anda untuk menyiapkan langkah berikutnya.</p>
+                                </div>
+                            </div>
+                            <div class="category-summary" id="category-summary" hidden>
+                                <span class="tag" id="category-tag"></span>
+                                <span id="category-description"></span>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="intake-step" data-step-title="Identitas &amp; Sosial" data-categories="all">
                         <div>
                             <h2 class="step-title">Informasi Personal</h2>
                             <div class="field-grid two">
@@ -365,6 +503,17 @@
                                 <div class="field">
                                     <label for="age">Usia</label>
                                     <input type="number" id="age" name="age" readonly placeholder="--" min="10">
+                                </div>
+                                <div class="field">
+                                    <label for="height">Tinggi Badan (cm)</label>
+                                    <input type="number" id="height" name="height" min="120" max="210" step="1" placeholder="Contoh: 160">
+                                    <label class="checkbox-item" style="margin-top:0.5rem;">
+                                        <input type="checkbox" id="height_unknown" name="height_unknown" value="true">
+                                        <span>Tidak tahu / belum mengukur</span>
+                                    </label>
+                                    <input type="hidden" id="bmi" name="bmi">
+                                    <p class="field-hint" id="bmi-summary">BMI akan dihitung oleh tim klinik saat kunjungan.</p>
+                                    <p class="field-hint">Berat badan akan ditimbang langsung saat Anda datang ke klinik.</p>
                                 </div>
                                 <div class="field">
                                     <label for="address">Alamat</label>
@@ -454,7 +603,7 @@
                         </div>
                     </section>
 
-                    <section class="intake-step" data-step="4">
+                    <section class="intake-step" data-step-title="Kehamilan Saat Ini" data-categories="obstetri">
                         <div>
                             <h2 class="step-title">Konfirmasi Kehamilan</h2>
                             <div class="field-grid two">
@@ -491,9 +640,9 @@
                         </div>
                     </section>
 
-                    <section class="intake-step" data-step="2">
+                    <section class="intake-step" data-step-title="Riwayat Medis" data-categories="obstetri,gyn_repro,gyn_special">
                         <div>
-                            <h2 class="step-title">Riwayat Medis Umum</h2>
+                            <h2 class="step-title">Riwayat Medis</h2>
                             <div class="field-grid two">
                                 <div class="field">
                                     <label for="blood_type">Golongan Darah</label>
@@ -604,18 +753,56 @@
                         </div>
                     </section>
 
-                    <section class="intake-step" data-step="3">
+                    <section class="intake-step" data-step-title="Riwayat Menstruasi" data-categories="obstetri,gyn_repro,gyn_special">
                         <div>
                             <h2 class="step-title">Riwayat Menstruasi</h2>
                             <div class="field-grid two">
                                 <div class="field">
-                                    <label for="menarche_age">Pertama kali menstruasi (usia)</label>
+                                    <label for="menarche_age">Usia pertama kali mens</label>
                                     <input type="number" id="menarche_age" name="menarche_age" min="8" max="25">
                                 </div>
                                 <div class="field">
-                                    <label for="cycle_length">Lama siklus (hari)</label>
+                                    <label for="cycle_length">Siklus menstruasi (hari)</label>
                                     <input type="number" id="cycle_length" name="cycle_length" min="15" max="45" placeholder="normal 21-35">
-                                    <small style="color: var(--muted); font-size: 0.8rem; margin-top: 0.25rem; display: block;">Siklus adalah hari pertama menstruasi bulan kemarin sampai pertama menstruasi bulan ini</small>
+                                    <small style="color: var(--muted); font-size: 0.8rem; margin-top: 0.25rem; display: block;">Siklus adalah hari pertama menstruasi bulan kemarin sampai hari pertama menstruasi bulan ini</small>
+                                </div>
+                                <div class="field" data-category-visible="gyn_repro,gyn_special">
+                                    <label for="menstruation_duration">Lama menstruasi (hari)</label>
+                                    <input type="number" id="menstruation_duration" name="menstruation_duration" min="1" max="14" placeholder="Contoh: 5">
+                                </div>
+                                <div class="field" data-category-visible="gyn_repro,gyn_special">
+                                    <label for="menstruation_flow">Jumlah perdarahan</label>
+                                    <select id="menstruation_flow" name="menstruation_flow">
+                                        <option value="">Pilih</option>
+                                        <option value="sedikit">Sedikit</option>
+                                        <option value="sedang">Sedang</option>
+                                        <option value="banyak">Banyak</option>
+                                    </select>
+                                </div>
+                                <div class="field" data-category-visible="gyn_repro,gyn_special">
+                                    <label for="dysmenorrhea_level">Nyeri haid</label>
+                                    <select id="dysmenorrhea_level" name="dysmenorrhea_level">
+                                        <option value="">Pilih</option>
+                                        <option value="batas_wajar">Batas wajar</option>
+                                        <option value="sangat_nyeri">Sangat nyeri</option>
+                                    </select>
+                                </div>
+                                <div class="field" data-category-visible="gyn_repro,gyn_special">
+                                    <label for="spotting_outside_cycle">Flek/spotting di luar siklus</label>
+                                    <select id="spotting_outside_cycle" name="spotting_outside_cycle">
+                                        <option value="">Pilih</option>
+                                        <option value="tidak">Tidak</option>
+                                        <option value="kadang">Kadang</option>
+                                        <option value="sering">Sering</option>
+                                    </select>
+                                </div>
+                                <div class="field" data-category-visible="gyn_repro">
+                                    <label for="fertility_program_interest">Sedang mengikuti program hamil?</label>
+                                    <select id="fertility_program_interest" name="fertility_program_interest">
+                                        <option value="">Pilih</option>
+                                        <option value="ya">Ya</option>
+                                        <option value="tidak">Tidak</option>
+                                    </select>
                                 </div>
                                 <div class="field">
                                     <label>Siklus teratur?</label>
@@ -631,10 +818,97 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="divider"></div>
-                        <div>
-                            <h2 class="step-title">Kehamilan Sebelumnya (Gravida/Para)</h2>
-                            <table data-collection="pregnancies">
+                        <div id="fertility-history-section" data-category-visible="gyn_repro">
+                            <div class="divider"></div>
+                            <h2 class="step-title">Riwayat Reproduksi Fertilitas</h2>
+                            <div class="field-grid two">
+                                <div class="field">
+                                    <label for="diagnosed_pcos">Apakah Anda didiagnosis PCOS?</label>
+                                    <select id="diagnosed_pcos" name="diagnosed_pcos">
+                                        <option value="">Pilih</option>
+                                        <option value="ya">Ya</option>
+                                        <option value="tidak">Tidak</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="diagnosed_gyne_conditions">Pernah didiagnosis miom/kista/endometriosis?</label>
+                                    <select id="diagnosed_gyne_conditions" name="diagnosed_gyne_conditions">
+                                        <option value="">Pilih</option>
+                                        <option value="ya">Ya</option>
+                                        <option value="tidak">Tidak</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="transvaginal_usg">Pernah USG transvaginal untuk kesuburan?</label>
+                                    <select id="transvaginal_usg" name="transvaginal_usg">
+                                        <option value="">Pilih</option>
+                                        <option value="ya">Ya</option>
+                                        <option value="tidak">Tidak</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="hsg_history">Pernah menjalani pemeriksaan HSG?</label>
+                                    <select id="hsg_history" name="hsg_history">
+                                        <option value="">Pilih</option>
+                                        <option value="ya">Ya</option>
+                                        <option value="tidak">Tidak</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="previous_programs">Pernah menjalani program hamil sebelumnya?</label>
+                                    <select id="previous_programs" name="previous_programs">
+                                        <option value="">Pilih</option>
+                                        <option value="ya">Ya</option>
+                                        <option value="tidak">Tidak</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="partner_smoking">Apakah pasangan merokok?</label>
+                                    <select id="partner_smoking" name="partner_smoking">
+                                        <option value="">Pilih</option>
+                                        <option value="ya">Ya</option>
+                                        <option value="tidak">Tidak</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="partner_alcohol">Apakah pasangan mengonsumsi alkohol?</label>
+                                    <select id="partner_alcohol" name="partner_alcohol">
+                                        <option value="">Pilih</option>
+                                        <option value="ya">Ya</option>
+                                        <option value="tidak">Tidak</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="sperm_analysis">Apakah pasangan pernah analisa sperma?</label>
+                                    <select id="sperm_analysis" name="sperm_analysis">
+                                        <option value="">Pilih</option>
+                                        <option value="ya">Ya</option>
+                                        <option value="tidak">Tidak</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="prefer_natural_program">Ingin promil alami terlebih dahulu?</label>
+                                    <select id="prefer_natural_program" name="prefer_natural_program">
+                                        <option value="">Pilih</option>
+                                        <option value="ya">Ya</option>
+                                        <option value="tidak">Tidak</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="willing_hormonal_therapy">Bersedia terapi hormonal jika diperlukan?</label>
+                                    <select id="willing_hormonal_therapy" name="willing_hormonal_therapy">
+                                        <option value="">Pilih</option>
+                                        <option value="ya">Ya</option>
+                                        <option value="tidak">Tidak</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="previous-pregnancy-section">
+                            <div class="divider"></div>
+                            <div>
+                                <h2 class="step-title">Riwayat Kehamilan Sebelumnya</h2>
+                                <table data-collection="pregnancies">
                                 <thead>
                                     <tr>
                                         <th>No</th>
@@ -698,9 +972,10 @@
                                     <input type="number" id="living_children" name="living_children" min="0" max="20">
                                 </div>
                             </div>
+                            </div>
                         </div>
-                        <div class="divider"></div>
-                        <div>
+                        <div class="divider" data-category-visible="obstetri"></div>
+                        <div data-category-visible="obstetri">
                             <h2 class="step-title">Riwayat Kontrasepsi</h2>
                             <div class="field-grid two">
                                 <div class="field">
@@ -733,7 +1008,184 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="divider"></div>
+                        <div class="divider" data-category-visible="gyn_special"></div>
+                        <div data-category-visible="gyn_special">
+                            <h2 class="step-title">Riwayat Ginekologi</h2>
+                            <div class="field-grid two">
+                                <div class="field">
+                                    <label for="frequent_discharge">Sering keputihan?</label>
+                                    <select id="frequent_discharge" name="frequent_discharge">
+                                        <option value="">Pilih</option>
+                                        <option value="ada">Ada</option>
+                                        <option value="tidak">Tidak</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="discharge_color">Warna keputihan (jika ada)</label>
+                                    <input type="text" id="discharge_color" name="discharge_color" placeholder="Putih/kekuningan/kehijauan">
+                                </div>
+                                <div class="field">
+                                    <label for="discharge_odor">Bau keputihan (jika ada)</label>
+                                    <input type="text" id="discharge_odor" name="discharge_odor" placeholder="Tidak ada/asam/menyengat">
+                                </div>
+                                <div class="field">
+                                    <label for="lower_abdomen_enlarged">Merasa perut bawah membesar?</label>
+                                    <select id="lower_abdomen_enlarged" name="lower_abdomen_enlarged">
+                                        <option value="">Pilih</option>
+                                        <option value="ya">Ya</option>
+                                        <option value="tidak">Tidak</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="reproductive_surgery">Pernah operasi terkait organ kandungan?</label>
+                                    <select id="reproductive_surgery" name="reproductive_surgery">
+                                        <option value="">Pilih</option>
+                                        <option value="ya">Ya</option>
+                                        <option value="tidak">Tidak</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="reproductive_surgery_detail">Jika ya, operasi apa?</label>
+                                    <input type="text" id="reproductive_surgery_detail" name="reproductive_surgery_detail" placeholder="Contoh: laparoskopi kista, miomektomi">
+                                </div>
+                                <div class="field">
+                                    <label for="pap_smear_history">Pernah pap smear?</label>
+                                    <select id="pap_smear_history" name="pap_smear_history">
+                                        <option value="">Pilih</option>
+                                        <option value="ya">Ya</option>
+                                        <option value="tidak">Tidak</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="pap_smear_result">Hasil (jika pernah) &amp; tahun</label>
+                                    <input type="text" id="pap_smear_result" name="pap_smear_result" placeholder="Contoh: LSIL, 2023">
+                                </div>
+                                <div class="field">
+                                    <label for="dyspareunia">Nyeri saat berhubungan?</label>
+                                    <select id="dyspareunia" name="dyspareunia">
+                                        <option value="">Pilih</option>
+                                        <option value="ya">Ya</option>
+                                        <option value="tidak">Tidak</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="postcoital_bleeding">Keluar darah saat berhubungan?</label>
+                                    <select id="postcoital_bleeding" name="postcoital_bleeding">
+                                        <option value="">Pilih</option>
+                                        <option value="ya">Ya</option>
+                                        <option value="tidak">Tidak</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="intake-step" data-step-title="Rencana Konsultasi" data-categories="gyn_repro_future">
+                        <div>
+                            <h2 class="step-title">Fokus Konsultasi &amp; Tindakan</h2>
+                            <div class="field">
+                                <label>Pilih tujuan utama Anda</label>
+                                <div class="checkbox-list">
+                                    <label class="checkbox-item"><input type="checkbox" name="repro_goals" value="promil"> Program hamil / promil</label>
+                                    <label class="checkbox-item"><input type="checkbox" name="repro_goals" value="kb_setup"> Pasang/lepas alat kontrasepsi</label>
+                                    <label class="checkbox-item"><input type="checkbox" name="repro_goals" value="fertility_check"> Pemeriksaan kesuburan</label>
+                                    <label class="checkbox-item"><input type="checkbox" name="repro_goals" value="pre_marital"> Konsultasi pra-nikah</label>
+                                    <label class="checkbox-item"><input type="checkbox" name="repro_goals" value="cycle_planning"> Mengatur siklus/menunda haid</label>
+                                    <label class="checkbox-item"><input type="checkbox" name="repro_goals" value="other"> Lainnya (jelaskan di bawah)</label>
+                                </div>
+                                <textarea id="repro_goal_detail" name="repro_goal_detail" rows="3" placeholder="Tuliskan detail tambahan jika ada"></textarea>
+                            </div>
+                            <div class="divider"></div>
+                            <div class="field-grid two">
+                                <div class="field">
+                                    <label for="repro_trying_duration">Berapa lama mencoba hamil?</label>
+                                    <select id="repro_trying_duration" name="repro_trying_duration">
+                                        <option value="">Pilih</option>
+                                        <option value="0-6m">0-6 bulan</option>
+                                        <option value="6-12m">6-12 bulan</option>
+                                        <option value="12-24m">1-2 tahun</option>
+                                        <option value="gt_24m">&gt; 2 tahun</option>
+                                        <option value="belum_mencoba">Belum mencoba / fokus tindakan lain</option>
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label for="repro_previous_evaluations">Pemeriksaan sebelumnya</label>
+                                    <textarea id="repro_previous_evaluations" name="repro_previous_evaluations" rows="3" placeholder="USG, HSG, lab hormon, sperma, dll"></textarea>
+                                </div>
+                            </div>
+                            <div class="field-grid two">
+                                <div class="field">
+                                    <label for="repro_last_contraception">Terakhir menggunakan kontrasepsi</label>
+                                    <input type="text" id="repro_last_contraception" name="repro_last_contraception" placeholder="Misal: lepas IUD 3 bulan lalu">
+                                </div>
+                                <div class="field">
+                                    <label for="repro_expectation">Harapan dari kunjungan ini</label>
+                                    <textarea id="repro_expectation" name="repro_expectation" rows="3" placeholder="Contoh: ingin evaluasi lengkap sebelum promil"></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="intake-step" data-step-title="Keluhan Utama" data-categories="gyn_special">
+                        <div>
+                            <h2 class="step-title">Keluhan &amp; Gejala</h2>
+                            <div class="field">
+                                <label for="gyn_primary_complaint">Keluhan utama *</label>
+                                <textarea id="gyn_primary_complaint" name="gyn_primary_complaint" rows="3" required placeholder="Contoh: nyeri haid berat, keputihan berbau, benjolan"></textarea>
+                            </div>
+                            <div class="field-grid two">
+                                <div class="field">
+                                    <label for="gyn_complaint_duration">Sejak kapan keluhan dirasakan?</label>
+                                    <input type="text" id="gyn_complaint_duration" name="gyn_complaint_duration" placeholder="Misal: 6 bulan terakhir">
+                                </div>
+                                <div class="field">
+                                    <label for="gyn_severity">Tingkat keparahan</label>
+                                    <select id="gyn_severity" name="gyn_severity">
+                                        <option value="">Pilih</option>
+                                        <option value="ringan">Ringan</option>
+                                        <option value="sedang">Sedang</option>
+                                        <option value="berat">Berat</option>
+                                        <option value="fluktuatif">Fluktuatif</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label for="gyn_related_symptoms">Keluhan tambahan yang dirasakan</label>
+                                <textarea id="gyn_related_symptoms" name="gyn_related_symptoms" rows="3" placeholder="Contoh: demam, mual, perdarahan di luar siklus, dll"></textarea>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="intake-step" data-step-title="Riwayat Penunjang" data-categories="gyn_special">
+                        <div>
+                            <h2 class="step-title">Riwayat Pemeriksaan &amp; Pengobatan</h2>
+                            <div class="field">
+                                <label for="gyn_previous_diagnosis">Diagnosis atau tindakan sebelumnya</label>
+                                <textarea id="gyn_previous_diagnosis" name="gyn_previous_diagnosis" rows="3" placeholder="Contoh: kista ovarium, operasi laparoskopi, obat yang sudah dicoba"></textarea>
+                            </div>
+                            <div class="field">
+                                <label for="gyn_trigger_notes">Faktor pencetus atau pola tertentu</label>
+                                <textarea id="gyn_trigger_notes" name="gyn_trigger_notes" rows="3" placeholder="Misal: nyeri saat haid hari ke-1, keluhan muncul setelah aktivitas tertentu"></textarea>
+                            </div>
+                            <div class="field">
+                                <label for="gyn_expectations">Harapan dari kunjungan ini</label>
+                                <textarea id="gyn_expectations" name="gyn_expectations" rows="3" placeholder="Contoh: ingin jawaban penyebab keluhan, rencana tindakan, atau second opinion"></textarea>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="intake-step" data-step-title="Tujuan Konsultasi" data-categories="admin_followup">
+                        <div>
+                            <h2 class="step-title">Ringkasan Permintaan Anda</h2>
+                            <div class="field">
+                                <label for="admin_followup_note_secondary">Tuliskan kebutuhan Anda untuk kami bantu</label>
+                                <textarea id="admin_followup_note_secondary" name="admin_followup_note_secondary" rows="4" placeholder="Contoh: ingin konsultasi online, menanyakan jadwal operasi, permintaan surat keterangan"></textarea>
+                                <p class="field-hint">Tulisan ini akan dibaca admin untuk menyiapkan jawaban atau menghubungi Anda.</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="intake-step" data-step-title="Konfirmasi" data-categories="all">
                         <div>
                             <h2 class="step-title">Konfirmasi &amp; Persetujuan Akhir</h2>
                             <div class="field">

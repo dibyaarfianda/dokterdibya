@@ -75,7 +75,7 @@ describe('Auth Middleware', () => {
             const token = jwt.sign(
                 { id: 1, username: 'testuser' },
                 process.env.JWT_SECRET,
-                { expiresIn: '-1s' } // Already expired
+                { expiresIn: '-1s' }
             );
 
             req.headers.authorization = `Bearer ${token}`;
@@ -121,7 +121,6 @@ describe('Auth Middleware', () => {
 
         it('should allow access when user has required role', () => {
             const middleware = requireRole('doctor', 'admin');
-            
             middleware(req, res, next);
 
             expect(next).toHaveBeenCalled();
@@ -131,7 +130,7 @@ describe('Auth Middleware', () => {
         it('should deny access when user lacks required elevated role', () => {
             req.user.role = 'admin';
             const middleware = requireRole('superadmin');
-            
+
             middleware(req, res, next);
 
             expect(res.status).toHaveBeenCalledWith(403);
@@ -141,7 +140,7 @@ describe('Auth Middleware', () => {
         it('should deny access when user does not have required role', () => {
             req.user.role = 'nurse';
             const middleware = requireRole('doctor', 'admin');
-            
+
             middleware(req, res, next);
 
             expect(res.status).toHaveBeenCalledWith(403);
@@ -157,7 +156,7 @@ describe('Auth Middleware', () => {
         it('should deny access when user role is not set', () => {
             delete req.user.role;
             const middleware = requireRole('doctor');
-            
+
             middleware(req, res, next);
 
             expect(res.status).toHaveBeenCalledWith(403);
