@@ -193,9 +193,9 @@
             }
             
             tbody.innerHTML = data.data.map(patient => {
-                const birthDate = patient.birth_date ? new Date(patient.birth_date).toLocaleDateString('id-ID') : '-';
-                const regDate = patient.created_at ? new Date(patient.created_at).toLocaleDateString('id-ID') : '-';
-                const lastVisit = patient.last_visit ? new Date(patient.last_visit).toLocaleDateString('id-ID') : 'Belum ada';
+                const birthDate = patient.birth_date ? new Date(patient.birth_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
+                const regDate = patient.created_at ? new Date(patient.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
+                const lastVisit = patient.last_visit ? new Date(patient.last_visit).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : 'Belum ada';
                 const statusBadge = patient.status === 'active' ? 
                     '<span class="badge badge-success">Aktif</span>' : 
                     '<span class="badge badge-secondary">Nonaktif</span>';
