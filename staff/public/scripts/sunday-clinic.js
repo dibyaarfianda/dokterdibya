@@ -745,6 +745,20 @@ function formatDate(value) {
     }).format(date);
 }
 
+// Format date as DD-MM-YYYY
+function formatDateDMY(value) {
+    if (!value) {
+        return value;
+    }
+    // Handle YYYY-MM-DD format
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+        const [, year, month, day] = match;
+        return `${day}-${month}-${year}`;
+    }
+    return value;
+}
+
 function formatDateTime(value) {
     const date = toDate(value);
     if (!date) {
@@ -2709,7 +2723,7 @@ function renderUSG() {
         const trimesterLabel = trimesterLabels[trimester] || `Trimester (${trimester})`;
 
         if (trimester === 'first') {
-            if (savedData.date) summaryItems.push(`<strong>Tanggal:</strong> ${savedData.date}`);
+            if (savedData.date) summaryItems.push(`<strong>Tanggal:</strong> ${formatDateDMY(savedData.date)}`);
             if (savedData.embryo_count) summaryItems.push(`<strong>Jumlah Embrio:</strong> ${savedData.embryo_count === 'single' ? 'Tunggal' : 'Multipel'}`);
             if (savedData.implantation) summaryItems.push(`<strong>Lokasi Implantasi:</strong> ${savedData.implantation === 'intrauterine' ? 'Dalam rahim' : 'Luar rahim/Ektopik'}`);
             // Combine CRL cm and weeks in one line
@@ -2720,10 +2734,10 @@ function renderUSG() {
                 summaryItems.push(`<strong>CRL:</strong> ${crlParts.join(' / ')}`);
             }
             if (savedData.heart_rate) summaryItems.push(`<strong>Denyut Jantung:</strong> ${savedData.heart_rate} x/menit`);
-            if (savedData.edd) summaryItems.push(`<strong>HPL:</strong> ${savedData.edd}`);
+            if (savedData.edd) summaryItems.push(`<strong>HPL:</strong> ${formatDateDMY(savedData.edd)}`);
             if (savedData.nt) summaryItems.push(`<strong>NT:</strong> ${savedData.nt} mm`);
         } else if (trimester === 'second') {
-            if (savedData.date) summaryItems.push(`<strong>Tanggal:</strong> ${savedData.date}`);
+            if (savedData.date) summaryItems.push(`<strong>Tanggal:</strong> ${formatDateDMY(savedData.date)}`);
             if (savedData.fetus_count) summaryItems.push(`<strong>Jumlah Janin:</strong> ${savedData.fetus_count === 'single' ? 'Tunggal' : 'Multipel'}`);
             if (savedData.gender) summaryItems.push(`<strong>Jenis Kelamin:</strong> ${savedData.gender === 'male' ? 'Laki-laki' : 'Perempuan'}`);
             if (savedData.fetus_lie) summaryItems.push(`<strong>Letak Janin:</strong> ${savedData.fetus_lie}`);
@@ -2736,10 +2750,10 @@ function renderUSG() {
             if (savedData.placenta_previa) summaryItems.push(`<strong>Plasenta Previa:</strong> ${savedData.placenta_previa}`);
             if (savedData.afi) summaryItems.push(`<strong>AFI:</strong> ${savedData.afi} cm`);
             if (savedData.efw) summaryItems.push(`<strong>EFW:</strong> ${savedData.efw} gram`);
-            if (savedData.edd) summaryItems.push(`<strong>HPL:</strong> ${savedData.edd}`);
+            if (savedData.edd) summaryItems.push(`<strong>HPL:</strong> ${formatDateDMY(savedData.edd)}`);
             if (savedData.notes) summaryItems.push(`<strong>Catatan:</strong> ${savedData.notes}`);
         } else if (trimester === 'third') {
-            if (savedData.date) summaryItems.push(`<strong>Tanggal:</strong> ${savedData.date}`);
+            if (savedData.date) summaryItems.push(`<strong>Tanggal:</strong> ${formatDateDMY(savedData.date)}`);
             if (savedData.fetus_count) summaryItems.push(`<strong>Jumlah Janin:</strong> ${savedData.fetus_count === 'single' ? 'Tunggal' : 'Multipel'}`);
             if (savedData.gender) summaryItems.push(`<strong>Jenis Kelamin:</strong> ${savedData.gender === 'male' ? 'Laki-laki' : 'Perempuan'}`);
             if (savedData.fetus_lie) summaryItems.push(`<strong>Letak Janin:</strong> ${savedData.fetus_lie}`);
@@ -2752,11 +2766,11 @@ function renderUSG() {
             if (savedData.placenta_previa) summaryItems.push(`<strong>Plasenta Previa:</strong> ${savedData.placenta_previa}`);
             if (savedData.afi) summaryItems.push(`<strong>AFI:</strong> ${savedData.afi} cm`);
             if (savedData.efw) summaryItems.push(`<strong>EFW:</strong> ${savedData.efw} gram`);
-            if (savedData.edd) summaryItems.push(`<strong>HPL:</strong> ${savedData.edd}`);
+            if (savedData.edd) summaryItems.push(`<strong>HPL:</strong> ${formatDateDMY(savedData.edd)}`);
             if (savedData.membrane_sweep) summaryItems.push(`<strong>Pelepasan Selaput:</strong> ${savedData.membrane_sweep === 'yes' ? 'Ya' : 'Tidak'}`);
             if (savedData.contraception && savedData.contraception.length > 0) summaryItems.push(`<strong>KB:</strong> ${savedData.contraception.join(', ')}`);
         } else if (trimester === 'screening') {
-            if (savedData.date) summaryItems.push(`<strong>Tanggal:</strong> ${savedData.date}`);
+            if (savedData.date) summaryItems.push(`<strong>Tanggal:</strong> ${formatDateDMY(savedData.date)}`);
             if (savedData.gender) summaryItems.push(`<strong>Jenis Kelamin:</strong> ${savedData.gender === 'male' ? 'Laki-laki' : 'Perempuan'}`);
             if (savedData.diameter_kepala) summaryItems.push(`<strong>Diameter Kepala:</strong> ${savedData.diameter_kepala}`);
             if (savedData.lingkar_kepala) summaryItems.push(`<strong>Lingkar Kepala:</strong> ${savedData.lingkar_kepala}`);
