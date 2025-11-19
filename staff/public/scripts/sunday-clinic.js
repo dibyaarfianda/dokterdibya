@@ -3875,7 +3875,7 @@ async function renderTagihan() {
                 billing.draftTerapi = draftTerapi;
             }
 
-            renderTagihanContent(section, billing);
+            await renderTagihanContent(section, billing);
 
             // Start real-time polling for change notifications
             if (typeof startChangeNotificationPolling === 'function') {
@@ -3895,7 +3895,7 @@ async function renderTagihan() {
 }
 
 // Render billing content
-function renderTagihanContent(container, billing) {
+async function renderTagihanContent(container, billing) {
     const items = billing?.items || [];
     const status = billing?.status || 'draft';
     const confirmedBy = billing?.confirmed_by;
@@ -5337,205 +5337,6 @@ function init() {
 }
 
 init();
-// Show modal to request billing changes
-async function showRequestChangeModal(billing) {
-    const modal = document.createElement('div');
-    modal.className = 'modal fade';
-    modal.id = 'modal-request-change';
-
-    const items = billing?.items || [];
-    const itemsHtml = items.map((item, index) => `
-        <tr>
-            <td>
-                <input type="text" class="form-control form-control-sm" value="${escapeHtml(item.item_name)}"
-                       data-index="${index}" data-field="name">
-            </td>
-            <td>
-                <input type="number" class="form-control form-control-sm" value="${item.quantity || 1}"
-                       data-index="${index}" data-field="quantity" min="1">
-            </td>
-            <td>
-                <input type="number" class="form-control form-control-sm" value="${item.price || 0}"
-                       data-index="${index}" data-field="price" min="0">
-            </td>
-            <td>
-                <button type="button" class="btn btn-sm btn-danger" data-action="delete" data-index="${index}">
-                    <i class="fas fa-trash"></i>
-                </button>
-            </td>
-        </tr>
-    `).join('');
-
-    modal.innerHTML = `
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header bg-warning">
-                    <h5 class="modal-title"><i class="fas fa-edit mr-2"></i>Ajukan Perubahan Tagihan</h5>
-                    <button type="button" class="close" data-dismiss="modal">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        Perubahan yang Anda ajukan akan dikirim ke dokter untuk ditinjau dan dikonfirmasi ulang.
-                    </div>
-                    <textarea class="form-control mb-3" id="change-note" placeholder="Catatan perubahan (opsional)" rows="2"></textarea>
-                    <table class="table table-bordered">
-                        <thead class="thead-light">
-                            <tr>
-                                <th>Item</th>
-                                <th width="15%">Qty</th>
-                                <th width="20%">Harga</th>
-                                <th width="10%">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="items-tbody">
-                            ${itemsHtml}
-                        </tbody>
-                    </table>
-                    <button type="button" class="btn btn-sm btn-success" id="btn-add-item">
-                        <i class="fas fa-plus mr-1"></i>Tambah Item
-                    </button>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                    <button type="button" class="btn btn-warning" id="btn-submit-change">
-                        <i class="fas fa-paper-plane mr-2"></i>Ajukan Perubahan
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-
-    document.body.appendChild(modal);
-    $(modal).modal('show');
-
-    $(modal).on('hidden.bs.modal', function() {
-        modal.remove();
-    });
-
-    // Handle add item
-    modal.querySelector('#btn-add-item').addEventListener('click', () => {
-        const tbody = modal.querySelector('#items-tbody');
-        const index = tbody.querySelectorAll('tr').length;
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td><input type="text" class="form-control form-control-sm" data-index="${index}" data-field="name" placeholder="Nama item"></td>
-            <td><input type="number" class="form-control form-control-sm" value="1" data-index="${index}" data-field="quantity" min="1"></td>
-            <td><input type="number" class="form-control form-control-sm" value="0" data-index="${index}" data-field="price" min="0"></td>
-            <td><button type="button" class="btn btn-sm btn-danger" data-action="delete" data-index="${index}"><i class="fas fa-trash"></i></button></td>
-        `;
-        tbody.appendChild(row);
-    });
-
-    // Handle delete
-    modal.addEventListener('click', (e) => {
-        if (e.target.closest('[data-action="delete"]')) {
-            e.target.closest('tr').remove();
-        }
-    });
-
-    // Handle submit
-    modal.querySelector('#btn-submit-change').addEventListener('click', async () => {
-        const rows = modal.querySelectorAll('#items-tbody tr');
-        const newItems = [];
-
-        rows.forEach(row => {
-            const name = row.querySelector('[data-field="name"]').value;
-            const quantity = parseInt(row.querySelector('[data-field="quantity"]').value) || 1;
-            const price = parseFloat(row.querySelector('[data-field="price"]').value) || 0;
-
-            if (name.trim()) {
-                newItems.push({
-                    item_name: name,
-                    item_type: 'admin',
-                    quantity: quantity,
-                    price: price
-                });
-            }
-        });
-
-        const changeNote = modal.querySelector('#change-note').value;
-
-        try {
-            const token = await getToken();
-            if (!token) return;
-
-            const response = await fetch(`/api/sunday-clinic/billing/${routeMrSlug}/request-change`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    items: newItems,
-                    changeNote: changeNote
-                })
-            });
-
-            if (!response.ok) throw new Error('Failed to request change');
-
-            showSuccess('Perubahan berhasil diajukan! Menunggu konfirmasi dokter.');
-            $(modal).modal('hide');
-
-            // Reload tagihan
-            setTimeout(() => {
-                handleSectionChange('tagihan', { pushHistory: false });
-            }, 1000);
-
-        } catch (error) {
-            console.error('Error requesting change:', error);
-            showError('Gagal mengajukan perubahan: ' + error.message);
-        }
-    });
-}
-
-// Review and approve changes (for doctor)
-async function reviewAndApproveChanges(billing) {
-    const changeRequests = billing?.change_requests || [];
-    const lastRequest = changeRequests[changeRequests.length - 1];
-
-    if (!lastRequest) {
-        showError('Tidak ada perubahan untuk ditinjau');
-        return;
-    }
-
-    // Show toast notification
-    showToastNotification(
-        'Perubahan Tagihan',
-        'Perubahan diajukan oleh: ' + lastRequest.requestedBy + '<br>Catatan: ' + (lastRequest.note || 'Tidak ada catatan'),
-        'warning'
-    );
-
-    // Confirm approval
-    if (confirm('Setujui perubahan yang diajukan oleh ' + lastRequest.requestedBy + '?\n\nCatatan: ' + (lastRequest.note || 'Tidak ada catatan'))) {
-        try {
-            const token = await getToken();
-            if (!token) return;
-
-            const response = await fetch(`/api/sunday-clinic/billing/${routeMrSlug}/approve-changes`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (!response.ok) throw new Error('Failed to approve changes');
-
-            showSuccess('Perubahan berhasil dikonfirmasi!');
-
-            // Reload tagihan
-            setTimeout(() => {
-                handleSectionChange('tagihan', { pushHistory: false });
-            }, 1000);
-
-        } catch (error) {
-            console.error('Error approving changes:', error);
-            showError('Gagal mengkonfirmasi perubahan: ' + error.message);
-        }
-    }
-}
-
 // Show toast notification (center of screen)
 function showToastNotification(title, message, type) {
     type = type || 'info';
