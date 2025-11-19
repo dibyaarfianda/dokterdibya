@@ -134,6 +134,11 @@ function renderAppointments(appointments) {
                 <button class="btn btn-xs btn-warning" onclick="showStatusModal(${apt.id}, '${apt.status}')" title="Update Status">
                     <i class="fas fa-edit"></i>
                 </button>
+                ${['cancelled', 'completed', 'no_show'].includes(apt.status) ? `
+                <button class="btn btn-xs btn-secondary" onclick="archiveAppointment(${apt.id})" title="Arsipkan">
+                    <i class="fas fa-archive"></i>
+                </button>
+                ` : ''}
             `
         ]);
     });
@@ -308,6 +313,45 @@ function showToast(message, type) {
     }, 3000);
 }
 
+async function archiveAppointment(appointmentId) {
+    const apt = allAppointments.find(a => a.id === appointmentId);
+    if (!apt) return;
+
+    if (!confirm(`Arsipkan appointment untuk ${apt.patient_name}?\n\nAppointment akan dipindahkan ke arsip dan dapat dikembalikan nanti jika diperlukan.`)) {
+        return;
+    }
+
+    try {
+        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+
+        // Move to archive via API
+        const response = await fetch(`/api/appointment-archive/archive-single/${appointmentId}`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                archived_reason: 'Manually archived by staff'
+            })
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Failed to archive appointment');
+        }
+
+        showToast('Appointment berhasil diarsipkan', 'success');
+
+        // Reload appointments
+        await loadAppointments();
+
+    } catch (error) {
+        console.error('Error archiving appointment:', error);
+        showToast('Gagal mengarsipkan appointment: ' + error.message, 'error');
+    }
+}
+
 function logout() {
     localStorage.removeItem('vps_auth_token');
     sessionStorage.removeItem('vps_auth_token');
@@ -324,6 +368,7 @@ window.updateStatus = updateStatus;
 window.resetFilters = resetFilters;
 window.logout = logout;
 window.loadAppointments = loadAppointments;
+window.archiveAppointment = archiveAppointment;
 
 
 })(); // End IIFE

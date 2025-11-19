@@ -1575,6 +1575,192 @@ function renderAnamnesa() {
     return section;
 }
 
+function renderAnamnesaGynSpecial() {
+    const section = document.createElement('div');
+    section.className = 'sc-section';
+    const derived = state.derived;
+    const payload = derived.payload || {};
+
+    // Load saved anamnesa data from medical records
+    const context = getMedicalRecordContext('anamnesa');
+    const savedData = capitalizePatientData(context?.data || {}, RECORD_CAPITALIZATION_SKIP_KEYS);
+
+    // Merge saved data with intake data (saved data takes priority)
+    const keluhanUtama = savedData.keluhan_utama || derived.appointment?.chiefComplaint || payload.current_symptoms || payload.reason || '';
+    const keluhanGinekologi = savedData.keluhan_ginekologi || payload.gynecology_complaints || '';
+    const hpht = savedData.hpht || payload.lmp_date || '';
+    const detailRiwayatPenyakit = savedData.detail_riwayat_penyakit || payload.past_medical_history || payload.other_conditions || payload.past_conditions_detail || '';
+    const riwayatKeluarga = savedData.riwayat_keluarga || payload.family_medical_history || payload.family_history_detail || '';
+    const alergiObat = savedData.alergi_obat || payload.drug_allergies || payload.allergy_drugs || '';
+    const alergiMakanan = savedData.alergi_makanan || payload.food_allergies || payload.allergy_food || '';
+    const alergiLingkungan = savedData.alergi_lingkungan || payload.other_allergies || payload.allergy_env || '';
+    const medications = savedData.medications || payload.current_medications || '';
+
+    // Menstruation History
+    const usiaMenuarche = savedData.usia_menarche ?? payload.menarche_age ?? '';
+    const lamaSiklus = savedData.lama_siklus ?? payload.cycle_length ?? '';
+    const siklusTeratur = savedData.siklus_teratur ?? (payload.cycle_regular === 'ya' ? 'Ya' : payload.cycle_regular === 'tidak' ? 'Tidak' : '');
+
+    // Obstetric History
+    const gravida = savedData.gravida ?? payload.gravida_count ?? '';
+    const para = savedData.para ?? payload.para_count ?? '';
+    const abortus = savedData.abortus ?? payload.abortus_count ?? '';
+    const anakHidup = savedData.anak_hidup ?? payload.living_children_count ?? '';
+    const riwayatPersalinan = savedData.riwayat_persalinan || payload.pregnancy_history || '';
+
+    // Contraception History
+    const metodeKBSebelumnya = savedData.metode_kb_sebelumnya ?? payload.previous_contraception ?? '';
+    const kegagalanKB = savedData.kegagalan_kb ?? (payload.contraception_failure === 'ya' ? 'Ya' : payload.contraception_failure === 'tidak' ? 'Tidak' : '');
+    const jenisKBGagal = savedData.jenis_kb_gagal ?? payload.failed_contraception_type ?? '';
+
+    // Use standard record metadata display
+    const metaHtml = context ? renderRecordMeta(context, 'anamnesa') : '';
+
+    section.innerHTML = `
+        <div class="sc-section-header">
+            <h3>Anamnesa & Riwayat Ginekologi</h3>
+            <button class="btn btn-primary btn-sm" id="btn-update-anamnesa-gyn" style="display:none;">
+                <i class="fas fa-save"></i> Update
+            </button>
+        </div>
+        ${metaHtml}
+        <div class="sc-grid two">
+            <div class="sc-card">
+                <h4>Keluhan Saat Ini</h4>
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">Keluhan Utama</label>
+                    <textarea class="form-control anamnesa-gyn-field" id="anamnesa-gyn-keluhan-utama" rows="2">${escapeHtml(keluhanUtama)}</textarea>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">Keluhan Ginekologi Spesifik</label>
+                    <textarea class="form-control anamnesa-gyn-field" id="anamnesa-gyn-keluhan-ginekologi" rows="3" placeholder="Keluhan terkait menstruasi, nyeri panggul, keputihan, dll">${escapeHtml(keluhanGinekologi)}</textarea>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">HPHT (Hari Pertama Haid Terakhir)</label>
+                    <input type="date" class="form-control anamnesa-gyn-field" id="anamnesa-gyn-hpht" value="${escapeHtml(hpht)}">
+                </div>
+            </div>
+            <div class="sc-card">
+                <h4>Riwayat Medis</h4>
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">Obat yang Sedang Dikonsumsi</label>
+                    <textarea class="form-control anamnesa-gyn-field" id="anamnesa-gyn-medications" rows="2" placeholder="Nama obat, dosis, frekuensi">${escapeHtml(medications)}</textarea>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">Riwayat Penyakit Dahulu</label>
+                    <textarea class="form-control anamnesa-gyn-field" id="anamnesa-gyn-detail-riwayat" rows="2" placeholder="Riwayat operasi, penyakit kronis, dll">${escapeHtml(detailRiwayatPenyakit)}</textarea>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">Riwayat Keluarga</label>
+                    <textarea class="form-control anamnesa-gyn-field" id="anamnesa-gyn-riwayat-keluarga" rows="2" placeholder="Penyakit keturunan, kanker, dll">${escapeHtml(riwayatKeluarga)}</textarea>
+                </div>
+            </div>
+        </div>
+        <div class="sc-grid two">
+            <div class="sc-card">
+                <h4>Riwayat Menstruasi</h4>
+                <div class="row">
+                    <div class="col-md-6 form-group mb-3">
+                        <label class="font-weight-bold">Usia Menarche (tahun)</label>
+                        <input type="number" class="form-control anamnesa-gyn-field" id="anamnesa-gyn-usia-menarche" value="${escapeHtml(usiaMenuarche)}" placeholder="12-16">
+                    </div>
+                    <div class="col-md-6 form-group mb-3">
+                        <label class="font-weight-bold">Lama Siklus (hari)</label>
+                        <input type="number" class="form-control anamnesa-gyn-field" id="anamnesa-gyn-lama-siklus" value="${escapeHtml(lamaSiklus)}" placeholder="21-35">
+                    </div>
+                    <div class="col-md-12 form-group mb-3">
+                        <label class="font-weight-bold">Siklus Teratur</label>
+                        <select class="form-control anamnesa-gyn-field" id="anamnesa-gyn-siklus-teratur">
+                            <option value="">-</option>
+                            <option value="Ya" ${siklusTeratur === 'Ya' ? 'selected' : ''}>Ya</option>
+                            <option value="Tidak" ${siklusTeratur === 'Tidak' ? 'selected' : ''}>Tidak</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <div class="sc-card">
+                <h4>Riwayat Alergi</h4>
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">Alergi Obat</label>
+                    <textarea class="form-control anamnesa-gyn-field" id="anamnesa-gyn-alergi-obat" rows="2">${escapeHtml(alergiObat)}</textarea>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">Alergi Makanan</label>
+                    <textarea class="form-control anamnesa-gyn-field" id="anamnesa-gyn-alergi-makanan" rows="2">${escapeHtml(alergiMakanan)}</textarea>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">Alergi Lingkungan</label>
+                    <textarea class="form-control anamnesa-gyn-field" id="anamnesa-gyn-alergi-lingkungan" rows="2">${escapeHtml(alergiLingkungan)}</textarea>
+                </div>
+            </div>
+        </div>
+        <div class="sc-grid two">
+            <div class="sc-card">
+                <h4>Ringkasan Obstetri (G-P-A-L)</h4>
+                <div class="row">
+                    <div class="col-md-6 form-group mb-3">
+                        <label class="font-weight-bold">Gravida (G)</label>
+                        <input type="number" class="form-control anamnesa-gyn-field" id="anamnesa-gyn-gravida" value="${escapeHtml(gravida)}">
+                    </div>
+                    <div class="col-md-6 form-group mb-3">
+                        <label class="font-weight-bold">Para (P)</label>
+                        <input type="number" class="form-control anamnesa-gyn-field" id="anamnesa-gyn-para" value="${escapeHtml(para)}">
+                    </div>
+                    <div class="col-md-6 form-group mb-3">
+                        <label class="font-weight-bold">Abortus (A)</label>
+                        <input type="number" class="form-control anamnesa-gyn-field" id="anamnesa-gyn-abortus" value="${escapeHtml(abortus)}">
+                    </div>
+                    <div class="col-md-6 form-group mb-3">
+                        <label class="font-weight-bold">Anak Hidup (L)</label>
+                        <input type="number" class="form-control anamnesa-gyn-field" id="anamnesa-gyn-anak-hidup" value="${escapeHtml(anakHidup)}">
+                    </div>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">Riwayat Persalinan</label>
+                    <textarea class="form-control anamnesa-gyn-field" id="anamnesa-gyn-riwayat-persalinan" rows="3" placeholder="Tahun, cara persalinan, komplikasi, berat bayi">${escapeHtml(riwayatPersalinan)}</textarea>
+                </div>
+            </div>
+            <div class="sc-card">
+                <h4>Riwayat Kontrasepsi</h4>
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">Metode KB Sebelumnya</label>
+                    <input type="text" class="form-control anamnesa-gyn-field" id="anamnesa-gyn-metode-kb" value="${escapeHtml(metodeKBSebelumnya)}" placeholder="Pil, suntik, IUD, implan, dll">
+                </div>
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">Kegagalan KB</label>
+                    <select class="form-control anamnesa-gyn-field" id="anamnesa-gyn-kegagalan-kb">
+                        <option value="">-</option>
+                        <option value="Ya" ${kegagalanKB === 'Ya' ? 'selected' : ''}>Ya</option>
+                        <option value="Tidak" ${kegagalanKB === 'Tidak' ? 'selected' : ''}>Tidak</option>
+                    </select>
+                </div>
+                <div class="form-group mb-3">
+                    <label class="font-weight-bold">Jenis KB saat gagal</label>
+                    <input type="text" class="form-control anamnesa-gyn-field" id="anamnesa-gyn-jenis-kb-gagal" value="${escapeHtml(jenisKBGagal)}">
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Add change detection
+    setTimeout(() => {
+        const fields = section.querySelectorAll('.anamnesa-gyn-field');
+        const updateBtn = document.getElementById('btn-update-anamnesa-gyn');
+
+        fields.forEach(field => {
+            field.addEventListener('input', () => {
+                if (updateBtn) updateBtn.style.display = 'inline-block';
+            });
+        });
+
+        if (updateBtn) {
+            updateBtn.addEventListener('click', saveAnamnesaGynSpecial);
+        }
+    }, 0);
+
+    return section;
+}
+
 function renderPemeriksaan() {
     const context = getMedicalRecordContext('physical_exam');
     const data = capitalizePatientData(context?.data || {}, RECORD_CAPITALIZATION_SKIP_KEYS);
@@ -5207,7 +5393,9 @@ async function renderActiveSection() {
             element = renderIdentitas();
             break;
         case 'anamnesa':
-            element = renderAnamnesa();
+            // Check if patient is pregnant/obstetric or gyn_special
+            const isPregnant = state.derived?.pregnant || state.derived?.lmp || state.derived?.edd;
+            element = isPregnant ? renderAnamnesa() : renderAnamnesaGynSpecial();
             break;
         case 'pemeriksaan':
             element = renderPemeriksaan();
@@ -5744,6 +5932,97 @@ async function saveAnamnesa() {
 
     } catch (error) {
         console.error('Error saving anamnesa:', error);
+        showError('Gagal menyimpan anamnesa: ' + error.message);
+
+        // Re-enable button
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> Update';
+    }
+}
+
+async function saveAnamnesaGynSpecial() {
+    const btn = document.getElementById('btn-update-anamnesa-gyn');
+    if (!btn) return;
+
+    // Disable button
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+
+    try {
+        // Collect all field values
+        const data = {
+            keluhan_utama: document.getElementById('anamnesa-gyn-keluhan-utama')?.value || '',
+            keluhan_ginekologi: document.getElementById('anamnesa-gyn-keluhan-ginekologi')?.value || '',
+            hpht: document.getElementById('anamnesa-gyn-hpht')?.value || '',
+            medications: document.getElementById('anamnesa-gyn-medications')?.value || '',
+            detail_riwayat_penyakit: document.getElementById('anamnesa-gyn-detail-riwayat')?.value || '',
+            riwayat_keluarga: document.getElementById('anamnesa-gyn-riwayat-keluarga')?.value || '',
+            usia_menarche: document.getElementById('anamnesa-gyn-usia-menarche')?.value || '',
+            lama_siklus: document.getElementById('anamnesa-gyn-lama-siklus')?.value || '',
+            siklus_teratur: document.getElementById('anamnesa-gyn-siklus-teratur')?.value || '',
+            alergi_obat: document.getElementById('anamnesa-gyn-alergi-obat')?.value || '',
+            alergi_makanan: document.getElementById('anamnesa-gyn-alergi-makanan')?.value || '',
+            alergi_lingkungan: document.getElementById('anamnesa-gyn-alergi-lingkungan')?.value || '',
+            gravida: document.getElementById('anamnesa-gyn-gravida')?.value || '',
+            para: document.getElementById('anamnesa-gyn-para')?.value || '',
+            abortus: document.getElementById('anamnesa-gyn-abortus')?.value || '',
+            anak_hidup: document.getElementById('anamnesa-gyn-anak-hidup')?.value || '',
+            riwayat_persalinan: document.getElementById('anamnesa-gyn-riwayat-persalinan')?.value || '',
+            metode_kb_sebelumnya: document.getElementById('anamnesa-gyn-metode-kb')?.value || '',
+            kegagalan_kb: document.getElementById('anamnesa-gyn-kegagalan-kb')?.value || '',
+            jenis_kb_gagal: document.getElementById('anamnesa-gyn-jenis-kb-gagal')?.value || ''
+        };
+
+        // Get patient ID from state
+        const patientId = state.derived?.patientId;
+        if (!patientId) {
+            showError('Patient ID tidak ditemukan');
+            return;
+        }
+
+        // Get token
+        const token = await getToken();
+        if (!token) return;
+
+        // Send to API
+        const recordPayload = {
+            patientId: patientId,
+            type: 'anamnesa',
+            data: data,
+            timestamp: getGMT7Timestamp()
+        };
+
+        if (currentStaffIdentity.name) {
+            recordPayload.doctorName = currentStaffIdentity.name;
+        }
+        if (currentStaffIdentity.id) {
+            recordPayload.doctorId = currentStaffIdentity.id;
+        }
+
+        const response = await fetch('/api/medical-records', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(recordPayload)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+            throw new Error(errorData.message || `Server error: ${response.status}`);
+        }
+
+        const result = await response.json();
+
+        // Show success message
+        showSuccess('Anamnesa Ginekologi berhasil diperbarui');
+
+        // Reload the record to show updated data
+        await fetchRecord(routeMrSlug);
+
+    } catch (error) {
+        console.error('Error saving anamnesa gyn_special:', error);
         showError('Gagal menyimpan anamnesa: ' + error.message);
 
         // Re-enable button
