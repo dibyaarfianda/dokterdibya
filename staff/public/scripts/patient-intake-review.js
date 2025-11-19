@@ -24,6 +24,515 @@ const STATUS_BADGE = {
     rejected: 'badge-danger',
 };
 
+const VALID_INTAKE_CATEGORIES = new Set(['obstetri', 'gyn_repro', 'gyn_special', 'admin_followup']);
+const INTAKE_CATEGORY_LABELS = {
+    obstetri: 'Obstetri (Kehamilan)',
+    gyn_repro: 'Ginekologi Reproduksi',
+    gyn_special: 'Ginekologi Spesialis',
+    admin_followup: 'Tindak Lanjut Admin',
+};
+
+const REPRO_GOAL_LABELS = {
+    promil: 'Program hamil / promil',
+    kb_setup: 'Pasang/lepas alat kontrasepsi',
+    fertility_check: 'Pemeriksaan kesuburan',
+    pre_marital: 'Konsultasi pra-nikah',
+    cycle_planning: 'Mengatur siklus/menunda haid',
+    other: 'Lainnya',
+};
+
+const PAST_CONDITION_LABELS = {
+    hipertensi: 'Hipertensi',
+    diabetes: 'Diabetes',
+    heart: 'Penyakit jantung',
+    kidney: 'Gangguan ginjal',
+    thyroid: 'Gangguan tiroid',
+    cyst_myoma: 'Kista/Myoma',
+    asthma: 'Asma',
+    autoimmune: 'Penyakit autoimun',
+    mental: 'Kondisi kesehatan mental',
+    surgery: 'Riwayat operasi',
+    blood: 'Kelainan darah',
+};
+
+const FAMILY_HISTORY_LABELS = {
+    hipertensi: 'Hipertensi',
+    diabetes: 'Diabetes',
+    heart: 'Penyakit jantung',
+    stroke: 'Stroke',
+    cancer: 'Kanker',
+    kidney: 'Gangguan ginjal',
+    thyroid: 'Gangguan tiroid',
+    asthma: 'Asma',
+    mental: 'Kondisi kesehatan mental',
+    blood: 'Kelainan darah',
+    genetic: 'Kelainan genetik',
+};
+
+const FERTILITY_ASSESSMENT_LABELS = {
+    diagnosedPcos: 'Diagnosis PCOS',
+    diagnosedGyneConditions: 'Riwayat miom/kista/endometriosis',
+    transvaginalUsg: 'USG transvaginal kesuburan',
+    hsgHistory: 'Pemeriksaan HSG',
+    previousPrograms: 'Program hamil sebelumnya',
+    partnerSmoking: 'Pasangan merokok',
+    partnerAlcohol: 'Pasangan mengonsumsi alkohol',
+    spermAnalysis: 'Analisa sperma',
+    preferNaturalProgram: 'Prefer promil alami',
+    willingHormonalTherapy: 'Bersedia terapi hormonal',
+};
+
+function trimToNull(value) {
+    if (value === null || value === undefined) {
+        return null;
+    }
+    const trimmed = String(value).trim();
+    return trimmed.length ? trimmed : null;
+}
+
+function normalizeChoice(value) {
+    const trimmed = trimToNull(value);
+    return trimmed ? trimmed.toLowerCase() : null;
+}
+
+function ensureArray(value) {
+    if (!value) {
+        return [];
+    }
+    if (Array.isArray(value)) {
+        return value
+            .map((item) => trimToNull(item))
+            .filter((item) => item !== null);
+    }
+    const single = trimToNull(value);
+    return single ? [single] : [];
+}
+
+function toNumber(value) {
+    if (value === null || value === undefined || value === '') {
+        return null;
+    }
+    const numeric = Number(value);
+    return Number.isFinite(numeric) ? numeric : null;
+}
+
+function formatChoiceDisplay(value) {
+    if (!value && value !== 0) {
+        return null;
+    }
+    const normalized = typeof value === 'string' ? value.toLowerCase() : value;
+    if (normalized === 'ya' || normalized === 'yes') {
+        return 'Ya';
+    }
+    if (normalized === 'tidak' || normalized === 'no') {
+        return 'Tidak';
+    }
+    if (typeof normalized === 'string') {
+        return normalized
+            .split('_')
+            .filter((segment) => segment.length)
+            .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+            .join(' ');
+    }
+    return normalized;
+}
+
+function escapeHtml(value) {
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
+
+function createDisplayLines(value) {
+    if (value === null || value === undefined || value === '') {
+        return [];
+    }
+    if (Array.isArray(value)) {
+        return value
+            .map((entry) => {
+                if (entry && typeof entry === 'object') {
+                    const label = entry.label ? `${entry.label}: ` : '';
+                    const lines = createDisplayLines(entry.value);
+                    return lines.map((line) => `${label}${line}`);
+                }
+                const text = trimToNull(entry);
+                return text ? [text] : [];
+            })
+            .flat();
+    }
+    if (typeof value === 'object') {
+        if ('label' in value || 'value' in value) {
+            const label = value.label ? `${value.label}: ` : '';
+            const lines = createDisplayLines(value.value);
+            return lines.map((line) => `${label}${line}`);
+        }
+        return Object.entries(value)
+            .map(([key, val]) => {
+                const lines = createDisplayLines(val);
+                return lines.map((line) => `${key}: ${line}`);
+            })
+            .flat();
+    }
+    const text = trimToNull(value);
+    return text ? [text] : [];
+}
+
+function renderValue(value) {
+    const lines = createDisplayLines(value);
+    if (!lines.length) {
+        return null;
+    }
+    return lines.map((line) => `<div>${escapeHtml(line)}</div>`).join('');
+}
+
+function renderDefinitionRow(label, value) {
+    const content = renderValue(value);
+    if (!content) {
+        return '';
+    }
+    return `<dt class="col-sm-4">${escapeHtml(label)}</dt><dd class="col-sm-8">${content}</dd>`;
+}
+
+function formatMeasurement(value, unit) {
+    if (value === null || value === undefined || value === '') {
+        return null;
+    }
+    return `${value} ${unit}`;
+}
+
+function buildRoutingSnapshot(payload = {}) {
+    return {
+        pregnantStatus: normalizeChoice(payload.pregnant_status),
+        needsReproductive: normalizeChoice(payload.needs_reproductive),
+        hasGynIssue: normalizeChoice(payload.has_gyn_issue),
+    };
+}
+
+function buildRoutingSummary(routing) {
+    if (!routing || typeof routing !== 'object') {
+        return '-';
+    }
+    const parts = [];
+    if (routing.pregnantStatus) {
+        parts.push(`Sedang hamil: ${formatChoiceDisplay(routing.pregnantStatus) || routing.pregnantStatus}`);
+    }
+    if (routing.needsReproductive) {
+        parts.push(`Butuh konsultasi reproduksi: ${formatChoiceDisplay(routing.needsReproductive) || routing.needsReproductive}`);
+    }
+    if (routing.hasGynIssue) {
+        parts.push(`Keluhan ginekologi: ${formatChoiceDisplay(routing.hasGynIssue) || routing.hasGynIssue}`);
+    }
+    return parts.length ? parts.map((line) => `<div>${escapeHtml(line)}</div>`).join('') : '-';
+}
+
+function resolveIntakeCategory(payload) {
+    if (!payload || typeof payload !== 'object') {
+        return null;
+    }
+    const direct = normalizeChoice(payload.intake_category || payload.metadata?.intakeCategory || null);
+    if (direct && VALID_INTAKE_CATEGORIES.has(direct)) {
+        return direct;
+    }
+    const routing = buildRoutingSnapshot(payload);
+    if (routing.pregnantStatus === 'yes') {
+        return 'obstetri';
+    }
+    if (routing.pregnantStatus === 'no') {
+        if (routing.needsReproductive === 'yes') {
+            return 'gyn_repro';
+        }
+        if (routing.needsReproductive === 'no') {
+            if (routing.hasGynIssue === 'yes') {
+                return 'gyn_special';
+            }
+            if (routing.hasGynIssue === 'no') {
+                const adminNote = trimToNull(payload.admin_followup_note) || trimToNull(payload.admin_followup_note_secondary);
+                return adminNote ? 'admin_followup' : null;
+            }
+        }
+    }
+    return null;
+}
+
+function formatMedicationRow(row) {
+    if (!row || typeof row !== 'object') {
+        return null;
+    }
+    const name = trimToNull(row.name);
+    const dose = trimToNull(row.dose);
+    const freq = trimToNull(row.freq);
+    const parts = [name, dose, freq].filter(Boolean);
+    return parts.length ? parts.join(' • ') : null;
+}
+
+function buildGeneralMedicalItems(payload = {}) {
+    const items = [];
+    const bloodType = trimToNull(payload.blood_type);
+    if (bloodType) {
+        items.push({ label: 'Golongan darah', value: bloodType.toUpperCase() });
+    }
+    const rhesus = trimToNull(payload.rhesus);
+    if (rhesus) {
+        items.push({ label: 'Rhesus', value: rhesus.toUpperCase() });
+    }
+
+    const allergyNotes = [];
+    const allergyDrugs = trimToNull(payload.allergy_drugs);
+    const allergyFood = trimToNull(payload.allergy_food);
+    const allergyEnv = trimToNull(payload.allergy_env);
+    if (allergyDrugs) {
+        allergyNotes.push(`Obat: ${allergyDrugs}`);
+    }
+    if (allergyFood) {
+        allergyNotes.push(`Makanan: ${allergyFood}`);
+    }
+    if (allergyEnv) {
+        allergyNotes.push(`Lingkungan: ${allergyEnv}`);
+    }
+    if (allergyNotes.length) {
+        items.push({ label: 'Alergi', value: allergyNotes });
+    }
+
+    const pastConditions = ensureArray(payload.past_conditions)
+        .map((code) => PAST_CONDITION_LABELS[code] || code)
+        .filter(Boolean);
+    if (pastConditions.length) {
+        items.push({ label: 'Riwayat penyakit', value: pastConditions });
+    }
+    const pastDetail = trimToNull(payload.past_conditions_detail);
+    if (pastDetail) {
+        items.push({ label: 'Detail penyakit', value: pastDetail });
+    }
+
+    const familyHistory = ensureArray(payload.family_history)
+        .map((code) => FAMILY_HISTORY_LABELS[code] || code)
+        .filter(Boolean);
+    if (familyHistory.length) {
+        items.push({ label: 'Riwayat keluarga', value: familyHistory });
+    }
+    const familyDetail = trimToNull(payload.family_history_detail);
+    if (familyDetail) {
+        items.push({ label: 'Detail keluarga', value: familyDetail });
+    }
+
+    const medications = Array.isArray(payload.medications)
+        ? payload.medications.map(formatMedicationRow).filter(Boolean)
+        : [];
+    if (medications.length) {
+        items.push({ label: 'Obat yang sedang dikonsumsi', value: medications });
+    }
+
+    return items;
+}
+
+function buildMenstrualDisplay(payload = {}) {
+    const items = [];
+    const menarcheAge = toNumber(payload.menarche_age);
+    if (menarcheAge !== null) {
+        items.push({ label: 'Pertama kali menstruasi', value: `${menarcheAge} tahun` });
+    }
+    const cycleLength = toNumber(payload.cycle_length);
+    if (cycleLength !== null) {
+        items.push({ label: 'Siklus menstruasi', value: `${cycleLength} hari` });
+    }
+    const menstruationDuration = toNumber(payload.menstruation_duration);
+    if (menstruationDuration !== null) {
+        items.push({ label: 'Lama menstruasi', value: `${menstruationDuration} hari` });
+    }
+    const menstruationFlow = formatChoiceDisplay(normalizeChoice(payload.menstruation_flow));
+    if (menstruationFlow) {
+        items.push({ label: 'Jumlah perdarahan', value: menstruationFlow });
+    }
+    const dysmenorrheaLevel = formatChoiceDisplay(normalizeChoice(payload.dysmenorrhea_level));
+    if (dysmenorrheaLevel) {
+        items.push({ label: 'Nyeri menstruasi', value: dysmenorrheaLevel });
+    }
+    const spottingOutsideCycle = formatChoiceDisplay(normalizeChoice(payload.spotting_outside_cycle));
+    if (spottingOutsideCycle) {
+        items.push({ label: 'Intermenstrual spotting', value: spottingOutsideCycle });
+    }
+    const cycleRegular = formatChoiceDisplay(normalizeChoice(payload.cycle_regular));
+    if (cycleRegular) {
+        items.push({ label: 'Siklus menstruasi teratur', value: cycleRegular });
+    }
+    const lmp = trimToNull(payload.lmp);
+    if (lmp) {
+        items.push({ label: 'Hari pertama haid terakhir', value: lmp });
+    }
+    return items;
+}
+
+function collectPregnancyEntries(payload = {}) {
+    if (Array.isArray(payload.previousPregnancies)) {
+        return payload.previousPregnancies;
+    }
+    if (Array.isArray(payload.previous_pregnancies)) {
+        return payload.previous_pregnancies;
+    }
+    if (Array.isArray(payload.pregnancy_history)) {
+        return payload.pregnancy_history;
+    }
+    return [];
+}
+
+function formatPregnancyRow(row) {
+    if (!row || typeof row !== 'object') {
+        return null;
+    }
+    const indexLabel = row.index ? `#${row.index}` : null;
+    const year = trimToNull(row.year);
+    const mode = trimToNull(row.mode);
+    const complication = trimToNull(row.complication);
+    const weight = toNumber(row.weight);
+    const alive = formatChoiceDisplay(normalizeChoice(row.alive));
+    const parts = [];
+    if (year) {
+        parts.push(year);
+    }
+    if (mode) {
+        parts.push(mode);
+    }
+    if (weight !== null) {
+        parts.push(`${weight} gr`);
+    }
+    if (alive) {
+        parts.push(`Anak hidup: ${alive}`);
+    }
+    if (complication) {
+        parts.push(`Komplikasi: ${complication}`);
+    }
+    if (!parts.length) {
+        return null;
+    }
+    return [indexLabel, parts.join(' • ')].filter(Boolean).join(' ');
+}
+
+function buildPregnancyDisplay(payload = {}) {
+    const items = [];
+    const totals = [
+        ['Gravida', toNumber(payload.gravida)],
+        ['Para', toNumber(payload.para)],
+        ['Abortus', toNumber(payload.abortus)],
+        ['Anak hidup', toNumber(payload.living_children)],
+    ];
+    totals.forEach(([label, value]) => {
+        if (value !== null && value !== undefined) {
+            items.push({ label, value });
+        }
+    });
+
+    const pregnancies = collectPregnancyEntries(payload)
+        .map(formatPregnancyRow)
+        .filter(Boolean);
+    if (pregnancies.length) {
+        items.push({ label: 'Riwayat persalinan', value: pregnancies });
+    }
+
+    return items;
+}
+
+function buildGynReproSections(payload = {}) {
+    const sections = [];
+    const reproductiveGoals = ensureArray(payload.repro_goals);
+    const goalDetail = trimToNull(payload.repro_goal_detail);
+    const tryingDuration = trimToNull(payload.repro_trying_duration);
+    const previousEvaluations = trimToNull(payload.repro_previous_evaluations);
+    const expectation = trimToNull(payload.repro_expectation);
+    const lastContraception = trimToNull(payload.repro_last_contraception);
+    const fertilityProgramInterest = normalizeChoice(payload.fertility_program_interest);
+
+    const complaintItems = [];
+    if (reproductiveGoals.length) {
+        complaintItems.push({
+            label: 'Tujuan konsultasi',
+            value: reproductiveGoals.map((goal) => REPRO_GOAL_LABELS[goal] || goal),
+        });
+    }
+    if (goalDetail) {
+        complaintItems.push({ label: 'Detail kebutuhan', value: goalDetail });
+    }
+    if (tryingDuration) {
+        complaintItems.push({ label: 'Durasi mencoba hamil', value: tryingDuration });
+    }
+    if (previousEvaluations) {
+        complaintItems.push({ label: 'Pemeriksaan sebelumnya', value: previousEvaluations });
+    }
+    if (expectation) {
+        complaintItems.push({ label: 'Harapan konsultasi', value: expectation });
+    }
+    if (lastContraception) {
+        complaintItems.push({ label: 'Metode kontrasepsi terakhir', value: lastContraception });
+    }
+    const formattedInterest = formatChoiceDisplay(fertilityProgramInterest);
+    if (formattedInterest) {
+        complaintItems.push({ label: 'Sedang mengikuti program hamil', value: formattedInterest });
+    }
+
+    const fertilityAssessment = {
+        diagnosedPcos: normalizeChoice(payload.diagnosed_pcos),
+        diagnosedGyneConditions: normalizeChoice(payload.diagnosed_gyne_conditions),
+        transvaginalUsg: normalizeChoice(payload.transvaginal_usg),
+        hsgHistory: normalizeChoice(payload.hsg_history),
+        previousPrograms: normalizeChoice(payload.previous_programs),
+        partnerSmoking: normalizeChoice(payload.partner_smoking),
+        partnerAlcohol: normalizeChoice(payload.partner_alcohol),
+        spermAnalysis: normalizeChoice(payload.sperm_analysis),
+        preferNaturalProgram: normalizeChoice(payload.prefer_natural_program),
+        willingHormonalTherapy: normalizeChoice(payload.willing_hormonal_therapy),
+    };
+
+    const assessmentItems = Object.entries(FERTILITY_ASSESSMENT_LABELS)
+        .map(([key, label]) => {
+            const formatted = formatChoiceDisplay(fertilityAssessment[key]);
+            return formatted ? { label, value: formatted } : null;
+        })
+        .filter(Boolean);
+    if (assessmentItems.length) {
+        complaintItems.push({ label: 'Riwayat reproduksi & gaya hidup', value: assessmentItems });
+    }
+
+    sections.push({ title: 'Keluhan Utama', items: complaintItems });
+    sections.push({ title: 'Riwayat Medis Umum', items: buildGeneralMedicalItems(payload) });
+    sections.push({ title: 'Riwayat Menstruasi', items: buildMenstrualDisplay(payload) });
+    sections.push({ title: 'Riwayat Kehamilan Sebelumnya', items: buildPregnancyDisplay(payload) });
+
+    return sections;
+}
+
+function buildStructuredSections(payload, intakeCategory) {
+    if (intakeCategory === 'gyn_repro') {
+        return buildGynReproSections(payload);
+    }
+    return [];
+}
+
+function renderStructuredSections(container, sections) {
+    if (!container) {
+        return;
+    }
+    if (!Array.isArray(sections) || !sections.length) {
+        container.innerHTML = '<div class="text-muted">Tidak ada data.</div>';
+        return;
+    }
+    container.innerHTML = sections
+        .map((section) => {
+            const rows = Array.isArray(section.items)
+                ? section.items.map((item) => renderDefinitionRow(item.label, item.value)).join('')
+                : '';
+            const content = rows || '<dd class="col-12 text-muted">Tidak ada data</dd>';
+            return `
+                <div class="structured-section mb-3">
+                    <div class="font-weight-semibold text-secondary">${escapeHtml(section.title)}</div>
+                    <dl class="row mb-0">${content}</dl>
+                </div>
+            `;
+        })
+        .join('');
+}
+
 const tableBody = document.querySelector('#intake-table tbody');
 const statusFilter = document.getElementById('filter-status');
 const riskFilter = document.getElementById('filter-risk');
@@ -40,6 +549,13 @@ const detailLoader = document.getElementById('detail-loading');
 const detailContent = document.getElementById('detail-content');
 const detailRiskBadge = document.getElementById('detail-risk-badge');
 const detailStatusBadge = document.getElementById('detail-status-badge');
+const detailIntakeCategory = document.getElementById('detail-intake-category');
+const detailIntakeRouting = document.getElementById('detail-intake-routing');
+const detailAdminFollowup = document.getElementById('detail-admin-followup');
+const detailAdminFollowupPrimary = document.getElementById('detail-admin-followup-primary');
+const detailAdminFollowupSecondary = document.getElementById('detail-admin-followup-secondary');
+const detailAnamnesaWrapper = document.getElementById('detail-anamnesa-wrapper');
+const detailAnamnesaSections = document.getElementById('detail-anamnesa-sections');
 const detailName = document.getElementById('detail-name');
 const detailDob = document.getElementById('detail-dob');
 const detailPhone = document.getElementById('detail-phone');
@@ -48,6 +564,8 @@ const detailLmp = document.getElementById('detail-lmp');
 const detailEdd = document.getElementById('detail-edd');
 const detailBmi = document.getElementById('detail-bmi');
 const detailObstetric = document.getElementById('detail-obstetric');
+const detailPregnancySection = document.getElementById('detail-pregnancy-section');
+const detailMedicalHistorySection = document.getElementById('detail-medical-history-section');
 const detailRiskFlags = document.getElementById('detail-risk-flags');
 const detailHistory = document.getElementById('detail-history');
 const detailStatusSelect = document.getElementById('detail-status');
@@ -253,6 +771,29 @@ function resetDetailModal() {
     detailRiskBadge.textContent = '';
     detailStatusBadge.className = 'badge badge-secondary ml-2';
     detailStatusBadge.textContent = '';
+    if (detailIntakeCategory) {
+        detailIntakeCategory.textContent = '-';
+    }
+    if (detailIntakeRouting) {
+        detailIntakeRouting.textContent = '-';
+    }
+    if (detailAdminFollowup) {
+        detailAdminFollowup.classList.add('d-none');
+    }
+    if (detailAdminFollowupPrimary) {
+        detailAdminFollowupPrimary.textContent = '';
+        detailAdminFollowupPrimary.classList.add('d-none');
+    }
+    if (detailAdminFollowupSecondary) {
+        detailAdminFollowupSecondary.textContent = '';
+        detailAdminFollowupSecondary.classList.add('d-none');
+    }
+    if (detailAnamnesaWrapper) {
+        detailAnamnesaWrapper.classList.add('d-none');
+    }
+    if (detailAnamnesaSections) {
+        detailAnamnesaSections.innerHTML = '';
+    }
     detailName.textContent = '-';
     detailDob.textContent = '-';
     detailPhone.textContent = '-';
@@ -261,6 +802,12 @@ function resetDetailModal() {
     detailEdd.textContent = '-';
     detailBmi.textContent = '-';
     detailObstetric.textContent = '-';
+    if (detailPregnancySection) {
+        detailPregnancySection.classList.remove('d-none');
+    }
+    if (detailMedicalHistorySection) {
+        detailMedicalHistorySection.classList.remove('d-none');
+    }
     detailRiskFlags.innerHTML = '';
     detailHistory.innerHTML = '';
     detailStatusSelect.value = 'verified';
@@ -273,6 +820,19 @@ function populateDetail(record) {
     const metadata = payload.metadata || {};
     const totals = metadata.obstetricTotals || {};
     const review = record.review || {};
+    const intakeCategory = record.intakeCategory
+        || record.integration?.intakeCategory
+        || metadata.intakeCategory
+        || resolveIntakeCategory(payload);
+    const routing = record.routing
+        || record.integration?.routing
+        || metadata.routing
+        || buildRoutingSnapshot(payload);
+    const adminFollowup = record.adminFollowup
+        || record.integration?.adminFollowup
+        || metadata.adminFollowup
+        || null;
+    const structuredSections = buildStructuredSections(payload, intakeCategory);
 
     const statusLabel = STATUS_LABELS[record.status || review.status] || record.status || review.status || 'Unknown';
     const statusBadge = STATUS_BADGE[record.status || review.status] || 'badge-secondary';
@@ -285,6 +845,66 @@ function populateDetail(record) {
     } else {
         detailRiskBadge.className = 'badge badge-normal';
         detailRiskBadge.textContent = 'Normal Risk';
+    }
+
+    if (detailIntakeCategory) {
+        detailIntakeCategory.textContent = intakeCategory
+            ? (INTAKE_CATEGORY_LABELS[intakeCategory] || intakeCategory)
+            : '-';
+    }
+    if (detailIntakeRouting) {
+        const routingSummary = buildRoutingSummary(routing);
+        if (routingSummary === '-') {
+            detailIntakeRouting.textContent = '-';
+        } else {
+            detailIntakeRouting.innerHTML = routingSummary;
+        }
+    }
+    if (detailAdminFollowup) {
+        const primaryNote = trimToNull(adminFollowup?.primaryNote);
+        const secondaryNote = trimToNull(adminFollowup?.secondaryNote);
+        if (primaryNote || secondaryNote) {
+            detailAdminFollowup.classList.remove('d-none');
+            if (detailAdminFollowupPrimary) {
+                if (primaryNote) {
+                    detailAdminFollowupPrimary.textContent = primaryNote;
+                    detailAdminFollowupPrimary.classList.remove('d-none');
+                } else {
+                    detailAdminFollowupPrimary.textContent = '';
+                    detailAdminFollowupPrimary.classList.add('d-none');
+                }
+            }
+            if (detailAdminFollowupSecondary) {
+                if (secondaryNote) {
+                    detailAdminFollowupSecondary.textContent = secondaryNote;
+                    detailAdminFollowupSecondary.classList.remove('d-none');
+                } else {
+                    detailAdminFollowupSecondary.textContent = '';
+                    detailAdminFollowupSecondary.classList.add('d-none');
+                }
+            }
+        } else {
+            detailAdminFollowup.classList.add('d-none');
+            if (detailAdminFollowupPrimary) {
+                detailAdminFollowupPrimary.textContent = '';
+                detailAdminFollowupPrimary.classList.add('d-none');
+            }
+            if (detailAdminFollowupSecondary) {
+                detailAdminFollowupSecondary.textContent = '';
+                detailAdminFollowupSecondary.classList.add('d-none');
+            }
+        }
+    }
+    if (detailAnamnesaWrapper) {
+        if (structuredSections.length) {
+            detailAnamnesaWrapper.classList.remove('d-none');
+            renderStructuredSections(detailAnamnesaSections, structuredSections);
+        } else {
+            detailAnamnesaWrapper.classList.add('d-none');
+            if (detailAnamnesaSections) {
+                detailAnamnesaSections.innerHTML = '';
+            }
+        }
     }
 
     // Basic identity
@@ -323,33 +943,47 @@ function populateDetail(record) {
     detailEdd.textContent = metadata.edd?.value || payload.edd || '-';
     detailBmi.textContent = payload.bmi ? `${payload.bmi} (${metadata.bmiCategory || '-'})` : '-';
     detailObstetric.textContent = `G${totals.gravida ?? payload.gravida ?? '-'} P${totals.para ?? '-'} A${totals.abortus ?? '-'} L${totals.living ?? '-'}`;
+    const pregnantStatus = normalizeChoice(payload.pregnant_status);
+    if (detailPregnancySection) {
+        if ((intakeCategory && intakeCategory !== 'obstetri') || pregnantStatus === 'no') {
+            detailPregnancySection.classList.add('d-none');
+        } else {
+            detailPregnancySection.classList.remove('d-none');
+        }
+    }
     
     // Medical History & Risk
     const medicalHistoryContainer = document.getElementById('detail-medical-history');
     if (medicalHistoryContainer) {
-        let medicalHTML = '';
-        if (payload.height) {
-            medicalHTML += `<dt class="col-sm-4">Tinggi Badan</dt><dd class="col-sm-8">${payload.height} cm</dd>`;
+        const rows = [];
+        const pushRow = (label, value) => {
+            const row = renderDefinitionRow(label, value);
+            if (row) {
+                rows.push(row);
+            }
+        };
+        pushRow('Tinggi Badan', formatMeasurement(payload.height, 'cm'));
+        pushRow('Berat Badan', formatMeasurement(payload.weight, 'kg'));
+        pushRow('Faktor Risiko', payload.risk_factors);
+
+        const generalItems = buildGeneralMedicalItems(payload);
+        generalItems.forEach((item) => pushRow(item.label, item.value));
+
+        const hasAllergyStructured = generalItems.some((item) => item.label === 'Alergi');
+        if (!hasAllergyStructured) {
+            pushRow('Alergi', payload.allergies);
         }
-        if (payload.weight) {
-            medicalHTML += `<dt class="col-sm-4">Berat Badan</dt><dd class="col-sm-8">${payload.weight} kg</dd>`;
+
+        const hasMedicationStructured = generalItems.some((item) => item.label === 'Obat yang sedang dikonsumsi');
+        if (!hasMedicationStructured) {
+            pushRow('Obat yang sedang dikonsumsi', trimToNull(payload.current_medications));
         }
-        if (payload.risk_factors) {
-            medicalHTML += `<dt class="col-sm-4">Faktor Risiko</dt><dd class="col-sm-8">${payload.risk_factors}</dd>`;
-        }
-        if (payload.past_conditions) {
-            medicalHTML += `<dt class="col-sm-4">Riwayat Penyakit</dt><dd class="col-sm-8">${payload.past_conditions}</dd>`;
-        }
-        if (payload.allergies) {
-            medicalHTML += `<dt class="col-sm-4">Alergi</dt><dd class="col-sm-8">${payload.allergies}</dd>`;
-        }
-        if (payload.current_medications) {
-            medicalHTML += `<dt class="col-sm-4">Obat Saat Ini</dt><dd class="col-sm-8">${payload.current_medications}</dd>`;
-        }
-        if (payload.immunizations) {
-            medicalHTML += `<dt class="col-sm-4">Imunisasi</dt><dd class="col-sm-8">${payload.immunizations}</dd>`;
-        }
-        medicalHistoryContainer.innerHTML = medicalHTML || '<dd class="col-12 text-muted">Tidak ada data</dd>';
+
+        pushRow('Imunisasi', payload.immunizations);
+
+        medicalHistoryContainer.innerHTML = rows.length
+            ? rows.join('')
+            : '<dd class="col-12 text-muted">Tidak ada data</dd>';
     }
     
     // Prenatal/ANC visits
