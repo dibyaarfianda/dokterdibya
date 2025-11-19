@@ -946,7 +946,7 @@ async function showPatientDetail(patientId) {
                                         </tr>
                                         <tr>
                                             <th>Tanggal Lahir</th>
-                                            <td>${intake.payload.dob ? new Date(intake.payload.dob).toLocaleDateString('id-ID') : '-'}</td>
+                                            <td>${intake.payload.dob ? new Date(intake.payload.dob).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-'}</td>
                                         </tr>
                                         <tr>
                                             <th>Usia</th>
@@ -990,7 +990,7 @@ async function showPatientDetail(patientId) {
                                         </tr>
                                         <tr>
                                             <th>HPHT</th>
-                                            <td>${intake.payload.lmp ? new Date(intake.payload.lmp).toLocaleDateString('id-ID') : '-'}</td>
+                                            <td>${intake.payload.lmp ? new Date(intake.payload.lmp).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-'}</td>
                                         </tr>
                                         <tr>
                                             <th>HPL</th>

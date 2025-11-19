@@ -116,7 +116,7 @@ function renderList(items) {
                         <i class="fas fa-check mr-1"></i>Pilih
                     </button>
                     <div class="small text-muted mt-1">
-                        <div>Terakhir: ${last ? last.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) + ' ' + last.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'Belum ada'}</div>
+                        <div>Terakhir: ${last ? last.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) + ' ' + last.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'Belum ada'}</div>
                     </div>
                 </div>
             </div>
@@ -173,7 +173,7 @@ async function showDetails(p) {
     
     const last = toDate(p.lastVisit);
     const patientId = String(p.patientId || '').padStart(5, '0');
-    const birthDateFormatted = p.birthDate ? toDate(p.birthDate).toLocaleDateString('id-ID') : '-';
+    const birthDateFormatted = p.birthDate ? toDate(p.birthDate).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
     
     // Initial render
     detailsEl.innerHTML = `
@@ -297,7 +297,7 @@ async function loadPatientHistory(patient) {
             const last5 = visits.slice(0, 5);
             last5.forEach((v, idx) => {
                 const visitDate = toDate(v.date);
-                const dateStr = visitDate ? visitDate.toLocaleDateString('id-ID') : '-';
+                const dateStr = visitDate ? visitDate.toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
                 const timeStr = visitDate ? visitDate.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '';
                 const services = Array.isArray(v.services) ? v.services.map(s => s.name || s).join(', ') : '-';
                 const obat = Array.isArray(v.obat) ? v.obat.map(o => `${o.name} (${o.quantity})`).join(', ') : '-';

@@ -87,6 +87,11 @@
             will-change: transform; /* Optimize for animation */
         }
 
+        /* Subtle hover feedback for admin logo */
+        .sidebar-logo img:hover {
+            transform: scale(1.1);
+        }
+
         /* Logo when sidebar collapsed - shrink to fit with smooth scale */
         body.sidebar-collapse .sidebar-logo {
             min-height: 95px; /* Smaller container when collapsed */
@@ -174,6 +179,42 @@
         .align-with-dropdown { margin-left: calc(140px + 16px); }
         .obstetri-textarea { max-width: 620px; }
         
+        /* Compact styling for online users panel */
+        #online-users-panel .card {
+            border-radius: 0.5rem;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            font-size: 0.85rem;
+        }
+
+        #online-users-panel .card-header {
+            padding: 0.4rem 0.75rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        #online-users-panel .card-title {
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+
+        #online-users-panel .badge {
+            font-size: 0.75rem;
+            padding: 0.3rem 0.55rem;
+        }
+
+        #online-users-panel .card-body {
+            max-height: 220px;
+            overflow-y: auto;
+        }
+
+        #online-users-panel .list-group-item {
+            padding: 0.5rem 0.75rem;
+            background-color: transparent;
+        }
+
         /* Toast Notification Styles */
         .toast-container {
             position: fixed;
@@ -726,7 +767,7 @@
     <aside class="main-sidebar sidebar-dark-primary elevation-4">
         <div class="sidebar">
             <div class="p-3 text-center sidebar-logo">
-                <img src="images/DIBYA.svg" alt="Logo" class="sidebar-logo-img">
+                <img src="images/DIBYA.svg" alt="Logo" class="sidebar-logo-img" title="Admin Panel">
             </div>
             <nav class="mt-2">
                 <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
@@ -821,13 +862,14 @@
             <!-- Online Users Activity Panel -->
             <div class="mt-3 px-3" id="online-users-panel">
                 <div class="card card-primary card-outline">
-                    <div class="card-header py-2">
+                    <div class="card-header">
                         <h3 class="card-title mb-0">
-                            <i class="fas fa-users"></i> Online Users
+                            <i class="fas fa-users fa-sm"></i>
+                            <span>Online Users</span>
                         </h3>
-                        <span class="badge badge-success float-right" id="online-count">0</span>
+                        <span class="badge badge-success ml-auto" id="online-count">0</span>
                     </div>
-                    <div class="card-body p-0" style="max-height: 300px; overflow-y: auto;">
+                    <div class="card-body p-0">
                         <ul class="list-group list-group-flush" id="online-users-list">
                             <li class="list-group-item text-center text-muted py-2">
                                 <small>No users online</small>
@@ -859,8 +901,8 @@
                         <div class="col-lg-3 col-6">
                             <div class="small-box bg-primary">
                                 <div class="inner">
-                                    <h3 id="stat-visits-today">-</h3>
-                                    <p>Kunjungan Hari Ini</p>
+                                    <h3 id="stat-visits-last-month">-</h3>
+                                    <p>Kunjungan Bulan Lalu</p>
                                 </div>
                                 <div class="icon"><i class="fas fa-notes-medical"></i></div>
                             </div>
@@ -878,7 +920,7 @@
                             <div class="small-box bg-warning">
                                 <div class="inner">
                                     <h3 id="stat-appointments-today" class="text-dark">-</h3>
-                                    <p>Appointment Hari Ini</p>
+                                    <p>Appointment Minggu Depan</p>
                                 </div>
                                 <div class="icon"><i class="fas fa-calendar-check"></i></div>
                             </div>
@@ -898,7 +940,7 @@
                         <div class="col-lg-8">
                             <div class="card">
                                 <div class="card-header">
-                                    <h3 class="card-title"><i class="fas fa-calendar-check mr-2"></i>Appointment Hari Ini</h3>
+                                    <h3 class="card-title"><i class="fas fa-calendar-check mr-2"></i>Appointment Minggu Depan</h3>
                                 </div>
                                 <div class="card-body" id="dashboard-today-appointments">
                                     <p class="text-muted mb-0">Tidak ada data.</p>
@@ -2617,7 +2659,7 @@ Tim {clinic_name}</textarea>
                                 <div class="card-body">
                                     <!-- Today's Appointments -->
                                     <div class="mb-4">
-                                        <h5><i class="fas fa-calendar-day mr-2"></i>Appointment Hari Ini</h5>
+                                        <h5><i class="fas fa-calendar-day mr-2"></i>Appointment Minggu Depan</h5>
                                         <div id="appointments-today-list" class="border rounded p-3" style="max-height: 300px; overflow-y: auto;">
                                             <p class="text-center text-muted"><i class="fas fa-spinner fa-spin"></i> Memuat data...</p>
                                         </div>
@@ -3677,9 +3719,9 @@ Tim {clinic_name}</textarea>
             }
             
             tbody.innerHTML = data.data.map(patient => {
-                const birthDate = patient.birth_date ? new Date(patient.birth_date).toLocaleDateString('id-ID') : '-';
-                const regDate = patient.created_at ? new Date(patient.created_at).toLocaleDateString('id-ID') : '-';
-                const lastVisit = patient.last_visit ? new Date(patient.last_visit).toLocaleDateString('id-ID') : 'Belum ada';
+                const birthDate = patient.birth_date ? new Date(patient.birth_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
+                const regDate = patient.created_at ? new Date(patient.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
+                const lastVisit = patient.last_visit ? new Date(patient.last_visit).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : 'Belum ada';
                 const statusBadge = patient.status === 'active' ? 
                     '<span class="badge badge-success">Aktif</span>' : 
                     '<span class="badge badge-secondary">Nonaktif</span>';
@@ -4009,7 +4051,7 @@ Apakah Anda yakin ingin melanjutkan?`;
                                             </tr>
                                             <tr>
                                                 <th>Tanggal Lahir</th>
-                                                <td>${intake.payload.dob ? new Date(intake.payload.dob).toLocaleDateString('id-ID') : '-'}</td>
+                                                <td>${intake.payload.dob ? new Date(intake.payload.dob).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-'}</td>
                                             </tr>
                                             <tr>
                                                 <th>Usia</th>
@@ -4053,7 +4095,7 @@ Apakah Anda yakin ingin melanjutkan?`;
                                             </tr>
                                             <tr>
                                                 <th>HPHT</th>
-                                                <td>${intake.payload.lmp ? new Date(intake.payload.lmp).toLocaleDateString('id-ID') : '-'}</td>
+                                                <td>${intake.payload.lmp ? new Date(intake.payload.lmp).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-'}</td>
                                             </tr>
                                             <tr>
                                                 <th>HPL</th>
@@ -4621,7 +4663,7 @@ Apakah Anda yakin ingin melanjutkan?`;
             xaxis: {
                 categories: data.map(d => {
                     const date = new Date(d.date);
-                    return date.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' });
+                    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
                 })
             },
             yaxis: {
