@@ -808,8 +808,22 @@ router.post('/billing/:mrId', verifyToken, async (req, res, next) => {
                         logger.warn('Tindakan not found for billing item', { itemName, itemCode });
                     }
                 } else if (itemType === 'admin') {
-                    // Use hardcoded admin fee
-                    validatedPrice = 5000;
+                    // Look up admin fee from tindakan table
+                    const [adminRows] = await connection.query(
+                        `SELECT id, code, name, price FROM tindakan
+                         WHERE LOWER(category) = 'administratif'
+                         OR LOWER(name) LIKE '%admin%'
+                         ORDER BY id ASC LIMIT 1`,
+                        []
+                    );
+
+                    if (adminRows.length > 0) {
+                        validatedPrice = parseFloat(adminRows[0].price || 0);
+                    } else {
+                        // Fall back to default admin fee if not found in database
+                        validatedPrice = 5000;
+                        logger.warn('Admin fee not found in database, using default: 5000');
+                    }
                 }
 
                 const itemTotal = quantity * validatedPrice;
@@ -1237,8 +1251,12 @@ router.post('/billing/:mrId/request-change', verifyToken, async (req, res, next)
                     const itemCode = item.item_code || null;
                     let validatedPrice = 0;
 
-                    // Validate price based on item type
-                    if (itemType === 'obat') {
+                    // If price is provided in the request, use it (for preserving existing prices)
+                    if (item.price && typeof item.price === 'number' && item.price > 0) {
+                        validatedPrice = parseFloat(item.price);
+                    }
+                    // Otherwise validate price based on item type
+                    else if (itemType === 'obat') {
                         // Look up obat price from database
                         let obatRow = null;
 
@@ -1297,8 +1315,22 @@ router.post('/billing/:mrId/request-change', verifyToken, async (req, res, next)
                             logger.warn('Tindakan not found for billing item', { itemName, itemCode });
                         }
                     } else if (itemType === 'admin') {
-                        // Use hardcoded admin fee
-                        validatedPrice = 5000;
+                        // Look up admin fee from tindakan table
+                        const [adminRows] = await connection.query(
+                            `SELECT id, code, name, price FROM tindakan
+                             WHERE LOWER(category) = 'administratif'
+                             OR LOWER(name) LIKE '%admin%'
+                             ORDER BY id ASC LIMIT 1`,
+                            []
+                        );
+
+                        if (adminRows.length > 0) {
+                            validatedPrice = parseFloat(adminRows[0].price || 0);
+                        } else {
+                            // Fall back to default admin fee if not found in database
+                            validatedPrice = 5000;
+                            logger.warn('Admin fee not found in database, using default: 5000');
+                        }
                     }
 
                     const itemTotal = quantity * validatedPrice;
