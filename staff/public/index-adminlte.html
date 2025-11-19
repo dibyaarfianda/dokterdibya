@@ -3872,7 +3872,13 @@ Apakah Anda yakin ingin melanjutkan?`;
                 console.log('🔄 Reloading appointment patients...');
                 await window.reloadAppointmentPatients();
             }
-            
+
+            // Reload Klinik Private appointments if available
+            if (window.klinikPrivate && typeof window.klinikPrivate.reload === 'function') {
+                console.log('🔄 Reloading Klinik Private appointments...');
+                await window.klinikPrivate.reload();
+            }
+
             console.log('✅ All patient lists refreshed after deletion');
             
         } catch (error) {
