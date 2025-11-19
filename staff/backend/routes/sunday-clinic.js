@@ -1008,7 +1008,7 @@ router.post('/billing/:mrId/obat', verifyToken, async (req, res, next) => {
             [
                 totals.subtotal,
                 totals.subtotal,
-                req.user.name || req.user.email || req.user.id,
+                req.user.name || req.user.id || 'Staff',
                 billingId
             ]
         );
@@ -1054,7 +1054,7 @@ router.post('/billing/:mrId/confirm', verifyToken, async (req, res, next) => {
             `UPDATE sunday_clinic_billings
              SET status = 'confirmed', confirmed_at = NOW(), confirmed_by = ?
              WHERE mr_id = ?`,
-            [req.user.name || req.user.email || 'Staff', normalizedMrId]
+            [req.user.name || req.user.id || 'Staff', normalizedMrId]
         );
 
         if (result.affectedRows === 0) {
@@ -1083,13 +1083,13 @@ router.post('/billing/:mrId/print', verifyToken, async (req, res, next) => {
             `UPDATE sunday_clinic_billings
              SET printed_at = NOW(), printed_by = ?
              WHERE mr_id = ?`,
-            [req.user.name || req.user.email || 'Staff', normalizedMrId]
+            [req.user.name || req.user.id || 'Staff', normalizedMrId]
         );
 
         res.json({
             success: true,
             message: 'Invoice berhasil dicetak',
-            cashierName: req.user.name || req.user.email || 'Staff'
+            cashierName: req.user.name || req.user.id || 'Staff'
         });
     } catch (error) {
         logger.error('Failed to record print', { error: error.message });
@@ -1224,7 +1224,7 @@ router.post('/billing/:mrId/request-change', verifyToken, async (req, res, next)
 
         // Add new change request
         changeRequests.push({
-            requestedBy: req.user.name || req.user.email || req.user.id,
+            requestedBy: req.user.name || req.user.id || 'Staff',
             requestedAt: new Date().toISOString(),
             note: changeNote || 'Perubahan item tagihan',
             items: items
@@ -1252,8 +1252,11 @@ router.post('/billing/:mrId/request-change', verifyToken, async (req, res, next)
                     let validatedPrice = 0;
 
                     // If price is provided in the request, use it (for preserving existing prices)
-                    if (item.price && typeof item.price === 'number' && item.price > 0) {
-                        validatedPrice = parseFloat(item.price);
+                    if (item.price != null && item.price !== '') {
+                        const parsedPrice = parseFloat(item.price);
+                        if (!isNaN(parsedPrice) && parsedPrice > 0) {
+                            validatedPrice = parsedPrice;
+                        }
                     }
                     // Otherwise validate price based on item type
                     else if (itemType === 'obat') {
@@ -1359,7 +1362,7 @@ router.post('/billing/:mrId/request-change', verifyToken, async (req, res, next)
                      SET subtotal = ?, total = ?, pending_changes = TRUE,
                          change_requests = ?, last_modified_by = ?, last_modified_at = NOW()
                      WHERE id = ?`,
-                    [subtotal, subtotal, JSON.stringify(changeRequests), req.user.name || req.user.email || req.user.id, billing.id]
+                    [subtotal, subtotal, JSON.stringify(changeRequests), req.user.name || req.user.id || 'Staff', billing.id]
                 );
             }
 
@@ -1391,7 +1394,7 @@ router.post('/billing/:mrId/approve-changes', verifyToken, async (req, res, next
              SET pending_changes = FALSE, status = 'confirmed',
                  confirmed_at = NOW(), confirmed_by = ?
              WHERE mr_id = ? AND pending_changes = TRUE`,
-            [req.user.name || req.user.email || req.user.id, normalizedMrId]
+            [req.user.name || req.user.id || 'Staff', normalizedMrId]
         );
 
         if (result.affectedRows === 0) {

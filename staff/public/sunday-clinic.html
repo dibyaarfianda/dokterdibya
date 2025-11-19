@@ -10,7 +10,50 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
     <link rel="stylesheet" href="/staff/public/styles/sunday-clinic.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
     <style>
+        /* Clinic header title font */
+        .clinic-header-title {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        /* Date and time styling - smaller size */
+        .navbar .datetime-display {
+            font-size: 0.85rem;
+        }
+        .navbar .datetime-display i {
+            font-size: 0.85rem;
+        }
+
+        /* Logo hover zoom effect */
+        #sidebar-logo {
+            transition: transform 0.5s ease;
+            position: relative;
+        }
+        #sidebar-logo:hover {
+            transform: scale(1.03);
+        }
+
+        /* Custom tooltip styling */
+        .custom-tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            white-space: nowrap;
+            z-index: 9999;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .custom-tooltip.show {
+            opacity: 1;
+        }
+
         /* Sidebar color and width - light gray theme */
         .main-sidebar {
             background-color: #FAFAFA !important;
@@ -192,17 +235,39 @@
                         <i class="fas fa-bars"></i>
                     </a>
                 </li>
+                <li class="nav-item d-flex align-items-center">
+                    <span class="font-weight-bold text-dark clinic-header-title" id="staff-name-display">Loading...</span>
+                </li>
             </ul>
             <ul class="navbar-nav ml-auto align-items-center">
-                <li class="nav-item mr-3">
-                    <button type="button" class="btn btn-outline-primary btn-sm" id="sc-open-directory">
+                <li class="nav-item d-none d-sm-inline-block mr-2">
+                    <span class="nav-link datetime-display" style="
+    width: 212px;
+    padding-right: 0;
+    height: 31px;
+">
+                        <i class="far fa-calendar-alt mr-1"></i>
+                        <span id="date-display"></span>
+                    </span>
+                </li>
+                <li class="nav-item d-none d-sm-inline-block mr-3">
+                    <span class="nav-link datetime-display" style="
+    width: 132px;
+    padding-right: 0px;
+    padding-left: 0px;
+    height: 31px;
+">
+                        <i class="far fa-clock mr-1"></i>
+                        <span id="time-display"></span>
+                    </span>
+                </li>
+                <li class="nav-item">
+                    <button type="button" class="btn btn-outline-primary btn-sm" id="sc-open-directory" style="
+    margin-right: 20px;
+">
                         <i class="fas fa-users mr-1"></i>
                         Pilih Pasien
                     </button>
-                </li>
-                <li class="nav-item d-flex align-items-center">
-                    <span class="badge badge-primary mr-2">MR <span id="mr-id-badge">-</span></span>
-                    <span class="text-muted" id="section-label">-</span>
                 </li>
             </ul>
         </nav>
@@ -211,17 +276,11 @@
         <aside class="main-sidebar sidebar-dark-primary elevation-4">
             <div class="sidebar">
                 <div class="p-3 text-center sidebar-logo">
-                    <img src="/staff/public/images/dibyablacklogo.svg" alt="Logo" class="sidebar-logo-img">
+                    <img src="/staff/public/images/dibyablacklogo.svg" alt="Logo" class="sidebar-logo-img" id="sidebar-logo" data-tooltip="Keluar dari Klinik Privat" style="cursor: pointer;">
                 </div>
                 <nav class="mt-2">
                     <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-                        <li class="nav-item">
-                            <a href="/staff/public/index-adminlte.html" class="nav-link">
-                                <i class="nav-icon fas fa-home"></i>
-                                <p>Home</p>
-                            </a>
-                        </li>
-                        <li class="nav-header">REKAM MEDIS</li>
+                        <li class="nav-header" style="font-size: 1.32rem; font-weight: 300;">REKAM MEDIS</li>
                         <li class="nav-item">
                             <a href="#" class="nav-link sc-nav-link" data-section="identitas">
                                 <i class="nav-icon fas fa-id-card"></i>

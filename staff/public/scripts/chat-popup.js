@@ -35,7 +35,9 @@
   const chatHTML = `
     <div id="chat-popup-container">
       <!-- Floating Chat Button -->
-      <div id="chat-toggle-btn" class="chat-toggle-btn">
+      <div id="chat-toggle-btn" class="chat-toggle-btn" style="
+    top: 50px;
+" aria-label="Buka Chat Tim" title="Buka Chat Tim">
         <i class="fas fa-comments"></i>
         <span class="chat-badge" style="display:none;">0</span>
       </div>

@@ -24,15 +24,15 @@
     }
 
     /* Hide sidebar on mobile by default */
-    .main-sidebar {
-        position: fixed;
-        left: -250px;
-        transition: left 0.3s ease;
-        z-index: 1050;
-    }
-
-    .main-sidebar.sidebar-open {
-        left: 0;
+/   .main-sidebar {
+//        position: fixed;
+//        left: -250px;
+//        transition: left 0.3s ease;
+//        z-index: 1050;
+//    }
+//
+    /.main-sidebar.sidebar-open {
+    /    left: 0;
     }
 
     /* Adjust content wrapper */
@@ -50,12 +50,12 @@
 
     .content-wrapper .content > .row,
     .content-wrapper .content .container-fluid > .row {
-        margin-left: 0;
+        margin-left: -270;
         margin-right: 0;
     }
 
     .main-header {
-        margin-left: 0 !important;
+        margin-left: -270 !important;
     }
 
     .main-footer {
