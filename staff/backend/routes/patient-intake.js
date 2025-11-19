@@ -18,7 +18,10 @@ let encryptionWarningLogged = false;
 // Helper function to get GMT+7 timestamp
 function getGMT7Timestamp() {
     const now = new Date();
-    const gmt7Time = new Date(now.getTime() + (7 * 60 * 60 * 1000));
+    // Get UTC time first
+    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
+    // Add 7 hours to get GMT+7 (Jakarta time)
+    const gmt7Time = new Date(utcTime + (7 * 60 * 60 * 1000));
     return gmt7Time.toISOString();
 }
 

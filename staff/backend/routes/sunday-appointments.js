@@ -25,8 +25,10 @@ const verifyToken = (req, res, next) => {
 // Helper function to get current date/time in GMT+7 (Jakarta/Indonesian time)
 function getGMT7Date() {
     const now = new Date();
-    // Add 7 hours offset for GMT+7
-    return new Date(now.getTime() + (7 * 60 * 60 * 1000));
+    // Get UTC time first
+    const utcTime = now.getTime() + (now.getTimezoneOffset() * 60 * 1000);
+    // Add 7 hours to get GMT+7 (Jakarta time)
+    return new Date(utcTime + (7 * 60 * 60 * 1000));
 }
 
 // Helper function to get next Sundays
