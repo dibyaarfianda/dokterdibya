@@ -19,14 +19,16 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
     const [rows] = await db.query(
-        `SELECT 
-            u.id,
+        `SELECT
+            u.new_id,
             u.name,
             u.email,
             u.password_hash,
             u.role,
             u.role_id,
             u.photo_url,
+            u.user_type,
+            u.is_superadmin,
             r.name AS resolved_role_name,
             r.display_name AS resolved_role_display
         FROM users u
@@ -44,15 +46,20 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
 
     const isPasswordValid = await bcrypt.compare(password, user.password_hash || '');
 
-    const resolvedRole = user.role || user.resolved_role_name || null;
+    const userId = user.new_id;
+
+    // Set role based on user type and superadmin status
+    const resolvedRole = user.is_superadmin ? 'superadmin' :
+                         user.user_type === 'staff' ? 'staff' :
+                         user.role || user.resolved_role_name || 'viewer';
     const resolvedRoleDisplay = user.resolved_role_display || resolvedRole || null;
-    const roleForToken = resolvedRole || 'viewer';
+    const roleForToken = resolvedRole;
 
     if (!user.role && user.resolved_role_name) {
         try {
-            await db.query('UPDATE users SET role = ? WHERE id = ?', [user.resolved_role_name, user.id]);
+            await db.query('UPDATE users SET role = ? WHERE new_id = ?', [user.resolved_role_name, userId]);
         } catch (updateErr) {
-            logger.warn(`Failed to backfill role column for user ${user.id}: ${updateErr.message}`);
+            logger.warn(`Failed to backfill role column for user ${userId}: ${updateErr.message}`);
         }
     }
 
@@ -61,7 +68,13 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
     }
 
     const token = jwt.sign(
-        { id: user.id, email: user.email, role: roleForToken },
+        {
+            id: userId,
+            email: user.email,
+            role: roleForToken,
+            user_type: user.user_type || 'patient',
+            is_superadmin: user.is_superadmin || false
+        },
         JWT_SECRET,
         { expiresIn: JWT_EXPIRES_IN }
     );
@@ -71,13 +84,15 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
     sendSuccess(res, {
         token,
         user: {
-            id: user.id,
+            id: userId,
             name: user.name,
             email: user.email,
             role: roleForToken,
             role_id: user.role_id || null,
             role_display_name: resolvedRoleDisplay || roleForToken,
-            photo_url: user.photo_url
+            photo_url: user.photo_url,
+            user_type: user.user_type || 'patient',
+            is_superadmin: user.is_superadmin || false
         }
     }, SUCCESS_MESSAGES.LOGIN_SUCCESS);
 }));
@@ -91,18 +106,20 @@ router.get('/api/auth/me', verifyToken, asyncHandler(async (req, res) => {
     }
 
     const [rows] = await db.query(
-        `SELECT 
-            u.id,
+        `SELECT
+            u.new_id,
             u.name,
             u.email,
             u.role,
             u.role_id,
             u.photo_url,
+            u.user_type,
+            u.is_superadmin,
             r.name AS resolved_role_name,
             r.display_name AS resolved_role_display
         FROM users u
         LEFT JOIN roles r ON u.role_id = r.id
-        WHERE u.id = ?`,
+        WHERE u.new_id = ?`,
         [userId]
     );
 
@@ -115,15 +132,17 @@ router.get('/api/auth/me', verifyToken, asyncHandler(async (req, res) => {
     const resolvedRoleDisplay = user.resolved_role_display || resolvedRole || null;
     const roleForClient = resolvedRole || 'viewer';
 
-    sendSuccess(res, { 
+    sendSuccess(res, {
         user: {
-            id: user.id,
+            id: user.new_id,
             name: user.name,
             email: user.email,
             role: roleForClient,
             role_id: user.role_id || null,
             role_display_name: resolvedRoleDisplay || roleForClient,
-            photo_url: user.photo_url
+            photo_url: user.photo_url,
+            user_type: user.user_type || 'patient',
+            is_superadmin: user.is_superadmin || false
         }
     });
 }));
@@ -156,7 +175,7 @@ router.put('/api/auth/profile', verifyToken, async (req, res) => {
         }
         
         values.push(userId);
-        const query = `UPDATE users SET ${updates.join(', ')} WHERE id = ?`;
+        const query = `UPDATE users SET ${updates.join(', ')} WHERE new_id = ?`;
         await db.query(query, values);
         
         res.json({ success: true, message: 'Profile updated' });
@@ -177,21 +196,21 @@ router.post('/api/auth/change-password', verifyToken, validatePasswordChange, as
     const { currentPassword, newPassword } = req.body;
 
     // Verify current password
-    const [rows] = await db.query('SELECT password_hash FROM users WHERE id = ?', [userId]);
-    
+    const [rows] = await db.query('SELECT password_hash FROM users WHERE new_id = ?', [userId]);
+
     if (rows.length === 0) {
         throw new AppError(ERROR_MESSAGES.NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     const isPasswordValid = await bcrypt.compare(currentPassword, rows[0].password_hash);
-    
+
     if (!isPasswordValid) {
         throw new AppError('Invalid current password', HTTP_STATUS.UNAUTHORIZED);
     }
 
     // Hash and update new password
     const newPasswordHash = await bcrypt.hash(newPassword, 10);
-    await db.query('UPDATE users SET password_hash = ? WHERE id = ?', [newPasswordHash, userId]);
+    await db.query('UPDATE users SET password_hash = ? WHERE new_id = ?', [newPasswordHash, userId]);
 
     logger.info(`Password changed for user ID: ${userId}`);
 
