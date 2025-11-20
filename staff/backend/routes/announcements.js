@@ -6,9 +6,28 @@ const { verifyToken } = require('../middleware/auth');
 // Get all active announcements (public - for patient dashboard)
 router.get('/active', async (req, res) => {
     try {
+        // Check if new columns exist by querying information_schema
+        let hasNewColumns = false;
+        try {
+            const [columns] = await db.query(
+                `SELECT COUNT(*) as count FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE()
+                 AND TABLE_NAME = 'announcements'
+                 AND COLUMN_NAME IN ('image_url', 'formatted_content', 'content_type')`
+            );
+            hasNewColumns = columns[0].count === 3;
+        } catch (e) {
+            console.log('Could not check columns, assuming basic schema:', e.message);
+        }
+
+        // Build query based on available columns
+        let selectColumns = 'id, title, message, created_by_name, priority, created_at';
+        if (hasNewColumns) {
+            selectColumns = 'id, title, message, image_url, formatted_content, content_type, created_by_name, priority, created_at';
+        }
+
         const [announcements] = await db.query(
-            `SELECT id, title, message, image_url, formatted_content, content_type,
-                    created_by_name, priority, created_at
+            `SELECT ${selectColumns}
              FROM announcements
              WHERE status = 'active'
              ORDER BY
@@ -76,24 +95,58 @@ router.post('/', verifyToken, async (req, res) => {
             });
         }
 
-        const [result] = await db.query(
-            `INSERT INTO announcements (title, message, image_url, formatted_content, content_type,
-                                       created_by, created_by_name, priority, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-                title,
-                message,
-                image_url || null,
-                formatted_content || null,
-                content_type || 'plain',
-                userId,
-                userName,
-                priority || 'normal',
-                status || 'active'
-            ]
-        );
+        // Check if new columns exist using information_schema
+        let hasNewColumns = false;
+        try {
+            const [columns] = await db.query(
+                `SELECT COUNT(*) as count FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE()
+                 AND TABLE_NAME = 'announcements'
+                 AND COLUMN_NAME IN ('image_url', 'formatted_content', 'content_type')`
+            );
+            hasNewColumns = columns[0].count === 3;
+        } catch (e) {
+            console.log('Could not check columns, assuming basic schema:', e.message);
+        }
 
-        const [newAnnouncement] = await db.query(
+        let result;
+
+        if (hasNewColumns) {
+            // Use new schema with image and formatting support
+            [result] = await db.query(
+                `INSERT INTO announcements (title, message, image_url, formatted_content, content_type,
+                                           created_by, created_by_name, priority, status)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    title,
+                    message,
+                    image_url || null,
+                    formatted_content || null,
+                    content_type || 'plain',
+                    userId,
+                    userName,
+                    priority || 'normal',
+                    status || 'active'
+                ]
+            );
+        } else {
+            // Use basic schema (backward compatibility)
+            console.log('Using basic announcement schema (new columns not available)');
+            [result] = await db.query(
+                `INSERT INTO announcements (title, message, created_by, created_by_name, priority, status)
+                 VALUES (?, ?, ?, ?, ?, ?)`,
+                [
+                    title,
+                    message,
+                    userId,
+                    userName,
+                    priority || 'normal',
+                    status || 'active'
+                ]
+            );
+        }
+
+        const [newAnnouncementResult] = await db.query(
             'SELECT * FROM announcements WHERE id = ?',
             [result.insertId]
         );
@@ -101,7 +154,7 @@ router.post('/', verifyToken, async (req, res) => {
         res.json({
             success: true,
             message: 'Announcement created successfully',
-            data: newAnnouncement[0]
+            data: newAnnouncementResult[0]
         });
     } catch (error) {
         console.error('Error creating announcement:', error);
@@ -115,14 +168,42 @@ router.put('/:id', verifyToken, async (req, res) => {
         const { title, message, image_url, formatted_content, content_type, priority, status } = req.body;
         const { id } = req.params;
 
-        const [result] = await db.query(
-            `UPDATE announcements
-             SET title = ?, message = ?, image_url = ?, formatted_content = ?,
-                 content_type = ?, priority = ?, status = ?
-             WHERE id = ?`,
-            [title, message, image_url || null, formatted_content || null,
-             content_type || 'plain', priority, status, id]
-        );
+        // Check if new columns exist using information_schema
+        let hasNewColumns = false;
+        try {
+            const [columns] = await db.query(
+                `SELECT COUNT(*) as count FROM information_schema.COLUMNS
+                 WHERE TABLE_SCHEMA = DATABASE()
+                 AND TABLE_NAME = 'announcements'
+                 AND COLUMN_NAME IN ('image_url', 'formatted_content', 'content_type')`
+            );
+            hasNewColumns = columns[0].count === 3;
+        } catch (e) {
+            console.log('Could not check columns, assuming basic schema:', e.message);
+        }
+
+        let result;
+
+        if (hasNewColumns) {
+            // Use new schema with image and formatting support
+            [result] = await db.query(
+                `UPDATE announcements
+                 SET title = ?, message = ?, image_url = ?, formatted_content = ?,
+                     content_type = ?, priority = ?, status = ?
+                 WHERE id = ?`,
+                [title, message, image_url || null, formatted_content || null,
+                 content_type || 'plain', priority, status, id]
+            );
+        } else {
+            // Use basic schema (backward compatibility)
+            console.log('Using basic announcement schema (new columns not available)');
+            [result] = await db.query(
+                `UPDATE announcements
+                 SET title = ?, message = ?, priority = ?, status = ?
+                 WHERE id = ?`,
+                [title, message, priority, status, id]
+            );
+        }
 
         if (result.affectedRows === 0) {
             return res.status(404).json({

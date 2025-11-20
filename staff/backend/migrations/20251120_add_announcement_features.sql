@@ -19,11 +19,59 @@ CREATE TABLE IF NOT EXISTS announcements (
     INDEX idx_created_at (created_at)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Add new columns for enhanced features
-ALTER TABLE announcements
-ADD COLUMN IF NOT EXISTS image_url VARCHAR(500) NULL AFTER message,
-ADD COLUMN IF NOT EXISTS formatted_content MEDIUMTEXT NULL AFTER image_url,
-ADD COLUMN IF NOT EXISTS content_type ENUM('plain', 'markdown', 'html') DEFAULT 'plain' AFTER formatted_content;
+-- Check if columns already exist before adding them
+SET @dbname = 'dibyaklinik';
+SET @tablename = 'announcements';
+
+-- Add image_url column if it doesn't exist
+SET @col_exists = 0;
+SELECT COUNT(*) INTO @col_exists
+FROM information_schema.COLUMNS
+WHERE TABLE_SCHEMA = @dbname
+AND TABLE_NAME = @tablename
+AND COLUMN_NAME = 'image_url';
+
+SET @query = IF(@col_exists = 0,
+    'ALTER TABLE announcements ADD COLUMN image_url VARCHAR(500) NULL AFTER message',
+    'SELECT "Column image_url already exists" AS Info');
+PREPARE stmt FROM @query;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Add formatted_content column if it doesn't exist
+SET @col_exists = 0;
+SELECT COUNT(*) INTO @col_exists
+FROM information_schema.COLUMNS
+WHERE TABLE_SCHEMA = @dbname
+AND TABLE_NAME = @tablename
+AND COLUMN_NAME = 'formatted_content';
+
+SET @query = IF(@col_exists = 0,
+    'ALTER TABLE announcements ADD COLUMN formatted_content MEDIUMTEXT NULL AFTER image_url',
+    'SELECT "Column formatted_content already exists" AS Info');
+PREPARE stmt FROM @query;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
+
+-- Add content_type column if it doesn't exist
+SET @col_exists = 0;
+SELECT COUNT(*) INTO @col_exists
+FROM information_schema.COLUMNS
+WHERE TABLE_SCHEMA = @dbname
+AND TABLE_NAME = @tablename
+AND COLUMN_NAME = 'content_type';
+
+SET @query = IF(@col_exists = 0,
+    'ALTER TABLE announcements ADD COLUMN content_type ENUM(\'plain\', \'markdown\', \'html\') DEFAULT \'plain\' AFTER formatted_content',
+    'SELECT "Column content_type already exists" AS Info');
+PREPARE stmt FROM @query;
+EXECUTE stmt;
+DEALLOCATE PREPARE stmt;
 
 -- Show confirmation
 SELECT 'Announcement table enhanced with image and formatting support!' as status;
+SELECT COLUMN_NAME, COLUMN_TYPE
+FROM information_schema.COLUMNS
+WHERE TABLE_SCHEMA = @dbname
+AND TABLE_NAME = @tablename
+ORDER BY ORDINAL_POSITION;
