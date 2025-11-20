@@ -1,0 +1,395 @@
+/**
+ * Mobile-Friendly Responsive CSS for AdminLTE Pages
+ * This file adds mobile responsiveness without impacting desktop view
+ * Applies to all AdminLTE dashboards and Sunday Clinic pages
+ */
+
+/* ============================================
+   MOBILE BREAKPOINTS
+   ============================================ */
+
+/* Tablets and below (768px and smaller) */
+@media (max-width: 768px) {
+
+    /* ========== SIDEBAR MOBILE OPTIMIZATION ========== */
+
+    /* Ensure sidebar is hidden by default on mobile */
+    .main-sidebar {
+        transform: translateX(-250px);
+        transition: transform 0.3s ease-in-out;
+    }
+
+    /* Show sidebar when active/open */
+    body.sidebar-open .main-sidebar {
+        transform: translateX(0);
+    }
+
+    /* Add overlay when sidebar is open */
+    body.sidebar-open::before {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 1037;
+        animation: fadeIn 0.3s;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    /* Adjust content wrapper when sidebar is open */
+    .content-wrapper {
+        margin-left: 0 !important;
+    }
+
+    /* Ensure hamburger menu is always visible */
+    .navbar .nav-link[data-widget="pushmenu"] {
+        display: block !important;
+    }
+
+    /* ========== NAVIGATION & HEADER ========== */
+
+    /* Make navbar sticky on mobile */
+    .main-header {
+        position: sticky;
+        top: 0;
+        z-index: 1038;
+    }
+
+    /* Optimize navbar items spacing */
+    .navbar-nav .nav-item {
+        padding: 0 5px;
+    }
+
+    .navbar-nav .nav-link {
+        padding: 0.5rem 0.75rem;
+    }
+
+    /* ========== CARDS & CONTENT ========== */
+
+    /* Reduce card margins and padding */
+    .card {
+        margin-bottom: 1rem;
+    }
+
+    .card-body {
+        padding: 1rem;
+    }
+
+    .card-header {
+        padding: 0.75rem 1rem;
+    }
+
+    .card-footer {
+        padding: 0.75rem 1rem;
+    }
+
+    /* ========== TABLES ========== */
+
+    /* Make tables horizontally scrollable */
+    .table-responsive {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    /* Wrap all tables in responsive container if not already */
+    table {
+        min-width: 600px; /* Prevents tables from being too cramped */
+    }
+
+    /* Adjust DataTables controls */
+    .dataTables_wrapper .row {
+        margin: 0;
+    }
+
+    .dataTables_wrapper .col-sm-12,
+    .dataTables_wrapper .col-md-6 {
+        padding: 0.5rem;
+    }
+
+    /* Stack DataTables filter and length controls */
+    .dataTables_wrapper .dataTables_length,
+    .dataTables_wrapper .dataTables_filter {
+        text-align: center;
+        margin-bottom: 0.5rem;
+    }
+
+    /* ========== BUTTONS & FORMS ========== */
+
+    /* Make buttons more touch-friendly */
+    .btn {
+        padding: 0.5rem 1rem;
+        min-height: 44px; /* Touch target size */
+        font-size: 0.9rem;
+    }
+
+    .btn-sm {
+        min-height: 38px;
+        padding: 0.4rem 0.75rem;
+    }
+
+    .btn-xs {
+        min-height: 32px;
+        padding: 0.25rem 0.5rem;
+    }
+
+    /* Stack buttons vertically on very small screens */
+    .btn-group-vertical {
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* Form controls touch optimization */
+    .form-control,
+    .custom-select {
+        min-height: 44px;
+        font-size: 16px; /* Prevents zoom on iOS */
+    }
+
+    /* Adjust input groups */
+    .input-group {
+        flex-wrap: wrap;
+    }
+
+    /* ========== MODALS ========== */
+
+    /* Full-width modals on mobile */
+    .modal-dialog {
+        margin: 0.5rem;
+        max-width: calc(100% - 1rem);
+    }
+
+    .modal-content {
+        border-radius: 0.5rem;
+    }
+
+    .modal-body {
+        padding: 1rem;
+    }
+
+    /* ========== INFO BOXES & SMALL BOXES ========== */
+
+    /* Stack info boxes */
+    .info-box {
+        margin-bottom: 1rem;
+    }
+
+    .small-box {
+        margin-bottom: 1rem;
+    }
+
+    /* ========== UTILITY CLASSES ========== */
+
+    /* Hide elements on mobile */
+    .hide-mobile {
+        display: none !important;
+    }
+
+    /* Show only on mobile */
+    .show-mobile {
+        display: block !important;
+    }
+
+    /* Text alignment on mobile */
+    .text-mobile-center {
+        text-align: center !important;
+    }
+
+    /* ========== SPECIFIC PAGE FIXES ========== */
+
+    /* Sunday Clinic page adjustments */
+    .clinic-section {
+        padding: 1rem 0;
+    }
+
+    /* Patient list adjustments */
+    .patient-row {
+        flex-direction: column;
+    }
+
+    /* Action button groups */
+    .action-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .action-buttons .btn {
+        width: 100%;
+    }
+}
+
+/* ============================================
+   SMALL MOBILE (576px and smaller)
+   ============================================ */
+
+@media (max-width: 576px) {
+
+    /* Further reduce spacing */
+    .content-wrapper {
+        padding: 0.5rem;
+    }
+
+    .content-header {
+        padding: 0.5rem 1rem;
+    }
+
+    /* Smaller headings */
+    h1.m-0 {
+        font-size: 1.5rem;
+    }
+
+    h3.card-title {
+        font-size: 1.1rem;
+    }
+
+    /* Stack breadcrumbs */
+    .breadcrumb {
+        flex-wrap: wrap;
+    }
+
+    /* Full-width cards */
+    .row > [class*='col-'] {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+
+    /* Hide less important columns in tables */
+    .table .hide-xs {
+        display: none;
+    }
+
+    /* Stack form rows */
+    .form-row > [class*='col-'] {
+        margin-bottom: 0.5rem;
+    }
+}
+
+/* ============================================
+   LANDSCAPE MOBILE (min-height: 500px)
+   ============================================ */
+
+@media (max-width: 768px) and (orientation: landscape) {
+
+    /* Reduce header height in landscape */
+    .main-header {
+        min-height: 3rem;
+    }
+
+    /* Compact sidebar */
+    .main-sidebar .brand-link {
+        padding: 0.5rem;
+    }
+
+    .sidebar .nav-link {
+        padding: 0.3rem 0.5rem !important;
+    }
+}
+
+/* ============================================
+   DESKTOP (769px and larger) - Ensure no impact
+   ============================================ */
+
+@media (min-width: 769px) {
+
+    /* Ensure sidebar behaves normally on desktop */
+    .main-sidebar {
+        transform: none !important;
+    }
+
+    /* Remove mobile-specific utilities */
+    .hide-mobile {
+        display: initial !important;
+    }
+
+    .show-mobile {
+        display: none !important;
+    }
+}
+
+/* ============================================
+   TOUCH DEVICE OPTIMIZATIONS
+   ============================================ */
+
+@media (hover: none) and (pointer: coarse) {
+
+    /* Larger touch targets */
+    a, button, .btn, input[type="checkbox"], input[type="radio"] {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    /* Remove hover effects on touch devices */
+    .btn:hover,
+    .nav-link:hover {
+        transform: none;
+    }
+
+    /* Improve tap highlighting */
+    a, button, .btn {
+        -webkit-tap-highlight-color: rgba(0, 123, 255, 0.2);
+    }
+}
+
+/* ============================================
+   PRINT STYLES (Keep desktop layout)
+   ============================================ */
+
+@media print {
+
+    /* Hide navigation elements */
+    .main-header,
+    .main-sidebar,
+    .btn,
+    .no-print {
+        display: none !important;
+    }
+
+    /* Full-width content */
+    .content-wrapper {
+        margin-left: 0 !important;
+        padding: 0 !important;
+    }
+
+    /* Optimize tables for printing */
+    table {
+        min-width: 100%;
+        font-size: 10pt;
+    }
+}
+
+/* ============================================
+   ACCESSIBILITY IMPROVEMENTS
+   ============================================ */
+
+/* Focus indicators for keyboard navigation */
+a:focus,
+button:focus,
+input:focus,
+select:focus,
+textarea:focus {
+    outline: 2px solid #007bff;
+    outline-offset: 2px;
+}
+
+/* Skip to content link for screen readers */
+.skip-to-content {
+    position: absolute;
+    top: -40px;
+    left: 0;
+    background: #007bff;
+    color: white;
+    padding: 8px;
+    z-index: 9999;
+}
+
+.skip-to-content:focus {
+    top: 0;
+}
