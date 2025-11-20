@@ -23,6 +23,37 @@
             overflow: hidden;
             text-overflow: ellipsis;
         }
+        .announcement-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .preview-container {
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 4px;
+            background: #f9f9f9;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .preview-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .format-toolbar {
+            margin-bottom: 10px;
+            padding: 5px;
+            background: #f5f5f5;
+            border-radius: 4px;
+        }
+        .format-toolbar button {
+            margin-right: 5px;
+        }
     </style>
 </head>
 <body class="hold-transition sidebar-mini">
@@ -117,44 +148,123 @@
             <div class="modal-body">
                 <form id="announcementForm">
                     <input type="hidden" id="announcementId">
-                    <div class="form-group">
-                        <label for="title">Judul Pengumuman *</label>
-                        <input type="text" class="form-control" id="title" required maxlength="255">
-                    </div>
-                    <div class="form-group">
-                        <label for="message">Pesan *</label>
-                        <textarea class="form-control" id="message" rows="6" required></textarea>
-                    </div>
-                    <div class="row">
-                        <div class="col-md-6">
+
+                    <!-- Tabs for Form and Preview -->
+                    <ul class="nav nav-tabs mb-3" id="announcementTabs" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="form-tab" data-toggle="tab" href="#formContent" role="tab">
+                                <i class="fas fa-edit"></i> Edit
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="preview-tab" data-toggle="tab" href="#previewContent" role="tab">
+                                <i class="fas fa-eye"></i> Preview
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content" id="announcementTabsContent">
+                        <!-- Form Tab -->
+                        <div class="tab-pane fade show active" id="formContent" role="tabpanel">
                             <div class="form-group">
-                                <label for="priority">Prioritas</label>
-                                <select class="form-control" id="priority">
-                                    <option value="normal">Normal</option>
-                                    <option value="important">Penting</option>
-                                    <option value="urgent">Mendesak</option>
+                                <label for="title">Judul Pengumuman *</label>
+                                <input type="text" class="form-control" id="title" required maxlength="255">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="imageUrl">URL Gambar (opsional)</label>
+                                <input type="url" class="form-control" id="imageUrl" placeholder="https://example.com/image.jpg">
+                                <small class="form-text text-muted">Masukkan URL gambar yang ingin ditampilkan di pengumuman</small>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="contentType">Tipe Konten</label>
+                                <select class="form-control" id="contentType">
+                                    <option value="plain">Teks Biasa</option>
+                                    <option value="markdown">Markdown</option>
                                 </select>
                             </div>
-                        </div>
-                        <div class="col-md-6">
+
                             <div class="form-group">
-                                <label for="status">Status</label>
-                                <select class="form-control" id="status">
-                                    <option value="active">Aktif</option>
-                                    <option value="inactive">Tidak Aktif</option>
-                                </select>
+                                <label for="message">Pesan *</label>
+                                <div class="format-toolbar" id="formatToolbar" style="display: none;">
+                                    <button type="button" class="btn btn-sm btn-secondary" onclick="insertFormat('**', '**', 'teks tebal')">
+                                        <strong>B</strong>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-secondary" onclick="insertFormat('*', '*', 'teks miring')">
+                                        <em>I</em>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-secondary" onclick="insertFormat('[', '](url)', 'teks link')">
+                                        <i class="fas fa-link"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-sm btn-secondary" onclick="insertFormat('\n- ', '', 'item')">
+                                        <i class="fas fa-list"></i>
+                                    </button>
+                                </div>
+                                <textarea class="form-control" id="message" rows="8" required></textarea>
+                                <small class="form-text text-muted" id="messageHelp">
+                                    Gunakan teks biasa atau markdown untuk pemformatan.
+                                </small>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="priority">Prioritas</label>
+                                        <select class="form-control" id="priority">
+                                            <option value="normal">Normal</option>
+                                            <option value="important">Penting</option>
+                                            <option value="urgent">Mendesak</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-group">
+                                        <label for="status">Status</label>
+                                        <select class="form-control" id="status">
+                                            <option value="active">Aktif</option>
+                                            <option value="inactive">Tidak Aktif</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="alert alert-info">
+                                <i class="fas fa-info-circle"></i>
+                                Pengumuman akan ditampilkan di dashboard pasien dengan nama:
+                                <strong>dr. Dibya Arfianda, SpOG, M.Ked.Klin.</strong>
                             </div>
                         </div>
-                    </div>
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i> 
-                        Pengumuman akan ditampilkan di dashboard pasien dengan nama: 
-                        <strong>dr. Dibya Arfianda, SpOG, M.Ked.Klin.</strong>
+
+                        <!-- Preview Tab -->
+                        <div class="tab-pane fade" id="previewContent" role="tabpanel">
+                            <div class="card">
+                                <div class="card-header" id="previewHeader">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge badge-light priority-badge" id="previewPriority">Normal</span>
+                                        <span class="badge badge-success" id="previewStatus">Aktif</span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <h5 class="card-title" id="previewTitle">Judul Pengumuman</h5>
+                                    <img id="previewImage" class="preview-image" style="display: none;" alt="Preview">
+                                    <div class="preview-container" id="previewMessage">
+                                        Pesan akan ditampilkan di sini...
+                                    </div>
+                                    <small class="text-muted">
+                                        <i class="far fa-user"></i> dr. Dibya Arfianda, SpOG, M.Ked.Klin.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-info" id="btn-update-preview">
+                    <i class="fas fa-sync"></i> Update Preview
+                </button>
                 <button type="button" class="btn btn-primary" id="btn-save">
                     <i class="fas fa-save"></i> Simpan
                 </button>
@@ -167,6 +277,8 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
 <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
 <script type="module" src="./scripts/kelola-announcement.js"></script>
 </body>
 </html>
