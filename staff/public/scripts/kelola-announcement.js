@@ -61,6 +61,30 @@ function setupEventListeners() {
     document.getElementById('btn-save').addEventListener('click', async () => {
         await saveAnnouncement();
     });
+
+    // Update preview button
+    document.getElementById('btn-update-preview').addEventListener('click', () => {
+        updatePreview();
+    });
+
+    // Content type change event
+    document.getElementById('contentType').addEventListener('change', (e) => {
+        const toolbar = document.getElementById('formatToolbar');
+        const messageHelp = document.getElementById('messageHelp');
+
+        if (e.target.value === 'markdown') {
+            toolbar.style.display = 'block';
+            messageHelp.innerHTML = 'Gunakan markdown untuk pemformatan. <a href="https://www.markdownguide.org/basic-syntax/" target="_blank">Panduan Markdown</a>';
+        } else {
+            toolbar.style.display = 'none';
+            messageHelp.textContent = 'Masukkan teks biasa tanpa pemformatan.';
+        }
+    });
+
+    // Auto-update preview when switching to preview tab
+    document.getElementById('preview-tab').addEventListener('shown.bs.tab', () => {
+        updatePreview();
+    });
 }
 
 async function loadAnnouncements() {
@@ -86,7 +110,7 @@ async function loadAnnouncements() {
 
 function displayAnnouncements(announcements) {
     const container = document.getElementById('announcements-container');
-    
+
     if (announcements.length === 0) {
         container.innerHTML = `
             <div class="col-12">
@@ -98,39 +122,47 @@ function displayAnnouncements(announcements) {
         return;
     }
 
-    container.innerHTML = announcements.map(announcement => `
-        <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card announcement-card h-100">
-                <div class="card-header bg-${getPriorityColor(announcement.priority)}">
-                    <div class="d-flex justify-content-between align-items-center">
-                        <span class="badge badge-light priority-badge">
-                            ${getPriorityLabel(announcement.priority)}
-                        </span>
-                        <span class="badge badge-${announcement.status === 'active' ? 'success' : 'secondary'}">
-                            ${announcement.status === 'active' ? 'Aktif' : 'Tidak Aktif'}
-                        </span>
+    container.innerHTML = announcements.map(announcement => {
+        const imageHtml = announcement.image_url ?
+            `<img src="${escapeHtml(announcement.image_url)}" class="announcement-image" alt="Announcement image" onerror="this.style.display='none'">` : '';
+
+        const previewContent = renderContent(announcement.message, announcement.content_type || 'plain', true);
+
+        return `
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card announcement-card h-100">
+                    <div class="card-header bg-${getPriorityColor(announcement.priority)}">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="badge badge-light priority-badge">
+                                ${getPriorityLabel(announcement.priority)}
+                            </span>
+                            <span class="badge badge-${announcement.status === 'active' ? 'success' : 'secondary'}">
+                                ${announcement.status === 'active' ? 'Aktif' : 'Tidak Aktif'}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title">${escapeHtml(announcement.title)}</h5>
+                        ${imageHtml}
+                        <div class="announcement-preview text-muted">
+                            ${previewContent}
+                        </div>
+                        <small class="text-muted">
+                            <i class="far fa-clock"></i> ${formatDate(announcement.created_at)}
+                        </small>
+                    </div>
+                    <div class="card-footer bg-transparent">
+                        <button class="btn btn-sm btn-primary" onclick="editAnnouncement(${announcement.id})">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteAnnouncement(${announcement.id}, '${escapeHtml(announcement.title)}')">
+                            <i class="fas fa-trash"></i> Hapus
+                        </button>
                     </div>
                 </div>
-                <div class="card-body">
-                    <h5 class="card-title">${escapeHtml(announcement.title)}</h5>
-                    <p class="card-text announcement-preview text-muted">
-                        ${escapeHtml(announcement.message)}
-                    </p>
-                    <small class="text-muted">
-                        <i class="far fa-clock"></i> ${formatDate(announcement.created_at)}
-                    </small>
-                </div>
-                <div class="card-footer bg-transparent">
-                    <button class="btn btn-sm btn-primary" onclick="editAnnouncement(${announcement.id})">
-                        <i class="fas fa-edit"></i> Edit
-                    </button>
-                    <button class="btn btn-sm btn-danger" onclick="deleteAnnouncement(${announcement.id}, '${escapeHtml(announcement.title)}')">
-                        <i class="fas fa-trash"></i> Hapus
-                    </button>
-                </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function getPriorityColor(priority) {
@@ -166,14 +198,96 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+function renderContent(content, contentType, isPreview = false) {
+    if (!content) return '';
+
+    if (contentType === 'markdown') {
+        try {
+            // Use marked to parse markdown
+            const html = marked.parse(content);
+            // Sanitize HTML to prevent XSS
+            return DOMPurify.sanitize(html);
+        } catch (error) {
+            console.error('Markdown parsing error:', error);
+            return escapeHtml(content);
+        }
+    }
+
+    // Plain text - escape and preserve line breaks
+    return escapeHtml(content).replace(/\n/g, '<br>');
+}
+
+function updatePreview() {
+    const title = document.getElementById('title').value;
+    const message = document.getElementById('message').value;
+    const imageUrl = document.getElementById('imageUrl').value;
+    const contentType = document.getElementById('contentType').value;
+    const priority = document.getElementById('priority').value;
+    const status = document.getElementById('status').value;
+
+    // Update preview title
+    document.getElementById('previewTitle').textContent = title || 'Judul Pengumuman';
+
+    // Update preview image
+    const previewImage = document.getElementById('previewImage');
+    if (imageUrl) {
+        previewImage.src = imageUrl;
+        previewImage.style.display = 'block';
+    } else {
+        previewImage.style.display = 'none';
+    }
+
+    // Update preview message with formatting
+    const previewMessage = document.getElementById('previewMessage');
+    if (message) {
+        previewMessage.innerHTML = renderContent(message, contentType);
+    } else {
+        previewMessage.innerHTML = '<em class="text-muted">Pesan akan ditampilkan di sini...</em>';
+    }
+
+    // Update priority badge
+    const previewPriority = document.getElementById('previewPriority');
+    previewPriority.textContent = getPriorityLabel(priority);
+
+    // Update status badge
+    const previewStatus = document.getElementById('previewStatus');
+    previewStatus.textContent = status === 'active' ? 'Aktif' : 'Tidak Aktif';
+    previewStatus.className = `badge badge-${status === 'active' ? 'success' : 'secondary'}`;
+
+    // Update header color
+    const previewHeader = document.getElementById('previewHeader');
+    previewHeader.className = `card-header bg-${getPriorityColor(priority)}`;
+}
+
+// Helper function to insert markdown formatting
+window.insertFormat = function(before, after, placeholder) {
+    const messageField = document.getElementById('message');
+    const start = messageField.selectionStart;
+    const end = messageField.selectionEnd;
+    const selectedText = messageField.value.substring(start, end);
+    const textToInsert = selectedText || placeholder;
+    const newText = before + textToInsert + after;
+
+    messageField.value = messageField.value.substring(0, start) + newText + messageField.value.substring(end);
+
+    // Set cursor position
+    const newCursorPos = selectedText ? start + newText.length : start + before.length;
+    messageField.focus();
+    messageField.setSelectionRange(newCursorPos, newCursorPos + (selectedText ? 0 : placeholder.length));
+};
+
 function openModal(announcement = null) {
     const modal = $('#announcementModal');
     const title = document.getElementById('modalTitle');
     const form = document.getElementById('announcementForm');
+    const toolbar = document.getElementById('formatToolbar');
 
     // Reset form
     form.reset();
     document.getElementById('announcementId').value = '';
+
+    // Reset tabs to form tab
+    $('#form-tab').tab('show');
 
     if (announcement) {
         // Edit mode
@@ -181,13 +295,24 @@ function openModal(announcement = null) {
         document.getElementById('announcementId').value = announcement.id;
         document.getElementById('title').value = announcement.title;
         document.getElementById('message').value = announcement.message;
+        document.getElementById('imageUrl').value = announcement.image_url || '';
+        document.getElementById('contentType').value = announcement.content_type || 'plain';
         document.getElementById('priority').value = announcement.priority;
         document.getElementById('status').value = announcement.status;
+
+        // Show toolbar if markdown
+        if (announcement.content_type === 'markdown') {
+            toolbar.style.display = 'block';
+        } else {
+            toolbar.style.display = 'none';
+        }
     } else {
         // Create mode
         title.textContent = 'Buat Pengumuman Baru';
         document.getElementById('status').value = 'active';
         document.getElementById('priority').value = 'normal';
+        document.getElementById('contentType').value = 'plain';
+        toolbar.style.display = 'none';
     }
 
     modal.modal('show');
@@ -197,6 +322,8 @@ async function saveAnnouncement() {
     const id = document.getElementById('announcementId').value;
     const title = document.getElementById('title').value.trim();
     const message = document.getElementById('message').value.trim();
+    const imageUrl = document.getElementById('imageUrl').value.trim();
+    const contentType = document.getElementById('contentType').value;
     const priority = document.getElementById('priority').value;
     const status = document.getElementById('status').value;
 
@@ -208,10 +335,19 @@ async function saveAnnouncement() {
     try {
         const token = await getIdToken();
         const user = currentUser;
-        
+
+        // Generate formatted content based on type
+        let formattedContent = null;
+        if (contentType === 'markdown') {
+            formattedContent = renderContent(message, contentType);
+        }
+
         const payload = {
             title,
             message,
+            image_url: imageUrl || null,
+            formatted_content: formattedContent,
+            content_type: contentType,
             priority,
             status,
             created_by: user.uid,
