@@ -5397,9 +5397,18 @@ async function renderActiveSection() {
             const payload = state.derived?.payload || {};
             const pregnantStatus = (payload.pregnant_status || '').toLowerCase();
 
-            // If pregnant_status is 'yes', use obstetric template
-            // Otherwise use gyn_special template (for gyn_repro and gyn_special cases)
-            const isObstetric = pregnantStatus === 'yes' || state.derived?.pregnant || state.derived?.lmp || state.derived?.edd;
+            // Determine if patient is obstetric based on pregnant_status
+            // Only use LMP/EDD fallback if pregnant_status is not set (for old records)
+            let isObstetric = false;
+            if (pregnantStatus === 'yes') {
+                isObstetric = true;
+            } else if (pregnantStatus === 'no') {
+                isObstetric = false;
+            } else {
+                // Fallback for old records without pregnant_status field
+                isObstetric = !!(state.derived?.pregnant || state.derived?.lmp || state.derived?.edd);
+            }
+
             element = isObstetric ? renderAnamnesa() : renderAnamnesaGynSpecial();
             break;
         case 'pemeriksaan':
