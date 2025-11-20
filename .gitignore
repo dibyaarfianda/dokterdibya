@@ -1,0 +1,32 @@
+# Gradle files
+.gradle/
+build/
+gradle-app.setting
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+
+# Android Studio
+.idea/
+*.iml
+.DS_Store
+local.properties
+
+# Android
+*.apk
+*.ap_
+*.aab
+*.dex
+*.class
+bin/
+gen/
+out/
+
+# Log files
+*.log
+
+# Node modules (for any JS/React Native components)
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
