@@ -7,8 +7,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -172,12 +175,21 @@ fun AnnouncementFullCard(announcement: Announcement) {
             // Image (if available)
             if (!announcement.imageUrl.isNullOrBlank()) {
                 Spacer(modifier = Modifier.height(12.dp))
-                // TODO: Add image loading with Coil
-                Text(
-                    text = "Image: ${announcement.imageUrl}",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.secondary
-                )
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    AsyncImage(
+                        model = announcement.imageUrl,
+                        contentDescription = announcement.title,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop,
+                        placeholder = null,
+                        error = null
+                    )
+                }
             }
         }
     }

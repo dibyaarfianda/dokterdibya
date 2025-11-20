@@ -136,7 +136,9 @@ fun LoginScreen(
             ) {
                 AppTextButton(
                     text = "Lupa Kata Sandi?",
-                    onClick = { /* TODO: Navigate to forgot password */ }
+                    onClick = {
+                        navController.navigate(Screen.ForgotPassword.route)
+                    }
                 )
             }
 
