@@ -49,9 +49,27 @@ async function loadAnnouncements() {
     }
 }
 
+function renderContent(content, contentType = 'plain') {
+    if (!content) return '';
+
+    if (contentType === 'markdown' && typeof marked !== 'undefined') {
+        try {
+            const html = marked.parse(content);
+            // Sanitize if DOMPurify is available
+            return typeof DOMPurify !== 'undefined' ? DOMPurify.sanitize(html) : html;
+        } catch (error) {
+            console.error('Markdown parsing error:', error);
+            return escapeHtml(content).replace(/\n/g, '<br>');
+        }
+    }
+
+    // Plain text - escape and preserve line breaks
+    return escapeHtml(content).replace(/\n/g, '<br>');
+}
+
 function displayAnnouncements(announcements) {
     const container = document.getElementById('announcements-container');
-    
+
     if (announcements.length === 0) {
         container.innerHTML = `
             <div style="text-align: center; padding: 30px; color: #999;">
@@ -62,44 +80,62 @@ function displayAnnouncements(announcements) {
         return;
     }
 
-    container.innerHTML = announcements.map(announcement => `
-        <div class="announcement-item" style="
-            background: #2a2a2a;
-            border-left: 5px solid ${getPriorityColor(announcement.priority)};
-            padding: 20px;
-            margin-bottom: 15px;
-            border-radius: 5px;
-            transition: all 0.3s;
-        " onmouseover="this.style.background='#333333'; this.style.borderLeftWidth='6px';" 
-           onmouseout="this.style.background='#2a2a2a'; this.style.borderLeftWidth='5px';">
-            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
-                <h4 style="margin: 0; color: #ffffff; font-size: 18px; font-weight: 600; flex: 1;">
-                    ${getPriorityIcon(announcement.priority)} ${escapeHtml(announcement.title)}
-                </h4>
-                <span style="
-                    background: ${getPriorityBadgeColor(announcement.priority)};
-                    color: white;
-                    padding: 5px 12px;
-                    border-radius: 20px;
-                    font-size: 11px;
-                    font-weight: 600;
-                    letter-spacing: 0.5px;
-                    white-space: nowrap;
-                ">${getPriorityLabel(announcement.priority)}</span>
+    container.innerHTML = announcements.map(announcement => {
+        // Render image if available
+        const imageHtml = announcement.image_url ? `
+            <div style="margin: 15px 0;">
+                <img src="${escapeHtml(announcement.image_url)}"
+                     alt="Announcement image"
+                     style="max-width: 100%; height: auto; border-radius: 8px; display: block;"
+                     onerror="this.style.display='none'">
             </div>
-            <p style="color: #e0e0e0; margin: 15px 0; white-space: pre-wrap; line-height: 1.7; font-size: 15px;">
-                ${escapeHtml(announcement.message)}
-            </p>
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid #404040; flex-wrap: wrap; gap: 10px;">
-                <small style="color: #28a7e9; font-weight: 500;">
-                    <i class="fa fa-user-md"></i> ${escapeHtml(announcement.created_by_name)}
-                </small>
-                <small style="color: #999;">
-                    <i class="fa fa-clock-o"></i> ${formatDate(announcement.created_at)}
-                </small>
+        ` : '';
+
+        // Render formatted content or plain message
+        const contentHtml = announcement.formatted_content && announcement.content_type === 'markdown' ?
+            announcement.formatted_content :
+            renderContent(announcement.message, announcement.content_type || 'plain');
+
+        return `
+            <div class="announcement-item" style="
+                background: #2a2a2a;
+                border-left: 5px solid ${getPriorityColor(announcement.priority)};
+                padding: 20px;
+                margin-bottom: 15px;
+                border-radius: 5px;
+                transition: all 0.3s;
+            " onmouseover="this.style.background='#333333'; this.style.borderLeftWidth='6px';"
+               onmouseout="this.style.background='#2a2a2a'; this.style.borderLeftWidth='5px';">
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">
+                    <h4 style="margin: 0; color: #ffffff; font-size: 18px; font-weight: 600; flex: 1;">
+                        ${getPriorityIcon(announcement.priority)} ${escapeHtml(announcement.title)}
+                    </h4>
+                    <span style="
+                        background: ${getPriorityBadgeColor(announcement.priority)};
+                        color: white;
+                        padding: 5px 12px;
+                        border-radius: 20px;
+                        font-size: 11px;
+                        font-weight: 600;
+                        letter-spacing: 0.5px;
+                        white-space: nowrap;
+                    ">${getPriorityLabel(announcement.priority)}</span>
+                </div>
+                ${imageHtml}
+                <div style="color: #e0e0e0; margin: 15px 0; line-height: 1.7; font-size: 15px;">
+                    ${contentHtml}
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid #404040; flex-wrap: wrap; gap: 10px;">
+                    <small style="color: #28a7e9; font-weight: 500;">
+                        <i class="fa fa-user-md"></i> ${escapeHtml(announcement.created_by_name)}
+                    </small>
+                    <small style="color: #999;">
+                        <i class="fa fa-clock-o"></i> ${formatDate(announcement.created_at)}
+                    </small>
+                </div>
             </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
 }
 
 function getPriorityColor(priority) {
