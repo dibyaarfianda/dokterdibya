@@ -935,7 +935,6 @@ async function showPatientDetail(patientId) {
                               ="badge badge-${intake.highRisk ? 'danger' : 'success'} ml-2">
                                     ${intake.highRisk ? 'High Risk' : 'Normal'}
                                 </span>
-                                ${intake.quickId ? `<span class="badge badge-info ml-1">RM: ${intake.quickId}</span>` : ''}
                             </h5>
                             <div class="row">
                                 <div class="col-md-6">
