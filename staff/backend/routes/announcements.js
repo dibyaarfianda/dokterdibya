@@ -1,7 +1,65 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const logger = require('../utils/logger');
 const { verifyToken } = require('../middleware/auth');
+
+function extractUserField(value) {
+    if (value === undefined || value === null) {
+        return null;
+    }
+    const text = String(value).trim();
+    return text.length ? text : null;
+}
+
+function resolveUserId(payload) {
+    if (!payload || typeof payload !== 'object') {
+        return null;
+    }
+
+    const primary = extractUserField(payload.uid)
+        || extractUserField(payload.id)
+        || extractUserField(payload.user_id)
+        || extractUserField(payload.email)
+        || extractUserField(payload.sub);
+    if (primary) {
+        return primary;
+    }
+
+    if (payload.user && typeof payload.user === 'object') {
+        return resolveUserId(payload.user);
+    }
+
+    if (Array.isArray(payload.identities)) {
+        for (const entry of payload.identities) {
+            const extracted = resolveUserId(entry);
+            if (extracted) {
+                return extracted;
+            }
+        }
+    }
+
+    return null;
+}
+
+function resolveUserName(payload) {
+    if (!payload || typeof payload !== 'object') {
+        return null;
+    }
+
+    const primary = extractUserField(payload.name)
+        || extractUserField(payload.displayName)
+        || extractUserField(payload.fullName);
+    if (primary) {
+        return primary;
+    }
+
+    if (payload.user && typeof payload.user === 'object') {
+        return resolveUserName(payload.user);
+    }
+
+    return null;
+}
 
 // Get all active announcements (public - for patient dashboard)
 router.get('/active', async (req, res) => {
@@ -85,8 +143,13 @@ router.get('/:id', async (req, res) => {
 router.post('/', verifyToken, async (req, res) => {
     try {
         const { title, message, image_url, formatted_content, content_type, priority, status } = req.body;
-        const userId = req.user?.uid || req.user?.id || req.user?.user_id || req.user?.email || null;
-        const userName = req.user?.name || req.user?.displayName || req.user?.email || 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.';
+        const userId = resolveUserId(req.user)
+            || extractUserField(req.body?.created_by)
+            || extractUserField(req.body?.createdBy);
+        const userName = resolveUserName(req.user)
+            || extractUserField(req.body?.created_by_name)
+            || extractUserField(req.user?.email)
+            || 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.';
 
         if (!title || !message) {
             return res.status(400).json({
@@ -96,9 +159,14 @@ router.post('/', verifyToken, async (req, res) => {
         }
 
         if (!userId) {
-            return res.status(400).json({
+            logger.warn('Announcements create missing user identity', {
+                path: req.path,
+                method: req.method,
+                tokenPayload: req.user || null,
+            });
+            return res.status(401).json({
                 success: false,
-                message: 'Authenticated user identity is missing; please re-login and try again.'
+                message: 'Tidak dapat mengenali akun. Silakan login ulang dan coba lagi.'
             });
         }
 
@@ -174,6 +242,22 @@ router.put('/:id', verifyToken, async (req, res) => {
     try {
         const { title, message, image_url, formatted_content, content_type, priority, status } = req.body;
         const { id } = req.params;
+        const userId = resolveUserId(req.user)
+            || extractUserField(req.body?.updated_by)
+            || extractUserField(req.body?.created_by)
+            || extractUserField(req.body?.createdBy);
+
+        if (!userId) {
+            logger.warn('Announcements update missing user identity', {
+                path: req.path,
+                method: req.method,
+                tokenPayload: req.user || null,
+            });
+            return res.status(401).json({
+                success: false,
+                message: 'Tidak dapat mengenali akun. Silakan login ulang dan coba lagi.'
+            });
+        }
 
         // Check if new columns exist using information_schema
         let hasNewColumns = false;
