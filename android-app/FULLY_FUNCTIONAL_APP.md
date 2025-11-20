@@ -22,13 +22,17 @@ The Android application is now **fully functional** with all core features imple
 2. **DashboardViewModel** - Load profile, appointments, announcements
 3. **AppointmentViewModel** - Load, book, cancel appointments
 
-### ✅ All Screens (6)
+### ✅ All Screens (10)
 1. **LoginScreen** - Email/password login with validation
 2. **RegisterScreen** - Full registration form with validation
-3. **DashboardScreen** - Shows appointments, announcements, profile
-4. **AppointmentsScreen** - List all appointments with cancel feature
-5. **AnnouncementsScreen** - View all announcements with priority
-6. **ProfileScreen** - View profile, logout
+3. **ForgotPasswordScreen** - Password recovery flow (NEW!)
+4. **DashboardScreen** - Shows appointments, announcements, profile with images
+5. **AppointmentsScreen** - List all appointments with cancel feature
+6. **BookingScreen** - Complete appointment booking flow (NEW!)
+7. **AnnouncementsScreen** - View all announcements with images and priority
+8. **ProfileScreen** - View profile with avatar, logout
+9. **EditProfileScreen** - Edit profile information (NEW!)
+10. **ChangePasswordScreen** - Change password with validation (NEW!)
 
 ### ✅ UI Components (10+)
 - AppButton (Primary, Outlined, Text)
@@ -362,23 +366,30 @@ curl -X POST http://72.60.78.188:3000/api/patients/login \
 
 ## 🐛 Known Limitations
 
-### Currently Missing (Future Enhancements):
-1. **Appointment Booking Screen** - UI ready, needs implementation
-2. **Edit Profile** - Placeholder exists, needs implementation
-3. **Change Password** - Placeholder exists, needs implementation
-4. **Forgot Password** - Placeholder exists, needs implementation
-5. **Image Loading** - Coil configured but not displayed yet
-6. **Google Sign-In** - Backend ready, needs Android OAuth setup
-7. **Push Notifications** - Can be added later
-8. **Offline Mode** - Room database can be added
+### Recently Completed (Latest Updates - 2025-11-20):
+1. ✅ **Appointment Booking Screen** - Full booking flow with date/session/slot selection
+2. ✅ **Edit Profile** - Complete profile editing with validation
+3. ✅ **Change Password** - Password change functionality with requirements
+4. ✅ **Forgot Password** - Password recovery email flow
+5. ✅ **Image Loading with Coil** - Profile pictures and announcement images
+
+### Future Enhancements (Optional):
+1. **Google Sign-In** - Backend ready, needs Android OAuth setup
+2. **Push Notifications** - FCM integration can be added
+3. **Offline Mode** - Room database for offline support
 
 ### Works Perfectly:
 - ✅ Login/Register
 - ✅ Dashboard with real data
 - ✅ View appointments
+- ✅ Book appointments (NEW!)
 - ✅ Cancel appointments
 - ✅ View announcements
 - ✅ View profile
+- ✅ Edit profile (NEW!)
+- ✅ Change password (NEW!)
+- ✅ Forgot password (NEW!)
+- ✅ Image loading (NEW!)
 - ✅ Logout
 - ✅ Navigation
 - ✅ Input validation
