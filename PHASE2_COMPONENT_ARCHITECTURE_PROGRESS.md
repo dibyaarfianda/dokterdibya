@@ -246,7 +246,7 @@ setActiveSection(section), hasUnsavedChanges()
 
 ## 📊 Progress Summary
 
-### Components Completed: 7/15 (47%)
+### Components Completed: 10/16 (63%)
 
 | Component | Status | Lines | Description |
 |-----------|--------|-------|-------------|
@@ -257,6 +257,9 @@ setActiveSection(section), hasUnsavedChanges()
 | `obstetri/usg-obstetri.js` | ✅ Done | 650 | Obstetric ultrasound |
 | `gyn-repro/usg-gyn-repro.js` | ✅ Done | 550 | Reproductive GYN USG |
 | `gyn-special/usg-gyn-special.js` | ✅ Done | 550 | Special GYN USG |
+| `obstetri/anamnesa-obstetri.js` | ✅ Done | 668 | Obstetric anamnesis |
+| `gyn-repro/anamnesa-gyn-repro.js` | ✅ Done | 612 | Reproductive anamnesis |
+| `gyn-special/anamnesa-gyn-special.js` | ✅ Done | 596 | Special GYN anamnesis |
 | **Shared Components** | ⏳ Pending | - | |
 | `shared/identity-section.js` | 📝 TODO | ~300 | Patient identity |
 | `shared/physical-exam.js` | 📝 TODO | ~400 | Physical examination |
@@ -264,12 +267,12 @@ setActiveSection(section), hasUnsavedChanges()
 | `shared/diagnosis.js` | 📝 TODO | ~300 | Diagnosis section |
 | `shared/plan.js` | 📝 TODO | ~350 | Treatment plan |
 | `shared/billing.js` | 📝 TODO | ~500 | Billing/Tagihan |
-| **Anamnesa Components** | ⏳ Pending | - | |
-| `obstetri/anamnesa-obstetri.js` | 📝 TODO | ~800 | Obstetric history |
-| `gyn-repro/anamnesa-gyn-repro.js` | 📝 TODO | ~700 | Reproductive history |
-| `gyn-special/anamnesa-gyn-special.js` | 📝 TODO | ~600 | Gynecology history |
+| **Anamnesa Components** | ✅ Complete | - | |
+| `obstetri/anamnesa-obstetri.js` | ✅ Done | 668 | Obstetric history |
+| `gyn-repro/anamnesa-gyn-repro.js` | ✅ Done | 612 | Reproductive history |
+| `gyn-special/anamnesa-gyn-special.js` | ✅ Done | 596 | Gynecology history |
 
-### Total Lines Written: ~2,430 / ~6,500 (37%)
+### Total Lines Written: ~4,306 / ~6,500 (66%)
 
 ---
 
@@ -356,9 +359,13 @@ These are reused across all 3 templates:
 5. `staff/public/scripts/sunday-clinic/components/obstetri/usg-obstetri.js`
 6. `staff/public/scripts/sunday-clinic/components/gyn-repro/usg-gyn-repro.js`
 7. `staff/public/scripts/sunday-clinic/components/gyn-special/usg-gyn-special.js`
-8. `PHASE2_COMPONENT_ARCHITECTURE_PROGRESS.md` (this file)
+8. `staff/public/scripts/sunday-clinic/components/obstetri/anamnesa-obstetri.js`
+9. `staff/public/scripts/sunday-clinic/components/gyn-repro/anamnesa-gyn-repro.js`
+10. `staff/public/scripts/sunday-clinic/components/gyn-special/anamnesa-gyn-special.js`
+11. `PHASE2_COMPONENT_ARCHITECTURE_PROGRESS.md` (this file)
+12. `PHASE2_PART2_SUMMARY.md` (anamnesa progress document)
 
-**Total:** 8 files created
+**Total:** 12 files created
 
 ---
 
@@ -443,6 +450,7 @@ Success → State marked clean → UI updated
 
 ---
 
-**Phase 2 Status:** 🟡 **IN PROGRESS** (47% Complete)
+**Phase 2 Status:** 🟡 **IN PROGRESS** (63% Complete)
 **Date:** 2025-11-20
-**Ready for:** Anamnesa components + Shared components
+**Completed:** Core Infrastructure, USG Components (3), Anamnesa Components (3)
+**Next:** Shared Components (6 remaining)
