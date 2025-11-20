@@ -147,6 +147,55 @@ router.get('/api/auth/me', verifyToken, asyncHandler(async (req, res) => {
     });
 }));
 
+// GET /api/staff/verify - Verify staff token (for Sunday Clinic and other staff apps)
+router.get('/api/staff/verify', verifyToken, asyncHandler(async (req, res) => {
+    const userId = req.user?.id;
+
+    if (!userId) {
+        throw new AppError('Invalid token payload', HTTP_STATUS.BAD_REQUEST);
+    }
+
+    const [rows] = await db.query(
+        `SELECT
+            u.new_id,
+            u.name,
+            u.email,
+            u.role,
+            u.role_id,
+            u.photo_url,
+            u.user_type,
+            u.is_superadmin,
+            r.name AS resolved_role_name,
+            r.display_name AS resolved_role_display
+        FROM users u
+        LEFT JOIN roles r ON u.role_id = r.id
+        WHERE u.new_id = ?
+        LIMIT 1`,
+        [userId]
+    );
+
+    if (rows.length === 0) {
+        throw new AppError('User not found', HTTP_STATUS.NOT_FOUND);
+    }
+
+    const user = rows[0];
+    const roleForClient = user.role || 'staff';
+    const resolvedRoleDisplay = user.resolved_role_display;
+
+    sendSuccess(res, {
+        id: user.new_id,
+        name: user.name,
+        username: user.name, // Add username for compatibility
+        email: user.email,
+        role: roleForClient,
+        role_id: user.role_id || null,
+        role_display_name: resolvedRoleDisplay || roleForClient,
+        photo_url: user.photo_url,
+        user_type: user.user_type || 'staff',
+        is_superadmin: user.is_superadmin || false
+    });
+}));
+
 // PUT /api/auth/profile - Update user profile
 router.put('/api/auth/profile', verifyToken, async (req, res) => {
     try {
