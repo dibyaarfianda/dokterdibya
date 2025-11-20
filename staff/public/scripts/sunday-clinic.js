@@ -5393,9 +5393,14 @@ async function renderActiveSection() {
             element = renderIdentitas();
             break;
         case 'anamnesa':
-            // Check if patient is pregnant/obstetric or gyn_special
-            const isPregnant = state.derived?.pregnant || state.derived?.lmp || state.derived?.edd;
-            element = isPregnant ? renderAnamnesa() : renderAnamnesaGynSpecial();
+            // Determine patient category based on patient intake routing
+            const payload = state.derived?.payload || {};
+            const pregnantStatus = (payload.pregnant_status || '').toLowerCase();
+
+            // If pregnant_status is 'yes', use obstetric template
+            // Otherwise use gyn_special template (for gyn_repro and gyn_special cases)
+            const isObstetric = pregnantStatus === 'yes' || state.derived?.pregnant || state.derived?.lmp || state.derived?.edd;
+            element = isObstetric ? renderAnamnesa() : renderAnamnesaGynSpecial();
             break;
         case 'pemeriksaan':
             element = renderPemeriksaan();
