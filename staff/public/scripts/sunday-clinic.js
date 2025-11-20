@@ -1295,20 +1295,7 @@ function createSummary() {
         ageMeta
     ));
 
-    // Card 3: Usia Kehamilan
-    const gaText = formatGestationalAge(derived.gestationalAge) || '-';
-    const hphtText = formatDate(derived.lmp);
-    const eddText = formatDate(derived.edd);
-    const pregnancyMetaParts = [];
-    if (hphtText) pregnancyMetaParts.push(`HPHT ${escapeHtml(hphtText)}`);
-    if (eddText) pregnancyMetaParts.push(`HPL ${escapeHtml(eddText)}`);
-    container.appendChild(createHeaderCard(
-        'Usia Kehamilan',
-        safeText(gaText),
-        pregnancyMetaParts.join(' • ')
-    ));
-
-    // Card 4: Janji Temu
+    // Card 3: Janji Temu
     let appointmentValue = 'Tidak terhubung';
     let appointmentMeta = '';
     if (derived.appointment) {
