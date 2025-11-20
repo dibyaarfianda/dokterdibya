@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Spacing -->
+    <dimen name="space_4">4dp</dimen>
+    <dimen name="space_8">8dp</dimen>
+    <dimen name="space_12">12dp</dimen>
+    <dimen name="space_16">16dp</dimen>
+    <dimen name="space_20">20dp</dimen>
+    <dimen name="space_24">24dp</dimen>
+    <dimen name="space_32">32dp</dimen>
+    <dimen name="space_40">40dp</dimen>
+    <dimen name="space_48">48dp</dimen>
+    <dimen name="space_64">64dp</dimen>
+
+    <!-- Component Spacing -->
+    <dimen name="card_padding">16dp</dimen>
+    <dimen name="list_item_padding_horizontal">16dp</dimen>
+    <dimen name="list_item_padding_vertical">12dp</dimen>
+    <dimen name="button_padding_horizontal">16dp</dimen>
+    <dimen name="button_padding_vertical">12dp</dimen>
+    <dimen name="input_field_padding">16dp</dimen>
+    <dimen name="screen_padding">16dp</dimen>
+    <dimen name="section_spacing">24dp</dimen>
+
+    <!-- Heights -->
+    <dimen name="bottom_nav_height">56dp</dimen>
+    <dimen name="top_app_bar_height">56dp</dimen>
+    <dimen name="button_min_height">48dp</dimen>
+    <dimen name="input_field_height">56dp</dimen>
+    <dimen name="list_item_single_height">56dp</dimen>
+    <dimen name="list_item_two_line_height">72dp</dimen>
+    <dimen name="list_item_three_line_height">88dp</dimen>
+
+    <!-- Border Radius -->
+    <dimen name="radius_xsmall">4dp</dimen>
+    <dimen name="radius_small">8dp</dimen>
+    <dimen name="radius_medium">12dp</dimen>
+    <dimen name="radius_large">16dp</dimen>
+    <dimen name="radius_xlarge">24dp</dimen>
+    <dimen name="radius_full">999dp</dimen>
+
+    <!-- Icon Sizes -->
+    <dimen name="icon_small">20dp</dimen>
+    <dimen name="icon_default">24dp</dimen>
+    <dimen name="icon_large">32dp</dimen>
+
+    <!-- Avatar Sizes -->
+    <dimen name="avatar_xsmall">24dp</dimen>
+    <dimen name="avatar_small">32dp</dimen>
+    <dimen name="avatar_medium">40dp</dimen>
+    <dimen name="avatar_large">56dp</dimen>
+    <dimen name="avatar_xlarge">72dp</dimen>
+    <dimen name="avatar_xxlarge">120dp</dimen>
+
+    <!-- Elevation -->
+    <dimen name="elevation_0">0dp</dimen>
+    <dimen name="elevation_1">2dp</dimen>
+    <dimen name="elevation_2">4dp</dimen>
+    <dimen name="elevation_3">6dp</dimen>
+    <dimen name="elevation_4">8dp</dimen>
+    <dimen name="elevation_5">16dp</dimen>
+
+    <!-- Touch Targets -->
+    <dimen name="touch_target_min">48dp</dimen>
+</resources>
