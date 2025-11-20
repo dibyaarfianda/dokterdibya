@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Colors -->
+    <color name="primary_900">#1A5490</color>
+    <color name="primary_700">#2174B9</color>
+    <color name="primary_500">#28A7E9</color>
+    <color name="primary_300">#6DC3F0</color>
+    <color name="primary_100">#B8E0F7</color>
+
+    <!-- Secondary Colors -->
+    <color name="secondary_700">#00897B</color>
+    <color name="secondary_500">#00ACC1</color>
+    <color name="secondary_300">#4DD0E1</color>
+
+    <!-- Accent Colors -->
+    <color name="accent_700">#E67E22</color>
+    <color name="accent_500">#F39C12</color>
+    <color name="accent_300">#F8B84E</color>
+
+    <!-- Semantic Colors -->
+    <color name="success">#27AE60</color>
+    <color name="warning">#F39C12</color>
+    <color name="error">#E74C3C</color>
+    <color name="info">#3498DB</color>
+
+    <!-- Priority Colors -->
+    <color name="urgent">#E74C3C</color>
+    <color name="important">#F39C12</color>
+    <color name="normal">#28A7E9</color>
+
+    <!-- Neutral Colors -->
+    <color name="gray_900">#1A1A1A</color>
+    <color name="gray_700">#4A4A4A</color>
+    <color name="gray_500">#9E9E9E</color>
+    <color name="gray_300">#E0E0E0</color>
+    <color name="gray_100">#F5F5F5</color>
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+
+    <!-- Dark Theme Colors -->
+    <color name="dark_background">#121212</color>
+    <color name="dark_surface">#1E1E1E</color>
+    <color name="dark_surface_variant">#2A2A2A</color>
+
+    <!-- Status Colors -->
+    <color name="status_scheduled">#3498DB</color>
+    <color name="status_confirmed">#27AE60</color>
+    <color name="status_completed">#95A5A6</color>
+    <color name="status_cancelled">#E74C3C</color>
+    <color name="status_no_show">#E67E22</color>
+
+    <!-- Payment Status Colors -->
+    <color name="payment_unpaid">#E74C3C</color>
+    <color name="payment_paid">#27AE60</color>
+    <color name="payment_partial">#F39C12</color>
+
+    <!-- Transparent -->
+    <color name="transparent">#00000000</color>
+
+    <!-- Overlay -->
+    <color name="overlay_dark">#80000000</color>
+    <color name="overlay_light">#80FFFFFF</color>
+</resources>
