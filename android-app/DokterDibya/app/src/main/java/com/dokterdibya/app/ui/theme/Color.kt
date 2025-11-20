@@ -36,6 +36,8 @@ val Gray700 = Color(0xFF4A4A4A)
 val Gray500 = Color(0xFF9E9E9E)
 val Gray300 = Color(0xFFE0E0E0)
 val Gray100 = Color(0xFFF5F5F5)
+val White = Color(0xFFFFFFFF)
+val Black = Color(0xFF000000)
 
 // Dark Theme
 val DarkBackground = Color(0xFF121212)
