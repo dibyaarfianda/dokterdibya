@@ -422,9 +422,30 @@ router.post('/:id/start-clinic-record', verifyToken, async (req, res) => {
 
         const userId = req.user && req.user.id ? req.user.id : null;
 
+        // Fetch latest intake data for the patient to determine correct category
+        let intakeData = null;
+        try {
+            const [intakeRows] = await db.query(
+                `SELECT payload FROM patient_intake_submissions
+                 WHERE patient_id = ? AND status = 'verified'
+                 ORDER BY created_at DESC
+                 LIMIT 1`,
+                [appointment.patient_db_id]
+            );
+
+            if (intakeRows.length > 0 && intakeRows[0].payload) {
+                intakeData = typeof intakeRows[0].payload === 'string'
+                    ? JSON.parse(intakeRows[0].payload)
+                    : intakeRows[0].payload;
+            }
+        } catch (intakeError) {
+            console.error('Failed to fetch intake data, will use default category:', intakeError);
+        }
+
         const { record, created } = await createSundayClinicRecord({
             appointmentId: appointment.id,
             patientId: appointment.patient_db_id,
+            intakeData: intakeData,
             createdBy: userId
         });
 

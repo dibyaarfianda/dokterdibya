@@ -46,10 +46,10 @@ export const SECTION_LABELS = {
 
 // API endpoints
 export const API_ENDPOINTS = {
-    RECORDS: '/sunday-clinic/records',
-    DIRECTORY: '/sunday-clinic/directory',
-    BILLING: '/sunday-clinic/billing',
-    STATISTICS: '/sunday-clinic/statistics/categories'
+    RECORDS: '/api/sunday-clinic/records',
+    DIRECTORY: '/api/sunday-clinic/directory',
+    BILLING: '/api/sunday-clinic/billing',
+    STATISTICS: '/api/sunday-clinic/statistics/categories'
 };
 
 // Form field types
