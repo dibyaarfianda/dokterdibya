@@ -924,7 +924,10 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
     <!-- Socket.io for real-time announcements -->
     <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
-    <script src="js/announcements-dashboard.js?v=20251115"></script>
+    <!-- Markdown and sanitization libraries for enhanced announcements -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+    <script src="js/announcements-dashboard.js?v=20251120"></script>
     <script>
         // Check authentication
         const token = localStorage.getItem('patient_token');
