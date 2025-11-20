@@ -85,13 +85,20 @@ router.get('/:id', async (req, res) => {
 router.post('/', verifyToken, async (req, res) => {
     try {
         const { title, message, image_url, formatted_content, content_type, priority, status } = req.body;
-        const userId = req.user.uid;
-        const userName = req.user.name || req.user.email || 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.';
+        const userId = req.user?.uid || req.user?.id || req.user?.user_id || req.user?.email || null;
+        const userName = req.user?.name || req.user?.displayName || req.user?.email || 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.';
 
         if (!title || !message) {
             return res.status(400).json({
                 success: false,
                 message: 'Title and message are required'
+            });
+        }
+
+        if (!userId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Authenticated user identity is missing; please re-login and try again.'
             });
         }
 
