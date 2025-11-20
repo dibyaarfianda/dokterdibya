@@ -2,6 +2,7 @@ package com.dokterdibya.app.ui.patient.profile
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -9,7 +10,10 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.dokterdibya.app.domain.Result
@@ -86,12 +90,24 @@ fun ProfileScreen(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Icon(
-                                imageVector = Icons.Default.AccountCircle,
-                                contentDescription = null,
-                                modifier = Modifier.size(80.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
+                            // Profile Picture
+                            if (!profile.data.profilePicture.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = profile.data.profilePicture,
+                                    contentDescription = "Profile Picture",
+                                    modifier = Modifier
+                                        .size(80.dp)
+                                        .clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.AccountCircle,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(80.dp),
+                                    tint = MaterialTheme.colorScheme.primary
+                                )
+                            }
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
                                 text = profile.data.fullName,
@@ -152,7 +168,9 @@ fun ProfileScreen(
                 style = MaterialTheme.typography.titleLarge
             )
 
-            AppCard(onClick = { /* TODO: Edit profile */ }) {
+            AppCard(onClick = {
+                navController.navigate(Screen.EditProfile.route)
+            }) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
@@ -164,7 +182,9 @@ fun ProfileScreen(
                 }
             }
 
-            AppCard(onClick = { /* TODO: Change password */ }) {
+            AppCard(onClick = {
+                navController.navigate(Screen.ChangePassword.route)
+            }) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()

@@ -47,7 +47,9 @@ fun AppointmentsScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = { /* TODO: Navigate to booking screen */ }
+                onClick = {
+                    navController.navigate(Screen.Booking.route)
+                }
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Book Appointment")
             }
