@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ============================================================================
 
 async function checkAuthentication() {
-    const token = localStorage.getItem('vps_auth_token');
+    const token = localStorage.getItem('staffToken');
 
     if (!token) {
         console.warn('[SundayClinic] No auth token found, redirecting to login');
@@ -150,7 +150,7 @@ async function checkAuthentication() {
         }
     } catch (error) {
         console.error('[SundayClinic] Authentication failed:', error);
-        localStorage.removeItem('vps_auth_token');
+        localStorage.removeItem('staffToken');
         window.location.href = '/staff/public/login.html';
         return false;
     }
@@ -209,7 +209,7 @@ function setupEventListeners() {
     if (logo) {
         logo.addEventListener('click', () => {
             if (confirm('Keluar dari Klinik Privat Minggu?')) {
-                window.location.href = '/staff/public/index-adminlte.html';
+                window.location.href = '/staff/public/dashboard.html';
             }
         });
     }
@@ -276,7 +276,7 @@ async function loadMedicalRecord(mrId, section = 'identitas') {
         showLoading();
 
         // Fetch MR data from API
-        const response = await apiClient.get(`/api/sunday-clinic/records/${mrId}`);
+        const response = await apiClient.get(`/api/staff/sunday-clinic/records/${mrId}`);
 
         if (!response.success || !response.data) {
             throw new Error('Failed to load medical record');
@@ -359,7 +359,7 @@ async function initializeDirectory() {
     console.log('[SundayClinic] Initializing directory...');
 
     try {
-        const response = await apiClient.get('/api/sunday-clinic/directory');
+        const response = await apiClient.get('/api/staff/sunday-clinic/directory');
 
         if (response.success && response.data) {
             directoryState.patients = response.data.patients || [];
@@ -408,7 +408,7 @@ function handleDirectorySearch(e) {
         directoryState.filteredPatients = directoryState.patients;
     } else {
         directoryState.filteredPatients = directoryState.patients.filter(patient => {
-            const searchStr = `${patient.fullName} ${patient.patientId} ${patient.phone}`.toLowerCase();
+            const searchStr = `${patient.full_name} ${patient.mr_id} ${patient.phone}`.toLowerCase();
             return searchStr.includes(directoryState.searchTerm);
         });
     }
@@ -431,16 +431,16 @@ function renderDirectoryPatients() {
 
     DOM.directoryPatientList.innerHTML = directoryState.filteredPatients
         .map(patient => `
-            <div class="sc-directory-patient-item ${patient.patientId === directoryState.selectedPatientId ? 'active' : ''}"
-                 data-patient-id="${patient.patientId}"
-                 onclick="selectPatient('${patient.patientId}')"
+            <div class="sc-directory-patient-item ${patient.patient_id === directoryState.selectedPatientId ? 'active' : ''}"
+                 data-patient-id="${patient.patient_id}"
+                 onclick="selectPatient('${patient.patient_id}')"
                  role="option"
-                 aria-selected="${patient.patientId === directoryState.selectedPatientId}">
+                 aria-selected="${patient.patient_id === directoryState.selectedPatientId}">
                 <div class="sc-directory-patient-info">
-                    <div class="sc-directory-patient-name">${patient.fullName}</div>
+                    <div class="sc-directory-patient-name">${patient.full_name}</div>
                     <div class="sc-directory-patient-meta">
-                        ${patient.totalVisits ? `${patient.totalVisits} kunjungan` : 'Belum ada kunjungan'}
-                        ${patient.phone ? ` • ${patient.phone}` : ''}
+                        ${patient.mr_id ? `MR: ${patient.mr_id}` : ''}
+                        ${patient.phone ? `• ${patient.phone}` : ''}
                     </div>
                 </div>
                 <i class="fas fa-chevron-right"></i>
@@ -455,24 +455,40 @@ window.selectPatient = async function(patientId) {
 
     renderDirectoryPatients();
 
-    // Find patient in loaded directory data
-    const patient = directoryState.patients.find(p => p.patientId === patientId);
+    // Load patient visits
+    const patient = directoryState.patients.find(p => p.patient_id === patientId);
 
     if (!patient) return;
 
     // Show patient info
     if (DOM.directoryInfo) {
         DOM.directoryInfo.innerHTML = `
-            <h3>${patient.fullName}</h3>
+            <h3>${patient.full_name}</h3>
             <p class="text-muted mb-0">
-                ${patient.birthDate ? `Lahir: ${formatDate(patient.birthDate)}` : ''}
+                ${patient.date_of_birth ? `Lahir: ${formatDate(patient.date_of_birth)}` : ''}
                 ${patient.phone ? `• ${patient.phone}` : ''}
             </p>
         `;
     }
 
-    // Use visits data that's already loaded from directory
-    renderDirectoryVisits(patient.visits || []);
+    // Load visits
+    try {
+        const response = await apiClient.get(`/api/staff/sunday-clinic/patients/${patientId}/visits`);
+
+        if (response.success && response.data) {
+            renderDirectoryVisits(response.data.visits || []);
+        }
+    } catch (error) {
+        console.error('[SundayClinic] Failed to load visits:', error);
+        if (DOM.directoryVisitList) {
+            DOM.directoryVisitList.innerHTML = `
+                <div class="text-center text-danger p-4">
+                    <i class="fas fa-exclamation-circle fa-2x mb-2"></i>
+                    <p>Gagal memuat kunjungan</p>
+                </div>
+            `;
+        }
+    }
 };
 
 function renderDirectoryVisits(visits) {
@@ -490,17 +506,17 @@ function renderDirectoryVisits(visits) {
 
     DOM.directoryVisitList.innerHTML = visits
         .map(visit => `
-            <div class="sc-directory-visit-item ${visit.mrId === directoryState.selectedVisitMrId ? 'active' : ''}"
-                 data-mr-id="${visit.mrId}"
-                 onclick="selectVisit('${visit.mrId}')"
+            <div class="sc-directory-visit-item ${visit.mr_id === directoryState.selectedVisitMrId ? 'active' : ''}"
+                 data-mr-id="${visit.mr_id}"
+                 onclick="selectVisit('${visit.mr_id}')"
                  role="option"
-                 aria-selected="${visit.mrId === directoryState.selectedVisitMrId}">
+                 aria-selected="${visit.mr_id === directoryState.selectedVisitMrId}">
                 <div class="sc-directory-visit-info">
-                    <div class="sc-directory-visit-mr">${visit.mrId}</div>
-                    <div class="sc-directory-visit-date">${formatDate(visit.appointmentDate || visit.recordCreatedAt)}</div>
-                    ${visit.recordStatus ? `<span class="badge badge-info">${visit.recordStatus}</span>` : ''}
+                    <div class="sc-directory-visit-mr">${visit.mr_id}</div>
+                    <div class="sc-directory-visit-date">${formatDate(visit.visit_date)}</div>
+                    ${visit.mr_category ? `<span class="badge badge-${getCategoryBadgeClass(visit.mr_category)}">${getCategoryLabel(visit.mr_category)}</span>` : ''}
                 </div>
-                <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); openVisit('${visit.mrId}')">
+                <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); openVisit('${visit.mr_id}')">
                     <i class="fas fa-folder-open"></i> Buka
                 </button>
             </div>
@@ -510,8 +526,11 @@ function renderDirectoryVisits(visits) {
 
 window.selectVisit = function(mrId) {
     directoryState.selectedVisitMrId = mrId;
-    const patient = directoryState.patients.find(p => p.patientId === directoryState.selectedPatientId);
-    renderDirectoryVisits(patient?.visits || []);
+    renderDirectoryVisits(
+        directoryState.patients
+            .find(p => p.patient_id === directoryState.selectedPatientId)
+            ?.visits || []
+    );
 };
 
 window.openVisit = async function(mrId) {
