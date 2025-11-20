@@ -5454,15 +5454,23 @@ async function renderActiveSection() {
             const identitasRecord = getMedicalRecordContext('identitas');
             const manualCategory = identitasRecord?.data?.manual_patient_category || '';
 
+            console.log('=== Anamnesa Template Selection Debug ===');
+            console.log('identitasRecord:', identitasRecord);
+            console.log('manualCategory:', manualCategory);
+            console.log('state.derived.medicalRecords:', state.derived?.medicalRecords);
+
             let isObstetric = false;
 
             if (manualCategory) {
                 // Manual override takes priority
                 isObstetric = manualCategory === 'obstetric';
+                console.log('Using manual override:', manualCategory, '-> isObstetric:', isObstetric);
             } else {
                 // Determine patient category based on patient intake routing
                 const payload = state.derived?.payload || {};
                 const pregnantStatus = (payload.pregnant_status || '').toLowerCase();
+
+                console.log('No manual category, checking pregnant_status:', pregnantStatus);
 
                 // Determine if patient is obstetric based on pregnant_status
                 // Only use LMP/EDD fallback if pregnant_status is not set (for old records)
@@ -5473,8 +5481,12 @@ async function renderActiveSection() {
                 } else {
                     // Fallback for old records without pregnant_status field
                     isObstetric = !!(state.derived?.pregnant || state.derived?.lmp || state.derived?.edd);
+                    console.log('Using fallback - lmp/edd exists:', isObstetric);
                 }
             }
+
+            console.log('Final decision - isObstetric:', isObstetric);
+            console.log('Will render:', isObstetric ? 'renderAnamnesa()' : 'renderAnamnesaGynSpecial()');
 
             element = isObstetric ? renderAnamnesa() : renderAnamnesaGynSpecial();
             break;
