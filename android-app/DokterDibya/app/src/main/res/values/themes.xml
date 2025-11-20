@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Base application theme -->
+    <style name="Base.Theme.DokterDibya" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Primary colors -->
+        <item name="colorPrimary">@color/primary_500</item>
+        <item name="colorPrimaryVariant">@color/primary_700</item>
+        <item name="colorOnPrimary">@color/white</item>
+
+        <!-- Secondary colors -->
+        <item name="colorSecondary">@color/secondary_500</item>
+        <item name="colorSecondaryVariant">@color/secondary_700</item>
+        <item name="colorOnSecondary">@color/white</item>
+
+        <!-- Background colors -->
+        <item name="android:colorBackground">@color/white</item>
+        <item name="colorSurface">@color/white</item>
+        <item name="colorOnBackground">@color/gray_900</item>
+        <item name="colorOnSurface">@color/gray_900</item>
+
+        <!-- Error colors -->
+        <item name="colorError">@color/error</item>
+        <item name="colorOnError">@color/white</item>
+
+        <!-- Status bar -->
+        <item name="android:statusBarColor">@color/primary_700</item>
+        <item name="android:windowLightStatusBar">false</item>
+
+        <!-- Navigation bar -->
+        <item name="android:navigationBarColor">@color/white</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+
+    <!-- Main theme -->
+    <style name="Theme.DokterDibya" parent="Base.Theme.DokterDibya" />
+
+    <!-- Splash theme -->
+    <style name="Theme.DokterDibya.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/primary_500</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="postSplashScreenTheme">@style/Theme.DokterDibya</item>
+    </style>
+</resources>

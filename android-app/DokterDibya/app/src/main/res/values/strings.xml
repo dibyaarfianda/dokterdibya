@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Dokter Dibya</string>
+    <string name="app_tagline">Klinik Obstetri &amp; Ginekologi</string>
+
+    <!-- Common -->
+    <string name="ok">OK</string>
+    <string name="cancel">Batal</string>
+    <string name="save">Simpan</string>
+    <string name="delete">Hapus</string>
+    <string name="edit">Edit</string>
+    <string name="done">Selesai</string>
+    <string name="close">Tutup</string>
+    <string name="next">Selanjutnya</string>
+    <string name="previous">Sebelumnya</string>
+    <string name="submit">Kirim</string>
+    <string name="retry">Coba Lagi</string>
+    <string name="refresh">Perbarui</string>
+    <string name="search">Cari</string>
+    <string name="filter">Filter</string>
+    <string name="loading">Memuat…</string>
+    <string name="error">Terjadi Kesalahan</string>
+    <string name="success">Berhasil</string>
+
+    <!-- Navigation -->
+    <string name="nav_home">Beranda</string>
+    <string name="nav_appointments">Janji Temu</string>
+    <string name="nav_records">Rekam Medis</string>
+    <string name="nav_profile">Profil</string>
+    <string name="nav_patients">Pasien</string>
+    <string name="nav_dashboard">Dashboard</string>
+    <string name="nav_more">Lainnya</string>
+
+    <!-- Authentication -->
+    <string name="login">Masuk</string>
+    <string name="logout">Keluar</string>
+    <string name="register">Daftar</string>
+    <string name="email">Email</string>
+    <string name="password">Kata Sandi</string>
+    <string name="confirm_password">Konfirmasi Kata Sandi</string>
+    <string name="forgot_password">Lupa Kata Sandi?</string>
+    <string name="reset_password">Reset Kata Sandi</string>
+    <string name="sign_in_with_google">Masuk dengan Google</string>
+    <string name="dont_have_account">Belum punya akun?</string>
+    <string name="already_have_account">Sudah punya akun?</string>
+    <string name="sign_up_here">Daftar di sini</string>
+    <string name="sign_in_here">Masuk di sini</string>
+    <string name="welcome">Selamat Datang</string>
+    <string name="welcome_back">Selamat Datang Kembali</string>
+
+    <!-- Validation -->
+    <string name="error_email_required">Email wajib diisi</string>
+    <string name="error_email_invalid">Format email tidak valid</string>
+    <string name="error_password_required">Kata sandi wajib diisi</string>
+    <string name="error_password_too_short">Kata sandi minimal 6 karakter</string>
+    <string name="error_password_mismatch">Kata sandi tidak cocok</string>
+    <string name="error_name_required">Nama wajib diisi</string>
+    <string name="error_phone_required">Nomor telepon wajib diisi</string>
+    <string name="error_phone_invalid">Format nomor telepon tidak valid</string>
+    <string name="error_date_required">Tanggal wajib dipilih</string>
+    <string name="error_field_required">Kolom ini wajib diisi</string>
+
+    <!-- Appointments -->
+    <string name="book_appointment">Buat Janji Temu</string>
+    <string name="my_appointments">Janji Temu Saya</string>
+    <string name="upcoming_appointments">Janji Temu Mendatang</string>
+    <string name="past_appointments">Riwayat Janji Temu</string>
+    <string name="appointment_date">Tanggal Janji</string>
+    <string name="appointment_time">Waktu</string>
+    <string name="select_date">Pilih Tanggal</string>
+    <string name="select_time">Pilih Waktu</string>
+    <string name="select_session">Pilih Sesi</string>
+    <string name="session_morning">Pagi (09:00-11:30)</string>
+    <string name="session_afternoon">Siang (12:00-14:30)</string>
+    <string name="session_evening">Sore (15:00-17:30)</string>
+    <string name="available_slots">Slot Tersedia</string>
+    <string name="no_slots_available">Tidak ada slot tersedia</string>
+    <string name="appointment_notes">Catatan (opsional)</string>
+    <string name="whatsapp_reminder">Pengingat WhatsApp</string>
+    <string name="cancel_appointment">Batalkan Janji</string>
+    <string name="appointment_cancelled">Janji temu dibatalkan</string>
+    <string name="appointment_booked">Janji temu berhasil dibuat</string>
+    <string name="confirm_cancel_appointment">Apakah Anda yakin ingin membatalkan janji temu ini?</string>
+
+    <!-- Status -->
+    <string name="status_scheduled">Dijadwalkan</string>
+    <string name="status_confirmed">Dikonfirmasi</string>
+    <string name="status_completed">Selesai</string>
+    <string name="status_cancelled">Dibatalkan</string>
+    <string name="status_no_show">Tidak Hadir</string>
+
+    <!-- Announcements -->
+    <string name="announcements">Pengumuman</string>
+    <string name="new_announcement">Pengumuman Baru</string>
+    <string name="no_announcements">Tidak ada pengumuman</string>
+    <string name="priority_urgent">MENDESAK</string>
+    <string name="priority_important">PENTING</string>
+    <string name="priority_info">INFORMASI</string>
+
+    <!-- Patient Intake -->
+    <string name="patient_intake">Formulir Pasien</string>
+    <string name="intake_form">Form Intake</string>
+    <string name="submit_intake">Kirim Formulir</string>
+    <string name="personal_information">Informasi Pribadi</string>
+    <string name="medical_history">Riwayat Medis</string>
+    <string name="current_symptoms">Keluhan Saat Ini</string>
+    <string name="digital_signature">Tanda Tangan Digital</string>
+    <string name="upload_documents">Unggah Dokumen</string>
+    <string name="intake_submitted">Formulir berhasil dikirim</string>
+    <string name="intake_submission_id">ID Pengajuan: %s</string>
+
+    <!-- Profile -->
+    <string name="profile">Profil</string>
+    <string name="edit_profile">Edit Profil</string>
+    <string name="full_name">Nama Lengkap</string>
+    <string name="phone_number">Nomor Telepon</string>
+    <string name="whatsapp_number">Nomor WhatsApp</string>
+    <string name="birth_date">Tanggal Lahir</string>
+    <string name="medical_record_id">No. Rekam Medis</string>
+    <string name="change_password">Ubah Kata Sandi</string>
+    <string name="current_password">Kata Sandi Saat Ini</string>
+    <string name="new_password">Kata Sandi Baru</string>
+    <string name="profile_updated">Profil berhasil diperbarui</string>
+    <string name="password_changed">Kata sandi berhasil diubah</string>
+    <string name="upload_photo">Unggah Foto</string>
+    <string name="take_photo">Ambil Foto</string>
+    <string name="choose_from_gallery">Pilih dari Galeri</string>
+
+    <!-- Medical Records -->
+    <string name="medical_records">Rekam Medis</string>
+    <string name="visit_history">Riwayat Kunjungan</string>
+    <string name="medical_exams">Pemeriksaan Medis</string>
+    <string name="prescriptions">Resep</string>
+    <string name="billing">Tagihan</string>
+    <string name="no_records_found">Tidak ada rekam medis</string>
+    <string name="view_details">Lihat Detail</string>
+    <string name="download_pdf">Unduh PDF</string>
+
+    <!-- Settings -->
+    <string name="settings">Pengaturan</string>
+    <string name="notifications">Notifikasi</string>
+    <string name="enable_notifications">Aktifkan Notifikasi</string>
+    <string name="language">Bahasa</string>
+    <string name="theme">Tema</string>
+    <string name="theme_light">Terang</string>
+    <string name="theme_dark">Gelap</string>
+    <string name="theme_system">Sistem</string>
+    <string name="biometric_login">Login Biometrik</string>
+    <string name="enable_biometric">Aktifkan Login Biometrik</string>
+    <string name="about">Tentang</string>
+    <string name="version">Versi</string>
+    <string name="privacy_policy">Kebijakan Privasi</string>
+    <string name="terms_of_service">Syarat &amp; Ketentuan</string>
+    <string name="help_support">Bantuan &amp; Dukungan</string>
+
+    <!-- Notifications -->
+    <string name="default_notification_channel_id">dokter_dibya_default</string>
+    <string name="default_notification_channel_name">Notifikasi Umum</string>
+    <string name="appointment_notification_channel_name">Janji Temu</string>
+    <string name="announcement_notification_channel_name">Pengumuman</string>
+    <string name="chat_notification_channel_name">Chat Tim</string>
+
+    <!-- Errors -->
+    <string name="error_network">Tidak ada koneksi internet</string>
+    <string name="error_server">Terjadi kesalahan pada server</string>
+    <string name="error_unknown">Terjadi kesalahan yang tidak diketahui</string>
+    <string name="error_timeout">Koneksi timeout</string>
+    <string name="error_login_failed">Login gagal. Periksa email dan kata sandi Anda</string>
+    <string name="error_registration_failed">Pendaftaran gagal</string>
+
+    <!-- Empty States -->
+    <string name="empty_appointments">Belum ada janji temu</string>
+    <string name="empty_announcements">Belum ada pengumuman</string>
+    <string name="empty_records">Belum ada rekam medis</string>
+    <string name="empty_state_action">Tambahkan sekarang</string>
+
+    <!-- Confirmation -->
+    <string name="confirm_logout">Apakah Anda yakin ingin keluar?</string>
+    <string name="confirm_delete">Apakah Anda yakin ingin menghapus?</string>
+
+    <!-- Staff Features -->
+    <string name="staff_role">Peran</string>
+    <string name="role_superadmin">Super Admin</string>
+    <string name="role_admin">Admin</string>
+    <string name="role_doctor">Dokter</string>
+    <string name="role_nurse">Perawat</string>
+    <string name="role_receptionist">Resepsionis</string>
+    <string name="role_pharmacist">Apoteker</string>
+    <string name="role_cashier">Kasir</string>
+    <string name="role_viewer">Viewer</string>
+
+    <!-- Staff Dashboard -->
+    <string name="today_appointments">Janji Hari Ini</string>
+    <string name="pending_reviews">Review Tertunda</string>
+    <string name="unpaid_bills">Tagihan Belum Dibayar</string>
+    <string name="active_patients">Pasien Aktif</string>
+    <string name="online_staff">Staff Online</string>
+
+    <!-- Patient Management -->
+    <string name="patients">Pasien</string>
+    <string name="add_patient">Tambah Pasien</string>
+    <string name="search_patients">Cari pasien…</string>
+    <string name="patient_status_active">Aktif</string>
+    <string name="patient_status_inactive">Tidak Aktif</string>
+
+    <!-- Billing -->
+    <string name="create_invoice">Buat Tagihan</string>
+    <string name="invoice_number">No. Tagihan</string>
+    <string name="total_amount">Total</string>
+    <string name="paid_amount">Jumlah Dibayar</string>
+    <string name="payment_method">Metode Pembayaran</string>
+    <string name="payment_cash">Tunai</string>
+    <string name="payment_card">Kartu</string>
+    <string name="payment_transfer">Transfer</string>
+
+    <!-- Content Descriptions (Accessibility) -->
+    <string name="cd_logo">Logo Dokter Dibya</string>
+    <string name="cd_profile_picture">Foto Profil</string>
+    <string name="cd_back_button">Tombol Kembali</string>
+    <string name="cd_menu_button">Menu</string>
+    <string name="cd_notification_icon">Notifikasi</string>
+    <string name="cd_search_icon">Pencarian</string>
+    <string name="cd_filter_icon">Filter</string>
+</resources>
