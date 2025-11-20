@@ -14,7 +14,7 @@ async function ensureMedicalRecordsTable() {
             visit_id INT NULL,
             doctor_id INT,
             doctor_name VARCHAR(255),
-            record_type ENUM('anamnesa', 'physical_exam', 'usg', 'lab', 'diagnosis', 'planning', 'complete') NOT NULL,
+            record_type ENUM('identitas', 'anamnesa', 'physical_exam', 'usg', 'lab', 'diagnosis', 'planning', 'complete') NOT NULL,
             record_data JSON NOT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -47,13 +47,13 @@ async function ensureMedicalRecordsTable() {
             logger.info('Added visit_id column to medical_records table');
         }
 
-        // Update record_type ENUM to include diagnosis and planning
+        // Update record_type ENUM to include identitas, diagnosis and planning
         try {
             await db.query(`
                 ALTER TABLE medical_records
-                MODIFY COLUMN record_type ENUM('anamnesa', 'physical_exam', 'usg', 'lab', 'diagnosis', 'planning', 'complete') NOT NULL
+                MODIFY COLUMN record_type ENUM('identitas', 'anamnesa', 'physical_exam', 'usg', 'lab', 'diagnosis', 'planning', 'complete') NOT NULL
             `);
-            logger.info('Updated record_type ENUM to include diagnosis and planning');
+            logger.info('Updated record_type ENUM to include identitas, diagnosis and planning');
         } catch (enumError) {
             // Ignore if already updated
             if (!enumError.message.includes('Duplicate')) {
