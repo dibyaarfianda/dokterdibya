@@ -382,17 +382,18 @@ router.get('/profile', verifyToken, async (req, res) => {
             return res.status(404).json({ message: 'Pasien tidak ditemukan' });
         }
         
-        // Map full_name to fullname for frontend compatibility
+        // Map full_name to fullname and photo_url to profile_picture for frontend compatibility
         const patient = patients[0];
         const mappedPatient = {
             ...patient,
             fullname: patient.full_name,
+            profile_picture: patient.photo_url,
             has_password: patient.password ? 1 : 0
         };
-        
+
         // Remove password from response (security)
         delete mappedPatient.password;
-        
+
         res.json({ user: mappedPatient });
         
     } catch (error) {
@@ -404,11 +405,11 @@ router.get('/profile', verifyToken, async (req, res) => {
 // Update user profile
 router.put('/profile', verifyToken, async (req, res) => {
     try {
-        const { full_name, email, phone, birth_date, age } = req.body;
-        
+        const { full_name, fullname, email, phone, birth_date, age, profile_picture } = req.body;
+
         // Get current patient data
         const [currentPatient] = await db.query(
-            'SELECT full_name, email, phone FROM patients WHERE id = ?',
+            'SELECT full_name, email, phone, photo_url FROM patients WHERE id = ?',
             [req.user.id]
         );
         
@@ -417,9 +418,11 @@ router.put('/profile', verifyToken, async (req, res) => {
         }
         
         // Use existing values if new ones not provided
-        const updatedFullName = full_name || currentPatient[0].full_name;
+        // Support both full_name and fullname for compatibility
+        const updatedFullName = fullname || full_name || currentPatient[0].full_name;
         const updatedEmail = email || currentPatient[0].email;
         const updatedPhone = phone || currentPatient[0].phone;
+        const updatedProfilePicture = profile_picture !== undefined ? profile_picture : currentPatient[0].photo_url;
         
         // Validation - only check if values exist (either new or existing)
         if (!updatedFullName || !updatedEmail || !updatedPhone) {
@@ -446,10 +449,10 @@ router.put('/profile', verifyToken, async (req, res) => {
         
         // Update patient data
         await db.query(
-            `UPDATE patients 
-             SET full_name = ?, email = ?, phone = ?, birth_date = ?, age = ?, updated_at = NOW()
+            `UPDATE patients
+             SET full_name = ?, email = ?, phone = ?, birth_date = ?, age = ?, photo_url = ?, updated_at = NOW()
              WHERE id = ?`,
-            [updatedFullName, updatedEmail, updatedPhone, birth_date || null, age || null, req.user.id]
+            [updatedFullName, updatedEmail, updatedPhone, birth_date || null, age || null, updatedProfilePicture, req.user.id]
         );
         
         // Fetch updated profile
