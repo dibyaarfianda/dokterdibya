@@ -6,9 +6,22 @@ const { verifyToken } = require('../middleware/auth');
 // Get all active announcements (public - for patient dashboard)
 router.get('/active', async (req, res) => {
     try {
+        // Try with new columns first, fall back to basic columns if they don't exist
+        let query = `SELECT id, title, message, created_by_name, priority, created_at`;
+
+        // Check if new columns exist by trying to select them
+        try {
+            await db.query(`SELECT image_url, formatted_content, content_type FROM announcements LIMIT 1`);
+            // If successful, include new columns
+            query = `SELECT id, title, message, image_url, formatted_content, content_type,
+                           created_by_name, priority, created_at`;
+        } catch (e) {
+            // Columns don't exist yet, use basic query
+            console.log('New announcement columns not yet migrated, using basic query');
+        }
+
         const [announcements] = await db.query(
-            `SELECT id, title, message, image_url, formatted_content, content_type,
-                    created_by_name, priority, created_at
+            `${query}
              FROM announcements
              WHERE status = 'active'
              ORDER BY
@@ -76,24 +89,52 @@ router.post('/', verifyToken, async (req, res) => {
             });
         }
 
-        const [result] = await db.query(
-            `INSERT INTO announcements (title, message, image_url, formatted_content, content_type,
-                                       created_by, created_by_name, priority, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-                title,
-                message,
-                image_url || null,
-                formatted_content || null,
-                content_type || 'plain',
-                userId,
-                userName,
-                priority || 'normal',
-                status || 'active'
-            ]
-        );
+        // Check if new columns exist
+        let hasNewColumns = false;
+        try {
+            await db.query(`SELECT image_url, formatted_content, content_type FROM announcements LIMIT 1`);
+            hasNewColumns = true;
+        } catch (e) {
+            console.log('New announcement columns not available, using basic insert');
+        }
 
-        const [newAnnouncement] = await db.query(
+        let result, newAnnouncement;
+
+        if (hasNewColumns) {
+            // Use new schema with image and formatting support
+            [result] = await db.query(
+                `INSERT INTO announcements (title, message, image_url, formatted_content, content_type,
+                                           created_by, created_by_name, priority, status)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    title,
+                    message,
+                    image_url || null,
+                    formatted_content || null,
+                    content_type || 'plain',
+                    userId,
+                    userName,
+                    priority || 'normal',
+                    status || 'active'
+                ]
+            );
+        } else {
+            // Use basic schema (backward compatibility)
+            [result] = await db.query(
+                `INSERT INTO announcements (title, message, created_by, created_by_name, priority, status)
+                 VALUES (?, ?, ?, ?, ?, ?)`,
+                [
+                    title,
+                    message,
+                    userId,
+                    userName,
+                    priority || 'normal',
+                    status || 'active'
+                ]
+            );
+        }
+
+        const [newAnnouncementResult] = await db.query(
             'SELECT * FROM announcements WHERE id = ?',
             [result.insertId]
         );
@@ -101,7 +142,7 @@ router.post('/', verifyToken, async (req, res) => {
         res.json({
             success: true,
             message: 'Announcement created successfully',
-            data: newAnnouncement[0]
+            data: newAnnouncementResult[0]
         });
     } catch (error) {
         console.error('Error creating announcement:', error);
@@ -115,14 +156,36 @@ router.put('/:id', verifyToken, async (req, res) => {
         const { title, message, image_url, formatted_content, content_type, priority, status } = req.body;
         const { id } = req.params;
 
-        const [result] = await db.query(
-            `UPDATE announcements
-             SET title = ?, message = ?, image_url = ?, formatted_content = ?,
-                 content_type = ?, priority = ?, status = ?
-             WHERE id = ?`,
-            [title, message, image_url || null, formatted_content || null,
-             content_type || 'plain', priority, status, id]
-        );
+        // Check if new columns exist
+        let hasNewColumns = false;
+        try {
+            await db.query(`SELECT image_url, formatted_content, content_type FROM announcements LIMIT 1`);
+            hasNewColumns = true;
+        } catch (e) {
+            console.log('New announcement columns not available, using basic update');
+        }
+
+        let result;
+
+        if (hasNewColumns) {
+            // Use new schema with image and formatting support
+            [result] = await db.query(
+                `UPDATE announcements
+                 SET title = ?, message = ?, image_url = ?, formatted_content = ?,
+                     content_type = ?, priority = ?, status = ?
+                 WHERE id = ?`,
+                [title, message, image_url || null, formatted_content || null,
+                 content_type || 'plain', priority, status, id]
+            );
+        } else {
+            // Use basic schema (backward compatibility)
+            [result] = await db.query(
+                `UPDATE announcements
+                 SET title = ?, message = ?, priority = ?, status = ?
+                 WHERE id = ?`,
+                [title, message, priority, status, id]
+            );
+        }
 
         if (result.affectedRows === 0) {
             return res.status(404).json({
