@@ -1452,4 +1452,22 @@ router.get('/billing/:mrId/changes', verifyToken, async (req, res, next) => {
     }
 });
 
+// Get MR category statistics
+router.get('/statistics/categories', verifyToken, async (req, res, next) => {
+    try {
+        const sundayClinicService = require('../services/sundayClinicService');
+        const stats = await sundayClinicService.getCategoryStatistics();
+
+        res.json({
+            success: true,
+            data: stats
+        });
+    } catch (error) {
+        logger.error('Failed to get category statistics', {
+            error: error.message
+        });
+        next(error);
+    }
+});
+
 module.exports = router;
