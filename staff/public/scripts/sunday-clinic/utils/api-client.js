@@ -8,7 +8,7 @@ import { API_ENDPOINTS } from './constants.js';
 class APIClient {
     constructor() {
         this.baseURL = '';
-        this.token = localStorage.getItem('staffToken');
+        this.token = localStorage.getItem('vps_auth_token');
     }
 
     /**
@@ -16,7 +16,7 @@ class APIClient {
      */
     setToken(token) {
         this.token = token;
-        localStorage.setItem('staffToken', token);
+        localStorage.setItem('vps_auth_token', token);
     }
 
     /**
@@ -167,14 +167,14 @@ class APIClient {
      */
     async getPatients(searchTerm = '') {
         const query = searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : '';
-        return this.get(`/api/staff/sunday-clinic/patients${query}`);
+        return this.get(`/api/sunday-clinic/patients${query}`);
     }
 
     /**
      * Get patient visits
      */
     async getPatientVisits(patientId) {
-        return this.get(`/api/staff/sunday-clinic/patients/${patientId}/visits`);
+        return this.get(`/api/sunday-clinic/patients/${patientId}/visits`);
     }
 
     /**
