@@ -1470,4 +1470,98 @@ router.get('/statistics/categories', verifyToken, async (req, res, next) => {
     }
 });
 
+/**
+ * POST /api/sunday-clinic/generate-anamnesa/:mrId
+ * Generate AI-powered anamnesa summary from patient intake
+ */
+router.post('/generate-anamnesa/:mrId', verifyToken, async (req, res, next) => {
+    const { mrId } = req.params;
+    const normalizedMrId = normalizeMrId(mrId);
+
+    if (!normalizedMrId) {
+        return res.status(400).json({
+            success: false,
+            message: 'MR ID tidak valid'
+        });
+    }
+
+    try {
+        // Find the record
+        const recordRow = await findRecordByMrId(normalizedMrId);
+        if (!recordRow) {
+            return res.status(404).json({
+                success: false,
+                message: 'Rekam medis Sunday Clinic tidak ditemukan.'
+            });
+        }
+
+        // Get patient intake data
+        const [intakeRows] = await db.query(
+            `SELECT payload FROM patient_intake_submissions
+             WHERE patient_id = ? AND status = 'verified'
+             ORDER BY created_at DESC
+             LIMIT 1`,
+            [recordRow.patient_id]
+        );
+
+        if (intakeRows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Data intake pasien tidak ditemukan'
+            });
+        }
+
+        const intakeData = typeof intakeRows[0].payload === 'string'
+            ? JSON.parse(intakeRows[0].payload)
+            : intakeRows[0].payload;
+
+        // Determine category from MR ID or record
+        let category = recordRow.mr_category || 'obstetri';
+        if (normalizedMrId.startsWith('MROBS')) {
+            category = 'obstetri';
+        } else if (normalizedMrId.startsWith('MRGPR')) {
+            category = 'gyn_repro';
+        } else if (normalizedMrId.startsWith('MRGPS')) {
+            category = 'gyn_special';
+        }
+
+        // Generate summary using OpenAI
+        const { generateAnamnesaSummary } = require('../services/openaiService');
+        const summary = await generateAnamnesaSummary(intakeData, category);
+
+        logger.info('Generated anamnesa summary', {
+            mrId: normalizedMrId,
+            category,
+            userId: req.user.id
+        });
+
+        res.json({
+            success: true,
+            data: {
+                summary,
+                category,
+                generatedAt: new Date().toISOString()
+            }
+        });
+
+    } catch (error) {
+        logger.error('Failed to generate anamnesa summary', {
+            mrId: normalizedMrId,
+            error: error.message
+        });
+
+        if (error.message.includes('OPENAI_API_KEY')) {
+            return res.status(500).json({
+                success: false,
+                message: 'OpenAI API tidak dikonfigurasi. Hubungi administrator.'
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: 'Gagal generate ringkasan anamnesa: ' + error.message
+        });
+    }
+});
+
 module.exports = router;
