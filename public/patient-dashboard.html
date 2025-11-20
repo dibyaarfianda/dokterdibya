@@ -682,6 +682,20 @@
             </div>
         </div>
 
+        <!-- Upcoming Appointments Section -->
+        <div class="dashboard-card" id="appointments-section" style="margin-bottom: 30px;">
+            <h3><i class="fa fa-calendar-check-o"></i> Janji Temu Mendatang</h3>
+            <div id="booking-status-container">
+                <p class="empty-state">
+                    <i class="fa fa-calendar-o"></i>
+                    Belum ada janji temu yang dijadwalkan
+                </p>
+            </div>
+            <a href="/booking-appointment.html" class="action-btn" id="booking-create-btn">
+                <i class="fa fa-plus"></i> Buat Janji Temu
+            </a>
+        </div>
+
         <!-- Kunjunganku Section -->
         <div class="dashboard-card" id="visits-history-section" style="margin-bottom: 30px;">
             <h3><i class="fa fa-clipboard-list"></i> Kunjunganku</h3>
@@ -725,6 +739,17 @@
             <div class="col-md-6">
                 <div class="dashboard-card" id="profile-section">
                     <h3><i class="fa fa-user"></i> Informasi Profil</h3>
+
+                    <!-- Profile Picture -->
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <div style="position: relative; display: inline-block;">
+                            <img id="profile-picture"
+                                 src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect width='120' height='120' fill='%23404040'/%3E%3Ctext x='50%25' y='50%25' font-size='48' fill='%2328a7e9' text-anchor='middle' dy='.3em'%3E👤%3C/text%3E%3C/svg%3E"
+                                 alt="Profile Picture"
+                                 style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #28a7e9;">
+                        </div>
+                    </div>
+
                     <ul class="profile-info">
                         <li>
                             <strong>Nama Lengkap</strong>
@@ -758,22 +783,9 @@
                 </div>
             </div>
 
-            <!-- Appointments & Records -->
+            <!-- Medical Records -->
             <div class="col-md-6">
                 <div class="dashboard-card">
-                    <h3><i class="fa fa-calendar-check-o"></i> Janji Temu Mendatang</h3>
-                    <div id="booking-status-container">
-                        <p class="empty-state">
-                            <i class="fa fa-calendar-o"></i>
-                            Belum ada janji temu yang dijadwalkan
-                        </p>
-                    </div>
-                    <a href="/booking-appointment.html" class="action-btn" id="booking-create-btn">
-                        <i class="fa fa-plus"></i> Buat Janji Temu
-                    </a>
-                </div>
-
-                <div class="dashboard-card" style="margin-top: 20px;">
                     <h3><i class="fa fa-file-text-o"></i> Rekam Medis</h3>
                     <p class="empty-state">
                         <i class="fa fa-folder-open-o"></i>
@@ -804,30 +816,45 @@
                 </div>
                 <div class="modal-body">
                     <form id="profile-form">
+                        <!-- Profile Picture Upload -->
+                        <div class="form-group">
+                            <label style="color: #28a7e9;">Foto Profil</label>
+                            <div style="text-align: center; margin-bottom: 15px;">
+                                <img id="edit-profile-picture-preview"
+                                     src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23404040'/%3E%3Ctext x='50%25' y='50%25' font-size='40' fill='%2328a7e9' text-anchor='middle' dy='.3em'%3E👤%3C/text%3E%3C/svg%3E"
+                                     alt="Preview"
+                                     style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid #28a7e9; margin-bottom: 10px;">
+                            </div>
+                            <input type="url" class="form-control" id="edit-profile-picture"
+                                   placeholder="Masukkan URL foto profil"
+                                   style="background: #303030; border: 1px solid #404040; color: #ffffff;">
+                            <small style="color: #999;">Masukkan URL gambar profil Anda (misalnya dari Imgur, Google Drive, dll)</small>
+                        </div>
+
                         <div class="form-group">
                             <label style="color: #28a7e9;">Nama Lengkap *</label>
-                            <input type="text" class="form-control" id="edit-fullname" required 
+                            <input type="text" class="form-control" id="edit-fullname" required
                                    style="background: #303030; border: 1px solid #404040; color: #ffffff;">
                         </div>
                         <div class="form-group">
                             <label style="color: #28a7e9;">Email *</label>
-                            <input type="email" class="form-control" id="edit-email" required 
+                            <input type="email" class="form-control" id="edit-email" required
                                    style="background: #303030; border: 1px solid #404040; color: #ffffff;">
                         </div>
                         <div class="form-group">
                             <label style="color: #28a7e9;">Nomor WhatsApp *</label>
-                            <input type="tel" class="form-control" id="edit-phone" required 
+                            <input type="tel" class="form-control" id="edit-phone" required
                                    placeholder="+62812345678"
                                    style="background: #303030; border: 1px solid #404040; color: #ffffff;">
                         </div>
                         <div class="form-group">
                             <label style="color: #28a7e9;">Tanggal Lahir</label>
-                            <input type="date" class="form-control" id="edit-birthdate" 
+                            <input type="date" class="form-control" id="edit-birthdate"
                                    style="background: #303030; border: 1px solid #404040; color: #ffffff;">
                         </div>
                         <div class="form-group">
                             <label style="color: #28a7e9;">Umur</label>
-                            <input type="number" class="form-control" id="edit-age" 
+                            <input type="number" class="form-control" id="edit-age"
                                    placeholder="Otomatis terisi dari tanggal lahir"
                                    style="background: #303030; border: 1px solid #404040; color: #ffffff;">
                         </div>
@@ -967,7 +994,17 @@
                 document.getElementById('profile-name').textContent = profile.fullname;
                 document.getElementById('profile-email').textContent = profile.email;
                 document.getElementById('profile-phone').textContent = profile.phone || 'Belum diisi';
-                
+
+                // Update profile picture
+                const profilePicture = document.getElementById('profile-picture');
+                if (profile.profile_picture) {
+                    profilePicture.src = profile.profile_picture;
+                    profilePicture.onerror = function() {
+                        // If image fails to load, use default
+                        this.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect width='120' height='120' fill='%23404040'/%3E%3Ctext x='50%25' y='50%25' font-size='48' fill='%2328a7e9' text-anchor='middle' dy='.3em'%3E👤%3C/text%3E%3C/svg%3E";
+                    };
+                }
+
                 // Format birth date
                 if (profile.birth_date) {
                     const birthDate = new Date(profile.birth_date);
@@ -1482,19 +1519,43 @@
 
         function openProfileModal() {
             if (!window.currentProfile) return;
-            
+
             // Populate form with current data
             document.getElementById('edit-fullname').value = window.currentProfile.fullname || '';
             document.getElementById('edit-email').value = window.currentProfile.email || '';
             document.getElementById('edit-phone').value = window.currentProfile.phone || '';
-            
+            document.getElementById('edit-profile-picture').value = window.currentProfile.profile_picture || '';
+
+            // Update preview picture
+            const previewImg = document.getElementById('edit-profile-picture-preview');
+            if (window.currentProfile.profile_picture) {
+                previewImg.src = window.currentProfile.profile_picture;
+                previewImg.onerror = function() {
+                    this.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23404040'/%3E%3Ctext x='50%25' y='50%25' font-size='40' fill='%2328a7e9' text-anchor='middle' dy='.3em'%3E👤%3C/text%3E%3C/svg%3E";
+                };
+            }
+
             if (window.currentProfile.birth_date) {
                 const birthDate = new Date(window.currentProfile.birth_date);
                 document.getElementById('edit-birthdate').value = birthDate.toISOString().split('T')[0];
             }
-            
+
             document.getElementById('edit-age').value = window.currentProfile.age || '';
-            
+
+            // Add listener for profile picture URL input to update preview
+            document.getElementById('edit-profile-picture').addEventListener('input', function(e) {
+                const url = e.target.value.trim();
+                const preview = document.getElementById('edit-profile-picture-preview');
+                if (url) {
+                    preview.src = url;
+                    preview.onerror = function() {
+                        this.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23404040'/%3E%3Ctext x='50%25' y='50%25' font-size='40' fill='%2328a7e9' text-anchor='middle' dy='.3em'%3E👤%3C/text%3E%3C/svg%3E";
+                    };
+                } else {
+                    preview.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23404040'/%3E%3Ctext x='50%25' y='50%25' font-size='40' fill='%2328a7e9' text-anchor='middle' dy='.3em'%3E👤%3C/text%3E%3C/svg%3E";
+                }
+            });
+
             // Show modal
             $('#profileModal').modal('show');
         }
@@ -1510,6 +1571,7 @@
             const phoneInput = document.getElementById('edit-phone').value.trim();
             const birthdateInput = document.getElementById('edit-birthdate').value;
             const ageInput = document.getElementById('edit-age').value;
+            const profilePictureInput = document.getElementById('edit-profile-picture').value.trim();
 
             // Get current profile data
             const currentFullname = window.currentProfile?.fullname || '';
@@ -1517,14 +1579,16 @@
             const currentPhone = window.currentProfile?.phone || '';
             const currentBirthdate = window.currentProfile?.birth_date || '';
             const currentAge = window.currentProfile?.age ? String(window.currentProfile.age) : '';
+            const currentProfilePicture = window.currentProfile?.profile_picture || '';
 
             // Check if there are any changes
-            const hasChanges = 
+            const hasChanges =
                 (fullnameInput !== currentFullname) ||
                 (emailInput !== currentEmail) ||
                 (phoneInput !== currentPhone) ||
                 (birthdateInput !== currentBirthdate) ||
-                (ageInput !== currentAge);
+                (ageInput !== currentAge) ||
+                (profilePictureInput !== currentProfilePicture);
 
             // If no changes, just close the modal
             if (!hasChanges) {
@@ -1539,6 +1603,7 @@
             const phone = phoneInput || currentPhone;
             const birthdate = birthdateInput || currentBirthdate || null;
             const age = ageInput || currentAge || null;
+            const profilePicture = profilePictureInput || currentProfilePicture || null;
 
             // Validation - require essential fields
             if (!fullname || !email || !phone) {
@@ -1559,7 +1624,8 @@
                         email,
                         phone,
                         birth_date: birthdate || null,
-                        age: age ? parseInt(age) : null
+                        age: age ? parseInt(age) : null,
+                        profile_picture: profilePicture
                     })
                 });
 
