@@ -8,7 +8,15 @@ import { API_ENDPOINTS } from './constants.js';
 class APIClient {
     constructor() {
         this.baseURL = '';
-        this.token = localStorage.getItem('token');
+        this.token = localStorage.getItem('staffToken');
+    }
+
+    /**
+     * Set authentication token
+     */
+    setToken(token) {
+        this.token = token;
+        localStorage.setItem('staffToken', token);
     }
 
     /**
@@ -138,6 +146,42 @@ class APIClient {
      */
     async getPatientIntake(patientId) {
         return this.get(`/api/patient-intake/patient/${patientId}/latest`);
+    }
+
+    /**
+     * Save a specific section of the medical record
+     */
+    async saveSection(mrId, section, data) {
+        return this.post(`${API_ENDPOINTS.RECORDS}/${mrId}/${section}`, data);
+    }
+
+    /**
+     * Save entire medical record (all sections)
+     */
+    async saveRecord(mrId, recordData) {
+        return this.put(`${API_ENDPOINTS.RECORDS}/${mrId}`, recordData);
+    }
+
+    /**
+     * Get patients for directory
+     */
+    async getPatients(searchTerm = '') {
+        const query = searchTerm ? `?search=${encodeURIComponent(searchTerm)}` : '';
+        return this.get(`/api/staff/sunday-clinic/patients${query}`);
+    }
+
+    /**
+     * Get patient visits
+     */
+    async getPatientVisits(patientId) {
+        return this.get(`/api/staff/sunday-clinic/patients/${patientId}/visits`);
+    }
+
+    /**
+     * Create new Sunday Clinic record
+     */
+    async createRecord(patientId, category) {
+        return this.post(API_ENDPOINTS.RECORDS, { patient_id: patientId, category });
     }
 }
 
