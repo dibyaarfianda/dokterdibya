@@ -7,11 +7,12 @@ const { verifyToken } = require('../middleware/auth');
 router.get('/active', async (req, res) => {
     try {
         const [announcements] = await db.query(
-            `SELECT id, title, message, created_by_name, priority, created_at 
-             FROM announcements 
-             WHERE status = 'active' 
-             ORDER BY 
-                CASE priority 
+            `SELECT id, title, message, image_url, formatted_content, content_type,
+                    created_by_name, priority, created_at
+             FROM announcements
+             WHERE status = 'active'
+             ORDER BY
+                CASE priority
                     WHEN 'urgent' THEN 1
                     WHEN 'important' THEN 2
                     WHEN 'normal' THEN 3
@@ -19,7 +20,7 @@ router.get('/active', async (req, res) => {
                 created_at DESC
              LIMIT 10`
         );
-        
+
         res.json({ success: true, data: announcements });
     } catch (error) {
         console.error('Error fetching active announcements:', error);
@@ -64,37 +65,41 @@ router.get('/:id', async (req, res) => {
 // Create announcement (staff only)
 router.post('/', verifyToken, async (req, res) => {
     try {
-        const { title, message, priority, status } = req.body;
+        const { title, message, image_url, formatted_content, content_type, priority, status } = req.body;
         const userId = req.user.uid;
         const userName = req.user.name || req.user.email || 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.';
-        
+
         if (!title || !message) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Title and message are required' 
+            return res.status(400).json({
+                success: false,
+                message: 'Title and message are required'
             });
         }
-        
+
         const [result] = await db.query(
-            `INSERT INTO announcements (title, message, created_by, created_by_name, priority, status)
-             VALUES (?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO announcements (title, message, image_url, formatted_content, content_type,
+                                       created_by, created_by_name, priority, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [
-                title, 
-                message, 
-                userId, 
+                title,
+                message,
+                image_url || null,
+                formatted_content || null,
+                content_type || 'plain',
+                userId,
                 userName,
                 priority || 'normal',
                 status || 'active'
             ]
         );
-        
+
         const [newAnnouncement] = await db.query(
             'SELECT * FROM announcements WHERE id = ?',
             [result.insertId]
         );
-        
-        res.json({ 
-            success: true, 
+
+        res.json({
+            success: true,
             message: 'Announcement created successfully',
             data: newAnnouncement[0]
         });
@@ -107,30 +112,32 @@ router.post('/', verifyToken, async (req, res) => {
 // Update announcement (staff only)
 router.put('/:id', verifyToken, async (req, res) => {
     try {
-        const { title, message, priority, status } = req.body;
+        const { title, message, image_url, formatted_content, content_type, priority, status } = req.body;
         const { id } = req.params;
-        
+
         const [result] = await db.query(
-            `UPDATE announcements 
-             SET title = ?, message = ?, priority = ?, status = ?
+            `UPDATE announcements
+             SET title = ?, message = ?, image_url = ?, formatted_content = ?,
+                 content_type = ?, priority = ?, status = ?
              WHERE id = ?`,
-            [title, message, priority, status, id]
+            [title, message, image_url || null, formatted_content || null,
+             content_type || 'plain', priority, status, id]
         );
-        
+
         if (result.affectedRows === 0) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'Announcement not found' 
+            return res.status(404).json({
+                success: false,
+                message: 'Announcement not found'
             });
         }
-        
+
         const [updated] = await db.query(
             'SELECT * FROM announcements WHERE id = ?',
             [id]
         );
-        
-        res.json({ 
-            success: true, 
+
+        res.json({
+            success: true,
             message: 'Announcement updated successfully',
             data: updated[0]
         });
