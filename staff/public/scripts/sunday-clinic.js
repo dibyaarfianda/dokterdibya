@@ -1390,6 +1390,12 @@ function renderIdentitas() {
         ? '<span class="sc-pill sc-pill--danger ml-3">High Risk</span>'
         : '';
 
+    // Get current manual category override from medical records
+    const identitasRecord = getMedicalRecordContext('identitas');
+    const savedCategory = identitasRecord?.data?.manual_patient_category || '';
+    const payload = derived.payload || {};
+    const hasIntakeForm = !!(payload.pregnant_status || payload.needs_reproductive || payload.has_gyn_issue);
+
     section.innerHTML = `
         <div class="sc-section-header">
             <h3>Identitas Pasien${riskBadge}</h3>
@@ -1405,7 +1411,58 @@ function renderIdentitas() {
                 ${riskBlock}
             </div>
         </div>
+        <div class="sc-card mt-3" style="background: #fff3cd; border-left: 4px solid #ffc107;">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h4 class="mb-0"><i class="fas fa-hand-pointer mr-2"></i>Kategori Pasien (Manual Override)</h4>
+                <button class="btn btn-sm btn-primary" id="btn-save-manual-category" style="display:none;">
+                    <i class="fas fa-save"></i> Simpan
+                </button>
+            </div>
+            <div class="alert alert-warning mb-3" style="font-size: 0.9rem;">
+                <i class="fas fa-info-circle mr-2"></i>
+                <strong>Untuk pasien walk-in tanpa form intake:</strong> Pilih kategori manual untuk menentukan template anamnesa yang sesuai.
+                ${hasIntakeForm ? '<br><span class="text-muted">⚠️ Pasien ini sudah memiliki form intake. Override manual akan menggantikan kategori otomatis.</span>' : ''}
+            </div>
+            <div class="form-group mb-0">
+                <label class="font-weight-bold">Pilih Kategori Pasien:</label>
+                <div class="btn-group btn-group-toggle d-flex" data-toggle="buttons">
+                    <label class="btn btn-outline-primary ${savedCategory === 'obstetric' ? 'active' : ''}">
+                        <input type="radio" name="manual_patient_category" id="category-obstetric" value="obstetric" ${savedCategory === 'obstetric' ? 'checked' : ''}>
+                        <i class="fas fa-baby mr-1"></i> Obstetri (Kehamilan)
+                    </label>
+                    <label class="btn btn-outline-success ${savedCategory === 'gyn_special' ? 'active' : ''}">
+                        <input type="radio" name="manual_patient_category" id="category-gyn-special" value="gyn_special" ${savedCategory === 'gyn_special' ? 'checked' : ''}>
+                        <i class="fas fa-female mr-1"></i> Ginekologi Spesialis
+                    </label>
+                    <label class="btn btn-outline-secondary ${!savedCategory ? 'active' : ''}">
+                        <input type="radio" name="manual_patient_category" id="category-auto" value="" ${!savedCategory ? 'checked' : ''}>
+                        <i class="fas fa-robot mr-1"></i> Otomatis (dari form)
+                    </label>
+                </div>
+                <small class="form-text text-muted mt-2">
+                    <strong>Obstetri:</strong> Pasien hamil dengan anamnesa kehamilan lengkap<br>
+                    <strong>Ginekologi Spesialis:</strong> Pasien dengan keluhan ginekologi (tidak hamil, bukan promil)<br>
+                    <strong>Otomatis:</strong> Kategori ditentukan dari form intake pasien
+                </small>
+            </div>
+        </div>
     `;
+
+    // Add event listener for manual category selection
+    setTimeout(() => {
+        const categoryRadios = section.querySelectorAll('input[name="manual_patient_category"]');
+        const saveBtn = section.querySelector('#btn-save-manual-category');
+
+        categoryRadios.forEach(radio => {
+            radio.addEventListener('change', () => {
+                if (saveBtn) saveBtn.style.display = 'inline-block';
+            });
+        });
+
+        if (saveBtn) {
+            saveBtn.addEventListener('click', saveManualCategory);
+        }
+    }, 0);
 
     return section;
 }
@@ -5393,20 +5450,30 @@ async function renderActiveSection() {
             element = renderIdentitas();
             break;
         case 'anamnesa':
-            // Determine patient category based on patient intake routing
-            const payload = state.derived?.payload || {};
-            const pregnantStatus = (payload.pregnant_status || '').toLowerCase();
+            // Check for manual category override first
+            const identitasRecord = getMedicalRecordContext('identitas');
+            const manualCategory = identitasRecord?.data?.manual_patient_category || '';
 
-            // Determine if patient is obstetric based on pregnant_status
-            // Only use LMP/EDD fallback if pregnant_status is not set (for old records)
             let isObstetric = false;
-            if (pregnantStatus === 'yes') {
-                isObstetric = true;
-            } else if (pregnantStatus === 'no') {
-                isObstetric = false;
+
+            if (manualCategory) {
+                // Manual override takes priority
+                isObstetric = manualCategory === 'obstetric';
             } else {
-                // Fallback for old records without pregnant_status field
-                isObstetric = !!(state.derived?.pregnant || state.derived?.lmp || state.derived?.edd);
+                // Determine patient category based on patient intake routing
+                const payload = state.derived?.payload || {};
+                const pregnantStatus = (payload.pregnant_status || '').toLowerCase();
+
+                // Determine if patient is obstetric based on pregnant_status
+                // Only use LMP/EDD fallback if pregnant_status is not set (for old records)
+                if (pregnantStatus === 'yes') {
+                    isObstetric = true;
+                } else if (pregnantStatus === 'no') {
+                    isObstetric = false;
+                } else {
+                    // Fallback for old records without pregnant_status field
+                    isObstetric = !!(state.derived?.pregnant || state.derived?.lmp || state.derived?.edd);
+                }
             }
 
             element = isObstetric ? renderAnamnesa() : renderAnamnesaGynSpecial();
@@ -5862,6 +5929,70 @@ window.addEventListener('popstate', () => {
     }
     handleSectionChange(SECTION_LOOKUP.has(route.section) ? route.section : SECTION_DEFS[0].id, { pushHistory: false });
 });
+// Save Manual Patient Category function
+async function saveManualCategory() {
+    const btn = document.getElementById('btn-save-manual-category');
+    if (!btn) return;
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+
+    try {
+        const selectedCategory = document.querySelector('input[name="manual_patient_category"]:checked')?.value || '';
+
+        const patientId = state.derived?.patientId;
+        if (!patientId) {
+            showError('Patient ID tidak ditemukan');
+            return;
+        }
+
+        const token = await getToken();
+        if (!token) return;
+
+        const recordPayload = {
+            patientId: patientId,
+            type: 'identitas',
+            data: {
+                manual_patient_category: selectedCategory
+            },
+            timestamp: getGMT7Timestamp()
+        };
+
+        if (currentStaffIdentity.name) {
+            recordPayload.doctorName = currentStaffIdentity.name;
+        }
+        if (currentStaffIdentity.id) {
+            recordPayload.doctorId = currentStaffIdentity.id;
+        }
+
+        const response = await fetch('/api/medical-records', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(recordPayload)
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+            throw new Error(errorData.message || `Server error: ${response.status}`);
+        }
+
+        showSuccess('Kategori pasien berhasil disimpan. Refresh halaman untuk melihat template anamnesa yang baru.');
+
+        // Reload the record to update the UI
+        await fetchRecord(routeMrSlug);
+
+        btn.style.display = 'none';
+
+    } catch (error) {
+        console.error('Error saving manual category:', error);
+        showError('Gagal menyimpan kategori: ' + error.message);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> Simpan';
+    }
+}
 
 // Save Anamnesa function
 async function saveAnamnesa() {
