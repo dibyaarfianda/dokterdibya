@@ -226,7 +226,7 @@
     </style>
 
     <!-- Mobile Responsive CSS -->
-    <link rel="stylesheet" href="/staff/public/css/mobile-responsive.css">
+    <link rel="stylesheet" href="css/mobile-responsive.css">
 </head>
 <body class="hold-transition sidebar-mini">
     <div class="wrapper">
@@ -544,6 +544,6 @@
     </script>
 
     <!-- Mobile Helper Script -->
-    <script src="/staff/public/scripts/mobile-helper.js"></script>
+    <script src="scripts/mobile-helper.js"></script>
 </body>
 </html>
