@@ -114,6 +114,7 @@ const medicalRecordsRoutes = require('./routes/medical-records');
 const patientRecordsRoutes = require('./routes/patient-records');
 const billingsRoutes = require('./routes/billings');
 const visitInvoicesRoutes = require('./routes/visit-invoices');
+const aiRoutes = require('./routes/ai');
 
 // Pass Socket.io to routes
 chatRoutes.setSocketIO(io);
@@ -196,6 +197,9 @@ app.use('/api/announcements', announcementsRoutes);
 
 // Visit invoice routes for printing and tracking
 app.use('/api/visit-invoices', visitInvoicesRoutes);
+
+// AI routes (Smart Triage, Summary, Chatbot)
+app.use('/', aiRoutes);
 
 // Role Management routes
 const rolesRoutes = require('./routes/roles');

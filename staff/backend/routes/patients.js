@@ -174,6 +174,60 @@ router.post('/api/patients', verifyToken, requirePermission('patients.create'), 
     }
 });
 
+// GET OWN PROFILE (Patient can view their own profile)
+router.get('/api/patients/profile', verifyToken, async (req, res) => {
+    try {
+        const userId = req.user.id; // From JWT token
+
+        const [rows] = await db.query(
+            `SELECT
+                p.id,
+                p.full_name as fullname,
+                p.birth_date,
+                p.age,
+                p.phone,
+                p.whatsapp,
+                p.address,
+                p.emergency_contact,
+                p.marital_status,
+                p.husband_name,
+                p.husband_age,
+                p.husband_job,
+                p.occupation,
+                p.education,
+                p.insurance,
+                p.nik,
+                p.profile_completed,
+                p.created_at,
+                u.email,
+                u.photo_url as profile_picture
+            FROM patients p
+            LEFT JOIN users u ON p.id = u.new_id
+            WHERE p.id = ?`,
+            [userId]
+        );
+
+        if (rows.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Patient profile not found'
+            });
+        }
+
+        res.json({
+            success: true,
+            user: rows[0]
+        });
+    } catch (error) {
+        console.error('Error fetching patient profile:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch profile',
+            error: error.message
+        });
+    }
+});
+
 // UPDATE OWN PROFILE (Patient can update their own profile)
 router.put('/api/patients/profile/me', verifyToken, async (req, res) => {
     try {
