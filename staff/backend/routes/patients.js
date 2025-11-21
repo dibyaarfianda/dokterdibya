@@ -174,6 +174,75 @@ router.post('/api/patients', verifyToken, requirePermission('patients.create'), 
     }
 });
 
+// UPDATE OWN PROFILE (Patient can update their own profile)
+router.put('/api/patients/profile/me', verifyToken, async (req, res) => {
+    try {
+        const userId = req.user.id; // From JWT token
+        const {
+            patient_name,
+            patient_dob,
+            patient_phone,
+            patient_emergency_contact,
+            patient_address,
+            patient_marital_status,
+            patient_husband_name,
+            husband_age,
+            husband_job,
+            patient_occupation,
+            patient_education,
+            patient_insurance,
+            nik
+        } = req.body;
+
+        // Calculate age from birth_date
+        let age = null;
+        if (patient_dob) {
+            const birthDate = new Date(patient_dob);
+            const today = new Date();
+            age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+        }
+
+        // Update patient record
+        const [result] = await db.query(
+            `UPDATE patients SET
+                full_name = ?,
+                birth_date = ?,
+                age = ?,
+                phone = ?,
+                whatsapp = ?,
+                updated_at = NOW()
+            WHERE id = ?`,
+            [patient_name, patient_dob, age, patient_phone, patient_phone, userId]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'Patient profile not found' });
+        }
+
+        // Invalidate patient cache
+        cache.delPattern('patients:');
+
+        res.json({
+            success: true,
+            message: 'Profile updated successfully',
+            data: {
+                patient_id: userId
+            }
+        });
+    } catch (error) {
+        console.error('Error updating patient profile:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update profile',
+            error: error.message
+        });
+    }
+});
+
 // UPDATE PATIENT
 router.put('/api/patients/:id', verifyToken, requirePermission('patients.edit'), validatePatient, async (req, res) => {
     try {

@@ -918,7 +918,7 @@
                 if (data.patient_phone) data.patient_phone = formatPhoneNumber(data.patient_phone);
                 if (data.patient_emergency_contact) data.patient_emergency_contact = formatPhoneNumber(data.patient_emergency_contact);
 
-                const response = await apiService.post('/patients', data);
+                const response = await apiService.put('/patients/profile/me', data);
 
                 if (response.success) {
                     localStorage.removeItem(STORAGE_KEY);
@@ -927,9 +927,12 @@
                     document.getElementById('loadingScreen').classList.remove('active');
                     document.getElementById('successScreen').classList.add('active');
 
+                    // Get patient_id from response or session
+                    const patientId = response.data?.patient_id || response.patient_id || sessionStorage.getItem('user_id');
+
                     // Redirect after 3 seconds
                     setTimeout(() => {
-                        window.location.href = '/patient-dashboard.html?patient_id=' + response.patient_id;
+                        window.location.href = '/patient-dashboard.html?patient_id=' + patientId;
                     }, 3000);
                 } else {
                     alert('Gagal menyimpan data: ' + (response.message || 'Terjadi kesalahan'));
