@@ -60,44 +60,7 @@
             color: #0FF;
             text-decoration: none;
         }
-        
-        /* Header */
-        header {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            padding: 20px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-            position: relative;
-            z-index: 1;
-        }
-        
-        header .phone,
-        header .email {
-            color: #ffffff;
-            font-size: 14px;
-            margin-bottom: 0;
-        }
-        
-        header .phone i,
-        header .email i {
-            color: #28a7e9;
-            margin-right: 5px;
-        }
-        
-        header h1 {
-            color: #28a7e9;
-            font-size: 28px;
-            font-weight: 700;
-            margin: 20px 0 10px;
-        }
-        
-        header p.subtitle {
-            color: #cccccc;
-            font-size: 14px;
-            margin: 0;
-        }
-        
+
         /* Main Content */
         .dashboard-container {
             padding: 30px 15px;
@@ -597,6 +560,32 @@
         .nav-links {
             display: flex;
             gap: 5px;
+            margin-left: 15px;
+        }
+
+        .welcome-text {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .welcome-title {
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .welcome-title span {
+            color: #28a7e9;
+        }
+
+        .welcome-subtitle {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            margin: 2px 0 0 0;
+            line-height: 1.2;
         }
 
         .nav-bar a {
@@ -777,6 +766,28 @@
                 text-align: center;
             }
 
+            .nav-bar .container {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .nav-links {
+                margin-left: 0;
+                width: 100%;
+            }
+
+            .welcome-text {
+                text-align: center;
+            }
+
+            .welcome-title {
+                font-size: 16px;
+            }
+
+            .welcome-subtitle {
+                font-size: 12px;
+            }
+
             .nav-bar a {
                 padding: 8px 12px;
                 font-size: 14px;
@@ -784,6 +795,10 @@
 
             .user-info-nav {
                 display: none;
+            }
+
+            .user-avatar-nav {
+                margin-right: 0;
             }
 
             .avatar-circle {
@@ -794,11 +809,6 @@
         }
         
         @media (max-width: 480px) {
-            header .phone,
-            header .email {
-                font-size: 12px;
-            }
-            
             .dashboard-container {
                 padding: 20px 10px;
             }
@@ -833,6 +843,10 @@
     <nav class="nav-bar">
         <div class="container">
             <div class="nav-links">
+                <div class="welcome-text">
+                    <h2 class="welcome-title">Selamat datang, <span id="user-name">Pasien</span>!</h2>
+                    <p class="welcome-subtitle">Portal privat milik Anda</p>
+                </div>
             </div>
             <div class="user-avatar-nav" onclick="toggleDropdown(event)">
                 <div class="avatar-circle" id="user-avatar">P</div>
@@ -854,23 +868,6 @@
         </div>
     </nav>
 
-    <!-- Header -->
-    <header>
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6 col-sm-6 col-xs-12">
-                    <p class="phone"><i class="fa fa-phone"></i> +62 822-2950-9661</p>
-                </div>
-                <div class="col-md-6 col-sm-6 col-xs-12">
-                    <p class="email"><i class="fa fa-envelope-o"></i> info@dokterdibya.com</p>
-                </div>
-                <div class="col-md-12">
-                    <h1>Selamat Datang, <span id="user-name">Pasien</span>!</h1>
-                    <p class="subtitle">Portal privat milik Anda</p>
-                </div>
-            </div>
-        </div>
-    </header>
 
     <!-- Main Content -->
     <div class="dashboard-container">
