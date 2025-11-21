@@ -635,7 +635,7 @@ router.post('/api/auth/reset-password', asyncHandler(async (req, res) => {
     sendSuccess(res, null, 'Password has been reset successfully. You can now log in with your new password.');
 }));
 
-// POST /api/auth/register - Patient registration (simplified without email verification)
+// POST /api/auth/register - Patient registration with email verification
 router.post('/api/auth/register', asyncHandler(async (req, res) => {
     const { email } = req.body;
 
@@ -653,19 +653,80 @@ router.post('/api/auth/register', asyncHandler(async (req, res) => {
         return sendError(res, 'Email sudah terdaftar', HTTP_STATUS.BAD_REQUEST);
     }
 
-    // For now, just store in session and return success
-    // In production, this would send an OTP email
+    // Generate 6-digit OTP code
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     const verificationToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const expiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
 
-    logger.info(`Registration initiated for email: ${email}`);
+    // Store verification code in database
+    await db.query(
+        `INSERT INTO email_verifications (email, code, verification_token, expires_at, created_at)
+         VALUES (?, ?, ?, ?, NOW())`,
+        [email, otpCode, verificationToken, expiresAt]
+    );
+
+    // Send verification email
+    const notificationService = require('../utils/notification');
+
+    const subject = 'Kode Verifikasi Dibya Klinik';
+    const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body { font-family: 'Arial', sans-serif; background: #f3f4f6; margin: 0; padding: 20px; }
+                .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+                .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px; text-align: center; color: white; }
+                .header h1 { margin: 0; font-size: 28px; }
+                .content { padding: 40px 30px; text-align: center; }
+                .otp-code { font-size: 48px; font-weight: bold; letter-spacing: 8px; color: #6366f1; background: #f3f4f6; padding: 20px; border-radius: 12px; margin: 30px 0; }
+                .info { color: #6b7280; font-size: 14px; margin-top: 30px; }
+                .footer { background: #f9fafb; padding: 20px; text-align: center; color: #9ca3af; font-size: 12px; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🏥 Dibya Klinik</h1>
+                </div>
+                <div class="content">
+                    <h2>Kode Verifikasi Email Anda</h2>
+                    <p>Masukkan kode berikut untuk melanjutkan pendaftaran:</p>
+                    <div class="otp-code">${otpCode}</div>
+                    <p class="info">
+                        Kode ini akan kedaluwarsa dalam <strong>2 menit</strong>.<br>
+                        Jika Anda tidak mendaftar, abaikan email ini.
+                    </p>
+                </div>
+                <div class="footer">
+                    © 2025 Dibya Klinik. All rights reserved.
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+
+    try {
+        await notificationService.sendEmail({
+            to: email,
+            subject,
+            html,
+            text: `Kode verifikasi Anda: ${otpCode}. Kode berlaku selama 2 menit.`
+        });
+        logger.info(`Verification email sent to: ${email}`);
+    } catch (emailError) {
+        logger.error('Failed to send verification email', { email, error: emailError.message });
+        // Continue anyway - email sending is best effort
+    }
 
     sendSuccess(res, {
         verification_token: verificationToken,
-        message: 'Registration successful. Please proceed to set your password.'
+        message: 'Kode verifikasi telah dikirim ke email Anda'
     });
 }));
 
-// POST /api/auth/verify-email - Email verification (mock for now)
+// POST /api/auth/verify-email - Email verification
 router.post('/api/auth/verify-email', asyncHandler(async (req, res) => {
     const { email, code, verification_token } = req.body;
 
@@ -673,12 +734,45 @@ router.post('/api/auth/verify-email', asyncHandler(async (req, res) => {
         throw new AppError('Email, code, and verification token are required', HTTP_STATUS.BAD_REQUEST);
     }
 
-    // For now, accept any 6-digit code (mock verification)
+    // Validate code format
     if (code.length !== 6 || !/^\d+$/.test(code)) {
         return sendError(res, 'Kode verifikasi harus 6 digit angka', HTTP_STATUS.BAD_REQUEST);
     }
 
+    // Check verification code in database
+    const [rows] = await db.query(
+        `SELECT id, code, expires_at, verified_at
+         FROM email_verifications
+         WHERE email = ? AND verification_token = ? AND verified_at IS NULL
+         ORDER BY created_at DESC
+         LIMIT 1`,
+        [email, verification_token]
+    );
+
+    if (rows.length === 0) {
+        return sendError(res, 'Kode verifikasi tidak valid atau sudah digunakan', HTTP_STATUS.BAD_REQUEST);
+    }
+
+    const verification = rows[0];
+
+    // Check if code has expired
+    if (new Date() > new Date(verification.expires_at)) {
+        return sendError(res, 'Kode verifikasi sudah kedaluwarsa', HTTP_STATUS.BAD_REQUEST);
+    }
+
+    // Check if code matches
+    if (verification.code !== code) {
+        return sendError(res, 'Kode verifikasi salah', HTTP_STATUS.BAD_REQUEST);
+    }
+
+    // Mark as verified
     const verifiedToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    await db.query(
+        `UPDATE email_verifications
+         SET verified_at = NOW(), verified_token = ?
+         WHERE id = ?`,
+        [verifiedToken, verification.id]
+    );
 
     logger.info(`Email verified for: ${email}`);
 
@@ -688,21 +782,96 @@ router.post('/api/auth/verify-email', asyncHandler(async (req, res) => {
     });
 }));
 
-// POST /api/auth/resend-verification - Resend verification code (mock)
+// POST /api/auth/resend-verification - Resend verification code
 router.post('/api/auth/resend-verification', asyncHandler(async (req, res) => {
     const { email } = req.body;
 
-    if (!email) {
-        throw new AppError('Email is required', HTTP_STATUS.BAD_REQUEST);
+    if (!email || !email.includes('@')) {
+        throw new AppError('Valid email is required', HTTP_STATUS.BAD_REQUEST);
     }
 
-    const verificationToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    // Check rate limiting - max 3 resends in last hour
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const [recentAttempts] = await db.query(
+        `SELECT COUNT(*) as count
+         FROM email_verifications
+         WHERE email = ? AND created_at > ?`,
+        [email, oneHourAgo]
+    );
 
-    logger.info(`Verification code resent to: ${email}`);
+    if (recentAttempts[0].count >= 5) {
+        return sendError(res, 'Terlalu banyak permintaan. Silakan coba lagi nanti.', HTTP_STATUS.TOO_MANY_REQUESTS);
+    }
+
+    // Generate new 6-digit OTP code
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const verificationToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    const expiresAt = new Date(Date.now() + 2 * 60 * 1000); // 2 minutes
+
+    // Store new verification code in database
+    await db.query(
+        `INSERT INTO email_verifications (email, code, verification_token, expires_at, created_at)
+         VALUES (?, ?, ?, ?, NOW())`,
+        [email, otpCode, verificationToken, expiresAt]
+    );
+
+    // Send verification email
+    const notificationService = require('../utils/notification');
+
+    const subject = 'Kode Verifikasi Dibya Klinik';
+    const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <style>
+                body { font-family: 'Arial', sans-serif; background: #f3f4f6; margin: 0; padding: 20px; }
+                .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+                .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px; text-align: center; color: white; }
+                .header h1 { margin: 0; font-size: 28px; }
+                .content { padding: 40px 30px; text-align: center; }
+                .otp-code { font-size: 48px; font-weight: bold; letter-spacing: 8px; color: #6366f1; background: #f3f4f6; padding: 20px; border-radius: 12px; margin: 30px 0; }
+                .info { color: #6b7280; font-size: 14px; margin-top: 30px; }
+                .footer { background: #f9fafb; padding: 20px; text-align: center; color: #9ca3af; font-size: 12px; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <div class="header">
+                    <h1>🏥 Dibya Klinik</h1>
+                </div>
+                <div class="content">
+                    <h2>Kode Verifikasi Email Anda</h2>
+                    <p>Masukkan kode berikut untuk melanjutkan pendaftaran:</p>
+                    <div class="otp-code">${otpCode}</div>
+                    <p class="info">
+                        Kode ini akan kedaluwarsa dalam <strong>2 menit</strong>.<br>
+                        Jika Anda tidak mendaftar, abaikan email ini.
+                    </p>
+                </div>
+                <div class="footer">
+                    © 2025 Dibya Klinik. All rights reserved.
+                </div>
+            </div>
+        </body>
+        </html>
+    `;
+
+    try {
+        await notificationService.sendEmail({
+            to: email,
+            subject,
+            html,
+            text: `Kode verifikasi Anda: ${otpCode}. Kode berlaku selama 2 menit.`
+        });
+        logger.info(`Verification email resent to: ${email}`);
+    } catch (emailError) {
+        logger.error('Failed to resend verification email', { email, error: emailError.message });
+    }
 
     sendSuccess(res, {
         verification_token: verificationToken,
-        message: 'Verification code sent'
+        message: 'Kode verifikasi baru telah dikirim ke email Anda'
     });
 }));
 

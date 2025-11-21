@@ -13,18 +13,18 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1">
 		
 		<!-- Cache-busted core styles -->
-		<link rel="stylesheet" href="css/animate.min.css?v=20251114">
-		<link rel="stylesheet" href="css/bootstrap.min.css?v=20251114">
-		<link rel="stylesheet" href="css/font-awesome.min.css?v=20251114">
+		<link rel="stylesheet" href="css/animate.min.css?v=20251121">
+		<link rel="stylesheet" href="css/bootstrap.min.css?v=20251121">
+		<link rel="stylesheet" href="css/font-awesome.min.css?v=20251121">
 		<link href='https://fonts.googleapis.com/css?family=Open+Sans:400,300,600,700' rel='stylesheet' type='text/css'>
-		<link rel="stylesheet" href="css/templatemo-style.css?v=20251114">
+		<link rel="stylesheet" href="css/templatemo-style.css?v=20251121">
 		<!-- Cache-busted core scripts -->
-		<script src="js/jquery.js?v=20251114"></script>
-		<script src="js/bootstrap.min.js?v=20251114"></script>
-        <script src="js/jquery.singlePageNav.min.js?v=20251114"></script>
-		<script src="js/typed.js?v=20251114"></script>
-		<script src="js/wow.min.js?v=20251114"></script>
-		<script src="js/custom.js?v=20251114"></script>
+		<script src="js/jquery.js?v=20251121c"></script>
+		<script src="js/bootstrap.min.js?v=20251121c"></script>
+        <script src="js/jquery.singlePageNav.min.js?v=20251121c"></script>
+		<script src="js/typed.js?v=20251121c"></script>
+		<script src="js/wow.min.js?v=20251121c"></script>
+		<script src="js/custom.js?v=20251121c"></script>
 		<script>
 		// Fix dropdown in mobile collapsed navbar
 		$(document).ready(function() {
@@ -118,7 +118,7 @@
 									<input type="password" class="form-control" id="navbar-password" name="password" autocomplete="current-password" placeholder="Password" required>
 								</div>
 								<div class="form-group text-right">
-                                        <a href="reset-password.html" class="text-info">Lupa Password?</a>
+                                        <a href="reset-password.html" class="external text-info">Lupa Password?</a>
                                     </div>
 								<button type="submit" class="btn btn-primary btn-block">Login</button>
 									</form>
@@ -231,7 +231,7 @@
     					</a>
 
     					<p style="text-align: center; color: #ddd; font-size: 14px; margin-top: 20px;">
-    						Sudah punya akun? <a href="login.html" style="color: #3498db; text-decoration: underline;">Login di sini</a>
+    						Sudah punya akun? <a href="login.html" class="external" style="color: #3498db; text-decoration: underline;">Login di sini</a>
     					</p>
     				</div>
     			</div>
@@ -253,14 +253,71 @@
         <!-- end copyright -->
 
 	<script>
-	// Force navigation to register.html in case any plugin intercepts the click
-	document.querySelectorAll('a[href="register.html"]').forEach(function(a){
-	  a.addEventListener('click', function(ev){
-	    // If already on register.html do nothing
-	    if (window.location.pathname.endsWith('/register.html')) return;
-	    ev.preventDefault();
-	    window.location.href = 'register.html';
-	  });
+	// Debug: Log all click events on the document
+	document.addEventListener('click', function(e) {
+		if (e.target.tagName === 'A' || e.target.closest('a')) {
+			var link = e.target.tagName === 'A' ? e.target : e.target.closest('a');
+			console.log('🔍 CLICK DEBUG:', {
+				tag: link.tagName,
+				href: link.getAttribute('href'),
+				class: link.className,
+				text: link.textContent.trim().substring(0, 30),
+				defaultPrevented: e.defaultPrevented,
+				phase: e.eventPhase === 1 ? 'CAPTURING' : e.eventPhase === 2 ? 'AT_TARGET' : 'BUBBLING'
+			});
+		}
+	}, true); // Capture phase to see all events
+
+	// Force navigation to .html pages - override singlePageNav
+	$(window).on('load', function() {
+		console.log('✅ Window loaded, initializing navigation override...');
+
+		// Wait a bit to ensure singlePageNav is fully initialized
+		setTimeout(function() {
+			console.log('⏱️ Timeout complete, looking for .html links...');
+
+			// Unbind singlePageNav from all .html links
+			var htmlLinks = $('a[href$=".html"]');
+			console.log('📋 Found ' + htmlLinks.length + ' .html links:', htmlLinks.map(function() {
+				return this.href;
+			}).get());
+
+			htmlLinks.off('click.singlePageNav');
+			console.log('🔓 Unbound singlePageNav from .html links');
+
+			// Force direct navigation with highest priority (useCapture=true)
+			var targetLinks = document.querySelectorAll('a[href="register.html"], a[href="login.html"], a[href="reset-password.html"]');
+			console.log('🎯 Found ' + targetLinks.length + ' target links to override');
+
+			targetLinks.forEach(function(link, index) {
+				console.log('🔧 Processing link ' + (index + 1) + ':', link.href, link.textContent.trim());
+
+				// Remove all existing event listeners by cloning
+				var newLink = link.cloneNode(true);
+				link.parentNode.replaceChild(newLink, link);
+				console.log('♻️ Cloned and replaced link ' + (index + 1));
+
+				// Add our navigation handler
+				newLink.addEventListener('click', function(e) {
+					console.log('🚀 NAVIGATION OVERRIDE TRIGGERED!');
+					console.log('   Target:', this.href);
+					console.log('   Event phase:', e.eventPhase);
+
+					e.preventDefault();
+					e.stopPropagation();
+					e.stopImmediatePropagation();
+
+					var href = this.getAttribute('href');
+					console.log('➡️ Navigating to:', href);
+					window.location.href = href;
+					return false;
+				}, true); // Use capture phase
+
+				console.log('✅ Added click handler to link ' + (index + 1));
+			});
+
+			console.log('✅ Navigation override complete!');
+		}, 100);
 	});
 	</script>
 	</body>
