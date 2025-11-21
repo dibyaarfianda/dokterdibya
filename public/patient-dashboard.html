@@ -155,39 +155,46 @@
         
         /* Alert */
         .alert-info-custom {
-            background: #1a3a4a;
-            border: 1px solid #28a7e9;
+            background: rgba(40, 167, 233, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(40, 167, 233, 0.3);
             border-left: 4px solid #28a7e9;
             padding: 15px;
             margin-bottom: 20px;
-            border-radius: 5px;
+            border-radius: 8px;
             color: #ffffff;
         }
-        
+
         .alert-info-custom i {
             color: #28a7e9;
             margin-right: 10px;
         }
-        
+
         .alert-success-custom {
-            background: #1a4a2a;
-            border: 1px solid #28e970;
+            background: rgba(40, 233, 112, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(40, 233, 112, 0.3);
             border-left: 4px solid #28e970;
             padding: 15px;
             margin-bottom: 20px;
-            border-radius: 5px;
+            border-radius: 8px;
             color: #ffffff;
         }
-        
+
         .alert-success-custom i {
             color: #28e970;
             margin-right: 10px;
         }
-        
+
         .appointment-info-box {
-            background: #2a2a2a;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
             padding: 12px;
-            border-radius: 5px;
+            border-radius: 8px;
             margin-top: 10px;
         }
         
@@ -242,15 +249,17 @@
         }
 
         .dashboard-modal-content {
-            background: #202020;
-            border: 1px solid #404040;
-            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
             width: 100%;
             max-width: 500px;
             padding: 25px;
             color: #ffffff;
             position: relative;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
         }
 
         .dashboard-modal-content h4 {
@@ -275,8 +284,11 @@
         }
 
         .cancel-summary {
-            background: #2a2a2a;
-            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
             padding: 12px;
             margin-bottom: 15px;
             font-size: 14px;
@@ -290,9 +302,11 @@
         .dashboard-modal textarea {
             width: 100%;
             min-height: 100px;
-            background: #303030;
-            border: 1px solid #404040;
-            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
             padding: 10px;
             color: #ffffff;
             resize: vertical;
@@ -315,12 +329,15 @@
         }
 
         .modal-actions .btn-secondary {
-            background: #505050;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             color: #ffffff;
         }
 
         .modal-actions .btn-secondary:hover {
-            background: #666666;
+            background: rgba(255, 255, 255, 0.25);
             transform: translateY(-1px);
         }
 
@@ -546,9 +563,11 @@
         
         /* Navigation */
         .nav-bar {
-            background: #202020;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             padding: 10px 0;
-            border-bottom: 1px solid #404040;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
             position: sticky;
             top: 0;
             z-index: 100;
@@ -679,7 +698,7 @@
                 </div>
                 <div class="col-md-12">
                     <h1>Selamat Datang, <span id="user-name">Pasien</span>!</h1>
-                    <p class="subtitle">Dashboard pribadi Anda untuk mengelola kesehatan</p>
+                    <p class="subtitle">Portal privat milik Anda</p>
                 </div>
             </div>
         </div>
@@ -859,7 +878,7 @@
     <!-- Profile Edit Modal -->
     <div class="modal fade" id="profileModal" tabindex="-1" role="dialog">
         <div class="modal-dialog" role="document">
-            <div class="modal-content" style="background: #202020; color: #ffffff; border: 1px solid #404040;">
+            <div class="modal-content" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); color: #ffffff; border: 1px solid rgba(255,255,255,0.2);">
                 <div class="modal-header" style="border-bottom: 1px solid #404040;">
                     <button type="button" class="close" data-dismiss="modal" style="color: #ffffff; opacity: 0.8;">&times;</button>
                     <h4 class="modal-title" style="color: #28a7e9;"><i class="fa fa-edit"></i> Edit Profil</h4>
@@ -877,44 +896,44 @@
                             </div>
                             <input type="url" class="form-control" id="edit-profile-picture"
                                    placeholder="Masukkan URL foto profil"
-                                   style="background: #303030; border: 1px solid #404040; color: #ffffff;">
+                                   style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
                             <small style="color: #999;">Masukkan URL gambar profil Anda (misalnya dari Imgur, Google Drive, dll)</small>
                         </div>
 
                         <div class="form-group">
                             <label style="color: #28a7e9;">Nama Lengkap *</label>
                             <input type="text" class="form-control" id="edit-fullname" required
-                                   style="background: #303030; border: 1px solid #404040; color: #ffffff;">
+                                   style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
                         </div>
                         <div class="form-group">
                             <label style="color: #28a7e9;">Email *</label>
                             <input type="email" class="form-control" id="edit-email" required
-                                   style="background: #303030; border: 1px solid #404040; color: #ffffff;">
+                                   style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
                         </div>
                         <div class="form-group">
                             <label style="color: #28a7e9;">Nomor WhatsApp *</label>
                             <input type="tel" class="form-control" id="edit-phone" required
                                    placeholder="+62812345678"
-                                   style="background: #303030; border: 1px solid #404040; color: #ffffff;">
+                                   style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
                         </div>
                         <div class="form-group">
                             <label style="color: #28a7e9;">Tanggal Lahir</label>
                             <input type="date" class="form-control" id="edit-birthdate"
-                                   style="background: #303030; border: 1px solid #404040; color: #ffffff;">
+                                   style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
                         </div>
                         <div class="form-group">
                             <label style="color: #28a7e9;">Umur</label>
                             <input type="number" class="form-control" id="edit-age"
                                    placeholder="Otomatis terisi dari tanggal lahir"
-                                   style="background: #303030; border: 1px solid #404040; color: #ffffff;">
+                                   style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
                         </div>
-                        <div class="alert" id="profile-error" style="display: none; background: #3a1a1a; border: 1px solid #d9534f; color: #ffffff;"></div>
-                        <div class="alert" id="profile-success" style="display: none; background: #1a3a2a; border: 1px solid #28a7e9; color: #ffffff;"></div>
+                        <div class="alert" id="profile-error" style="display: none; background: rgba(217,83,79,0.15); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(217,83,79,0.3); color: #ffffff;"></div>
+                        <div class="alert" id="profile-success" style="display: none; background: rgba(40,167,233,0.15); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(40,167,233,0.3); color: #ffffff;"></div>
                     </form>
                 </div>
                 <div class="modal-footer" style="border-top: 1px solid #404040;">
                     <button type="button" class="btn btn-default" data-dismiss="modal" 
-                            style="background: #505050; color: #ffffff; border: none;">Batal</button>
+                            style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">Batal</button>
                     <button type="button" class="btn btn-primary" onclick="saveProfile()" 
                             style="background: #28a7e9; border: none;">
                         <i class="fa fa-save"></i> Simpan Perubahan
@@ -927,7 +946,7 @@
     <!-- Password Modal -->
     <div class="modal fade" id="passwordModal" tabindex="-1" role="dialog">
         <div class="modal-dialog" role="document">
-            <div class="modal-content" style="background: #202020; color: #ffffff; border: 1px solid #404040;">
+            <div class="modal-content" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); color: #ffffff; border: 1px solid rgba(255,255,255,0.2);">
                 <div class="modal-header" style="border-bottom: 1px solid #404040;">
                     <button type="button" class="close" data-dismiss="modal" style="color: #ffffff; opacity: 0.8;">&times;</button>
                     <h4 class="modal-title" style="color: #28a7e9;"><i class="fa fa-lock"></i> <span id="password-modal-title">Set Password</span></h4>
@@ -938,7 +957,7 @@
                         <div class="form-group" id="old-password-group" style="display: none;">
                             <label style="color: #28a7e9;">Password Lama *</label>
                             <input type="password" class="form-control" id="old-password" name="current_password" autocomplete="current-password" 
-                                   style="background: #303030; border: 1px solid #404040; color: #ffffff;">
+                                   style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
                         </div>
                         
                         <!-- New Password -->
@@ -946,7 +965,7 @@
                             <label style="color: #28a7e9;"><span id="new-pass-label">Password</span> *</label>
                             <input type="password" class="form-control" id="new-password" name="new_password" autocomplete="new-password" required
                                    placeholder="Minimal 6 karakter"
-                                   style="background: #303030; border: 1px solid #404040; color: #ffffff;">
+                                   style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
                             <small style="color: #999;">Minimal 6 karakter</small>
                         </div>
                         
@@ -955,7 +974,7 @@
                             <label style="color: #28a7e9;">Konfirmasi Password *</label>
                             <input type="password" class="form-control" id="confirm-password" name="confirm_password" autocomplete="new-password" required
                                    placeholder="Ulangi password"
-                                   style="background: #303030; border: 1px solid #404040; color: #ffffff;">
+                                   style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
                         </div>
 
                         <div class="alert" id="password-error" style="display: none; background: #3a1a1a; border: 1px solid #d9534f; color: #ffffff;"></div>
@@ -971,7 +990,7 @@
                 </div>
                 <div class="modal-footer" style="border-top: 1px solid #404040;">
                     <button type="button" class="btn btn-default" data-dismiss="modal" 
-                            style="background: #505050; color: #ffffff; border: none;">Batal</button>
+                            style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">Batal</button>
                     <button type="button" class="btn btn-primary" onclick="savePassword()" 
                             style="background: #28a7e9; border: none;">
                         <i class="fa fa-save"></i> <span id="save-password-btn-text">Set Password</span>
