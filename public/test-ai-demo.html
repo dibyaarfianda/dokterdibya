@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Interview Test - No Auth Required</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 40px 20px;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .subtitle {
+            color: #6b7280;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .info-box {
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        .info-box h3 {
+            color: #1e40af;
+            font-size: 16px;
+            margin-bottom: 8px;
+        }
+        .info-box p {
+            color: #3b82f6;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+            font-size: 14px;
+        }
+        .status.success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #86efac;
+        }
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+        .status.info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+        button {
+            width: 100%;
+            padding: 14px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 12px;
+            transition: all 0.2s;
+        }
+        button:hover {
+            background: #5568d3;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        button:disabled {
+            background: #cbd5e1;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .result {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+            display: none;
+        }
+        .result.show {
+            display: block;
+        }
+        .result pre {
+            background: #1f2937;
+            color: #10b981;
+            padding: 12px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+        .test-list {
+            list-style: none;
+        }
+        .test-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 14px;
+        }
+        .test-list li:last-child {
+            border-bottom: none;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+        .badge.pending {
+            background: #fef3c7;
+            color: #92400e;
+        }
+        .badge.running {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        .badge.success {
+            background: #dcfce7;
+            color: #166534;
+        }
+        .badge.fail {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 AI Interview Test Page</h1>
+        <p class="subtitle">Test AI endpoints tanpa memerlukan login - For Testing Only</p>
+
+        <div class="info-box">
+            <h3>⚠️ Demo Mode</h3>
+            <p>
+                Halaman ini adalah test page yang <strong>TIDAK memerlukan authentication</strong>.
+                Digunakan untuk testing AI interview flow tanpa perlu login terlebih dahulu.
+            </p>
+        </div>
+
+        <div id="status"></div>
+
+        <button onclick="testDetectCategory()">1. Test Detect Category</button>
+        <div id="result1" class="result"></div>
+
+        <button onclick="testGenerateQuestions()">2. Test Generate Questions</button>
+        <div id="result2" class="result"></div>
+
+        <button onclick="testProcessAnswers()">3. Test Process Answers</button>
+        <div id="result3" class="result"></div>
+
+        <button onclick="runAllTests()" style="background: #10b981; margin-top: 24px;">
+            🚀 Run All Tests
+        </button>
+
+        <div class="info-box" style="margin-top: 24px;">
+            <h3>📋 System Check</h3>
+            <ul class="test-list" id="systemCheck">
+                <li>Backend API: <span class="badge pending">CHECKING...</span></li>
+                <li>OpenAI Key: <span class="badge pending">CHECKING...</span></li>
+                <li>Database: <span class="badge pending">CHECKING...</span></li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+
+        function showStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.className = `status ${type}`;
+            status.textContent = message;
+            status.style.display = 'block';
+        }
+
+        function showResult(resultId, data, isError = false) {
+            const resultDiv = document.getElementById(resultId);
+            resultDiv.className = 'result show';
+            resultDiv.innerHTML = `
+                <strong>${isError ? '❌ Error' : '✅ Success'}</strong>
+                <pre>${JSON.stringify(data, null, 2)}</pre>
+            `;
+        }
+
+        async function testDetectCategory() {
+            showStatus('Testing category detection...', 'info');
+            try {
+                // Test WITHOUT authentication - should work if endpoint is public
+                const response = await fetch(`${API_BASE}/api/ai/detect-category`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        patientId: 'DRD0001',
+                        complaint: 'USG kehamilan 24 minggu'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showStatus('✅ Category detection working!', 'success');
+                    showResult('result1', data);
+                } else {
+                    showStatus(`⚠️ API returned error: ${data.message}`, 'error');
+                    showResult('result1', data, true);
+                }
+            } catch (error) {
+                showStatus(`❌ Request failed: ${error.message}`, 'error');
+                showResult('result1', { error: error.message }, true);
+            }
+        }
+
+        async function testGenerateQuestions() {
+            showStatus('Testing question generation...', 'info');
+            try {
+                const response = await fetch(`${API_BASE}/api/ai/interview/questions`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        category: 'obstetri',
+                        complaint: 'USG kehamilan 24 minggu',
+                        patientData: { name: 'Test Patient' }
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showStatus('✅ Question generation working!', 'success');
+                    showResult('result2', data);
+                } else {
+                    showStatus(`⚠️ API returned error: ${data.message}`, 'error');
+                    showResult('result2', data, true);
+                }
+            } catch (error) {
+                showStatus(`❌ Request failed: ${error.message}`, 'error');
+                showResult('result2', { error: error.message }, true);
+            }
+        }
+
+        async function testProcessAnswers() {
+            showStatus('Testing answer processing...', 'info');
+            try {
+                const response = await fetch(`${API_BASE}/api/ai/interview/process`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        category: 'obstetri',
+                        complaint: 'USG kehamilan 24 minggu',
+                        answers: [
+                            { question: 'Berapa usia kehamilan?', answer: '24 minggu' },
+                            { question: 'Kapan HPHT?', answer: '1 Mei 2025' },
+                            { question: 'Ada keluhan?', answer: 'Tidak ada' },
+                            { question: 'G P A?', answer: 'G2P1A0' },
+                            { question: 'Riwayat penyakit?', answer: 'Tidak ada' }
+                        ]
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showStatus('✅ Answer processing working!', 'success');
+                    showResult('result3', data);
+                } else {
+                    showStatus(`⚠️ API returned error: ${data.message}`, 'error');
+                    showResult('result3', data, true);
+                }
+            } catch (error) {
+                showStatus(`❌ Request failed: ${error.message}`, 'error');
+                showResult('result3', { error: error.message }, true);
+            }
+        }
+
+        async function runAllTests() {
+            showStatus('Running all tests...', 'info');
+            await testDetectCategory();
+            await new Promise(r => setTimeout(r, 1000));
+            await testGenerateQuestions();
+            await new Promise(r => setTimeout(r, 1000));
+            await testProcessAnswers();
+            showStatus('✅ All tests completed!', 'success');
+        }
+
+        // Run system check on load
+        window.addEventListener('load', async () => {
+            showStatus('System check running...', 'info');
+
+            // This page demonstrates that the endpoints REQUIRE authentication
+            // The original book-appointment-ai.html page should work if you're logged in
+
+            showStatus('⚠️ All endpoints require JWT authentication. Please login first at /index.html', 'error');
+        });
+    </script>
+</body>
+</html>
