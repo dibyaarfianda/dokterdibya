@@ -923,12 +923,7 @@
             const formData = new FormData(form);
             const data = {};
 
-            // First, handle checkboxes explicitly before processing FormData
-            // This ensures checkbox values are captured even if unchecked
-            const consentCheckbox = document.getElementById('consent');
-            const finalAckCheckbox = document.getElementById('final_ack');
-
-            // Process FormData entries
+            // Process FormData entries (checkboxes already retrieved above)
             for (let [key, value] of formData.entries()) {
                 // Skip consent and final_ack from FormData, we'll handle them separately
                 if (key === 'consent' || key === 'final_ack') {
