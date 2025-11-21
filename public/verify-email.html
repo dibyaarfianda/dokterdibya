@@ -517,11 +517,14 @@
                     // Clear draft after successful verification
                     localStorage.removeItem('verify_otp_draft');
 
-                    // Store verification token
+                    // Store verification token for later use
                     sessionStorage.setItem('verified_token', response.data.verified_token);
 
-                    // Redirect to password setup
-                    window.location.href = 'set-password.html';
+                    // Store email for profile completion
+                    sessionStorage.setItem('registration_email', email);
+
+                    // Redirect to complete profile (new flow)
+                    window.location.href = 'complete-profile.html';
                 } else {
                     // Show error
                     otpInputs.forEach(input => input.classList.add('error'));

@@ -666,26 +666,47 @@
                     const data = await response.json();
                     const profile = data.user;
 
-                    // Auto-fill available fields
-                    if (profile.fullname) {
-                        document.getElementById('full_name').value = profile.fullname;
+                    // Auto-fill available fields (check both fullname and full_name)
+                    const fullName = profile.fullname || profile.full_name;
+                    if (fullName && fullName !== 'New Patient') {
+                        const fullNameInput = document.getElementById('full_name');
+                        if (fullNameInput) {
+                            fullNameInput.value = fullName;
+                        }
                     }
 
                     if (profile.phone) {
-                        document.getElementById('phone').value = profile.phone;
+                        const phoneInput = document.getElementById('phone');
+                        if (phoneInput) {
+                            phoneInput.value = profile.phone;
+                        }
                     }
 
                     if (profile.birth_date) {
                         const birthDate = new Date(profile.birth_date);
-                        document.getElementById('dob').value = birthDate.toISOString().split('T')[0];
+                        const dobInput = document.getElementById('dob');
+                        if (dobInput) {
+                            dobInput.value = birthDate.toISOString().split('T')[0];
+                        }
 
                         // Auto-calculate age
                         if (profile.age) {
-                            document.getElementById('age').value = profile.age;
+                            const ageInput = document.getElementById('age');
+                            if (ageInput) {
+                                ageInput.value = profile.age;
+                            }
                         }
                     }
 
-                    console.log('Patient profile loaded successfully');
+                    // Also auto-fill whatsapp if not set (same as phone)
+                    if (profile.phone && !profile.whatsapp) {
+                        const whatsappInput = document.getElementById('whatsapp');
+                        if (whatsappInput) {
+                            whatsappInput.value = profile.phone;
+                        }
+                    }
+
+                    console.log('Patient profile loaded and auto-filled successfully');
                 } else {
                     console.log('Failed to load patient profile');
                 }

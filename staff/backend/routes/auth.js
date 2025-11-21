@@ -899,9 +899,9 @@ router.delete('/api/admin/cleanup-email/:email', verifyToken, asyncHandler(async
     }, `Email ${email} cleaned up from all tables successfully`);
 }));
 
-// POST /api/auth/set-password - Set password after verification
+// POST /api/auth/set-password - Set password after verification (with profile data)
 router.post('/api/auth/set-password', asyncHandler(async (req, res) => {
-    const { email, password, verified_token } = req.body;
+    const { email, password, verified_token, fullname, phone, birth_date, age } = req.body;
 
     if (!email || !password || !verified_token) {
         throw new AppError('Email, password, and verified token are required', HTTP_STATUS.BAD_REQUEST);
@@ -946,11 +946,16 @@ router.post('/api/auth/set-password', asyncHandler(async (req, res) => {
         [userId, email, passwordHash]
     );
 
-    // Create basic patient record
+    // Create patient record with profile data from complete-profile page
+    const patientName = fullname || 'New Patient';
+    const patientPhone = phone || null;
+    const patientBirthDate = birth_date || null;
+    const patientAge = age || null;
+
     await db.query(
-        `INSERT INTO patients (id, email, full_name, status, created_at)
-         VALUES (?, ?, ?, 'active', NOW())`,
-        [userId, email, 'New Patient']
+        `INSERT INTO patients (id, email, full_name, phone, whatsapp, birth_date, age, status, patient_type, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'active', 'web', NOW())`,
+        [userId, email, patientName, patientPhone, patientPhone, patientBirthDate, patientAge]
     );
 
     // Generate JWT token
