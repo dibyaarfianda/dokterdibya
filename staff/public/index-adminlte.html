@@ -3466,57 +3466,139 @@
     
     function initializeApp(user) {
         // Initialize core UI (pages, clock, navigation)
-        initMain();
-        
-        // Initialize feature areas
-        initAuth();
-        initSessionManager();
-        // initBilling(); - Now loaded dynamically when Tindakan/Obat pages are opened
-        initDashboard();
-        if (user.role === 'superadmin') {
-            initFinanceDashboard();
-            initAnalyticsDashboard(); // Finance page charts
+        try {
+            initMain();
+        } catch (error) {
+            console.error('❌ Error initializing main:', error);
         }
-        initPatients();
+
+        // Initialize feature areas
+        try {
+            initAuth();
+        } catch (error) {
+            console.error('❌ Error initializing auth UI:', error);
+        }
+
+        try {
+            initSessionManager();
+        } catch (error) {
+            console.error('❌ Error initializing session manager:', error);
+        }
+
+        // initBilling(); - Now loaded dynamically when Tindakan/Obat pages are opened
+        try {
+            initDashboard();
+        } catch (error) {
+            console.error('❌ Error initializing dashboard:', error);
+        }
+
+        if (user.role === 'superadmin') {
+            try {
+                initFinanceDashboard();
+            } catch (error) {
+                console.error('❌ Error initializing finance dashboard:', error);
+            }
+
+            try {
+                initAnalyticsDashboard(); // Finance page charts
+            } catch (error) {
+                console.error('❌ Error initializing analytics dashboard:', error);
+            }
+        }
+
+        try {
+            initPatients();
+        } catch (error) {
+            console.error('❌ Error initializing patients:', error);
+        }
+
         // Chat is now handled by chat-popup.js loaded at bottom of page
         // initCashier() - Now loaded dynamically when Cashier page is opened
-        
+
         // Initialize real-time sync
-        initRealtimeSync(user);
-        console.log('🔄 Real-time sync initialized for user:', user.name);
-        
+        try {
+            initRealtimeSync(user);
+            console.log('🔄 Real-time sync initialized for user:', user.name);
+        } catch (error) {
+            console.error('⚠️ Real-time sync initialization failed (non-critical):', error);
+        }
+
         // Restore session if exists
-        restoreSessionOnLoad().then(session => {
-            if (session && session.patient) {
-                console.log('Session restored for patient:', session.patient.name);
-                // TODO: Restore UI state based on session data
-            }
-        });
-        console.log('AdminLTE app initialized');
+        try {
+            restoreSessionOnLoad().then(session => {
+                if (session && session.patient) {
+                    console.log('✅ Session restored for patient:', session.patient.name);
+                    // TODO: Restore UI state based on session data
+                }
+            }).catch(error => {
+                console.warn('⚠️ Session restore failed (non-critical):', error);
+            });
+        } catch (error) {
+            console.error('⚠️ Session restoration setup failed:', error);
+        }
+
+        console.log('✅ AdminLTE app initialized successfully');
     }
  </script>
 
  <!-- Socket.IO initialization for chat -->
  <script>
+    // Validate required functions are loaded before proceeding
+    const requiredFunctions = [
+        'showDashboardPage',
+        'showKlinikPrivatePage',
+        'showFinanceAnalysisPage',
+        'showKelolaPasienPage',
+        'showKelolaAppointmentPage',
+        'showKelolaJadwalPage',
+        'showKelolaTindakanPage',
+        'showKelolaObatManagementPage',
+        'showLogPage',
+        'showPatientPage'
+    ];
+
+    // Check which functions are available
+    const missingFunctions = [];
+    requiredFunctions.forEach(fn => {
+        if (typeof window[fn] !== 'function') {
+            missingFunctions.push(fn);
+        }
+    });
+
+    if (missingFunctions.length > 0) {
+        console.warn('⚠️ Warning: Some navigation functions not yet loaded:', missingFunctions);
+        console.log('This is normal - they will be available once their modules load');
+    } else {
+        console.log('✅ All required navigation functions are available');
+    }
+
     // Initialize Socket.IO connection for chat
     const socketOrigin = ['localhost', '127.0.0.1'].includes(window.location.hostname)
         ? 'http://localhost:3001'
         : window.location.origin.replace(/\/$/, '');
 
-    window.socket = io(socketOrigin, {
-        transports: ['websocket', 'polling'],
-        reconnection: true,
-        reconnectionDelay: 1000,
-        reconnectionAttempts: 5
-    });
+    try {
+        window.socket = io(socketOrigin, {
+            transports: ['websocket', 'polling'],
+            reconnection: true,
+            reconnectionDelay: 1000,
+            reconnectionAttempts: 5
+        });
 
-    window.socket.on('connect', () => {
-        console.log('Socket.IO connected for chat');
-    });
+        window.socket.on('connect', () => {
+            console.log('✅ Socket.IO connected for chat');
+        });
 
-    window.socket.on('disconnect', () => {
-        console.log('Socket.IO disconnected');
-    });
+        window.socket.on('disconnect', () => {
+            console.log('⚠️ Socket.IO disconnected (will reconnect)');
+        });
+
+        window.socket.on('error', (error) => {
+            console.error('❌ Socket.IO error:', error);
+        });
+    } catch (error) {
+        console.error('❌ Failed to initialize Socket.IO:', error);
+    }
     
     // Global helper to hide floating panel
     window.hideFloatingPanel = function() {
@@ -3524,6 +3606,51 @@
         if (floatingPanel && !floatingPanel.classList.contains('d-none')) {
             console.log('Hiding floating panel');
             floatingPanel.classList.add('d-none');
+        }
+    };
+
+    // Helper function to get valid token
+    window.getValidToken = function() {
+        const token = localStorage.getItem('vps_auth_token');
+        if (!token) {
+            console.error('❌ No authentication token found');
+            alert('Sesi Anda telah habis. Silakan login kembali.');
+            window.location.replace('login.html');
+            return null;
+        }
+        return token;
+    };
+
+    // Safe fetch wrapper with token validation
+    window.safeFetch = async function(url, options = {}) {
+        try {
+            const token = window.getValidToken();
+            if (!token) return null;
+
+            // Add auth header if not already present
+            if (!options.headers) options.headers = {};
+            if (!options.headers['Authorization']) {
+                options.headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            const response = await fetch(url, options);
+
+            if (response.status === 401) {
+                console.error('❌ Unauthorized - token expired');
+                localStorage.removeItem('vps_auth_token');
+                alert('Token Anda telah kadaluarsa. Silakan login kembali.');
+                window.location.replace('login.html');
+                return null;
+            }
+
+            if (!response.ok) {
+                throw new Error(`API Error: ${response.status} ${response.statusText}`);
+            }
+
+            return response;
+        } catch (error) {
+            console.error('❌ Fetch error:', error);
+            throw error;
         }
     };
     
