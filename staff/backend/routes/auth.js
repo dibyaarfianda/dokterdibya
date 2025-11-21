@@ -903,6 +903,16 @@ router.delete('/api/admin/cleanup-email/:email', verifyToken, asyncHandler(async
 router.post('/api/auth/set-password', asyncHandler(async (req, res) => {
     const { email, password, verified_token, fullname, phone, birth_date, age } = req.body;
 
+    // Debug logging
+    logger.info('=== SET PASSWORD REQUEST ===', {
+        email,
+        fullname,
+        phone,
+        birth_date,
+        age,
+        has_verified_token: !!verified_token
+    });
+
     if (!email || !password || !verified_token) {
         throw new AppError('Email, password, and verified token are required', HTTP_STATUS.BAD_REQUEST);
     }
