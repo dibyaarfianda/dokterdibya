@@ -421,58 +421,6 @@
             line-height: 1.4;
         }
 
-        /* Kunjunganku Visit Cards */
-        .visit-card-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-            gap: 15px;
-            margin-top: 15px;
-        }
-
-        .visit-card {
-            border: 1px solid #404040;
-            border-radius: 8px;
-            padding: 18px;
-            background: #1e1e1e;
-            box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
-        }
-
-        .visit-card h4 {
-            margin: 0;
-            color: #28a7e9;
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        .visit-card p {
-            margin: 5px 0;
-            color: #bfbfbf;
-            font-size: 14px;
-        }
-
-        .visit-card .visit-actions {
-            margin-top: 12px;
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-        }
-
-        .visit-card .visit-actions a {
-            background: #303030;
-            color: #28a7e9;
-            border: 1px solid #28a7e9;
-            padding: 6px 12px;
-            border-radius: 4px;
-            font-size: 13px;
-            text-decoration: none;
-            transition: background 0.2s, color 0.2s;
-        }
-
-        .visit-card .visit-actions a:hover {
-            background: #28a7e9;
-            color: #020202;
-        }
-        
         /* Profile Info */
         .profile-info {
             list-style: none;
@@ -572,20 +520,79 @@
             top: 0;
             z-index: 100;
         }
-        
+
+        .nav-bar .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 5px;
+        }
+
         .nav-bar a {
             color: #cccccc;
             padding: 10px 15px;
             display: inline-block;
             transition: color 0.3s;
         }
-        
+
         .nav-bar a:hover {
             color: #28a7e9;
         }
-        
+
         .nav-bar a i {
             margin-right: 5px;
+        }
+
+        .user-avatar-nav {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: background 0.3s;
+        }
+
+        .user-avatar-nav:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .avatar-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0066FF 0%, #00D4FF 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 12px rgba(0, 102, 255, 0.3);
+        }
+
+        .user-info-nav {
+            display: flex;
+            flex-direction: column;
+            text-align: right;
+        }
+
+        .user-info-nav .user-name {
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 14px;
+            line-height: 1.2;
+        }
+
+        .user-info-nav .user-role {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 12px;
+            line-height: 1.2;
         }
         
         /* Responsive */
@@ -633,9 +640,19 @@
             .nav-bar {
                 text-align: center;
             }
-            
+
             .nav-bar a {
                 padding: 8px 12px;
+                font-size: 14px;
+            }
+
+            .user-info-nav {
+                display: none;
+            }
+
+            .avatar-circle {
+                width: 36px;
+                height: 36px;
                 font-size: 14px;
             }
         }
@@ -679,10 +696,17 @@
     <!-- Navigation -->
     <nav class="nav-bar">
         <div class="container">
-            <a href="#profile-section"><i class="fa fa-user"></i> Profil</a>
-            <a href="patient-visit-history.html"><i class="fa fa-history"></i> Riwayat Kontrol</a>
-            <a href="#visits-history-section"><i class="fa fa-clipboard-list"></i> Kunjunganku</a>
-            <a href="#" id="logout-link"><i class="fa fa-sign-out"></i> Keluar</a>
+            <div class="nav-links">
+                <a href="patient-visit-history.html"><i class="fa fa-history"></i> Riwayat Visit</a>
+                <a href="#" id="logout-link"><i class="fa fa-sign-out"></i> Keluar</a>
+            </div>
+            <div class="user-avatar-nav" onclick="scrollToSection('profile-section')">
+                <div class="avatar-circle" id="user-avatar">P</div>
+                <div class="user-info-nav">
+                    <div class="user-name" id="user-name-nav">Pasien</div>
+                    <div class="user-role">Pasien</div>
+                </div>
+            </div>
         </div>
     </nav>
 
@@ -763,17 +787,6 @@
             <a href="/booking-appointment.html" class="action-btn" id="booking-create-btn">
                 <i class="fa fa-plus"></i> Buat Janji Temu
             </a>
-        </div>
-
-        <!-- Kunjunganku Section -->
-        <div class="dashboard-card" id="visits-history-section" style="margin-bottom: 30px;">
-            <h3><i class="fa fa-clipboard-list"></i> Kunjunganku</h3>
-            <div id="visits-list-container">
-                <div class="empty-state" style="padding: 40px 20px;">
-                    <i class="fa fa-spinner fa-spin fa-2x"></i>
-                    <p style="margin-top: 10px; color: #999;">Memuat riwayat kunjungan dan invoice Anda...</p>
-                </div>
-            </div>
         </div>
 
         <div class="row">
@@ -1063,6 +1076,24 @@
                 document.getElementById('profile-name').textContent = profile.fullname;
                 document.getElementById('profile-email').textContent = profile.email;
                 document.getElementById('profile-phone').textContent = profile.phone || 'Belum diisi';
+
+                // Update navigation avatar
+                const userNameNav = document.getElementById('user-name-nav');
+                const userAvatar = document.getElementById('user-avatar');
+                if (userNameNav && profile.fullname) {
+                    userNameNav.textContent = profile.fullname;
+                }
+                if (userAvatar && profile.fullname) {
+                    // Get initials from fullname
+                    const nameParts = profile.fullname.trim().split(' ');
+                    let initials = '';
+                    if (nameParts.length === 1) {
+                        initials = nameParts[0].substring(0, 2).toUpperCase();
+                    } else {
+                        initials = (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
+                    }
+                    userAvatar.textContent = initials;
+                }
 
                 // Update profile picture
                 const profilePicture = document.getElementById('profile-picture');
@@ -1795,6 +1826,14 @@
             localStorage.removeItem('patient_token');
             localStorage.removeItem('patient_user');
             window.location.href = '/index.html';
+        }
+
+        // Smooth scroll to section
+        function scrollToSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         }
 
         // Logout event listeners
