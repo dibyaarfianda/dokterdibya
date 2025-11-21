@@ -635,6 +635,145 @@ router.post('/api/auth/reset-password', asyncHandler(async (req, res) => {
     sendSuccess(res, null, 'Password has been reset successfully. You can now log in with your new password.');
 }));
 
+// POST /api/auth/register - Patient registration (simplified without email verification)
+router.post('/api/auth/register', asyncHandler(async (req, res) => {
+    const { email } = req.body;
+
+    if (!email || !email.includes('@')) {
+        throw new AppError('Valid email is required', HTTP_STATUS.BAD_REQUEST);
+    }
+
+    // Check if email already exists
+    const [existingUsers] = await db.query(
+        'SELECT new_id FROM users WHERE email = ?',
+        [email]
+    );
+
+    if (existingUsers.length > 0) {
+        return sendError(res, 'Email sudah terdaftar', HTTP_STATUS.BAD_REQUEST);
+    }
+
+    // For now, just store in session and return success
+    // In production, this would send an OTP email
+    const verificationToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
+
+    logger.info(`Registration initiated for email: ${email}`);
+
+    sendSuccess(res, {
+        verification_token: verificationToken,
+        message: 'Registration successful. Please proceed to set your password.'
+    });
+}));
+
+// POST /api/auth/verify-email - Email verification (mock for now)
+router.post('/api/auth/verify-email', asyncHandler(async (req, res) => {
+    const { email, code, verification_token } = req.body;
+
+    if (!email || !code || !verification_token) {
+        throw new AppError('Email, code, and verification token are required', HTTP_STATUS.BAD_REQUEST);
+    }
+
+    // For now, accept any 6-digit code (mock verification)
+    if (code.length !== 6 || !/^\d+$/.test(code)) {
+        return sendError(res, 'Kode verifikasi harus 6 digit angka', HTTP_STATUS.BAD_REQUEST);
+    }
+
+    const verifiedToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
+
+    logger.info(`Email verified for: ${email}`);
+
+    sendSuccess(res, {
+        verified_token: verifiedToken,
+        message: 'Email verified successfully'
+    });
+}));
+
+// POST /api/auth/resend-verification - Resend verification code (mock)
+router.post('/api/auth/resend-verification', asyncHandler(async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+        throw new AppError('Email is required', HTTP_STATUS.BAD_REQUEST);
+    }
+
+    const verificationToken = Math.random().toString(36).substring(2) + Date.now().toString(36);
+
+    logger.info(`Verification code resent to: ${email}`);
+
+    sendSuccess(res, {
+        verification_token: verificationToken,
+        message: 'Verification code sent'
+    });
+}));
+
+// POST /api/auth/set-password - Set password after verification
+router.post('/api/auth/set-password', asyncHandler(async (req, res) => {
+    const { email, password, verified_token } = req.body;
+
+    if (!email || !password || !verified_token) {
+        throw new AppError('Email, password, and verified token are required', HTTP_STATUS.BAD_REQUEST);
+    }
+
+    if (password.length < 8) {
+        throw new AppError('Password harus minimal 8 karakter', HTTP_STATUS.BAD_REQUEST);
+    }
+
+    // Check if email already exists
+    const [existingUsers] = await db.query(
+        'SELECT new_id FROM users WHERE email = ?',
+        [email]
+    );
+
+    if (existingUsers.length > 0) {
+        return sendError(res, 'Email sudah terdaftar', HTTP_STATUS.BAD_REQUEST);
+    }
+
+    // Generate user ID
+    const [maxIdResult] = await db.query(
+        `SELECT new_id FROM users WHERE new_id LIKE 'U%' ORDER BY new_id DESC LIMIT 1`
+    );
+
+    let nextNumber = 1;
+    if (maxIdResult.length > 0) {
+        const lastId = maxIdResult[0].new_id;
+        const lastNumber = parseInt(lastId.substring(1));
+        nextNumber = lastNumber + 1;
+    }
+
+    const userId = `U${String(nextNumber).padStart(7, '0')}`;
+
+    // Hash password
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    // Insert user
+    await db.query(
+        `INSERT INTO users (new_id, email, password_hash, user_type, role, is_active, created_at)
+         VALUES (?, ?, ?, 'patient', 'user', 1, NOW())`,
+        [userId, email, passwordHash]
+    );
+
+    // Generate JWT token
+    const token = jwt.sign(
+        {
+            id: userId,
+            email: email,
+            role: 'user',
+            user_type: 'patient',
+            is_superadmin: false
+        },
+        JWT_SECRET,
+        { expiresIn: JWT_EXPIRES_IN }
+    );
+
+    logger.info(`New patient account created: ${userId} - ${email}`);
+
+    sendSuccess(res, {
+        token,
+        user_id: userId,
+        message: 'Account created successfully'
+    });
+}));
+
 
 module.exports = router;
 

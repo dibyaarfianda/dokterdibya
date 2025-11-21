@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Daftar - Dibya Klinik</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .bubble {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-100px) rotate(180deg); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 450px;
+            width: 100%;
+        }
+
+        .card {
+            background: white;
+            border-radius: 25px;
+            padding: 40px 35px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-icon {
+            margin-bottom: 10px;
+        }
+
+        .logo-icon img {
+            height: 80px;
+            width: auto;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .logo h1 {
+            font-size: 26px;
+            color: #1f2937;
+            margin-bottom: 5px;
+        }
+
+        .logo p {
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .form-group {
+            margin-bottom: 25px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 20px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 15px 15px 15px 50px;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-size: 16px;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        .form-group input.error {
+            border-color: var(--danger);
+        }
+
+        .error-message {
+            display: none;
+            color: var(--danger);
+            font-size: 13px;
+            margin-top: 6px;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 16px;
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .btn-submit:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-submit:disabled {
+            background: #d1d5db;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-submit .spinner {
+            display: none;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top: 2px solid white;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto;
+        }
+
+        .btn-submit.loading .spinner {
+            display: block;
+        }
+
+        .btn-submit.loading .btn-text {
+            display: none;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .divider {
+            text-align: center;
+            margin: 25px 0;
+            position: relative;
+        }
+
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #e5e7eb;
+        }
+
+        .divider span {
+            background: white;
+            padding: 0 15px;
+            color: #9ca3af;
+            font-size: 14px;
+            position: relative;
+        }
+
+        .login-link {
+            text-align: center;
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .login-link a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        .benefits {
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .benefit-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            color: #4b5563;
+        }
+
+        .benefit-item .icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 480px) {
+            .card {
+                padding: 30px 25px;
+            }
+
+            .logo h1 {
+                font-size: 22px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation" id="bgAnimation"></div>
+
+    <div class="container">
+        <div class="card">
+            <div class="logo">
+                <div class="logo-icon">
+                    <img src="images/DIBYA.svg" alt="Dibya Klinik">
+                </div>
+                <p>Daftar untuk memulai konsultasi</p>
+            </div>
+
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <div class="input-wrapper">
+                        <span class="input-icon">📧</span>
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            placeholder="nama@email.com"
+                            required
+                            autocomplete="email"
+                        >
+                    </div>
+                    <div class="error-message" id="emailError">Email tidak valid</div>
+                </div>
+
+                <button type="submit" class="btn-submit" id="submitBtn">
+                    <span class="btn-text">Daftar Sekarang →</span>
+                    <div class="spinner"></div>
+                </button>
+            </form>
+
+            <div class="divider">
+                <span>atau</span>
+            </div>
+
+            <div class="login-link">
+                Sudah punya akun? <a href="login.html">Masuk di sini</a>
+            </div>
+
+            <div class="benefits">
+                <div class="benefit-item">
+                    <span class="icon">✓</span>
+                    <span>Konsultasi dengan dokter ahli</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="icon">✓</span>
+                    <span>Rekam medis digital aman</span>
+                </div>
+                <div class="benefit-item">
+                    <span class="icon">✓</span>
+                    <span>Booking janji temu online</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { apiService } from './scripts/api-service.js';
+
+        // Create animated bubbles
+        function createBubbles() {
+            const bg = document.getElementById('bgAnimation');
+            for (let i = 0; i < 10; i++) {
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+                const size = Math.random() * 100 + 50;
+                bubble.style.width = size + 'px';
+                bubble.style.height = size + 'px';
+                bubble.style.left = Math.random() * 100 + '%';
+                bubble.style.top = Math.random() * 100 + '%';
+                bubble.style.animationDelay = Math.random() * 5 + 's';
+                bg.appendChild(bubble);
+            }
+        }
+
+        const form = document.getElementById('registerForm');
+        const emailInput = document.getElementById('email');
+        const emailError = document.getElementById('emailError');
+        const submitBtn = document.getElementById('submitBtn');
+
+        // Email validation
+        function validateEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
+
+        // Clear error on input
+        emailInput.addEventListener('input', () => {
+            emailInput.classList.remove('error');
+            emailError.classList.remove('show');
+        });
+
+        // Form submission
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const email = emailInput.value.trim();
+
+            // Validate email
+            if (!validateEmail(email)) {
+                emailInput.classList.add('error');
+                emailError.textContent = 'Email tidak valid';
+                emailError.classList.add('show');
+                return;
+            }
+
+            // Show loading
+            submitBtn.classList.add('loading');
+            submitBtn.disabled = true;
+
+            try {
+                const response = await apiService.post('/auth/register', { email });
+
+                if (response.success) {
+                    // Store email temporarily
+                    sessionStorage.setItem('registration_email', email);
+                    sessionStorage.setItem('verification_token', response.verification_token);
+
+                    // Redirect to verification page
+                    window.location.href = 'verify-email.html';
+                } else {
+                    emailInput.classList.add('error');
+                    emailError.textContent = response.message || 'Email sudah terdaftar';
+                    emailError.classList.add('show');
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                emailInput.classList.add('error');
+                emailError.textContent = 'Terjadi kesalahan. Silakan coba lagi.';
+                emailError.classList.add('show');
+            } finally {
+                submitBtn.classList.remove('loading');
+                submitBtn.disabled = false;
+            }
+        });
+
+        // Initialize
+        createBubbles();
+    </script>
+</body>
+</html>

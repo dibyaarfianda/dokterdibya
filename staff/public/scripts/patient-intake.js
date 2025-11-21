@@ -16,6 +16,14 @@ const riskAlert = document.getElementById('risk-alert');
 const riskList = document.getElementById('risk-list');
 const lmpField = document.getElementById('lmp');
 const eddField = document.getElementById('edd');
+const eddDateIntakeField = document.getElementById('edd_date_intake');
+const pregnancyCountField = document.getElementById('pregnancy_count');
+const miscarriageCountField = document.getElementById('miscarriage_count');
+const livingCountField = document.getElementById('living_count');
+const csectionCountField = document.getElementById('csection_count');
+const csectionYearsField = document.getElementById('csection_years');
+const gpalSummaryField = document.getElementById('gpal_summary');
+const bscSummaryField = document.getElementById('bsc_summary');
 const gravidaField = document.getElementById('gravida');
 const paraField = document.getElementById('para');
 const abortusField = document.getElementById('abortus');
@@ -631,6 +639,8 @@ function updateDerived() {
     updateEDDFromLMP();
     computeObstetricTotals();
     updateRiskFlags();
+    updateGPALSummary();
+    updateBSCSummary();
 }
 
 function updateAge() {
@@ -692,6 +702,9 @@ function updateEDDFromLMP() {
     }
     if (!lmpField.value) {
         lastAutoEdd = null;
+        if (eddDateIntakeField) {
+            eddDateIntakeField.value = '';
+        }
         return;
     }
     const lmpDate = new Date(lmpField.value);
@@ -702,6 +715,15 @@ function updateEDDFromLMP() {
     computed.setDate(computed.getDate() + 280);
     const formatted = computed.toISOString().slice(0, 10);
     lastAutoEdd = formatted;
+
+    // Update the new EDD intake field with formatted date
+    if (eddDateIntakeField) {
+        const eddDate = new Date(formatted);
+        const options = { day: 'numeric', month: 'long', year: 'numeric' };
+        const formattedDisplay = eddDate.toLocaleDateString('id-ID', options);
+        eddDateIntakeField.value = formattedDisplay;
+    }
+
     if (eddField.dataset.userEdited === 'true' && eddField.value) {
         return;
     }
@@ -799,6 +821,57 @@ function updateRiskFlags() {
     }
 }
 
+function updateGPALSummary() {
+    if (!gpalSummaryField) {
+        return;
+    }
+
+    const gravida = pregnancyCountField ? parseInt(pregnancyCountField.value) || 0 : 0;
+    const abortus = miscarriageCountField ? parseInt(miscarriageCountField.value) || 0 : 0;
+    const living = livingCountField ? parseInt(livingCountField.value) || 0 : 0;
+    const para = living > 0 ? living : 0;
+
+    if (gravida === 0 && abortus === 0 && living === 0) {
+        gpalSummaryField.value = '';
+        return;
+    }
+
+    gpalSummaryField.value = `G${gravida} P${para} A${abortus} L${living}`;
+}
+
+function updateBSCSummary() {
+    if (!bscSummaryField) {
+        return;
+    }
+
+    const hasCsection = document.querySelector('input[name="has_csection"]:checked');
+
+    if (!hasCsection || hasCsection.value === 'tidak') {
+        bscSummaryField.value = '';
+        return;
+    }
+
+    const lastYearsRadio = document.querySelector('input[name="last_csection_years"]:checked');
+
+    if (!lastYearsRadio) {
+        bscSummaryField.value = '';
+        return;
+    }
+
+    if (lastYearsRadio.value === '<2') {
+        bscSummaryField.value = 'BSC <2 tahun';
+    } else if (lastYearsRadio.value === 'custom' && csectionYearsField) {
+        const years = csectionYearsField.value;
+        if (years) {
+            bscSummaryField.value = `BSC ${years} tahun`;
+        } else {
+            bscSummaryField.value = '';
+        }
+    } else {
+        bscSummaryField.value = '';
+    }
+}
+
 function resetDerivedFlags() {
     if (eddField) {
         delete eddField.dataset.userEdited;
@@ -831,6 +904,90 @@ function syncMaritalFields() {
     toggleFieldAvailability(husbandNameField, disableSpouseFields);
     toggleFieldAvailability(husbandAgeField, disableSpouseFields);
     toggleFieldAvailability(husbandJobField, disableSpouseFields);
+}
+
+function formatPhoneNumber(phoneNumber) {
+    if (!phoneNumber) return '';
+
+    // Remove all spaces, dashes, and parentheses
+    let cleaned = phoneNumber.replace(/[\s\-\(\)]/g, '');
+
+    // Handle different formats:
+    // +628xxx -> 628xxx
+    if (cleaned.startsWith('+62')) {
+        cleaned = cleaned.substring(1);
+    }
+    // 08xxx -> 628xxx
+    else if (cleaned.startsWith('08')) {
+        cleaned = '62' + cleaned.substring(1);
+    }
+    // 8xxx -> 628xxx (missing leading 0)
+    else if (cleaned.startsWith('8') && !cleaned.startsWith('62')) {
+        cleaned = '62' + cleaned;
+    }
+    // 628xxx -> keep as is
+    // Already in correct format
+
+    return cleaned;
+}
+
+function applyPhoneFormatting(inputElement) {
+    if (!inputElement) return;
+
+    inputElement.addEventListener('blur', function() {
+        const formatted = formatPhoneNumber(this.value);
+        if (formatted && formatted !== this.value) {
+            this.value = formatted;
+            scheduleSave();
+        }
+    });
+
+    // Also format on paste
+    inputElement.addEventListener('paste', function(e) {
+        setTimeout(() => {
+            const formatted = formatPhoneNumber(this.value);
+            if (formatted && formatted !== this.value) {
+                this.value = formatted;
+                scheduleSave();
+            }
+        }, 10);
+    });
+}
+
+async function autoFillFromProfile() {
+    try {
+        // Import auth from vps-auth-v2.js
+        const { auth } = await import('./vps-auth-v2.js');
+        const user = auth.currentUser;
+
+        if (!user) {
+            console.log('No user logged in, skipping auto-fill');
+            return;
+        }
+
+        // Check if form already has data (from draft restoration)
+        const fullNameField = document.getElementById('full_name');
+        const dobField = document.getElementById('dob');
+        const phoneField = document.getElementById('phone');
+
+        // Only auto-fill if fields are empty
+        if (fullNameField && !fullNameField.value && user.name) {
+            fullNameField.value = user.name;
+        }
+
+        if (dobField && !dobField.value && user.dob) {
+            dobField.value = user.dob;
+            updateAge(); // Trigger age calculation
+        }
+
+        if (phoneField && !phoneField.value && user.phone) {
+            phoneField.value = formatPhoneNumber(user.phone);
+        }
+
+        scheduleSave();
+    } catch (error) {
+        console.error('Error auto-filling profile data:', error);
+    }
 }
 
 // Prenatal row button removed - section deleted from form
@@ -888,6 +1045,101 @@ document.querySelectorAll('input[name="risk_factors"], input[name="past_conditio
         scheduleSave();
     });
 });
+
+// Event listeners for pregnancy history fields
+if (pregnancyCountField) {
+    pregnancyCountField.addEventListener('change', () => {
+        updateGPALSummary();
+        scheduleSave();
+    });
+}
+
+if (miscarriageCountField) {
+    miscarriageCountField.addEventListener('change', () => {
+        updateGPALSummary();
+        scheduleSave();
+    });
+}
+
+if (livingCountField) {
+    livingCountField.addEventListener('change', () => {
+        updateGPALSummary();
+        scheduleSave();
+    });
+}
+
+// Event listeners for miscarriage radio buttons
+document.querySelectorAll('input[name="has_miscarriage"]').forEach((radio) => {
+    radio.addEventListener('change', (e) => {
+        if (miscarriageCountField) {
+            miscarriageCountField.disabled = e.target.value === 'tidak';
+            if (e.target.value === 'tidak') {
+                miscarriageCountField.value = '';
+                updateGPALSummary();
+            }
+        }
+        scheduleSave();
+    });
+});
+
+// Event listeners for C-section fields
+document.querySelectorAll('input[name="has_csection"]').forEach((radio) => {
+    radio.addEventListener('change', (e) => {
+        const hasCsection = e.target.value === 'pernah';
+
+        if (csectionCountField) {
+            csectionCountField.disabled = !hasCsection;
+            if (!hasCsection) {
+                csectionCountField.value = '';
+            }
+        }
+
+        // Disable/enable last C-section year fields
+        document.querySelectorAll('input[name="last_csection_years"]').forEach((yearRadio) => {
+            yearRadio.disabled = !hasCsection;
+            if (!hasCsection) {
+                yearRadio.checked = false;
+            }
+        });
+
+        if (csectionYearsField) {
+            csectionYearsField.disabled = true;
+            csectionYearsField.value = '';
+        }
+
+        updateBSCSummary();
+        scheduleSave();
+    });
+});
+
+// Event listeners for C-section count
+if (csectionCountField) {
+    csectionCountField.addEventListener('change', () => {
+        scheduleSave();
+    });
+}
+
+// Event listeners for last C-section years
+document.querySelectorAll('input[name="last_csection_years"]').forEach((radio) => {
+    radio.addEventListener('change', (e) => {
+        if (csectionYearsField) {
+            csectionYearsField.disabled = e.target.value !== 'custom';
+            if (e.target.value !== 'custom') {
+                csectionYearsField.value = '';
+            }
+        }
+        updateBSCSummary();
+        scheduleSave();
+    });
+});
+
+// Event listener for C-section years dropdown
+if (csectionYearsField) {
+    csectionYearsField.addEventListener('change', () => {
+        updateBSCSummary();
+        scheduleSave();
+    });
+}
 
 prevBtn.addEventListener('click', () => {
     updateStep(currentStep - 1);
@@ -970,6 +1222,13 @@ refreshButtons();
 updateDerived();
 syncMaritalFields();
 
+// Apply phone number formatting to phone and emergency contact fields
+applyPhoneFormatting(document.getElementById('phone'));
+applyPhoneFormatting(document.getElementById('emergency_contact'));
+
+// Auto-fill from profile (only if fields are empty after draft restoration)
+autoFillFromProfile();
+
 // Check verification status on load
 checkVerificationStatus();
 
@@ -1037,9 +1296,8 @@ function showVerificationStatus(verificationData) {
 }
 
 // Add phone field change listener to check verification when phone is entered
-const phoneField = document.getElementById('phone');
-if (phoneField) {
-    phoneField.addEventListener('blur', (event) => {
+if (document.getElementById('phone')) {
+    document.getElementById('phone').addEventListener('blur', (event) => {
         if (event.target.value) {
             checkVerificationByPhone(event.target.value);
         }

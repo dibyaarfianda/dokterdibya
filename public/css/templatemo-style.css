@@ -165,9 +165,11 @@ header .social-icon li a
 /* start nagivation */
 .navbar-default
 	{
-		background: #fff;
+		background: rgba(255, 255, 255, 0.1);
+		backdrop-filter: blur(10px);
+		-webkit-backdrop-filter: blur(10px);
 		border: none;
-		box-shadow: none;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 		margin: 0 !important;
 	}
 .navbar-default .navbar-brand
@@ -184,10 +186,26 @@ header .social-icon li a
 		font-size: 13px;
 		height: 70px;
 		line-height: 40px;
+		color: #ffffff !important;
 	}
 
-.navbar-default .navbar-nav > li > a.current { 
-	color: #28A7E9; 
+.navbar-default .navbar-nav > li > a.current {
+	color: #28A7E9;
+}
+.navbar-default .navbar-nav > li > a:hover,
+.navbar-default .navbar-nav > li > a:focus {
+	color: #28A7E9 !important;
+	background: rgba(255, 255, 255, 0.1);
+}
+.navbar-default .navbar-toggle {
+	border-color: rgba(255, 255, 255, 0.3);
+}
+.navbar-default .navbar-toggle:hover,
+.navbar-default .navbar-toggle:focus {
+	background: rgba(255, 255, 255, 0.1);
+}
+.navbar-default .navbar-toggle .icon-bar {
+	background-color: #ffffff;
 }
 .templatemo-nav {
 	border-radius: 0;	
@@ -627,7 +645,9 @@ header .social-icon li a
 /* end 360 media quires */
 /* Dropdown Login Styles */
 .login-dropdown {
-    background: #fff;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border-radius: 4px;
     box-shadow: 0 6px 12px rgba(0,0,0,0.175);
     padding: 0;
