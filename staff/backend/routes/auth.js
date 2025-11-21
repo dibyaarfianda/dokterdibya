@@ -897,19 +897,20 @@ router.post('/api/auth/set-password', asyncHandler(async (req, res) => {
         return sendError(res, 'Email sudah terdaftar', HTTP_STATUS.BAD_REQUEST);
     }
 
-    // Generate user ID
+    // Generate user ID - use patient ID format
+    const year = new Date().getFullYear();
     const [maxIdResult] = await db.query(
-        `SELECT new_id FROM users WHERE new_id LIKE 'U%' ORDER BY new_id DESC LIMIT 1`
+        `SELECT id FROM patients WHERE id LIKE 'P${year}%' ORDER BY id DESC LIMIT 1`
     );
 
     let nextNumber = 1;
     if (maxIdResult.length > 0) {
-        const lastId = maxIdResult[0].new_id;
-        const lastNumber = parseInt(lastId.substring(1));
+        const lastId = maxIdResult[0].id;
+        const lastNumber = parseInt(lastId.substring(5)); // Remove 'P2025'
         nextNumber = lastNumber + 1;
     }
 
-    const userId = `U${String(nextNumber).padStart(7, '0')}`;
+    const userId = `P${year}${String(nextNumber).padStart(3, '0')}`;
 
     // Hash password
     const passwordHash = await bcrypt.hash(password, 10);
@@ -919,6 +920,13 @@ router.post('/api/auth/set-password', asyncHandler(async (req, res) => {
         `INSERT INTO users (new_id, email, password_hash, user_type, role, is_active, created_at)
          VALUES (?, ?, ?, 'patient', 'user', 1, NOW())`,
         [userId, email, passwordHash]
+    );
+
+    // Create basic patient record
+    await db.query(
+        `INSERT INTO patients (id, email, full_name, status, created_at)
+         VALUES (?, ?, ?, 'active', NOW())`,
+        [userId, email, 'New Patient']
     );
 
     // Generate JWT token

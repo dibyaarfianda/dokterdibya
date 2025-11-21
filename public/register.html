@@ -407,7 +407,7 @@
                 if (response.success) {
                     // Store email temporarily
                     sessionStorage.setItem('registration_email', email);
-                    sessionStorage.setItem('verification_token', response.verification_token);
+                    sessionStorage.setItem('verification_token', response.data.verification_token);
 
                     // Redirect to verification page
                     window.location.href = 'verify-email.html';

@@ -444,7 +444,7 @@
 
                 if (response.success) {
                     // Store verification token
-                    sessionStorage.setItem('verified_token', response.verified_token);
+                    sessionStorage.setItem('verified_token', response.data.verified_token);
 
                     // Redirect to password setup
                     window.location.href = 'set-password.html';
@@ -494,7 +494,7 @@
                 const response = await apiService.post('/auth/resend-verification', { email });
 
                 if (response.success) {
-                    sessionStorage.setItem('verification_token', response.verification_token);
+                    sessionStorage.setItem('verification_token', response.data.verification_token);
 
                     // Reset timer
                     timeLeft = 120;
