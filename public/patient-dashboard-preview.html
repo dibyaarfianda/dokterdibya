@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Pasien - Klinik Dr. Dibya (Preview)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5568d3;
+            --secondary: #764ba2;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-400: #9ca3af;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-800: #1f2937;
+            --gray-900: #111827;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .dashboard-container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .dashboard-header {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 32px;
+            font-weight: 700;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .header-info h1 {
+            font-size: 28px;
+            color: var(--gray-900);
+            margin-bottom: 4px;
+        }
+
+        .header-info p {
+            color: var(--gray-500);
+            font-size: 14px;
+        }
+
+        .patient-id {
+            display: inline-block;
+            background: var(--gray-100);
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: var(--gray-600);
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            text-decoration: none;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
+        }
+
+        .btn-outline {
+            background: white;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 16px;
+        }
+
+        .stat-icon.primary { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+        .stat-icon.success { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+        .stat-icon.warning { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+        .stat-icon.info { background: linear-gradient(135deg, #3b82f6, #2563eb); color: white; }
+
+        .stat-value {
+            font-size: 32px;
+            font-weight: 800;
+            color: var(--gray-900);
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            color: var(--gray-500);
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* Main Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Card */
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            padding-bottom: 16px;
+            border-bottom: 2px solid var(--gray-100);
+        }
+
+        .card-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--gray-900);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .card-title i {
+            color: var(--primary);
+        }
+
+        /* Appointment List */
+        .appointment-item {
+            background: var(--gray-50);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 16px;
+            border-left: 4px solid var(--primary);
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .appointment-item:hover {
+            background: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transform: translateX(4px);
+        }
+
+        .appointment-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .appointment-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .appointment-date {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--gray-900);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .appointment-date i {
+            color: var(--primary);
+        }
+
+        .badge {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .badge.ai {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .badge.upcoming {
+            background: #dbeafe;
+            color: #1e40af;
+        }
+
+        .badge.completed {
+            background: #d1fae5;
+            color: #065f46;
+        }
+
+        .badge.cancelled {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .appointment-details {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            color: var(--gray-600);
+            font-size: 14px;
+        }
+
+        .appointment-detail {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .appointment-detail i {
+            width: 16px;
+            color: var(--gray-400);
+        }
+
+        /* Quick Actions */
+        .quick-action {
+            background: var(--gray-50);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            transition: all 0.3s;
+            cursor: pointer;
+            text-decoration: none;
+            color: inherit;
+        }
+
+        .quick-action:hover {
+            background: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+            transform: translateX(4px);
+        }
+
+        .quick-action-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .quick-action-content h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--gray-900);
+            margin-bottom: 4px;
+        }
+
+        .quick-action-content p {
+            font-size: 12px;
+            color: var(--gray-500);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--gray-400);
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        /* Preview Banner */
+        .preview-banner {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: white;
+            padding: 16px 24px;
+            border-radius: 16px;
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        }
+
+        .preview-banner-content {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .preview-banner i {
+            font-size: 24px;
+        }
+
+        .preview-banner h3 {
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        .preview-banner p {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .dashboard-header {
+                padding: 20px;
+            }
+
+            .header-left {
+                width: 100%;
+            }
+
+            .header-actions {
+                width: 100%;
+                flex-direction: column;
+            }
+
+            .btn {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .card {
+                padding: 20px;
+            }
+
+            .preview-banner {
+                flex-direction: column;
+                text-align: center;
+                gap: 16px;
+            }
+        }
+
+        /* Animation */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card, .stat-card {
+            animation: fadeInUp 0.6s ease-out;
+        }
+
+        .stat-card:nth-child(1) { animation-delay: 0.1s; }
+        .stat-card:nth-child(2) { animation-delay: 0.2s; }
+        .stat-card:nth-child(3) { animation-delay: 0.3s; }
+        .stat-card:nth-child(4) { animation-delay: 0.4s; }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Preview Banner -->
+        <div class="preview-banner">
+            <div class="preview-banner-content">
+                <i class="fas fa-eye"></i>
+                <div>
+                    <h3>🎨 UI Preview Mode</h3>
+                    <p>Ini adalah preview desain dashboard pasien. Data yang ditampilkan adalah contoh.</p>
+                </div>
+            </div>
+            <button class="btn btn-outline" style="background: white; border: none;" onclick="alert('Untuk implementasi ke dashboard sebenarnya, file ini akan diintegrasikan dengan patient-dashboard.html yang sudah ada.')">
+                <i class="fas fa-info-circle"></i> Info
+            </button>
+        </div>
+
+        <!-- Header -->
+        <div class="dashboard-header">
+            <div class="header-left">
+                <div class="avatar">
+                    BS
+                </div>
+                <div class="header-info">
+                    <h1>Selamat Datang, Brightview! 👋</h1>
+                    <p>Semoga Anda sehat selalu</p>
+                    <span class="patient-id"><i class="fas fa-id-card"></i> DRD0005</span>
+                </div>
+            </div>
+            <div class="header-actions">
+                <a href="#" class="btn btn-primary">
+                    <i class="fas fa-robot"></i> Book dengan AI Interview
+                </a>
+                <button class="btn btn-outline">
+                    <i class="fas fa-user-circle"></i> Profile
+                </button>
+            </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon primary">
+                    <i class="fas fa-calendar-check"></i>
+                </div>
+                <div class="stat-value">2</div>
+                <div class="stat-label">Appointment Mendatang</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon success">
+                    <i class="fas fa-file-medical"></i>
+                </div>
+                <div class="stat-value">8</div>
+                <div class="stat-label">Rekam Medis</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon warning">
+                    <i class="fas fa-clipboard-list"></i>
+                </div>
+                <div class="stat-value">1</div>
+                <div class="stat-label">Form Pending</div>
+            </div>
+
+            <div class="stat-card">
+                <div class="stat-icon info">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <div class="stat-value">3</div>
+                <div class="stat-label">AI Interview Selesai</div>
+            </div>
+        </div>
+
+        <!-- Main Grid -->
+        <div class="main-grid">
+            <!-- Left Column -->
+            <div>
+                <!-- Upcoming Appointments -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-calendar-alt"></i>
+                            Appointment Mendatang
+                        </h2>
+                        <a href="#" class="btn btn-primary" style="padding: 8px 16px; font-size: 13px;">
+                            <i class="fas fa-plus"></i> Buat Baru
+                        </a>
+                    </div>
+
+                    <div class="appointment-item">
+                        <div class="appointment-header">
+                            <div class="appointment-date">
+                                <i class="fas fa-calendar"></i>
+                                Sabtu, 23 November 2025
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <span class="badge ai">
+                                    <i class="fas fa-robot"></i> AI Interview
+                                </span>
+                                <span class="badge upcoming">Upcoming</span>
+                            </div>
+                        </div>
+                        <div class="appointment-details">
+                            <div class="appointment-detail">
+                                <i class="fas fa-clock"></i>
+                                <span>09:00 WIB</span>
+                            </div>
+                            <div class="appointment-detail">
+                                <i class="fas fa-stethoscope"></i>
+                                <span>Konsultasi Kandungan - USG Kehamilan</span>
+                            </div>
+                            <div class="appointment-detail">
+                                <i class="fas fa-notes-medical"></i>
+                                <span>Pre-anamnesa telah diisi via AI Interview</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="appointment-item" style="border-left-color: var(--success);">
+                        <div class="appointment-header">
+                            <div class="appointment-date">
+                                <i class="fas fa-calendar"></i>
+                                Minggu, 24 November 2025
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <span class="badge upcoming">Upcoming</span>
+                            </div>
+                        </div>
+                        <div class="appointment-details">
+                            <div class="appointment-detail">
+                                <i class="fas fa-clock"></i>
+                                <span>14:00 WIB</span>
+                            </div>
+                            <div class="appointment-detail">
+                                <i class="fas fa-stethoscope"></i>
+                                <span>Kontrol Rutin</span>
+                            </div>
+                            <div class="appointment-detail">
+                                <i class="fas fa-info-circle"></i>
+                                <span>Booking manual - belum lengkapi anamnesa</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Medical Records -->
+                <div class="card" style="margin-top: 24px;">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-file-medical-alt"></i>
+                            Riwayat Rekam Medis
+                        </h2>
+                        <a href="#" style="color: var(--primary); font-size: 14px; font-weight: 600; text-decoration: none;">
+                            Lihat Semua <i class="fas fa-arrow-right"></i>
+                        </a>
+                    </div>
+
+                    <div class="appointment-item" style="border-left-color: var(--success);">
+                        <div class="appointment-header">
+                            <div class="appointment-date">
+                                <i class="fas fa-calendar-check"></i>
+                                15 November 2025
+                            </div>
+                            <span class="badge completed">Completed</span>
+                        </div>
+                        <div class="appointment-details">
+                            <div class="appointment-detail">
+                                <i class="fas fa-stethoscope"></i>
+                                <span>USG Kehamilan Trimester 2</span>
+                            </div>
+                            <div class="appointment-detail">
+                                <i class="fas fa-user-md"></i>
+                                <span>Dr. Dibya, Sp.OG</span>
+                            </div>
+                            <div class="appointment-detail">
+                                <i class="fas fa-notes-medical"></i>
+                                <span>Hasil: Kehamilan normal, usia 24 minggu</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="appointment-item" style="border-left-color: var(--info);">
+                        <div class="appointment-header">
+                            <div class="appointment-date">
+                                <i class="fas fa-calendar-check"></i>
+                                01 November 2025
+                            </div>
+                            <div style="display: flex; gap: 8px;">
+                                <span class="badge ai">
+                                    <i class="fas fa-robot"></i> AI Generated
+                                </span>
+                                <span class="badge completed">Completed</span>
+                            </div>
+                        </div>
+                        <div class="appointment-details">
+                            <div class="appointment-detail">
+                                <i class="fas fa-stethoscope"></i>
+                                <span>Konsultasi KB</span>
+                            </div>
+                            <div class="appointment-detail">
+                                <i class="fas fa-user-md"></i>
+                                <span>Dr. Dibya, Sp.OG</span>
+                            </div>
+                            <div class="appointment-detail">
+                                <i class="fas fa-robot"></i>
+                                <span>Pre-anamnesa dibuat oleh AI Interview</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column -->
+            <div>
+                <!-- Quick Actions -->
+                <div class="card">
+                    <div class="card-header">
+                        <h2 class="card-title">
+                            <i class="fas fa-bolt"></i>
+                            Quick Actions
+                        </h2>
+                    </div>
+
+                    <a href="#" class="quick-action">
+                        <div class="quick-action-icon" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="quick-action-content">
+                            <h4>Book dengan AI Interview</h4>
+                            <p>Isi anamnesa otomatis dengan AI</p>
+                        </div>
+                    </a>
+
+                    <a href="#" class="quick-action">
+                        <div class="quick-action-icon" style="background: linear-gradient(135deg, #10b981, #059669); color: white;">
+                            <i class="fas fa-clipboard-list"></i>
+                        </div>
+                        <div class="quick-action-content">
+                            <h4>Lengkapi Patient Intake</h4>
+                            <p>1 form menunggu dilengkapi</p>
+                        </div>
+                    </a>
+
+                    <a href="#" class="quick-action">
+                        <div class="quick-action-icon" style="background: linear-gradient(135deg, #3b82f6, #2563eb); color: white;">
+                            <i class="fas fa-file-medical"></i>
+                        </div>
+                        <div class="quick-action-content">
+                            <h4>Lihat Rekam Medis</h4>
+                            <p>8 rekam medis tersedia</p>
+                        </div>
+                    </a>
+
+                    <a href="#" class="quick-action">
+                        <div class="quick-action-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white;">
+                            <i class="fas fa-user-edit"></i>
+                        </div>
+                        <div class="quick-action-content">
+                            <h4>Update Profile</h4>
+                            <p>Perbarui informasi pribadi</p>
+                        </div>
+                    </a>
+
+                    <a href="#" class="quick-action">
+                        <div class="quick-action-icon" style="background: linear-gradient(135deg, #ec4899, #db2777); color: white;">
+                            <i class="fas fa-phone"></i>
+                        </div>
+                        <div class="quick-action-content">
+                            <h4>Hubungi Klinik</h4>
+                            <p>Telepon atau WhatsApp</p>
+                        </div>
+                    </a>
+                </div>
+
+                <!-- AI Interview Info -->
+                <div class="card" style="margin-top: 24px; background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <h3 style="font-size: 20px; margin-bottom: 12px; font-weight: 700;">
+                            AI Interview Smart Triage
+                        </h3>
+                        <p style="opacity: 0.9; margin-bottom: 24px; line-height: 1.6;">
+                            Hemat waktu Anda! AI akan menanyakan 5 pertanyaan smart untuk membuat pre-anamnesa otomatis sebelum kunjungan.
+                        </p>
+                        <button class="btn" style="background: white; color: var(--primary); width: 100%;">
+                            <i class="fas fa-play-circle"></i> Coba Sekarang
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Add click animations
+        document.querySelectorAll('.quick-action, .appointment-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                if (!this.href || this.href === '#') {
+                    e.preventDefault();
+                    alert('Ini adalah preview UI. Dalam implementasi sebenarnya, ini akan mengarah ke halaman yang sesuai.');
+                }
+            });
+        });
+
+        // Animate stats on load
+        document.querySelectorAll('.stat-value').forEach(stat => {
+            const finalValue = parseInt(stat.textContent);
+            let currentValue = 0;
+            const increment = finalValue / 30;
+
+            const timer = setInterval(() => {
+                currentValue += increment;
+                if (currentValue >= finalValue) {
+                    stat.textContent = finalValue;
+                    clearInterval(timer);
+                } else {
+                    stat.textContent = Math.floor(currentValue);
+                }
+            }, 30);
+        });
+    </script>
+</body>
+</html>
