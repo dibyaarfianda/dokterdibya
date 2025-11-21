@@ -252,6 +252,60 @@
         </footer>
         <!-- end copyright -->
 
+	<script type="module">
+	// Import API service
+	import { apiService } from './scripts/api-service.js';
+
+	// Handle navbar login form
+	document.addEventListener('DOMContentLoaded', function() {
+		const loginForm = document.getElementById('navbar-login-form');
+		if (loginForm) {
+			loginForm.addEventListener('submit', async function(e) {
+				e.preventDefault();
+
+				const email = document.getElementById('navbar-email').value;
+				const password = document.getElementById('navbar-password').value;
+				const submitBtn = loginForm.querySelector('button[type="submit"]');
+
+				// Disable button and show loading
+				submitBtn.disabled = true;
+				submitBtn.textContent = 'Loading...';
+
+				try {
+					const response = await apiService.post('/auth/login', {
+						email,
+						password
+					});
+
+					if (response.success) {
+						// Store token and user info
+						sessionStorage.setItem('auth_token', response.data.token);
+						sessionStorage.setItem('user_id', response.data.user.id);
+						sessionStorage.setItem('user_email', email);
+						sessionStorage.setItem('user_name', response.data.user.name);
+						sessionStorage.setItem('user_type', response.data.user.user_type);
+
+						// Redirect based on user type
+						if (response.data.user.user_type === 'staff') {
+							window.location.href = '/staff/index.html';
+						} else {
+							window.location.href = '/patient-dashboard.html';
+						}
+					} else {
+						alert(response.message || 'Login failed');
+						submitBtn.disabled = false;
+						submitBtn.textContent = 'Login';
+					}
+				} catch (error) {
+					console.error('Login error:', error);
+					alert('An error occurred during login');
+					submitBtn.disabled = false;
+					submitBtn.textContent = 'Login';
+				}
+			});
+		}
+	});
+	</script>
 	<script>
 	// Debug: Log all click events on the document
 	document.addEventListener('click', function(e) {
