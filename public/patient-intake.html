@@ -918,9 +918,17 @@
                 }
             }
 
-            // Add metadata
-            data.submitted_at = new Date().toISOString();
-            data.user_agent = navigator.userAgent;
+            // Add required metadata object
+            data.metadata = {
+                submittedAt: new Date().toISOString(),
+                userAgent: navigator.userAgent,
+                deviceTimestamp: new Date().toISOString(),
+                stage: 'patient_reported'
+            };
+
+            // Ensure consent and final_ack are boolean
+            data.consent = document.getElementById('consent')?.checked || false;
+            data.final_ack = document.getElementById('final_ack')?.checked || false;
 
             console.log('Form data:', data);
 
