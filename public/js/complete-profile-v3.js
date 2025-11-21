@@ -120,8 +120,14 @@ document.addEventListener('DOMContentLoaded', function() {
             email: email
         };
 
+        console.log('=== COMPLETE PROFILE DEBUG ===');
+        console.log('Profile Data to Save:', profileData);
+
         sessionStorage.setItem('profile_data', JSON.stringify(profileData));
 
+        // Verify it was saved
+        const savedData = sessionStorage.getItem('profile_data');
+        console.log('Verified Saved Data:', savedData);
         console.log('Profile data saved to session, redirecting to set-password...');
 
         // Redirect to set-password page

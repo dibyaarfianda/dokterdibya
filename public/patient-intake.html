@@ -666,12 +666,16 @@
                     const data = await response.json();
                     const profile = data.user;
 
+                    console.log('=== PATIENT INTAKE AUTO-FILL DEBUG ===');
+                    console.log('Profile data received:', profile);
+
                     // Auto-fill available fields (check both fullname and full_name)
                     const fullName = profile.fullname || profile.full_name;
                     if (fullName && fullName !== 'New Patient') {
                         const fullNameInput = document.getElementById('full_name');
                         if (fullNameInput) {
                             fullNameInput.value = fullName;
+                            console.log('✓ Auto-filled full_name:', fullName);
                         }
                     }
 
@@ -679,6 +683,7 @@
                         const phoneInput = document.getElementById('phone');
                         if (phoneInput) {
                             phoneInput.value = profile.phone;
+                            console.log('✓ Auto-filled phone:', profile.phone);
                         }
                     }
 
@@ -687,6 +692,7 @@
                         const dobInput = document.getElementById('dob');
                         if (dobInput) {
                             dobInput.value = birthDate.toISOString().split('T')[0];
+                            console.log('✓ Auto-filled birth_date:', birthDate.toISOString().split('T')[0]);
                         }
 
                         // Auto-calculate age
@@ -694,15 +700,8 @@
                             const ageInput = document.getElementById('age');
                             if (ageInput) {
                                 ageInput.value = profile.age;
+                                console.log('✓ Auto-filled age:', profile.age);
                             }
-                        }
-                    }
-
-                    // Also auto-fill whatsapp if not set (same as phone)
-                    if (profile.phone && !profile.whatsapp) {
-                        const whatsappInput = document.getElementById('whatsapp');
-                        if (whatsappInput) {
-                            whatsappInput.value = profile.phone;
                         }
                     }
 
