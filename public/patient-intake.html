@@ -943,7 +943,16 @@
                     }, 2000);
                 } else {
                     const error = await response.json();
-                    showToast('Gagal mengirim data: ' + (error.message || 'Unknown error'));
+                    console.error('Validation errors:', error);
+
+                    // Show detailed validation errors if available
+                    if (response.status === 422 && error.errors && Array.isArray(error.errors)) {
+                        const errorList = error.errors.join('\n• ');
+                        showToast('Validasi gagal:\n• ' + errorList);
+                        console.error('Missing fields:', error.errors);
+                    } else {
+                        showToast('Gagal mengirim data: ' + (error.message || 'Unknown error'));
+                    }
                 }
             } catch (error) {
                 console.error('Submission error:', error);
