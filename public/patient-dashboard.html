@@ -917,57 +917,52 @@
             </div>
         </div>
 
-        <!-- Two Column Cards: Tentang Hamil & Tentang Kandungan -->
+        <!-- Two Column Layout: Appointments & Journey Book -->
         <div class="row" style="margin-bottom: 30px;">
-            <!-- Tentang Hamil (Left Column) -->
-            <div class="col-md-6">
-                <div class="dashboard-card" style="cursor: pointer;" onclick="window.location.href='/perjalanan-ibu.html'">
-                    <h3><i class="fa fa-female"></i> Tentang Hamil</h3>
-                    <div style="line-height: 1.8; color: #e0e0e0; font-size: 15px;">
-                        <p>Informasi dan panduan seputar kehamilan Anda.</p>
-                        <ul style="padding-left: 20px; margin-top: 15px;">
-                            <li>Pemeriksaan kehamilan rutin</li>
-                            <li>Perkembangan janin</li>
-                            <li>Nutrisi ibu hamil</li>
-                            <li>Tips kesehatan kehamilan</li>
-                        </ul>
-                        <div style="margin-top: 20px; text-align: center;">
-                            <i class="fa fa-book" style="color: var(--primary); font-size: 18px; margin-right: 8px;"></i>
-                            <span style="color: var(--primary); font-weight: 600;">Klik untuk membuka Buku Perjalanan</span>
+            <!-- Left Column: Upcoming Appointments (Smaller) -->
+            <div class="col-md-5">
+                <div class="dashboard-card" id="appointments-section">
+                    <h3><i class="fa fa-calendar-check-o"></i> Janji Temu Mendatang</h3>
+                    <div id="booking-status-container">
+                        <p class="empty-state">
+                            <i class="fa fa-calendar-o"></i>
+                            Belum ada janji temu yang dijadwalkan
+                        </p>
+                    </div>
+                    <a href="/booking-appointment.html" class="action-btn" id="booking-create-btn">
+                        <i class="fa fa-plus"></i> Buat Janji Temu
+                    </a>
+                </div>
+            </div>
+
+            <!-- Right Column: Journey Book with Image (Larger) -->
+            <div class="col-md-7">
+                <div class="dashboard-card" style="cursor: pointer; position: relative; overflow: hidden; min-height: 400px; background: linear-gradient(135deg, rgba(0, 102, 255, 0.15) 0%, rgba(255, 255, 255, 0.1) 100%);" onclick="window.location.href='/perjalanan-ibu.html'">
+                    <!-- Background Image -->
+                    <div style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; opacity: 0.3; background-image: url('/images/dokter-dibya-book/1.png'); background-size: cover; background-position: center; filter: blur(2px);"></div>
+
+                    <!-- Content Overlay -->
+                    <div style="position: relative; z-index: 1; padding: 40px; text-align: center;">
+                        <div style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 12px; padding: 30px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);">
+                            <i class="fa fa-book" style="font-size: 64px; color: var(--primary); margin-bottom: 20px; display: block;"></i>
+                            <h2 style="color: #333; font-size: 32px; font-weight: 700; margin-bottom: 10px;">Perjalanan menjadi Ibu</h2>
+                            <p style="color: #666; font-size: 14px; font-style: italic; margin-bottom: 25px;">by dokter<span style="color: var(--primary); font-weight: 600;">DIBYA</span></p>
+
+                            <!-- Preview Image -->
+                            <div style="margin: 25px 0;">
+                                <img src="/images/dokter-dibya-book/1.png" alt="Perjalanan menjadi Ibu" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);">
+                            </div>
+
+                            <div style="margin-top: 25px; padding: 15px; background: rgba(0, 102, 255, 0.1); border-radius: 8px; border-left: 4px solid var(--primary);">
+                                <p style="color: #333; font-size: 15px; line-height: 1.6; margin: 0;">
+                                    <i class="fa fa-hand-pointer-o" style="color: var(--primary); margin-right: 8px;"></i>
+                                    <strong>Klik untuk membuka</strong> buku interaktif berisi momen indah perjalanan kehamilan Anda
+                                </p>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Tentang Kandungan (Right Column) -->
-            <div class="col-md-6">
-                <div class="dashboard-card">
-                    <h3><i class="fa fa-heartbeat"></i> Tentang Kandungan</h3>
-                    <div style="line-height: 1.8; color: #e0e0e0; font-size: 15px;">
-                        <p>Informasi kesehatan reproduksi dan kandungan.</p>
-                        <ul style="padding-left: 20px; margin-top: 15px;">
-                            <li>Kesehatan organ reproduksi</li>
-                            <li>Gangguan kandungan</li>
-                            <li>Konsultasi ginekologi</li>
-                            <li>Perawatan kesehatan wanita</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Upcoming Appointments Section -->
-        <div class="dashboard-card" id="appointments-section" style="margin-bottom: 30px;">
-            <h3><i class="fa fa-calendar-check-o"></i> Janji Temu Mendatang</h3>
-            <div id="booking-status-container">
-                <p class="empty-state">
-                    <i class="fa fa-calendar-o"></i>
-                    Belum ada janji temu yang dijadwalkan
-                </p>
-            </div>
-            <a href="/booking-appointment.html" class="action-btn" id="booking-create-btn">
-                <i class="fa fa-plus"></i> Buat Janji Temu
-            </a>
         </div>
 
         <div class="row">
