@@ -278,17 +278,24 @@
 					});
 
 					if (response.success) {
-						// Store token and user info
-						sessionStorage.setItem('auth_token', response.data.token);
-						sessionStorage.setItem('user_id', response.data.user.id);
-						sessionStorage.setItem('user_email', email);
-						sessionStorage.setItem('user_name', response.data.user.name);
-						sessionStorage.setItem('user_type', response.data.user.user_type);
-
-						// Redirect based on user type
+						// Store token and user info based on user type
 						if (response.data.user.user_type === 'staff') {
+							// Staff login - use sessionStorage
+							sessionStorage.setItem('auth_token', response.data.token);
+							sessionStorage.setItem('user_id', response.data.user.id);
+							sessionStorage.setItem('user_email', email);
+							sessionStorage.setItem('user_name', response.data.user.name);
+							sessionStorage.setItem('user_type', 'staff');
 							window.location.href = '/staff/index.html';
 						} else {
+							// Patient login - use localStorage with patient_ prefix
+							localStorage.setItem('patient_token', response.data.token);
+							localStorage.setItem('patient_user', JSON.stringify({
+								id: response.data.user.id,
+								name: response.data.user.name,
+								email: response.data.user.email,
+								user_type: 'patient'
+							}));
 							window.location.href = '/patient-dashboard.html';
 						}
 					} else {
