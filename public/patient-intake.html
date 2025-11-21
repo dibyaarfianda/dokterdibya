@@ -903,11 +903,38 @@
                 return;
             }
 
+            // Additional validation for consent checkboxes
+            const consentCheckbox = document.getElementById('consent');
+            const finalAckCheckbox = document.getElementById('final_ack');
+
+            if (!consentCheckbox || !consentCheckbox.checked) {
+                showToast('Mohon centang persetujuan untuk melanjutkan');
+                consentCheckbox?.focus();
+                return;
+            }
+
+            if (!finalAckCheckbox || !finalAckCheckbox.checked) {
+                showToast('Mohon centang konfirmasi akhir untuk melanjutkan');
+                finalAckCheckbox?.focus();
+                return;
+            }
+
             // Collect form data
             const formData = new FormData(form);
             const data = {};
 
+            // First, handle checkboxes explicitly before processing FormData
+            // This ensures checkbox values are captured even if unchecked
+            const consentCheckbox = document.getElementById('consent');
+            const finalAckCheckbox = document.getElementById('final_ack');
+
+            // Process FormData entries
             for (let [key, value] of formData.entries()) {
+                // Skip consent and final_ack from FormData, we'll handle them separately
+                if (key === 'consent' || key === 'final_ack') {
+                    continue;
+                }
+
                 if (data[key]) {
                     if (!Array.isArray(data[key])) {
                         data[key] = [data[key]];
@@ -918,6 +945,16 @@
                 }
             }
 
+            // Explicitly set checkbox values as booleans
+            data.consent = consentCheckbox ? consentCheckbox.checked : false;
+            data.final_ack = finalAckCheckbox ? finalAckCheckbox.checked : false;
+
+            // Ensure patient_signature is included
+            const signatureField = document.getElementById('patient_signature');
+            if (signatureField) {
+                data.patient_signature = signatureField.value;
+            }
+
             // Add required metadata object
             data.metadata = {
                 submittedAt: new Date().toISOString(),
@@ -926,18 +963,30 @@
                 stage: 'patient_reported'
             };
 
-            // Ensure consent and final_ack are boolean
-            data.consent = document.getElementById('consent')?.checked || false;
-            data.final_ack = document.getElementById('final_ack')?.checked || false;
+            // Debug logging
+            console.log('Checkbox states:', {
+                consent: consentCheckbox ? consentCheckbox.checked : 'element not found',
+                final_ack: finalAckCheckbox ? finalAckCheckbox.checked : 'element not found'
+            });
+            console.log('Full form data:', data);
+            console.log('Metadata:', data.metadata);
 
-            console.log('Form data:', data);
+            // Get patient token if available
+            const token = localStorage.getItem('patient_token');
 
             try {
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+
+                // Add authorization header if token exists
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
                 const response = await fetch('/api/patient-intake', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: headers,
                     body: JSON.stringify(data)
                 });
 
