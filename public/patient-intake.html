@@ -9,37 +9,57 @@
     <title>Identitas Pribadi</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            color-scheme: light;
-            --bg: #f8fafc;
-            --card: #ffffff;
-            --primary: #2563eb;
-            --primary-dark: #1d4ed8;
-            --border: #e2e8f0;
-            --text: #0f172a;
-            --muted: #64748b;
-            --success: #16a34a;
-            --danger: #dc2626;
+            color-scheme: dark;
+            --primary: #0066FF;
+            --primary-dark: #0052CC;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg-gradient: linear-gradient(135deg, #1a1a1a 0%, #303030 100%);
         }
         * { box-sizing: border-box; }
         body {
             margin: 0;
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background: var(--bg);
-            color: var(--text);
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-gradient);
+            color: #ffffff;
+            position: relative;
+        }
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+        }
+        .bubble {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-100px) rotate(180deg); }
         }
         .intake-shell {
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            position: relative;
+            z-index: 1;
         }
         header {
             padding: 1rem 1.25rem;
-            background: var(--card);
-            border-bottom: 1px solid var(--border);
-            box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
             position: sticky;
             top: 0;
             z-index: 10;
@@ -48,11 +68,12 @@
             margin: 0 0 0.25rem;
             font-size: 1.25rem;
             font-weight: 600;
+            color: #ffffff;
         }
         header p {
             margin: 0;
             font-size: 0.875rem;
-            color: var(--muted);
+            color: rgba(255, 255, 255, 0.7);
         }
         .stepper {
             display: grid;
@@ -65,14 +86,14 @@
             text-align: center;
             padding: 0.5rem;
             border-radius: 0.75rem;
-            border: 1px solid var(--border);
-            background: #f1f5f9;
-            color: var(--muted);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.6);
             transition: all 0.2s ease;
         }
         .stepper span.active {
-            background: var(--primary);
-            color: #fff;
+            background: linear-gradient(135deg, #0066FF 0%, #0052CC 100%);
+            color: #ffffff;
             border-color: var(--primary);
             font-weight: 600;
         }
@@ -81,11 +102,13 @@
             padding: 1.5rem 1rem 5rem;
         }
         .card {
-            background: var(--card);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             border-radius: 1rem;
             padding: 1.25rem;
-            box-shadow: 0 10px 40px rgba(15, 23, 42, 0.08);
-            border: 1px solid rgba(148, 163, 184, 0.2);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             max-width: 880px;
             margin: 0 auto;
         }
@@ -100,6 +123,7 @@
             font-size: 1.1rem;
             font-weight: 600;
             margin: 0 0 0.75rem;
+            color: #ffffff;
         }
         .field-grid {
             display: grid;
@@ -119,6 +143,7 @@
         label {
             font-size: 0.9rem;
             font-weight: 500;
+            color: #ffffff;
         }
         input[type="text"],
         input[type="date"],
@@ -128,10 +153,20 @@
         textarea {
             padding: 0.65rem 0.75rem;
             border-radius: 0.75rem;
-            border: 1px solid var(--border);
-            background: #fcfdff;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
             font-size: 0.95rem;
-            transition: border 0.2s ease, box-shadow 0.2s ease;
+            transition: all 0.3s ease;
+            font-family: 'Poppins', sans-serif;
+        }
+        input::placeholder,
+        textarea::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        select option {
+            background: #1a1a1a;
+            color: #ffffff;
         }
         textarea { resize: vertical; min-height: 90px; }
         input:focus,
@@ -139,7 +174,8 @@
         textarea:focus {
             border-color: var(--primary);
             outline: none;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+            background: rgba(255, 255, 255, 0.1);
+            box-shadow: 0 0 0 4px rgba(0, 102, 255, 0.2);
         }
         .checkbox-list {
             display: grid;
@@ -150,21 +186,28 @@
             gap: 0.6rem;
             align-items: flex-start;
             font-size: 0.9rem;
+            color: #ffffff;
         }
         .checkbox-item input { margin-top: 0.2rem; }
+        .checkbox-item span {
+            color: #ffffff;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
-            border: 1px solid var(--border);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 0.75rem;
             overflow: hidden;
             font-size: 0.9rem;
         }
-        thead { background: #f8fafc; }
+        thead {
+            background: rgba(255, 255, 255, 0.1);
+        }
         th, td {
-            border: 1px solid var(--border);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             padding: 0.55rem;
             text-align: left;
+            color: #ffffff;
         }
         th { font-weight: 600; }
         td input,
@@ -177,7 +220,7 @@
         }
         .table-note {
             font-size: 0.8rem;
-            color: var(--muted);
+            color: rgba(255, 255, 255, 0.7);
             margin-top: 0.4rem;
         }
         .buttons {
@@ -202,79 +245,95 @@
             box-shadow: none;
         }
         .btn-secondary {
-            background: #e2e8f0;
-            color: var(--text);
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
         .btn-primary {
-            background: var(--primary);
-            color: #fff;
+            background: linear-gradient(135deg, #0066FF 0%, #0052CC 100%);
+            color: #ffffff;
         }
-        .btn-primary:hover { background: var(--primary-dark); }
-        .btn-secondary:hover { background: #cbd5f5; }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 102, 255, 0.4);
+        }
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
         .btn-primary:not(:disabled),
         .btn-secondary:not(:disabled) {
-            box-shadow: 0 10px 30px rgba(37, 99, 235, 0.15);
+            box-shadow: 0 10px 30px rgba(0, 102, 255, 0.15);
         }
         .summary {
-            background: rgba(37, 99, 235, 0.05);
+            background: rgba(0, 102, 255, 0.1);
             border-radius: 0.75rem;
             padding: 0.75rem 1rem;
             margin-top: 1rem;
             font-size: 0.85rem;
+            color: #ffffff;
+            border: 1px solid rgba(0, 102, 255, 0.3);
         }
         .toast {
             position: fixed;
             bottom: 1.25rem;
             left: 50%;
             transform: translateX(-50%);
-            background: var(--card);
-            border: 1px solid var(--border);
-            box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15);
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
             border-radius: 0.75rem;
             padding: 0.85rem 1.1rem;
             display: none;
             z-index: 50;
             font-size: 0.9rem;
+            color: #ffffff;
         }
         .toast.show { display: block; }
         .tag {
             display: inline-flex;
             align-items: center;
             gap: 0.4rem;
-            background: #eef2ff;
-            color: var(--primary-dark);
+            background: rgba(0, 102, 255, 0.2);
+            color: #ffffff;
             padding: 0.35rem 0.65rem;
             border-radius: 999px;
             font-size: 0.75rem;
             font-weight: 500;
+            border: 1px solid rgba(0, 102, 255, 0.4);
         }
         .step-description {
             margin: 0 0 1rem;
-            color: var(--muted);
+            color: rgba(255, 255, 255, 0.7);
             font-size: 0.9rem;
         }
         .field-hint {
             margin: 0.35rem 0 0;
             font-size: 0.8rem;
-            color: var(--muted);
+            color: rgba(255, 255, 255, 0.7);
         }
         .alert {
             border-radius: 0.75rem;
             padding: 0.85rem;
-            border: 1px solid rgba(37, 99, 235, 0.2);
-            background: rgba(37, 99, 235, 0.05);
+            border: 1px solid rgba(0, 102, 255, 0.3);
+            background: rgba(0, 102, 255, 0.1);
             font-size: 0.85rem;
+            color: #ffffff;
         }
         .divider {
             height: 1px;
-            background: var(--border);
+            background: rgba(255, 255, 255, 0.2);
             margin: 0.75rem 0 1.2rem;
         }
         footer {
             padding: 1rem;
             text-align: center;
             font-size: 0.78rem;
-            color: var(--muted);
+            color: rgba(255, 255, 255, 0.7);
+        }
+        small {
+            color: rgba(255, 255, 255, 0.7);
         }
         @media (max-width: 640px) {
             header h1 { font-size: 1.05rem; }
@@ -315,6 +374,7 @@
     </script>
 </head>
 <body>
+    <div class="bg-animation" id="bgAnimation"></div>
     <div class="intake-shell">
         <header>
             <h1 id="form-title">Form Riwayat Antenatal</h1>
@@ -814,6 +874,25 @@
         // Initialize
         initStepper();
         showStep(0);
+
+        // Create animated bubbles
+        function createBubbles() {
+            const bg = document.getElementById('bgAnimation');
+            for (let i = 0; i < 10; i++) {
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+                const size = Math.random() * 100 + 50;
+                bubble.style.width = size + 'px';
+                bubble.style.height = size + 'px';
+                bubble.style.left = Math.random() * 100 + '%';
+                bubble.style.top = Math.random() * 100 + '%';
+                bubble.style.animationDelay = Math.random() * 5 + 's';
+                bg.appendChild(bubble);
+            }
+        }
+
+        // Initialize bubbles on load
+        createBubbles();
     </script>
 </body>
 </html>
