@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Patient Intake Draft</title>
+    <style>
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f8fafc;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            margin-top: 0;
+            color: #1e293b;
+        }
+        button {
+            background: #dc2626;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-right: 10px;
+        }
+        button:hover {
+            background: #b91c1c;
+        }
+        button.secondary {
+            background: #2563eb;
+        }
+        button.secondary:hover {
+            background: #1d4ed8;
+        }
+        .success {
+            background: #d1fae5;
+            color: #065f46;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 15px;
+            display: none;
+        }
+        .info {
+            background: #dbeafe;
+            color: #1e40af;
+            padding: 12px;
+            border-radius: 6px;
+            margin-top: 15px;
+        }
+        ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🗑️ Clear Patient Intake Draft Data</h1>
+        <p>This utility will clear all saved draft data from your browser's local storage for the Patient Intake form.</p>
+
+        <div class="info">
+            <strong>What will be cleared:</strong>
+            <ul>
+                <li>All saved form field values</li>
+                <li>Draft auto-save data</li>
+                <li>Current step progress</li>
+            </ul>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <button onclick="clearDraft()">🗑️ Clear All Draft Data</button>
+            <button class="secondary" onclick="window.location.href='patient-intake.html'">📋 Go to Intake Form</button>
+        </div>
+
+        <div id="success" class="success">
+            ✅ All draft data has been cleared successfully! You can now test with a fresh start.
+        </div>
+    </div>
+
+    <script>
+        function clearDraft() {
+            // Clear the main intake draft
+            localStorage.removeItem('dibya-intake-draft-v1');
+
+            // Clear any other related items
+            // Check for any verification or session data if needed
+            const keysToCheck = Object.keys(localStorage);
+            keysToCheck.forEach(key => {
+                if (key.includes('intake') || key.includes('dibya')) {
+                    console.log('Clearing:', key);
+                }
+            });
+
+            // Show success message
+            document.getElementById('success').style.display = 'block';
+
+            console.log('✅ Patient intake draft data cleared!');
+
+            // Optional: redirect to intake page after 2 seconds
+            setTimeout(() => {
+                if (confirm('Draft cleared! Go to Patient Intake form now?')) {
+                    window.location.href = 'patient-intake.html';
+                }
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

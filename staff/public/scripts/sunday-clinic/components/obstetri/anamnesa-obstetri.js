@@ -41,13 +41,15 @@ export default {
      */
     renderChiefComplaint(intake) {
         return `
-            <h6 class="font-weight-bold text-primary mt-3">KELUHAN UTAMA</h6>
+            <h6 class="font-weight-bold text-primary mt-4 mb-3">
+                <i class="fas fa-stethoscope"></i> KELUHAN UTAMA
+            </h6>
             <div class="form-group">
-                <label>Keluhan saat ini:</label>
+                <label class="font-weight-semibold">Keluhan saat ini</label>
                 <textarea class="form-control" name="chief_complaint" rows="3"
                           placeholder="Keluhan yang dirasakan pasien...">${intake.chief_complaint || intake.keluhan_utama || ''}</textarea>
             </div>
-            <hr>
+            <hr class="my-4">
         `;
     },
 
@@ -61,47 +63,72 @@ export default {
         const ga = metadata.gestationalAge || this.calculateGA(lmp);
 
         return `
-            <h6 class="font-weight-bold text-primary mt-3">KEHAMILAN SAAT INI</h6>
+            <h6 class="font-weight-bold text-primary mt-4 mb-3">
+                <i class="fas fa-baby"></i> KEHAMILAN SAAT INI
+            </h6>
+
+            <!-- LMP, EDD, and GA in one clean row -->
             <div class="row">
                 <div class="col-md-4">
                     <div class="form-group">
-                        <label>HPHT (Hari Pertama Haid Terakhir):</label>
-                        <input type="date" class="form-control" name="lmp_date" value="${lmp || ''}">
+                        <label class="font-weight-bold">
+                            <i class="fas fa-calendar-alt text-danger"></i> HPHT (Tanggal Haid Terakhir)
+                        </label>
+                        <input type="date" class="form-control form-control-lg"
+                               id="lmp_date" name="lmp_date" value="${lmp || ''}"
+                               style="border: 2px solid #007bff;">
+                        <small class="form-text text-muted">Pilih tanggal untuk menghitung HPL dan usia kehamilan</small>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="form-group">
-                        <label>HPL (Hari Perkiraan Lahir):</label>
-                        <input type="date" class="form-control" name="edd_date" value="${eddValue || ''}" readonly>
-                        <small class="text-muted">Dihitung otomatis dari HPHT</small>
+                        <label class="font-weight-bold">
+                            <i class="fas fa-calendar-check text-success"></i> HPL (Hari Perkiraan Lahir)
+                        </label>
+                        <input type="text" class="form-control form-control-lg bg-light"
+                               id="edd_date" name="edd_date" value="${eddValue || ''}" readonly
+                               placeholder="Otomatis dari HPHT"
+                               style="border: 2px solid #28a745; font-weight: bold;">
+                        <small class="form-text text-success">
+                            <i class="fas fa-info-circle"></i> Dihitung otomatis: HPHT + 280 hari
+                        </small>
                     </div>
                 </div>
                 <div class="col-md-4">
                     <div class="form-group">
-                        <label>Usia Kehamilan:</label>
-                        <div class="input-group">
-                            <input type="number" class="form-control" name="ga_weeks"
-                                   value="${ga?.weeks || ''}" placeholder="Minggu" readonly>
+                        <label class="font-weight-bold">
+                            <i class="fas fa-hourglass-half text-info"></i> Usia Kehamilan (GA)
+                        </label>
+                        <div class="input-group input-group-lg">
+                            <input type="text" class="form-control bg-light text-center"
+                                   id="ga_weeks" name="ga_weeks"
+                                   value="${ga?.weeks || ''}" placeholder="--" readonly
+                                   style="border: 2px solid #17a2b8; font-weight: bold; font-size: 1.5rem;">
                             <div class="input-group-append input-group-prepend">
-                                <span class="input-group-text">minggu</span>
+                                <span class="input-group-text bg-info text-white">minggu</span>
                             </div>
-                            <input type="number" class="form-control" name="ga_days"
-                                   value="${ga?.days || ''}" placeholder="Hari" readonly>
+                            <input type="text" class="form-control bg-light text-center"
+                                   id="ga_days" name="ga_days"
+                                   value="${ga?.days || ''}" placeholder="--" readonly
+                                   style="border: 2px solid #17a2b8; font-weight: bold; font-size: 1.5rem;">
                             <div class="input-group-append">
-                                <span class="input-group-text">hari</span>
+                                <span class="input-group-text bg-info text-white">hari</span>
                             </div>
                         </div>
-                        <small class="text-muted">Dihitung dari HPHT</small>
+                        <small class="form-text text-info">
+                            <i class="fas fa-info-circle"></i> Dihitung otomatis dari HPHT
+                        </small>
                     </div>
                 </div>
             </div>
 
-            <div class="row">
+            <!-- Physical measurements -->
+            <div class="row mt-3">
                 <div class="col-md-3">
                     <div class="form-group">
-                        <label>Tinggi Badan:</label>
+                        <label>Tinggi Badan</label>
                         <div class="input-group">
-                            <input type="number" class="form-control" name="height"
+                            <input type="number" class="form-control" id="height" name="height"
                                    value="${intake.height || ''}" step="0.1" placeholder="0.0">
                             <div class="input-group-append">
                                 <span class="input-group-text">cm</span>
@@ -111,9 +138,9 @@ export default {
                 </div>
                 <div class="col-md-3">
                     <div class="form-group">
-                        <label>Berat Badan Sekarang:</label>
+                        <label>Berat Badan Sekarang</label>
                         <div class="input-group">
-                            <input type="number" class="form-control" name="current_weight"
+                            <input type="number" class="form-control" id="current_weight" name="current_weight"
                                    value="${intake.current_weight || intake.weight || ''}" step="0.1" placeholder="0.0">
                             <div class="input-group-append">
                                 <span class="input-group-text">kg</span>
@@ -123,7 +150,7 @@ export default {
                 </div>
                 <div class="col-md-3">
                     <div class="form-group">
-                        <label>BB Sebelum Hamil:</label>
+                        <label>BB Sebelum Hamil</label>
                         <div class="input-group">
                             <input type="number" class="form-control" name="pre_pregnancy_weight"
                                    value="${intake.pre_pregnancy_weight || ''}" step="0.1" placeholder="0.0">
@@ -135,13 +162,13 @@ export default {
                 </div>
                 <div class="col-md-3">
                     <div class="form-group">
-                        <label>BMI:</label>
+                        <label>BMI</label>
                         <div class="input-group">
-                            <input type="number" class="form-control" name="bmi"
+                            <input type="number" class="form-control bg-light" name="bmi"
                                    value="${metadata.bmiValue || intake.bmi || ''}" step="0.1" readonly>
                             <div class="input-group-append">
-                                <button class="btn btn-outline-secondary" type="button" onclick="calculateBMI()">
-                                    <i class="fas fa-calculator"></i>
+                                <button class="btn btn-outline-primary" type="button" onclick="calculateBMI()">
+                                    <i class="fas fa-calculator"></i> Hitung
                                 </button>
                             </div>
                         </div>
@@ -149,10 +176,11 @@ export default {
                 </div>
             </div>
 
+            <!-- ANC visits -->
             <div class="row">
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label>Jumlah Kunjungan ANC:</label>
+                        <label>Jumlah Kunjungan ANC</label>
                         <input type="number" class="form-control" name="anc_visits"
                                value="${intake.anc_visits || intake.anc_visit_count || ''}"
                                placeholder="Berapa kali kontrol">
@@ -160,7 +188,7 @@ export default {
                 </div>
                 <div class="col-md-6">
                     <div class="form-group">
-                        <label>Kunjungan ANC terakhir:</label>
+                        <label>Kunjungan ANC Terakhir</label>
                         <input type="date" class="form-control" name="last_anc_date"
                                value="${intake.last_anc_date || ''}">
                     </div>
@@ -168,13 +196,15 @@ export default {
             </div>
 
             <div class="form-group">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="prenatal_vitamins"
+                <div class="custom-control custom-checkbox">
+                    <input class="custom-control-input" type="checkbox" id="prenatal_vitamins" name="prenatal_vitamins"
                            ${intake.prenatal_vitamins || intake.taking_vitamins ? 'checked' : ''}>
-                    <label class="form-check-label">Mengonsumsi vitamin prenatal</label>
+                    <label class="custom-control-label" for="prenatal_vitamins">
+                        <i class="fas fa-pills text-success"></i> Mengonsumsi vitamin prenatal
+                    </label>
                 </div>
             </div>
-            <hr>
+            <hr class="my-4">
         `;
     },
 
@@ -191,7 +221,9 @@ export default {
         const previousPregnancies = intake.previousPregnancies || intake.previous_pregnancies || intake.pregnancy_history || [];
 
         return `
-            <h6 class="font-weight-bold text-primary mt-3">RIWAYAT OBSTETRI</h6>
+            <h6 class="font-weight-bold text-primary mt-4 mb-3">
+                <i class="fas fa-history"></i> RIWAYAT OBSTETRI
+            </h6>
             <div class="row">
                 <div class="col-md-3">
                     <div class="form-group">
@@ -232,7 +264,7 @@ export default {
                     <i class="fas fa-plus"></i> Tambah Riwayat Kehamilan
                 </button>
             </div>
-            <hr>
+            <hr class="my-4">
         `;
     },
 
@@ -305,7 +337,9 @@ export default {
         const isHighRisk = metadata.highRisk || false;
 
         return `
-            <h6 class="font-weight-bold text-primary mt-3">FAKTOR RISIKO</h6>
+            <h6 class="font-weight-bold text-primary mt-4 mb-3">
+                <i class="fas fa-exclamation-triangle"></i> FAKTOR RISIKO
+            </h6>
 
             ${isHighRisk ? `
                 <div class="alert alert-danger">
@@ -348,7 +382,7 @@ export default {
                 <textarea class="form-control" name="risk_notes" rows="2"
                           placeholder="Faktor risiko lain yang perlu diperhatikan...">${intake.risk_notes || ''}</textarea>
             </div>
-            <hr>
+            <hr class="my-4">
         `;
     },
 
@@ -360,7 +394,9 @@ export default {
         const familyHistory = intake.family_history || [];
 
         return `
-            <h6 class="font-weight-bold text-primary mt-3">RIWAYAT MEDIS UMUM</h6>
+            <h6 class="font-weight-bold text-primary mt-4 mb-3">
+                <i class="fas fa-notes-medical"></i> RIWAYAT MEDIS UMUM
+            </h6>
 
             <div class="row">
                 <div class="col-md-6">
@@ -445,7 +481,7 @@ export default {
                 <textarea class="form-control" name="family_history_detail" rows="2"
                           placeholder="Jelaskan riwayat penyakit keluarga...">${intake.family_history_detail || ''}</textarea>
             </div>
-            <hr>
+            <hr class="my-4">
         `;
     },
 
@@ -456,7 +492,9 @@ export default {
         const medications = intake.medications || [];
 
         return `
-            <h6 class="font-weight-bold text-primary mt-3">OBAT YANG SEDANG DIKONSUMSI</h6>
+            <h6 class="font-weight-bold text-primary mt-4 mb-3">
+                <i class="fas fa-pills"></i> OBAT YANG SEDANG DIKONSUMSI
+            </h6>
             <div id="medications-list">
                 ${this.renderMedicationsList(medications)}
             </div>
@@ -625,25 +663,85 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Calculate EDD from LMP
-    document.querySelector('[name="lmp_date"]')?.addEventListener('change', (e) => {
-        const lmp = new Date(e.target.value);
-        if (!isNaN(lmp)) {
-            const edd = new Date(lmp);
-            edd.setDate(edd.getDate() + 280); // 40 weeks
-            document.querySelector('[name="edd_date"]').value = edd.toISOString().split('T')[0];
+    // Calculate EDD and GA from LMP - with Indonesian date formatting
+    const lmpInput = document.querySelector('#lmp_date');
+    const eddInput = document.querySelector('#edd_date');
+    const gaWeeksInput = document.querySelector('#ga_weeks');
+    const gaDaysInput = document.querySelector('#ga_days');
 
-            // Calculate GA
-            const today = new Date();
-            const diffMs = today - lmp;
-            const totalDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
-            const weeks = Math.floor(totalDays / 7);
-            const days = totalDays % 7;
-
-            document.querySelector('[name="ga_weeks"]').value = weeks;
-            document.querySelector('[name="ga_days"]').value = days;
+    if (lmpInput) {
+        // Function to format date in Indonesian style
+        function formatIndonesianDate(date) {
+            const months = [
+                'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+            ];
+            const day = date.getDate();
+            const month = months[date.getMonth()];
+            const year = date.getFullYear();
+            return `${day} ${month} ${year}`;
         }
-    });
+
+        // Calculate EDD and GA when LMP changes
+        lmpInput.addEventListener('change', function(e) {
+            const lmpValue = e.target.value;
+            if (!lmpValue) {
+                // Clear fields if LMP is cleared
+                eddInput.value = '';
+                gaWeeksInput.value = '';
+                gaDaysInput.value = '';
+                return;
+            }
+
+            const lmpDate = new Date(lmpValue);
+            if (isNaN(lmpDate.getTime())) {
+                alert('Tanggal HPHT tidak valid');
+                return;
+            }
+
+            // Calculate EDD using Naegele's Rule: LMP + 280 days (40 weeks)
+            const eddDate = new Date(lmpDate);
+            eddDate.setDate(eddDate.getDate() + 280);
+
+            // Format EDD in Indonesian style
+            eddInput.value = formatIndonesianDate(eddDate);
+
+            // Calculate current GA (Gestational Age)
+            const today = new Date();
+            today.setHours(0, 0, 0, 0); // Reset time for accurate day calculation
+
+            const diffMs = today - lmpDate;
+            if (diffMs < 0) {
+                // LMP is in the future
+                gaWeeksInput.value = '0';
+                gaDaysInput.value = '0';
+                alert('Perhatian: HPHT yang dipilih adalah tanggal yang akan datang.');
+            } else {
+                const totalDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+                const weeks = Math.floor(totalDays / 7);
+                const days = totalDays % 7;
+
+                gaWeeksInput.value = weeks;
+                gaDaysInput.value = days;
+
+                // Visual feedback for different trimesters
+                if (weeks < 13) {
+                    gaWeeksInput.style.color = '#17a2b8'; // Info blue for 1st trimester
+                } else if (weeks < 27) {
+                    gaWeeksInput.style.color = '#28a745'; // Green for 2nd trimester
+                } else if (weeks < 42) {
+                    gaWeeksInput.style.color = '#ffc107'; // Yellow for 3rd trimester
+                } else {
+                    gaWeeksInput.style.color = '#dc3545'; // Red for post-term
+                }
+            }
+        });
+
+        // Trigger calculation on page load if LMP already has a value
+        if (lmpInput.value) {
+            lmpInput.dispatchEvent(new Event('change'));
+        }
+    }
 
     // Dynamic list handlers
     window.addPreviousPregnancy = function() {

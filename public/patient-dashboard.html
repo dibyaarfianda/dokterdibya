@@ -892,14 +892,14 @@
                         <!-- Old Password (only for change password) -->
                         <div class="form-group" id="old-password-group" style="display: none;">
                             <label style="color: #28a7e9;">Password Lama *</label>
-                            <input type="password" class="form-control" id="old-password" 
+                            <input type="password" class="form-control" id="old-password" name="current_password" autocomplete="current-password" 
                                    style="background: #303030; border: 1px solid #404040; color: #ffffff;">
                         </div>
                         
                         <!-- New Password -->
                         <div class="form-group">
                             <label style="color: #28a7e9;"><span id="new-pass-label">Password</span> *</label>
-                            <input type="password" class="form-control" id="new-password" required
+                            <input type="password" class="form-control" id="new-password" name="new_password" autocomplete="new-password" required
                                    placeholder="Minimal 6 karakter"
                                    style="background: #303030; border: 1px solid #404040; color: #ffffff;">
                             <small style="color: #999;">Minimal 6 karakter</small>
@@ -908,7 +908,7 @@
                         <!-- Confirm Password -->
                         <div class="form-group">
                             <label style="color: #28a7e9;">Konfirmasi Password *</label>
-                            <input type="password" class="form-control" id="confirm-password" required
+                            <input type="password" class="form-control" id="confirm-password" name="confirm_password" autocomplete="new-password" required
                                    placeholder="Ulangi password"
                                    style="background: #303030; border: 1px solid #404040; color: #ffffff;">
                         </div>
