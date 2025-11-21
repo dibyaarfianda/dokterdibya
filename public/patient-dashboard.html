@@ -421,13 +421,80 @@
             line-height: 1.4;
         }
 
+        /* Ultrasound Gallery */
+        #ultrasound-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .ultrasound-item {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            aspect-ratio: 1;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .ultrasound-item:hover {
+            transform: scale(1.05);
+            border-color: #28a7e9;
+        }
+
+        .ultrasound-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .ultrasound-item .overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            padding: 10px;
+            color: #ffffff;
+            font-size: 12px;
+        }
+
+        .ultrasound-item .delete-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(239, 68, 68, 0.9);
+            color: #ffffff;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .ultrasound-item:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .ultrasound-item .delete-btn:hover {
+            background: rgba(239, 68, 68, 1);
+        }
+
         /* Profile Info */
         .profile-info {
             list-style: none;
             padding: 0;
             margin: 0;
         }
-        
+
         .profile-info li {
             padding: 12px 0;
             border-bottom: 1px solid #404040;
@@ -435,16 +502,16 @@
             justify-content: space-between;
             align-items: center;
         }
-        
+
         .profile-info li:last-child {
             border-bottom: none;
         }
-        
+
         .profile-info strong {
             color: #28a7e9;
             font-weight: 500;
         }
-        
+
         .profile-info span {
             color: #cccccc;
             text-align: right;
@@ -548,6 +615,7 @@
         }
 
         .user-avatar-nav {
+            position: relative;
             display: flex;
             align-items: center;
             gap: 12px;
@@ -593,6 +661,73 @@
             color: rgba(255, 255, 255, 0.6);
             font-size: 12px;
             line-height: 1.2;
+        }
+
+        /* Dropdown Menu */
+        .dropdown-menu-custom {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            background: rgba(30, 30, 30, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            min-width: 200px;
+            padding: 8px 0;
+            z-index: 1000;
+            display: none;
+            animation: slideDown 0.2s ease-out;
+        }
+
+        .dropdown-menu-custom.show {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dropdown-menu-custom a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            color: #ffffff;
+            text-decoration: none;
+            transition: background 0.2s;
+            font-size: 14px;
+        }
+
+        .dropdown-menu-custom a:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #28a7e9;
+        }
+
+        .dropdown-menu-custom a i {
+            width: 18px;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .dropdown-menu-custom a.logout {
+            color: #ef4444;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 4px;
+        }
+
+        .dropdown-menu-custom a.logout:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
         }
         
         /* Responsive */
@@ -698,13 +833,22 @@
         <div class="container">
             <div class="nav-links">
                 <a href="patient-visit-history.html"><i class="fa fa-history"></i> Riwayat Visit</a>
-                <a href="#" id="logout-link"><i class="fa fa-sign-out"></i> Keluar</a>
             </div>
-            <div class="user-avatar-nav" onclick="scrollToSection('profile-section')">
+            <div class="user-avatar-nav" onclick="toggleDropdown(event)">
                 <div class="avatar-circle" id="user-avatar">P</div>
                 <div class="user-info-nav">
                     <div class="user-name" id="user-name-nav">Pasien</div>
                     <div class="user-role">Pasien</div>
+                </div>
+                <div class="dropdown-menu-custom" id="user-dropdown">
+                    <a href="#" onclick="openProfileViewModal(event)">
+                        <i class="fa fa-cog"></i>
+                        <span>Setting</span>
+                    </a>
+                    <a href="#" onclick="logout(event)" class="logout">
+                        <i class="fa fa-sign-out"></i>
+                        <span>Log out</span>
+                    </a>
                 </div>
             </div>
         </div>
@@ -817,74 +961,21 @@
         </div>
 
         <div class="row">
-            <!-- Profile Info -->
-            <div class="col-md-6">
-                <div class="dashboard-card" id="profile-section">
-                    <h3><i class="fa fa-user"></i> Informasi Profil</h3>
-
-                    <!-- Profile Picture -->
-                    <div style="text-align: center; margin-bottom: 20px;">
-                        <div style="position: relative; display: inline-block;">
-                            <img id="profile-picture"
-                                 src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect width='120' height='120' fill='%23404040'/%3E%3Ctext x='50%25' y='50%25' font-size='48' fill='%2328a7e9' text-anchor='middle' dy='.3em'%3E👤%3C/text%3E%3C/svg%3E"
-                                 alt="Profile Picture"
-                                 style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #28a7e9;">
-                        </div>
-                    </div>
-
-                    <ul class="profile-info">
-                        <li>
-                            <strong>Nama Lengkap</strong>
-                            <span id="profile-name">-</span>
-                        </li>
-                        <li>
-                            <strong>Email</strong>
-                            <span id="profile-email">-</span>
-                        </li>
-                        <li>
-                            <strong>Nomor Telepon</strong>
-                            <span id="profile-phone">-</span>
-                        </li>
-                        <li>
-                            <strong>Tanggal Lahir</strong>
-                            <span id="profile-birthdate">-</span>
-                        </li>
-                        <li>
-                            <strong>Terdaftar Sejak</strong>
-                            <span id="profile-registered">-</span>
-                        </li>
-                    </ul>
-                    <div style="margin-top: 15px;">
-                        <button class="action-btn action-btn-secondary" onclick="openProfileModal()" style="margin-right: 10px;">
-                            <i class="fa fa-edit"></i> Edit Profil
-                        </button>
-                        <button class="action-btn action-btn-primary" onclick="openPasswordModal()" id="password-btn">
-                            <i class="fa fa-lock"></i> <span id="password-btn-text">Set Password</span>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Medical Records -->
-            <div class="col-md-6">
+            <!-- Ultrasound Gallery -->
+            <div class="col-md-12">
                 <div class="dashboard-card">
-                    <h3><i class="fa fa-file-text-o"></i> Rekam Medis</h3>
-                    <p class="empty-state">
-                        <i class="fa fa-folder-open-o"></i>
-                        Belum ada rekam medis
-                    </p>
-                    <a href="/patient-intake.html" class="action-btn">
-                        <i class="fa fa-file-text"></i> Formulir Rekam Medis Awal
-                    </a>
+                    <h3><i class="fa fa-picture-o"></i> Galeri Ultrasound</h3>
+                    <div id="ultrasound-gallery">
+                        <p class="empty-state">
+                            <i class="fa fa-image"></i>
+                            Belum ada foto USG
+                        </p>
+                    </div>
+                    <button class="action-btn" onclick="openUploadUltrasoundModal()" style="margin-top: 15px;">
+                        <i class="fa fa-upload"></i> Upload Foto USG
+                    </button>
                 </div>
             </div>
-        </div>
-
-        <!-- Logout Button -->
-        <div style="text-align: center; margin-top: 40px; margin-bottom: 50px;">
-            <button class="action-btn logout-btn" id="logout-btn">
-                <i class="fa fa-sign-out"></i> Keluar dari Akun
-            </button>
         </div>
     </div>
 
@@ -1013,6 +1104,106 @@
         </div>
     </div>
 
+    <!-- Profile View Modal (Settings) -->
+    <div class="modal fade" id="profileViewModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); color: #ffffff; border: 1px solid rgba(255,255,255,0.2);">
+                <div class="modal-header" style="border-bottom: 1px solid #404040;">
+                    <button type="button" class="close" data-dismiss="modal" style="color: #ffffff; opacity: 0.8;">&times;</button>
+                    <h4 class="modal-title" style="color: #28a7e9;"><i class="fa fa-cog"></i> Setting</h4>
+                </div>
+                <div class="modal-body" id="profile-section">
+                    <!-- Profile Picture -->
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <div style="position: relative; display: inline-block;">
+                            <img id="profile-picture"
+                                 src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect width='120' height='120' fill='%23404040'/%3E%3Ctext x='50%25' y='50%25' font-size='48' fill='%2328a7e9' text-anchor='middle' dy='.3em'%3E👤%3C/text%3E%3C/svg%3E"
+                                 alt="Profile Picture"
+                                 style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #28a7e9;">
+                        </div>
+                    </div>
+
+                    <ul class="profile-info">
+                        <li>
+                            <strong>Nama Lengkap</strong>
+                            <span id="profile-name">-</span>
+                        </li>
+                        <li>
+                            <strong>Email</strong>
+                            <span id="profile-email">-</span>
+                        </li>
+                        <li>
+                            <strong>Nomor Telepon</strong>
+                            <span id="profile-phone">-</span>
+                        </li>
+                        <li>
+                            <strong>Tanggal Lahir</strong>
+                            <span id="profile-birthdate">-</span>
+                        </li>
+                        <li>
+                            <strong>Terdaftar Sejak</strong>
+                            <span id="profile-registered">-</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #404040; display: flex; gap: 10px; justify-content: center;">
+                    <button type="button" class="btn btn-default" onclick="openProfileModal()"
+                            style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
+                        <i class="fa fa-edit"></i> Edit Profil
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="openPasswordModal()" id="password-btn-modal"
+                            style="background: #28a7e9; border: none;">
+                        <i class="fa fa-lock"></i> <span id="password-btn-text-modal">Set Password</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Ultrasound Modal -->
+    <div class="modal fade" id="uploadUltrasoundModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); color: #ffffff; border: 1px solid rgba(255,255,255,0.2);">
+                <div class="modal-header" style="border-bottom: 1px solid #404040;">
+                    <button type="button" class="close" data-dismiss="modal" style="color: #ffffff; opacity: 0.8;">&times;</button>
+                    <h4 class="modal-title" style="color: #28a7e9;"><i class="fa fa-upload"></i> Upload Foto USG</h4>
+                </div>
+                <div class="modal-body">
+                    <form id="ultrasound-upload-form">
+                        <div class="form-group">
+                            <label style="color: #28a7e9;">URL Foto USG *</label>
+                            <input type="url" class="form-control" id="ultrasound-url" required
+                                   placeholder="Masukkan URL foto USG (misalnya dari Imgur, Google Drive, dll)"
+                                   style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
+                            <small style="color: #999;">Upload foto ke Imgur atau layanan hosting gambar lainnya, lalu paste URL-nya di sini</small>
+                        </div>
+                        <div class="form-group">
+                            <label style="color: #28a7e9;">Tanggal USG *</label>
+                            <input type="date" class="form-control" id="ultrasound-date" required
+                                   style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="color: #28a7e9;">Keterangan (Opsional)</label>
+                            <textarea class="form-control" id="ultrasound-notes" rows="3"
+                                      placeholder="Tambahkan catatan atau keterangan foto USG"
+                                      style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;"></textarea>
+                        </div>
+                        <div class="alert" id="ultrasound-error" style="display: none; background: rgba(217,83,79,0.15); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(217,83,79,0.3); color: #ffffff;"></div>
+                        <div class="alert" id="ultrasound-success" style="display: none; background: rgba(40,167,233,0.15); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(40,167,233,0.3); color: #ffffff;"></div>
+                    </form>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #404040;">
+                    <button type="button" class="btn btn-default" data-dismiss="modal"
+                            style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">Batal</button>
+                    <button type="button" class="btn btn-primary" onclick="saveUltrasound()"
+                            style="background: #28a7e9; border: none;">
+                        <i class="fa fa-save"></i> Simpan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="dashboard-modal" id="cancel-appointment-modal" aria-hidden="true">
         <div class="dashboard-modal-content" role="dialog" aria-modal="true" aria-labelledby="cancel-modal-title">
             <button type="button" class="dashboard-modal-close" id="cancel-modal-close" aria-label="Tutup">&times;</button>
@@ -1048,6 +1239,8 @@
         } else {
             // Load user profile
             loadUserProfile();
+            // Load ultrasound images
+            loadUltrasoundImages();
         }
 
         async function loadUserProfile() {
@@ -1131,9 +1324,15 @@
                 // Check if user has password set
                 hasPassword = profile.has_password === 1 || profile.password !== null;
                 if (hasPassword) {
-                    document.getElementById('password-btn-text').textContent = 'Ubah Password';
+                    const passwordBtnText = document.getElementById('password-btn-text-modal');
+                    if (passwordBtnText) {
+                        passwordBtnText.textContent = 'Ubah Password';
+                    }
                 } else {
-                    document.getElementById('password-btn-text').textContent = 'Set Password';
+                    const passwordBtnText = document.getElementById('password-btn-text-modal');
+                    if (passwordBtnText) {
+                        passwordBtnText.textContent = 'Set Password';
+                    }
                 }
 
                 // Update intake button appearance and hide alert if completed
@@ -1822,26 +2021,181 @@
             });
         }
 
-        function logout() {
+        function logout(event) {
+            if (event) {
+                event.preventDefault();
+            }
             localStorage.removeItem('patient_token');
             localStorage.removeItem('patient_user');
             window.location.href = '/index.html';
         }
 
-        // Smooth scroll to section
-        function scrollToSection(sectionId) {
-            const section = document.getElementById(sectionId);
-            if (section) {
-                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        // Toggle dropdown menu
+        function toggleDropdown(event) {
+            event.stopPropagation();
+            const dropdown = document.getElementById('user-dropdown');
+            dropdown.classList.toggle('show');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('user-dropdown');
+            if (dropdown && dropdown.classList.contains('show')) {
+                dropdown.classList.remove('show');
+            }
+        });
+
+        // Open profile view modal (Settings)
+        function openProfileViewModal(event) {
+            if (event) {
+                event.preventDefault();
+            }
+            $('#profileViewModal').modal('show');
+            // Close dropdown
+            const dropdown = document.getElementById('user-dropdown');
+            if (dropdown) {
+                dropdown.classList.remove('show');
             }
         }
 
-        // Logout event listeners
-        document.getElementById('logout-btn').addEventListener('click', logout);
-        document.getElementById('logout-link').addEventListener('click', function(e) {
-            e.preventDefault();
-            logout();
-        });
+        // Ultrasound Gallery Functions
+        let ultrasoundImages = [];
+
+        function openUploadUltrasoundModal() {
+            $('#uploadUltrasoundModal').modal('show');
+            // Clear form
+            document.getElementById('ultrasound-upload-form').reset();
+            document.getElementById('ultrasound-error').style.display = 'none';
+            document.getElementById('ultrasound-success').style.display = 'none';
+        }
+
+        async function saveUltrasound() {
+            const url = document.getElementById('ultrasound-url').value.trim();
+            const date = document.getElementById('ultrasound-date').value;
+            const notes = document.getElementById('ultrasound-notes').value.trim();
+
+            if (!url || !date) {
+                showUltrasoundError('URL dan tanggal USG harus diisi');
+                return;
+            }
+
+            try {
+                // Save to localStorage for now (can be changed to API call later)
+                const newImage = {
+                    id: Date.now(),
+                    url: url,
+                    date: date,
+                    notes: notes,
+                    created_at: new Date().toISOString()
+                };
+
+                ultrasoundImages.push(newImage);
+                localStorage.setItem('ultrasound_images', JSON.stringify(ultrasoundImages));
+
+                showUltrasoundSuccess('Foto USG berhasil disimpan');
+                setTimeout(() => {
+                    $('#uploadUltrasoundModal').modal('hide');
+                    renderUltrasoundGallery();
+                }, 1500);
+            } catch (error) {
+                showUltrasoundError('Gagal menyimpan foto USG');
+            }
+        }
+
+        function renderUltrasoundGallery() {
+            const gallery = document.getElementById('ultrasound-gallery');
+
+            if (ultrasoundImages.length === 0) {
+                gallery.innerHTML = `
+                    <p class="empty-state">
+                        <i class="fa fa-image"></i>
+                        Belum ada foto USG
+                    </p>
+                `;
+                return;
+            }
+
+            gallery.innerHTML = ultrasoundImages.map(img => {
+                const imgDate = new Date(img.date);
+                const formattedDate = imgDate.toLocaleDateString('id-ID', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                return `
+                    <div class="ultrasound-item" onclick="viewUltrasoundImage('${img.url}', '${formattedDate}', '${img.notes || ''}')">
+                        <img src="${img.url}" alt="USG ${formattedDate}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27200%27 height=%27200%27%3E%3Crect width=%27200%27 height=%27200%27 fill=%27%23404040%27/%3E%3Ctext x=%2750%25%27 y=%2750%25%27 font-size=%2720%27 fill=%27%2328a7e9%27 text-anchor=%27middle%27 dy=%27.3em%27%3EGambar Error%3C/text%3E%3C/svg%3E'">
+                        <div class="overlay">
+                            ${formattedDate}
+                            ${img.notes ? '<br>' + img.notes : ''}
+                        </div>
+                        <button class="delete-btn" onclick="deleteUltrasound(event, ${img.id})">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function deleteUltrasound(event, id) {
+            event.stopPropagation();
+            if (confirm('Yakin ingin menghapus foto USG ini?')) {
+                ultrasoundImages = ultrasoundImages.filter(img => img.id !== id);
+                localStorage.setItem('ultrasound_images', JSON.stringify(ultrasoundImages));
+                renderUltrasoundGallery();
+            }
+        }
+
+        function viewUltrasoundImage(url, date, notes) {
+            // Create a simple image viewer modal
+            const modalContent = `
+                <div style="text-align: center;">
+                    <img src="${url}" style="max-width: 100%; max-height: 70vh; border-radius: 8px;">
+                    <h4 style="color: #28a7e9; margin-top: 20px;">${date}</h4>
+                    ${notes ? `<p style="color: #cccccc; margin-top: 10px;">${notes}</p>` : ''}
+                </div>
+            `;
+
+            // Show in a simple alert for now (can be improved with a custom modal)
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;';
+            modal.innerHTML = `
+                <div style="max-width: 800px; width: 100%;">
+                    ${modalContent}
+                    <button onclick="this.parentElement.parentElement.remove()" style="margin-top: 20px; padding: 10px 30px; background: #28a7e9; color: #ffffff; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">
+                        Tutup
+                    </button>
+                </div>
+            `;
+            modal.onclick = (e) => {
+                if (e.target === modal) modal.remove();
+            };
+            document.body.appendChild(modal);
+        }
+
+        function showUltrasoundError(message) {
+            const errorEl = document.getElementById('ultrasound-error');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+            document.getElementById('ultrasound-success').style.display = 'none';
+        }
+
+        function showUltrasoundSuccess(message) {
+            const successEl = document.getElementById('ultrasound-success');
+            successEl.textContent = message;
+            successEl.style.display = 'block';
+            document.getElementById('ultrasound-error').style.display = 'none';
+        }
+
+        // Load ultrasound images from localStorage
+        function loadUltrasoundImages() {
+            const stored = localStorage.getItem('ultrasound_images');
+            if (stored) {
+                ultrasoundImages = JSON.parse(stored);
+                renderUltrasoundGallery();
+            }
+        }
 
         // Password Management Functions
         let hasPassword = false; // Track if user has password set
