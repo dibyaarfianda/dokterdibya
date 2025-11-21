@@ -1,21 +1,15 @@
 // Complete Profile Form Handler v4.0 - New Registration Flow
-console.log('=== COMPLETE PROFILE HANDLER v4.0 - ' + new Date().toISOString() + ' ===');
 
 // Wait for DOM to be ready
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('DOM ready, initializing complete profile...');
-
     // Check if we're coming from email verification
     const verifiedToken = sessionStorage.getItem('verified_token');
     const email = sessionStorage.getItem('registration_email');
 
     if (!verifiedToken || !email) {
-        console.log('No verified token or email found, redirecting...');
         window.location.href = '/register.html';
         return;
     }
-
-    console.log('Verified token found, setting up form...');
 
     // Phone number auto-formatting (08 → 628, +628 → 628, 8 → 628)
     const phoneInput = document.getElementById('phone');
@@ -69,16 +63,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const completeProfileForm = document.getElementById('complete-profile-form');
 
     if (!completeProfileForm) {
-        console.error('Form not found!');
         return;
     }
 
-    console.log('Form found, attaching submit handler');
-
     completeProfileForm.addEventListener('submit', async function(e) {
         e.preventDefault();
-
-        console.log('Form submitted');
 
         const fullnameInput = document.getElementById('fullname');
         const phoneInput = document.getElementById('phone');
@@ -120,15 +109,7 @@ document.addEventListener('DOMContentLoaded', function() {
             email: email
         };
 
-        console.log('=== COMPLETE PROFILE DEBUG ===');
-        console.log('Profile Data to Save:', profileData);
-
         sessionStorage.setItem('profile_data', JSON.stringify(profileData));
-
-        // Verify it was saved
-        const savedData = sessionStorage.getItem('profile_data');
-        console.log('Verified Saved Data:', savedData);
-        console.log('Profile data saved to session, redirecting to set-password...');
 
         // Redirect to set-password page
         window.location.href = 'set-password.html';
