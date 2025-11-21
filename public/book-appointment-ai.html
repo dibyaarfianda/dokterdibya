@@ -470,18 +470,29 @@
                     complaint: complaint
                 });
 
-                if (result.success) {
-                    detectedCategory = result.data.category;
-                    const confidenceBadge = result.data.confidence === 'high' ? '✓' : '⚠️';
+                // Handle both AI success and fallback responses
+                let categoryData;
+                if (result.success && result.data) {
+                    categoryData = result.data;
+                } else if (result.fallback) {
+                    categoryData = result.fallback;
+                }
+
+                if (categoryData) {
+                    detectedCategory = categoryData.category;
+                    const confidenceBadge = categoryData.confidence === 'high' ? '✓' : '⚠️';
+                    const fallbackNote = result.fallback ? ' <small>(Fallback)</small>' : '';
                     detectionResult.innerHTML = `
                         <span class="detection-badge">
-                            ${confidenceBadge} Terdeteksi: ${result.data.category.toUpperCase()}
-                            (${result.data.confidence})
+                            ${confidenceBadge} Terdeteksi: ${categoryData.category.toUpperCase()}
+                            (${categoryData.confidence})${fallbackNote}
                         </span>
                         <p style="font-size: 13px; color: #6b7280; margin-top: 8px;">
-                            ${result.data.reasoning}
+                            ${categoryData.reasoning}
                         </p>
                     `;
+                } else {
+                    detectionResult.innerHTML = '<p style="color: #ef4444;">Gagal mendeteksi kategori. Silakan lanjutkan.</p>';
                 }
             } catch (error) {
                 console.error('Detection error:', error);
@@ -530,19 +541,23 @@
                     }
                 });
 
-                if (result.success) {
+                // Handle both AI success and fallback responses
+                if (result.success && result.data && result.data.questions) {
                     interviewQuestions = result.data.questions;
+                } else if (result.fallback && result.fallback.questions) {
+                    interviewQuestions = result.fallback.questions;
+                } else if (result.questions) {
+                    interviewQuestions = result.questions;
+                }
 
+                if (interviewQuestions && interviewQuestions.length > 0) {
                     // Remove loading message
                     chatContainer.innerHTML = '';
 
                     // Show first question
                     displayQuestion(0);
                 } else {
-                    // Use fallback questions
-                    interviewQuestions = result.fallback.questions;
-                    chatContainer.innerHTML = '';
-                    displayQuestion(0);
+                    showAIMessage('Maaf, tidak dapat memuat pertanyaan. Silakan coba lagi.', false);
                 }
             } catch (error) {
                 console.error('Interview error:', error);
@@ -611,6 +626,13 @@
         };
 
         function handleAnswer(answer) {
+            // Safety check
+            if (!interviewQuestions || !interviewQuestions[currentQuestion]) {
+                console.error('Invalid question index:', currentQuestion);
+                showAIMessage('Maaf terjadi kesalahan. Silakan coba lagi.', false);
+                return;
+            }
+
             // Store answer
             answers.push({
                 question: interviewQuestions[currentQuestion].question,

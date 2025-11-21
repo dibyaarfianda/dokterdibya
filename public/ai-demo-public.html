@@ -536,19 +536,24 @@
                     }
                 });
 
-                if (result.success) {
+                // Handle both AI success and fallback responses
+                if (result.success && result.data && result.data.questions) {
                     interviewQuestions = result.data.questions;
+                } else if (result.fallback && result.fallback.questions) {
+                    interviewQuestions = result.fallback.questions;
+                } else if (result.questions) {
+                    // Direct questions array
+                    interviewQuestions = result.questions;
+                }
 
+                if (interviewQuestions && interviewQuestions.length > 0) {
                     // Remove loading message
                     chatContainer.innerHTML = '';
 
                     // Show first question
                     displayQuestion(0);
                 } else {
-                    // Use fallback questions
-                    interviewQuestions = result.fallback.questions;
-                    chatContainer.innerHTML = '';
-                    displayQuestion(0);
+                    showAIMessage('Maaf, tidak dapat memuat pertanyaan. Silakan coba lagi.', false);
                 }
             } catch (error) {
                 console.error('Interview error:', error);
@@ -617,6 +622,13 @@
         };
 
         function handleAnswer(answer) {
+            // Safety check
+            if (!interviewQuestions || !interviewQuestions[currentQuestion]) {
+                console.error('Invalid question index:', currentQuestion);
+                showAIMessage('Maaf terjadi kesalahan. Silakan coba lagi.', false);
+                return;
+            }
+
             // Store answer
             answers.push({
                 question: interviewQuestions[currentQuestion].question,
@@ -654,14 +666,24 @@
                     answers: answers
                 });
 
-                if (result.success) {
-                    preAnamnesaData = result.data;
+                // Handle both AI success and fallback responses
+                let anamnesaData;
+                if (result.success && result.data) {
+                    anamnesaData = result.data;
+                } else if (result.fallback) {
+                    anamnesaData = result.fallback;
+                }
+
+                if (anamnesaData) {
+                    preAnamnesaData = anamnesaData;
 
                     // Remove loading
                     chatContainer.innerHTML = '';
 
                     // Show summary
-                    showSummary(result.data);
+                    showSummary(anamnesaData);
+                } else {
+                    showAIMessage('Maaf terjadi kesalahan saat memproses jawaban.', false);
                 }
             } catch (error) {
                 console.error('Process error:', error);
