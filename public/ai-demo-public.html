@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Booking Appointment dengan AI - Dibya Klinik</title>
+    <title>AI Interview DEMO (Public - No Login) - Dibya Klinik</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
@@ -426,13 +426,7 @@
     <script type="module">
         import { apiService } from './scripts/api-service.js';
 
-        // Check authentication first
-        const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
-        if (!token) {
-            // Show login required message
-            alert('Anda harus login terlebih dahulu untuk menggunakan fitur AI Interview.\n\nSilakan login di halaman utama.');
-            window.location.href = '/index.html';
-        }
+        // DEMO MODE - No authentication required
 
         // Global variables
         let detectedCategory = null;
@@ -465,7 +459,7 @@
             detectionResult.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div> Mendeteksi kategori...';
 
             try {
-                const result = await apiService.post('/ai/detect-category', {
+                const result = await apiService.post('/ai/demo/detect-category', {
                     patientId: 'DRD0005', // Demo - should be actual patient ID
                     complaint: complaint
                 });
@@ -522,7 +516,7 @@
 
             try {
                 // Get questions from AI
-                const result = await apiService.post('/ai/interview/questions', {
+                const result = await apiService.post('/ai/demo/interview/questions', {
                     category: detectedCategory,
                     complaint: bookingData.complaint,
                     patientData: {
@@ -642,7 +636,7 @@
             showAIMessage('Terima kasih! Saya sedang menyusun data anamnesa Anda...', true);
 
             try {
-                const result = await apiService.post('/ai/interview/process', {
+                const result = await apiService.post('/ai/demo/interview/process', {
                     category: detectedCategory,
                     complaint: bookingData.complaint,
                     answers: answers
