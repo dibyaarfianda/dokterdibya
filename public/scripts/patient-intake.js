@@ -1218,7 +1218,18 @@ form.addEventListener('submit', async (event) => {
         }
         
         if (!response.ok) {
-            throw new Error(`Server responded with ${response.status}`);
+            // Try to get detailed error from response
+            const errorData = await response.json().catch(() => null);
+            console.error('Submit error details:', errorData);
+
+            if (response.status === 422 && errorData?.errors) {
+                // Validation errors - show them to user
+                const errorList = errorData.errors.join('\n');
+                showToast(`Validasi gagal:\n${errorList}`, 'error');
+                throw new Error(`Validation failed: ${errorList}`);
+            }
+
+            throw new Error(`Server responded with ${response.status}: ${errorData?.message || 'Unknown error'}`);
         }
         const result = await response.json().catch(() => null);
         const quickId = result && typeof result === 'object' ? result.quickId : undefined;
