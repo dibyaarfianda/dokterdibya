@@ -5459,15 +5459,16 @@ async function renderActiveSection() {
 
                 console.log('No manual category, checking pregnant_status:', pregnantStatus);
 
-                // Determine if patient is obstetric based on pregnant_status ONLY
-                // Do NOT use LMP/EDD as fallback - these fields exist for non-obstetric patients too
+                // Determine if patient is obstetric based on pregnant_status
+                // Only use LMP/EDD fallback if pregnant_status is not set (for old records)
                 if (pregnantStatus === 'yes') {
                     isObstetric = true;
-                } else {
-                    // Default to non-obstetric (gynecology) if not explicitly marked as pregnant
-                    // This prevents anobs/anpro patients from being wrongly classified as obstetric
+                } else if (pregnantStatus === 'no') {
                     isObstetric = false;
-                    console.log('No pregnant_status=yes, defaulting to gynecology (non-obstetric)');
+                } else {
+                    // Fallback for old records without pregnant_status field
+                    isObstetric = !!(state.derived?.pregnant || state.derived?.lmp || state.derived?.edd);
+                    console.log('Using fallback - lmp/edd exists:', isObstetric);
                 }
             }
 
