@@ -117,7 +117,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 // ============================================================================
 
 async function checkAuthentication() {
-    const token = localStorage.getItem('staffToken');
+    const token = localStorage.getItem('vps_auth_token');
 
     if (!token) {
         console.warn('[SundayClinic] No auth token found, redirecting to login');
@@ -130,12 +130,12 @@ async function checkAuthentication() {
         apiClient.setToken(token);
 
         // Verify token and get staff info
-        const response = await apiClient.get('/api/staff/verify');
+        const response = await apiClient.get('/api/auth/me');
 
-        if (response.success && response.data) {
+        if (response.success && response.data && response.data.user) {
             appState.staffIdentity = {
-                id: response.data.id,
-                name: response.data.name || response.data.username
+                id: response.data.user.id,
+                name: response.data.user.name || response.data.user.email
             };
 
             // Update staff name display
@@ -150,7 +150,7 @@ async function checkAuthentication() {
         }
     } catch (error) {
         console.error('[SundayClinic] Authentication failed:', error);
-        localStorage.removeItem('staffToken');
+        localStorage.removeItem('vps_auth_token');
         window.location.href = '/staff/public/login.html';
         return false;
     }
