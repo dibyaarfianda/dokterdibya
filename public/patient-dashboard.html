@@ -921,7 +921,8 @@
         <div class="row" style="margin-bottom: 30px;">
             <!-- Left Column: Upcoming Appointments (Smaller) -->
             <div class="col-md-5">
-                <div class="dashboard-card" id="appointments-section">
+                <!-- Janji Temu Mendatang -->
+                <div class="dashboard-card" id="appointments-section" style="margin-bottom: 20px;">
                     <h3><i class="fa fa-calendar-check-o"></i> Janji Temu Mendatang</h3>
                     <div id="booking-status-container">
                         <p class="empty-state">
@@ -932,6 +933,30 @@
                     <a href="/booking-appointment.html" class="action-btn" id="booking-create-btn">
                         <i class="fa fa-plus"></i> Buat Janji Temu
                     </a>
+                </div>
+
+                <!-- Galeri USG -->
+                <div class="dashboard-card" style="margin-bottom: 20px;">
+                    <h3><i class="fa fa-picture-o"></i> Galeri USG</h3>
+                    <div id="ultrasound-gallery-mini">
+                        <p class="empty-state">
+                            <i class="fa fa-image"></i>
+                            Belum ada foto USG
+                        </p>
+                    </div>
+                    <button class="action-btn" onclick="openUploadUltrasoundModal()" style="margin-top: 15px;">
+                        <i class="fa fa-upload"></i> Upload Foto USG
+                    </button>
+                </div>
+
+                <!-- Rekam Medis -->
+                <div class="dashboard-card">
+                    <h3><i class="fa fa-file-text"></i> Rekam Medis <span id="medical-record-name" style="font-weight: 400; font-size: 18px;"></span></h3>
+                    <div style="padding: 15px 0;">
+                        <a href="/patient-intake.html" class="action-btn" style="display: block; text-align: center;">
+                            <i class="fa fa-edit"></i> Lihat & Edit Rekam Medis
+                        </a>
+                    </div>
                 </div>
             </div>
 
@@ -992,23 +1017,6 @@
             </div>
         </div>
 
-        <div class="row">
-            <!-- Ultrasound Gallery -->
-            <div class="col-md-12">
-                <div class="dashboard-card">
-                    <h3><i class="fa fa-picture-o"></i> Galeri Ultrasound</h3>
-                    <div id="ultrasound-gallery">
-                        <p class="empty-state">
-                            <i class="fa fa-image"></i>
-                            Belum ada foto USG
-                        </p>
-                    </div>
-                    <button class="action-btn" onclick="openUploadUltrasoundModal()" style="margin-top: 15px;">
-                        <i class="fa fa-upload"></i> Upload Foto USG
-                    </button>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Profile Edit Modal -->
@@ -1300,6 +1308,12 @@
                 document.getElementById('profile-name').textContent = profile.fullname;
                 document.getElementById('profile-email').textContent = profile.email;
                 document.getElementById('profile-phone').textContent = profile.phone || 'Belum diisi';
+
+                // Update medical record name
+                const medicalRecordName = document.getElementById('medical-record-name');
+                if (medicalRecordName && profile.fullname) {
+                    medicalRecordName.textContent = profile.fullname;
+                }
 
                 // Update navigation avatar
                 const userNameNav = document.getElementById('user-name-nav');
@@ -2135,18 +2149,21 @@
 
         function renderUltrasoundGallery() {
             const gallery = document.getElementById('ultrasound-gallery');
+            const galleryMini = document.getElementById('ultrasound-gallery-mini');
 
             if (ultrasoundImages.length === 0) {
-                gallery.innerHTML = `
+                const emptyState = `
                     <p class="empty-state">
                         <i class="fa fa-image"></i>
                         Belum ada foto USG
                     </p>
                 `;
+                if (gallery) gallery.innerHTML = emptyState;
+                if (galleryMini) galleryMini.innerHTML = emptyState;
                 return;
             }
 
-            gallery.innerHTML = ultrasoundImages.map(img => {
+            const galleryHTML = ultrasoundImages.map(img => {
                 const imgDate = new Date(img.date);
                 const formattedDate = imgDate.toLocaleDateString('id-ID', {
                     year: 'numeric',
@@ -2167,6 +2184,9 @@
                     </div>
                 `;
             }).join('');
+
+            if (gallery) gallery.innerHTML = galleryHTML;
+            if (galleryMini) galleryMini.innerHTML = galleryHTML;
         }
 
         function deleteUltrasound(event, id) {
