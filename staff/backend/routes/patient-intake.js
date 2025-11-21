@@ -821,6 +821,51 @@ router.put('/api/patient-intake/my-intake', verifyToken, async (req, res, next) 
     }
 });
 
+// GET verification status by phone number (must come before /:submissionId route)
+router.get('/api/patient-intake/status', async (req, res, next) => {
+    try {
+        const { phone } = req.query;
+
+        if (!phone) {
+            return res.status(400).json({ success: false, message: 'Nomor telepon harus diisi' });
+        }
+
+        const normalizedPhone = phone.replace(/\D/g, '').slice(-10);
+
+        const [rows] = await db.query(
+            `SELECT submission_id, status, reviewed_by, reviewed_at, review_notes
+            FROM patient_intake_submissions
+            WHERE RIGHT(REPLACE(phone, '-', ''), 10) = ?
+            AND status = 'verified'
+            AND reviewed_by IS NOT NULL
+            AND reviewed_by != 'auto_system'
+            ORDER BY reviewed_at DESC
+            LIMIT 1`,
+            [normalizedPhone]
+        );
+
+        if (rows.length === 0) {
+            return res.json({ success: true, data: null });
+        }
+
+        const verification = rows[0];
+
+        return res.json({
+            success: true,
+            data: {
+                submission_id: verification.submission_id,
+                status: verification.status,
+                reviewed_by: verification.reviewed_by,
+                reviewed_at: verification.reviewed_at,
+                review_notes: verification.review_notes
+            }
+        });
+    } catch (error) {
+        logger.error('Failed to check verification status', { error: error.message });
+        next(error);
+    }
+});
+
 router.get('/api/patient-intake/:submissionId', verifyToken, async (req, res, next) => {
     const { submissionId } = req.params;
 
@@ -1114,51 +1159,6 @@ router.delete('/api/patient-intake/:submissionId', verifyToken, async (req, res,
         return res.json({ success: true, message: 'Data intake berhasil dihapus.', submissionId });
     } catch (error) {
         logger.error('Failed to delete intake submission', { submissionId, error: error.message });
-        next(error);
-    }
-});
-
-// GET verification status by phone number
-router.get('/api/patient-intake/status', async (req, res, next) => {
-    try {
-        const { phone } = req.query;
-        
-        if (!phone) {
-            return res.status(400).json({ success: false, message: 'Nomor telepon harus diisi' });
-        }
-        
-        const normalizedPhone = phone.replace(/\D/g, '').slice(-10);
-        
-        const [rows] = await db.query(
-            `SELECT submission_id, status, reviewed_by, reviewed_at, review_notes 
-            FROM patient_intake_submissions 
-            WHERE RIGHT(REPLACE(phone, '-', ''), 10) = ? 
-            AND status = 'verified'
-            AND reviewed_by IS NOT NULL
-            AND reviewed_by != 'auto_system'
-            ORDER BY reviewed_at DESC
-            LIMIT 1`,
-            [normalizedPhone]
-        );
-        
-        if (rows.length === 0) {
-            return res.json({ success: true, data: null });
-        }
-        
-        const verification = rows[0];
-        
-        return res.json({
-            success: true,
-            data: {
-                submission_id: verification.submission_id,
-                status: verification.status,
-                reviewed_by: verification.reviewed_by,
-                reviewed_at: verification.reviewed_at,
-                review_notes: verification.review_notes
-            }
-        });
-    } catch (error) {
-        logger.error('Failed to check verification status', { error: error.message });
         next(error);
     }
 });

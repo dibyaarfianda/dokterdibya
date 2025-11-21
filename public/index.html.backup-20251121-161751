@@ -25,6 +25,9 @@
 		<script src="js/typed.js?v=20251114"></script>
 		<script src="js/wow.min.js?v=20251114"></script>
 		<script src="js/custom.js?v=20251114"></script>
+		<!-- Google Sign-In API -->
+		<script src="https://accounts.google.com/gsi/client" async defer></script>
+		<script src="js/auth.js?v=20251114"></script>
 		<script>
 		// Fix dropdown in mobile collapsed navbar
 		$(document).ready(function() {
@@ -99,7 +102,7 @@
 						<span class="icon icon-bar"></span>
 						<span class="icon icon-bar"></span>
 					</button>
-					<a href="#" class="navbar-brand"><img src="images/logo-white.svg" alt="Dr. Dibya" style="height: 75px; margin-top: -12px;"></a>
+					<a href="#" class="navbar-brand"><img src="images/logo-dibya.png" alt="Dr. Dibya" style="height: 75px; margin-top: -12px;"></a>
 				</div>
 				<div class="collapse navbar-collapse">
 					<ul class="nav navbar-nav navbar-right">
@@ -111,16 +114,44 @@
 							<form id="navbar-login-form" style="padding: 15px;">
 								<div class="form-group">
 									<label style="color: #333;">Email</label>
-									<input type="email" class="form-control" id="navbar-email" name="email" autocomplete="email" placeholder="contoh@email.com" required>
+									<input type="email" class="form-control" id="navbar-email" placeholder="contoh@email.com" required>
 								</div>
 								<div class="form-group">
 									<label style="color: #333;">Password</label>
-									<input type="password" class="form-control" id="navbar-password" name="password" autocomplete="current-password" placeholder="Password" required>
+									<input type="password" class="form-control" id="navbar-password" placeholder="Password" required>
 								</div>
 								<div class="form-group text-right">
                                         <a href="reset-password.html" class="text-info">Lupa Password?</a>
                                     </div>
-								<button type="submit" class="btn btn-primary btn-block">Login</button>
+								<button type="submit" class="btn btn-primary btn-block">Login</button>										<!-- Google Sign-In (Tailwind-style) -->
+										<button type="button" id="google-signin-btn" style="
+											display: flex;
+											align-items: center;
+											justify-content: center;
+											width: 100%;
+											padding: 10px 16px;
+											background: white;
+											border: 1px solid #dadce0;
+											border-radius: 6px;
+											font-family: 'Roboto', sans-serif;
+											font-size: 14px;
+											font-weight: 500;
+											color: #3c4043;
+											cursor: pointer;
+											transition: all 0.12s ease-in-out;
+											box-shadow: 0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15);
+										" onmouseover="this.style.backgroundColor='#f8f9fa'; this.style.boxShadow='0 1px 3px 0 rgba(60,64,67,0.3), 0 4px 8px 3px rgba(60,64,67,0.15)';" onmouseout="this.style.backgroundColor='white'; this.style.boxShadow='0 1px 2px 0 rgba(60,64,67,0.3), 0 1px 3px 1px rgba(60,64,67,0.15)';">
+											<svg width="18" height="18" viewBox="0 0 18 18" style="margin-right: 10px;">
+												<path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+												<path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+												<path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.007-2.332z"/>
+												<path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z"/>
+											</svg>
+											<span>Sign in with Google</span>
+										</button>
+										<p style="text-align: center; color: #999; font-size: 11px; margin: 5px 0;">
+											<i class="fa fa-info-circle"></i> Jika tidak bekerja, gunakan email & password
+										</p>
 									</form>
 								</li>
 							</ul>
@@ -212,27 +243,57 @@
     				<div class="col-md-12">
     					<h2 class="wow bounceIn" data-wow-offset="50" data-wow-delay="0.3s">DAFTAR <span>AKUN BARU</span></h2>
     				</div>
-    				<div class="col-md-offset-3 col-md-6 col-sm-offset-2 col-sm-8 col-xs-12 wow fadeInUp" data-wow-offset="50" data-wow-delay="0.9s" style="text-align: center;">
-						<a href="register.html" class="form-control external" style="
-    						display: inline-block;
+    				<div class="col-md-offset-3 col-md-6 col-sm-offset-2 col-sm-8 col-xs-12 wow fadeInUp" data-wow-offset="50" data-wow-delay="0.9s">
+    					<!-- Google Sign In Button (Tailwind Style) -->
+    					<button type="button" id="google-signup-btn" style="
+    						display: flex;
+    						align-items: center;
+    						justify-content: center;
     						width: 100%;
-    						max-width: 400px;
-    						padding: 15px 20px;
-    						background: #fff;
-    						color: #667eea;
-    						text-decoration: none;
+    						padding: 12px 20px;
+    						background: white;
+    						border: 1px solid #dadce0;
+    						border-radius: 4px;
+    						font-family: 'Roboto', sans-serif;
     						font-size: 18px;
-    						font-weight: 600;
-    						border-radius: 5px;
-    						transition: all 0.3s ease;
-    						box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    					" onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.3)';" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.2)';">
-    						DAFTAR SEKARANG
-    					</a>
-
-    					<p style="text-align: center; color: #ddd; font-size: 14px; margin-top: 20px;">
-    						Sudah punya akun? <a href="login.html" style="color: #3498db; text-decoration: underline;">Login di sini</a>
+    						font-weight: 500;
+    						color: #3c4043;
+    						cursor: pointer;
+    						transition: all 0.15s ease-in-out;
+    						box-shadow: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+    						margin-bottom: 10px;
+    					" onmouseover="this.style.backgroundColor='#f8f9fa'; this.style.boxShadow='0 1px 3px 0 rgba(60, 64, 67, 0.3), 0 4px 8px 3px rgba(60, 64, 67, 0.15)';" onmouseout="this.style.backgroundColor='white'; this.style.boxShadow='0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15)';">
+    						<svg width="18" height="18" viewBox="0 0 18 18" style="margin-right: 12px;">
+    							<path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+    							<path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+    							<path fill="#FBBC05" d="M3.964 10.707c-.18-.54-.282-1.117-.282-1.707s.102-1.167.282-1.707V4.961H.957C.347 6.175 0 7.55 0 9s.348 2.825.957 4.039l3.007-2.332z"/>
+    							<path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.961L3.964 7.293C4.672 5.163 6.656 3.58 9 3.58z"/>
+    						</svg>
+    						<span>Daftar dengan Google</span>
+    					</button>
+    					<p style="text-align: center; color: #999; font-size: 12px; margin-bottom: 20px;">
+    						<i class="fa fa-info-circle"></i> Jika Google Sign-In tidak bekerja, gunakan email & password di bawah
     					</p>
+    					
+    					<div style="text-align: center; margin: 20px 0; color: #fff;">
+    						<span style="background: #2d2d2d; padding: 0 10px;">atau</span>
+    					</div>
+    					
+    					<form id="register-form">
+    						<label>NAMA LENGKAP</label>
+    						<input name="fullname" type="text" class="form-control" id="fullname" placeholder="Masukkan nama lengkap Anda" required>
+   						  	
+                            <label>EMAIL</label>
+    						<input name="email" type="email" class="form-control" id="email" placeholder="contoh@email.com" required>
+   						  	
+                            <label>NOMOR TELEPON</label>
+    						<input name="phone" type="tel" class="form-control" id="phone" placeholder="+62 XXX-XXXX-XXXX" required>
+    						
+                            <label>PASSWORD</label>
+    						<input name="password" type="password" class="form-control" id="password" placeholder="Minimal 8 karakter" required>
+    						
+                            <input type="submit" class="form-control" value="DAFTAR SEKARANG">
+    					</form>
     				</div>
     			</div>
     		</div>
@@ -252,16 +313,5 @@
         </footer>
         <!-- end copyright -->
 
-	<script>
-	// Force navigation to register.html in case any plugin intercepts the click
-	document.querySelectorAll('a[href="register.html"]').forEach(function(a){
-	  a.addEventListener('click', function(ev){
-	    // If already on register.html do nothing
-	    if (window.location.pathname.endsWith('/register.html')) return;
-	    ev.preventDefault();
-	    window.location.href = 'register.html';
-	  });
-	});
-	</script>
 	</body>
 </html>
