@@ -9,13 +9,46 @@
     <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,300,600,700' rel='stylesheet' type='text/css'>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --primary: #0066FF;
+            --primary-dark: #0052CC;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg-gradient: linear-gradient(135deg, #1a1a1a 0%, #303030 100%);
+        }
+
         body {
-            background: #303030;
+            background: var(--bg-gradient);
             color: #ffffff;
-            font-family: 'Open Sans', sans-serif;
+            font-family: 'Poppins', 'Open Sans', sans-serif;
             font-weight: 300;
             margin: 0;
             padding: 0;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bubble {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-100px) rotate(180deg); }
         }
         
         a {
@@ -30,9 +63,13 @@
         
         /* Header */
         header {
-            background: #202020;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             padding: 20px 0;
-            border-bottom: 1px solid #404040;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            position: relative;
+            z-index: 1;
         }
         
         header .phone,
@@ -66,16 +103,21 @@
             padding: 30px 15px;
             max-width: 1200px;
             margin: 0 auto;
+            position: relative;
+            z-index: 1;
         }
-        
+
         /* Cards */
         .dashboard-card {
-            background: #202020;
-            border: 1px solid #404040;
-            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
             padding: 25px;
             margin-bottom: 20px;
             transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
         }
         
         .dashboard-card:hover {
@@ -612,6 +654,9 @@
     </style>
 </head>
 <body>
+    <!-- Background Animation -->
+    <div class="bg-animation" id="bgAnimation"></div>
+
     <!-- Navigation -->
     <nav class="nav-bar">
         <div class="container">
@@ -1888,6 +1933,31 @@
                 }
             }
         });
+    </script>
+
+    <!-- Bubble Animation Script -->
+    <script>
+        function createBubbles() {
+            const bgAnimation = document.getElementById('bgAnimation');
+            const bubbleCount = 15;
+
+            for (let i = 0; i < bubbleCount; i++) {
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+
+                const size = Math.random() * 60 + 20;
+                bubble.style.width = size + 'px';
+                bubble.style.height = size + 'px';
+                bubble.style.left = Math.random() * 100 + '%';
+                bubble.style.top = Math.random() * 100 + '%';
+                bubble.style.animationDelay = Math.random() * 8 + 's';
+                bubble.style.animationDuration = (Math.random() * 4 + 6) + 's';
+
+                bgAnimation.appendChild(bubble);
+            }
+        }
+
+        createBubbles();
     </script>
 </body>
 </html>
