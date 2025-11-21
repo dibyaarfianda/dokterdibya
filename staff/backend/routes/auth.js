@@ -668,7 +668,7 @@ router.post('/api/auth/register', asyncHandler(async (req, res) => {
     // Send verification email
     const notificationService = require('../utils/notification');
 
-    const subject = 'Kode Verifikasi Dibya Klinik';
+    const subject = 'Kode Verifikasi dokterDIBYA';
     const html = `
         <!DOCTYPE html>
         <html>
@@ -677,10 +677,10 @@ router.post('/api/auth/register', asyncHandler(async (req, res) => {
             <style>
                 body { font-family: 'Arial', sans-serif; background: #f3f4f6; margin: 0; padding: 20px; }
                 .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-                .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px; text-align: center; color: white; }
+                .header { background: linear-gradient(135deg, #0066FF 0%, #0052CC 100%); padding: 40px 20px; text-align: center; color: white; }
                 .header h1 { margin: 0; font-size: 28px; }
                 .content { padding: 40px 30px; text-align: center; }
-                .otp-code { font-size: 48px; font-weight: bold; letter-spacing: 8px; color: #6366f1; background: #f3f4f6; padding: 20px; border-radius: 12px; margin: 30px 0; }
+                .otp-code { font-size: 48px; font-weight: bold; letter-spacing: 8px; color: #0066FF; background: #f3f4f6; padding: 20px; border-radius: 12px; margin: 30px 0; }
                 .info { color: #6b7280; font-size: 14px; margin-top: 30px; }
                 .footer { background: #f9fafb; padding: 20px; text-align: center; color: #9ca3af; font-size: 12px; }
             </style>
@@ -688,7 +688,7 @@ router.post('/api/auth/register', asyncHandler(async (req, res) => {
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>🏥 Dibya Klinik</h1>
+                    <h1>dokterDIBYA</h1>
                 </div>
                 <div class="content">
                     <h2>Kode Verifikasi Email Anda</h2>
@@ -700,7 +700,7 @@ router.post('/api/auth/register', asyncHandler(async (req, res) => {
                     </p>
                 </div>
                 <div class="footer">
-                    © 2025 Dibya Klinik. All rights reserved.
+                    © 2025 dokterDIBYA. All rights reserved.
                 </div>
             </div>
         </body>
@@ -818,7 +818,7 @@ router.post('/api/auth/resend-verification', asyncHandler(async (req, res) => {
     // Send verification email
     const notificationService = require('../utils/notification');
 
-    const subject = 'Kode Verifikasi Dibya Klinik';
+    const subject = 'Kode Verifikasi dokterDIBYA';
     const html = `
         <!DOCTYPE html>
         <html>
@@ -827,10 +827,10 @@ router.post('/api/auth/resend-verification', asyncHandler(async (req, res) => {
             <style>
                 body { font-family: 'Arial', sans-serif; background: #f3f4f6; margin: 0; padding: 20px; }
                 .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-                .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px; text-align: center; color: white; }
+                .header { background: linear-gradient(135deg, #0066FF 0%, #0052CC 100%); padding: 40px 20px; text-align: center; color: white; }
                 .header h1 { margin: 0; font-size: 28px; }
                 .content { padding: 40px 30px; text-align: center; }
-                .otp-code { font-size: 48px; font-weight: bold; letter-spacing: 8px; color: #6366f1; background: #f3f4f6; padding: 20px; border-radius: 12px; margin: 30px 0; }
+                .otp-code { font-size: 48px; font-weight: bold; letter-spacing: 8px; color: #0066FF; background: #f3f4f6; padding: 20px; border-radius: 12px; margin: 30px 0; }
                 .info { color: #6b7280; font-size: 14px; margin-top: 30px; }
                 .footer { background: #f9fafb; padding: 20px; text-align: center; color: #9ca3af; font-size: 12px; }
             </style>
@@ -838,7 +838,7 @@ router.post('/api/auth/resend-verification', asyncHandler(async (req, res) => {
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>🏥 Dibya Klinik</h1>
+                    <h1>dokterDIBYA</h1>
                 </div>
                 <div class="content">
                     <h2>Kode Verifikasi Email Anda</h2>
@@ -850,7 +850,7 @@ router.post('/api/auth/resend-verification', asyncHandler(async (req, res) => {
                     </p>
                 </div>
                 <div class="footer">
-                    © 2025 Dibya Klinik. All rights reserved.
+                    © 2025 dokterDIBYA. All rights reserved.
                 </div>
             </div>
         </body>
