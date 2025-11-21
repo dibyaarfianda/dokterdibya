@@ -446,20 +446,21 @@ function showProfileSettings() {
     loadExternalPage('profile-settings-page', 'profile-settings.html');
 }
 
-function showEmailSettingsPage() {
-    hideAllPages();
-    const page = document.getElementById('email-settings-page');
-    if (page) {
-        page.classList.remove('d-none');
-    }
-    setTitleAndActive('Pengaturan Email', 'management-nav-email-settings', 'email-settings');
-
-    // Initialize email settings form if not already done
-    if (!page.dataset.initialized) {
-        initializeEmailSettingsForm();
-        page.dataset.initialized = 'true';
-    }
-}
+// REMOVED: Email Settings Page
+// function showEmailSettingsPage() {
+//     hideAllPages();
+//     const page = document.getElementById('email-settings-page');
+//     if (page) {
+//         page.classList.remove('d-none');
+//     }
+//     setTitleAndActive('Pengaturan Email', 'management-nav-email-settings', 'email-settings');
+//
+//     // Initialize email settings form if not already done
+//     if (!page.dataset.initialized) {
+//         initializeEmailSettingsForm();
+//         page.dataset.initialized = 'true';
+//     }
+// }
 
 async function initializeEmailSettingsForm() {
     const form = document.getElementById('email-settings-form');
@@ -1075,7 +1076,7 @@ window.showKelolaTindakanPage = showKelolaTindakanPage;
 window.showKelolaObatManagementPage = showKelolaObatManagementPage;
 window.showFinanceAnalysisPage = showFinanceAnalysisPage;
 window.showProfileSettings = showProfileSettings;
-window.showEmailSettingsPage = showEmailSettingsPage;
+// REMOVED: window.showEmailSettingsPage = showEmailSettingsPage;
 window.showStokOpnamePage = showStokOpnamePage;
 window.showPengaturanPage = showPengaturanPage;
 window.showKelolaObatPage = showKelolaObatPage;

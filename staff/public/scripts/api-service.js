@@ -24,7 +24,14 @@ export const apiService = {
      */
     async get(endpoint, options = {}) {
         try {
-            const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
+            let url;
+            if (endpoint.startsWith('http')) {
+                url = endpoint;
+            } else if (endpoint.startsWith('/api/')) {
+                url = `${API_BASE}${endpoint}`;
+            } else {
+                url = `${API_BASE}/api${endpoint}`;
+            }
             const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
 
             const response = await fetch(url, {
@@ -114,7 +121,14 @@ export const apiService = {
      */
     async put(endpoint, data = {}, options = {}) {
         try {
-            const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
+            let url;
+            if (endpoint.startsWith('http')) {
+                url = endpoint;
+            } else if (endpoint.startsWith('/api/')) {
+                url = `${API_BASE}${endpoint}`;
+            } else {
+                url = `${API_BASE}/api${endpoint}`;
+            }
             const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
 
             const response = await fetch(url, {
@@ -162,7 +176,14 @@ export const apiService = {
      */
     async delete(endpoint, options = {}) {
         try {
-            const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
+            let url;
+            if (endpoint.startsWith('http')) {
+                url = endpoint;
+            } else if (endpoint.startsWith('/api/')) {
+                url = `${API_BASE}${endpoint}`;
+            } else {
+                url = `${API_BASE}/api${endpoint}`;
+            }
             const token = sessionStorage.getItem('auth_token') || localStorage.getItem('auth_token');
 
             const response = await fetch(url, {

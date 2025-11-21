@@ -105,7 +105,7 @@ const v1Routes = require('./routes/v1');
 // PDF and Notification routes
 const pdfRoutes = require('./routes/pdf');
 const notificationRoutes = require('./routes/notifications');
-const emailSettingsRoutes = require('./routes/email-settings');
+// REMOVED: const emailSettingsRoutes = require('./routes/email-settings');
 
 // Analytics routes
 const analyticsRoutes = require('./routes/analytics');
@@ -177,7 +177,7 @@ app.use('/', authRoutes);
 // PDF and Notification routes
 app.use('/api/pdf', pdfRoutes);
 app.use('/api/notifications', notificationRoutes);
-app.use('/api/email-settings', emailSettingsRoutes);
+// REMOVED: app.use('/api/email-settings', emailSettingsRoutes);
 
 // Analytics routes
 app.use('/api/analytics', analyticsRoutes);
