@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Booking Appointment dengan AI - Dibya Klinik</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #6b7280;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #374151;
+        }
+
+        input, textarea, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e5e7eb;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:disabled {
+            background: #d1d5db;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* AI Interview Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .modal-header {
+            padding: 25px;
+            border-bottom: 2px solid #f3f4f6;
+        }
+
+        .modal-header h3 {
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 15px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            transition: width 0.3s ease;
+        }
+
+        .progress-text {
+            display: block;
+            text-align: center;
+            margin-top: 8px;
+            font-size: 14px;
+            color: #6b7280;
+        }
+
+        .modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 25px;
+        }
+
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .ai-message {
+            display: flex;
+            gap: 12px;
+            animation: slideIn 0.3s ease;
+        }
+
+        .ai-avatar {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .message-bubble {
+            background: #f3f4f6;
+            padding: 15px 18px;
+            border-radius: 18px 18px 18px 4px;
+            max-width: 80%;
+        }
+
+        .question-text {
+            font-weight: 500;
+            margin-bottom: 15px;
+            color: #1f2937;
+        }
+
+        .user-message {
+            display: flex;
+            justify-content: flex-end;
+            animation: slideIn 0.3s ease;
+        }
+
+        .user-bubble {
+            background: #667eea;
+            color: white;
+            padding: 12px 18px;
+            border-radius: 18px 18px 4px 18px;
+            max-width: 80%;
+        }
+
+        .ai-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #667eea;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .ai-input:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+        }
+
+        .choice-buttons {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .choice-btn {
+            padding: 10px 20px;
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 20px;
+            color: #667eea;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: 'Poppins', sans-serif;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .choice-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .submit-answer-btn {
+            margin-top: 10px;
+        }
+
+        .loading-dots {
+            display: inline-flex;
+            gap: 4px;
+        }
+
+        .loading-dots span {
+            width: 8px;
+            height: 8px;
+            background: #667eea;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+        .loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .detection-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            background: #10b981;
+            color: white;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-top: 10px;
+        }
+
+        .summary-card {
+            background: #f0f9ff;
+            border: 2px solid #3b82f6;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .summary-card h4 {
+            color: #1e40af;
+            margin-bottom: 15px;
+        }
+
+        .summary-item {
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #bfdbfe;
+        }
+
+        .summary-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+            padding-bottom: 0;
+        }
+
+        .summary-label {
+            font-weight: 600;
+            color: #1e40af;
+            margin-bottom: 4px;
+        }
+
+        .summary-value {
+            color: #1f2937;
+        }
+
+        .alert {
+            padding: 12px 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .alert-success {
+            background: #d1fae5;
+            border: 2px solid #10b981;
+            color: #047857;
+        }
+
+        .alert-info {
+            background: #dbeafe;
+            border: 2px solid #3b82f6;
+            color: #1e40af;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>📅 Booking Appointment</h1>
+            <p class="subtitle">Isi data untuk booking appointment dengan AI Assistant</p>
+
+            <form id="bookingForm">
+                <div class="form-group">
+                    <label>Nama Lengkap</label>
+                    <input type="text" id="patientName" placeholder="Nama lengkap" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Tanggal Appointment</label>
+                    <input type="date" id="appointmentDate" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Jam Appointment</label>
+                    <select id="appointmentTime" required>
+                        <option value="">Pilih jam</option>
+                        <option value="09:00">09:00</option>
+                        <option value="09:30">09:30</option>
+                        <option value="10:00">10:00</option>
+                        <option value="10:30">10:30</option>
+                        <option value="11:00">11:00</option>
+                        <option value="13:00">13:00</option>
+                        <option value="13:30">13:30</option>
+                        <option value="14:00">14:00</option>
+                        <option value="14:30">14:30</option>
+                        <option value="15:00">15:00</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Keluhan / Tujuan Kunjungan</label>
+                    <textarea id="complaint" rows="3" placeholder="Contoh: USG kehamilan 24 minggu" required></textarea>
+                    <div id="detectionResult"></div>
+                </div>
+
+                <button type="submit" class="btn btn-primary" id="submitBtn">
+                    Lanjutkan ke AI Interview
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- AI Interview Modal -->
+    <div id="aiInterviewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🤖 AI Interview - Pertanyaan Pra-Kunjungan</h3>
+                <p class="subtitle" style="margin-bottom: 0;">Jawab beberapa pertanyaan singkat untuk mempersiapkan kunjungan Anda</p>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+                </div>
+                <span class="progress-text" id="progressText">Memulai...</span>
+            </div>
+
+            <div class="modal-body">
+                <div id="chatContainer" class="chat-container">
+                    <!-- AI messages will appear here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { apiService } from './scripts/api-service.js';
+
+        // Global variables
+        let detectedCategory = null;
+        let interviewQuestions = [];
+        let currentQuestion = 0;
+        let answers = [];
+        let preAnamnesaData = null;
+        let bookingData = {};
+
+        // DOM elements
+        const form = document.getElementById('bookingForm');
+        const complaintInput = document.getElementById('complaint');
+        const detectionResult = document.getElementById('detectionResult');
+        const modal = document.getElementById('aiInterviewModal');
+        const chatContainer = document.getElementById('chatContainer');
+        const progressFill = document.getElementById('progressFill');
+        const progressText = document.getElementById('progressText');
+
+        // Auto-detect category when complaint is filled
+        let detectionTimeout;
+        complaintInput.addEventListener('input', () => {
+            clearTimeout(detectionTimeout);
+            detectionTimeout = setTimeout(detectCategory, 1000);
+        });
+
+        async function detectCategory() {
+            const complaint = complaintInput.value.trim();
+            if (!complaint || complaint.length < 10) return;
+
+            detectionResult.innerHTML = '<div class="loading-dots"><span></span><span></span><span></span></div> Mendeteksi kategori...';
+
+            try {
+                const result = await apiService.post('/ai/detect-category', {
+                    patientId: 'DRD0005', // Demo - should be actual patient ID
+                    complaint: complaint
+                });
+
+                if (result.success) {
+                    detectedCategory = result.data.category;
+                    const confidenceBadge = result.data.confidence === 'high' ? '✓' : '⚠️';
+                    detectionResult.innerHTML = `
+                        <span class="detection-badge">
+                            ${confidenceBadge} Terdeteksi: ${result.data.category.toUpperCase()}
+                            (${result.data.confidence})
+                        </span>
+                        <p style="font-size: 13px; color: #6b7280; margin-top: 8px;">
+                            ${result.data.reasoning}
+                        </p>
+                    `;
+                }
+            } catch (error) {
+                console.error('Detection error:', error);
+                detectionResult.innerHTML = '<p style="color: #ef4444;">Gagal mendeteksi kategori. Silakan lanjutkan.</p>';
+            }
+        }
+
+        // Form submission - start AI interview
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            // Store booking data
+            bookingData = {
+                patient_name: document.getElementById('patientName').value,
+                appointment_date: document.getElementById('appointmentDate').value,
+                appointment_time: document.getElementById('appointmentTime').value,
+                complaint: complaintInput.value
+            };
+
+            if (!detectedCategory) {
+                alert('Silakan tunggu deteksi kategori selesai');
+                return;
+            }
+
+            // Start AI interview
+            await startAIInterview();
+        });
+
+        async function startAIInterview() {
+            // Show modal
+            modal.classList.add('active');
+            chatContainer.innerHTML = '';
+            currentQuestion = 0;
+            answers = [];
+
+            // Show loading
+            showAIMessage('Sebentar ya, saya sedang menyiapkan pertanyaan untuk Anda...', true);
+
+            try {
+                // Get questions from AI
+                const result = await apiService.post('/ai/interview/questions', {
+                    category: detectedCategory,
+                    complaint: bookingData.complaint,
+                    patientData: {
+                        name: bookingData.patient_name
+                    }
+                });
+
+                if (result.success) {
+                    interviewQuestions = result.data.questions;
+
+                    // Remove loading message
+                    chatContainer.innerHTML = '';
+
+                    // Show first question
+                    displayQuestion(0);
+                } else {
+                    // Use fallback questions
+                    interviewQuestions = result.fallback.questions;
+                    chatContainer.innerHTML = '';
+                    displayQuestion(0);
+                }
+            } catch (error) {
+                console.error('Interview error:', error);
+                showAIMessage('Maaf terjadi kesalahan. Silakan coba lagi.', false);
+            }
+        }
+
+        function displayQuestion(index) {
+            const q = interviewQuestions[index];
+
+            // Update progress
+            const progress = ((index + 1) / interviewQuestions.length) * 100;
+            progressFill.style.width = progress + '%';
+            progressText.textContent = `Pertanyaan ${index + 1} dari ${interviewQuestions.length}`;
+
+            // Show question
+            showAIMessage(q.question, false, q.type, q.choices);
+        }
+
+        function showAIMessage(message, isLoading = false, inputType = 'text', choices = null) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'ai-message';
+
+            messageDiv.innerHTML = `
+                <div class="ai-avatar">🤖</div>
+                <div class="message-bubble">
+                    <p class="question-text">${message}</p>
+                    ${isLoading ? '' : renderInput(inputType, choices)}
+                </div>
+            `;
+
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function renderInput(type, choices) {
+            if (type === 'choice' && choices) {
+                return `
+                    <div class="choice-buttons">
+                        ${choices.map(c => `<button class="choice-btn" onclick="window.selectChoice('${c}')">${c}</button>`).join('')}
+                    </div>
+                `;
+            } else if (type === 'date') {
+                return `
+                    <input type="date" class="ai-input" id="answerInput">
+                    <button class="btn btn-primary submit-answer-btn" onclick="window.submitAnswer()">Kirim</button>
+                `;
+            } else {
+                return `
+                    <textarea class="ai-input" id="answerInput" rows="2" placeholder="Ketik jawaban Anda..."></textarea>
+                    <button class="btn btn-primary submit-answer-btn" onclick="window.submitAnswer()">Kirim</button>
+                `;
+            }
+        }
+
+        // Global functions for button clicks
+        window.selectChoice = function(choice) {
+            handleAnswer(choice);
+        };
+
+        window.submitAnswer = function() {
+            const input = document.getElementById('answerInput');
+            if (input && input.value.trim()) {
+                handleAnswer(input.value.trim());
+            }
+        };
+
+        function handleAnswer(answer) {
+            // Store answer
+            answers.push({
+                question: interviewQuestions[currentQuestion].question,
+                answer: answer
+            });
+
+            // Show user's answer
+            showUserMessage(answer);
+
+            // Move to next question or finish
+            currentQuestion++;
+
+            if (currentQuestion < interviewQuestions.length) {
+                setTimeout(() => displayQuestion(currentQuestion), 500);
+            } else {
+                setTimeout(processInterviewAnswers, 500);
+            }
+        }
+
+        function showUserMessage(message) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'user-message';
+            messageDiv.innerHTML = `<div class="user-bubble">${message}</div>`;
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        async function processInterviewAnswers() {
+            showAIMessage('Terima kasih! Saya sedang menyusun data anamnesa Anda...', true);
+
+            try {
+                const result = await apiService.post('/ai/interview/process', {
+                    category: detectedCategory,
+                    complaint: bookingData.complaint,
+                    answers: answers
+                });
+
+                if (result.success) {
+                    preAnamnesaData = result.data;
+
+                    // Remove loading
+                    chatContainer.innerHTML = '';
+
+                    // Show summary
+                    showSummary(result.data);
+                }
+            } catch (error) {
+                console.error('Process error:', error);
+                showAIMessage('Maaf terjadi kesalahan saat memproses jawaban.', false);
+            }
+        }
+
+        function showSummary(data) {
+            const summaryHTML = `
+                <div class="alert alert-success">
+                    ✓ Interview selesai! Berikut ringkasan data Anda:
+                </div>
+                <div class="summary-card">
+                    <h4>📋 Pre-Anamnesa (AI Generated)</h4>
+                    ${Object.entries(data).filter(([key]) => key !== 'metadata').map(([key, value]) => `
+                        <div class="summary-item">
+                            <div class="summary-label">${formatKey(key)}</div>
+                            <div class="summary-value">${typeof value === 'object' ? JSON.stringify(value, null, 2) : value}</div>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="alert alert-info" style="margin-top: 20px;">
+                    📌 Data ini akan otomatis tersimpan dan ter-fill saat dokter membuka rekam medis Anda.
+                </div>
+                <button class="btn btn-primary" onclick="window.confirmBooking()" style="width: 100%; margin-top: 20px;">
+                    Konfirmasi & Simpan Appointment
+                </button>
+            `;
+
+            chatContainer.innerHTML = summaryHTML;
+        }
+
+        function formatKey(key) {
+            return key.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+        }
+
+        window.confirmBooking = async function() {
+            const finalData = {
+                ...bookingData,
+                patient_id: 'DRD0005', // Demo - should be actual patient ID
+                detected_category: detectedCategory,
+                pre_anamnesa: preAnamnesaData
+            };
+
+            console.log('Saving appointment:', finalData);
+
+            alert('✓ Appointment berhasil dibuat!\n\nData anamnesa sudah disiapkan oleh AI dan akan otomatis muncul saat dokter membuka rekam medis Anda.');
+
+            // Close modal
+            modal.classList.remove('active');
+
+            // Reset form
+            form.reset();
+            detectionResult.innerHTML = '';
+        };
+
+        // Close modal on outside click
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                if (confirm('Yakin ingin membatalkan interview?')) {
+                    modal.classList.remove('active');
+                }
+            }
+        });
+    </script>
+</body>
+</html>
