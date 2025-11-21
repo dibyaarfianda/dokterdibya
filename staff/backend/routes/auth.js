@@ -10,7 +10,7 @@ const { asyncHandler, AppError, handleDatabaseError } = require('../middleware/e
 const { sendSuccess, sendError } = require('../utils/response');
 const { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } = require('../config/constants');
 const logger = require('../utils/logger');
-const { deletePatientWithRelations } = require('../services/patientDeletion');
+const { deletePatientWithRelations, deletePatientByEmail } = require('../services/patientDeletion');
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
@@ -873,6 +873,30 @@ router.post('/api/auth/resend-verification', asyncHandler(async (req, res) => {
         verification_token: verificationToken,
         message: 'Kode verifikasi baru telah dikirim ke email Anda'
     });
+}));
+
+// DELETE /api/admin/cleanup-email - Clean up patient by email from dual-table system (Superadmin only)
+router.delete('/api/admin/cleanup-email/:email', verifyToken, asyncHandler(async (req, res) => {
+    // Check if user is superadmin
+    if (req.user.role !== 'superadmin') {
+        logger.warn(`Unauthorized email cleanup attempt by ${req.user.email} (${req.user.role})`);
+        throw new AppError('Unauthorized access - Superadmin role required', HTTP_STATUS.FORBIDDEN);
+    }
+
+    const email = req.params.email;
+    const result = await deletePatientByEmail(email);
+
+    if (!result.found) {
+        throw new AppError('Email not found in system', HTTP_STATUS.NOT_FOUND);
+    }
+
+    logger.info(`Email cleanup: ${email} (Patient ID: ${result.patientId}) by ${req.user.email}`, result.deletedData);
+
+    sendSuccess(res, {
+        email: result.email,
+        patient_id: result.patientId,
+        deleted_data: result.deletedData
+    }, `Email ${email} cleaned up from all tables successfully`);
 }));
 
 // POST /api/auth/set-password - Set password after verification
