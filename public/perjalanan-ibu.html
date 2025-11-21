@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Perjalanan menjadi Ibu - dokterDIBYA</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0066FF;
+            --primary-dark: #0052CC;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg-gradient: linear-gradient(135deg, #1a1a1a 0%, #303030 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bubble {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-100px) rotate(180deg); }
+        }
+
+        .container-wrapper {
+            position: relative;
+            z-index: 1;
+            padding: 40px 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .header h1 {
+            font-size: 42px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .header p {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .back-btn {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            z-index: 1000;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: var(--primary);
+            color: #ffffff;
+            text-decoration: none;
+            transform: translateX(-5px);
+        }
+
+        /* Flipbook Container */
+        .flipbook-container {
+            perspective: 2000px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 40px auto;
+            position: relative;
+        }
+
+        .book {
+            position: relative;
+            width: 900px;
+            height: 600px;
+            transform-style: preserve-3d;
+            transition: transform 0.5s;
+        }
+
+        .page {
+            position: absolute;
+            width: 50%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
+            border-radius: 0 12px 12px 0;
+            transform-origin: left center;
+            transition: transform 0.8s cubic-bezier(0.645, 0.045, 0.355, 1);
+            overflow: hidden;
+        }
+
+        .page.flipped {
+            transform: rotateY(-180deg);
+        }
+
+        .page-content {
+            width: 100%;
+            height: 100%;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            backface-visibility: hidden;
+        }
+
+        .page-content img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .page-number {
+            position: absolute;
+            bottom: 20px;
+            right: 30px;
+            font-size: 14px;
+            color: #666;
+            font-weight: 600;
+        }
+
+        /* Navigation Controls */
+        .controls {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            padding: 14px 28px;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-btn:hover:not(:disabled) {
+            background: var(--primary);
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0, 102, 255, 0.4);
+        }
+
+        .nav-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .page-indicator {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        /* Responsive */
+        @media (max-width: 992px) {
+            .book {
+                width: 700px;
+                height: 480px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .book {
+                width: 90vw;
+                height: 60vw;
+            }
+
+            .header h1 {
+                font-size: 32px;
+            }
+
+            .back-btn {
+                top: 15px;
+                left: 15px;
+                padding: 10px 18px;
+                font-size: 14px;
+            }
+
+            .controls {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+
+        /* Book spine effect */
+        .book::before {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            width: 3px;
+            height: 100%;
+            background: linear-gradient(to bottom, #333, #555, #333);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-animation" id="bgAnimation"></div>
+
+    <a href="/patient-dashboard.html" class="back-btn">
+        <i class="fa fa-arrow-left"></i> Kembali ke Dashboard
+    </a>
+
+    <div class="container-wrapper">
+        <div class="header">
+            <h1><i class="fa fa-book"></i> Perjalanan menjadi Ibu</h1>
+            <p>Jelajahi momen indah dalam perjalanan kehamilan Anda</p>
+        </div>
+
+        <div class="flipbook-container">
+            <div class="book" id="book">
+                <!-- Pages will be generated by JavaScript -->
+            </div>
+        </div>
+
+        <div class="controls">
+            <button class="nav-btn" id="prevBtn" onclick="prevPage()">
+                <i class="fa fa-chevron-left"></i> Sebelumnya
+            </button>
+            <div class="page-indicator">
+                Halaman <span id="currentPage">1</span> dari <span id="totalPages">16</span>
+            </div>
+            <button class="nav-btn" id="nextBtn" onclick="nextPage()">
+                Selanjutnya <i class="fa fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Create floating bubbles
+        function createBubbles() {
+            const bgAnimation = document.getElementById('bgAnimation');
+            const bubbleCount = 15;
+
+            for (let i = 0; i < bubbleCount; i++) {
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+
+                const size = Math.random() * 60 + 20;
+                bubble.style.width = size + 'px';
+                bubble.style.height = size + 'px';
+                bubble.style.left = Math.random() * 100 + '%';
+                bubble.style.top = Math.random() * 100 + '%';
+                bubble.style.animationDelay = Math.random() * 8 + 's';
+                bubble.style.animationDuration = (Math.random() * 4 + 6) + 's';
+
+                bgAnimation.appendChild(bubble);
+            }
+        }
+
+        createBubbles();
+
+        // Book images
+        const images = [
+            '1.png', '2.png', '6.png', '7.png', '8.png', '9.png',
+            '10.png', '11.png', '12.png', '13.png', '14.png', '15.png',
+            '16.png', '17.png', '37.png', '38.png'
+        ];
+
+        let currentPageIndex = 0;
+
+        // Generate pages
+        function generatePages() {
+            const book = document.getElementById('book');
+
+            images.forEach((img, index) => {
+                const page = document.createElement('div');
+                page.className = 'page';
+                page.style.zIndex = images.length - index;
+
+                page.innerHTML = `
+                    <div class="page-content">
+                        <img src="/images/dokter-dibya-book/${img}" alt="Halaman ${index + 1}">
+                        <div class="page-number">${index + 1}</div>
+                    </div>
+                `;
+
+                book.appendChild(page);
+            });
+
+            updateControls();
+        }
+
+        // Navigate to next page
+        function nextPage() {
+            if (currentPageIndex < images.length - 1) {
+                const pages = document.querySelectorAll('.page');
+                pages[currentPageIndex].classList.add('flipped');
+                currentPageIndex++;
+                updateControls();
+            }
+        }
+
+        // Navigate to previous page
+        function prevPage() {
+            if (currentPageIndex > 0) {
+                currentPageIndex--;
+                const pages = document.querySelectorAll('.page');
+                pages[currentPageIndex].classList.remove('flipped');
+                updateControls();
+            }
+        }
+
+        // Update navigation controls
+        function updateControls() {
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const currentPageSpan = document.getElementById('currentPage');
+            const totalPagesSpan = document.getElementById('totalPages');
+
+            prevBtn.disabled = currentPageIndex === 0;
+            nextBtn.disabled = currentPageIndex === images.length - 1;
+            currentPageSpan.textContent = currentPageIndex + 1;
+            totalPagesSpan.textContent = images.length;
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight') {
+                nextPage();
+            } else if (e.key === 'ArrowLeft') {
+                prevPage();
+            }
+        });
+
+        // Initialize on page load
+        window.addEventListener('load', generatePages);
+    </script>
+</body>
+</html>
