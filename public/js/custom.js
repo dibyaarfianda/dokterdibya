@@ -15,13 +15,22 @@ $(function(){
     });
     /* end typed element */
 
-    /* Smooth scroll and Scroll spy (https://github.com/ChrisWojcik/single-page-nav)    
-    ---------------------------------------------------------------------------------*/ 
+    /* Smooth scroll and Scroll spy (https://github.com/ChrisWojcik/single-page-nav)
+    ---------------------------------------------------------------------------------*/
+    console.log('🔧 Initializing singlePageNav with filter:', ':not(.external):not([href*=".html"])');
+    var navLinks = $('.templatemo-nav a');
+    console.log('📊 Total nav links:', navLinks.length);
+    console.log('📊 Nav links:', navLinks.map(function() { return this.href; }).get());
+
     $('.templatemo-nav').singlePageNav({
         offset: $(".templatemo-nav").height(),
-        filter: ':not(.external)',
+        filter: ':not(.external):not([href*=".html"])',
         updateHash: false
     });
+
+    var filteredLinks = $('.templatemo-nav a:not(.external):not([href*=".html"])');
+    console.log('✅ singlePageNav initialized, filtered links:', filteredLinks.length);
+    console.log('📊 Filtered links:', filteredLinks.map(function() { return this.href; }).get());
 
     /* start navigation top js */
     $(window).scroll(function(){
@@ -35,7 +44,7 @@ $(function(){
     
     /* Hide mobile menu after clicking on a link
     -----------------------------------------------*/
-    $('.navbar-collapse a').click(function(){
+    $('.navbar-collapse a:not(.external)').click(function(){
         $(".navbar-collapse").collapse('hide');
     });
     /* end navigation top js */

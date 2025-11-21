@@ -1,14 +1,10 @@
 const db = require('../db');
 const logger = require('../utils/logger');
 
-// MR ID category prefixes
-const MR_PREFIX = {
-    'obstetri': 'MROBS',
-    'gyn_repro': 'MRGPR',
-    'gyn_special': 'MRGPS'
-};
+// Unified MR ID prefix (Dr. Dibya Medical Record)
+const MR_PREFIX = 'DRD';
 
-// Valid intake categories
+// Valid intake categories (for smart triage and form routing)
 const VALID_CATEGORIES = ['obstetri', 'gyn_repro', 'gyn_special'];
 
 /**
@@ -48,13 +44,13 @@ function determineMrCategory(intakeData) {
 }
 
 /**
- * Generate category-based MR ID (MROBS0001, MRGPR0002, MRGPS0003)
- * @param {string} category - Category: 'obstetri', 'gyn_repro', or 'gyn_special'
+ * Generate unified MR ID (DRD0001, DRD0002, DRD0003...)
+ * @param {string} category - Category: 'obstetri', 'gyn_repro', or 'gyn_special' (for tracking only)
  * @param {Object} connection - Optional database connection for transaction
  * @returns {Promise<{mrId: string, category: string, sequence: number}>}
  */
 async function generateCategoryBasedMrId(category, connection) {
-    // Validate category
+    // Validate category (still needed for smart triage tracking)
     if (!category || !VALID_CATEGORIES.includes(category)) {
         throw new Error(`Invalid MR category: ${category}. Must be one of: ${VALID_CATEGORIES.join(', ')}`);
     }
@@ -63,31 +59,30 @@ async function generateCategoryBasedMrId(category, connection) {
     const releaseLater = !connection;
 
     try {
-        // Lock and increment counter for this category
+        // Use unified counter (category = 'unified')
         await conn.query(
             'UPDATE sunday_clinic_mr_counters SET current_sequence = current_sequence + 1 WHERE category = ?',
-            [category]
+            ['unified']
         );
 
-        // Get new sequence number
+        // Get new sequence number from unified counter
         const [rows] = await conn.query(
             'SELECT current_sequence FROM sunday_clinic_mr_counters WHERE category = ?',
-            [category]
+            ['unified']
         );
 
         if (!rows.length) {
-            throw new Error(`Counter not found for category: ${category}`);
+            throw new Error('Unified counter not found');
         }
 
         const sequence = rows[0].current_sequence;
-        const prefix = MR_PREFIX[category];
-        const mrId = `${prefix}${String(sequence).padStart(4, '0')}`;
+        const mrId = `${MR_PREFIX}${String(sequence).padStart(4, '0')}`;
 
-        logger.info('Generated category-based MR ID', { mrId, category, sequence });
+        logger.info('Generated unified MR ID', { mrId, category, sequence });
 
         return { mrId, category, sequence };
     } catch (error) {
-        logger.error('Failed to generate category-based MR ID', {
+        logger.error('Failed to generate unified MR ID', {
             category,
             error: error.message
         });
@@ -146,6 +141,279 @@ async function findRecordByMrId(mrId, connection) {
         [mrId]
     );
     return rows[0] || null;
+}
+
+/**
+ * Find patient's MR history by category
+ * @param {string} patientId - Patient ID
+ * @param {string} category - Category (obstetri/gyn_repro/gyn_special)
+ * @param {Object} connection - Optional database connection
+ * @returns {Promise<Object|null>} MR history record or null
+ */
+async function findPatientMrByCategory(patientId, category, connection) {
+    const conn = connection || db;
+    const [rows] = await conn.query(
+        `SELECT * FROM patient_mr_history
+         WHERE patient_id = ? AND mr_category = ?
+         ORDER BY last_visit_date DESC
+         LIMIT 1`,
+        [patientId, category]
+    );
+    return rows[0] || null;
+}
+
+/**
+ * Get all MR IDs for a patient
+ * @param {string} patientId - Patient ID
+ * @param {Object} connection - Optional database connection
+ * @returns {Promise<Array>} Array of MR history records
+ */
+async function getPatientMrHistory(patientId, connection) {
+    const conn = connection || db;
+    const [rows] = await conn.query(
+        `SELECT * FROM patient_mr_history
+         WHERE patient_id = ?
+         ORDER BY last_visit_date DESC`,
+        [patientId]
+    );
+    return rows;
+}
+
+/**
+ * Smart category detection based on appointment complaint and patient history
+ * @param {Object} params
+ * @param {string} params.patientId - Patient ID
+ * @param {string} params.complaint - Chief complaint from appointment
+ * @param {Object} params.intakeData - Latest patient intake data
+ * @param {Object} connection - Optional database connection
+ * @returns {Promise<Object>} Detection result with category, confidence, reason
+ */
+async function detectVisitCategory({ patientId, complaint = '', intakeData = null }, connection) {
+    const conn = connection || db;
+
+    // Get patient's MR history
+    const mrHistory = await getPatientMrHistory(patientId, conn);
+
+    const chiefComplaint = (complaint || '').toLowerCase();
+
+    // RULE 1: Pregnancy-related keywords → Obstetri
+    const obstetriKeywords = [
+        'hamil', 'kehamilan', 'pregnant', 'pregnancy',
+        'usg', 'kontrol kandungan', 'cek janin',
+        'mual muntah', 'morning sickness', 'anc', 'prenatal',
+        'antenatal', 'trimester', 'usia kehamilan'
+    ];
+
+    if (obstetriKeywords.some(keyword => chiefComplaint.includes(keyword))) {
+        return {
+            category: 'obstetri',
+            confidence: 'high',
+            reason: 'Pregnancy-related complaint detected',
+            needsConfirmation: false,
+            keywords: obstetriKeywords.filter(k => chiefComplaint.includes(k))
+        };
+    }
+
+    // RULE 2: Contraception/reproductive → Gyn Repro
+    const reproKeywords = [
+        'kb', 'kontrasepsi', 'contraception',
+        'menstruasi', 'haid', 'menstrual', 'period',
+        'ingin punya anak', 'program hamil', 'fertility',
+        'pasca melahirkan', 'post partum', 'nifas',
+        'siklus haid', 'telat haid', 'amenorrhea'
+    ];
+
+    if (reproKeywords.some(keyword => chiefComplaint.includes(keyword))) {
+        return {
+            category: 'gyn_repro',
+            confidence: 'high',
+            reason: 'Reproductive health concern detected',
+            needsConfirmation: false,
+            keywords: reproKeywords.filter(k => chiefComplaint.includes(k))
+        };
+    }
+
+    // RULE 3: Gynecological issues → Gyn Special
+    const gynKeywords = [
+        'keputihan', 'discharge', 'gatal', 'itching',
+        'nyeri panggul', 'pelvic pain', 'perdarahan', 'bleeding',
+        'kista', 'cyst', 'miom', 'fibroid', 'endometriosis',
+        'kanker', 'cancer', 'tumor', 'benjolan'
+    ];
+
+    if (gynKeywords.some(keyword => chiefComplaint.includes(keyword))) {
+        return {
+            category: 'gyn_special',
+            confidence: 'high',
+            reason: 'Gynecological issue detected',
+            needsConfirmation: false,
+            keywords: gynKeywords.filter(k => chiefComplaint.includes(k))
+        };
+    }
+
+    // RULE 4: Check if currently pregnant from recent intake
+    if (intakeData?.pregnant_status === 'yes') {
+        const intakeDate = intakeData.created_at || intakeData.submission_date;
+        const isRecent = intakeDate && isWithinMonths(intakeDate, 9); // Within pregnancy period
+
+        if (isRecent) {
+            return {
+                category: 'obstetri',
+                confidence: 'medium',
+                reason: 'Currently pregnant (from recent intake)',
+                needsConfirmation: true,
+                intakeDate
+            };
+        }
+    }
+
+    // RULE 5: Post-partum period (< 6 months after obstetri visit)
+    const recentObstetri = mrHistory.find(mr =>
+        mr.mr_category === 'obstetri' && isWithinMonths(mr.last_visit_date, 6)
+    );
+
+    if (recentObstetri) {
+        return {
+            category: 'gyn_repro',
+            confidence: 'medium',
+            reason: 'Post-partum period (likely contraception or reproductive)',
+            needsConfirmation: true,
+            lastObstetriVisit: recentObstetri.last_visit_date
+        };
+    }
+
+    // RULE 6: Default to most recent category
+    if (mrHistory.length > 0) {
+        const mostRecent = mrHistory[0];
+        return {
+            category: mostRecent.mr_category,
+            confidence: 'low',
+            reason: `Last visit category: ${mostRecent.mr_category}`,
+            needsConfirmation: true,
+            lastVisit: mostRecent.last_visit_date,
+            mrId: mostRecent.mr_id
+        };
+    }
+
+    // RULE 7: First time patient - must ask
+    return {
+        category: null,
+        confidence: 'none',
+        reason: 'First time patient - category selection required',
+        needsConfirmation: true
+    };
+}
+
+/**
+ * Helper function to check if date is within specified months
+ * @param {Date|string} date - Date to check
+ * @param {number} months - Number of months
+ * @returns {boolean}
+ */
+function isWithinMonths(date, months) {
+    if (!date) return false;
+    const checkDate = new Date(date);
+    const now = new Date();
+    const monthsAgo = new Date();
+    monthsAgo.setMonth(monthsAgo.getMonth() - months);
+    return checkDate >= monthsAgo && checkDate <= now;
+}
+
+/**
+ * Get or create MR ID for visit with smart category detection
+ * @param {Object} params
+ * @param {string} params.patientId - Patient ID
+ * @param {string} params.category - Category (if manually specified)
+ * @param {string} params.complaint - Chief complaint
+ * @param {Object} params.intakeData - Patient intake data
+ * @param {Object} connection - Optional database connection
+ * @returns {Promise<Object>} MR ID information with category
+ */
+async function getOrCreateMrIdForVisit({
+    patientId,
+    category = null,
+    complaint = '',
+    intakeData = null
+}, connection) {
+    const conn = connection || await db.getConnection();
+    const releaseLater = !connection;
+
+    try {
+        // If category not specified, detect it
+        let finalCategory = category;
+        let detection = null;
+
+        if (!finalCategory) {
+            detection = await detectVisitCategory({
+                patientId,
+                complaint,
+                intakeData
+            }, conn);
+            finalCategory = detection.category || 'obstetri';
+        }
+
+        // Check if patient already has an MR ID for this category
+        const existingMr = await findPatientMrByCategory(patientId, finalCategory, conn);
+
+        if (existingMr) {
+            // Reuse existing MR ID
+            await conn.query(
+                `UPDATE patient_mr_history
+                 SET last_visit_date = CURDATE(),
+                     visit_count = visit_count + 1,
+                     updated_at = NOW()
+                 WHERE id = ?`,
+                [existingMr.id]
+            );
+
+            logger.info('Reusing existing MR ID for patient', {
+                patientId,
+                mrId: existingMr.mr_id,
+                category: finalCategory,
+                visitCount: existingMr.visit_count + 1
+            });
+
+            return {
+                mrId: existingMr.mr_id,
+                category: finalCategory,
+                sequence: existingMr.mr_id.match(/\d+/)?.[0],
+                isNew: false,
+                previousVisits: existingMr.visit_count,
+                detection
+            };
+        }
+
+        // Generate NEW MR ID for this category
+        const { mrId, sequence } = await generateCategoryBasedMrId(finalCategory, conn);
+
+        // Record in patient MR history
+        await conn.query(
+            `INSERT INTO patient_mr_history
+             (patient_id, mr_id, mr_category, first_visit_date, last_visit_date, visit_count)
+             VALUES (?, ?, ?, CURDATE(), CURDATE(), 1)`,
+            [patientId, mrId, finalCategory]
+        );
+
+        logger.info('Created new MR ID for patient', {
+            patientId,
+            mrId,
+            category: finalCategory,
+            sequence
+        });
+
+        return {
+            mrId,
+            category: finalCategory,
+            sequence,
+            isNew: true,
+            previousVisits: 0,
+            detection
+        };
+    } finally {
+        if (releaseLater) {
+            conn.release();
+        }
+    }
 }
 
 /**
@@ -285,6 +553,12 @@ module.exports = {
     generateCategoryBasedMrId,
     determineMrCategory,
     getCategoryStatistics,
+
+    // Smart Triage functions
+    detectVisitCategory,
+    getOrCreateMrIdForVisit,
+    getPatientMrHistory,
+    findPatientMrByCategory,
 
     // Updated functions
     createSundayClinicRecord,

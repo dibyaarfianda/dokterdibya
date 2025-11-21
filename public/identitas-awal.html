@@ -1,0 +1,969 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Kenalan Yuk! 👋</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #ec4899;
+            --success: #10b981;
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --card-bg: #ffffff;
+            --text: #1f2937;
+            --text-light: #6b7280;
+            --border: #e5e7eb;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            padding: 0;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .bubble {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-100px) rotate(180deg); }
+        }
+
+        /* Main Container */
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 600px;
+            margin: 0 auto;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+
+        /* Welcome Screen */
+        .welcome-screen {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            animation: fadeIn 0.8s ease-in;
+        }
+
+        .welcome-screen.hidden {
+            display: none;
+        }
+
+        .welcome-icon {
+            margin-bottom: 20px;
+        }
+
+        .welcome-icon img {
+            height: 120px;
+            width: auto;
+            animation: wave 2s ease-in-out infinite;
+        }
+
+        @keyframes wave {
+            0%, 100% { transform: rotate(0deg); }
+            25% { transform: rotate(5deg); }
+            75% { transform: rotate(-5deg); }
+        }
+
+        .welcome-screen h1 {
+            color: white;
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .welcome-screen p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 16px;
+            margin-bottom: 40px;
+            line-height: 1.6;
+        }
+
+        .btn-start {
+            background: white;
+            color: var(--primary);
+            border: none;
+            padding: 18px 50px;
+            border-radius: 50px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: var(--shadow);
+            transition: all 0.3s ease;
+        }
+
+        .btn-start:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Form Container */
+        .form-container {
+            display: none;
+            flex-direction: column;
+            padding-top: 20px;
+            animation: slideUp 0.5s ease-out;
+        }
+
+        .form-container.active {
+            display: flex;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Progress Bar */
+        .progress-bar {
+            background: rgba(255, 255, 255, 0.3);
+            height: 6px;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .progress-fill {
+            background: white;
+            height: 100%;
+            width: 0%;
+            transition: width 0.4s ease;
+            border-radius: 10px;
+        }
+
+        .progress-text {
+            color: white;
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-align: center;
+            font-weight: 500;
+        }
+
+        /* Question Card */
+        .question-card {
+            background: var(--card-bg);
+            border-radius: 25px;
+            padding: 30px 25px;
+            box-shadow: var(--shadow);
+            margin-bottom: 20px;
+            display: none;
+            animation: cardEnter 0.5s ease-out;
+        }
+
+        .question-card.active {
+            display: block;
+        }
+
+        @keyframes cardEnter {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .question-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .question-title {
+            font-size: 22px;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+
+        .question-subtitle {
+            font-size: 14px;
+            color: var(--text-light);
+            margin-bottom: 25px;
+        }
+
+        /* Input Fields */
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+
+        .input-group input,
+        .input-group select,
+        .input-group textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid var(--border);
+            border-radius: 15px;
+            font-size: 16px;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .input-group input:focus,
+        .input-group select:focus,
+        .input-group textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        .input-group input[readonly] {
+            background: #f9fafb;
+            color: var(--text-light);
+        }
+
+        .input-group small {
+            display: block;
+            margin-top: 6px;
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        /* Radio/Checkbox Options */
+        .option-group {
+            display: grid;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .option-item {
+            position: relative;
+        }
+
+        .option-item input[type="radio"],
+        .option-item input[type="checkbox"] {
+            position: absolute;
+            opacity: 0;
+        }
+
+        .option-item label {
+            display: block;
+            padding: 18px 20px;
+            border: 2px solid var(--border);
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .option-item input:checked + label {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+            transform: scale(1.02);
+        }
+
+        .option-item label:hover {
+            border-color: var(--primary);
+        }
+
+        /* Buttons */
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 25px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 16px;
+            border: none;
+            border-radius: 15px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        .btn-back {
+            background: #f3f4f6;
+            color: var(--text);
+        }
+
+        .btn-back:hover {
+            background: #e5e7eb;
+        }
+
+        .btn-next {
+            background: var(--primary);
+            color: white;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-next:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-next:disabled {
+            background: #d1d5db;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Success Screen */
+        .success-screen {
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 40px 20px;
+            animation: fadeIn 0.8s ease-in;
+        }
+
+        .success-screen.active {
+            display: flex;
+        }
+
+        .success-icon {
+            font-size: 100px;
+            margin-bottom: 20px;
+            animation: checkmark 0.8s ease-in-out;
+        }
+
+        @keyframes checkmark {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        .success-screen h2 {
+            color: white;
+            font-size: 28px;
+            margin-bottom: 15px;
+        }
+
+        .success-screen p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 16px;
+            margin-bottom: 30px;
+        }
+
+        /* Auto-save indicator */
+        .autosave-indicator {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--success);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: var(--shadow);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            z-index: 1000;
+        }
+
+        .autosave-indicator.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Mobile optimizations */
+        @media (max-width: 480px) {
+            .container {
+                padding: 15px;
+            }
+
+            .welcome-screen h1 {
+                font-size: 28px;
+            }
+
+            .question-title {
+                font-size: 20px;
+            }
+
+            .question-card {
+                padding: 25px 20px;
+            }
+        }
+
+        /* Loading Animation */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-animation" id="bgAnimation"></div>
+
+    <div class="container">
+        <!-- Welcome Screen -->
+        <div class="welcome-screen" id="welcomeScreen">
+            <div class="welcome-icon">
+                <img src="images/DIBYA.svg" alt="Dibya Klinik">
+            </div>
+            <h1>Halo! Selamat Datang</h1>
+            <p>Sebelum memulai konsultasi, mari kenalan dulu dengan mengisi data diri Anda.<br><br>Tenang, prosesnya cepat kok! ⚡</p>
+            <button class="btn-start" onclick="startForm()">Mulai Sekarang</button>
+        </div>
+
+        <!-- Form Container -->
+        <div class="form-container" id="formContainer">
+            <!-- Progress Bar -->
+            <div>
+                <div class="progress-text" id="progressText">Langkah 1 dari 7</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+
+            <form id="identityForm">
+                <!-- Question 1: Name -->
+                <div class="question-card active" data-step="1">
+                    <div class="question-icon">😊</div>
+                    <h2 class="question-title">Siapa nama lengkap Anda?</h2>
+                    <p class="question-subtitle">Nama sesuai KTP ya!</p>
+                    <div class="input-group">
+                        <input type="text" id="full_name" name="patient_name" placeholder="Contoh: Siti Nurhaliza" required autocomplete="name">
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-next" onclick="nextStep()">Lanjut →</button>
+                    </div>
+                </div>
+
+                <!-- Question 2: DOB & NIK -->
+                <div class="question-card" data-step="2">
+                    <div class="question-icon">🎂</div>
+                    <h2 class="question-title">Kapan tanggal lahir Anda?</h2>
+                    <p class="question-subtitle">Kami akan menghitung usia Anda otomatis</p>
+                    <div class="input-group">
+                        <label>Tanggal Lahir</label>
+                        <input type="date" id="dob" name="patient_dob" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Usia</label>
+                        <input type="number" id="age" name="patient_age" readonly placeholder="Otomatis dihitung">
+                    </div>
+                    <div class="input-group">
+                        <label>NIK (Opsional)</label>
+                        <input type="text" id="nik" name="nik" inputmode="numeric" maxlength="16" placeholder="16 digit NIK">
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-back" onclick="prevStep()">← Kembali</button>
+                        <button type="button" class="btn btn-next" onclick="nextStep()">Lanjut →</button>
+                    </div>
+                </div>
+
+                <!-- Question 3: Contact -->
+                <div class="question-card" data-step="3">
+                    <div class="question-icon">📱</div>
+                    <h2 class="question-title">Bagaimana kami bisa menghubungi Anda?</h2>
+                    <p class="question-subtitle">Nomor HP untuk konfirmasi janji temu</p>
+                    <div class="input-group">
+                        <label>Nomor WhatsApp/HP</label>
+                        <input type="tel" id="phone" name="patient_phone" placeholder="081234567890" required autocomplete="tel">
+                        <small>Nomor dimulai 0 akan otomatis diubah ke 628</small>
+                    </div>
+                    <div class="input-group">
+                        <label>Kontak Darurat (Opsional)</label>
+                        <input type="tel" id="emergency_contact" name="patient_emergency_contact" placeholder="081234567890" autocomplete="tel">
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-back" onclick="prevStep()">← Kembali</button>
+                        <button type="button" class="btn btn-next" onclick="nextStep()">Lanjut →</button>
+                    </div>
+                </div>
+
+                <!-- Question 4: Address -->
+                <div class="question-card" data-step="4">
+                    <div class="question-icon">🏡</div>
+                    <h2 class="question-title">Di mana alamat Anda?</h2>
+                    <p class="question-subtitle">Alamat lengkap untuk keperluan administrasi</p>
+                    <div class="input-group">
+                        <textarea id="address" name="patient_address" rows="4" placeholder="Jl. Contoh No. 123, RT/RW, Kelurahan, Kecamatan, Kota"></textarea>
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-back" onclick="prevStep()">← Kembali</button>
+                        <button type="button" class="btn btn-next" onclick="nextStep()">Lanjut →</button>
+                    </div>
+                </div>
+
+                <!-- Question 5: Marital Status -->
+                <div class="question-card" data-step="5">
+                    <div class="question-icon">💍</div>
+                    <h2 class="question-title">Status pernikahan Anda?</h2>
+                    <p class="question-subtitle">Pilih salah satu</p>
+                    <div class="option-group">
+                        <div class="option-item">
+                            <input type="radio" id="status_single" name="patient_marital_status" value="single">
+                            <label for="status_single">Single</label>
+                        </div>
+                        <div class="option-item">
+                            <input type="radio" id="status_menikah" name="patient_marital_status" value="menikah">
+                            <label for="status_menikah">Menikah</label>
+                        </div>
+                        <div class="option-item">
+                            <input type="radio" id="status_cerai" name="patient_marital_status" value="cerai">
+                            <label for="status_cerai">Cerai</label>
+                        </div>
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-back" onclick="prevStep()">← Kembali</button>
+                        <button type="button" class="btn btn-next" onclick="nextStep()">Lanjut →</button>
+                    </div>
+                </div>
+
+                <!-- Question 6: Spouse Info (conditional) -->
+                <div class="question-card" data-step="6">
+                    <div class="question-icon">👨‍👩‍👧</div>
+                    <h2 class="question-title">Informasi Pasangan</h2>
+                    <p class="question-subtitle">Data suami (opsional)</p>
+                    <div class="input-group">
+                        <label>Nama Suami</label>
+                        <input type="text" id="husband_name" name="patient_husband_name" placeholder="Nama lengkap suami">
+                    </div>
+                    <div class="input-group">
+                        <label>Umur Suami</label>
+                        <input type="number" id="husband_age" name="husband_age" min="15" max="80" placeholder="Contoh: 35">
+                    </div>
+                    <div class="input-group">
+                        <label>Pekerjaan Suami</label>
+                        <input type="text" id="husband_job" name="husband_job" placeholder="Contoh: Pegawai Swasta">
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-back" onclick="prevStep()">← Kembali</button>
+                        <button type="button" class="btn btn-next" onclick="nextStep()">Lanjut →</button>
+                    </div>
+                </div>
+
+                <!-- Question 7: Additional Info -->
+                <div class="question-card" data-step="7">
+                    <div class="question-icon">💼</div>
+                    <h2 class="question-title">Informasi Tambahan</h2>
+                    <p class="question-subtitle">Beberapa data terakhir</p>
+                    <div class="input-group">
+                        <label>Pekerjaan Anda</label>
+                        <input type="text" id="occupation" name="patient_occupation" placeholder="Contoh: Ibu Rumah Tangga">
+                    </div>
+                    <div class="input-group">
+                        <label>Pendidikan Terakhir</label>
+                        <select id="education" name="patient_education">
+                            <option value="">Pilih pendidikan</option>
+                            <option value="sd">SD/MI</option>
+                            <option value="smp">SMP/MTs</option>
+                            <option value="sma">SMA/SMK/MA</option>
+                            <option value="diploma">Diploma</option>
+                            <option value="sarjana">Sarjana</option>
+                            <option value="lainnya">Lainnya</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Asuransi (Opsional)</label>
+                        <input type="text" id="insurance" name="patient_insurance" placeholder="BPJS, Private, dll">
+                    </div>
+                    <div class="input-group">
+                        <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                            <input type="checkbox" id="consent" name="consent" required style="width: auto;">
+                            <span style="font-size: 14px;">Saya setuju data ini digunakan untuk pelayanan kesehatan</span>
+                        </label>
+                    </div>
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-back" onclick="prevStep()">← Kembali</button>
+                        <button type="submit" class="btn btn-next">Selesai ✓</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Loading Screen -->
+        <div class="loading" id="loadingScreen">
+            <div class="spinner"></div>
+            <p style="color: white; font-size: 16px;">Menyimpan data Anda...</p>
+        </div>
+
+        <!-- Success Screen -->
+        <div class="success-screen" id="successScreen">
+            <div class="success-icon">✅</div>
+            <h2>Data Berhasil Disimpan!</h2>
+            <p>Selamat datang di Dibya Klinik.<br>Anda akan dialihkan ke dashboard...</p>
+        </div>
+    </div>
+
+    <!-- Autosave Indicator -->
+    <div class="autosave-indicator" id="autosaveIndicator">
+        ✓ Tersimpan otomatis
+    </div>
+
+    <script type="module">
+        import { apiService } from './scripts/api-service.js';
+        import { auth } from './scripts/vps-auth-v2.js';
+
+        // Constants
+        const STORAGE_KEY = 'dibya-identity-draft-v2';
+        const TOTAL_STEPS = 7;
+        let currentStep = 1;
+        let autosaveTimer = null;
+
+        // Create animated background bubbles
+        function createBubbles() {
+            const bg = document.getElementById('bgAnimation');
+            for (let i = 0; i < 10; i++) {
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+                const size = Math.random() * 100 + 50;
+                bubble.style.width = size + 'px';
+                bubble.style.height = size + 'px';
+                bubble.style.left = Math.random() * 100 + '%';
+                bubble.style.top = Math.random() * 100 + '%';
+                bubble.style.animationDelay = Math.random() * 5 + 's';
+                bg.appendChild(bubble);
+            }
+        }
+
+        // Start form
+        window.startForm = function() {
+            document.getElementById('welcomeScreen').classList.add('hidden');
+            document.getElementById('formContainer').classList.add('active');
+            updateProgress();
+            restoreDraft();
+            autoFillFromProfile();
+        };
+
+        // Navigate steps
+        window.nextStep = function() {
+            if (!validateCurrentStep()) return;
+
+            const currentCard = document.querySelector(`.question-card[data-step="${currentStep}"]`);
+            currentCard.classList.remove('active');
+
+            // Skip spouse info if not married
+            if (currentStep === 5) {
+                const maritalStatus = document.querySelector('input[name="patient_marital_status"]:checked')?.value;
+                if (maritalStatus !== 'menikah') {
+                    currentStep += 2; // Skip step 6
+                } else {
+                    currentStep++;
+                }
+            } else {
+                currentStep++;
+            }
+
+            const nextCard = document.querySelector(`.question-card[data-step="${currentStep}"]`);
+            if (nextCard) {
+                nextCard.classList.add('active');
+                updateProgress();
+                saveDraft();
+            }
+
+            // Scroll to top
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        window.prevStep = function() {
+            const currentCard = document.querySelector(`.question-card[data-step="${currentStep}"]`);
+            currentCard.classList.remove('active');
+
+            // Skip spouse info if not married
+            if (currentStep === 7) {
+                const maritalStatus = document.querySelector('input[name="patient_marital_status"]:checked')?.value;
+                if (maritalStatus !== 'menikah') {
+                    currentStep -= 2; // Skip step 6
+                } else {
+                    currentStep--;
+                }
+            } else {
+                currentStep--;
+            }
+
+            const prevCard = document.querySelector(`.question-card[data-step="${currentStep}"]`);
+            if (prevCard) {
+                prevCard.classList.add('active');
+                updateProgress();
+            }
+
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        // Validate current step
+        function validateCurrentStep() {
+            const currentCard = document.querySelector(`.question-card[data-step="${currentStep}"]`);
+            const inputs = currentCard.querySelectorAll('input[required], select[required], textarea[required]');
+
+            for (const input of inputs) {
+                if (!input.value || (input.type === 'checkbox' && !input.checked)) {
+                    input.focus();
+                    alert('Mohon lengkapi field yang wajib diisi');
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // Update progress bar
+        function updateProgress() {
+            const progress = (currentStep / TOTAL_STEPS) * 100;
+            document.getElementById('progressFill').style.width = progress + '%';
+            document.getElementById('progressText').textContent = `Langkah ${currentStep} dari ${TOTAL_STEPS}`;
+        }
+
+        // Phone formatting
+        function formatPhoneNumber(phoneNumber) {
+            if (!phoneNumber) return '';
+            let cleaned = phoneNumber.replace(/[\s\-\(\)]/g, '');
+
+            if (cleaned.startsWith('+62')) {
+                cleaned = cleaned.substring(1);
+            } else if (cleaned.startsWith('08')) {
+                cleaned = '62' + cleaned.substring(1);
+            } else if (cleaned.startsWith('8') && !cleaned.startsWith('62')) {
+                cleaned = '62' + cleaned;
+            }
+
+            return cleaned;
+        }
+
+        // Update age from DOB
+        function updateAge() {
+            const dobField = document.getElementById('dob');
+            const ageField = document.getElementById('age');
+
+            if (!dobField.value) return;
+
+            const birthDate = new Date(dobField.value);
+            const today = new Date();
+            let age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+
+            if (age >= 0) {
+                ageField.value = age;
+            }
+        }
+
+        // Auto-fill from profile
+        async function autoFillFromProfile() {
+            try {
+                const user = auth.currentUser;
+                if (!user) return;
+
+                if (user.name) document.getElementById('full_name').value = user.name;
+                if (user.dob) {
+                    document.getElementById('dob').value = user.dob;
+                    updateAge();
+                }
+                if (user.phone) document.getElementById('phone').value = formatPhoneNumber(user.phone);
+
+                saveDraft();
+            } catch (error) {
+                console.error('Error auto-filling:', error);
+            }
+        }
+
+        // Save draft
+        function saveDraft() {
+            try {
+                const formData = new FormData(document.getElementById('identityForm'));
+                const data = { step: currentStep };
+
+                for (const [key, value] of formData.entries()) {
+                    data[key] = value;
+                }
+
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                showAutosaveIndicator();
+            } catch (error) {
+                console.error('Error saving draft:', error);
+            }
+        }
+
+        // Restore draft
+        function restoreDraft() {
+            try {
+                const stored = localStorage.getItem(STORAGE_KEY);
+                if (!stored) return;
+
+                const data = JSON.parse(stored);
+
+                for (const [key, value] of Object.entries(data)) {
+                    if (key === 'step') continue;
+
+                    const input = document.querySelector(`[name="${key}"]`);
+                    if (input) {
+                        if (input.type === 'checkbox') {
+                            input.checked = value === 'on' || value === true;
+                        } else if (input.type === 'radio') {
+                            const radio = document.querySelector(`[name="${key}"][value="${value}"]`);
+                            if (radio) radio.checked = true;
+                        } else {
+                            input.value = value;
+                        }
+                    }
+                }
+
+                updateAge();
+            } catch (error) {
+                console.error('Error restoring draft:', error);
+            }
+        }
+
+        // Show autosave indicator
+        function showAutosaveIndicator() {
+            const indicator = document.getElementById('autosaveIndicator');
+            indicator.classList.add('show');
+            setTimeout(() => {
+                indicator.classList.remove('show');
+            }, 2000);
+        }
+
+        // Form submission
+        document.getElementById('identityForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!validateCurrentStep()) return;
+
+            // Show loading
+            document.getElementById('formContainer').style.display = 'none';
+            document.getElementById('loadingScreen').classList.add('active');
+
+            try {
+                const formData = new FormData(e.target);
+                const data = {};
+
+                for (const [key, value] of formData.entries()) {
+                    data[key] = value;
+                }
+
+                // Format phone numbers
+                if (data.patient_phone) data.patient_phone = formatPhoneNumber(data.patient_phone);
+                if (data.patient_emergency_contact) data.patient_emergency_contact = formatPhoneNumber(data.patient_emergency_contact);
+
+                const response = await apiService.put('/patients/profile/me', data);
+
+                if (response.success) {
+                    localStorage.removeItem(STORAGE_KEY);
+
+                    // Show success screen
+                    document.getElementById('loadingScreen').classList.remove('active');
+                    document.getElementById('successScreen').classList.add('active');
+
+                    // Get patient_id from response or session
+                    const patientId = response.data?.patient_id || response.patient_id || sessionStorage.getItem('user_id');
+
+                    // Redirect after 3 seconds
+                    setTimeout(() => {
+                        window.location.href = '/patient-dashboard.html?patient_id=' + patientId;
+                    }, 3000);
+                } else {
+                    alert('Gagal menyimpan data: ' + (response.message || 'Terjadi kesalahan'));
+                    document.getElementById('loadingScreen').classList.remove('active');
+                    document.getElementById('formContainer').style.display = 'flex';
+                }
+            } catch (error) {
+                console.error('Error submitting form:', error);
+                alert('Terjadi kesalahan. Silakan coba lagi.');
+                document.getElementById('loadingScreen').classList.remove('active');
+                document.getElementById('formContainer').style.display = 'flex';
+            }
+        });
+
+        // Event listeners
+        document.getElementById('dob').addEventListener('change', updateAge);
+        document.getElementById('phone').addEventListener('blur', function() {
+            this.value = formatPhoneNumber(this.value);
+        });
+        document.getElementById('emergency_contact').addEventListener('blur', function() {
+            this.value = formatPhoneNumber(this.value);
+        });
+
+        // Auto-save on input
+        document.getElementById('identityForm').addEventListener('input', () => {
+            clearTimeout(autosaveTimer);
+            autosaveTimer = setTimeout(saveDraft, 1500);
+        });
+
+        // Initialize
+        createBubbles();
+    </script>
+</body>
+</html>

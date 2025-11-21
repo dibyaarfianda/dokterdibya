@@ -15,12 +15,14 @@ CREATE TABLE IF NOT EXISTS sunday_clinic_mr_counters (
     UNIQUE KEY uq_category (category)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Initialize counters for each category
+-- Initialize counters for each category (kept for backward compatibility)
+-- and add unified counter for DRD#### numbering
 INSERT INTO sunday_clinic_mr_counters (category, current_sequence)
 VALUES
     ('obstetri', 0),
     ('gyn_repro', 0),
-    ('gyn_special', 0)
+    ('gyn_special', 0),
+    ('unified', 0)
 ON DUPLICATE KEY UPDATE category = category;
 
 -- Add category and sequence columns to sunday_clinic_records if they don't exist

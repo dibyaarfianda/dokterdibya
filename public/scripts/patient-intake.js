@@ -33,17 +33,14 @@ const previousPregnancySection = document.getElementById('previous-pregnancy-sec
 // const addLabRowBtn = document.getElementById('add-lab-row');
 const patientSignatureField = document.getElementById('patient_signature');
 const categoryField = document.getElementById('intake_category');
-const pregnantRadios = Array.from(document.querySelectorAll('input[name="pregnant_status"]'));
-const reproductiveRadios = Array.from(document.querySelectorAll('input[name="needs_reproductive"]'));
-const gynIssueRadios = Array.from(document.querySelectorAll('input[name="has_gyn_issue"]'));
-const nonPregnantFlow = document.getElementById('non-pregnant-flow');
-const gynIssueQuestion = document.getElementById('gyn-issue-question');
-const adminFollowupContainer = document.getElementById('admin-followup-container');
-const adminFollowupNote = document.getElementById('admin_followup_note');
-const adminFollowupAdditional = document.getElementById('admin_followup_note_secondary');
-const categorySummary = document.getElementById('category-summary');
-const categoryTag = document.getElementById('category-tag');
-const categoryDescription = document.getElementById('category-description');
+const lmpDateIntake = document.getElementById('lmp_date_intake');
+const eddDateIntake = document.getElementById('edd_date_intake');
+const gaWeeksIntake = document.getElementById('ga_weeks_intake');
+const gaDaysIntake = document.getElementById('ga_days_intake');
+const positiveTestDate = document.getElementById('positive_test_date');
+const categorySummary = null; // Removed from UI but referenced in code
+const categoryTag = null; // Removed from UI but referenced in code
+const categoryDescription = null; // Removed from UI but referenced in code
 const categorySpecificBlocks = Array.from(document.querySelectorAll('[data-category-visible]'));
 const fertilityProgramSelect = document.getElementById('fertility_program_interest');
 const fertilityHistorySection = document.getElementById('fertility-history-section');
@@ -66,6 +63,8 @@ let lastAutoEdd = null;
 
 const riskFactorLabels = {
     age_extremes: 'Usia ibu di bawah 18 tahun atau di atas 35 tahun',
+    hypertension: 'Tekanan Darah Tinggi',
+    diabetes: 'Gula Darah Tinggi',
     previous_complication: 'Riwayat komplikasi kehamilan sebelumnya',
     multiple_pregnancy: 'Kemungkinan kehamilan kembar',
     medical_conditions: 'Memiliki penyakit medis yang berisiko',
@@ -130,15 +129,6 @@ function setRadioRequired(inputs, required) {
     });
 }
 
-function toggleAdminNoteVisibility(shouldShow) {
-    if (!adminFollowupContainer) {
-        return;
-    }
-    adminFollowupContainer.hidden = !shouldShow;
-    if (adminFollowupNote) {
-        adminFollowupNote.required = shouldShow;
-    }
-}
 
 function applyHeightUnknownState() {
     if (!heightField) {
@@ -372,99 +362,14 @@ function setActiveCategory(category) {
     }
 }
 
+// Simple category derivation - all patients are obstetri for now
 function deriveCategoryFromRouting() {
-    const pregnantValue = getSelectedValue(pregnantRadios);
-    if (pregnantValue === 'yes') {
-        return 'obstetri';
-    }
-    if (pregnantValue === 'no') {
-        const reproductiveValue = getSelectedValue(reproductiveRadios);
-        if (reproductiveValue === 'yes') {
-            return 'gyn_repro';
-        }
-        if (reproductiveValue === 'no') {
-            const issueValue = getSelectedValue(gynIssueRadios);
-            if (issueValue === 'yes') {
-                return 'gyn_special';
-            }
-            if (issueValue === 'no') {
-                if (adminFollowupNote && adminFollowupNote.value.trim().length > 0) {
-                    return 'admin_followup';
-                }
-                return null;
-            }
-            return null;
-        }
-        return null;
-    }
-    return null;
+    // All patients filling this form are obstetri patients
+    return 'obstetri';
 }
 
 function updateRoutingVisibility() {
-    const pregnantValue = getSelectedValue(pregnantRadios);
-    if (pregnantValue === 'yes') {
-        if (nonPregnantFlow) {
-            nonPregnantFlow.hidden = true;
-        }
-        if (gynIssueQuestion) {
-            gynIssueQuestion.hidden = true;
-        }
-        setRadioRequired(reproductiveRadios, false);
-        setRadioRequired(gynIssueRadios, false);
-        toggleAdminNoteVisibility(false);
-        return;
-    }
-
-    if (pregnantValue === 'no') {
-        if (nonPregnantFlow) {
-            nonPregnantFlow.hidden = false;
-        }
-        const reproductiveValue = getSelectedValue(reproductiveRadios);
-        const reproductiveAnswered = reproductiveValue !== null;
-        setRadioRequired(reproductiveRadios, true);
-
-        if (reproductiveValue === 'yes') {
-            if (gynIssueQuestion) {
-                gynIssueQuestion.hidden = true;
-            }
-            setRadioRequired(gynIssueRadios, false);
-            toggleAdminNoteVisibility(false);
-            return;
-        }
-
-        if (reproductiveValue === 'no') {
-            if (gynIssueQuestion) {
-                gynIssueQuestion.hidden = false;
-            }
-            const issueValue = getSelectedValue(gynIssueRadios);
-            setRadioRequired(gynIssueRadios, true);
-            if (issueValue === 'no') {
-                toggleAdminNoteVisibility(true);
-            } else {
-                toggleAdminNoteVisibility(false);
-            }
-            return;
-        }
-
-        if (!reproductiveAnswered) {
-            if (gynIssueQuestion) {
-                gynIssueQuestion.hidden = true;
-            }
-            setRadioRequired(gynIssueRadios, false);
-            toggleAdminNoteVisibility(false);
-            return;
-        }
-    }
-
-    if (nonPregnantFlow) {
-        nonPregnantFlow.hidden = true;
-    }
-    if (gynIssueQuestion) {
-        gynIssueQuestion.hidden = true;
-    }
-    setRadioRequired(reproductiveRadios, false);
-    setRadioRequired(gynIssueRadios, false);
-    toggleAdminNoteVisibility(false);
+    // No routing needed - all obstetri
 }
 
 function handleRoutingChange() {
@@ -1378,31 +1283,10 @@ if (heightUnknownCheckbox) {
 
 prevBtn.disabled = true;
 
-pregnantRadios.forEach((radio) => {
-    radio.addEventListener('change', handleRoutingChange);
-});
-
-reproductiveRadios.forEach((radio) => {
-    radio.addEventListener('change', handleRoutingChange);
-});
-
-gynIssueRadios.forEach((radio) => {
-    radio.addEventListener('change', handleRoutingChange);
-});
-
-if (adminFollowupNote) {
-    adminFollowupNote.addEventListener('input', () => {
-        if (adminFollowupAdditional && !adminFollowupAdditional.dataset.userEdited) {
-            adminFollowupAdditional.value = adminFollowupNote.value;
-        }
-        handleRoutingChange();
-    });
-}
-
-if (adminFollowupAdditional) {
-    adminFollowupAdditional.addEventListener('input', () => {
-        adminFollowupAdditional.dataset.userEdited = 'true';
-    });
+// All patients are obstetri - set category immediately
+if (categoryField) {
+    categoryField.value = 'obstetri';
+    setActiveCategory('obstetri');
 }
 
 if (fertilityProgramSelect) {
@@ -1476,4 +1360,118 @@ if (paymentInsuranceCheckbox && insuranceNameField) {
             insuranceNameField.value = '';
         }
     });
+}
+
+// Auto-calculate EDD and GA from LMP - Intake Form Version
+if (lmpDateIntake) {
+    // Function to format date in Indonesian style
+    function formatIndonesianDate(date) {
+        const months = [
+            'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+        ];
+        const day = date.getDate();
+        const month = months[date.getMonth()];
+        const year = date.getFullYear();
+        return `${day} ${month} ${year}`;
+    }
+
+    // Calculate EDD and GA when LMP changes
+    lmpDateIntake.addEventListener('change', function(e) {
+        const lmpValue = e.target.value;
+        if (!lmpValue) {
+            // Clear fields if LMP is cleared
+            if (eddDateIntake) eddDateIntake.value = '';
+            if (gaWeeksIntake) gaWeeksIntake.value = '';
+            if (gaDaysIntake) gaDaysIntake.value = '';
+            return;
+        }
+
+        const lmpDate = new Date(lmpValue);
+        if (isNaN(lmpDate.getTime())) {
+            alert('Tanggal HPHT tidak valid');
+            return;
+        }
+
+        // Calculate EDD using Naegele's Rule: LMP + 280 days (40 weeks)
+        const eddDate = new Date(lmpDate);
+        eddDate.setDate(eddDate.getDate() + 280);
+
+        // Format EDD in Indonesian style
+        if (eddDateIntake) {
+            eddDateIntake.value = formatIndonesianDate(eddDate);
+        }
+
+        // Calculate current GA (Gestational Age)
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Reset time for accurate day calculation
+
+        const diffMs = today - lmpDate;
+        if (diffMs < 0) {
+            // LMP is in the future
+            if (gaWeeksIntake) gaWeeksIntake.value = '0';
+            if (gaDaysIntake) gaDaysIntake.value = '0';
+            alert('Perhatian: HPHT yang dipilih adalah tanggal yang akan datang.');
+        } else {
+            const totalDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+            const weeks = Math.floor(totalDays / 7);
+            const days = totalDays % 7;
+
+            if (gaWeeksIntake) gaWeeksIntake.value = weeks;
+            if (gaDaysIntake) gaDaysIntake.value = days;
+
+            // Visual feedback for different trimesters
+            if (gaWeeksIntake) {
+                if (weeks < 13) {
+                    gaWeeksIntake.style.color = '#17a2b8'; // Info blue for 1st trimester
+                } else if (weeks < 27) {
+                    gaWeeksIntake.style.color = '#28a745'; // Green for 2nd trimester
+                } else if (weeks < 42) {
+                    gaWeeksIntake.style.color = '#ffc107'; // Yellow for 3rd trimester
+                } else {
+                    gaWeeksIntake.style.color = '#dc3545'; // Red for post-term
+                }
+            }
+        }
+    });
+
+    // Trigger calculation on page load if LMP already has a value
+    if (lmpDateIntake.value) {
+        lmpDateIntake.dispatchEvent(new Event('change'));
+    }
+}
+
+// Pregnancy history table row visibility based on pregnancy number
+const pregnancyNumberSelect = document.getElementById('pregnancy_number');
+if (pregnancyNumberSelect) {
+    pregnancyNumberSelect.addEventListener('change', function() {
+        const selectedNumber = parseInt(this.value);
+
+        // Hide all rows first
+        for (let i = 1; i <= 8; i++) {
+            const row = document.getElementById(`pregnancy-row-${i}`);
+            if (row) {
+                row.style.display = 'none';
+            }
+        }
+
+        // Show rows based on selection
+        // If pregnancy #2, show row 1 (previous child)
+        // If pregnancy #3, show rows 1 & 2 (2 previous children)
+        // etc.
+        if (selectedNumber > 1 && selectedNumber <= 9) {
+            const numberOfPreviousPregnancies = selectedNumber - 1;
+            for (let i = 1; i <= numberOfPreviousPregnancies; i++) {
+                const row = document.getElementById(`pregnancy-row-${i}`);
+                if (row) {
+                    row.style.display = 'table-row';
+                }
+            }
+        }
+    });
+
+    // Trigger on page load if value exists
+    if (pregnancyNumberSelect.value) {
+        pregnancyNumberSelect.dispatchEvent(new Event('change'));
+    }
 }
