@@ -357,6 +357,73 @@
         const verifyBtn = document.getElementById('verifyBtn');
         const otpError = document.getElementById('otpError');
 
+        // Debounce function for auto-save
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        // Auto-save OTP draft to localStorage
+        const saveDraft = debounce(() => {
+            const otpCode = Array.from(otpInputs).map(input => input.value).join('');
+            if (otpCode) {
+                const formData = {
+                    otp: otpCode,
+                    timestamp: new Date().toISOString()
+                };
+                localStorage.setItem('verify_otp_draft', JSON.stringify(formData));
+                showSaveIndicator();
+            }
+        }, 300);
+
+        // Restore draft from localStorage
+        function restoreDraft() {
+            const draft = localStorage.getItem('verify_otp_draft');
+            if (draft) {
+                try {
+                    const data = JSON.parse(draft);
+                    const otpDigits = data.otp.split('');
+                    otpDigits.forEach((digit, i) => {
+                        if (otpInputs[i]) {
+                            otpInputs[i].value = digit;
+                            otpInputs[i].classList.add('filled');
+                        }
+                    });
+                    checkOTPComplete();
+                    showRestoredIndicator();
+                } catch (e) {
+                    console.error('Error restoring draft:', e);
+                }
+            }
+        }
+
+        // Show save indicator
+        function showSaveIndicator() {
+            const existing = document.getElementById('save-indicator');
+            if (existing) {
+                existing.textContent = 'Draft tersimpan ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                return;
+            }
+
+            const indicator = document.createElement('div');
+            indicator.id = 'save-indicator';
+            indicator.style.cssText = 'background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.75rem; margin-bottom: 1rem; text-align: center; border: 1px solid rgba(16, 185, 129, 0.3);';
+            indicator.textContent = 'Draft tersimpan ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            document.querySelector('.otp-container').insertBefore(indicator, document.querySelector('.otp-inputs'));
+        }
+
+        // Show restored indicator
+        function showRestoredIndicator() {
+            const indicator = document.createElement('div');
+            indicator.style.cssText = 'background: rgba(0, 102, 255, 0.2); color: #0066FF; padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.75rem; margin-bottom: 1rem; text-align: center; border: 1px solid rgba(0, 102, 255, 0.3);';
+            indicator.textContent = 'Draft dipulihkan dari sesi sebelumnya';
+            document.querySelector('.otp-container').insertBefore(indicator, document.querySelector('.otp-inputs'));
+            setTimeout(() => indicator.remove(), 5000);
+        }
+
         otpInputs.forEach((input, index) => {
             input.addEventListener('input', (e) => {
                 const value = e.target.value;
@@ -384,6 +451,9 @@
                 } else {
                     input.classList.remove('filled');
                 }
+
+                // Auto-save draft
+                saveDraft();
             });
 
             // Handle backspace
@@ -444,6 +514,9 @@
                 });
 
                 if (response.success) {
+                    // Clear draft after successful verification
+                    localStorage.removeItem('verify_otp_draft');
+
                     // Store verification token
                     sessionStorage.setItem('verified_token', response.data.verified_token);
 
@@ -518,6 +591,7 @@
 
         // Initialize
         createBubbles();
+        restoreDraft();
         otpInputs[0].focus();
     </script>
 </body>
