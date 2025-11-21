@@ -709,6 +709,122 @@
         const stepper = document.getElementById('stepper');
         const form = document.getElementById('intake-form');
 
+        // Debounce function for auto-save
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        // Auto-save draft to localStorage
+        const saveDraft = debounce(() => {
+            const formData = new FormData(form);
+            const data = {};
+
+            for (let [key, value] of formData.entries()) {
+                if (data[key]) {
+                    if (!Array.isArray(data[key])) {
+                        data[key] = [data[key]];
+                    }
+                    data[key].push(value);
+                } else {
+                    data[key] = value;
+                }
+            }
+
+            data.currentStep = currentStep;
+            data.timestamp = new Date().toISOString();
+
+            localStorage.setItem('patient_intake_draft_v3', JSON.stringify(data));
+            showSaveIndicator();
+        }, 300);
+
+        // Restore draft from localStorage
+        function restoreDraft() {
+            const draft = localStorage.getItem('patient_intake_draft_v3');
+            if (draft) {
+                try {
+                    const data = JSON.parse(draft);
+
+                    // Restore form fields
+                    for (let [key, value] of Object.entries(data)) {
+                        if (key === 'currentStep' || key === 'timestamp') continue;
+
+                        const elements = form.elements[key];
+                        if (!elements) continue;
+
+                        if (elements.length > 1) {
+                            // Multiple elements with same name (checkboxes/radios)
+                            if (Array.isArray(value)) {
+                                Array.from(elements).forEach(el => {
+                                    if (value.includes(el.value)) {
+                                        el.checked = true;
+                                    }
+                                });
+                            }
+                        } else {
+                            // Single element
+                            const element = elements;
+                            if (element.type === 'checkbox') {
+                                element.checked = value === 'true' || value === true;
+                            } else {
+                                element.value = value;
+                            }
+                        }
+                    }
+
+                    // Restore step
+                    if (data.currentStep !== undefined) {
+                        currentStep = data.currentStep;
+                        showStep(currentStep);
+                    }
+
+                    showRestoredIndicator(data.timestamp);
+                } catch (e) {
+                    console.error('Error restoring draft:', e);
+                }
+            }
+        }
+
+        // Show save indicator
+        function showSaveIndicator() {
+            let indicator = document.getElementById('save-indicator');
+            if (!indicator) {
+                indicator = document.createElement('div');
+                indicator.id = 'save-indicator';
+                indicator.style.cssText = 'position: fixed; top: 70px; right: 1rem; background: rgba(16, 185, 129, 0.95); color: white; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.85rem; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 1px solid rgba(16, 185, 129, 1);';
+                document.body.appendChild(indicator);
+            }
+            indicator.textContent = 'Draft tersimpan ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            indicator.style.display = 'block';
+        }
+
+        // Show restored indicator
+        function showRestoredIndicator(timestamp) {
+            const indicator = document.createElement('div');
+            const savedDate = new Date(timestamp);
+            indicator.style.cssText = 'position: fixed; top: 70px; right: 1rem; background: rgba(0, 102, 255, 0.95); color: white; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.85rem; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.3); border: 1px solid rgba(0, 102, 255, 1);';
+            indicator.textContent = 'Draft dipulihkan dari ' + savedDate.toLocaleString('id-ID', {
+                day: '2-digit',
+                month: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            document.body.appendChild(indicator);
+            setTimeout(() => indicator.remove(), 8000);
+        }
+
+        // Add auto-save listeners to all form inputs
+        function initAutoSave() {
+            const formElements = form.querySelectorAll('input, select, textarea');
+            formElements.forEach(element => {
+                element.addEventListener('input', saveDraft);
+                element.addEventListener('change', saveDraft);
+            });
+        }
+
         // Initialize stepper
         function initStepper() {
             stepper.innerHTML = '';
@@ -818,6 +934,9 @@
                 });
 
                 if (response.ok) {
+                    // Clear draft after successful submission
+                    localStorage.removeItem('patient_intake_draft_v3');
+
                     showToast('Data berhasil dikirim!');
                     setTimeout(() => {
                         window.location.href = '/patient-dashboard.html';
@@ -873,7 +992,9 @@
 
         // Initialize
         initStepper();
-        showStep(0);
+        initAutoSave();
+        restoreDraft();
+        showStep(currentStep);
 
         // Create animated bubbles
         function createBubbles() {

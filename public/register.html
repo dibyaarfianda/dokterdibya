@@ -402,10 +402,68 @@
             return re.test(email);
         }
 
+        // Debounce function for auto-save
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        // Auto-save draft to localStorage
+        const saveDraft = debounce(() => {
+            const formData = {
+                email: emailInput.value,
+                timestamp: new Date().toISOString()
+            };
+            localStorage.setItem('register_draft_email', JSON.stringify(formData));
+            showSaveIndicator();
+        }, 300);
+
+        // Restore draft from localStorage
+        function restoreDraft() {
+            const draft = localStorage.getItem('register_draft_email');
+            if (draft) {
+                try {
+                    const data = JSON.parse(draft);
+                    emailInput.value = data.email;
+                    showRestoredIndicator();
+                } catch (e) {
+                    console.error('Error restoring draft:', e);
+                }
+            }
+        }
+
+        // Show save indicator
+        function showSaveIndicator() {
+            const existing = document.getElementById('save-indicator');
+            if (existing) {
+                existing.textContent = 'Draft tersimpan ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                return;
+            }
+
+            const indicator = document.createElement('div');
+            indicator.id = 'save-indicator';
+            indicator.style.cssText = 'background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.75rem; margin-bottom: 1rem; text-align: center; border: 1px solid rgba(16, 185, 129, 0.3);';
+            indicator.textContent = 'Draft tersimpan ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            form.insertBefore(indicator, form.firstChild);
+        }
+
+        // Show restored indicator
+        function showRestoredIndicator() {
+            const indicator = document.createElement('div');
+            indicator.style.cssText = 'background: rgba(0, 102, 255, 0.2); color: #0066FF; padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.75rem; margin-bottom: 1rem; text-align: center; border: 1px solid rgba(0, 102, 255, 0.3);';
+            indicator.textContent = 'Draft dipulihkan dari sesi sebelumnya';
+            form.insertBefore(indicator, form.firstChild);
+            setTimeout(() => indicator.remove(), 5000);
+        }
+
         // Clear error on input
         emailInput.addEventListener('input', () => {
             emailInput.classList.remove('error');
             emailError.classList.remove('show');
+            saveDraft();
         });
 
         // Form submission
@@ -430,6 +488,9 @@
                 const response = await apiService.post('/auth/register', { email });
 
                 if (response.success) {
+                    // Clear draft after successful registration
+                    localStorage.removeItem('register_draft_email');
+
                     // Store email temporarily
                     sessionStorage.setItem('registration_email', email);
                     sessionStorage.setItem('verification_token', response.data.verification_token);
@@ -454,6 +515,7 @@
 
         // Initialize
         createBubbles();
+        restoreDraft();
     </script>
 </body>
 </html>
