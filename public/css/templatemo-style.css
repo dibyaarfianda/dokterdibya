@@ -10,6 +10,7 @@ body
 		font-family: 'Open Sans', sans-serif;
 		font-weight: 300;
 		overflow-x: hidden; /* prevent horizontal scrollbar from appearing */
+		min-height: 100vh;
 	}
 	
 a {
@@ -76,15 +77,15 @@ h2 span
   		text-align: center;
   		font-size: 10px; 
   	}
-.sk-spinner-wave div 
+.sk-spinner-wave div
 	{
-  		background-color: #333;
+  		background-color: #ffffff;
   		height: 100%;
   		width: 6px;
   		display: inline-block;
          -webkit-animation: sk-waveStretchDelay 1.2s infinite ease-in-out;
                  animation: sk-waveStretchDelay 1.2s infinite ease-in-out;
-         
+
     }
 .sk-spinner-wave .sk-rect2 
 	{
@@ -171,6 +172,9 @@ header .social-icon li a
 		border: none;
 		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 		margin: 0 !important;
+		position: sticky;
+		top: 0;
+		z-index: 1000;
 	}
 .navbar-default .navbar-brand
 	{
@@ -222,8 +226,9 @@ header .social-icon li a
 /* start home */
 #home
 	{
-		background: url('../images/home-bg.jpg') no-repeat;
+		background: url('../images/home-bg.jpg') no-repeat top center;
 		background-size: cover;
+		background-attachment: fixed;
 		padding-top: 160px;
 		padding-bottom: 100px;
 		min-height: 650px;
@@ -233,6 +238,7 @@ header .social-icon li a
 		font-weight: 300;
 		font-size: 70px;
 		padding-bottom: 10px;
+		color: #ffffff;
 	}
 #home h1 span
 	{
@@ -261,6 +267,7 @@ header .social-icon li a
 .element {
 	height: 60px;
 	font-size: 16px;
+	color: #ffffff;
 }
 /* end home */
 
@@ -645,14 +652,14 @@ header .social-icon li a
 /* end 360 media quires */
 /* Dropdown Login Styles */
 .login-dropdown {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.15);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
     border-radius: 4px;
     box-shadow: 0 6px 12px rgba(0,0,0,0.175);
     padding: 0;
-    min-width: 320px;
-    max-width: 400px;
+    min-width: 260px;
+    max-width: 300px;
     right: 0;
     left: auto;
 }
@@ -665,7 +672,7 @@ header .social-icon li a
     border-radius: 4px;
     border: 1px solid #ddd;
     padding: 8px 12px;
-    color: #333;
+    color: #ffffff;
     font-size: 14px;
 }
 
@@ -675,7 +682,7 @@ header .social-icon li a
 }
 
 .login-dropdown label {
-    color: #333;
+    color: #ffffff;
     font-weight: 600;
     margin-bottom: 5px;
     font-size: 13px;
@@ -701,6 +708,14 @@ header .social-icon li a
 .login-dropdown a:hover {
     color: #0FF;
     text-decoration: underline;
+}
+
+.login-dropdown .form-group {
+    margin-bottom: 8px !important;
+}
+
+.login-dropdown .form-group label {
+    margin-bottom: 3px !important;
 }
 
 /* Mobile Responsive for Login Dropdown */
