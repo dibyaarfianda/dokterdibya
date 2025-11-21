@@ -1,498 +1,523 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <title>Verifikasi Email - Dokter Dibya</title>
-    
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Verifikasi Email - Dibya Klinik</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
         body {
-            font-family: 'Open Sans', sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-gradient);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
         }
-        
-        .verification-container {
-            max-width: 500px;
+
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            background-color: white;
-            border-radius: 15px;
-            padding: 40px;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .bubble {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-100px) rotate(180deg); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 450px;
+            width: 100%;
+        }
+
+        .card {
+            background: white;
+            border-radius: 25px;
+            padding: 40px 35px;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-        }
-        
-        .logo-section {
+            animation: slideUp 0.6s ease-out;
             text-align: center;
-            margin-bottom: 30px;
         }
-        
-        .logo-section .icon {
-            font-size: 60px;
-            color: #667eea;
-            margin-bottom: 15px;
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
-        
-        .logo-section h1 {
-            font-family: 'Poppins', sans-serif;
-            color: #333;
-            font-size: 24px;
-            font-weight: 600;
+
+        .email-icon {
+            margin-bottom: 20px;
+        }
+
+        .email-icon img {
+            height: 100px;
+            width: auto;
+            animation: bounce 2s ease-in-out infinite;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        h1 {
+            font-size: 26px;
+            color: #1f2937;
             margin-bottom: 10px;
         }
-        
-        .logo-section p {
-            color: #666;
-            font-size: 14px;
+
+        .email-sent {
+            color: #6b7280;
+            font-size: 15px;
+            margin-bottom: 30px;
         }
-        
-        .info-box {
-            background-color: #e3f2fd;
-            border-left: 4px solid #2196F3;
-            padding: 15px;
-            margin-bottom: 25px;
-            border-radius: 5px;
+
+        .email-sent strong {
+            color: var(--primary);
+            display: block;
+            margin-top: 8px;
         }
-        
-        .info-box p {
-            margin: 0;
-            color: #1976D2;
-            font-size: 13px;
+
+        .otp-container {
+            margin: 30px 0;
         }
-        
-        .form-group label {
-            color: #333;
-            font-weight: 500;
-            margin-bottom: 8px;
+
+        .otp-inputs {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-bottom: 20px;
         }
-        
-        .form-control {
-            height: 50px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 10px 15px;
-            font-size: 16px;
-            transition: border-color 0.3s;
-        }
-        
-        .form-control:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
-        }
-        
-        .code-input {
+
+        .otp-input {
+            width: 55px;
+            height: 60px;
             text-align: center;
-            letter-spacing: 10px;
             font-size: 24px;
             font-weight: 600;
-            text-transform: uppercase;
+            border: 2px solid #e5e7eb;
+            border-radius: 12px;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s ease;
         }
-        
+
+        .otp-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+        }
+
+        .otp-input.filled {
+            border-color: var(--success);
+            background: #f0fdf4;
+        }
+
+        .otp-input.error {
+            border-color: var(--danger);
+            animation: shake 0.5s;
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-10px); }
+            75% { transform: translateX(10px); }
+        }
+
+        .error-message {
+            display: none;
+            color: var(--danger);
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
         .btn-verify {
             width: 100%;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            border: none;
+            padding: 16px;
+            background: var(--primary);
             color: white;
-            padding: 15px;
+            border: none;
+            border-radius: 12px;
             font-size: 16px;
             font-weight: 600;
-            border-radius: 8px;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            margin-top: 10px;
+            transition: all 0.3s ease;
+            font-family: 'Poppins', sans-serif;
+            margin-top: 20px;
         }
-        
-        .btn-verify:hover:not(:disabled) {
+
+        .btn-verify:hover {
+            background: var(--primary-dark);
             transform: translateY(-2px);
-            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
         }
-        
+
         .btn-verify:disabled {
-            opacity: 0.6;
+            background: #d1d5db;
             cursor: not-allowed;
+            transform: none;
         }
-        
+
+        .resend-section {
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .resend-text {
+            color: #6b7280;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .timer {
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+
         .btn-resend {
-            width: 100%;
-            background-color: white;
-            border: 2px solid #667eea;
-            color: #667eea;
-            padding: 12px;
+            background: none;
+            border: none;
+            color: var(--primary);
             font-size: 14px;
             font-weight: 600;
-            border-radius: 8px;
             cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 10px;
+            font-family: 'Poppins', sans-serif;
+            text-decoration: underline;
         }
-        
-        .btn-resend:hover:not(:disabled) {
-            background-color: #667eea;
-            color: white;
-        }
-        
+
         .btn-resend:disabled {
-            opacity: 0.5;
+            color: #d1d5db;
             cursor: not-allowed;
+            text-decoration: none;
         }
-        
-        .alert {
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 20px;
-            display: none;
+
+        .instructions {
+            background: #f9fafb;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 25px;
+            text-align: left;
         }
-        
-        .alert-success {
-            background-color: #d4edda;
-            border-color: #c3e6cb;
-            color: #155724;
+
+        .instructions h3 {
+            font-size: 14px;
+            color: #374151;
+            margin-bottom: 12px;
         }
-        
-        .alert-danger {
-            background-color: #f8d7da;
-            border-color: #f5c6cb;
-            color: #721c24;
-        }
-        
-        .resend-timer {
-            text-align: center;
-            color: #999;
+
+        .instructions ul {
+            margin: 0;
+            padding-left: 20px;
+            color: #6b7280;
             font-size: 13px;
-            margin-top: 10px;
         }
-        
-        .success-animation {
-            text-align: center;
-            display: none;
+
+        .instructions li {
+            margin-bottom: 8px;
         }
-        
-        .success-animation .checkmark {
-            width: 100px;
-            height: 100px;
-            border-radius: 50%;
-            display: block;
-            stroke-width: 2;
-            stroke: #4CAF50;
-            stroke-miterlimit: 10;
-            margin: 20px auto;
-            box-shadow: inset 0px 0px 0px #4CAF50;
-            animation: fill 0.4s ease-in-out 0.4s forwards, scale 0.3s ease-in-out 0.9s both;
-        }
-        
-        @keyframes fill {
-            100% {
-                box-shadow: inset 0px 0px 0px 50px #4CAF50;
+
+        @media (max-width: 480px) {
+            .card {
+                padding: 30px 25px;
             }
-        }
-        
-        @keyframes scale {
-            0%, 100% {
-                transform: none;
+
+            .otp-inputs {
+                gap: 8px;
             }
-            50% {
-                transform: scale3d(1.1, 1.1, 1);
-            }
-        }
-        
-        @media (max-width: 768px) {
-            .verification-container {
-                padding: 30px 20px;
-            }
-            
-            .logo-section h1 {
-                font-size: 20px;
-            }
-            
-            .code-input {
-                letter-spacing: 5px;
-                font-size: 20px;
+
+            .otp-input {
+                width: 48px;
+                height: 55px;
+                font-size: 22px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="verification-container">
-        <div class="logo-section">
-            <div class="icon">
-                <i class="fa fa-envelope-o"></i>
+    <div class="bg-animation" id="bgAnimation"></div>
+
+    <div class="container">
+        <div class="card">
+            <div class="email-icon">
+                <img src="images/DIBYA.svg" alt="Dibya Klinik">
             </div>
-            <h1>Verifikasi Email</h1>
-            <p>Masukkan kode yang dikirim ke email Anda</p>
-        </div>
-        
-        <div class="info-box">
-            <p><i class="fa fa-info-circle"></i> Kami telah mengirimkan kode verifikasi 6 digit ke email Anda. Periksa inbox atau folder spam.</p>
-        </div>
-        
-        <div id="success-animation" class="success-animation">
-            <svg class="checkmark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 52 52">
-                <circle class="checkmark__circle" cx="26" cy="26" r="25" fill="none"/>
-                <path class="checkmark__check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
-            </svg>
-            <h3 style="color: #4CAF50;">Email Terverifikasi!</h3>
-            <p>Mengalihkan ke halaman berikutnya...</p>
-        </div>
-        
-        <div id="verification-form">
-            <div id="alert-message" class="alert"></div>
-            
-            <form id="verify-form">
-                <input type="hidden" id="email" name="email">
-                
-                <div class="form-group">
-                    <label for="verification-code">Kode Verifikasi</label>
-                    <input 
-                        type="text" 
-                        class="form-control code-input" 
-                        id="verification-code" 
-                        name="code"
-                        placeholder="000000" 
-                        maxlength="6"
-                        pattern="[0-9]{6}"
-                        required
-                        autocomplete="off">
-                    <small class="help-block" style="text-align: center; color: #999; margin-top: 5px;">
-                        Masukkan 6 digit angka
-                    </small>
+            <h1>Cek Email Anda!</h1>
+            <p class="email-sent">
+                Kami telah mengirim kode verifikasi 6 digit ke:
+                <strong id="userEmail">loading...</strong>
+            </p>
+
+            <div class="otp-container">
+                <div class="otp-inputs">
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="0">
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="1">
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="2">
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="3">
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="4">
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" pattern="[0-9]" data-index="5">
                 </div>
-                
-                <button type="submit" class="btn btn-verify" id="verify-btn">
-                    <i class="fa fa-check-circle"></i> Verifikasi Email
+                <div class="error-message" id="otpError">Kode verifikasi salah</div>
+            </div>
+
+            <button type="button" class="btn-verify" id="verifyBtn" disabled>
+                Verifikasi Email
+            </button>
+
+            <div class="resend-section">
+                <p class="resend-text">Tidak menerima kode?</p>
+                <div class="timer" id="timer">02:00</div>
+                <button type="button" class="btn-resend" id="resendBtn" disabled>
+                    Kirim Ulang Kode
                 </button>
-                
-                <button type="button" class="btn btn-resend" id="resend-btn">
-                    <i class="fa fa-refresh"></i> Kirim Ulang Kode
-                </button>
-                
-                <div class="resend-timer" id="resend-timer"></div>
-            </form>
+            </div>
+
+            <div class="instructions">
+                <h3>💡 Tips:</h3>
+                <ul>
+                    <li>Periksa folder spam/junk email Anda</li>
+                    <li>Pastikan email ditulis dengan benar</li>
+                    <li>Tunggu hingga 2 menit untuk email masuk</li>
+                </ul>
+            </div>
         </div>
     </div>
-    
-    <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
-    
-    <script>
-        const API_BASE_URL = '/api/patients';
-        
-        let resendTimeout = 0;
-        let resendTimer = null;
-        
-        // Parse URL parameters
-        function getURLParameter(name) {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get(name);
+
+    <script type="module">
+        import { apiService } from './scripts/api-service.js';
+
+        // Create animated bubbles
+        function createBubbles() {
+            const bg = document.getElementById('bgAnimation');
+            for (let i = 0; i < 10; i++) {
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+                const size = Math.random() * 100 + 50;
+                bubble.style.width = size + 'px';
+                bubble.style.height = size + 'px';
+                bubble.style.left = Math.random() * 100 + '%';
+                bubble.style.top = Math.random() * 100 + '%';
+                bubble.style.animationDelay = Math.random() * 5 + 's';
+                bg.appendChild(bubble);
+            }
         }
-        
-        // Show message
-        function showMessage(message, type = 'success') {
-            const alertEl = document.getElementById('alert-message');
-            alertEl.className = `alert alert-${type}`;
-            alertEl.textContent = message;
-            alertEl.style.display = 'block';
-            
-            setTimeout(() => {
-                alertEl.style.display = 'none';
-            }, 5000);
+
+        // Get email from session
+        const email = sessionStorage.getItem('registration_email');
+        if (!email) {
+            window.location.href = 'register.html';
         }
-        
-        // Start resend timer
-        function startResendTimer(seconds) {
-            resendTimeout = seconds;
-            const resendBtn = document.getElementById('resend-btn');
-            const timerEl = document.getElementById('resend-timer');
-            
-            resendBtn.disabled = true;
-            
-            resendTimer = setInterval(() => {
-                if (resendTimeout > 0) {
-                    resendTimeout--;
-                    timerEl.textContent = `Kirim ulang tersedia dalam ${resendTimeout} detik`;
+
+        document.getElementById('userEmail').textContent = email;
+
+        // OTP input handling
+        const otpInputs = document.querySelectorAll('.otp-input');
+        const verifyBtn = document.getElementById('verifyBtn');
+        const otpError = document.getElementById('otpError');
+
+        otpInputs.forEach((input, index) => {
+            input.addEventListener('input', (e) => {
+                const value = e.target.value;
+
+                // Only allow numbers
+                if (!/^\d*$/.test(value)) {
+                    e.target.value = '';
+                    return;
+                }
+
+                // Clear error
+                input.classList.remove('error');
+                otpError.classList.remove('show');
+
+                if (value) {
+                    input.classList.add('filled');
+
+                    // Auto-focus next input
+                    if (index < otpInputs.length - 1) {
+                        otpInputs[index + 1].focus();
+                    }
+
+                    // Check if all inputs are filled
+                    checkOTPComplete();
                 } else {
-                    clearInterval(resendTimer);
-                    resendBtn.disabled = false;
-                    timerEl.textContent = '';
+                    input.classList.remove('filled');
                 }
-            }, 1000);
-        }
-        
-        // Auto-fill from URL if token provided
-        document.addEventListener('DOMContentLoaded', function() {
-            const tokenFromUrl = getURLParameter('token');
-            const emailFromUrl = getURLParameter('email');
-            
-            if (emailFromUrl) {
-                document.getElementById('email').value = emailFromUrl;
-            }
-            
-            if (tokenFromUrl) {
-                document.getElementById('verification-code').value = tokenFromUrl;
-                // Auto submit if both provided
-                if (emailFromUrl) {
-                    setTimeout(() => {
-                        document.getElementById('verify-form').dispatchEvent(new Event('submit'));
-                    }, 500);
+            });
+
+            // Handle backspace
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    otpInputs[index - 1].focus();
+                    otpInputs[index - 1].value = '';
+                    otpInputs[index - 1].classList.remove('filled');
+                    checkOTPComplete();
                 }
-            }
-            
-            // Check if email in localStorage
-            const patientUser = localStorage.getItem('patient_user');
-            if (patientUser && !emailFromUrl) {
-                try {
-                    const user = JSON.parse(patientUser);
-                    if (user.email) {
-                        document.getElementById('email').value = user.email;
-                    }
-                } catch (e) {
-                    console.error('Error parsing patient_user:', e);
+            });
+
+            // Handle paste
+            input.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const pastedData = e.clipboardData.getData('text').slice(0, 6);
+                if (/^\d{6}$/.test(pastedData)) {
+                    pastedData.split('').forEach((digit, i) => {
+                        if (otpInputs[i]) {
+                            otpInputs[i].value = digit;
+                            otpInputs[i].classList.add('filled');
+                        }
+                    });
+                    checkOTPComplete();
                 }
-            }
-            
-            // Start initial timer
-            startResendTimer(60);
+            });
         });
-        
-        // Handle verification form submit
-        document.getElementById('verify-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const email = document.getElementById('email').value;
-            const code = document.getElementById('verification-code').value.trim();
-            
-            if (!email) {
-                showMessage('Email tidak ditemukan. Silakan daftar ulang.', 'danger');
-                return;
-            }
-            
-            if (code.length !== 6) {
-                showMessage('Kode verifikasi harus 6 digit', 'danger');
-                return;
-            }
-            
-            const verifyBtn = document.getElementById('verify-btn');
-            const originalHtml = verifyBtn.innerHTML;
+
+        function checkOTPComplete() {
+            const allFilled = Array.from(otpInputs).every(input => input.value);
+            verifyBtn.disabled = !allFilled;
+        }
+
+        function getOTPCode() {
+            return Array.from(otpInputs).map(input => input.value).join('');
+        }
+
+        function clearOTP() {
+            otpInputs.forEach(input => {
+                input.value = '';
+                input.classList.remove('filled', 'error');
+            });
             verifyBtn.disabled = true;
-            verifyBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Memverifikasi...';
-            
+            otpInputs[0].focus();
+        }
+
+        // Verify OTP
+        verifyBtn.addEventListener('click', async () => {
+            const code = getOTPCode();
+            verifyBtn.disabled = true;
+            verifyBtn.textContent = 'Memverifikasi...';
+
             try {
-                const response = await fetch(`${API_BASE_URL}/verify-email`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        email: email,
-                        token: code
-                    })
+                const response = await apiService.post('/auth/verify-email', {
+                    email,
+                    code,
+                    verification_token: sessionStorage.getItem('verification_token')
                 });
-                
-                const data = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(data.message || 'Verifikasi gagal');
+
+                if (response.success) {
+                    // Store verification token
+                    sessionStorage.setItem('verified_token', response.verified_token);
+
+                    // Redirect to password setup
+                    window.location.href = 'set-password.html';
+                } else {
+                    // Show error
+                    otpInputs.forEach(input => input.classList.add('error'));
+                    otpError.textContent = response.message || 'Kode verifikasi salah';
+                    otpError.classList.add('show');
+                    clearOTP();
                 }
-                
-                // Show success animation
-                document.getElementById('verification-form').style.display = 'none';
-                document.getElementById('success-animation').style.display = 'block';
-                
-                // Update localStorage if exists
-                const patientUser = localStorage.getItem('patient_user');
-                if (patientUser) {
-                    try {
-                        const user = JSON.parse(patientUser);
-                        user.email_verified = true;
-                        localStorage.setItem('patient_user', JSON.stringify(user));
-                    } catch (e) {
-                        console.error('Error updating patient_user:', e);
-                    }
-                }
-                
-                // Redirect after 2 seconds
-                setTimeout(() => {
-                    window.location.href = '/complete-profile.html';
-                }, 2000);
-                
             } catch (error) {
                 console.error('Verification error:', error);
-                showMessage(error.message, 'danger');
-                verifyBtn.disabled = false;
-                verifyBtn.innerHTML = originalHtml;
+                otpInputs.forEach(input => input.classList.add('error'));
+                otpError.textContent = 'Terjadi kesalahan. Silakan coba lagi.';
+                otpError.classList.add('show');
+                clearOTP();
+            } finally {
+                verifyBtn.textContent = 'Verifikasi Email';
             }
         });
-        
-        // Handle resend button
-        document.getElementById('resend-btn').addEventListener('click', async function() {
-            const email = document.getElementById('email').value;
-            
-            if (!email) {
-                showMessage('Email tidak ditemukan. Silakan daftar ulang.', 'danger');
-                return;
+
+        // Timer countdown
+        let timeLeft = 120; // 2 minutes
+        const timerDisplay = document.getElementById('timer');
+        const resendBtn = document.getElementById('resendBtn');
+
+        const countdown = setInterval(() => {
+            timeLeft--;
+
+            const minutes = Math.floor(timeLeft / 60);
+            const seconds = timeLeft % 60;
+            timerDisplay.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+            if (timeLeft <= 0) {
+                clearInterval(countdown);
+                timerDisplay.textContent = '';
+                resendBtn.disabled = false;
             }
-            
-            const resendBtn = this;
-            const originalHtml = resendBtn.innerHTML;
+        }, 1000);
+
+        // Resend OTP
+        resendBtn.addEventListener('click', async () => {
             resendBtn.disabled = true;
-            resendBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Mengirim...';
-            
+            resendBtn.textContent = 'Mengirim...';
+
             try {
-                const response = await fetch(`${API_BASE_URL}/resend-verification`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ email })
-                });
-                
-                const data = await response.json();
-                
-                if (!response.ok) {
-                    throw new Error(data.message || 'Gagal mengirim ulang kode');
+                const response = await apiService.post('/auth/resend-verification', { email });
+
+                if (response.success) {
+                    sessionStorage.setItem('verification_token', response.verification_token);
+
+                    // Reset timer
+                    timeLeft = 120;
+                    resendBtn.textContent = 'Kirim Ulang Kode';
+
+                    // Show success message
+                    alert('Kode verifikasi baru telah dikirim!');
+                } else {
+                    alert('Gagal mengirim ulang kode. Silakan coba lagi.');
+                    resendBtn.disabled = false;
                 }
-                
-                showMessage(data.message || 'Kode verifikasi baru telah dikirim', 'success');
-                
-                // Clear code input
-                document.getElementById('verification-code').value = '';
-                document.getElementById('verification-code').focus();
-                
-                // Start timer again
-                startResendTimer(60);
-                
             } catch (error) {
                 console.error('Resend error:', error);
-                showMessage(error.message, 'danger');
+                alert('Terjadi kesalahan. Silakan coba lagi.');
                 resendBtn.disabled = false;
-                resendBtn.innerHTML = originalHtml;
             }
+
+            resendBtn.textContent = 'Kirim Ulang Kode';
         });
-        
-        // Auto-format code input (numbers only)
-        document.getElementById('verification-code').addEventListener('input', function(e) {
-            this.value = this.value.replace(/[^0-9]/g, '');
-        });
+
+        // Initialize
+        createBubbles();
+        otpInputs[0].focus();
     </script>
 </body>
 </html>
