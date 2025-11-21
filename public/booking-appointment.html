@@ -7,35 +7,77 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <style>
+        :root {
+            --primary: #0066FF;
+            --primary-dark: #0052CC;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg-gradient: linear-gradient(135deg, #1a1a1a 0%, #303030 100%);
+        }
+
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-gradient);
+            font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             min-height: 100vh;
             padding: 20px 0;
+            position: relative;
         }
+
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bubble {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-100px) rotate(180deg); }
+        }
+
         .booking-container {
             max-width: 900px;
             margin: 0 auto;
-            background: white;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 15px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
             overflow: hidden;
+            position: relative;
+            z-index: 1;
         }
+
         .booking-header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, var(--primary) 0%, #00D4FF 100%);
             color: white;
             padding: 30px;
             text-align: center;
         }
+
         .booking-header h1 {
             margin: 0 0 10px 0;
             font-size: 28px;
             font-weight: 600;
         }
+
         .booking-header p {
             margin: 0;
             opacity: 0.9;
         }
+
         .booking-content {
             padding: 30px;
         }
@@ -52,7 +94,7 @@
             left: 0;
             right: 0;
             height: 2px;
-            background: #e0e0e0;
+            background: rgba(255, 255, 255, 0.2);
             z-index: 0;
         }
         .step {
@@ -65,29 +107,31 @@
             width: 40px;
             height: 40px;
             border-radius: 50%;
-            background: #e0e0e0;
-            color: #999;
+            background: rgba(255, 255, 255, 0.1);
+            color: rgba(255, 255, 255, 0.5);
             display: inline-flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
             margin-bottom: 10px;
-            border: 3px solid white;
+            border: 3px solid rgba(255, 255, 255, 0.3);
         }
         .step.active .step-circle {
-            background: #667eea;
+            background: var(--primary);
             color: white;
+            border-color: var(--primary);
         }
         .step.completed .step-circle {
-            background: #4caf50;
+            background: var(--success);
             color: white;
+            border-color: var(--success);
         }
         .step-label {
             font-size: 12px;
-            color: #666;
+            color: rgba(255, 255, 255, 0.6);
         }
         .step.active .step-label {
-            color: #667eea;
+            color: var(--primary);
             font-weight: 600;
         }
         .booking-step {
@@ -95,6 +139,13 @@
         }
         .booking-step.active {
             display: block;
+        }
+        .booking-step h3 {
+            color: #ffffff;
+            margin-bottom: 10px;
+        }
+        .booking-step .text-muted {
+            color: rgba(255, 255, 255, 0.6);
         }
         .date-grid {
             display: grid;
@@ -104,45 +155,47 @@
         }
         .date-card {
             padding: 20px;
-            border: 2px solid #e0e0e0;
+            border: 2px solid rgba(255, 255, 255, 0.2);
             border-radius: 10px;
             cursor: pointer;
             transition: all 0.3s;
             text-align: center;
+            background: rgba(255, 255, 255, 0.05);
         }
         .date-card:hover {
-            border-color: #667eea;
+            border-color: var(--primary);
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.2);
+            box-shadow: 0 5px 15px rgba(0, 102, 255, 0.3);
         }
         .date-card.selected {
-            border-color: #667eea;
-            background: #f3f5ff;
+            border-color: var(--primary);
+            background: rgba(0, 102, 255, 0.15);
         }
         .date-card .day {
             font-size: 14px;
-            color: #666;
+            color: rgba(255, 255, 255, 0.7);
             margin-bottom: 5px;
         }
         .date-card .date {
             font-size: 18px;
             font-weight: 600;
-            color: #333;
+            color: #ffffff;
         }
         .session-card {
             padding: 20px;
-            border: 2px solid #e0e0e0;
+            border: 2px solid rgba(255, 255, 255, 0.2);
             border-radius: 10px;
             margin-bottom: 20px;
             cursor: pointer;
             transition: all 0.3s;
+            background: rgba(255, 255, 255, 0.05);
         }
         .session-card:hover {
-            border-color: #667eea;
+            border-color: var(--primary);
         }
         .session-card.selected {
-            border-color: #667eea;
-            background: #f3f5ff;
+            border-color: var(--primary);
+            background: rgba(0, 102, 255, 0.15);
         }
         .session-header {
             display: flex;
@@ -153,11 +206,11 @@
         .session-title {
             font-size: 18px;
             font-weight: 600;
-            color: #333;
+            color: #ffffff;
         }
         .session-time {
             font-size: 14px;
-            color: #666;
+            color: rgba(255, 255, 255, 0.7);
         }
         .session-badge {
             display: inline-block;
@@ -167,16 +220,19 @@
             font-weight: 600;
         }
         .badge-available {
-            background: #e8f5e9;
-            color: #4caf50;
+            background: rgba(16, 185, 129, 0.2);
+            color: var(--success);
+            border: 1px solid var(--success);
         }
         .badge-limited {
-            background: #fff3e0;
+            background: rgba(255, 152, 0, 0.2);
             color: #ff9800;
+            border: 1px solid #ff9800;
         }
         .badge-full {
-            background: #ffebee;
-            color: #f44336;
+            background: rgba(239, 68, 68, 0.2);
+            color: var(--danger);
+            border: 1px solid var(--danger);
         }
         .slot-grid {
             display: grid;
@@ -185,33 +241,53 @@
         }
         .slot-btn {
             padding: 12px 5px;
-            border: 2px solid #e0e0e0;
+            border: 2px solid rgba(255, 255, 255, 0.2);
             border-radius: 8px;
-            background: white;
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
             cursor: pointer;
             transition: all 0.3s;
             font-size: 13px;
             text-align: center;
         }
         .slot-btn:hover:not(.disabled) {
-            border-color: #667eea;
-            background: #f3f5ff;
+            border-color: var(--primary);
+            background: rgba(0, 102, 255, 0.15);
         }
         .slot-btn.selected {
-            border-color: #667eea;
-            background: #667eea;
+            border-color: var(--primary);
+            background: var(--primary);
             color: white;
         }
         .slot-btn.disabled {
-            background: #f5f5f5;
-            color: #999;
+            background: rgba(255, 255, 255, 0.03);
+            color: rgba(255, 255, 255, 0.3);
             cursor: not-allowed;
             opacity: 0.5;
         }
         .form-group label {
             font-weight: 600;
-            color: #333;
+            color: #ffffff;
             margin-bottom: 10px;
+        }
+        .form-control {
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+            border-radius: 8px;
+            padding: 12px 16px;
+        }
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+        .form-control:focus {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: var(--primary);
+            outline: none;
+            box-shadow: 0 0 0 4px rgba(0, 102, 255, 0.2);
+        }
+        .help-block {
+            color: rgba(255, 255, 255, 0.5);
         }
         textarea.form-control {
             resize: vertical;
@@ -224,22 +300,32 @@
             transition: all 0.3s;
         }
         .btn-primary {
-            background: #667eea;
+            background: var(--primary);
             border: none;
+            color: white;
         }
         .btn-primary:hover {
-            background: #5568d3;
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 102, 255, 0.3);
+        }
+        .btn-primary:disabled {
+            background: rgba(255, 255, 255, 0.2);
+            cursor: not-allowed;
+            transform: none;
         }
         .btn-default {
-            background: #f5f5f5;
-            border: none;
-            color: #666;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.8);
         }
         .btn-default:hover {
-            background: #e0e0e0;
+            background: rgba(255, 255, 255, 0.15);
         }
         .summary-card {
-            background: #f8f9fa;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             padding: 20px;
             border-radius: 10px;
             margin: 20px 0;
@@ -248,28 +334,38 @@
             display: flex;
             justify-content: space-between;
             padding: 10px 0;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
         }
         .summary-row:last-child {
             border-bottom: none;
         }
         .summary-label {
-            color: #666;
+            color: rgba(255, 255, 255, 0.7);
         }
         .summary-value {
             font-weight: 600;
-            color: #333;
+            color: #ffffff;
         }
         .alert {
             border-radius: 8px;
         }
+        .alert-info {
+            background: rgba(0, 102, 255, 0.15);
+            border: 1px solid rgba(0, 102, 255, 0.3);
+            border-left: 4px solid var(--primary);
+            color: #ffffff;
+        }
+        .alert-info i {
+            color: var(--primary);
+        }
         .loading {
             text-align: center;
             padding: 40px;
+            color: rgba(255, 255, 255, 0.7);
         }
         .spinner {
-            border: 3px solid #f3f3f3;
-            border-top: 3px solid #667eea;
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid var(--primary);
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -280,9 +376,14 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+        .text-danger {
+            color: var(--danger);
+        }
     </style>
 </head>
 <body>
+    <div class="bg-animation" id="bgAnimation"></div>
+
     <div class="booking-container">
         <div class="booking-header">
             <h1><i class="fa fa-calendar-check-o"></i> Buat Janji Konsultasi</h1>
@@ -391,5 +492,30 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
     <script src="/scripts/booking-appointment.js"></script>
+
+    <script>
+        // Create floating bubbles animation
+        function createBubbles() {
+            const bgAnimation = document.getElementById('bgAnimation');
+            const bubbleCount = 15;
+
+            for (let i = 0; i < bubbleCount; i++) {
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+
+                const size = Math.random() * 60 + 20;
+                bubble.style.width = size + 'px';
+                bubble.style.height = size + 'px';
+                bubble.style.left = Math.random() * 100 + '%';
+                bubble.style.top = Math.random() * 100 + '%';
+                bubble.style.animationDelay = Math.random() * 8 + 's';
+                bubble.style.animationDuration = (Math.random() * 4 + 6) + 's';
+
+                bgAnimation.appendChild(bubble);
+            }
+        }
+
+        createBubbles();
+    </script>
 </body>
 </html>
