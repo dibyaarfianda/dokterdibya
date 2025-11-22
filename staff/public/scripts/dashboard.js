@@ -17,7 +17,17 @@ function formatDateLocal(date) {
 function getNextSundayDate(referenceDate = new Date()) {
     const base = new Date(referenceDate.getFullYear(), referenceDate.getMonth(), referenceDate.getDate());
     const day = base.getDay();
-    const daysUntilSunday = day === 0 ? 7 : 7 - day;
+
+    // If today is Sunday and it's before 9 PM, show today's Sunday
+    let daysUntilSunday;
+    if (day === 0) {
+        const currentHour = referenceDate.getHours();
+        // If it's after 9 PM on Sunday, show next Sunday
+        daysUntilSunday = currentHour >= 21 ? 7 : 0;
+    } else {
+        daysUntilSunday = 7 - day;
+    }
+
     base.setDate(base.getDate() + daysUntilSunday);
     return base;
 }

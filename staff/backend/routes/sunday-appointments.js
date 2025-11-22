@@ -285,7 +285,7 @@ router.get('/patient', verifyToken, async (req, res) => {
              ORDER BY appointment_date DESC, session ASC, slot_number ASC`,
             [req.user.id]
         );
-        
+
         const formatted = appointments.map(apt => {
             const slotTime = getSlotTime(apt.session, apt.slot_number);
 
@@ -295,7 +295,12 @@ router.get('/patient', verifyToken, async (req, res) => {
             let isPast = new Date(apt.appointment_date) < new Date();
 
             if (slotTime && /^\d{2}:\d{2}$/.test(slotTime)) {
-                const start = new Date(`${apt.appointment_date}T${slotTime}:00`);
+                // MySQL DATE is returned as UTC midnight, but represents local date
+                // Add 7 hours to get correct GMT+7 date, then extract date part
+                const aptDate = new Date(apt.appointment_date);
+                const gmt7Offset = aptDate.getTime() + (7 * 60 * 60 * 1000);
+                const dateStr = new Date(gmt7Offset).toISOString().split('T')[0];
+                const start = new Date(`${dateStr}T${slotTime}:00+07:00`); // Create date in GMT+7
                 if (!isNaN(start.getTime())) {
                     startDateTime = start.toISOString();
                     const arrival = new Date(start.getTime() - (15 * 60 * 1000));
@@ -322,9 +327,9 @@ router.get('/patient', verifyToken, async (req, res) => {
                 isPast
             };
         });
-        
+
         res.json({ appointments: formatted });
-        
+
     } catch (error) {
         console.error('Error getting patient appointments:', error);
         res.status(500).json({ message: 'Terjadi kesalahan' });
@@ -561,18 +566,34 @@ router.get('/patient-by-id', verifyToken, async (req, res) => {
             [patientId]
         );
         
-        const formatted = appointments.map(apt => ({
-            ...apt,
-            dateFormatted: new Date(apt.appointment_date).toLocaleDateString('id-ID', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            }),
-            sessionLabel: getSessionLabel(apt.session),
-            time: getSlotTime(apt.session, apt.slot_number),
-            isPast: new Date(apt.appointment_date) < new Date()
-        }));
+        const formatted = appointments.map(apt => {
+            const slotTime = getSlotTime(apt.session, apt.slot_number);
+
+            // Calculate isPast correctly with GMT+7 timezone
+            let isPast = new Date(apt.appointment_date) < new Date();
+            if (slotTime && /^\d{2}:\d{2}$/.test(slotTime)) {
+                const aptDate = new Date(apt.appointment_date);
+                const gmt7Offset = aptDate.getTime() + (7 * 60 * 60 * 1000);
+                const dateStr = new Date(gmt7Offset).toISOString().split('T')[0];
+                const start = new Date(`${dateStr}T${slotTime}:00+07:00`);
+                if (!isNaN(start.getTime())) {
+                    isPast = start < new Date();
+                }
+            }
+
+            return {
+                ...apt,
+                dateFormatted: new Date(apt.appointment_date).toLocaleDateString('id-ID', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                }),
+                sessionLabel: getSessionLabel(apt.session),
+                time: slotTime,
+                isPast
+            };
+        });
         
         res.json({ 
             success: true, 
