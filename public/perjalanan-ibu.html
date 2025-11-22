@@ -120,58 +120,56 @@
 
         .book {
             position: relative;
-            width: 1000px;
-            height: 650px;
+            width: 700px;
+            height: 900px;
             transform-style: preserve-3d;
             transition: transform 0.5s;
             display: flex;
             justify-content: center;
+            align-items: center;
             box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
             border-radius: 12px;
         }
 
         .page {
             position: absolute;
-            width: 500px;
+            width: 100%;
             height: 100%;
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.3);
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-            border-radius: 0 12px 12px 0;
-            left: 50%;
+            border-radius: 12px;
             transform-origin: left center;
-            transition: transform 0.8s cubic-bezier(0.645, 0.045, 0.355, 1);
+            transition: all 0.8s cubic-bezier(0.645, 0.045, 0.355, 1);
             overflow: hidden;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(-100%);
+        }
+
+        .page.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(0);
+            z-index: 10;
         }
 
         .page.flipped {
-            transform: rotateY(-180deg);
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(-100%);
+            z-index: 1;
         }
 
         .page-left {
-            position: absolute;
-            width: 500px;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4);
-            border-radius: 12px 0 0 12px;
-            right: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #333;
-            font-size: 18px;
-            font-weight: 600;
-            background: linear-gradient(to right, rgba(240, 240, 240, 0.95), rgba(255, 255, 255, 0.95));
+            display: none;
         }
 
         .page-content {
             width: 100%;
             height: 100%;
-            padding: 30px;
+            padding: 15px;
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -182,9 +180,29 @@
         .page-content img {
             max-width: 100%;
             max-height: 100%;
+            width: 100%;
+            height: 100%;
             object-fit: contain;
             border-radius: 8px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Mobile optimization - even more zoom */
+        @media (max-width: 768px) {
+            .page-content {
+                padding: 5px;
+            }
+
+            .page-content img {
+                object-fit: cover;
+                border-radius: 4px;
+            }
+
+            .page-number {
+                font-size: 12px;
+                bottom: 10px;
+                right: 15px;
+            }
         }
 
         .page-number {
@@ -247,23 +265,17 @@
         /* Responsive */
         @media (max-width: 992px) {
             .book {
-                width: 800px;
-                height: 520px;
-            }
-
-            .page, .page-left {
-                width: 400px;
+                width: 90vw;
+                max-width: 600px;
+                height: 120vw;
+                max-height: 800px;
             }
         }
 
         @media (max-width: 768px) {
             .book {
-                width: 90vw;
-                height: 65vw;
-            }
-
-            .page, .page-left {
-                width: 45vw;
+                width: 95vw;
+                height: 130vw;
             }
 
             .header h1 {
@@ -283,18 +295,49 @@
             }
         }
 
-        /* Book spine effect */
-        .book::before {
-            content: '';
+        /* Book spine effect - removed for single page view */
+
+        /* Clickable areas for page navigation */
+        .book-click-left,
+        .book-click-right {
             position: absolute;
-            left: 50%;
             top: 0;
-            width: 4px;
+            width: 48%;
             height: 100%;
-            background: linear-gradient(to bottom, #444, #666, #444);
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.7);
-            z-index: 100;
-            transform: translateX(-50%);
+            cursor: pointer;
+            z-index: 101;
+            transition: background 0.3s;
+        }
+
+        .book-click-left {
+            left: 0;
+        }
+
+        .book-click-right {
+            right: 0;
+        }
+
+        .book-click-left:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        .book-click-right:hover {
+            background: rgba(0, 0, 0, 0.05);
+        }
+
+        /* Cursor hints */
+        .book-click-left:not(.disabled) {
+            cursor: w-resize;
+        }
+
+        .book-click-right:not(.disabled) {
+            cursor: e-resize;
+        }
+
+        .book-click-left.disabled,
+        .book-click-right.disabled {
+            cursor: not-allowed;
+            opacity: 0;
         }
     </style>
 </head>
@@ -313,6 +356,9 @@
 
         <div class="flipbook-container">
             <div class="book" id="book">
+                <!-- Clickable areas for navigation -->
+                <div class="book-click-left" id="clickLeft" onclick="prevPage()" title="Halaman sebelumnya"></div>
+                <div class="book-click-right" id="clickRight" onclick="nextPage()" title="Halaman selanjutnya"></div>
                 <!-- Pages will be generated by JavaScript -->
             </div>
         </div>
@@ -367,16 +413,12 @@
         function generatePages() {
             const book = document.getElementById('book');
 
-            // Add left page (cover/previous page placeholder)
-            const leftPage = document.createElement('div');
-            leftPage.className = 'page-left';
-            leftPage.innerHTML = '<div style="text-align: center; padding: 30px;"><i class="fa fa-book" style="font-size: 48px; color: #0066FF; margin-bottom: 20px;"></i><br><span style="font-size: 24px; color: #0066FF;">Perjalanan</span><br><span style="font-size: 20px;">menjadi Ibu</span></div>';
-            book.appendChild(leftPage);
-
             images.forEach((img, index) => {
                 const page = document.createElement('div');
                 page.className = 'page';
-                page.style.zIndex = images.length - index;
+                if (index === 0) {
+                    page.classList.add('active');
+                }
 
                 page.innerHTML = `
                     <div class="page-content">
@@ -395,8 +437,11 @@
         function nextPage() {
             if (currentPageIndex < images.length - 1) {
                 const pages = document.querySelectorAll('.page');
+                pages[currentPageIndex].classList.remove('active');
                 pages[currentPageIndex].classList.add('flipped');
                 currentPageIndex++;
+                pages[currentPageIndex].classList.add('active');
+                pages[currentPageIndex].classList.remove('flipped');
                 updateControls();
             }
         }
@@ -404,8 +449,10 @@
         // Navigate to previous page
         function prevPage() {
             if (currentPageIndex > 0) {
-                currentPageIndex--;
                 const pages = document.querySelectorAll('.page');
+                pages[currentPageIndex].classList.remove('active');
+                currentPageIndex--;
+                pages[currentPageIndex].classList.add('active');
                 pages[currentPageIndex].classList.remove('flipped');
                 updateControls();
             }
@@ -415,11 +462,33 @@
         function updateControls() {
             const prevBtn = document.getElementById('prevBtn');
             const nextBtn = document.getElementById('nextBtn');
+            const clickLeft = document.getElementById('clickLeft');
+            const clickRight = document.getElementById('clickRight');
             const currentPageSpan = document.getElementById('currentPage');
             const totalPagesSpan = document.getElementById('totalPages');
 
+            // Update button states
             prevBtn.disabled = currentPageIndex === 0;
             nextBtn.disabled = currentPageIndex === images.length - 1;
+
+            // Update clickable area states
+            if (clickLeft) {
+                if (currentPageIndex === 0) {
+                    clickLeft.classList.add('disabled');
+                } else {
+                    clickLeft.classList.remove('disabled');
+                }
+            }
+
+            if (clickRight) {
+                if (currentPageIndex === images.length - 1) {
+                    clickRight.classList.add('disabled');
+                } else {
+                    clickRight.classList.remove('disabled');
+                }
+            }
+
+            // Update page indicator
             currentPageSpan.textContent = currentPageIndex + 1;
             totalPagesSpan.textContent = images.length;
         }
