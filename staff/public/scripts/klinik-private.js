@@ -53,9 +53,17 @@ function getUpcomingSunday(reference = new Date()) {
     const base = new Date(reference.getTime());
     const day = base.getDay();
     let daysAhead = (7 - day) % 7;
+
+    // If today is Sunday and it's before 9 PM, show today's Sunday
     if (daysAhead === 0) {
-        daysAhead = 7;
+        const currentHour = base.getHours();
+        // If it's after 9 PM on Sunday, show next Sunday
+        if (currentHour >= 21) {
+            daysAhead = 7;
+        }
+        // Otherwise show today (daysAhead = 0)
     }
+
     base.setDate(base.getDate() + daysAhead);
     base.setHours(0, 0, 0, 0);
     return base;
