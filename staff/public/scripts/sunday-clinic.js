@@ -270,7 +270,7 @@ function updateRoute(mrId, section = 'identitas') {
 // MEDICAL RECORD LOADING
 // ============================================================================
 
-async function loadMedicalRecord(mrId, section = 'identitas') {
+async function loadMedicalRecord(mrId, section = 'identity') {
     console.log('[SundayClinic] Loading MR:', mrId, 'Section:', section);
 
     try {
@@ -283,8 +283,8 @@ async function loadMedicalRecord(mrId, section = 'identitas') {
         // Update route
         updateRoute(mrId, section);
 
-        // Initialize Sunday Clinic App with MR ID (it will fetch the data)
-        await SundayClinicApp.init(mrId);
+        // Initialize Sunday Clinic App with MR ID (it will fetch the data and render the section)
+        await SundayClinicApp.init(mrId, section);
 
         // Update section navigation
         updateSectionNavigation(section);
@@ -305,7 +305,7 @@ async function loadMedicalRecord(mrId, section = 'identitas') {
 // SECTION NAVIGATION
 // ============================================================================
 
-window.handleSectionChange = function(section) {
+window.handleSectionChange = async function(section) {
     console.log('[SundayClinic] Section changed:', section);
 
     if (!appState.currentMrId) {
@@ -317,8 +317,8 @@ window.handleSectionChange = function(section) {
     updateRoute(appState.currentMrId, section);
     updateSectionNavigation(section);
 
-    // Scroll to section
-    scrollToSection(section);
+    // Navigate to section (show only that section)
+    await SundayClinicApp.navigateToSection(section);
 };
 
 function updateSectionNavigation(activeSection) {
