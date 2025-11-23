@@ -859,7 +859,7 @@
                     <div class="user-name" id="user-name-nav">Nanda Ananda</div>
                     <div class="user-role">Pasien</div>
                 </div>
-                <div class="dropdown-menu-custom show" id="user-dropdown">
+                <div class="dropdown-menu-custom" id="user-dropdown">
                     <a href="#" onclick="openProfileViewModal(event)">
                         <i class="fa fa-cog"></i>
                         <span>Setting</span>
@@ -1274,13 +1274,19 @@
     <script src="js/announcements-dashboard.js?v=20251120"></script>
     <script>
         // Check authentication
-        const token = localStorage.getItem('patient_token');
+        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
         const user = JSON.parse(localStorage.getItem('patient_user') || '{}');
+
+        console.log('[DASHBOARD] Auth check - token:', token ? 'EXISTS' : 'MISSING');
+        console.log('[DASHBOARD] Auth check - user:', user);
+        console.log('[DASHBOARD] Auth check - user.id:', user.id);
 
         if (!token || !user.id) {
             // Not authenticated, redirect to login
+            console.log('[DASHBOARD] Not authenticated, redirecting to login');
             window.location.href = '/index.html#masuk';
         } else {
+            console.log('[DASHBOARD] Authenticated, loading profile...');
             // Load user profile
             loadUserProfile();
             // Load ultrasound images
@@ -2074,7 +2080,8 @@
             if (event) {
                 event.preventDefault();
             }
-            localStorage.removeItem('patient_token');
+            localStorage.removeItem('vps_auth_token');
+            sessionStorage.removeItem('vps_auth_token');
             localStorage.removeItem('patient_user');
             window.location.href = '/index.html';
         }

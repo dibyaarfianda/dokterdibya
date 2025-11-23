@@ -676,29 +676,44 @@ router.get('/api/patient-intake', verifyToken, async (req, res, next) => {
  */
 router.get('/api/patient-intake/my-intake', verifyToken, async (req, res, next) => {
     try {
-        const patientPhone = req.user.phone || req.user.whatsapp;
+        const patientId = req.user.id; // P2025001 format
+        const patientEmail = req.user.email;
         
-        if (!patientPhone) {
+        logger.info('Loading intake for patient', { id: patientId, email: patientEmail });
+        
+        if (!patientId && !patientEmail) {
+            logger.warn('No id or email in token');
             return res.json({ success: true, data: null });
         }
         
-        const normalizedPatientPhone = patientPhone.replace(/\D/g, '').slice(-10);
-        
-        // Try to load from database first
+        // Try to load from database - query by patient_id or email
         try {
-            const [rows] = await db.query(
-                `SELECT submission_id, quick_id, payload, created_at as receivedAt, status 
+            // Build query to match by patient_id (primary) or email (fallback)
+            let query = `SELECT submission_id, quick_id, payload, created_at as receivedAt, status 
                 FROM patient_intake_submissions 
-                WHERE RIGHT(REPLACE(phone, '-', ''), 10) = ? 
-                AND status = 'verified'
-                ORDER BY created_at DESC
-                LIMIT 1`,
-                [normalizedPatientPhone]
-            );
+                WHERE status = 'verified' AND (`;
+            const params = [];
+            
+            if (patientId) {
+                query += `patient_id = ?`;
+                params.push(patientId);
+            }
+            
+            if (patientEmail) {
+                if (params.length > 0) query += ` OR `;
+                query += `JSON_EXTRACT(payload, '$.email') = ?`;
+                params.push(patientEmail);
+            }
+            
+            query += `) ORDER BY created_at DESC LIMIT 1`;
+            
+            const [rows] = await db.query(query, params);
             
             if (rows.length > 0) {
                 const row = rows[0];
                 const payload = typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload;
+                
+                logger.info('Found existing intake', { submissionId: row.submission_id, quickId: row.quick_id });
                 
                 return res.json({
                     success: true,
@@ -711,8 +726,10 @@ router.get('/api/patient-intake/my-intake', verifyToken, async (req, res, next) 
                     },
                 });
             }
+            
+            logger.info('No existing intake found');
         } catch (dbError) {
-            logger.error('Failed to load intake from database', { error: dbError.message });
+            logger.error('Failed to load intake from database', { error: dbError.message, stack: dbError.stack });
         }
 
         return res.json({ success: true, data: null });
@@ -738,26 +755,38 @@ router.put('/api/patient-intake/my-intake', verifyToken, async (req, res, next) 
 
         const intakeCategory = attachIntakeCategoryMetadata(payload);
 
-        const patientPhone = req.user.phone || req.user.whatsapp;
+        const patientEmail = req.user.email;
         
-        if (!patientPhone) {
-            return res.status(400).json({ success: false, message: 'Nomor telepon tidak ditemukan' });
+        logger.info('Updating intake for patient', { id: patientId, email: patientEmail });
+        
+        if (!patientId && !patientEmail) {
+            return res.status(400).json({ success: false, message: 'Patient ID atau email tidak ditemukan' });
         }
         
-        const normalizedPatientPhone = patientPhone.replace(/\D/g, '').slice(-10);
         let existingRecord = null;
         
-        // Load from database
+        // Load from database - query by patient_id or email
         try {
-            const [rows] = await db.query(
-                `SELECT submission_id, payload, created_at as receivedAt, status, patient_id
+            // Build query to match by patient_id (primary) or email (fallback)
+            let query = `SELECT submission_id, payload, created_at as receivedAt, status, patient_id
                 FROM patient_intake_submissions 
-                WHERE RIGHT(REPLACE(phone, '-', ''), 10) = ? 
-                AND status = 'verified'
-                ORDER BY created_at DESC
-                LIMIT 1`,
-                [normalizedPatientPhone]
-            );
+                WHERE status = 'verified' AND (`;
+            const params = [];
+            
+            if (patientId) {
+                query += `patient_id = ?`;
+                params.push(patientId);
+            }
+            
+            if (patientEmail) {
+                if (params.length > 0) query += ` OR `;
+                query += `JSON_EXTRACT(payload, '$.email') = ?`;
+                params.push(patientEmail);
+            }
+            
+            query += `) ORDER BY created_at DESC LIMIT 1`;
+            
+            const [rows] = await db.query(query, params);
             
             if (rows.length > 0) {
                 const row = rows[0];
@@ -770,6 +799,7 @@ router.put('/api/patient-intake/my-intake', verifyToken, async (req, res, next) 
                     integration: row.patient_id ? { patientId: row.patient_id } : null,
                     review: { history: [] }
                 };
+                logger.info('Found existing intake for update', { submissionId: row.submission_id });
             }
         } catch (dbError) {
             logger.error('Failed to load intake from database for update', { error: dbError.message });
