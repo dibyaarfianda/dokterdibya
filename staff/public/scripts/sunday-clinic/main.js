@@ -899,7 +899,9 @@ class SundayClinicApp {
      */
     async reload() {
         if (this.currentMrId) {
-            await this.init(this.currentMrId);
+            // Preserve the current active section when reloading
+            const currentSection = stateManager.getState().activeSection || SECTIONS.IDENTITY;
+            await this.init(this.currentMrId, currentSection);
         }
     }
 
