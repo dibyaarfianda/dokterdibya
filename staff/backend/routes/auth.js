@@ -116,7 +116,7 @@ router.post('/api/auth/patient-login', asyncHandler(async (req, res) => {
             u.new_id,
             u.name,
             u.email,
-            u.password,
+            u.password_hash,
             u.role,
             u.role_id,
             u.user_type,
@@ -136,7 +136,7 @@ router.post('/api/auth/patient-login', asyncHandler(async (req, res) => {
 
     const user = rows[0];
     const userId = user.new_id;
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
 
     if (!isPasswordValid) {
         throw new AppError(ERROR_MESSAGES.INVALID_CREDENTIALS, HTTP_STATUS.UNAUTHORIZED);
@@ -151,6 +151,7 @@ router.post('/api/auth/patient-login', asyncHandler(async (req, res) => {
     const token = jwt.sign(
         {
             id: userId,
+            email: user.email,
             name: user.name || 'Patient',
             role: 'patient',
             user_type: 'patient',

@@ -269,6 +269,9 @@
 					});
 
 					if (response.success) {
+						console.log('[LOGIN] Success response:', response);
+						console.log('[LOGIN] User type:', response.data?.user?.user_type);
+						
 						// Store token and user info based on user type
 						if (response.data.user.user_type === 'staff') {
 							// Staff login - use sessionStorage
@@ -279,15 +282,19 @@
 							sessionStorage.setItem('user_type', 'staff');
 							window.location.href = '/staff/index.html';
 						} else {
-							// Patient login - use localStorage with patient_ prefix
-							localStorage.setItem('patient_token', response.data.token);
+							// Patient login - use localStorage with vps_auth_token (consistent with vps-auth-v2.js)
+							console.log('[LOGIN] Saving patient token and user data');
+							localStorage.setItem('vps_auth_token', response.data.token);
 							localStorage.setItem('patient_user', JSON.stringify({
 								id: response.data.user.id,
 								name: response.data.user.name,
 								email: response.data.user.email,
 								user_type: 'patient'
 							}));
-							window.location.href = '/patient-dashboard.html';
+							console.log('[LOGIN] Token saved:', localStorage.getItem('vps_auth_token') ? 'YES' : 'NO');
+							console.log('[LOGIN] User saved:', localStorage.getItem('patient_user') ? 'YES' : 'NO');
+							console.log('[LOGIN] Redirecting to patient dashboard...');
+							window.location.href = '/patient-dashboard.html?_=' + Date.now();
 						}
 					} else {
 						alert(response.message || 'Login failed');

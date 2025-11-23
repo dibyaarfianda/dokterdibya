@@ -648,7 +648,7 @@
     <script>
         // Auto-fill patient data from profile
         async function loadPatientProfile() {
-            const token = localStorage.getItem('patient_token');
+            const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
 
             if (!token) {
                 console.log('No patient token found');
@@ -712,6 +712,7 @@
     <script>
         // Simple 3-step form navigation
         let currentStep = 0;
+        let existingIntakeId = null; // Track if updating existing intake
         const steps = document.querySelectorAll('.intake-step');
         const totalSteps = steps.length;
         const btnPrev = document.getElementById('btn-prev');
@@ -719,6 +720,105 @@
         const btnSubmit = document.getElementById('btn-submit');
         const stepper = document.getElementById('stepper');
         const form = document.getElementById('intake-form');
+
+        // Load existing intake from server if logged in
+        async function loadExistingIntake() {
+            const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+            if (!token) {
+                console.log('[Intake] No token, skipping server load');
+                return null;
+            }
+
+            try {
+                console.log('[Intake] Loading existing data...');
+                const response = await fetch('/api/patient-intake/my-intake', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) return null;
+
+                const result = await response.json();
+                if (result.success && result.data) {
+                    console.log('[Intake] Found existing data:', result.data.submissionId);
+                    existingIntakeId = result.data.submissionId;
+                    restoreServerData(result.data.payload);
+                    btnSubmit.textContent = 'Perbarui Data';
+                    return result.data;
+                }
+            } catch (error) {
+                console.error('[Intake] Error loading:', error);
+            }
+            return null;
+        }
+
+        // Restore data from server
+        function restoreServerData(payload) {
+            if (!payload) return;
+            
+            console.log('[Intake] Restoring data from payload:', payload);
+            
+            for (let [key, value] of Object.entries(payload)) {
+                if (key === 'metadata' || key === 'review') continue;
+                
+                const elements = form.elements[key];
+                if (!elements) {
+                    console.log(`[Intake] No element found for key: ${key}`);
+                    continue;
+                }
+
+                // Check if it's a single select element (has options property)
+                const isSingleSelect = elements.tagName === 'SELECT' || (elements[0] && elements[0].tagName === 'SELECT' && elements.length === 1);
+
+                // Handle NodeList (multiple elements with same name) - but NOT single select
+                if (elements.length > 1 && !isSingleSelect) {
+                    console.log(`[Intake] Restoring ${key} (multiple elements):`, value);
+                    Array.from(elements).forEach(el => {
+                        if (el.type === 'checkbox') {
+                            if (Array.isArray(value)) {
+                                el.checked = value.includes(el.value);
+                            } else {
+                                el.checked = value === el.value;
+                            }
+                            console.log(`  - Checkbox [${el.value}]: ${el.checked}`);
+                        } else if (el.type === 'radio') {
+                            // For radio, match even empty string values
+                            const isMatch = (value === el.value) || (value === '' && el.value === '');
+                            el.checked = isMatch;
+                            if (isMatch) {
+                                console.log(`  ✓ Radio [${el.value}]: SELECTED`);
+                            }
+                        }
+                    });
+                } else {
+                    // Single element or NodeList with 1 element
+                    const element = elements.length === 1 ? elements[0] : elements;
+                    const elementType = element.type || element.tagName?.toLowerCase();
+                    console.log(`[Intake] Restoring ${key} (${elementType}):`, value);
+                    
+                    if (element.type === 'checkbox') {
+                        element.checked = Boolean(value);
+                    } else if (element.tagName === 'SELECT' || element.type === 'select-one' || element.type === 'select-multiple') {
+                        // Dropdown/select
+                        if (Array.isArray(value)) {
+                            // Multiple select
+                            Array.from(element.options).forEach(opt => {
+                                opt.selected = value.includes(opt.value);
+                            });
+                        } else {
+                            element.value = value || '';
+                            console.log(`  ✓ Select set to: ${element.value}`);
+                        }
+                    } else {
+                        // Text, number, date, etc.
+                        element.value = value || '';
+                    }
+                }
+            }
+            console.log('[Intake] Data restored from server');
+        }
 
         // Debounce function for auto-save
         function debounce(func, wait) {
@@ -951,6 +1051,31 @@
                 }
             }
 
+            // Collect radio groups explicitly (FormData misses unchecked radios)
+            const radioGroups = {};
+            form.querySelectorAll('input[type="radio"]').forEach(radio => {
+                if (!radioGroups[radio.name]) {
+                    radioGroups[radio.name] = null;
+                }
+                if (radio.checked) {
+                    radioGroups[radio.name] = radio.value;
+                }
+            });
+            
+            // Merge radio values into data
+            for (let [name, value] of Object.entries(radioGroups)) {
+                if (name && !data[name]) {
+                    data[name] = value || '';
+                }
+            }
+
+            // Collect select/dropdown values explicitly
+            form.querySelectorAll('select').forEach(select => {
+                if (select.name && !data[select.name]) {
+                    data[select.name] = select.value || '';
+                }
+            });
+
             // Explicitly set checkbox values as booleans
             data.consent = consentCheckbox ? consentCheckbox.checked : false;
             data.final_ack = finalAckCheckbox ? finalAckCheckbox.checked : false;
@@ -978,20 +1103,27 @@
             console.log('Metadata:', data.metadata);
 
             // Get patient token if available
-            const token = localStorage.getItem('patient_token');
+            const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+
+            // Determine if creating or updating
+            const isUpdate = !!existingIntakeId;
+            const url = isUpdate ? '/api/patient-intake/my-intake' : '/api/patient-intake';
+            const method = isUpdate ? 'PUT' : 'POST';
+
+            console.log(`[Intake] Submitting - ${method} ${url}`);
 
             try {
                 const headers = {
                     'Content-Type': 'application/json'
                 };
 
-                // Add authorization header if token exists
+                // Add authorization header if token exists (required for PUT)
                 if (token) {
                     headers['Authorization'] = `Bearer ${token}`;
                 }
 
-                const response = await fetch('/api/patient-intake', {
-                    method: 'POST',
+                const response = await fetch(url, {
+                    method: method,
                     headers: headers,
                     body: JSON.stringify(data)
                 });
@@ -1065,8 +1197,15 @@
         // Initialize
         initStepper();
         initAutoSave();
-        restoreDraft();
-        showStep(currentStep);
+        
+        // Load existing data from server (if logged in), then fallback to draft
+        (async function init() {
+            const existing = await loadExistingIntake();
+            if (!existing) {
+                restoreDraft();
+            }
+            showStep(currentStep);
+        })();
 
         // Create animated bubbles
         function createBubbles() {
