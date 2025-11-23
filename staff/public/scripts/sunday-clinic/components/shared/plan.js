@@ -164,8 +164,26 @@ export default {
     /**
      * Render old Obstetri format (simple)
      */
-    renderObstetriFormat(state) {
-        const plan = state.recordData?.plan || {};
+    async renderObstetriFormat(state) {
+        // Get saved data from medicalRecords if available
+        let savedData = {};
+        try {
+            const { getMedicalRecordContext } = await import('../../utils/helpers.js');
+            const context = getMedicalRecordContext(state, 'planning');
+            if (context) {
+                savedData = context.data || {};
+            }
+        } catch (error) {
+            console.error('[Plan] Failed to load saved data:', error);
+        }
+
+        // Merge with state.recordData.plan (fallback to savedData from medicalRecords)
+        const statePlan = state.recordData?.plan || {};
+        const planData = {
+            tindakan: savedData.tindakan || statePlan.tindakan || '',
+            terapi: savedData.terapi || statePlan.terapi || '',
+            rencana: savedData.rencana || statePlan.rencana || ''
+        };
 
         const escapeHtml = (str) => {
             if (!str) return '';
@@ -186,7 +204,7 @@ export default {
                     <div class="mb-3">
                         <label class="font-weight-bold">Tindakan</label>
                         <textarea class="form-control" id="planning-tindakan" rows="4"
-                                  placeholder="Klik tombol 'Input Tindakan' untuk memilih dari daftar...">${escapeHtml(plan.tindakan || '')}</textarea>
+                                  placeholder="Klik tombol 'Input Tindakan' untuk memilih dari daftar...">${escapeHtml(planData.tindakan)}</textarea>
                         <div class="mt-2">
                             <button type="button" class="btn btn-sm btn-outline-primary mr-2" id="btn-input-tindakan">
                                 <i class="fas fa-plus-circle mr-1"></i>Input Tindakan
@@ -200,7 +218,7 @@ export default {
                     <div class="mb-3">
                         <label class="font-weight-bold">Terapi</label>
                         <textarea class="form-control" id="planning-terapi" rows="4"
-                                  placeholder="Klik tombol 'Input Terapi' untuk memilih obat...">${escapeHtml(plan.terapi || '')}</textarea>
+                                  placeholder="Klik tombol 'Input Terapi' untuk memilih obat...">${escapeHtml(planData.terapi)}</textarea>
                         <div class="mt-2">
                             <button type="button" class="btn btn-sm btn-outline-primary mr-2" id="btn-input-terapi">
                                 <i class="fas fa-plus-circle mr-1"></i>Input Terapi
@@ -214,7 +232,7 @@ export default {
                     <div class="mb-3">
                         <label class="font-weight-bold">Rencana</label>
                         <textarea class="form-control" id="planning-rencana" rows="4"
-                                  placeholder="Masukkan rencana tindak lanjut...">${escapeHtml(plan.rencana || '')}</textarea>
+                                  placeholder="Masukkan rencana tindak lanjut...">${escapeHtml(planData.rencana)}</textarea>
                     </div>
 
                     <div class="text-right mt-3">
