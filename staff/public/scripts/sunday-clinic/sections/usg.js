@@ -763,6 +763,8 @@ export function renderUSG() {
 
     console.log('[USG] Returning HTML length:', html.length);
     console.log('[USG] HTML preview:', html.substring(0, 200));
+    console.log('[USG] Checking for btn-save-usg in HTML:', html.includes('btn-save-usg'));
+    console.log('[USG] showForm value:', showForm);
     return html;
 }
 
