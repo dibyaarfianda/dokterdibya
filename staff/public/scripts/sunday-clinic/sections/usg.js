@@ -108,13 +108,88 @@ export function renderUSG() {
             if (savedData.membrane_sweep) summaryItems.push(`<strong>Pelepasan Selaput:</strong> ${savedData.membrane_sweep === 'yes' ? 'Ya' : 'Tidak'}`);
             if (savedData.contraception && savedData.contraception.length > 0) summaryItems.push(`<strong>KB:</strong> ${savedData.contraception.join(', ')}`);
         } else if (trimester === 'screening') {
-             if (savedData.date) summaryItems.push(`<strong>Tanggal:</strong> ${formatDateDMY(savedData.date)}`);
-            if (savedData.tidak_kelainan) summaryItems.push('<strong>Kesimpulan:</strong> Tidak ditemukan kelainan');
-            if (savedData.kecurigaan && savedData.kecurigaan_text) summaryItems.push(`<strong>Kecurigaan:</strong> ${escapeHtml(savedData.kecurigaan_text)}`);
+            if (savedData.date) summaryItems.push(`<div class="col-md-6 mb-2"><strong>Tanggal:</strong> ${formatDateDMY(savedData.date)}</div>`);
+            
+            // Biometrik data
+            if (savedData.diameter_kepala) summaryItems.push(`<div class="col-md-6 mb-2"><strong>Diameter Kepala:</strong> ${escapeHtml(savedData.diameter_kepala)} minggu</div>`);
+            if (savedData.lingkar_kepala) summaryItems.push(`<div class="col-md-6 mb-2"><strong>Lingkar Kepala:</strong> ${escapeHtml(savedData.lingkar_kepala)} minggu</div>`);
+            if (savedData.lingkar_perut) summaryItems.push(`<div class="col-md-6 mb-2"><strong>Lingkar Perut:</strong> ${escapeHtml(savedData.lingkar_perut)} minggu</div>`);
+            if (savedData.panjang_tulang_paha) summaryItems.push(`<div class="col-md-6 mb-2"><strong>Panjang Tulang Paha:</strong> ${escapeHtml(savedData.panjang_tulang_paha)} minggu</div>`);
+            if (savedData.taksiran_berat_janin) summaryItems.push(`<div class="col-md-6 mb-2"><strong>Taksiran Berat Janin:</strong> ${escapeHtml(savedData.taksiran_berat_janin)} gram</div>`);
+            
+            // Collect all checked screening items
+            const screeningFindings = [];
+            
+            // Kepala dan Otak
+            if (savedData.simetris_hemisfer) screeningFindings.push('Simetris hemisfer serebral');
+            if (savedData.falx_bpd) screeningFindings.push('Ventrikel lateral, Atrium < 10 mm');
+            if (savedData.ventrikel) screeningFindings.push('Ventrikel sereberal, cisterna magna');
+            if (savedData.cavum_septum) screeningFindings.push('Cavum septum pellucidum');
+            
+            // Muka dan Leher
+            if (savedData.profil_muka) screeningFindings.push('Profil muka normal');
+            if (savedData.tulang_hidung) screeningFindings.push('Tulang hidung tampak, ukuran normal');
+            if (savedData.garis_bibir) screeningFindings.push('Garis bibir atas menyambung');
+            
+            // Jantung dan Rongga Dada
+            if (savedData.four_chamber) screeningFindings.push('Gambaran jelas 4-chamber view');
+            if (savedData.jantung_kiri) screeningFindings.push('Jantung di sebelah kiri');
+            if (savedData.septum_interv) screeningFindings.push('Apex jantung kearah kiri (~45°)');
+            if (savedData.besar_jantung) screeningFindings.push('Besar jantung <1/3 area dada');
+            if (savedData.dua_atrium) screeningFindings.push('Dua atrium dan dua ventrikel');
+            if (savedData.katup_atrioventricular) screeningFindings.push('Katup atrioventricular');
+            if (savedData.ritme_jantung) screeningFindings.push('Ritme jantung reguler');
+            if (savedData.echogenic_pads) screeningFindings.push('Echogenic pada lapang paru');
+            
+            // Tulang Belakang
+            if (savedData.vertebra) screeningFindings.push('Tidak tampak kelainan vertebra');
+            if (savedData.kulit_dorsal) screeningFindings.push('Garis kulit tampak baik');
+            
+            // Anggota Gerak
+            if (savedData.alat_gerak_atas) screeningFindings.push('Alat gerak kiri kanan atas normal');
+            if (savedData.alat_gerak_bawah) screeningFindings.push('Alat gerak kiri kanan bawah normal');
+            if (savedData.visual_tangan) screeningFindings.push('Visualisasi tangan dan kaki baik');
+            
+            // Rongga Perut
+            if (savedData.lambung_kiri) screeningFindings.push('Lambung di sebelah kiri');
+            if (savedData.posisi_liver) screeningFindings.push('Posisi liver dan echogenocity normal');
+            if (savedData.ginjal_kiri_kanan) screeningFindings.push('Terlihat ginjal kiri & kanan');
+            if (savedData.ginjal_echohypoic) screeningFindings.push('Ginjal tampak hipoechoic dibanding usus');
+            if (savedData.kandung_kemih) screeningFindings.push('Kandung kemih terisi');
+            if (savedData.insersi_tali_pusat) screeningFindings.push('Insersi tali pusat baik');
+            if (savedData.dinding_perut) screeningFindings.push('Dinding perut tidak tampak defek');
+            
+            // Plasenta dan Air Ketuban
+            if (savedData.lokasi_plasenta && savedData.lokasi_plasenta_text) screeningFindings.push(`Lokasi plasenta: ${escapeHtml(savedData.lokasi_plasenta_text)}`);
+            if (savedData.tekstur_plasenta) screeningFindings.push('Tekstur plasenta homogen');
+            if (savedData.volume_ketuban) screeningFindings.push('Volume ketuban cukup');
+            if (savedData.panjang_serviks && savedData.panjang_serviks_text) screeningFindings.push(`Panjang serviks: ${escapeHtml(savedData.panjang_serviks_text)} cm`);
+            
+            // Lainnya
+            if (savedData.gerak_janin_baik) screeningFindings.push('Gerak janin baik');
+            if (savedData.gender) screeningFindings.push(`Jenis kelamin: ${savedData.gender === 'male' ? 'Laki-laki' : 'Perempuan'}`);
+            
+            // Add screening findings summary
+            if (screeningFindings.length > 0) {
+                summaryItems.push(`<div class="col-md-12 mb-2"><strong>Pada skrining kelainan kongenital mayor, kami dapatkan:</strong></div>`);
+                screeningFindings.forEach(finding => {
+                    summaryItems.push(`<div class="col-md-6" style="padding-left: 20px;">• ${finding}</div>`);
+                });
+            }
+            
+            // Kesimpulan
+            if (savedData.tidak_kelainan) summaryItems.push(`<div class="col-md-12 mt-2"><strong>Kesimpulan:</strong> Tidak ditemukan kelainan</div>`);
+            if (savedData.kecurigaan && savedData.kecurigaan_text) summaryItems.push(`<div class="col-md-12 mt-2"><strong>Kecurigaan:</strong> ${escapeHtml(savedData.kecurigaan_text)}</div>`);
         }
 
         // If there are saved items, show summary; otherwise treat as no saved record
         if (summaryItems.length > 0) {
+            // For screening: items already contain their div wrappers (col-md-6 or col-md-12)
+            // For other trimesters: items are plain strings, need col-md-6 wrapping
+            const summaryContent = (trimester === 'screening') 
+                ? summaryItems.join('') 
+                : summaryItems.map(item => `<div class="col-md-6 mb-2">${item}</div>`).join('');
+            
             savedSummaryHtml = `<div class="alert mb-3" style="background-color: #EDEDED; border-color: #DEDEDE;" id="usg-summary-container">
                    <h5 style="cursor: pointer; margin-bottom: 0;" data-toggle="collapse" data-target="#usg-summary-collapse">
                        <i class="fas fa-check-circle" style="color: #28a745;"></i> ${trimesterLabel} - <span style="color: #007bff;">Data Tersimpan</span>
@@ -123,7 +198,7 @@ export function renderUSG() {
                    <div id="usg-summary-collapse" class="collapse">
                        <hr>
                        <div class="row" style="font-size: 0.875rem; font-weight: 300;">
-                           ${summaryItems.map(item => `<div class="col-md-6 mb-2">${item}</div>`).join('')}
+                           ${summaryContent}
                        </div>
                    </div>
                    <hr>
@@ -448,63 +523,73 @@ export function renderUSG() {
                 <div class="form-row">
                     <div class="form-group col-md-6"><label>Taksiran Berat Janin</label><div class="input-group"><input type="text" class="form-control usg-field" id="scr-taksiran-berat-janin-text" value="${escapeHtml(savedData.taksiran_berat_janin || '')}"><div class="input-group-append"><span class="input-group-text">gram</span></div></div></div>
                 </div>
+                <div class="card bg-light mb-3">
+                    <div class="card-body py-2">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="scr-select-all">
+                            <label class="custom-control-label font-weight-bold text-primary" for="scr-select-all">
+                                <i class="fas fa-check-double"></i> Pilih Semua (Normal)
+                            </label>
+                        </div>
+                    </div>
+                </div>
                 <h5 class="mt-3 mb-2">Kepala dan Otak:</h5>
                 <div class="form-group">
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-simetris-hemisfer" ${savedData.simetris_hemisfer ? 'checked' : ''}><label class="custom-control-label" for="scr-simetris-hemisfer">Simetris hemisfer serebral</label></div>
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-falx-bpd" ${savedData.falx_bpd ? 'checked' : ''}><label class="custom-control-label" for="scr-falx-bpd">Ventrikel lateral, Atrium < 10 mm</label></div>
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-ventrikel" ${savedData.ventrikel ? 'checked' : ''}><label class="custom-control-label" for="scr-ventrikel">Ventrikel sereberal, cisterna magna</label></div>
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-cavum-septum" ${savedData.cavum_septum ? 'checked' : ''}><label class="custom-control-label" for="scr-cavum-septum">Cavum septum pellucidum</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-simetris-hemisfer" ${savedData.simetris_hemisfer ? 'checked' : ''}><label class="custom-control-label" for="scr-simetris-hemisfer">Simetris hemisfer serebral</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-falx-bpd" ${savedData.falx_bpd ? 'checked' : ''}><label class="custom-control-label" for="scr-falx-bpd">Ventrikel lateral, Atrium < 10 mm</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-ventrikel" ${savedData.ventrikel ? 'checked' : ''}><label class="custom-control-label" for="scr-ventrikel">Ventrikel sereberal, cisterna magna</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-cavum-septum" ${savedData.cavum_septum ? 'checked' : ''}><label class="custom-control-label" for="scr-cavum-septum">Cavum septum pellucidum</label></div>
                 </div>
                 <h5 class="mt-3 mb-2">Muka dan Leher:</h5>
                 <div class="form-group">
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-profil-muka" ${savedData.profil_muka ? 'checked' : ''}><label class="custom-control-label" for="scr-profil-muka">Profil muka normal</label></div>
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-bibir-langit" ${savedData.tulang_hidung ? 'checked' : ''}><label class="custom-control-label" for="scr-bibir-langit">Tulang hidung tampak, ukuran normal</label></div>
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-lens-bibir" ${savedData.garis_bibir ? 'checked' : ''}><label class="custom-control-label" for="scr-lens-bibir">Garis bibir atas menyambung</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-profil-muka" ${savedData.profil_muka ? 'checked' : ''}><label class="custom-control-label" for="scr-profil-muka">Profil muka normal</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-bibir-langit" ${savedData.tulang_hidung ? 'checked' : ''}><label class="custom-control-label" for="scr-bibir-langit">Tulang hidung tampak, ukuran normal</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-lens-bibir" ${savedData.garis_bibir ? 'checked' : ''}><label class="custom-control-label" for="scr-lens-bibir">Garis bibir atas menyambung</label></div>
                 </div>
                 <h5 class="mt-3 mb-2">Jantung dan Rongga Dada:</h5>
                 <div class="form-group">
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-4chamber" ${savedData.four_chamber ? 'checked' : ''}><label class="custom-control-label" for="scr-4chamber">Gambaran jelas 4-chamber view</label></div>
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-jantung-kiri" ${savedData.jantung_kiri ? 'checked' : ''}><label class="custom-control-label" for="scr-jantung-kiri">Jantung di sebelah kiri</label></div>
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-septum-interv" ${savedData.septum_interv ? 'checked' : ''}><label class="custom-control-label" for="scr-septum-interv">Apex jantung kearah kiri (~45')</label></div>
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-besar-jantung" ${savedData.besar_jantung ? 'checked' : ''}><label class="custom-control-label" for="scr-besar-jantung">Besar jantung <1/3 area dada</label></div>
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-dua-atrium" ${savedData.dua_atrium ? 'checked' : ''}><label class="custom-control-label" for="scr-dua-atrium">Dua atrium dan dua ventrikel</label></div>
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-irama-jantung" ${savedData.katup_atrioventricular ? 'checked' : ''}><label class="custom-control-label" for="scr-irama-jantung">Katup atrioventricular</label></div>
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-ritme-jantung" ${savedData.ritme_jantung ? 'checked' : ''}><label class="custom-control-label" for="scr-ritme-jantung">Ritme jantung reguler</label></div>
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-echogenic-pads" ${savedData.echogenic_pads ? 'checked' : ''}><label class="custom-control-label" for="scr-echogenic-pads">Echogenic pada lapang paru</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-4chamber" ${savedData.four_chamber ? 'checked' : ''}><label class="custom-control-label" for="scr-4chamber">Gambaran jelas 4-chamber view</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-jantung-kiri" ${savedData.jantung_kiri ? 'checked' : ''}><label class="custom-control-label" for="scr-jantung-kiri">Jantung di sebelah kiri</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-septum-interv" ${savedData.septum_interv ? 'checked' : ''}><label class="custom-control-label" for="scr-septum-interv">Apex jantung kearah kiri (~45')</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-besar-jantung" ${savedData.besar_jantung ? 'checked' : ''}><label class="custom-control-label" for="scr-besar-jantung">Besar jantung <1/3 area dada</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-dua-atrium" ${savedData.dua_atrium ? 'checked' : ''}><label class="custom-control-label" for="scr-dua-atrium">Dua atrium dan dua ventrikel</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-irama-jantung" ${savedData.katup_atrioventricular ? 'checked' : ''}><label class="custom-control-label" for="scr-irama-jantung">Katup atrioventricular</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-ritme-jantung" ${savedData.ritme_jantung ? 'checked' : ''}><label class="custom-control-label" for="scr-ritme-jantung">Ritme jantung reguler</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-echogenic-pads" ${savedData.echogenic_pads ? 'checked' : ''}><label class="custom-control-label" for="scr-echogenic-pads">Echogenic pada lapang paru</label></div>
                 </div>
                 <h5 class="mt-3 mb-2">Tulang Belakang:</h5>
                 <div class="form-group">
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-vertebra" ${savedData.vertebra ? 'checked' : ''}><label class="custom-control-label" for="scr-vertebra">Tidak tampak kelainan vertebra</label></div>
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-kulit-dorsal" ${savedData.kulit_dorsal ? 'checked' : ''}><label class="custom-control-label" for="scr-kulit-dorsal">Garis kulit tampak baik</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-vertebra" ${savedData.vertebra ? 'checked' : ''}><label class="custom-control-label" for="scr-vertebra">Tidak tampak kelainan vertebra</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-kulit-dorsal" ${savedData.kulit_dorsal ? 'checked' : ''}><label class="custom-control-label" for="scr-kulit-dorsal">Garis kulit tampak baik</label></div>
                 </div>
                 <h5 class="mt-3 mb-2">Anggota Gerak:</h5>
                 <div class="form-group">
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-gerakan-lengan" ${savedData.alat_gerak_atas ? 'checked' : ''}><label class="custom-control-label" for="scr-gerakan-lengan">Alat gerak kiri kanan atas normal</label></div>
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-alat-gerak" ${savedData.alat_gerak_bawah ? 'checked' : ''}><label class="custom-control-label" for="scr-alat-gerak">Alat gerak kiri kanan bawah normal</label></div>
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-visual-tangan" ${savedData.visual_tangan ? 'checked' : ''}><label class="custom-control-label" for="scr-visual-tangan">Visualisasi tangan dan kaki baik</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-gerakan-lengan" ${savedData.alat_gerak_atas ? 'checked' : ''}><label class="custom-control-label" for="scr-gerakan-lengan">Alat gerak kiri kanan atas normal</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-alat-gerak" ${savedData.alat_gerak_bawah ? 'checked' : ''}><label class="custom-control-label" for="scr-alat-gerak">Alat gerak kiri kanan bawah normal</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-visual-tangan" ${savedData.visual_tangan ? 'checked' : ''}><label class="custom-control-label" for="scr-visual-tangan">Visualisasi tangan dan kaki baik</label></div>
                 </div>
                 <h5 class="mt-3 mb-2">Rongga perut:</h5>
                 <div class="form-group">
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-lambung-kiri" ${savedData.lambung_kiri ? 'checked' : ''}><label class="custom-control-label" for="scr-lambung-kiri">Lambung di sebelah kiri</label></div>
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-posisi-liver" ${savedData.posisi_liver ? 'checked' : ''}><label class="custom-control-label" for="scr-posisi-liver">Posisi liver dan echogenocity normal</label></div>
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-ginjal-kiri-kanan" ${savedData.ginjal_kiri_kanan ? 'checked' : ''}><label class="custom-control-label" for="scr-ginjal-kiri-kanan">Terlihat ginjal kiri & kanan</label></div>
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-ginjal-echohypoic" ${savedData.ginjal_echohypoic ? 'checked' : ''}><label class="custom-control-label" for="scr-ginjal-echohypoic">Ginjal tampak hipoechoic dibanding usus</label></div>
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-kandung-kemih" ${savedData.kandung_kemih ? 'checked' : ''}><label class="custom-control-label" for="scr-kandung-kemih">Kandung kemih terisi</label></div>
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-hawa-jantung" ${savedData.insersi_tali_pusat ? 'checked' : ''}><label class="custom-control-label" for="scr-hawa-jantung">Insersi tali pusat baik</label></div>
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-masa-padat" ${savedData.dinding_perut ? 'checked' : ''}><label class="custom-control-label" for="scr-masa-padat">Dinding perut tidak tampak defek</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-lambung-kiri" ${savedData.lambung_kiri ? 'checked' : ''}><label class="custom-control-label" for="scr-lambung-kiri">Lambung di sebelah kiri</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-posisi-liver" ${savedData.posisi_liver ? 'checked' : ''}><label class="custom-control-label" for="scr-posisi-liver">Posisi liver dan echogenocity normal</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-ginjal-kiri-kanan" ${savedData.ginjal_kiri_kanan ? 'checked' : ''}><label class="custom-control-label" for="scr-ginjal-kiri-kanan">Terlihat ginjal kiri & kanan</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-ginjal-echohypoic" ${savedData.ginjal_echohypoic ? 'checked' : ''}><label class="custom-control-label" for="scr-ginjal-echohypoic">Ginjal tampak hipoechoic dibanding usus</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-kandung-kemih" ${savedData.kandung_kemih ? 'checked' : ''}><label class="custom-control-label" for="scr-kandung-kemih">Kandung kemih terisi</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-hawa-jantung" ${savedData.insersi_tali_pusat ? 'checked' : ''}><label class="custom-control-label" for="scr-hawa-jantung">Insersi tali pusat baik</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-masa-padat" ${savedData.dinding_perut ? 'checked' : ''}><label class="custom-control-label" for="scr-masa-padat">Dinding perut tidak tampak defek</label></div>
                 </div>
                 <h5 class="mt-3 mb-2">Plasenta dan Air Ketuban:</h5>
                 <div class="form-group">
-                    <div class="custom-control custom-checkbox mb-2"><input type="checkbox" class="custom-control-input usg-field" id="scr-lokasi-plasenta" ${savedData.lokasi_plasenta ? 'checked' : ''}><label class="custom-control-label" for="scr-lokasi-plasenta">Lokasi plasenta</label></div>
+                    <div class="custom-control custom-checkbox mb-2"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-lokasi-plasenta" ${savedData.lokasi_plasenta ? 'checked' : ''}><label class="custom-control-label" for="scr-lokasi-plasenta">Lokasi plasenta</label></div>
                     <div class="form-row mb-2"><div class="form-group col-md-6 mb-0"><input type="text" class="form-control usg-field" id="scr-lokasi-plasenta-text" placeholder="Sebutkan lokasi plasenta..." value="${escapeHtml(savedData.lokasi_plasenta_text || '')}"></div></div>
-                    <div class="custom-control custom-checkbox mb-2"><input type="checkbox" class="custom-control-input usg-field" id="scr-tekstur-plasenta" ${savedData.tekstur_plasenta ? 'checked' : ''}><label class="custom-control-label" for="scr-tekstur-plasenta">Tekstur plasenta homogen</label></div>
-                    <div class="custom-control custom-checkbox mb-2"><input type="checkbox" class="custom-control-input usg-field" id="scr-volume-ketuban" ${savedData.volume_ketuban ? 'checked' : ''}><label class="custom-control-label" for="scr-volume-ketuban">Volume ketuban cukup</label></div>
-                    <div class="custom-control custom-checkbox mb-2"><input type="checkbox" class="custom-control-input usg-field" id="scr-warna-jernih" ${savedData.panjang_serviks ? 'checked' : ''}><label class="custom-control-label" for="scr-warna-jernih">Panjang serviks</label></div>
+                    <div class="custom-control custom-checkbox mb-2"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-tekstur-plasenta" ${savedData.tekstur_plasenta ? 'checked' : ''}><label class="custom-control-label" for="scr-tekstur-plasenta">Tekstur plasenta homogen</label></div>
+                    <div class="custom-control custom-checkbox mb-2"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-volume-ketuban" ${savedData.volume_ketuban ? 'checked' : ''}><label class="custom-control-label" for="scr-volume-ketuban">Volume ketuban cukup</label></div>
+                    <div class="custom-control custom-checkbox mb-2"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-warna-jernih" ${savedData.panjang_serviks ? 'checked' : ''}><label class="custom-control-label" for="scr-warna-jernih">Panjang serviks</label></div>
                     <div class="form-row"><div class="form-group col-md-4 mb-0"><div class="input-group"><input type="text" class="form-control usg-field" id="scr-panjang-serviks-text" placeholder="Panjang serviks" value="${escapeHtml(savedData.panjang_serviks_text || '')}"><div class="input-group-append"><span class="input-group-text">cm</span></div></div></div></div>
                 </div>
                 <h5 class="mt-3 mb-2">Lainnya:</h5>
                 <div class="form-group">
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-gerak-janin-baik" ${savedData.gerak_janin_baik ? 'checked' : ''}><label class="custom-control-label" for="scr-gerak-janin-baik">Gerak janin baik</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-gerak-janin-baik" ${savedData.gerak_janin_baik ? 'checked' : ''}><label class="custom-control-label" for="scr-gerak-janin-baik">Gerak janin baik</label></div>
                     <div class="form-group mt-2"><label class="font-weight-bold">Jenis kelamin</label><div><div class="custom-control custom-radio d-inline-block mr-3"><input type="radio" class="custom-control-input usg-field" name="screening_gender" id="scr-gender-male" value="male" ${savedData.gender === 'male' ? 'checked' : ''}><label class="custom-control-label" for="scr-gender-male">Laki-laki</label></div><div class="custom-control custom-radio d-inline-block"><input type="radio" class="custom-control-input usg-field" name="screening_gender" id="scr-gender-female" value="female" ${savedData.gender === 'female' ? 'checked' : ''}><label class="custom-control-label" for="scr-gender-female">Perempuan</label></div></div></div>
                 </div>
                 <h5 class="mt-3 mb-2">KESIMPULAN</h5>
@@ -760,6 +845,34 @@ export function renderUSG() {
             summaryCollapse.on('hide.bs.collapse', function () {
                 $(this).closest('.alert').find('.fa-chevron-down').css('transform', 'rotate(-90deg)');
             });
+        }
+
+        // Handle "Select All" checkbox for screening section
+        const selectAllCheckbox = container.querySelector('#scr-select-all');
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+                const screeningCheckboxes = container.querySelectorAll('.screening-checkbox');
+                screeningCheckboxes.forEach(checkbox => {
+                    checkbox.checked = this.checked;
+                });
+            });
+
+            // Update "Select All" state when individual checkboxes change
+            const screeningCheckboxes = container.querySelectorAll('.screening-checkbox');
+            screeningCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', function() {
+                    const allChecked = Array.from(screeningCheckboxes).every(cb => cb.checked);
+                    const someChecked = Array.from(screeningCheckboxes).some(cb => cb.checked);
+                    selectAllCheckbox.checked = allChecked;
+                    selectAllCheckbox.indeterminate = someChecked && !allChecked;
+                });
+            });
+
+            // Initialize indeterminate state
+            const allChecked = Array.from(screeningCheckboxes).every(cb => cb.checked);
+            const someChecked = Array.from(screeningCheckboxes).some(cb => cb.checked);
+            selectAllCheckbox.checked = allChecked;
+            selectAllCheckbox.indeterminate = someChecked && !allChecked;
         }
     }, 100);
 

@@ -120,33 +120,18 @@ export default {
                 <div class="sc-section-header">
                     <h3>Identitas Pasien</h3>
                 </div>
-                <div class="sc-grid two">
-                    <div class="sc-card">
-                        <h4>Data Utama</h4>
-                        <table class="table table-sm table-bordered">
-                            <tbody>
-                                ${primaryRows.map(([label, value]) => `
-                                    <tr>
-                                        <th style="width: 40%;">${label}</th>
-                                        <td>${value}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="sc-card">
-                        <h4>Informasi Intake</h4>
-                        <table class="table table-sm table-bordered">
-                            <tbody>
-                                ${intakeRows.map(([label, value]) => `
-                                    <tr>
-                                        <th style="width: 40%;">${label}</th>
-                                        <td>${value}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="sc-card">
+                    <h4>Data Utama</h4>
+                    <table class="table table-sm table-bordered">
+                        <tbody>
+                            ${primaryRows.map(([label, value]) => `
+                                <tr>
+                                    <th style="width: 30%;">${label}</th>
+                                    <td>${value}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         `;
