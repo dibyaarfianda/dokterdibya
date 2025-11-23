@@ -249,14 +249,20 @@
 
     // Initialize chat popup
     async function initChatPopup() {
+        console.log('[ChatPopup] initChatPopup called, readyState:', document.readyState);
+        console.log('[ChatPopup] window.auth:', window.auth);
+        
         // Wait for auth to be ready
         let user = window.auth?.currentUser;
+        console.log('[ChatPopup] Initial user:', user);
         
         // If auth not ready, wait for it
         if (!user) {
+            console.log('[ChatPopup] User not ready, waiting...');
             await new Promise((resolve) => {
                 const checkAuth = setInterval(() => {
                     if (window.auth?.currentUser) {
+                        console.log('[ChatPopup] Auth ready!');
                         clearInterval(checkAuth);
                         resolve();
                     }
@@ -264,28 +270,38 @@
                 
                 // Timeout after 10 seconds
                 setTimeout(() => {
+                    console.warn('[ChatPopup] Auth wait timeout');
                     clearInterval(checkAuth);
                     resolve();
                 }, 10000);
             });
             
             user = window.auth?.currentUser;
+            console.log('[ChatPopup] User after wait:', user);
         }
         
         // Check if user has chat permission (all roles have permission by default)
         if (!user || !user.role) {
-            console.warn('Chat not initialized: User not authenticated');
+            console.warn('[ChatPopup] Chat not initialized: User not authenticated', user);
             return;
         }
 
         // All users have chat access
-        console.log('Initializing chat for user:', user.role);
+        console.log('[ChatPopup] ✅ Initializing chat for user:', user.role, user);
 
         // Inject CSS
+        console.log('[ChatPopup] Injecting CSS...');
         document.head.insertAdjacentHTML('beforeend', chatCSS);
 
         // Inject HTML
         document.body.insertAdjacentHTML('beforeend', chatHTML);
+
+        // Check if Socket.IO is available (should be created by global-chat-loader)
+        if (!window.socket) {
+            console.error('[ChatPopup] window.socket not available, real-time chat will not work');
+        } else {
+            console.log('[ChatPopup] Using global Socket.IO connection:', window.socket.id || 'connecting...');
+        }
 
         // Ensure chat audio elements exist
         if (!document.getElementById('chat-send-sound')) {
@@ -439,19 +455,29 @@
       // Send to backend
       try {
         const token = await window.getIdToken();
-  const response = await fetch(`${API_ORIGIN}/api/chat/send`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({
+        const payload = {
             message,
-            user_id: curUser.id,
+            user_id: curUser.id || curUser.uid,
             user_name: curUser.name || curUser.email,
             user_photo: userPhoto
-          })
+        };
+        console.log('[ChatPopup] Sending message:', payload);
+        
+        const response = await fetch(`${API_ORIGIN}/api/chat/send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify(payload)
         });
-        if (!response.ok) console.error('Failed to send chat message');
+        
+        if (response.ok) {
+            const result = await response.json();
+            console.log('[ChatPopup] Message sent successfully:', result);
+        } else {
+            const error = await response.json().catch(() => ({}));
+            console.error('[ChatPopup] Failed to send chat message:', response.status, error);
+        }
       } catch (err) {
-        console.error('Error sending chat message:', err);
+        console.error('[ChatPopup] Error sending chat message:', err);
       }
     }
     sendBtn.addEventListener('click', sendMessage);
@@ -568,11 +594,19 @@
 
         // Listen for real-time chat messages via Socket.IO
         if (window.socket) {
-      window.socket.on('chat:message', (data) => {
-        if (data.user_id !== user.id) {
-          addMessage(data.message, 'received', data.created_at, data.user_name, data.user_photo, data.user_id);
+            console.log('[ChatPopup] Setting up chat:message listener, current user:', user.id);
+            window.socket.on('chat:message', (data) => {
+                console.log('[ChatPopup] 📨 Received chat:message:', data);
+                console.log('[ChatPopup] My user.id:', user.id, 'Message user_id:', data.user_id);
+                if (data.user_id !== user.id && data.user_id !== user.uid) {
+                    console.log('[ChatPopup] Adding received message');
+                    addMessage(data.message, 'received', data.created_at, data.user_name, data.user_photo, data.user_id);
+                } else {
+                    console.log('[ChatPopup] Skipping own message');
                 }
             });
+        } else {
+            console.error('[ChatPopup] window.socket not available, real-time chat disabled');
         }
         
         // Clear chat button handler

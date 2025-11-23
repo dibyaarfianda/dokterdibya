@@ -166,6 +166,11 @@ app.use('/api/dashboard-stats', dashboardStatsRoutes);
 const sundayClinicRoutes = require('./routes/sunday-clinic');
 app.use('/api/sunday-clinic', sundayClinicRoutes);
 
+// Setup Socket.io handlers for Sunday Clinic
+if (sundayClinicRoutes.setupSocketHandlers) {
+    sundayClinicRoutes.setupSocketHandlers(io);
+}
+
 // Lab results routes (upload and AI interpretation)
 const labResultsRoutes = require('./routes/lab-results');
 app.use('/api/lab-results', labResultsRoutes);
@@ -279,6 +284,11 @@ app.use(errorHandler);
 
 // Global state for current selected patient
 let currentSelectedPatient = null;
+
+// Initialize real-time sync with Socket.IO
+const realtimeSync = require('./realtime-sync');
+realtimeSync.init(io);
+logger.info('Real-time sync initialized with Socket.IO');
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
