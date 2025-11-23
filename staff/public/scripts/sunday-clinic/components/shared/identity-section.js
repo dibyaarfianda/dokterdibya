@@ -69,27 +69,42 @@ export default {
         const patient = state.patientData || {};
         const record = state.recordData?.record || {};
         const intake = state.intakeData || {};
+        const intakePayload = intake.payload || {};
 
         const formatValue = (val) => val || '-';
         const formatPhone = (phone) => phone ? phone.replace(/(\d{4})(\d{4})(\d{4})/, '$1-$2-$3') : '-';
 
-        const husbandAge = patient.husband_age || intake.payload?.husband_age;
+        // Get data from patient or intake payload
+        const fullName = patient.fullName || patient.full_name || intakePayload.full_name || patient.name;
+        const patientId = patient.id || patient.patient_id;
+        const dateOfBirth = patient.birthDate || patient.date_of_birth || intakePayload.dob;
+        const phone = patient.phone || patient.phone_number || patient.whatsapp;
+        const email = patient.email || intakePayload.email;
+        const address = patient.address || intakePayload.address;
+        const maritalStatus = patient.marital_status || intakePayload.marital_status;
+        const husbandName = patient.husband_name || intakePayload.husband_name;
+        const husbandAge = patient.husband_age || intakePayload.husband_age;
+        const husbandOccupation = patient.husband_occupation || intakePayload.husband_occupation;
+        const occupation = patient.occupation || intakePayload.occupation;
+        const education = patient.education || intakePayload.education;
+        const insurance = patient.insurance || intakePayload.insurance;
+        const emergencyPhone = patient.emergency_contact_phone || intakePayload.emergency_contact_phone;
 
         const primaryRows = [
-            ['Nama Lengkap', formatValue(patient.full_name || patient.name)],
-            ['ID Pasien', formatValue(patient.patient_id || patient.id)],
-            ['Usia', formatValue(patient.date_of_birth ? this.calculateAge(patient.date_of_birth) + ' tahun' : '')],
-            ['Telepon', formatPhone(patient.phone || patient.phone_number)],
-            ['Kontak Darurat', formatPhone(patient.emergency_contact_phone)],
-            ['Email', formatValue(patient.email)],
-            ['Alamat', formatValue(patient.address)],
-            ['Status Pernikahan', formatValue(this.getMaritalStatusLabel(patient.marital_status))],
-            ['Nama Suami', formatValue(patient.husband_name || intake.payload?.husband_name)],
+            ['Nama Lengkap', formatValue(fullName)],
+            ['ID Pasien', formatValue(patientId)],
+            ['Usia', formatValue(dateOfBirth ? this.calculateAge(dateOfBirth) + ' tahun' : '')],
+            ['Telepon', formatPhone(phone)],
+            ['Kontak Darurat', formatPhone(emergencyPhone)],
+            ['Email', formatValue(email)],
+            ['Alamat', formatValue(address)],
+            ['Status Pernikahan', formatValue(this.getMaritalStatusLabel(maritalStatus))],
+            ['Nama Suami', formatValue(husbandName)],
             ['Umur Suami', formatValue(husbandAge ? husbandAge + ' tahun' : '')],
-            ['Pekerjaan Suami', formatValue(patient.husband_occupation || intake.payload?.husband_occupation)],
-            ['Pekerjaan Ibu', formatValue(patient.occupation)],
-            ['Pendidikan', formatValue(patient.education)],
-            ['Asuransi', formatValue(patient.insurance || 'Tidak ada')]
+            ['Pekerjaan Suami', formatValue(husbandOccupation)],
+            ['Pekerjaan Ibu', formatValue(occupation)],
+            ['Pendidikan', formatValue(education)],
+            ['Asuransi', formatValue(insurance || 'Tidak ada')]
         ];
 
         const intakeRows = [
