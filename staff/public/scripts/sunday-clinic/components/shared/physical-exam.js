@@ -182,7 +182,7 @@ export default {
                     </div>
 
                     <div class="text-right mt-3">
-                        <button type="button" class="btn btn-primary" id="save-physical-exam">
+                        <button type="button" class="btn btn-primary" id="save-physical-exam" onclick="window.savePhysicalExam()">
                             <i class="fas fa-save mr-2"></i>Simpan Pemeriksaan Fisik
                         </button>
                     </div>

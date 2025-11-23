@@ -169,7 +169,7 @@ export default {
                         <p class="text-muted mb-0">Obstetrician Gynaecologist</p>
                     </div>
                     <div class="text-right mt-3">
-                        <button type="button" class="btn btn-primary" id="save-diagnosis">
+                        <button type="button" class="btn btn-primary" id="save-diagnosis" onclick="window.saveDiagnosis()">
                             <i class="fas fa-save mr-2"></i>Simpan Diagnosis
                         </button>
                     </div>

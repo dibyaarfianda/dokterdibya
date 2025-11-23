@@ -100,7 +100,7 @@ export default {
             <div class="sc-section">
                 <div class="sc-section-header">
                     <h3>Anamnesa & Riwayat</h3>
-                    <button class="btn btn-primary btn-sm" id="btn-update-anamnesa">
+                    <button class="btn btn-primary btn-sm" id="btn-update-anamnesa" onclick="window.saveAnamnesa()">
                         <i class="fas fa-save"></i> Simpan
                     </button>
                 </div>
