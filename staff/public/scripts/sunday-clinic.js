@@ -17,15 +17,15 @@ import stateManager from './sunday-clinic/utils/state-manager.js';
 // ============================================================================
 
 const SECTION_DEFS = [
-    { id: 'identitas', label: 'Identitas', icon: 'fa-id-card' },
+    { id: 'identity', label: 'Identitas', icon: 'fa-id-card' },
     { id: 'anamnesa', label: 'Anamnesa', icon: 'fa-clipboard-list' },
-    { id: 'pemeriksaan', label: 'Pemeriksaan Fisik', icon: 'fa-stethoscope' },
+    { id: 'physical-exam', label: 'Pemeriksaan Fisik', icon: 'fa-stethoscope' },
     { id: 'pemeriksaan-obstetri', label: 'Pemeriksaan Obstetri', icon: 'fa-heartbeat' },
     { id: 'usg', label: 'USG', icon: 'fa-baby' },
     { id: 'penunjang', label: 'Penunjang', icon: 'fa-flask' },
     { id: 'diagnosis', label: 'Diagnosis', icon: 'fa-diagnoses' },
-    { id: 'planning', label: 'Planning', icon: 'fa-clipboard-check' },
-    { id: 'tagihan', label: 'Tagihan', icon: 'fa-file-invoice-dollar' }
+    { id: 'plan', label: 'Planning', icon: 'fa-clipboard-check' },
+    { id: 'billing', label: 'Tagihan', icon: 'fa-file-invoice-dollar' }
 ];
 
 const SECTION_LOOKUP = new Map(SECTION_DEFS.map(section => [section.id, section]));
@@ -36,7 +36,7 @@ const SECTION_LOOKUP = new Map(SECTION_DEFS.map(section => [section.id, section]
 
 const appState = {
     currentMrId: null,
-    currentSection: 'identitas',
+    currentSection: 'identity',
     staffIdentity: {
         id: null,
         name: null
@@ -248,20 +248,20 @@ function setupDateTimeDisplay() {
 function parseRoute(pathname = window.location.pathname) {
     const trimmed = pathname.replace(/^\/+|\/+$/g, '');
     const segments = trimmed.split('/');
-    const [root, rawMrId = '', rawSection = 'identitas', ...rest] = segments;
+    const [root, rawMrId = '', rawSection = 'identity', ...rest] = segments;
 
     if (root !== 'sunday-clinic') {
-        return { mrId: null, section: 'identitas', remainder: '' };
+        return { mrId: null, section: 'identity', remainder: '' };
     }
 
     return {
         mrId: rawMrId || null,
-        section: (rawSection || 'identitas').toLowerCase(),
+        section: (rawSection || 'identity').toLowerCase(),
         remainder: rest.join('/')
     };
 }
 
-function updateRoute(mrId, section = 'identitas') {
+function updateRoute(mrId, section = 'identity') {
     const newPath = `/sunday-clinic/${mrId}/${section}`;
     window.history.pushState({ mrId, section }, '', newPath);
 }
@@ -529,7 +529,7 @@ window.selectVisit = function(mrId) {
 
 window.openVisit = async function(mrId) {
     closeDirectory();
-    await loadMedicalRecord(mrId, 'identitas');
+    await loadMedicalRecord(mrId, 'identity');
 };
 
 function getCategoryBadgeClass(category) {
