@@ -342,9 +342,18 @@ class SundayClinicApp {
             };
 
             const state = stateManager.getState();
-            const patientId = state.recordData?.record?.patient_id;
+            console.log('[SundayClinic] State:', state);
+            console.log('[SundayClinic] Record data:', state.recordData);
+
+            // Try multiple possible locations for patient_id
+            const patientId = state.recordData?.record?.patient_id ||
+                             state.recordData?.intake?.patientId ||
+                             state.recordData?.intake?.patient_id;
+
+            console.log('[SundayClinic] Patient ID found:', patientId);
 
             if (!patientId) {
+                console.error('[SundayClinic] Full state dump:', JSON.stringify(state, null, 2));
                 throw new Error('Patient ID tidak ditemukan');
             }
 
