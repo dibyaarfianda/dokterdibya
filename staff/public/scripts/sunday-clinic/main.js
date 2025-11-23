@@ -237,19 +237,39 @@ class SundayClinicApp {
         const resetTerapiBtn = document.getElementById('btn-reset-terapi');
         const savePlanBtn = document.getElementById('save-plan');
 
+        console.log('[SundayClinic] Planning buttons found:', {
+            inputTindakan: !!inputTindakanBtn,
+            inputTerapi: !!inputTerapiBtn,
+            resetTindakan: !!resetTindakanBtn,
+            resetTerapi: !!resetTerapiBtn,
+            savePlan: !!savePlanBtn
+        });
+
+        console.log('[SundayClinic] Planning functions available:', {
+            openTindakanModal: typeof window.openTindakanModal,
+            openTerapiModal: typeof window.openTerapiModal,
+            resetTindakan: typeof window.resetTindakan,
+            resetTerapi: typeof window.resetTerapi
+        });
+
         if (inputTindakanBtn && window.openTindakanModal) {
+            console.log('[SundayClinic] Attaching openTindakanModal listener');
             inputTindakanBtn.addEventListener('click', window.openTindakanModal);
         }
         if (inputTerapiBtn && window.openTerapiModal) {
+            console.log('[SundayClinic] Attaching openTerapiModal listener');
             inputTerapiBtn.addEventListener('click', window.openTerapiModal);
         }
         if (resetTindakanBtn && window.resetTindakan) {
+            console.log('[SundayClinic] Attaching resetTindakan listener');
             resetTindakanBtn.addEventListener('click', window.resetTindakan);
         }
         if (resetTerapiBtn && window.resetTerapi) {
+            console.log('[SundayClinic] Attaching resetTerapi listener');
             resetTerapiBtn.addEventListener('click', window.resetTerapi);
         }
         if (savePlanBtn) {
+            console.log('[SundayClinic] Attaching savePlanningObstetri listener');
             savePlanBtn.addEventListener('click', () => this.savePlanningObstetri());
         }
 
@@ -328,7 +348,7 @@ class SundayClinicApp {
                 throw new Error('Patient ID tidak ditemukan');
             }
 
-            const token = await apiClient.getToken();
+            const token = window.getToken();
             if (!token) {
                 throw new Error('Authentication token tidak tersedia');
             }
