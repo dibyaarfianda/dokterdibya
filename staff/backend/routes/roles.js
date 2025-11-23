@@ -225,7 +225,7 @@ router.get('/api/users/:userId/permissions', verifyToken, asyncHandler(async (re
     // Users can view their own permissions
     // Admins can view anyone's permissions
     const isOwnPermissions = req.user.id === userId;
-    const isAdmin = ['superadmin', 'admin'].includes(req.user.role);
+    const isAdmin = req.user.is_superadmin || ['dokter', 'admin'].includes(req.user.role);
 
     if (!isOwnPermissions && !isAdmin) {
         throw new AppError('Akses ditolak', HTTP_STATUS.FORBIDDEN);
@@ -268,9 +268,9 @@ router.put('/api/users/:userId/role', verifyToken, requirePermission('roles.edit
 
     const role = roleRows[0];
 
-    // Only superadmin can assign superadmin role
-    if (role.name === 'superadmin' && req.user.role !== 'superadmin') {
-        throw new AppError('Hanya super admin yang dapat menetapkan role super admin', HTTP_STATUS.FORBIDDEN);
+    // Only superadmin can assign dokter role
+    if (role.name === 'dokter' && !req.user.is_superadmin && req.user.role !== 'dokter') {
+        throw new AppError('Hanya dokter yang dapat menetapkan role dokter', HTTP_STATUS.FORBIDDEN);
     }
 
     await db.query('UPDATE users SET role_id = ?, role = ? WHERE new_id = ?', [role_id, role.name, userId]);
@@ -281,7 +281,7 @@ router.put('/api/users/:userId/role', verifyToken, requirePermission('roles.edit
 }));
 
 // GET /api/users - Get all users with roles (enhanced)
-router.get('/api/users', verifyToken, requireRole('superadmin', 'admin'), asyncHandler(async (req, res) => {
+router.get('/api/users', verifyToken, requireRole('dokter', 'admin'), asyncHandler(async (req, res) => {
     const [users] = await db.query(`
         SELECT u.new_id as id, u.name, u.email, u.is_active,
             u.created_at, u.user_type,
@@ -295,7 +295,7 @@ router.get('/api/users', verifyToken, requireRole('superadmin', 'admin'), asyncH
 }));
 
 // PUT /api/users/:userId/status - Toggle user active status
-router.put('/api/users/:userId/status', verifyToken, requireRole('superadmin', 'admin'), asyncHandler(async (req, res) => {
+router.put('/api/users/:userId/status', verifyToken, requireRole('dokter', 'admin'), asyncHandler(async (req, res) => {
     const { userId } = req.params;
     const { is_active } = req.body;
 

@@ -221,11 +221,12 @@ function requirePermission(...requiredPermissions) {
         }
 
         // Superadmin has all permissions
-        if (req.user.role === 'superadmin') {
+        if (req.user.is_superadmin || req.user.role === 'dokter') {
             logger.debug('Superadmin access granted', {
                 requestId,
                 userId: req.user.id,
-                requiredPermissions
+                requiredPermissions,
+                is_superadmin: req.user.is_superadmin
             });
             return next();
         }
