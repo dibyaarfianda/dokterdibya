@@ -174,9 +174,6 @@ export function renderUSG() {
     const html = `
         <div class="sc-section-header d-flex justify-content-between">
             <h3>USG Obstetri</h3>
-            <button class="btn btn-primary btn-sm" id="btn-save-usg" style="display:none;">
-                <i class="fas fa-save"></i> Simpan
-            </button>
         </div>
         ${metaHtml}
         <div class="sc-card">
@@ -678,6 +675,13 @@ export function renderUSG() {
                     </div>
                 </div>
             </div>
+            
+            <!-- Save Button -->
+            <div class="mt-4 text-right">
+                <button class="btn btn-primary" id="btn-save-usg">
+                    <i class="fas fa-save"></i> Simpan Data USG
+                </button>
+            </div>
             </div>
         </div>
     `;
@@ -691,12 +695,6 @@ export function renderUSG() {
         const editBtn = container.querySelector('#btn-edit-usg');
         const resetBtn = container.querySelector('#btn-reset-usg');
         const editForm = container.querySelector('#usg-edit-form');
-
-        container.querySelectorAll('.usg-field').forEach(field => {
-            field.addEventListener('input', () => {
-                if (saveBtn) saveBtn.style.display = 'inline-block';
-            });
-        });
 
         if (saveBtn) saveBtn.addEventListener('click', saveUSGExam);
         if (editBtn) {
@@ -714,7 +712,6 @@ export function renderUSG() {
                     const savedContent = document.getElementById(`usg-${savedTrimester}-trimester`);
                     if (savedContent) savedContent.style.display = 'block';
                 }
-                if (saveBtn) saveBtn.style.display = 'inline-block';
             });
         }
         if (resetBtn) {
