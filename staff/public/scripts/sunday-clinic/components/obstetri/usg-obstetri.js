@@ -8,14 +8,21 @@ export default {
      * Render USG form for Obstetri with 4 trimester tabs
      */
     async render(state) {
-        const data = state.recordData?.usg || {};
+        // Load saved USG data from medical records using getMedicalRecordContext
+        const { getMedicalRecordContext } = await import('../../utils/helpers.js');
+        const context = getMedicalRecordContext(state, 'usg');
+        const savedData = context?.data || {};
+
+        // Use saved data if available
+        const data = savedData;
+
         const escapeHtml = (str) => {
             if (!str) return '';
             return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
         };
 
-        // Determine current trimester (default to first)
-        const currentTrimester = data.current_trimester || 'first';
+        // Determine current trimester from saved data (default to first)
+        const currentTrimester = data.current_trimester || data.trimester || 'first';
 
         // Define switchTrimester function globally
         if (!window.switchTrimester) {
