@@ -713,14 +713,29 @@ export function renderUSG() {
             return;
         }
 
+        console.log('[USG] Container found:', container);
+        console.log('[USG] Container HTML length:', container.innerHTML.length);
+        console.log('[USG] Looking for buttons...');
+
         const saveBtn = container.querySelector('#btn-save-usg');
         const editBtn = container.querySelector('#btn-edit-usg');
         const resetBtn = container.querySelector('#btn-reset-usg');
         const editForm = container.querySelector('#usg-edit-form');
 
-        console.log('[USG] Save button found:', !!saveBtn);
-        console.log('[USG] Edit button found:', !!editBtn);
-        console.log('[USG] Reset button found:', !!resetBtn);
+        console.log('[USG] Save button found:', !!saveBtn, saveBtn);
+        console.log('[USG] Edit button found:', !!editBtn, editBtn);
+        console.log('[USG] Reset button found:', !!resetBtn, resetBtn);
+        console.log('[USG] Edit form found:', !!editForm);
+
+        // Try finding by document.getElementById as fallback
+        if (!saveBtn) {
+            const saveBtnById = document.getElementById('btn-save-usg');
+            console.log('[USG] Save button by getElementById:', !!saveBtnById, saveBtnById);
+            if (saveBtnById) {
+                console.log('[USG] Attaching via getElementById');
+                saveBtnById.addEventListener('click', saveUSGExam);
+            }
+        }
 
         if (saveBtn) {
             console.log('[USG] Attaching click event to Save button');
