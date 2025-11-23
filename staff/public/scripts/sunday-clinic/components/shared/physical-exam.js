@@ -17,8 +17,8 @@ export default {
     async render(state) {
         const exam = state.recordData?.physical_exam || {};
         const intake = state.intakeData?.payload || {};
-        const record = state.recordData?.record || {};
-        const category = record?.mr_category || 'obstetri';
+        const record = state.recordData || {};
+        const category = record?.mrCategory || record?.mr_category || 'obstetri';
 
         // Use old simple format for obstetri category
         if (category === 'obstetri') {
