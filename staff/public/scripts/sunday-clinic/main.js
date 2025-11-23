@@ -177,7 +177,10 @@ class SundayClinicApp {
             `;
         }
 
+        console.log('[SundayClinic] Setting container HTML, length:', html.length);
+        console.log('[SundayClinic] Container element:', container);
         container.innerHTML = html;
+        console.log('[SundayClinic] Container innerHTML after set:', container.innerHTML.length);
 
         // Attach event listeners
         this.attachEventListeners();
