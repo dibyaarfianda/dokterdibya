@@ -53,14 +53,14 @@ mysql -u root -p"${MYSQL_PASSWORD}" dibyaklinik <<EOF
 -- Create billing revisions table
 CREATE TABLE IF NOT EXISTS sunday_clinic_billing_revisions (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    mr_id VARCHAR(50) NOT NULL,
+    mr_id VARCHAR(20) NOT NULL,
     message TEXT NOT NULL,
     requested_by VARCHAR(255) NOT NULL,
     status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
-    approved_at TIMESTAMP NULL,
+    approved_at DATETIME NULL,
     approved_by VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    created_at DATETIME NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_mr_id (mr_id),
     INDEX idx_status (status),
     FOREIGN KEY (mr_id) REFERENCES sunday_clinic_records(mr_id) ON DELETE CASCADE
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS sunday_clinic_billing_revisions (
 
 -- Add print tracking columns to billings table
 ALTER TABLE sunday_clinic_billings
-ADD COLUMN IF NOT EXISTS printed_at TIMESTAMP NULL,
+ADD COLUMN IF NOT EXISTS printed_at DATETIME NULL,
 ADD COLUMN IF NOT EXISTS printed_by VARCHAR(255);
 
 SELECT 'Migration completed successfully' as status;

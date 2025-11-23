@@ -4,10 +4,12 @@
 -- Table untuk menyimpan request revisi dari staff ke dokter
 CREATE TABLE IF NOT EXISTS sunday_clinic_billing_revisions (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    mr_id VARCHAR(50) NOT NULL,
+    mr_id VARCHAR(20) NOT NULL,
     message TEXT NOT NULL,
     requested_by VARCHAR(255) NOT NULL,
     status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
+    approved_at DATETIME DEFAULT NULL,
+    approved_by VARCHAR(255) DEFAULT NULL,
     created_at DATETIME NOT NULL,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     INDEX idx_mr_id (mr_id),
