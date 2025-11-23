@@ -38,8 +38,8 @@ async function setAuthUI(user) {
         }
         
         // Toggle superadmin items based on role
-        const isSuperAdmin = user.role === 'superadmin';
-        const isAdmin = user.role === 'admin';
+        const isSuperAdmin = user.is_superadmin || user.role === 'dokter' || user.role === 'superadmin';
+        const isAdmin = user.role === 'admin' || user.role === 'managerial';
         console.log('Checking user role:', { id: user.id, role: user.role, isSuperAdmin, isAdmin });
         
         // Show all superadmin-only items to superadmin and admin
