@@ -724,9 +724,10 @@ function escapeHtml(text) {
 
 // Refresh billing component if active
 function refreshBillingIfActive() {
-    // Trigger a custom event that the billing component can listen to
-    const event = new CustomEvent('billing-update-needed');
-    window.dispatchEvent(event);
+    // Force reload the billing section by triggering a section change
+    if (window.handleSectionChange) {
+        window.handleSectionChange('billing', { pushHistory: false });
+    }
 }
 
 // ============================================================================
