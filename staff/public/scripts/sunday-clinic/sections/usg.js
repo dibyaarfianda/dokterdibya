@@ -715,10 +715,21 @@ export function renderUSG() {
 
         if (saveBtn) saveBtn.addEventListener('click', saveUSGExam);
         if (editBtn) {
-            editBtn.addEventListener('click', async () => {
-                // Render ulang dengan mode edit
-                const SundayClinicApp = (await import('../main.js')).default;
-                SundayClinicApp.render(state.activeSection);
+            editBtn.addEventListener('click', () => {
+                // Hide summary, show form
+                const summaryContainer = container.querySelector('#usg-summary-container');
+                if (summaryContainer) summaryContainer.style.display = 'none';
+                
+                if (editForm) {
+                    editForm.style.display = 'block';
+                    // Show only the saved trimester
+                    const savedTrimester = context?.data?.trimester || 'first';
+                    document.querySelectorAll('.trimester-content').forEach(content => {
+                        content.style.display = 'none';
+                    });
+                    const savedContent = document.getElementById(`usg-${savedTrimester}-trimester`);
+                    if (savedContent) savedContent.style.display = 'block';
+                }
             });
         }
         if (resetBtn) {
