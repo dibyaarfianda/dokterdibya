@@ -22,7 +22,7 @@ export default {
 
         // Use old simple format for obstetri category
         if (category === 'obstetri') {
-            return this.renderObstetriFormat(exam);
+            return await this.renderObstetriFormat(state, exam);
         }
 
         // Use new detailed format for other categories
@@ -101,9 +101,17 @@ export default {
     },
 
     /**
-     * Render old Obstetri format (simple)
+     * Render old Obstetri format (simple) - EXACT copy from backup
      */
-    renderObstetriFormat(exam) {
+    async renderObstetriFormat(state, exam) {
+        // Load saved physical exam data using getMedicalRecordContext
+        const { getMedicalRecordContext } = await import('../utils/helpers.js');
+        const context = getMedicalRecordContext(state, 'physical_exam');
+
+        // Use saved data if available, otherwise use passed exam data
+        const savedData = context.data || exam;
+
+        exam = savedData;
         const escapeHtml = (str) => {
             if (!str) return '';
             return String(str)
@@ -124,25 +132,25 @@ export default {
                     <div class="row mb-3">
                         <div class="col-md-3">
                             <label class="font-weight-bold">Tekanan Darah</label>
-                            <input type="text" class="form-control" name="tekanan_darah"
+                            <input type="text" class="form-control" id="pe-tekanan-darah"
                                    value="${escapeHtml(exam.tekanan_darah || '120/80')}"
                                    placeholder="120/80">
                         </div>
                         <div class="col-md-3">
                             <label class="font-weight-bold">Nadi</label>
-                            <input type="text" class="form-control" name="nadi"
+                            <input type="text" class="form-control" id="pe-nadi"
                                    value="${escapeHtml(exam.nadi || '88')}"
                                    placeholder="88">
                         </div>
                         <div class="col-md-3">
                             <label class="font-weight-bold">Suhu</label>
-                            <input type="text" class="form-control" name="suhu"
+                            <input type="text" class="form-control" id="pe-suhu"
                                    value="${escapeHtml(exam.suhu || '36.8')}"
                                    placeholder="36.8">
                         </div>
                         <div class="col-md-3">
                             <label class="font-weight-bold">Respirasi</label>
-                            <input type="text" class="form-control" name="respirasi"
+                            <input type="text" class="form-control" id="pe-respirasi"
                                    value="${escapeHtml(exam.respirasi || '18')}"
                                    placeholder="18">
                         </div>
@@ -151,19 +159,23 @@ export default {
                     <!-- Examination Findings -->
                     <div class="mb-3">
                         <label class="font-weight-bold">Pemeriksaan Kepala & Leher</label>
-                        <textarea class="form-control" name="kepala_leher" rows="2">${escapeHtml(exam.kepala_leher || 'Anemia/Icterus/Cyanosis/Dyspneu (-)')}</textarea>
+                        <textarea class="form-control" id="pe-kepala-leher" rows="2">${escapeHtml(exam.kepala_leher || 'Anemia/Icterus/Cyanosis/Dyspneu (-)')}</textarea>
                     </div>
                     <div class="mb-3">
                         <label class="font-weight-bold">Pemeriksaan Thorax</label>
-                        <textarea class="form-control" name="thorax" rows="3">${escapeHtml(exam.thorax || 'Simetris. Vesiculer/vesicular. Rhonki/Wheezing (-)\nS1 S2 tunggal, murmur (-), gallop (-)')}</textarea>
+                        <textarea class="form-control" id="pe-thorax" rows="3">${escapeHtml(exam.thorax || 'Simetris. Vesiculer/vesicular. Rhonki/Wheezing (-)\nS1 S2 tunggal, murmur (-), gallop (-)')}</textarea>
                     </div>
                     <div class="mb-3">
                         <label class="font-weight-bold">Pemeriksaan Abdomen</label>
-                        <textarea class="form-control" name="abdomen" rows="3">${escapeHtml(exam.abdomen || 'BU (+), Soepel\nGravida tampak sesuai usia kehamilan / Massa abdomen')}</textarea>
+                        <textarea class="form-control" id="pe-abdomen" rows="3">${escapeHtml(exam.abdomen || 'BU (+), Soepel\nGravida tampak sesuai usia kehamilan / Massa abdomen')}</textarea>
                     </div>
                     <div class="mb-3">
                         <label class="font-weight-bold">Pemeriksaan Ekstremitas</label>
-                        <textarea class="form-control" name="ekstremitas" rows="2">${escapeHtml(exam.ekstremitas || 'Akral hangat, kering. CRT < 2 detik')}</textarea>
+                        <textarea class="form-control" id="pe-ekstremitas" rows="2">${escapeHtml(exam.ekstremitas || 'Akral hangat, kering. CRT < 2 detik')}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="font-weight-bold">Pemeriksaan Obstetri</label>
+                        <textarea class="form-control" id="pe-obstetri" rows="4">${escapeHtml(exam.pemeriksaan_obstetri || 'TFU:\nDJJ:\nVT: (tidak dilakukan)')}</textarea>
                     </div>
 
                     <div class="text-right mt-3">

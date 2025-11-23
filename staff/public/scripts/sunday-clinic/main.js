@@ -273,6 +273,20 @@ class SundayClinicApp {
             savePlanBtn.addEventListener('click', () => this.savePlanningObstetri());
         }
 
+        // Physical Exam save button (for old format obstetri category)
+        const savePhysicalExamBtn = document.getElementById('save-physical-exam');
+        if (savePhysicalExamBtn) {
+            console.log('[SundayClinic] Attaching savePhysicalExam listener');
+            savePhysicalExamBtn.addEventListener('click', () => this.savePhysicalExam());
+        }
+
+        // USG save button (for old format obstetri category)
+        const saveUSGBtn = document.getElementById('save-usg');
+        if (saveUSGBtn) {
+            console.log('[SundayClinic] Attaching saveUSGExam listener');
+            saveUSGBtn.addEventListener('click', () => this.saveUSGExam());
+        }
+
         // Warn before leaving if there are unsaved changes
         window.addEventListener('beforeunload', (e) => {
             if (stateManager.hasUnsavedChanges()) {
@@ -393,6 +407,213 @@ class SundayClinicApp {
 
         } catch (error) {
             console.error('[SundayClinic] Save Planning failed:', error);
+            this.showError(error.message);
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    /**
+     * Save USG for obstetri category (old format)
+     */
+    async saveUSGExam() {
+        try {
+            const saveBtn = document.getElementById('save-usg');
+            if (saveBtn) {
+                saveBtn.disabled = true;
+                saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Menyimpan...';
+            }
+
+            this.showLoading('Menyimpan USG...');
+
+            // Detect active trimester
+            const activeTrimesterInput = document.querySelector('.trimester-selector .btn.active input');
+            const trimester = activeTrimesterInput ? activeTrimesterInput.value : 'first';
+
+            console.log('[SundayClinic] Saving USG for trimester:', trimester);
+
+            // Import helper functions
+            const { getMedicalRecordContext } = await import('./utils/helpers.js');
+
+            // Check if existing record exists
+            const state = stateManager.getState();
+            const context = getMedicalRecordContext(state, 'usg');
+            const existingRecordId = context.record?.recordId || context.record?.id || null;
+
+            // Collect data from USG component
+            const usgComponent = this.components['usg'];
+            if (!usgComponent) {
+                throw new Error('USG component not found');
+            }
+
+            const data = {
+                current_trimester: trimester,
+                trimester_1: usgComponent.collectTrimester1Data(),
+                trimester_2: usgComponent.collectTrimester2Data(),
+                screening: usgComponent.collectScreeningData(),
+                trimester_3: usgComponent.collectTrimester3Data()
+            };
+
+            const patientId = state.derived?.patientId ||
+                             state.recordData?.patientId ||
+                             state.patientData?.id;
+
+            if (!patientId) {
+                throw new Error('Patient ID tidak ditemukan');
+            }
+
+            const token = window.getToken();
+            if (!token) {
+                throw new Error('Authentication token tidak tersedia');
+            }
+
+            let response;
+            let successMessage;
+
+            if (existingRecordId) {
+                // UPDATE existing record
+                console.log('[SundayClinic] Updating existing USG record:', existingRecordId);
+
+                response = await fetch(`/api/medical-records/${existingRecordId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        data: data,
+                        timestamp: new Date().toISOString()
+                        // NO doctorName/doctorId for USG!
+                    })
+                });
+
+                successMessage = 'Data USG berhasil diperbarui!';
+            } else {
+                // CREATE new record
+                console.log('[SundayClinic] Creating new USG record');
+
+                const recordPayload = {
+                    patientId: patientId,
+                    type: 'usg',
+                    data: data,
+                    timestamp: new Date().toISOString()
+                    // NO doctorName/doctorId for USG!
+                };
+
+                response = await fetch('/api/medical-records', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(recordPayload)
+                });
+
+                successMessage = 'Data USG berhasil disimpan!';
+            }
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+                throw new Error(errorData.message || `Server error: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('[SundayClinic] USG saved successfully:', result);
+
+            // Reload the record to show updated data
+            await this.reload();
+
+            this.showSuccess(successMessage);
+
+        } catch (error) {
+            console.error('[SundayClinic] Save USG failed:', error);
+            this.showError(error.message);
+        } finally {
+            this.hideLoading();
+
+            // Re-enable button
+            const saveBtn = document.getElementById('save-usg');
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Simpan USG';
+            }
+        }
+    }
+
+    /**
+     * Save Physical Exam for obstetri category (old format)
+     */
+    async savePhysicalExam() {
+        try {
+            this.showLoading('Menyimpan Pemeriksaan Fisik...');
+
+            const data = {
+                tekanan_darah: document.getElementById('pe-tekanan-darah')?.value || '',
+                nadi: document.getElementById('pe-nadi')?.value || '',
+                suhu: document.getElementById('pe-suhu')?.value || '',
+                respirasi: document.getElementById('pe-respirasi')?.value || '',
+                kepala_leher: document.getElementById('pe-kepala-leher')?.value || '',
+                thorax: document.getElementById('pe-thorax')?.value || '',
+                abdomen: document.getElementById('pe-abdomen')?.value || '',
+                ekstremitas: document.getElementById('pe-ekstremitas')?.value || '',
+                pemeriksaan_obstetri: document.getElementById('pe-obstetri')?.value || ''
+            };
+
+            const state = stateManager.getState();
+
+            // Patient ID is in derived state
+            const patientId = state.derived?.patientId ||
+                             state.recordData?.patientId ||
+                             state.patientData?.id;
+
+            if (!patientId) {
+                throw new Error('Patient ID tidak ditemukan');
+            }
+
+            const token = window.getToken();
+            if (!token) {
+                throw new Error('Authentication token tidak tersedia');
+            }
+
+            const recordPayload = {
+                patientId: patientId,
+                type: 'physical_exam',
+                data: data,
+                timestamp: new Date().toISOString()
+            };
+
+            // Add doctor info if available
+            if (window.currentStaffIdentity?.name) {
+                recordPayload.doctorName = window.currentStaffIdentity.name;
+            }
+            if (window.currentStaffIdentity?.id) {
+                recordPayload.doctorId = window.currentStaffIdentity.id;
+            }
+
+            const response = await fetch('/api/medical-records', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(recordPayload)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+                throw new Error(errorData.message || `Server error: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('[SundayClinic] Physical Exam saved successfully:', result);
+
+            // Reload the record to show updated data
+            await this.reload();
+
+            this.showSuccess('Pemeriksaan Fisik berhasil disimpan!');
+
+        } catch (error) {
+            console.error('[SundayClinic] Save Physical Exam failed:', error);
             this.showError(error.message);
         } finally {
             this.hideLoading();
