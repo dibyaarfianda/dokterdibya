@@ -19,7 +19,14 @@ export default {
         const patient = state.patientData || {};
         const record = state.recordData?.record || {};
         const appointment = state.appointmentData || {};
+        const category = record.mr_category || 'obstetri';
 
+        // Use old simple format for obstetri category
+        if (category === 'obstetri') {
+            return this.renderObstetriFormat(state);
+        }
+
+        // Use new detailed format for other categories
         return `
             <div class="card mb-3">
                 <div class="card-header bg-secondary text-white">
@@ -53,6 +60,99 @@ export default {
                 </div>
             </div>
         `;
+    },
+
+    /**
+     * Render old Obstetri format (simple)
+     */
+    renderObstetriFormat(state) {
+        const patient = state.patientData || {};
+        const record = state.recordData?.record || {};
+        const intake = state.intakeData || {};
+
+        const formatValue = (val) => val || '-';
+        const formatPhone = (phone) => phone ? phone.replace(/(\d{4})(\d{4})(\d{4})/, '$1-$2-$3') : '-';
+
+        const primaryRows = [
+            ['Nama Lengkap', formatValue(patient.full_name || patient.name)],
+            ['ID Pasien', formatValue(patient.patient_id || patient.id)],
+            ['Usia', formatValue(patient.date_of_birth ? this.calculateAge(patient.date_of_birth) + ' tahun' : '')],
+            ['Telepon', formatPhone(patient.phone || patient.phone_number)],
+            ['Kontak Darurat', formatPhone(patient.emergency_contact_phone)],
+            ['Email', formatValue(patient.email)],
+            ['Alamat', formatValue(patient.address)],
+            ['Status Pernikahan', formatValue(this.getMaritalStatusLabel(patient.marital_status))],
+            ['Nama Suami', formatValue(patient.husband_name || intake.payload?.husband_name)],
+            ['Umur Suami', formatValue(patient.husband_age || intake.payload?.husband_age ? patient.husband_age + ' tahun' : '')],
+            ['Pekerjaan Suami', formatValue(patient.husband_occupation || intake.payload?.husband_occupation)],
+            ['Pekerjaan Ibu', formatValue(patient.occupation)],
+            ['Pendidikan', formatValue(patient.education)],
+            ['Asuransi', formatValue(patient.insurance || 'Tidak ada')]
+        ];
+
+        const intakeRows = [
+            ['Status Intake', formatValue(intake.status ? this.getIntakeStatusLabel(intake.status) : '')],
+            ['Diterima', formatValue(intake.created_at ? this.formatDate(intake.created_at) : '')],
+            ['Diverifikasi', formatValue(intake.reviewed_at ? this.formatDate(intake.reviewed_at) : '')],
+            ['Direview Oleh', formatValue(intake.reviewed_by_name)],
+            ['Catatan Review', formatValue(intake.review_notes)]
+        ];
+
+        return `
+            <div class="sc-section">
+                <div class="sc-section-header">
+                    <h3>Identitas Pasien</h3>
+                </div>
+                <div class="sc-grid two">
+                    <div class="sc-card">
+                        <h4>Data Utama</h4>
+                        <table class="table table-sm table-bordered">
+                            <tbody>
+                                ${primaryRows.map(([label, value]) => `
+                                    <tr>
+                                        <th style="width: 40%;">${label}</th>
+                                        <td>${value}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="sc-card">
+                        <h4>Informasi Intake</h4>
+                        <table class="table table-sm table-bordered">
+                            <tbody>
+                                ${intakeRows.map(([label, value]) => `
+                                    <tr>
+                                        <th style="width: 40%;">${label}</th>
+                                        <td>${value}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    getMaritalStatusLabel(status) {
+        const labels = {
+            'single': 'Belum Menikah',
+            'married': 'Menikah',
+            'divorced': 'Bercerai',
+            'widowed': 'Janda/Duda',
+            'unknown': 'Tidak Diketahui'
+        };
+        return labels[status] || status;
+    },
+
+    getIntakeStatusLabel(status) {
+        const labels = {
+            'pending': 'Menunggu Review',
+            'approved': 'Disetujui',
+            'rejected': 'Ditolak'
+        };
+        return labels[status] || status;
     },
 
     /**
