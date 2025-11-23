@@ -16,14 +16,18 @@ export default {
         const obstetricExam = state.recordData?.pemeriksaan_obstetri || {};
         const defaultText = obstetricExam.findings || 'TFU:\nDJJ:\nVT:';
 
+        // Get metadata for display
+        const { getMedicalRecordContext, renderRecordMeta } = await import('../../utils/helpers.js');
+        const context = getMedicalRecordContext(state, 'pemeriksaan_obstetri');
+        const metaHtml = context ? renderRecordMeta(context, 'pemeriksaan_obstetri') : '';
+
         return `
-            <div class="card mb-3">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">
-                        <i class="fas fa-heartbeat"></i> Pemeriksaan Obstetri
-                    </h5>
+            <div class="sc-section">
+                <div class="sc-section-header">
+                    <h3>Pemeriksaan Obstetri</h3>
                 </div>
-                <div class="card-body">
+                ${metaHtml}
+                <div class="sc-card">
                     <div class="form-group">
                         <label for="pemeriksaan-obstetri-findings">
                             Hasil Pemeriksaan Obstetri

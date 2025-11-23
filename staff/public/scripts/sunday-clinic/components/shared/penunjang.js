@@ -17,14 +17,18 @@ export default {
         const uploadedFiles = penunjang.files || [];
         const interpretation = penunjang.interpretation || '';
 
+        // Get metadata for display
+        const { getMedicalRecordContext, renderRecordMeta } = await import('../../utils/helpers.js');
+        const context = getMedicalRecordContext(state, 'penunjang');
+        const metaHtml = context ? renderRecordMeta(context, 'penunjang') : '';
+
         return `
-            <div class="card mb-3">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0">
-                        <i class="fas fa-flask"></i> Pemeriksaan Penunjang
-                    </h5>
+            <div class="sc-section">
+                <div class="sc-section-header">
+                    <h3>Pemeriksaan Penunjang</h3>
                 </div>
-                <div class="card-body">
+                ${metaHtml}
+                <div class="sc-card">
                     <!-- Upload Section -->
                     <div class="form-group">
                         <label>Upload Hasil Laboratorium</label>
