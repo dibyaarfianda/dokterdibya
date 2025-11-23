@@ -142,6 +142,10 @@ export function renderUSG() {
     
     // Override hasSavedRecord if no summary data exists
     const showForm = !savedSummaryHtml;
+    
+    console.log('[USG] hasSavedRecord:', hasSavedRecord);
+    console.log('[USG] savedSummaryHtml length:', savedSummaryHtml.length);
+    console.log('[USG] showForm:', showForm);
 
     const metaHtml = context ? `<div class="sc-note">Dicatat oleh ${escapeHtml(context.record.doctorName || 'N/A')} pada ${formatDateDMY(context.record.createdAt)}</div>` : '';
 
@@ -255,6 +259,11 @@ export function renderUSG() {
                 <div class="form-group">
                     <label class="font-weight-bold">Notes</label>
                     <textarea class="form-control usg-field" id="usg-first-notes" rows="2" readonly>Posisi janin harus menghadap kedepan dengan kepala sedikit menunduk untuk mendapatkan gambaran nuchal translucency (NT)</textarea>
+                </div>
+                <div class="mt-3 text-right">
+                    <button class="btn btn-primary" id="btn-save-usg">
+                        <i class="fas fa-save"></i> Simpan Data USG
+                    </button>
                 </div>
             </div>
 
@@ -414,6 +423,11 @@ export function renderUSG() {
                     <label class="font-weight-bold">Notes</label>
                     <textarea class="form-control usg-field" id="usg-second-notes" rows="2" placeholder="Pemeriksaan skrining kelainan kongenital dilakukan di usia kehamilan 18-21 minggu. Bila ditemukan kelainan bawaan, dikonsulkan kepada Subspesialis Fetomaternal">${escapeHtml(savedData.notes || '')}</textarea>
                 </div>
+                <div class="mt-3 text-right">
+                    <button class="btn btn-primary" id="btn-save-usg">
+                        <i class="fas fa-save"></i> Simpan Data USG
+                    </button>
+                </div>
             </div>
 
             <!-- Screening -->
@@ -501,6 +515,11 @@ export function renderUSG() {
                     <div class="custom-control custom-checkbox mb-3"><input type="checkbox" class="custom-control-input usg-field" id="scr-tidak-kelainan" ${savedData.tidak_kelainan ? 'checked' : ''}><label class="custom-control-label" for="scr-tidak-kelainan">Tidak ditemukan kelainan</label></div>
                     <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" id="scr-kecurigaan" ${savedData.kecurigaan ? 'checked' : ''}><label class="custom-control-label" for="scr-kecurigaan">Kecurigaan</label></div>
                     <div class="mt-2"><textarea class="form-control usg-field" id="usg-screening-kecurigaan-text" style="width: 100%; height: 71px;">${escapeHtml(savedData.kecurigaan_text || '')}</textarea></div>
+                </div>
+                <div class="mt-3 text-right">
+                    <button class="btn btn-primary" id="btn-save-usg">
+                        <i class="fas fa-save"></i> Simpan Data USG
+                    </button>
                 </div>
             </div>
 
@@ -674,14 +693,12 @@ export function renderUSG() {
                         <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field" name="third_contraception" id="kb-mow" value="MOW" ${(savedData.contraception || []).includes('MOW') ? 'checked' : ''}><label class="custom-control-label" for="kb-mow">MOW (Steril)</label></div>
                     </div>
                 </div>
+                <div class="mt-3 text-right">
+                    <button class="btn btn-primary" id="btn-save-usg">
+                        <i class="fas fa-save"></i> Simpan Data USG
+                    </button>
+                </div>
             </div>
-            </div>
-            
-            <!-- Save Button (outside edit form, but inside card) -->
-            <div class="mt-4 text-right" id="usg-save-button-container" style="display: ${showForm ? 'block' : 'none'};">
-                <button class="btn btn-primary" id="btn-save-usg">
-                    <i class="fas fa-save"></i> Simpan Data USG
-                </button>
             </div>
         </div>
     `;
@@ -710,23 +727,10 @@ export function renderUSG() {
             console.error('[USG] Save button not found in DOM');
         }
         if (editBtn) {
-            editBtn.addEventListener('click', () => {
-                const summaryContainer = container.querySelector('#usg-summary-container');
-                const saveButtonContainer = container.querySelector('#usg-save-button-container');
-                
-                if (summaryContainer) summaryContainer.style.display = 'none';
-                if (saveButtonContainer) saveButtonContainer.style.display = 'block';
-                
-                if (editForm) {
-                    editForm.style.display = 'block';
-                    // Show only the saved trimester content when editing
-                    const savedTrimester = context?.data?.trimester || 'first';
-                    document.querySelectorAll('.trimester-content').forEach(content => {
-                        content.style.display = 'none';
-                    });
-                    const savedContent = document.getElementById(`usg-${savedTrimester}-trimester`);
-                    if (savedContent) savedContent.style.display = 'block';
-                }
+            editBtn.addEventListener('click', async () => {
+                // Render ulang dengan mode edit
+                const SundayClinicApp = (await import('../main.js')).default;
+                SundayClinicApp.render(state.activeSection);
             });
         }
         if (resetBtn) {
