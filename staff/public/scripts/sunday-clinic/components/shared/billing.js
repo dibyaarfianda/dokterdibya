@@ -15,8 +15,8 @@ export default {
      * Render the Billing form
      */
     async render(state) {
-        const record = state.recordData?.record || {};
-        const category = record?.mr_category || 'obstetri';
+        const record = state.recordData || {};
+        const category = record?.mrCategory || record?.mr_category || 'obstetri';
 
         // Use old read-only format for obstetri category
         if (category === 'obstetri') {
@@ -706,7 +706,7 @@ export default {
         let billing = { items: [], status: 'draft' };
 
         try {
-            const mrId = state.recordData?.mrId || state.currentMrId;
+            const mrId = state.recordData?.mrId || state.recordData?.mr_id || state.currentMrId;
             if (mrId) {
                 const token = window.getToken?.();
                 if (token) {
