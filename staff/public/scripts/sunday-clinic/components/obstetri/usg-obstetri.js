@@ -73,12 +73,41 @@ export default {
 
                     <!-- Save Button -->
                     <div class="text-right mt-4">
-                        <button type="button" class="btn btn-primary" id="save-usg">
+                        <button type="button" class="btn btn-primary" id="btn-save-usg" style="display:none;">
                             <i class="fas fa-save mr-2"></i>Simpan USG
                         </button>
                     </div>
                 </div>
             </div>
+
+            <script>
+            // Initialize USG save handler
+            setTimeout(() => {
+                // Show save button on any field change
+                document.querySelectorAll('.usg-field').forEach(field => {
+                    field.addEventListener('input', () => {
+                        const btn = document.getElementById('btn-save-usg');
+                        if (btn) btn.style.display = 'inline-block';
+                    });
+                    field.addEventListener('change', () => {
+                        const btn = document.getElementById('btn-save-usg');
+                        if (btn) btn.style.display = 'inline-block';
+                    });
+                });
+
+                // Attach save handler
+                const btnSave = document.getElementById('btn-save-usg');
+                if (btnSave) {
+                    btnSave.onclick = () => {
+                        if (window.SundayClinicApp && window.SundayClinicApp.saveUSGExam) {
+                            window.SundayClinicApp.saveUSGExam();
+                        } else if (window.saveUSGExam) {
+                            window.saveUSGExam();
+                        }
+                    };
+                }
+            }, 100);
+            </script>
         `;
     },
 

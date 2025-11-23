@@ -658,6 +658,228 @@ class SundayClinicApp {
     }
 
     /**
+     * Save Anamnesa
+     */
+    async saveAnamnesa() {
+        const btn = document.getElementById('btn-update-anamnesa');
+        if (!btn) return;
+
+        // Disable button
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+
+        try {
+            // Collect all field values
+            const data = {
+                keluhan_utama: document.getElementById('anamnesa-keluhan-utama')?.value || '',
+                riwayat_kehamilan_saat_ini: document.getElementById('anamnesa-riwayat-kehamilan')?.value || '',
+                hpht: document.getElementById('anamnesa-hpht')?.value || '',
+                hpl: document.getElementById('anamnesa-hpl')?.value || '',
+                detail_riwayat_penyakit: document.getElementById('anamnesa-detail-riwayat')?.value || '',
+                riwayat_keluarga: document.getElementById('anamnesa-riwayat-keluarga')?.value || '',
+                alergi_obat: document.getElementById('anamnesa-alergi-obat')?.value || '',
+                alergi_makanan: document.getElementById('anamnesa-alergi-makanan')?.value || '',
+                alergi_lingkungan: document.getElementById('anamnesa-alergi-lingkungan')?.value || '',
+                gravida: document.getElementById('anamnesa-gravida')?.value || '',
+                para: document.getElementById('anamnesa-para')?.value || '',
+                abortus: document.getElementById('anamnesa-abortus')?.value || '',
+                anak_hidup: document.getElementById('anamnesa-anak-hidup')?.value || '',
+                usia_menarche: document.getElementById('anamnesa-usia-menarche')?.value || '',
+                lama_siklus: document.getElementById('anamnesa-lama-siklus')?.value || '',
+                siklus_teratur: document.getElementById('anamnesa-siklus-teratur')?.value || '',
+                metode_kb_terakhir: document.getElementById('anamnesa-metode-kb')?.value || '',
+                kegagalan_kb: document.getElementById('anamnesa-kegagalan-kb')?.value || '',
+                jenis_kb_gagal: document.getElementById('anamnesa-jenis-kb-gagal')?.value || ''
+            };
+
+            // Get patient ID from state
+            const state = stateManager.getState();
+            const patientId = state.derived?.patientId;
+            if (!patientId) {
+                this.showError('Patient ID tidak ditemukan');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save"></i> Simpan';
+                return;
+            }
+
+            // Get token
+            const token = window.getToken();
+            if (!token) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save"></i> Simpan';
+                return;
+            }
+
+            // Send to API
+            const recordPayload = {
+                patientId: patientId,
+                type: 'anamnesa',
+                data: data,
+                timestamp: window.getGMT7Timestamp()
+            };
+
+            if (window.currentStaffIdentity?.name) {
+                recordPayload.doctorName = window.currentStaffIdentity.name;
+            }
+            if (window.currentStaffIdentity?.id) {
+                recordPayload.doctorId = window.currentStaffIdentity.id;
+            }
+
+            const response = await fetch('/api/medical-records', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(recordPayload)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+                throw new Error(errorData.message || `Server error: ${response.status}`);
+            }
+
+            const result = await response.json();
+
+            // Show success message
+            this.showSuccess('Anamnesa berhasil diperbarui');
+
+            // Reload the record to show updated data
+            await this.fetchRecord(this.currentMrId);
+
+            // Re-enable button
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save"></i> Simpan';
+
+        } catch (error) {
+            console.error('Error saving anamnesa:', error);
+            this.showError('Gagal menyimpan anamnesa: ' + error.message);
+
+            // Re-enable button
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save"></i> Simpan';
+        }
+    }
+
+    /**
+     * Fetch and reload record data
+     */
+    async fetchRecord(mrId) {
+        const token = window.getToken();
+        if (!token) {
+            return;
+        }
+
+        const normalizedMr = mrId ? String(mrId).trim() : '';
+        if (!normalizedMr) {
+            this.showError('MR ID tidak ditemukan');
+            return;
+        }
+
+        this.showLoading('Memuat data rekam medis...');
+
+        try {
+            const response = await fetch(`/api/sunday-clinic/records/${encodeURIComponent(normalizedMr)}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
+            if (response.status === 401) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            if (response.status === 404) {
+                this.showError('Data rekam medis Sunday Clinic tidak ditemukan.');
+                return;
+            }
+
+            if (!response.ok) {
+                throw new Error('Gagal memuat data Sunday Clinic');
+            }
+
+            const payload = await response.json();
+            if (!payload || !payload.data) {
+                this.showError('Data rekam medis Sunday Clinic kosong.');
+                return;
+            }
+
+            // Load record data into state manager
+            await stateManager.loadRecord(payload.data);
+
+            // Re-render the current section
+            this.hideLoading();
+            await this.loadCurrentSection();
+
+        } catch (error) {
+            console.error('Sunday Clinic: gagal memuat rekam medis', error);
+            this.showError('Terjadi kesalahan saat memuat data rekam medis Sunday Clinic.');
+        }
+    }
+
+    /**
+     * Save Diagnosis
+     */
+    async saveDiagnosis() {
+        try {
+            const data = {
+                diagnosis_utama: document.getElementById('diagnosis-utama')?.value || '',
+                diagnosis_sekunder: document.getElementById('diagnosis-sekunder')?.value || ''
+            };
+
+            const state = stateManager.getState();
+            const patientId = state.derived?.patientId;
+            if (!patientId) {
+                this.showError('Patient ID tidak ditemukan');
+                return;
+            }
+
+            const token = window.getToken();
+            if (!token) return;
+
+            const recordPayload = {
+                patientId: patientId,
+                type: 'diagnosis',
+                data: data,
+                timestamp: window.getGMT7Timestamp()
+            };
+
+            if (window.currentStaffIdentity?.name) {
+                recordPayload.doctorName = window.currentStaffIdentity.name;
+            }
+            if (window.currentStaffIdentity?.id) {
+                recordPayload.doctorId = window.currentStaffIdentity.id;
+            }
+
+            const response = await fetch('/api/medical-records', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(recordPayload)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+                console.error('Server error response:', errorData);
+                throw new Error(errorData.message || `Server error: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('Save successful:', result);
+
+            this.showSuccess('Diagnosis berhasil disimpan!');
+
+            // Reload the record to show updated data
+            await this.fetchRecord(this.currentMrId);
+
+        } catch (error) {
+            console.error('Error saving diagnosis:', error);
+            this.showError('Gagal menyimpan diagnosis: ' + error.message);
+        }
+    }
+
+    /**
      * Show success message
      */
     showSuccess(message) {
@@ -712,3 +934,10 @@ export default app;
 
 // Make it globally available
 window.SundayClinicApp = app;
+
+// Also make save functions globally available for button handlers
+window.saveAnamnesa = () => app.saveAnamnesa();
+window.savePhysicalExam = () => app.savePhysicalExam();
+window.saveUSGExam = () => app.saveUSGExam();
+window.savePlanningObstetri = () => app.savePlanningObstetri();
+window.saveDiagnosis = () => app.saveDiagnosis();

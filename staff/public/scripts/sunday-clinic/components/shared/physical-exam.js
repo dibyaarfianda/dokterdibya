@@ -105,11 +105,11 @@ export default {
      */
     async renderObstetriFormat(state, exam) {
         // Load saved physical exam data using getMedicalRecordContext
-        const { getMedicalRecordContext } = await import('../utils/helpers.js');
+        const { getMedicalRecordContext } = await import('../../utils/helpers.js');
         const context = getMedicalRecordContext(state, 'physical_exam');
 
         // Use saved data if available, otherwise use passed exam data
-        const savedData = context.data || exam;
+        const savedData = context?.data || exam || {};
 
         exam = savedData;
         const escapeHtml = (str) => {
@@ -185,6 +185,20 @@ export default {
                     </div>
                 </div>
             </div>
+
+            <script>
+            // Initialize Physical Exam save handler
+            setTimeout(() => {
+                const saveBtn = document.getElementById('save-physical-exam');
+                if (saveBtn) {
+                    saveBtn.onclick = () => {
+                        if (window.savePhysicalExam) {
+                            window.savePhysicalExam();
+                        }
+                    };
+                }
+            }, 100);
+            </script>
         `;
     },
 

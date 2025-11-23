@@ -143,12 +143,12 @@ export default {
                 <div class="sc-card">
                     <div class="mb-3">
                         <label class="font-weight-bold">Diagnosis Utama</label>
-                        <textarea class="form-control" name="diagnosis_utama" rows="1"
+                        <textarea class="form-control" id="diagnosis-utama" name="diagnosis_utama" rows="1"
                                   placeholder="Masukkan diagnosis utama">${escapeHtml(diagnosis.diagnosis_utama || '')}</textarea>
                     </div>
                     <div class="mb-3">
                         <label class="font-weight-bold">Diagnosis Sekunder (jika ada)</label>
-                        <textarea class="form-control" name="diagnosis_sekunder" rows="1"
+                        <textarea class="form-control" id="diagnosis-sekunder" name="diagnosis_sekunder" rows="1"
                                   placeholder="Masukkan diagnosis sekunder jika ada">${escapeHtml(diagnosis.diagnosis_sekunder || '')}</textarea>
                     </div>
                     <div class="mb-4 mt-4">
@@ -162,6 +162,20 @@ export default {
                     </div>
                 </div>
             </div>
+
+            <script>
+            // Initialize Diagnosis save handler
+            setTimeout(() => {
+                const saveBtn = document.getElementById('save-diagnosis');
+                if (saveBtn) {
+                    saveBtn.onclick = () => {
+                        if (window.saveDiagnosis) {
+                            window.saveDiagnosis();
+                        }
+                    };
+                }
+            }, 100);
+            </script>
         `;
     },
 
