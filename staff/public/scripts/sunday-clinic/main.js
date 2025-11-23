@@ -438,7 +438,7 @@ class SundayClinicApp {
             // Check if existing record exists
             const state = stateManager.getState();
             const context = getMedicalRecordContext(state, 'usg');
-            const existingRecordId = context.record?.recordId || context.record?.id || null;
+            const existingRecordId = context?.record?.recordId || context?.record?.id || null;
 
             // Collect data from USG component
             const usgComponent = this.components['usg'];
