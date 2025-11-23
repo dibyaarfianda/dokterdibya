@@ -777,34 +777,60 @@ export default {
         // Action buttons
         let actionsHtml = '';
         if (status === 'draft') {
+            // DRAFT: Only dokter can confirm, all others wait
             if (isDokter) {
                 actionsHtml = `
                     <button type="button" class="btn btn-primary" id="btn-confirm-billing">
                         <i class="fas fa-check mr-2"></i>Konfirmasi Tagihan
+                    </button>
+                    <button type="button" class="btn btn-secondary mr-2" id="btn-print-etiket" disabled>
+                        <i class="fas fa-tag mr-2"></i>Cetak Etiket
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="btn-print-invoice" disabled>
+                        <i class="fas fa-receipt mr-2"></i>Cetak Invoice
                     </button>`;
             } else {
+                // Non-dokter: All buttons disabled until confirmed
                 actionsHtml = `
-                    <div class="alert alert-info mb-0 d-inline-block">
+                    <div class="alert alert-info mb-3">
                         <i class="fas fa-info-circle mr-2"></i>
                         Menunggu konfirmasi dokter
                     </div>
-                    <button type="button" class="btn btn-warning ml-2" id="btn-request-revision">
-                        <i class="fas fa-edit mr-2"></i>Ajukan Usulan
+                    <button type="button" class="btn btn-secondary mr-2" id="btn-request-revision" disabled>
+                        <i class="fas fa-edit mr-2"></i>Ajukan Perubahan
+                    </button>
+                    <button type="button" class="btn btn-secondary mr-2" id="btn-print-etiket" disabled>
+                        <i class="fas fa-tag mr-2"></i>Cetak Etiket
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="btn-print-invoice" disabled>
+                        <i class="fas fa-receipt mr-2"></i>Cetak Invoice
                     </button>`;
             }
         } else {
-            // Confirmed - show print buttons (disabled for non-dokter initially)
-            const printDisabled = !isDokter && !billing.printed_at ? 'disabled' : '';
-            const printClass = !isDokter && !billing.printed_at ? 'btn-secondary' : 'btn-success';
-            
-            actionsHtml = `
-                <button type="button" class="btn ${printClass} mr-2" id="btn-print-etiket" ${printDisabled}>
-                    <i class="fas fa-tag mr-2"></i>Cetak Etiket
-                </button>
-                <button type="button" class="btn ${printClass}" id="btn-print-invoice" ${printDisabled}>
-                    <i class="fas fa-receipt mr-2"></i>Cetak Invoice
-                </button>
-                ${billing.printed_at ? '<small class="text-muted ml-2">Telah dicetak</small>' : ''}`;
+            // CONFIRMED: All print buttons active for everyone
+            if (isDokter) {
+                actionsHtml = `
+                    <button type="button" class="btn btn-success mr-2" id="btn-print-etiket">
+                        <i class="fas fa-tag mr-2"></i>Cetak Etiket
+                    </button>
+                    <button type="button" class="btn btn-success" id="btn-print-invoice">
+                        <i class="fas fa-receipt mr-2"></i>Cetak Invoice
+                    </button>
+                    ${billing.printed_at ? '<small class="text-muted ml-2">Telah dicetak</small>' : ''}`;
+            } else {
+                // Non-dokter: Print + Ajukan Perubahan all active
+                actionsHtml = `
+                    <button type="button" class="btn btn-warning mr-2" id="btn-request-revision">
+                        <i class="fas fa-edit mr-2"></i>Ajukan Perubahan
+                    </button>
+                    <button type="button" class="btn btn-success mr-2" id="btn-print-etiket">
+                        <i class="fas fa-tag mr-2"></i>Cetak Etiket
+                    </button>
+                    <button type="button" class="btn btn-success" id="btn-print-invoice">
+                        <i class="fas fa-receipt mr-2"></i>Cetak Invoice
+                    </button>
+                    ${billing.printed_at ? '<small class="text-muted ml-2">Telah dicetak</small>' : ''}`;
+            }
         }
 
         return `
@@ -919,8 +945,9 @@ export default {
 
                     // 2. Print etiket button
                     const etiketBtn = document.getElementById('btn-print-etiket');
-                    if (etiketBtn && !etiketBtn.disabled) {
+                    if (etiketBtn) {
                         etiketBtn.addEventListener('click', async function() {
+                            if (this.disabled) return;
                             try {
                                 const token = window.getToken?.();
                                 const mrId = window.routeMrSlug;
@@ -966,8 +993,10 @@ export default {
 
                     // 3. Print invoice button
                     const invoiceBtn = document.getElementById('btn-print-invoice');
-                    if (invoiceBtn && !invoiceBtn.disabled) {
+                    if (invoiceBtn) {
                         invoiceBtn.addEventListener('click', async function() {
+                            if (this.disabled) return;
+                            
                             try {
                                 const token = window.getToken?.();
                                 const mrId = window.routeMrSlug;
