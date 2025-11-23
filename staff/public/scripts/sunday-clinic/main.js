@@ -80,7 +80,7 @@ class SundayClinicApp {
         const categoryFolder = this.currentCategory;
         const specific = [
             { section: SECTIONS.ANAMNESA, path: `${basePath}/${categoryFolder}/anamnesa-${categoryFolder}.js` },
-            { section: SECTIONS.USG, path: `${basePath}/${categoryFolder}/usg-${categoryFolder}.js` }
+            { section: SECTIONS.USG, path: `/staff/public/scripts/sunday-clinic/sections/usg.js` }
         ];
 
         // Obstetri-specific components
@@ -282,11 +282,11 @@ class SundayClinicApp {
         }
 
         // USG save button (for old format obstetri category)
-        const saveUSGBtn = document.getElementById('save-usg');
+        /* const saveUSGBtn = document.getElementById('save-usg');
         if (saveUSGBtn) {
             console.log('[SundayClinic] Attaching saveUSGExam listener');
             saveUSGBtn.addEventListener('click', () => this.saveUSGExam());
-        }
+        } */
 
         // Warn before leaving if there are unsaved changes
         window.addEventListener('beforeunload', (e) => {
@@ -417,7 +417,7 @@ class SundayClinicApp {
     /**
      * Save USG for obstetri category (old format)
      */
-    async saveUSGExam() {
+    /* async saveUSGExam() {
         try {
             const saveBtn = document.getElementById('save-usg');
             if (saveBtn) {
@@ -538,7 +538,7 @@ class SundayClinicApp {
                 saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Simpan USG';
             }
         }
-    }
+    } */
 
     /**
      * Save Physical Exam for obstetri category (old format)
@@ -930,6 +930,6 @@ window.SundayClinicApp = app;
 // Also make save functions globally available for button handlers
 window.saveAnamnesa = () => app.saveAnamnesa();
 window.savePhysicalExam = () => app.savePhysicalExam();
-window.saveUSGExam = () => app.saveUSGExam();
+// window.saveUSGExam = () => app.saveUSGExam();
 window.savePlanningObstetri = () => app.savePlanningObstetri();
 window.saveDiagnosis = () => app.saveDiagnosis();
