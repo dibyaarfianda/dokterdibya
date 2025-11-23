@@ -176,10 +176,6 @@ export default {
                         <label class="font-weight-bold">Pemeriksaan Ekstremitas</label>
                         <textarea class="form-control" id="pe-ekstremitas" rows="2">${escapeHtml(exam.ekstremitas || 'Akral hangat, kering. CRT < 2 detik')}</textarea>
                     </div>
-                    <div class="mb-3">
-                        <label class="font-weight-bold">Pemeriksaan Obstetri</label>
-                        <textarea class="form-control" id="pe-obstetri" rows="4">${escapeHtml(exam.pemeriksaan_obstetri || 'TFU:\nDJJ:\nVT: (tidak dilakukan)')}</textarea>
-                    </div>
 
                     <div class="text-right mt-3">
                         <button type="button" class="btn btn-primary" id="save-physical-exam" onclick="window.savePhysicalExam()">
