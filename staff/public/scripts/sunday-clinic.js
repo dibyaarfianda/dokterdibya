@@ -366,6 +366,23 @@ function setupDateTimeDisplay() {
 // ROUTE PARSING
 // ============================================================================
 
+// Mapping Indonesian section names to internal English names
+const SECTION_NAME_MAP = {
+    'identitas': 'identity',
+    'identity': 'identity',
+    'anamnesa': 'anamnesa',
+    'physical-exam': 'physical-exam',
+    'pemeriksaan-fisik': 'physical-exam',
+    'pemeriksaan-obstetri': 'pemeriksaan-obstetri',
+    'usg': 'usg',
+    'penunjang': 'penunjang',
+    'laboratorium': 'penunjang',
+    'diagnosis': 'diagnosis',
+    'plan': 'plan',
+    'billing': 'billing',
+    'tagihan': 'billing'
+};
+
 function parseRoute(pathname = window.location.pathname) {
     const trimmed = pathname.replace(/^\/+|\/+$/g, '');
     const segments = trimmed.split('/');
@@ -375,9 +392,13 @@ function parseRoute(pathname = window.location.pathname) {
         return { mrId: null, section: 'identity', remainder: '' };
     }
 
+    // Map section name to internal format
+    const normalizedSection = (rawSection || 'identity').toLowerCase();
+    const mappedSection = SECTION_NAME_MAP[normalizedSection] || 'identity';
+
     return {
         mrId: rawMrId || null,
-        section: (rawSection || 'identity').toLowerCase(),
+        section: mappedSection,
         remainder: rest.join('/')
     };
 }
