@@ -20,7 +20,7 @@ export default {
 
         // Use old read-only format for obstetri category
         if (category === 'obstetri') {
-            return this.renderObstetriFormat(state);
+            return await this.renderObstetriFormat(state);
         }
 
         // Use new detailed format for other categories
@@ -701,8 +701,31 @@ export default {
     /**
      * Render old Obstetri format (read-only with confirmation)
      */
-    renderObstetriFormat(state) {
-        const billing = state.billingData || state.recordData?.billing || {};
+    async renderObstetriFormat(state) {
+        // Load billing data from API
+        let billing = { items: [], status: 'draft' };
+
+        try {
+            const mrId = state.recordData?.mrId || state.currentMrId;
+            if (mrId) {
+                const token = window.getToken?.();
+                if (token) {
+                    const response = await fetch(`/api/sunday-clinic/billing/${mrId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.success && result.data) {
+                            billing = result.data;
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('[Billing] Failed to load billing data:', error);
+        }
+
         const items = billing.items || [];
         const status = billing.status || 'draft';
 
