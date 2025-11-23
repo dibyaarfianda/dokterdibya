@@ -159,6 +159,15 @@ class SundayClinicApp {
                         ${sectionHtml}
                     </div>
                 `;
+                
+                // Call afterRender if available
+                if (component.afterRender) {
+                    setTimeout(() => {
+                        component.afterRender(state).catch(err => {
+                            console.error(`[SundayClinic] Error in afterRender for ${activeSection}:`, err);
+                        });
+                    }, 50);
+                }
             } catch (error) {
                 console.error(`[SundayClinic] Error rendering ${activeSection}:`, error);
                 html += `

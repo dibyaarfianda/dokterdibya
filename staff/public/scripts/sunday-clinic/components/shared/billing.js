@@ -843,11 +843,16 @@ export default {
                     </div>
                 </div>
             </div>
+        `;
+    },
 
-            <script>
-                // Setup billing button handlers
-                setTimeout(() => {
-                    // 1. Confirm billing button (dokter only)
+    /**
+     * Setup event handlers after render
+     */
+    async afterRender(state) {
+        // Setup billing button handlers
+        setTimeout(() => {
+            // 1. Confirm billing button (dokter only)
                     const confirmBtn = document.getElementById('btn-confirm-billing');
                     if (confirmBtn) {
                         confirmBtn.addEventListener('click', async function() {
@@ -1044,7 +1049,5 @@ export default {
                         });
                     }
                 }, 100);
-            </script>
-        `;
     }
 };
