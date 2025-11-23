@@ -17,6 +17,16 @@ export default {
         // Determine current trimester (default to first)
         const currentTrimester = data.current_trimester || 'first';
 
+        // Define switchTrimester function globally
+        if (!window.switchTrimester) {
+            window.switchTrimester = function(evt, trimester) {
+                document.querySelectorAll('.trimester-content').forEach(el => el.style.display = 'none');
+                document.getElementById('usg-trimester-' + trimester).style.display = 'block';
+                document.querySelectorAll('.trimester-selector .btn').forEach(btn => btn.classList.remove('active'));
+                evt.target.closest('.btn').classList.add('active');
+            };
+        }
+
         return `
             <div class="sc-section">
                 <div class="sc-section-header">
@@ -69,20 +79,6 @@ export default {
                     </div>
                 </div>
             </div>
-
-            <script>
-                window.switchTrimester = function(evt, trimester) {
-                    // Hide all trimester contents
-                    document.querySelectorAll('.trimester-content').forEach(el => el.style.display = 'none');
-
-                    // Show selected trimester
-                    document.getElementById('usg-trimester-' + trimester).style.display = 'block';
-
-                    // Update active button
-                    document.querySelectorAll('.trimester-selector .btn').forEach(btn => btn.classList.remove('active'));
-                    evt.target.closest('.btn').classList.add('active');
-                };
-            </script>
         `;
     },
 
