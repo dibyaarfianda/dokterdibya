@@ -15,6 +15,15 @@ export default {
      * Render the Plan form
      */
     async render(state) {
+        const record = state.recordData?.record || {};
+        const category = record?.mr_category || 'obstetri';
+
+        // Use old simple format for obstetri category
+        if (category === 'obstetri') {
+            return this.renderObstetriFormat(state);
+        }
+
+        // Use new detailed format for other categories
         const plan = state.recordData?.plan || {};
         const medications = plan.medications || [];
 
@@ -149,6 +158,62 @@ export default {
                     if (item) item.remove();
                 };
             </script>
+        `;
+    },
+
+    /**
+     * Render old Obstetri format (simple)
+     */
+    renderObstetriFormat(state) {
+        const plan = state.recordData?.plan || {};
+
+        const escapeHtml = (str) => {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        };
+
+        return `
+            <div class="sc-section">
+                <div class="sc-section-header">
+                    <h3>Planning</h3>
+                </div>
+                <div class="sc-card">
+                    <div class="mb-3">
+                        <label class="font-weight-bold">Tatalaksana / Terapi</label>
+                        <textarea class="form-control" name="tatalaksana" rows="4"
+                                  placeholder="Rencana tatalaksana dan terapi...">${escapeHtml(plan.tatalaksana || '')}</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="font-weight-bold">Resep Obat</label>
+                        <textarea class="form-control" name="resep" rows="5"
+                                  placeholder="Resep obat untuk pasien...">${escapeHtml(plan.resep || '')}</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="font-weight-bold">Edukasi & Nasihat</label>
+                        <textarea class="form-control" name="edukasi" rows="3"
+                                  placeholder="Edukasi dan nasihat untuk pasien...">${escapeHtml(plan.edukasi || '')}</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="font-weight-bold">Rencana Kontrol</label>
+                        <textarea class="form-control" name="rencana_kontrol" rows="2"
+                                  placeholder="Jadwal kontrol berikutnya...">${escapeHtml(plan.rencana_kontrol || '')}</textarea>
+                    </div>
+
+                    <div class="text-right mt-3">
+                        <button type="button" class="btn btn-primary" id="save-plan">
+                            <i class="fas fa-save mr-2"></i>Simpan Planning
+                        </button>
+                    </div>
+                </div>
+            </div>
         `;
     },
 
