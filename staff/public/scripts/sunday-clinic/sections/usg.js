@@ -40,12 +40,15 @@ window.switchTrimester = function(trimester) {
 }
 
 export function renderUSG() {
+    console.log('[USG] renderUSG called');
     const section = document.createElement('div');
     section.className = 'section-container';
     section.setAttribute('data-section', 'usg');
 
     const state = stateManager.getState();
+    console.log('[USG] State:', state);
     const context = getMedicalRecordContext(state, 'usg');
+    console.log('[USG] Context:', context);
     const savedData = context ? (context.data || {}) : {};
     const hasSavedRecord = context && context.record && context.record.id;
 
@@ -723,6 +726,7 @@ export function renderUSG() {
         }
     }, 100);
 
+    console.log('[USG] Returning innerHTML, length:', section.innerHTML.length);
     return section.innerHTML;
 }
 
