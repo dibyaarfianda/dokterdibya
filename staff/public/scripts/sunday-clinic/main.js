@@ -779,40 +779,31 @@ class SundayClinicApp {
         this.showLoading('Memuat data rekam medis...');
 
         try {
-            const response = await fetch(`/api/sunday-clinic/records/${encodeURIComponent(normalizedMr)}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            });
+            // Use apiClient instead of direct fetch to ensure consistent data structure
+            const response = await apiClient.getRecord(normalizedMr);
 
-            if (response.status === 401) {
-                window.location.href = 'login.html';
-                return;
+            if (!response.success) {
+                throw new Error(response.message || 'Failed to load record');
             }
 
-            if (response.status === 404) {
-                this.showError('Data rekam medis Sunday Clinic tidak ditemukan.');
-                return;
-            }
-
-            if (!response.ok) {
-                throw new Error('Gagal memuat data Sunday Clinic');
-            }
-
-            const payload = await response.json();
-            if (!payload || !payload.data) {
+            if (!response.data) {
                 this.showError('Data rekam medis Sunday Clinic kosong.');
                 return;
             }
 
             // Load record data into state manager
-            await stateManager.loadRecord(payload.data);
+            await stateManager.loadRecord(response.data);
 
             // Re-render the current section
+            const currentSection = stateManager.getState().activeSection || SECTIONS.IDENTITY;
+            await this.render(currentSection);
+
             this.hideLoading();
-            await this.loadCurrentSection();
 
         } catch (error) {
             console.error('Sunday Clinic: gagal memuat rekam medis', error);
             this.showError('Terjadi kesalahan saat memuat data rekam medis Sunday Clinic.');
+            this.hideLoading();
         }
     }
 

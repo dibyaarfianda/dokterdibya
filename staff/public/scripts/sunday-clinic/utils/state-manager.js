@@ -89,7 +89,21 @@ class StateManager {
         });
 
         try {
+            // Validate data structure
+            if (!recordData) {
+                throw new Error('Record data is null or undefined');
+            }
+
+            if (!recordData.record) {
+                console.error('[StateManager] Invalid record data structure:', recordData);
+                throw new Error('Invalid record data structure: missing "record" property');
+            }
+
             const mrId = recordData.record.mrId || recordData.record.mr_id;
+
+            if (!mrId) {
+                throw new Error('MR ID not found in record data');
+            }
 
             // Compute derived state EXACTLY like backup
             const derived = computeDerived({
@@ -113,10 +127,12 @@ class StateManager {
                 isDirty: false
             });
 
+            console.log('[StateManager] Record loaded successfully. MR ID:', mrId);
             console.log('[StateManager] Derived state computed:', derived);
 
             return true;
         } catch (error) {
+            console.error('[StateManager] Failed to load record:', error);
             this.setState({
                 loading: false,
                 error: error.message
