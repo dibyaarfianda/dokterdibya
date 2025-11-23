@@ -689,14 +689,26 @@ export function renderUSG() {
     // Attach event listeners after DOM is ready
     setTimeout(() => {
         const container = document.querySelector('[data-section="usg"]');
-        if (!container) return;
+        if (!container) {
+            console.error('[USG] Container not found');
+            return;
+        }
 
         const saveBtn = container.querySelector('#btn-save-usg');
         const editBtn = container.querySelector('#btn-edit-usg');
         const resetBtn = container.querySelector('#btn-reset-usg');
         const editForm = container.querySelector('#usg-edit-form');
 
-        if (saveBtn) saveBtn.addEventListener('click', saveUSGExam);
+        console.log('[USG] Save button found:', !!saveBtn);
+        console.log('[USG] Edit button found:', !!editBtn);
+        console.log('[USG] Reset button found:', !!resetBtn);
+
+        if (saveBtn) {
+            console.log('[USG] Attaching click event to Save button');
+            saveBtn.addEventListener('click', saveUSGExam);
+        } else {
+            console.error('[USG] Save button not found in DOM');
+        }
         if (editBtn) {
             editBtn.addEventListener('click', () => {
                 const summaryContainer = container.querySelector('#usg-summary-container');
@@ -751,8 +763,14 @@ export function renderUSG() {
 }
 
 export async function saveUSGExam() {
+    console.log('[USG] saveUSGExam called');
     const btn = document.getElementById('btn-save-usg');
-    if (!btn) return;
+    console.log('[USG] Button in saveUSGExam:', btn);
+    
+    if (!btn) {
+        console.error('[USG] Save button not found in saveUSGExam');
+        return;
+    }
 
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
