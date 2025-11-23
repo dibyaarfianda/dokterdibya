@@ -82,12 +82,8 @@ class SundayClinicApp {
             { section: SECTIONS.USG, path: `${basePath}/${categoryFolder}/usg-${categoryFolder}.js` }
         ];
 
-        // Obstetri-specific components
-        if (this.currentCategory === MR_CATEGORIES.OBSTETRI) {
-            specific.push(
-                { section: SECTIONS.PEMERIKSAAN_OBSTETRI, path: `${basePath}/obstetri/pemeriksaan-obstetri.js` }
-            );
-        }
+        // Note: Pemeriksaan Obstetri is now integrated into Physical Exam component
+        // for obstetri category (no separate component needed)
 
         return [...shared, ...specific];
     }
