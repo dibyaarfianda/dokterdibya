@@ -15,6 +15,15 @@ export default {
      * Render the Billing form
      */
     async render(state) {
+        const record = state.recordData?.record || {};
+        const category = record?.mr_category || 'obstetri';
+
+        // Use old read-only format for obstetri category
+        if (category === 'obstetri') {
+            return this.renderObstetriFormat(state);
+        }
+
+        // Use new detailed format for other categories
         const billing = state.billingData || state.recordData?.billing || {};
         const items = billing.items || [];
 
@@ -687,5 +696,98 @@ export default {
         });
 
         return items;
+    },
+
+    /**
+     * Render old Obstetri format (read-only with confirmation)
+     */
+    renderObstetriFormat(state) {
+        const billing = state.billingData || state.recordData?.billing || {};
+        const items = billing.items || [];
+        const status = billing.status || 'draft';
+
+        const escapeHtml = (str) => {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        };
+
+        const formatRupiah = (amount) => {
+            return 'Rp ' + (amount || 0).toLocaleString('id-ID');
+        };
+
+        // Calculate total
+        let subtotal = 0;
+        const itemsHtml = items.map(item => {
+            const itemTotal = (item.quantity || 1) * (item.price || 0);
+            subtotal += itemTotal;
+            return `
+                <tr>
+                    <td>${escapeHtml(item.item_name)}</td>
+                    <td class="text-center">${item.quantity || 1}</td>
+                    <td class="text-right">${formatRupiah(item.price)}</td>
+                    <td class="text-right font-weight-bold">${formatRupiah(itemTotal)}</td>
+                </tr>
+            `;
+        }).join('');
+
+        // Status badge
+        const statusBadge = status === 'confirmed'
+            ? '<span class="badge badge-success">Dikonfirmasi</span>'
+            : '<span class="badge badge-warning">Draft</span>';
+
+        // Action buttons
+        const actionsHtml = status === 'draft'
+            ? `<button type="button" class="btn btn-primary" id="btn-confirm-billing">
+                   <i class="fas fa-check mr-2"></i>Konfirmasi Tagihan
+               </button>`
+            : `<button type="button" class="btn btn-success mr-2" id="btn-print-etiket">
+                   <i class="fas fa-tag mr-2"></i>Cetak Etiket
+               </button>
+               <button type="button" class="btn btn-info" id="btn-print-invoice">
+                   <i class="fas fa-receipt mr-2"></i>Cetak Invoice
+               </button>`;
+
+        return `
+            <div class="sc-section">
+                <div class="sc-section-header">
+                    <h3>Tagihan & Pembayaran</h3>
+                </div>
+                <div class="sc-card">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">Rincian Tagihan</h5>
+                        ${statusBadge}
+                    </div>
+
+                    <table class="table table-bordered">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Item</th>
+                                <th width="10%" class="text-center">Qty</th>
+                                <th width="20%" class="text-right">Harga</th>
+                                <th width="20%" class="text-right">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsHtml || '<tr><td colspan="4" class="text-center text-muted">Belum ada item tagihan. Item akan muncul setelah Planning disimpan.</td></tr>'}
+                            ${itemsHtml ? `
+                            <tr class="table-active font-weight-bold">
+                                <td colspan="3" class="text-right">GRAND TOTAL</td>
+                                <td class="text-right">${formatRupiah(subtotal)}</td>
+                            </tr>
+                            ` : ''}
+                        </tbody>
+                    </table>
+
+                    <div class="text-right mt-3">
+                        ${actionsHtml}
+                    </div>
+                </div>
+            </div>
+        `;
     }
 };
