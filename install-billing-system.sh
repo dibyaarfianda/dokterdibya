@@ -49,7 +49,7 @@ echo -e "${YELLOW}Step 3: Running database migration...${NC}"
 echo "Please enter MySQL root password:"
 read -s MYSQL_PASSWORD
 
-mysql -u root -p"${MYSQL_PASSWORD}" dokterdibya <<EOF
+mysql -u root -p"${MYSQL_PASSWORD}" dibyaklinik <<EOF
 -- Create billing revisions table
 CREATE TABLE IF NOT EXISTS sunday_clinic_billing_revisions (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -111,7 +111,7 @@ else
 fi
 
 # Check table
-TABLE_EXISTS=$(mysql -u root -p"${MYSQL_PASSWORD}" dokterdibya -se "SHOW TABLES LIKE 'sunday_clinic_billing_revisions';" 2>/dev/null)
+TABLE_EXISTS=$(mysql -u root -p"${MYSQL_PASSWORD}" dibyaklinik -se "SHOW TABLES LIKE 'sunday_clinic_billing_revisions';" 2>/dev/null)
 if [ -n "$TABLE_EXISTS" ]; then
     echo -e "${GREEN}✓ Billing revisions table created${NC}"
 else
@@ -119,7 +119,7 @@ else
 fi
 
 # Check columns
-COLUMN_EXISTS=$(mysql -u root -p"${MYSQL_PASSWORD}" dokterdibya -se "SHOW COLUMNS FROM sunday_clinic_billings LIKE 'printed_at';" 2>/dev/null)
+COLUMN_EXISTS=$(mysql -u root -p"${MYSQL_PASSWORD}" dibyaklinik -se "SHOW COLUMNS FROM sunday_clinic_billings LIKE 'printed_at';" 2>/dev/null)
 if [ -n "$COLUMN_EXISTS" ]; then
     echo -e "${GREEN}✓ Print tracking columns added${NC}"
 else
