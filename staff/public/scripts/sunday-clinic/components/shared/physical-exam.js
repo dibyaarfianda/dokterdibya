@@ -104,14 +104,16 @@ export default {
      * Render old Obstetri format (simple) - EXACT copy from backup
      */
     async renderObstetriFormat(state, exam) {
-        // Load saved physical exam data using getMedicalRecordContext
-        const { getMedicalRecordContext } = await import('../../utils/helpers.js');
+        // Load saved physical exam data and metadata using getMedicalRecordContext
+        const { getMedicalRecordContext, renderRecordMeta } = await import('../../utils/helpers.js');
         const context = getMedicalRecordContext(state, 'physical_exam');
 
         // Use saved data if available, otherwise use passed exam data
         const savedData = context?.data || exam || {};
-
         exam = savedData;
+
+        // Get metadata for display
+        const metaHtml = context ? renderRecordMeta(context, 'physical_exam') : '';
         const escapeHtml = (str) => {
             if (!str) return '';
             return String(str)
@@ -127,6 +129,7 @@ export default {
                 <div class="sc-section-header">
                     <h3>Pemeriksaan Fisik</h3>
                 </div>
+                ${metaHtml}
                 <div class="sc-card">
                     <!-- Vital Signs in one row -->
                     <div class="row mb-3">

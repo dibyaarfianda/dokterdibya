@@ -122,7 +122,19 @@ export default {
     /**
      * Render old Obstetri format (simple)
      */
-    renderObstetriFormat(diagnosis, state) {
+    async renderObstetriFormat(diagnosis, state) {
+        // Get metadata context for display
+        let metaHtml = '';
+        try {
+            const { getMedicalRecordContext, renderRecordMeta } = await import('../../utils/helpers.js');
+            const context = getMedicalRecordContext(state, 'diagnosis');
+            if (context) {
+                metaHtml = renderRecordMeta(context, 'diagnosis');
+            }
+        } catch (error) {
+            console.error('[Diagnosis] Failed to load metadata:', error);
+        }
+
         const escapeHtml = (str) => {
             if (!str) return '';
             return String(str)
@@ -140,6 +152,7 @@ export default {
                 <div class="sc-section-header">
                     <h3>Diagnosis</h3>
                 </div>
+                ${metaHtml}
                 <div class="sc-card">
                     <div class="mb-3">
                         <label class="font-weight-bold">Diagnosis Utama</label>

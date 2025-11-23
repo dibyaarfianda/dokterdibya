@@ -73,7 +73,7 @@ export default {
 
                     <!-- Save Button -->
                     <div class="text-right mt-4">
-                        <button type="button" class="btn btn-primary" id="btn-save-usg" style="display:none;">
+                        <button type="button" class="btn btn-primary" id="btn-save-usg">
                             <i class="fas fa-save mr-2"></i>Simpan USG
                         </button>
                     </div>

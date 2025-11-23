@@ -48,10 +48,22 @@ export default {
     /**
      * Render old Obstetri format (simple)
      */
-    renderObstetriFormat(state) {
+    async renderObstetriFormat(state) {
         const anamnesa = state.recordData?.anamnesa || {};
         const intake = state.intakeData?.payload || {};
         const derived = state.derived || {};
+
+        // Get metadata context for display
+        let metaHtml = '';
+        try {
+            const { getMedicalRecordContext, renderRecordMeta } = await import('../../utils/helpers.js');
+            const context = getMedicalRecordContext(state, 'anamnesa');
+            if (context) {
+                metaHtml = renderRecordMeta(context, 'anamnesa');
+            }
+        } catch (error) {
+            console.error('[Anamnesa] Failed to load metadata:', error);
+        }
 
         const escapeHtml = (str) => {
             if (!str) return '';
@@ -84,34 +96,15 @@ export default {
         const kegagalanKb = anamnesa.kegagalan_kb ?? '';
         const jenisKbGagal = anamnesa.jenis_kb_gagal ?? '';
 
-        // Add initialization script for change detection
-        setTimeout(() => {
-            const fields = document.querySelectorAll('.anamnesa-field');
-            const updateBtn = document.getElementById('btn-update-anamnesa');
-
-            if (fields && updateBtn) {
-                fields.forEach(field => {
-                    field.addEventListener('input', () => {
-                        updateBtn.style.display = 'inline-block';
-                    });
-                });
-
-                updateBtn.addEventListener('click', () => {
-                    if (window.SundayClinicApp && window.SundayClinicApp.saveAnamnesa) {
-                        window.SundayClinicApp.saveAnamnesa();
-                    }
-                });
-            }
-        }, 100);
-
         return `
             <div class="sc-section">
                 <div class="sc-section-header">
                     <h3>Anamnesa & Riwayat</h3>
-                    <button class="btn btn-primary btn-sm" id="btn-update-anamnesa" style="display:none;">
+                    <button class="btn btn-primary btn-sm" id="btn-update-anamnesa">
                         <i class="fas fa-save"></i> Simpan
                     </button>
                 </div>
+                ${metaHtml}
                 <div class="sc-grid two">
                     <div class="sc-card">
                         <h4>Keluhan & Kehamilan Saat Ini</h4>
@@ -223,6 +216,28 @@ export default {
                         </div>
                 </div>
             </div>
+
+            <script>
+            // Initialize Anamnesa save handler
+            setTimeout(() => {
+                const fields = document.querySelectorAll('.anamnesa-field');
+                const updateBtn = document.getElementById('btn-update-anamnesa');
+
+                if (fields && updateBtn) {
+                    fields.forEach(field => {
+                        field.addEventListener('input', () => {
+                            updateBtn.style.display = 'inline-block';
+                        });
+                    });
+
+                    updateBtn.addEventListener('click', () => {
+                        if (window.saveAnamnesa) {
+                            window.saveAnamnesa();
+                        }
+                    });
+                }
+            }, 100);
+            </script>
         `;
     },
 
