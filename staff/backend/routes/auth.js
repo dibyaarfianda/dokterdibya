@@ -49,7 +49,7 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
     const userId = user.new_id;
 
     // Set role based on user type and superadmin status
-    const resolvedRole = user.is_superadmin ? 'superadmin' :
+    const resolvedRole = user.is_superadmin ? 'dokter' :
                          user.user_type === 'staff' ? 'staff' :
                          user.role || user.resolved_role_name || 'viewer';
     const resolvedRoleDisplay = user.resolved_role_display || resolvedRole || null;
@@ -272,7 +272,7 @@ router.get('/api/admin/web-patients', verifyToken, asyncHandler(async (req, res)
     logger.info(`Web patients request from user: ${req.user.email} (${req.user.role})`);
     
     // Check if user is admin/superadmin
-    if (!['superadmin', 'admin'].includes(req.user.role)) {
+    if (!req.user.is_superadmin && !['dokter', 'admin'].includes(req.user.role)) {
         logger.warn(`Unauthorized web patients access attempt by ${req.user.email} (${req.user.role})`);
         throw new AppError('Unauthorized access - Admin role required', HTTP_STATUS.FORBIDDEN);
     }
@@ -291,7 +291,7 @@ router.get('/api/admin/web-patients', verifyToken, asyncHandler(async (req, res)
 // Get single web patient detail (Admin only)
 router.get('/api/admin/web-patients/:id', verifyToken, asyncHandler(async (req, res) => {
     // Check if user is admin/superadmin
-    if (!['superadmin', 'admin'].includes(req.user.role)) {
+    if (!req.user.is_superadmin && !['dokter', 'admin'].includes(req.user.role)) {
         logger.warn(`Unauthorized web patient detail access attempt by ${req.user.email} (${req.user.role})`);
         throw new AppError('Unauthorized access - Admin role required', HTTP_STATUS.FORBIDDEN);
     }
@@ -350,7 +350,7 @@ router.get('/api/admin/web-patients/:id', verifyToken, asyncHandler(async (req, 
 // Update web patient status (Admin only)
 router.patch('/api/admin/web-patients/:id/status', verifyToken, asyncHandler(async (req, res) => {
     // Check if user is admin/superadmin
-    if (!['superadmin', 'admin'].includes(req.user.role)) {
+    if (!req.user.is_superadmin && !['dokter', 'admin'].includes(req.user.role)) {
         logger.warn(`Unauthorized web patient status update attempt by ${req.user.email} (${req.user.role})`);
         throw new AppError('Unauthorized access - Admin role required', HTTP_STATUS.FORBIDDEN);
     }
@@ -387,7 +387,7 @@ router.patch('/api/admin/web-patients/:id/status', verifyToken, asyncHandler(asy
 // Clear all chat logs (Superadmin only)
 router.delete('/api/admin/clear-chat-logs', verifyToken, asyncHandler(async (req, res) => {
     // Check if user is superadmin
-    if (req.user.role !== 'superadmin') {
+    if (!req.user.is_superadmin && req.user.role !== 'dokter') {
         logger.warn(`Unauthorized chat logs deletion attempt by ${req.user.email} (${req.user.role})`);
         throw new AppError('Unauthorized access - Superadmin role required', HTTP_STATUS.FORBIDDEN);
     }
@@ -407,7 +407,7 @@ router.delete('/api/admin/clear-chat-logs', verifyToken, asyncHandler(async (req
 // Sync all web patients to patients table (Superadmin only)
 router.post('/api/admin/sync-web-patients', verifyToken, asyncHandler(async (req, res) => {
     // Check if user is superadmin
-    if (req.user.role !== 'superadmin') {
+    if (!req.user.is_superadmin && req.user.role !== 'dokter') {
         logger.warn(`Unauthorized sync attempt by ${req.user.email} (${req.user.role})`);
         throw new AppError('Unauthorized access - Superadmin role required', HTTP_STATUS.FORBIDDEN);
     }
@@ -492,7 +492,7 @@ router.post('/api/admin/sync-web-patients', verifyToken, asyncHandler(async (req
 // Delete web patient (Admin only)
 router.delete('/api/admin/web-patients/:id', verifyToken, asyncHandler(async (req, res) => {
     // Check if user is admin/superadmin
-    if (!['superadmin', 'admin'].includes(req.user.role)) {
+    if (!req.user.is_superadmin && !['dokter', 'admin'].includes(req.user.role)) {
         throw new AppError('Unauthorized access', HTTP_STATUS.FORBIDDEN);
     }
     
@@ -878,7 +878,7 @@ router.post('/api/auth/resend-verification', asyncHandler(async (req, res) => {
 // DELETE /api/admin/cleanup-email - Clean up patient by email from dual-table system (Superadmin only)
 router.delete('/api/admin/cleanup-email/:email', verifyToken, asyncHandler(async (req, res) => {
     // Check if user is superadmin
-    if (req.user.role !== 'superadmin') {
+    if (!req.user.is_superadmin && req.user.role !== 'dokter') {
         logger.warn(`Unauthorized email cleanup attempt by ${req.user.email} (${req.user.role})`);
         throw new AppError('Unauthorized access - Superadmin role required', HTTP_STATUS.FORBIDDEN);
     }

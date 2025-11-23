@@ -124,6 +124,9 @@ statusRoutes.setSocketIO(io);
 // Serve static staff assets directly from the merged repo
 app.use(express.static(path.join(__dirname, '../public')));
 
+// Serve uploaded files (lab results, etc.)
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 // Sunday Clinic dynamic routes (e.g., /sunday-clinic/mr0001/identitas)
 app.get(/^\/sunday-clinic\/[\w-]+(?:\/.*)?$/, (req, res) => {
     res.sendFile(sundayClinicPagePath);
@@ -162,6 +165,10 @@ app.use('/api/dashboard-stats', dashboardStatsRoutes);
 // Sunday clinic record routes
 const sundayClinicRoutes = require('./routes/sunday-clinic');
 app.use('/api/sunday-clinic', sundayClinicRoutes);
+
+// Lab results routes (upload and AI interpretation)
+const labResultsRoutes = require('./routes/lab-results');
+app.use('/api/lab-results', labResultsRoutes);
 
 // Practice schedules routes
 const practiceSchedulesRoutes = require('./routes/practice-schedules');

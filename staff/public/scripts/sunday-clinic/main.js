@@ -82,6 +82,13 @@ class SundayClinicApp {
             { section: SECTIONS.USG, path: `${basePath}/${categoryFolder}/usg-${categoryFolder}.js` }
         ];
 
+        // Obstetri-specific components
+        if (this.currentCategory === MR_CATEGORIES.OBSTETRI) {
+            specific.push(
+                { section: SECTIONS.PEMERIKSAAN_OBSTETRI, path: `${basePath}/obstetri/pemeriksaan-obstetri.js` }
+            );
+        }
+
         return [...shared, ...specific];
     }
 

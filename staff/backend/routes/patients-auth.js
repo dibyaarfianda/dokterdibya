@@ -683,7 +683,7 @@ router.get('/all', verifyToken, async (req, res) => {
 // Delete web patient (Admin/Superadmin only)
 router.delete('/:id', verifyToken, async (req, res) => {
     try {
-        if (!['admin', 'superadmin'].includes(req.user.role)) {
+        if (!req.user.is_superadmin && !['admin', 'dokter'].includes(req.user.role)) {
             return res.status(403).json({ message: 'Unauthorized. Admin access required.' });
         }
 
@@ -727,7 +727,7 @@ router.patch('/:id/status', verifyToken, async (req, res) => {
         }
         
         // Check if user is admin/superadmin
-        if (!['admin', 'superadmin'].includes(req.user.role)) {
+        if (!req.user.is_superadmin && !['admin', 'dokter'].includes(req.user.role)) {
             return res.status(403).json({ 
                 success: false, 
                 message: 'Unauthorized. Admin access required.' 
