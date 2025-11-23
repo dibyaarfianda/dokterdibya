@@ -16,7 +16,15 @@ export default {
     async render(state) {
         const diagnosis = state.recordData?.diagnosis || {};
         const diagnoses = diagnosis.diagnoses || [];
+        const record = state.recordData?.record || {};
+        const category = record?.mr_category || 'obstetri';
 
+        // Use old simple format for obstetri category
+        if (category === 'obstetri') {
+            return this.renderObstetriFormat(diagnosis, state);
+        }
+
+        // Use new detailed format for other categories
         return `
             <div class="card mb-3">
                 <div class="card-header bg-warning text-dark">
@@ -108,6 +116,52 @@ export default {
                     if (item) item.remove();
                 };
             </script>
+        `;
+    },
+
+    /**
+     * Render old Obstetri format (simple)
+     */
+    renderObstetriFormat(diagnosis, state) {
+        const escapeHtml = (str) => {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        };
+
+        const signatureName = 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.';
+
+        return `
+            <div class="sc-section">
+                <div class="sc-section-header">
+                    <h3>Diagnosis</h3>
+                </div>
+                <div class="sc-card">
+                    <div class="mb-3">
+                        <label class="font-weight-bold">Diagnosis Utama</label>
+                        <textarea class="form-control" name="diagnosis_utama" rows="1"
+                                  placeholder="Masukkan diagnosis utama">${escapeHtml(diagnosis.diagnosis_utama || '')}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="font-weight-bold">Diagnosis Sekunder (jika ada)</label>
+                        <textarea class="form-control" name="diagnosis_sekunder" rows="1"
+                                  placeholder="Masukkan diagnosis sekunder jika ada">${escapeHtml(diagnosis.diagnosis_sekunder || '')}</textarea>
+                    </div>
+                    <div class="mb-4 mt-4">
+                        <p class="mb-0"><strong>${escapeHtml(signatureName)}</strong></p>
+                        <p class="text-muted mb-0">Obstetrician Gynaecologist</p>
+                    </div>
+                    <div class="text-right mt-3">
+                        <button type="button" class="btn btn-primary" id="save-diagnosis">
+                            <i class="fas fa-save mr-2"></i>Simpan Diagnosis
+                        </button>
+                    </div>
+                </div>
+            </div>
         `;
     },
 

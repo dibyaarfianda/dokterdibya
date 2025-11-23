@@ -17,7 +17,15 @@ export default {
     async render(state) {
         const exam = state.recordData?.physical_exam || {};
         const intake = state.intakeData?.payload || {};
+        const record = state.recordData?.record || {};
+        const category = record?.mr_category || 'obstetri';
 
+        // Use old simple format for obstetri category
+        if (category === 'obstetri') {
+            return this.renderObstetriFormat(exam);
+        }
+
+        // Use new detailed format for other categories
         return `
             <div class="card mb-3">
                 <div class="card-header bg-primary text-white">
@@ -89,6 +97,86 @@ export default {
                 // Calculate on load
                 window.calculateBMI();
             </script>
+        `;
+    },
+
+    /**
+     * Render old Obstetri format (simple)
+     */
+    renderObstetriFormat(exam) {
+        const escapeHtml = (str) => {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        };
+
+        return `
+            <div class="sc-section">
+                <div class="sc-section-header">
+                    <h3>Pemeriksaan Fisik</h3>
+                </div>
+                <div class="sc-card">
+                    <!-- Vital Signs in one row -->
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label class="font-weight-bold">Tekanan Darah</label>
+                            <input type="text" class="form-control" name="tekanan_darah"
+                                   value="${escapeHtml(exam.tekanan_darah || '120/80')}"
+                                   placeholder="120/80">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="font-weight-bold">Nadi</label>
+                            <input type="text" class="form-control" name="nadi"
+                                   value="${escapeHtml(exam.nadi || '88')}"
+                                   placeholder="88">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="font-weight-bold">Suhu</label>
+                            <input type="text" class="form-control" name="suhu"
+                                   value="${escapeHtml(exam.suhu || '36.8')}"
+                                   placeholder="36.8">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="font-weight-bold">Respirasi</label>
+                            <input type="text" class="form-control" name="respirasi"
+                                   value="${escapeHtml(exam.respirasi || '18')}"
+                                   placeholder="18">
+                        </div>
+                    </div>
+
+                    <!-- Examination Findings -->
+                    <div class="mb-3">
+                        <label class="font-weight-bold">Pemeriksaan Kepala & Leher</label>
+                        <textarea class="form-control" name="kepala_leher" rows="2">${escapeHtml(exam.kepala_leher || 'Anemia/Icterus/Cyanosis/Dyspneu (-)')}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="font-weight-bold">Pemeriksaan Thorax</label>
+                        <textarea class="form-control" name="thorax" rows="3">${escapeHtml(exam.thorax || 'Simetris. Vesiculer/vesicular. Rhonki/Wheezing (-)\nS1 S2 tunggal, murmur (-), gallop (-)')}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="font-weight-bold">Pemeriksaan Abdomen</label>
+                        <textarea class="form-control" name="abdomen" rows="3">${escapeHtml(exam.abdomen || 'BU (+), Soepel\nGravida tampak sesuai usia kehamilan / Massa abdomen')}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="font-weight-bold">Pemeriksaan Ekstremitas</label>
+                        <textarea class="form-control" name="ekstremitas" rows="2">${escapeHtml(exam.ekstremitas || 'Akral hangat, kering. CRT < 2 detik')}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="font-weight-bold">Pemeriksaan Obstetri</label>
+                        <textarea class="form-control" name="pemeriksaan_obstetri" rows="4">${escapeHtml(exam.pemeriksaan_obstetri || 'TFU:\nDJJ:\nVT: (tidak dilakukan)')}</textarea>
+                    </div>
+
+                    <div class="text-right mt-3">
+                        <button type="button" class="btn btn-primary" id="save-physical-exam">
+                            <i class="fas fa-save mr-2"></i>Simpan Pemeriksaan Fisik
+                        </button>
+                    </div>
+                </div>
+            </div>
         `;
     },
 
