@@ -8,6 +8,15 @@ export default {
      * Render Anamnesa form for Obstetri
      */
     async render(state) {
+        const record = state.recordData?.record || {};
+        const category = record.mr_category || 'obstetri';
+
+        // Use old simple format for obstetri category
+        if (category === 'obstetri') {
+            return this.renderObstetriFormat(state);
+        }
+
+        // Use new detailed format for other categories (if ever used)
         const intake = state.intakeData?.payload || {};
         const summary = state.intakeData?.summary || {};
         const metadata = intake.metadata || {};
@@ -31,6 +40,93 @@ export default {
                     <button type="button" class="btn btn-primary" onclick="saveAnamnesaData()">
                         <i class="fas fa-save"></i> Simpan Anamnesa
                     </button>
+                </div>
+            </div>
+        `;
+    },
+
+    /**
+     * Render old Obstetri format (simple)
+     */
+    renderObstetriFormat(state) {
+        const anamnesa = state.recordData?.anamnesa || {};
+        const intake = state.intakeData?.payload || {};
+
+        const escapeHtml = (str) => {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        };
+
+        return `
+            <div class="sc-section">
+                <div class="sc-section-header">
+                    <h3>Anamnesa</h3>
+                </div>
+                <div class="sc-card">
+                    <div class="mb-3">
+                        <label><strong>Keluhan Utama</strong></label>
+                        <textarea
+                            class="form-control"
+                            name="keluhan_utama"
+                            rows="3"
+                            placeholder="Keluhan yang dirasakan pasien..."
+                        >${escapeHtml(anamnesa.keluhan_utama || intake.chief_complaint || intake.keluhan_utama || '')}</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label><strong>Riwayat Penyakit Sekarang</strong></label>
+                        <textarea
+                            class="form-control"
+                            name="riwayat_penyakit_sekarang"
+                            rows="4"
+                            placeholder="Riwayat penyakit yang sedang dialami..."
+                        >${escapeHtml(anamnesa.riwayat_penyakit_sekarang || '')}</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label><strong>Riwayat Penyakit Dahulu</strong></label>
+                        <textarea
+                            class="form-control"
+                            name="riwayat_penyakit_dahulu"
+                            rows="3"
+                            placeholder="Riwayat penyakit terdahulu..."
+                        >${escapeHtml(anamnesa.riwayat_penyakit_dahulu || '')}</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label><strong>Riwayat Obstetri (G-P-A)</strong></label>
+                        <textarea
+                            class="form-control"
+                            name="riwayat_obstetri"
+                            rows="2"
+                            placeholder="Contoh: G2P1A0"
+                        >${escapeHtml(anamnesa.riwayat_obstetri || '')}</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label><strong>Riwayat Kehamilan Sebelumnya</strong></label>
+                        <textarea
+                            class="form-control"
+                            name="riwayat_kehamilan"
+                            rows="3"
+                            placeholder="Detail kehamilan sebelumnya..."
+                        >${escapeHtml(anamnesa.riwayat_kehamilan || '')}</textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label><strong>Riwayat Alergi</strong></label>
+                        <textarea
+                            class="form-control"
+                            name="riwayat_alergi"
+                            rows="2"
+                            placeholder="Alergi obat, makanan, atau lainnya..."
+                        >${escapeHtml(anamnesa.riwayat_alergi || '')}</textarea>
+                    </div>
                 </div>
             </div>
         `;
@@ -573,10 +669,24 @@ export default {
     },
 
     /**
-     * Save Anamnesa data
+     * Collect data - handles both old and new formats
      */
-    async save(state) {
-        try {
+    async collectData() {
+        // Check if we're using old format (simple textareas)
+        const keluhanUtama = document.querySelector('[name="keluhan_utama"]');
+
+        if (keluhanUtama) {
+            // Old format
+            return {
+                keluhan_utama: keluhanUtama.value || '',
+                riwayat_penyakit_sekarang: document.querySelector('[name="riwayat_penyakit_sekarang"]')?.value || '',
+                riwayat_penyakit_dahulu: document.querySelector('[name="riwayat_penyakit_dahulu"]')?.value || '',
+                riwayat_obstetri: document.querySelector('[name="riwayat_obstetri"]')?.value || '',
+                riwayat_kehamilan: document.querySelector('[name="riwayat_kehamilan"]')?.value || '',
+                riwayat_alergi: document.querySelector('[name="riwayat_alergi"]')?.value || ''
+            };
+        } else {
+            // New format
             const formData = {
                 chiefComplaint: document.querySelector('[name="chief_complaint"]')?.value,
                 pregnancy: this.collectPregnancyData(),
@@ -585,9 +695,25 @@ export default {
                 generalMedical: this.collectGeneralMedicalData(),
                 medications: this.collectMedications()
             };
+            return formData;
+        }
+    },
 
+    /**
+     * Validate form data
+     */
+    async validate() {
+        // Anamnesa is optional, no strict validation needed for old format
+        return { valid: true, errors: [] };
+    },
+
+    /**
+     * Save Anamnesa data
+     */
+    async save(state) {
+        try {
+            const formData = await this.collectData();
             console.log('[Anamnesa Obstetri] Saving data:', formData);
-
             return { success: true, data: formData };
         } catch (error) {
             console.error('[Anamnesa Obstetri] Save failed:', error);
