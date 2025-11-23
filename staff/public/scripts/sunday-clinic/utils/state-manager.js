@@ -3,6 +3,8 @@
  * Global state management with pub/sub pattern
  */
 
+import { computeDerived } from './derived-state.js';
+
 class StateManager {
     constructor() {
         this.state = {
@@ -14,6 +16,7 @@ class StateManager {
             intakeData: null,
             billingData: null,
             medicalRecords: null,
+            derived: null,  // Computed derived state from all data
             isDirty: false,  // Track unsaved changes
             activeSection: 'identity',
             loading: false,
@@ -86,17 +89,31 @@ class StateManager {
         });
 
         try {
+            const mrId = recordData.record.mrId || recordData.record.mr_id;
+
+            // Compute derived state EXACTLY like backup
+            const derived = computeDerived({
+                record: recordData.record,
+                patient: recordData.patient,
+                appointment: recordData.appointment,
+                intake: recordData.intake,
+                medicalRecords: recordData.medicalRecords
+            }, mrId);
+
             this.setState({
-                currentMrId: recordData.record.mrId || recordData.record.mr_id,
+                currentMrId: mrId,
                 currentCategory: recordData.record.mrCategory || recordData.record.mr_category || 'obstetri',
                 recordData: recordData.record,
                 patientData: recordData.patient,
                 appointmentData: recordData.appointment,
                 intakeData: recordData.intake,
                 medicalRecords: recordData.medicalRecords,
+                derived: derived,  // ADD DERIVED STATE
                 loading: false,
                 isDirty: false
             });
+
+            console.log('[StateManager] Derived state computed:', derived);
 
             return true;
         } catch (error) {

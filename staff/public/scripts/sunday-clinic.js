@@ -88,6 +88,46 @@ window.getToken = function() {
 // Expose routeMrSlug globally for planning-helpers.js
 window.routeMrSlug = null;
 
+// Current staff identity (EXACT copy from backup)
+window.currentStaffIdentity = {
+    id: null,
+    name: null
+};
+
+function resolveStaffIdentity(raw) {
+    if (!raw || typeof raw !== 'object') {
+        return { id: null, name: null };
+    }
+
+    const candidates = [];
+    if (raw.data && typeof raw.data === 'object') {
+        if (raw.data.user && typeof raw.data.user === 'object') {
+            candidates.push(raw.data.user);
+        }
+        candidates.push(raw.data);
+    }
+    candidates.push(raw);
+
+    let name = null;
+    let id = null;
+
+    for (const candidate of candidates) {
+        if (!candidate || typeof candidate !== 'object') continue;
+
+        if (!name) {
+            name = candidate.name || candidate.fullName || candidate.full_name || candidate.displayName || candidate.email || null;
+        }
+
+        if (!id) {
+            id = candidate.id || candidate.user_id || candidate.uuid || null;
+        }
+
+        if (name && id) break;
+    }
+
+    return { id: id || null, name: name || null };
+}
+
 // Expose showSuccess and showError globally for planning-helpers.js
 window.showSuccess = function(message) {
     // Create a temporary toast notification
@@ -143,6 +183,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Check authentication
         if (!await checkAuthentication()) {
             return;
+        }
+
+        // Fetch and set currentStaffIdentity
+        try {
+            const token = window.getToken();
+            if (token) {
+                const response = await fetch('/api/auth/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const userData = await response.json();
+                    const identity = resolveStaffIdentity(userData);
+                    window.currentStaffIdentity.id = identity.id;
+                    window.currentStaffIdentity.name = identity.name;
+                    console.log('[SundayClinic] Staff identity set:', identity);
+                }
+            }
+        } catch (error) {
+            console.error('[SundayClinic] Failed to fetch staff identity:', error);
         }
 
         // Initialize DOM references
