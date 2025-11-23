@@ -40,15 +40,8 @@ window.switchTrimester = function(trimester) {
 }
 
 export function renderUSG() {
-    console.log('[USG] renderUSG called');
-    const section = document.createElement('div');
-    section.className = 'section-container';
-    section.setAttribute('data-section', 'usg');
-
     const state = stateManager.getState();
-    console.log('[USG] State:', state);
     const context = getMedicalRecordContext(state, 'usg');
-    console.log('[USG] Context:', context);
     const savedData = context ? (context.data || {}) : {};
     const hasSavedRecord = context && context.record && context.record.id;
 
@@ -164,7 +157,7 @@ export function renderUSG() {
                </div>
            </div>`;
 
-    section.innerHTML = `
+    const html = `
         <div class="sc-section-header d-flex justify-content-between">
             <h3>USG Obstetri</h3>
             <button class="btn btn-primary btn-sm" id="btn-save-usg" style="display:none;">
@@ -675,8 +668,9 @@ export function renderUSG() {
         </div>
     `;
 
+    // Attach event listeners after DOM is ready
     setTimeout(() => {
-        const container = document.querySelector('.section-container[data-section="usg"]');
+        const container = document.querySelector('[data-section="usg"]');
         if (!container) return;
 
         const saveBtn = container.querySelector('#btn-save-usg');
@@ -726,8 +720,7 @@ export function renderUSG() {
         }
     }, 100);
 
-    console.log('[USG] Returning innerHTML, length:', section.innerHTML.length);
-    return section.innerHTML;
+    return html;
 }
 
 export async function saveUSGExam() {
