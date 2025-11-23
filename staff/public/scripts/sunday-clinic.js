@@ -72,6 +72,67 @@ const DOM = {
 };
 
 // ============================================================================
+// GLOBAL HELPERS (for planning-helpers.js compatibility)
+// ============================================================================
+
+// Expose getToken globally for planning-helpers.js
+window.getToken = function() {
+    const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+    if (!token) {
+        window.location.href = '/staff/public/login.html';
+        return null;
+    }
+    return token;
+};
+
+// Expose routeMrSlug globally for planning-helpers.js
+window.routeMrSlug = null;
+
+// Expose showSuccess and showError globally for planning-helpers.js
+window.showSuccess = function(message) {
+    // Create a temporary toast notification
+    const toast = document.createElement('div');
+    toast.className = 'alert alert-success position-fixed';
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        <i class="fas fa-check-circle mr-2"></i>${escapeHtml(message)}
+    `;
+    document.body.appendChild(toast);
+
+    // Remove after 3 seconds
+    setTimeout(() => {
+        toast.style.transition = 'opacity 0.3s';
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+};
+
+window.showError = function(message) {
+    // Create a temporary toast notification
+    const toast = document.createElement('div');
+    toast.className = 'alert alert-danger position-fixed';
+    toast.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        <i class="fas fa-exclamation-circle mr-2"></i>${escapeHtml(message)}
+    `;
+    document.body.appendChild(toast);
+
+    // Remove after 5 seconds
+    setTimeout(() => {
+        toast.style.transition = 'opacity 0.3s';
+        toast.style.opacity = '0';
+        setTimeout(() => toast.remove(), 300);
+    }, 5000);
+};
+
+// Helper function for escaping HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// ============================================================================
 // INITIALIZATION
 // ============================================================================
 
@@ -279,6 +340,9 @@ async function loadMedicalRecord(mrId, section = 'identity') {
         // Update app state
         appState.currentMrId = mrId;
         appState.currentSection = section;
+
+        // Update global routeMrSlug for planning-helpers.js
+        window.routeMrSlug = mrId;
 
         // Update route
         updateRoute(mrId, section);
