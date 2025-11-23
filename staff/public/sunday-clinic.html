@@ -524,10 +524,10 @@
     <!-- AdminLTE App -->
     <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
 
-    <!-- Planning Helpers (for old format obstetri category) -->
-    <script src="/staff/public/scripts/sunday-clinic/utils/planning-helpers.js"></script>
-
     <script type="module" src="/staff/public/scripts/sunday-clinic.js"></script>
+
+    <!-- Planning Helpers (for old format obstetri category) - must load AFTER main script -->
+    <script src="/staff/public/scripts/sunday-clinic/utils/planning-helpers.js"></script>
     <script>
         // Add click handler for sidebar navigation
         document.addEventListener('DOMContentLoaded', function() {
