@@ -278,12 +278,8 @@
             return;
         }
 
-        // All roles have chat permission
-        const allowedRoles = ['superadmin', 'admin', 'doctor', 'doctorassistant', 'manager'];
-        if (!allowedRoles.includes(user.role)) {
-            console.warn('Chat not initialized: User role not allowed');
-            return;
-        }
+        // All users have chat access
+        console.log('Initializing chat for user:', user.role);
 
         // Inject CSS
         document.head.insertAdjacentHTML('beforeend', chatCSS);
@@ -335,14 +331,10 @@
             const role = currentUser.role || authData.role || '';
             
             console.log('Checking clear button visibility - Role:', role);
-            
-            if (role === 'superadmin') {
-                clearBtn.style.display = 'flex';
-                console.log('Clear button shown for superadmin');
-            } else {
-                clearBtn.style.display = 'none';
-                console.log('Clear button hidden for role:', role);
-            }
+
+            // Show clear button for all users
+            clearBtn.style.display = 'flex';
+            console.log('Clear button shown for all users');
         }
 
         // Function to update online users

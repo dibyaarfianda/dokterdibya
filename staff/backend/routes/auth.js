@@ -67,6 +67,12 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
         throw new AppError(ERROR_MESSAGES.INVALID_CREDENTIALS, HTTP_STATUS.UNAUTHORIZED);
     }
 
+    // Prevent patients from accessing admin panel
+    if (user.user_type === 'patient') {
+        logger.warn(`Patient attempted admin login: ${user.email}`);
+        throw new AppError('Akses ditolak. Pasien tidak dapat mengakses panel admin.', HTTP_STATUS.FORBIDDEN);
+    }
+
     const token = jwt.sign(
         {
             id: userId,

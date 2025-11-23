@@ -135,8 +135,8 @@ export async function fetchUserPermissions() {
 }
 
 export async function hasPermission(permissionName) {
-    // Superadmin has all permissions
-    if (auth.currentUser && auth.currentUser.role === 'superadmin') {
+    // Superadmin/Dokter has all permissions
+    if (auth.currentUser && (auth.currentUser.is_superadmin || auth.currentUser.role === 'dokter' || auth.currentUser.role === 'superadmin')) {
         return true;
     }
     
