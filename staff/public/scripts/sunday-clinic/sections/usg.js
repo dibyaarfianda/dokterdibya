@@ -675,13 +675,13 @@ export function renderUSG() {
                     </div>
                 </div>
             </div>
+            </div>
             
-            <!-- Save Button -->
-            <div class="mt-4 text-right">
+            <!-- Save Button (outside edit form, but inside card) -->
+            <div class="mt-4 text-right" id="usg-save-button-container" style="display: ${showForm ? 'block' : 'none'};">
                 <button class="btn btn-primary" id="btn-save-usg">
                     <i class="fas fa-save"></i> Simpan Data USG
                 </button>
-            </div>
             </div>
         </div>
     `;
@@ -700,7 +700,10 @@ export function renderUSG() {
         if (editBtn) {
             editBtn.addEventListener('click', () => {
                 const summaryContainer = container.querySelector('#usg-summary-container');
+                const saveButtonContainer = container.querySelector('#usg-save-button-container');
+                
                 if (summaryContainer) summaryContainer.style.display = 'none';
+                if (saveButtonContainer) saveButtonContainer.style.display = 'block';
                 
                 if (editForm) {
                     editForm.style.display = 'block';
