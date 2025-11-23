@@ -720,6 +720,8 @@ export function renderUSG() {
         }
     }, 100);
 
+    console.log('[USG] Returning HTML length:', html.length);
+    console.log('[USG] HTML preview:', html.substring(0, 200));
     return html;
 }
 
