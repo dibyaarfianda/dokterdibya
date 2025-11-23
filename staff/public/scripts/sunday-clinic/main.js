@@ -481,9 +481,8 @@ class SundayClinicApp {
                         'Authorization': `Bearer ${token}`
                     },
                     body: JSON.stringify({
-                        data: data,
-                        timestamp: new Date().toISOString()
-                        // NO doctorName/doctorId for USG!
+                        type: 'usg',
+                        data: data
                     })
                 });
 
