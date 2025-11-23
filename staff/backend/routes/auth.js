@@ -103,6 +103,78 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
     }, SUCCESS_MESSAGES.LOGIN_SUCCESS);
 }));
 
+// POST /api/auth/patient-login - Patient login endpoint
+router.post('/api/auth/patient-login', asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        throw new AppError(ERROR_MESSAGES.MISSING_CREDENTIALS, HTTP_STATUS.BAD_REQUEST);
+    }
+
+    const [rows] = await db.query(
+        `SELECT
+            u.new_id,
+            u.name,
+            u.email,
+            u.password,
+            u.role,
+            u.role_id,
+            u.user_type,
+            u.is_superadmin,
+            u.photo_url,
+            r.name AS resolved_role_name,
+            r.display_name AS resolved_role_display
+        FROM users u
+        LEFT JOIN roles r ON u.role_id = r.id
+        WHERE u.email = ?`,
+        [email]
+    );
+
+    if (rows.length === 0) {
+        throw new AppError(ERROR_MESSAGES.INVALID_CREDENTIALS, HTTP_STATUS.UNAUTHORIZED);
+    }
+
+    const user = rows[0];
+    const userId = user.new_id;
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+
+    if (!isPasswordValid) {
+        throw new AppError(ERROR_MESSAGES.INVALID_CREDENTIALS, HTTP_STATUS.UNAUTHORIZED);
+    }
+
+    // Only allow patients to login via this endpoint
+    if (user.user_type !== 'patient') {
+        logger.warn(`Non-patient attempted patient login: ${user.email}`);
+        throw new AppError('Akses ditolak. Silakan gunakan halaman login staff.', HTTP_STATUS.FORBIDDEN);
+    }
+
+    const token = jwt.sign(
+        {
+            id: userId,
+            name: user.name || 'Patient',
+            role: 'patient',
+            user_type: 'patient',
+            is_superadmin: false
+        },
+        JWT_SECRET,
+        { expiresIn: JWT_EXPIRES_IN }
+    );
+
+    logger.info(`Patient logged in: ${user.email}`);
+
+    sendSuccess(res, {
+        token,
+        user: {
+            id: userId,
+            name: user.name,
+            email: user.email,
+            role: 'patient',
+            user_type: 'patient',
+            photo_url: user.photo_url
+        }
+    }, SUCCESS_MESSAGES.LOGIN_SUCCESS);
+}));
+
 // GET /api/auth/me
 router.get('/api/auth/me', verifyToken, asyncHandler(async (req, res) => {
     const userId = req.user?.id;
