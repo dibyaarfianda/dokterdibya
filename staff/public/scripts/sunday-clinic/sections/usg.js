@@ -708,12 +708,15 @@ export function renderUSG() {
             return;
         }
 
-        const saveBtn = container.querySelector('#btn-save-usg');
+        const saveBtns = container.querySelectorAll('#btn-save-usg');
         const editBtn = container.querySelector('#btn-edit-usg');
         const resetBtn = container.querySelector('#btn-reset-usg');
         const editForm = container.querySelector('#usg-edit-form');
 
-        if (saveBtn) saveBtn.addEventListener('click', saveUSGExam);
+        // Attach event listener to all Save buttons (one per trimester)
+        saveBtns.forEach(btn => {
+            btn.addEventListener('click', saveUSGExam);
+        });
         if (editBtn) {
             editBtn.addEventListener('click', () => {
                 // Hide summary, show form
