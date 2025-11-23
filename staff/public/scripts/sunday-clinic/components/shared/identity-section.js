@@ -73,6 +73,8 @@ export default {
         const formatValue = (val) => val || '-';
         const formatPhone = (phone) => phone ? phone.replace(/(\d{4})(\d{4})(\d{4})/, '$1-$2-$3') : '-';
 
+        const husbandAge = patient.husband_age || intake.payload?.husband_age;
+
         const primaryRows = [
             ['Nama Lengkap', formatValue(patient.full_name || patient.name)],
             ['ID Pasien', formatValue(patient.patient_id || patient.id)],
@@ -83,7 +85,7 @@ export default {
             ['Alamat', formatValue(patient.address)],
             ['Status Pernikahan', formatValue(this.getMaritalStatusLabel(patient.marital_status))],
             ['Nama Suami', formatValue(patient.husband_name || intake.payload?.husband_name)],
-            ['Umur Suami', formatValue(patient.husband_age || intake.payload?.husband_age ? patient.husband_age + ' tahun' : '')],
+            ['Umur Suami', formatValue(husbandAge ? husbandAge + ' tahun' : '')],
             ['Pekerjaan Suami', formatValue(patient.husband_occupation || intake.payload?.husband_occupation)],
             ['Pekerjaan Ibu', formatValue(patient.occupation)],
             ['Pendidikan', formatValue(patient.education)],
