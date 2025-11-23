@@ -113,8 +113,9 @@ export function renderUSG() {
             if (savedData.kecurigaan && savedData.kecurigaan_text) summaryItems.push(`<strong>Kecurigaan:</strong> ${escapeHtml(savedData.kecurigaan_text)}`);
         }
 
-        savedSummaryHtml = summaryItems.length > 0
-            ? `<div class="alert mb-3" style="background-color: #EDEDED; border-color: #DEDEDE;">
+        // If there are saved items, show summary; otherwise treat as no saved record
+        if (summaryItems.length > 0) {
+            savedSummaryHtml = `<div class="alert mb-3" style="background-color: #EDEDED; border-color: #DEDEDE;">
                    <h5 style="cursor: pointer; margin-bottom: 0;" data-toggle="collapse" data-target="#usg-summary-collapse">
                        <i class="fas fa-check-circle" style="color: #28a745;"></i> ${trimesterLabel} - <span style="color: #007bff;">Data Tersimpan</span>
                        <i class="fas fa-chevron-down float-right" style="transition: transform 0.3s; transform: rotate(-90deg);"></i>
@@ -132,13 +133,19 @@ export function renderUSG() {
                            <i class="fas fa-trash"></i> Reset
                        </button>
                    </div>
-               </div>`
-            : '';
+               </div>`;
+        } else {
+            // No actual data saved, treat as new record
+            savedSummaryHtml = '';
+        }
     }
+    
+    // Override hasSavedRecord if no summary data exists
+    const showForm = !savedSummaryHtml;
 
     const metaHtml = context ? `<div class="sc-note">Dicatat oleh ${escapeHtml(context.record.doctorName || 'N/A')} pada ${formatDateDMY(context.record.createdAt)}</div>` : '';
 
-    const trimesterSelectorHtml = hasSavedRecord
+    const trimesterSelectorHtml = !showForm
         ? `<div class="alert alert-secondary mb-3"><strong><i class="fas fa-calendar-check"></i> ${trimesterLabels[trimester]}</strong></div>`
         : `<div class="trimester-selector mb-4">
                <div class="btn-group btn-group-toggle" data-toggle="buttons">
@@ -168,7 +175,7 @@ export function renderUSG() {
         <div class="sc-card">
             ${savedSummaryHtml}
 
-            <div id="usg-edit-form" style="display: ${hasSavedRecord ? 'none' : 'block'};">
+            <div id="usg-edit-form" style="display: ${showForm ? 'block' : 'none'};">
             ${trimesterSelectorHtml}
 
             <!-- First Trimester -->
