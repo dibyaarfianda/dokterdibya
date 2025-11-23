@@ -641,15 +641,30 @@ function bindSundayClinicLauncher() {
 function initializeApp(user) {
     if (user) {
         // User is logged in, check roles
-        if (user.role !== 'superadmin') {
-            const managementHeader = document.getElementById('management-header');
-            const financeNav = document.getElementById('finance-analysis-nav');
-            const kelolaPasienNav = document.getElementById('management-nav-kelola-pasien');
-            const kelolaAppointmentNav = document.getElementById('management-nav-kelola-appointment');
-            const kelolaJadwalNav = document.getElementById('management-nav-kelola-jadwal');
-            const kelolaTindakanNav = document.getElementById('management-nav-kelola-tindakan');
-            const kelolaObatNav = document.getElementById('management-nav-kelola-obat');
+        const isDokter = user.is_superadmin || user.role === 'dokter' || user.role === 'superadmin';
+        const isManagerial = user.role === 'managerial';
+        const isBidan = user.role === 'bidan';
 
+        // Get management navigation elements
+        const managementHeader = document.getElementById('management-header');
+        const financeNav = document.getElementById('finance-analysis-nav');
+        const kelolaPasienNav = document.getElementById('management-nav-kelola-pasien');
+        const kelolaAppointmentNav = document.getElementById('management-nav-kelola-appointment');
+        const kelolaJadwalNav = document.getElementById('management-nav-kelola-jadwal');
+        const kelolaTindakanNav = document.getElementById('management-nav-kelola-tindakan');
+        const kelolaObatNav = document.getElementById('management-nav-kelola-obat');
+
+        if (isDokter) {
+            // Dokter sees everything - no hiding
+        } else if (isManagerial) {
+            // Managerial: Hide only patient management
+            if (kelolaPasienNav) kelolaPasienNav.style.display = 'none';
+        } else if (isBidan) {
+            // Bidan: Hide patient management and finance
+            if (financeNav) financeNav.style.display = 'none';
+            if (kelolaPasienNav) kelolaPasienNav.style.display = 'none';
+        } else {
+            // Other roles: Hide all management
             if (managementHeader) managementHeader.style.display = 'none';
             if (financeNav) financeNav.style.display = 'none';
             if (kelolaPasienNav) kelolaPasienNav.style.display = 'none';

@@ -210,7 +210,7 @@ function setupEventListeners() {
     if (logo) {
         logo.addEventListener('click', () => {
             if (confirm('Keluar dari Klinik Privat Minggu?')) {
-                window.location.href = '/staff/public/dashboard.html';
+                window.location.href = '/staff/public/index-adminlte.html';
             }
         });
     }
@@ -277,7 +277,7 @@ async function loadMedicalRecord(mrId, section = 'identitas') {
         showLoading();
 
         // Fetch MR data from API
-        const response = await apiClient.get(`/api/staff/sunday-clinic/records/${mrId}`);
+        const response = await apiClient.get(`/api/sunday-clinic/records/${mrId}`);
 
         if (!response.success || !response.data) {
             throw new Error('Failed to load medical record');
@@ -360,7 +360,7 @@ async function initializeDirectory() {
     console.log('[SundayClinic] Initializing directory...');
 
     try {
-        const response = await apiClient.get('/api/staff/sunday-clinic/directory');
+        const response = await apiClient.get('/api/sunday-clinic/directory');
 
         if (response.success && response.data) {
             directoryState.patients = response.data.patients || [];
@@ -474,7 +474,7 @@ window.selectPatient = async function(patientId) {
 
     // Load visits
     try {
-        const response = await apiClient.get(`/api/staff/sunday-clinic/patients/${patientId}/visits`);
+        const response = await apiClient.get(`/api/sunday-clinic/patients/${patientId}/visits`);
 
         if (response.success && response.data) {
             renderDirectoryVisits(response.data.visits || []);
