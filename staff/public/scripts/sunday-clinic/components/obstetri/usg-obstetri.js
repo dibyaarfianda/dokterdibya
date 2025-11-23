@@ -26,16 +26,16 @@ export default {
                     <!-- Trimester Selector -->
                     <div class="trimester-selector mb-4">
                         <div class="btn-group btn-group-toggle" data-toggle="buttons" role="group">
-                            <label class="btn btn-outline-primary ${currentTrimester === 'first' ? 'active' : ''}" onclick="window.switchTrimester('first')">
+                            <label class="btn btn-outline-primary ${currentTrimester === 'first' ? 'active' : ''}" onclick="window.switchTrimester(event, 'first')">
                                 <input type="radio" name="trimester" value="first" ${currentTrimester === 'first' ? 'checked' : ''}> Trimester 1 (1-13w)
                             </label>
-                            <label class="btn btn-outline-primary ${currentTrimester === 'second' ? 'active' : ''}" onclick="window.switchTrimester('second')">
+                            <label class="btn btn-outline-primary ${currentTrimester === 'second' ? 'active' : ''}" onclick="window.switchTrimester(event, 'second')">
                                 <input type="radio" name="trimester" value="second" ${currentTrimester === 'second' ? 'checked' : ''}> Trimester 2 (14-27w)
                             </label>
-                            <label class="btn btn-outline-primary ${currentTrimester === 'screening' ? 'active' : ''}" onclick="window.switchTrimester('screening')">
+                            <label class="btn btn-outline-primary ${currentTrimester === 'screening' ? 'active' : ''}" onclick="window.switchTrimester(event, 'screening')">
                                 <input type="radio" name="trimester" value="screening" ${currentTrimester === 'screening' ? 'checked' : ''}> Skrining Kongenital (18-23w)
                             </label>
-                            <label class="btn btn-outline-primary ${currentTrimester === 'third' ? 'active' : ''}" onclick="window.switchTrimester('third')">
+                            <label class="btn btn-outline-primary ${currentTrimester === 'third' ? 'active' : ''}" onclick="window.switchTrimester(event, 'third')">
                                 <input type="radio" name="trimester" value="third" ${currentTrimester === 'third' ? 'checked' : ''}> Trimester 3 (28+w)
                             </label>
                         </div>
@@ -71,7 +71,7 @@ export default {
             </div>
 
             <script>
-                window.switchTrimester = function(trimester) {
+                window.switchTrimester = function(evt, trimester) {
                     // Hide all trimester contents
                     document.querySelectorAll('.trimester-content').forEach(el => el.style.display = 'none');
 
@@ -80,7 +80,7 @@ export default {
 
                     // Update active button
                     document.querySelectorAll('.trimester-selector .btn').forEach(btn => btn.classList.remove('active'));
-                    event.target.closest('.btn').classList.add('active');
+                    evt.target.closest('.btn').classList.add('active');
                 };
             </script>
         `;
