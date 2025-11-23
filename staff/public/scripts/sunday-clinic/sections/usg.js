@@ -778,7 +778,12 @@ export async function saveUSGExam() {
         const context = getMedicalRecordContext(state, 'usg');
         const existingRecordId = context?.record?.id;
 
-        const activeTrimester = document.querySelector('.trimester-selector .btn.active input')?.value || 'first';
+        // Get trimester from selector, or from saved data if editing (when selector is locked/hidden)
+        let activeTrimester = document.querySelector('.trimester-selector .btn.active input')?.value;
+        if (!activeTrimester && context?.data?.trimester) {
+            activeTrimester = context.data.trimester;
+        }
+        activeTrimester = activeTrimester || 'first';
 
         let usgData = { trimester: activeTrimester };
 
