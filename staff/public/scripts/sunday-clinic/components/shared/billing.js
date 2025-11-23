@@ -15,15 +15,6 @@ export default {
      * Render the Billing form
      */
     async render(state) {
-        const record = state.recordData?.record || {};
-        const category = record?.mr_category || 'obstetri';
-
-        // Use old simple format for obstetri category
-        if (category === 'obstetri') {
-            return this.renderObstetriFormat(state);
-        }
-
-        // Use new detailed format for other categories
         const billing = state.billingData || state.recordData?.billing || {};
         const items = billing.items || [];
 
@@ -204,74 +195,6 @@ export default {
                 document.querySelector('[name="tax_rate"]')?.addEventListener('input', window.calculateBillingTotal);
                 document.querySelector('[name="amount_paid"]')?.addEventListener('input', window.calculatePaymentBalance);
             </script>
-        `;
-    },
-
-    /**
-     * Render old Obstetri format (simple)
-     */
-    renderObstetriFormat(state) {
-        const billing = state.billingData || state.recordData?.billing || {};
-
-        const escapeHtml = (str) => {
-            if (!str) return '';
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
-        };
-
-        return `
-            <div class="sc-section">
-                <div class="sc-section-header">
-                    <h3>Tagihan</h3>
-                </div>
-                <div class="sc-card">
-                    <div class="mb-3">
-                        <label class="font-weight-bold">Tindakan</label>
-                        <textarea class="form-control" name="tindakan" rows="3"
-                                  placeholder="Daftar tindakan yang dilakukan...">${escapeHtml(billing.tindakan || '')}</textarea>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="font-weight-bold">Obat-obatan</label>
-                        <textarea class="form-control" name="obat" rows="4"
-                                  placeholder="Daftar obat yang diberikan...">${escapeHtml(billing.obat || '')}</textarea>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="font-weight-bold">Total Biaya</label>
-                        <input type="text" class="form-control" name="total_biaya"
-                               value="${escapeHtml(billing.total_biaya || '')}"
-                               placeholder="Rp 0">
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="font-weight-bold">Metode Pembayaran</label>
-                        <select class="form-control" name="payment_method">
-                            <option value="">-- Pilih --</option>
-                            <option value="cash" ${billing.payment_method === 'cash' ? 'selected' : ''}>Tunai</option>
-                            <option value="transfer" ${billing.payment_method === 'transfer' ? 'selected' : ''}>Transfer</option>
-                            <option value="debit" ${billing.payment_method === 'debit' ? 'selected' : ''}>Debit</option>
-                            <option value="insurance" ${billing.payment_method === 'insurance' ? 'selected' : ''}>Asuransi</option>
-                        </select>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="font-weight-bold">Catatan</label>
-                        <textarea class="form-control" name="catatan_billing" rows="2"
-                                  placeholder="Catatan tambahan untuk billing...">${escapeHtml(billing.catatan_billing || '')}</textarea>
-                    </div>
-
-                    <div class="text-right mt-3">
-                        <button type="button" class="btn btn-primary" id="save-billing">
-                            <i class="fas fa-save mr-2"></i>Simpan Tagihan
-                        </button>
-                    </div>
-                </div>
-            </div>
         `;
     },
 
