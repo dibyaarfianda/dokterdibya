@@ -923,10 +923,8 @@ export default {
                                     window.showSuccess('Tagihan berhasil dikonfirmasi!');
                                 }
 
-                                // Broadcast notification to other users
-                                if (window.realtimeSync?.broadcastBillingConfirmed && result.patientName) {
-                                    window.realtimeSync.broadcastBillingConfirmed(mrId, result.patientName);
-                                }
+                                // Backend will broadcast via Socket.IO
+                                console.log('[Billing] Billing confirmed, server will broadcast to all users');
 
                                 // Reload billing section
                                 if (window.handleSectionChange) {
@@ -1066,9 +1064,14 @@ export default {
 
                                 if (!response.ok) throw new Error('Gagal mengirim usulan');
 
+                                const result = await response.json();
+
                                 if (window.showSuccess) {
                                     window.showSuccess('Usulan berhasil dikirim ke dokter!');
                                 }
+
+                                // Backend will broadcast via Socket.IO
+                                console.log('[Billing] Revision request sent, server will broadcast to dokter');
                             } catch (error) {
                                 console.error('Error requesting revision:', error);
                                 if (window.showError) {
