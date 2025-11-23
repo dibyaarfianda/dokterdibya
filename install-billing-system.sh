@@ -84,7 +84,7 @@ echo ""
 
 echo -e "${YELLOW}Step 4: Restarting backend server...${NC}"
 if command -v pm2 &> /dev/null; then
-    pm2 restart dokterdibya-backend
+    pm2 restart sunday-clinic
     echo -e "${GREEN}✓ Backend restarted with PM2${NC}"
 elif systemctl is-active --quiet dokterdibya-backend; then
     systemctl restart dokterdibya-backend
