@@ -115,7 +115,7 @@ export function renderUSG() {
 
         // If there are saved items, show summary; otherwise treat as no saved record
         if (summaryItems.length > 0) {
-            savedSummaryHtml = `<div class="alert mb-3" style="background-color: #EDEDED; border-color: #DEDEDE;">
+            savedSummaryHtml = `<div class="alert mb-3" style="background-color: #EDEDED; border-color: #DEDEDE;" id="usg-summary-container">
                    <h5 style="cursor: pointer; margin-bottom: 0;" data-toggle="collapse" data-target="#usg-summary-collapse">
                        <i class="fas fa-check-circle" style="color: #28a745;"></i> ${trimesterLabel} - <span style="color: #007bff;">Data Tersimpan</span>
                        <i class="fas fa-chevron-down float-right" style="transition: transform 0.3s; transform: rotate(-90deg);"></i>
@@ -125,14 +125,14 @@ export function renderUSG() {
                        <div class="row" style="font-size: 0.875rem; font-weight: 300;">
                            ${summaryItems.map(item => `<div class="col-md-6 mb-2">${item}</div>`).join('')}
                        </div>
-                       <hr>
-                       <button class="btn btn-warning btn-sm mr-2" id="btn-edit-usg">
-                           <i class="fas fa-edit"></i> Edit Data
-                       </button>
-                       <button class="btn btn-danger btn-sm" id="btn-reset-usg">
-                           <i class="fas fa-trash"></i> Reset
-                       </button>
                    </div>
+                   <hr>
+                   <button class="btn btn-warning btn-sm mr-2" id="btn-edit-usg">
+                       <i class="fas fa-edit"></i> Edit
+                   </button>
+                   <button class="btn btn-danger btn-sm" id="btn-reset-usg">
+                       <i class="fas fa-trash"></i> Reset
+                   </button>
                </div>`;
         } else {
             // No actual data saved, treat as new record
@@ -145,8 +145,15 @@ export function renderUSG() {
 
     const metaHtml = context ? `<div class="sc-note">Dicatat oleh ${escapeHtml(context.record.doctorName || 'N/A')} pada ${formatDateDMY(context.record.createdAt)}</div>` : '';
 
+    // When editing existing data, show only the saved trimester (locked)
+    // When creating new data, show all 4 trimester options
     const trimesterSelectorHtml = !showForm
         ? `<div class="alert alert-secondary mb-3"><strong><i class="fas fa-calendar-check"></i> ${trimesterLabels[trimester]}</strong></div>`
+        : hasSavedRecord && savedSummaryHtml
+        ? `<div class="alert alert-info mb-3">
+               <strong><i class="fas fa-lock"></i> Mengedit: ${trimesterLabels[trimester]}</strong>
+               <small class="d-block text-muted mt-1">Trimester terkunci untuk data yang sudah disimpan. Gunakan tombol Reset untuk memulai dari awal.</small>
+           </div>`
         : `<div class="trimester-selector mb-4">
                <div class="btn-group btn-group-toggle" data-toggle="buttons">
                    <label class="btn btn-outline-primary ${trimester === 'first' ? 'active' : ''}" onclick="switchTrimester('first')">
@@ -694,9 +701,20 @@ export function renderUSG() {
         if (saveBtn) saveBtn.addEventListener('click', saveUSGExam);
         if (editBtn) {
             editBtn.addEventListener('click', () => {
-                if (editForm) editForm.style.display = 'block';
+                const summaryContainer = container.querySelector('#usg-summary-container');
+                if (summaryContainer) summaryContainer.style.display = 'none';
+                
+                if (editForm) {
+                    editForm.style.display = 'block';
+                    // Show only the saved trimester content when editing
+                    const savedTrimester = context?.data?.trimester || 'first';
+                    document.querySelectorAll('.trimester-content').forEach(content => {
+                        content.style.display = 'none';
+                    });
+                    const savedContent = document.getElementById(`usg-${savedTrimester}-trimester`);
+                    if (savedContent) savedContent.style.display = 'block';
+                }
                 if (saveBtn) saveBtn.style.display = 'inline-block';
-                editBtn.closest('.alert').style.display = 'none';
             });
         }
         if (resetBtn) {
