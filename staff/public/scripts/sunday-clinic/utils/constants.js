@@ -26,7 +26,6 @@ export const SECTIONS = {
     IDENTITY: 'identity',
     ANAMNESA: 'anamnesa',
     PHYSICAL_EXAM: 'physical-exam',
-    PEMERIKSAAN_OBSTETRI: 'pemeriksaan-obstetri',
     USG: 'usg',
     PENUNJANG: 'penunjang',  // Renamed from laboratorium
     DIAGNOSIS: 'diagnosis',
@@ -38,7 +37,6 @@ export const SECTION_LABELS = {
     [SECTIONS.IDENTITY]: 'Identitas Pasien',
     [SECTIONS.ANAMNESA]: 'Anamnesa',
     [SECTIONS.PHYSICAL_EXAM]: 'Pemeriksaan Fisik',
-    [SECTIONS.PEMERIKSAAN_OBSTETRI]: 'Pemeriksaan Obstetri',
     [SECTIONS.USG]: 'USG',
     [SECTIONS.PENUNJANG]: 'Penunjang',  // Changed from "Laboratorium"
     [SECTIONS.DIAGNOSIS]: 'Diagnosis',
