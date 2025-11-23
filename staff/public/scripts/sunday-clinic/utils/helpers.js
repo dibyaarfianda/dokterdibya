@@ -112,6 +112,19 @@ function titleCaseWords(str) {
         .join(' ');
 }
 
+export function formatDateDMY(value) {
+    if (!value) {
+        return value;
+    }
+    // Handle YYYY-MM-DD format
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+        const [, year, month, day] = match;
+        return `${day}-${month}-${year}`;
+    }
+    return value;
+}
+
 // ============================================================================
 // METADATA RENDERING
 // ============================================================================
@@ -175,7 +188,7 @@ function formatRecordTypeLabel(type) {
     return labels[type] || type;
 }
 
-function escapeHtml(value) {
+export function escapeHtml(value) {
     return String(value)
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
