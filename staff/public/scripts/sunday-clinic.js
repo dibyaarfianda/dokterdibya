@@ -31,6 +31,38 @@ const SECTION_DEFS = [
 const SECTION_LOOKUP = new Map(SECTION_DEFS.map(section => [section.id, section]));
 
 // ============================================================================
+// ROLE HELPERS
+// ============================================================================
+
+function getRoleLabel(role) {
+    const roleMap = {
+        'dokter': 'Dokter',
+        'superadmin': 'Super Admin',
+        'admin': 'Admin',
+        'managerial': 'Managerial',
+        'bidan': 'Bidan',
+        'perawat': 'Perawat',
+        'kasir': 'Kasir',
+        'apoteker': 'Apoteker'
+    };
+    return roleMap[role] || role || 'Staff';
+}
+
+function getRoleColor(role) {
+    const colorMap = {
+        'dokter': 'primary',
+        'superadmin': 'danger',
+        'admin': 'info',
+        'managerial': 'warning',
+        'bidan': 'success',
+        'perawat': 'info',
+        'kasir': 'secondary',
+        'apoteker': 'teal'
+    };
+    return colorMap[role] || 'secondary';
+}
+
+// ============================================================================
 // STATE
 // ============================================================================
 
@@ -39,7 +71,8 @@ const appState = {
     currentSection: 'identity',
     staffIdentity: {
         id: null,
-        name: null
+        name: null,
+        role: null
     },
     isInitialized: false
 };
@@ -91,12 +124,13 @@ window.routeMrSlug = null;
 // Current staff identity (EXACT copy from backup)
 window.currentStaffIdentity = {
     id: null,
-    name: null
+    name: null,
+    role: null
 };
 
 function resolveStaffIdentity(raw) {
     if (!raw || typeof raw !== 'object') {
-        return { id: null, name: null };
+        return { id: null, name: null, role: null };
     }
 
     const candidates = [];
@@ -110,6 +144,7 @@ function resolveStaffIdentity(raw) {
 
     let name = null;
     let id = null;
+    let role = null;
 
     for (const candidate of candidates) {
         if (!candidate || typeof candidate !== 'object') continue;
@@ -122,10 +157,14 @@ function resolveStaffIdentity(raw) {
             id = candidate.id || candidate.user_id || candidate.uuid || null;
         }
 
-        if (name && id) break;
+        if (!role) {
+            role = candidate.role || null;
+        }
+
+        if (name && id && role) break;
     }
 
-    return { id: id || null, name: name || null };
+    return { id: id || null, name: name || null, role: role || null };
 }
 
 // Expose showSuccess and showError globally for planning-helpers.js
@@ -198,6 +237,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const identity = resolveStaffIdentity(userData);
                     window.currentStaffIdentity.id = identity.id;
                     window.currentStaffIdentity.name = identity.name;
+                    window.currentStaffIdentity.role = identity.role;
                     console.log('[SundayClinic] Staff identity set:', identity);
                 }
             }
@@ -257,15 +297,21 @@ async function checkAuthentication() {
         if (response.success && response.data && response.data.user) {
             appState.staffIdentity = {
                 id: response.data.user.id,
-                name: response.data.user.name || response.data.user.email
+                name: response.data.user.name || response.data.user.email,
+                role: response.data.user.role || ''
             };
 
-            // Update staff name display
+            // Update staff name display with role
             if (DOM.staffNameDisplay) {
-                DOM.staffNameDisplay.textContent = appState.staffIdentity.name;
+                const roleLabel = getRoleLabel(appState.staffIdentity.role);
+                const roleColor = getRoleColor(appState.staffIdentity.role);
+                DOM.staffNameDisplay.innerHTML = `
+                    ${appState.staffIdentity.name}
+                    <span class="badge badge-${roleColor} ml-2" style="font-size: 0.75rem; vertical-align: middle;">${roleLabel}</span>
+                `;
             }
 
-            console.log('[SundayClinic] Authenticated as:', appState.staffIdentity.name);
+            console.log('[SundayClinic] Authenticated as:', appState.staffIdentity.name, '(', appState.staffIdentity.role, ')');
             return true;
         } else {
             throw new Error('Invalid token response');

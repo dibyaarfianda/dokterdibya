@@ -1,11 +1,12 @@
 # Email Verification System - Documentation
 
 ## Gambaran Umum
+
 Sistem verifikasi email untuk memastikan pasien menggunakan email yang valid sebelum dapat mengakses layanan klinik.
 
 ## Flow Registrasi Baru
 
-```
+```text
 1. User Register (email, password, dll)
    ↓
 2. System:
@@ -33,7 +34,7 @@ Sistem verifikasi email untuk memastikan pasien menggunakan email yang valid seb
 
 ## Database Schema
 
-### Kolom Baru di Tabel `patients`:
+### Kolom Baru di Tabel `patients`
 
 ```sql
 -- Status verifikasi email
@@ -51,9 +52,11 @@ verification_token_expires DATETIME DEFAULT NULL
 ## API Endpoints
 
 ### 1. POST /api/patients/register
+
 **Perubahan:** Sekarang generate verification token dan kirim email
 
 **Request:**
+
 ```json
 {
   "fullname": "John Doe",
@@ -81,15 +84,18 @@ verification_token_expires DATETIME DEFAULT NULL
 ```
 
 **Email yang dikirim:**
+
 - Subject: "Verifikasi Email - Klinik Dr. Dibya"
 - Berisi: 6 digit code
 - Link verifikasi: `https://dokterdibya.com/verify-email.html?token=123456&email=john@example.com`
 - Expiry: 24 jam
 
 ### 2. POST /api/patients/verify-email
+
 **Fungsi:** Verifikasi kode yang diinput user
 
 **Request:**
+
 ```json
 {
   "email": "john@example.com",
@@ -98,6 +104,7 @@ verification_token_expires DATETIME DEFAULT NULL
 ```
 
 **Response Success:**
+
 ```json
 {
   "success": true,
@@ -112,6 +119,7 @@ verification_token_expires DATETIME DEFAULT NULL
 ```
 
 **Response Error:**
+
 ```json
 {
   "message": "Kode verifikasi tidak valid"
@@ -127,9 +135,11 @@ verification_token_expires DATETIME DEFAULT NULL
 ```
 
 ### 3. POST /api/patients/resend-verification
+
 **Fungsi:** Kirim ulang kode verifikasi baru
 
 **Request:**
+
 ```json
 {
   "email": "john@example.com"
@@ -145,9 +155,11 @@ verification_token_expires DATETIME DEFAULT NULL
 ```
 
 ### 4. GET /api/patients/profile
+
 **Perubahan:** Sekarang return `email_verified` field
 
 **Response:**
+
 ```json
 {
   "user": {
@@ -165,7 +177,9 @@ verification_token_expires DATETIME DEFAULT NULL
 ## Frontend Files
 
 ### 1. /verify-email.html
+
 **Halaman verifikasi email dengan fitur:**
+
 - Input 6 digit code
 - Auto-fill jika dari link email
 - Timer untuk resend (60 detik)
@@ -174,24 +188,29 @@ verification_token_expires DATETIME DEFAULT NULL
 - Responsive design
 
 **URL Parameters:**
+
 - `token` - Kode verifikasi (optional, auto-fill)
 - `email` - Email user (optional, auto-fill)
 
 **Example:**
-```
+
+```text
 https://dokterdibya.com/verify-email.html?token=123456&email=john@example.com
 ```
 
 ### 2. /js/auth.js
+
 **Update:**
 
-#### signUpWithEmail():
+#### signUpWithEmail()
+
 ```javascript
 // Redirect ke verify-email setelah register
 window.location.href = '/verify-email.html';
 ```
 
-#### checkProfileCompletionAndRedirect():
+#### checkProfileCompletionAndRedirect()
+
 ```javascript
 // Cek email_verified PERTAMA sebelum yang lain
 if (profile.email_verified === 0) {
@@ -217,7 +236,8 @@ if (profile.profile_completed === 1) {
 
 Email menggunakan **nodemailer** melalui `NotificationService`.
 
-### Environment Variables Required:
+### Environment Variables Required
+
 ```bash
 # Enable/disable email
 EMAIL_ENABLED=true
@@ -236,7 +256,8 @@ FRONTEND_URL=https://dokterdibya.com
 CLINIC_NAME=Klinik Dr. Dibya
 ```
 
-### Gmail Setup:
+### Gmail Setup
+
 1. Enable 2-Factor Authentication
 2. Generate App Password
 3. Use App Password in `EMAIL_PASSWORD`
@@ -244,11 +265,13 @@ CLINIC_NAME=Klinik Dr. Dibya
 ## Special Cases
 
 ### Google Sign-In Users
+
 - **Automatic verification:** `email_verified = 1`
 - Google sudah verify email, tidak perlu verifikasi lagi
 - Langsung ke birthdate/profile completion
 
 ### Existing Users
+
 - User yang sudah terdaftar sebelum sistem verifikasi
 - `email_verified = 0` by default
 - Akan diminta verifikasi saat login berikutnya
@@ -257,6 +280,7 @@ CLINIC_NAME=Klinik Dr. Dibya
 ## Testing
 
 ### 1. Test Email Service
+
 ```javascript
 const NotificationService = require('./utils/notification');
 const notif = new NotificationService();
@@ -269,6 +293,7 @@ notif.sendEmail({
 ```
 
 ### 2. Test Registration Flow
+
 ```bash
 # 1. Register new user
 curl -X POST http://localhost:3001/api/patients/register \
@@ -296,6 +321,7 @@ curl -X GET http://localhost:3001/api/patients/profile \
 ```
 
 ### 3. Test Database
+
 ```sql
 -- Check verification status
 SELECT id, full_name, email, email_verified, verification_token, verification_token_expires
@@ -310,14 +336,16 @@ WHERE email = 'test@example.com';
 
 ## Security Considerations
 
-### Token Security:
+### Token Security
+
 - ✅ 6 digit random code (1 million combinations)
 - ✅ Expires after 24 hours
 - ✅ Stored hashed in database (optional enhancement)
 - ✅ Rate limiting on resend (60 seconds)
 - ✅ Token cleared after verification
 
-### Best Practices:
+### Best Practices
+
 1. **Rate Limiting:** Limit verification attempts (e.g., 5 per hour)
 2. **IP Tracking:** Log failed verification attempts
 3. **Email Throttling:** Limit resend emails (current: 60 seconds)
@@ -325,7 +353,8 @@ WHERE email = 'test@example.com';
 
 ## Troubleshooting
 
-### Email tidak terkirim:
+### Email tidak terkirim
+
 ```bash
 # Check email service status
 pm2 logs dibyaklinik-backend | grep -i email
@@ -337,7 +366,8 @@ pm2 env 0 | grep EMAIL
 curl -v telnet://smtp.gmail.com:587
 ```
 
-### User tidak bisa verify:
+### User tidak bisa verify
+
 ```sql
 -- Check token status
 SELECT email, verification_token, verification_token_expires 
@@ -353,7 +383,8 @@ FROM patients
 WHERE email = 'user@example.com';
 ```
 
-### Manual verification (emergency):
+### Manual verification (emergency)
+
 ```sql
 UPDATE patients 
 SET email_verified = 1, 
@@ -372,6 +403,7 @@ WHERE email = 'user@example.com';
 6. **Notification:** Push notification untuk mobile app
 
 ## Versi
+
 - **Created:** 13 November 2025
 - **Backend Restart:** #78
 - **Status:** ✅ Production Ready
