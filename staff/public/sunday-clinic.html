@@ -528,8 +528,8 @@
 
     <!-- Planning Helpers (for old format obstetri category) - must load AFTER main script -->
     <script src="/staff/public/scripts/sunday-clinic/utils/planning-helpers.js"></script>
-    <!-- Billing Notifications - must load AFTER main script -->
-    <script src="/staff/public/scripts/sunday-clinic/utils/billing-notifications.js"></script>
+    <!-- Socket.io Client -->
+    <script src="/socket.io/socket.io.js"></script>
     <script>
         // Add click handler for sidebar navigation
         document.addEventListener('DOMContentLoaded', function() {
@@ -556,5 +556,8 @@
 
     <!-- Mobile Helper Script -->
     <script src="/staff/public/scripts/mobile-helper.js"></script>
+    
+    <!-- Global Chat Loader -->
+    <script src="/staff/public/scripts/global-chat-loader.js"></script>
 </body>
 </html>

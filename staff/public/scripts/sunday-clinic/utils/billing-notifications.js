@@ -6,6 +6,63 @@
 class BillingNotifications {
     constructor() {
         this.listeners = new Set();
+        this.socket = null;
+        this.initializeSocket();
+    }
+
+    /**
+     * Initialize Socket.IO connection
+     */
+    initializeSocket() {
+        console.log('[BillingNotifications] Initializing Socket.IO, io available?', typeof io !== 'undefined');
+        
+        if (typeof io !== 'undefined') {
+            // Connect with explicit options
+            this.socket = io({
+                transports: ['websocket', 'polling'],
+                reconnection: true,
+                reconnectionDelay: 1000,
+                reconnectionAttempts: 10
+            });
+            
+            this.socket.on('connect', () => {
+                console.log('[BillingNotifications] ✅ Socket.IO CONNECTED, socket ID:', this.socket.id);
+                console.log('[BillingNotifications] Transport:', this.socket.io.engine.transport.name);
+            });
+
+            this.socket.on('connect_error', (error) => {
+                console.error('[BillingNotifications] ❌ Connection error:', error);
+            });
+
+            this.socket.on('disconnect', (reason) => {
+                console.log('[BillingNotifications] Socket.IO disconnected, reason:', reason);
+            });
+
+            this.socket.on('reconnect', (attemptNumber) => {
+                console.log('[BillingNotifications] Reconnected after', attemptNumber, 'attempts');
+            });
+
+            // Listen for billing_confirmed events from server
+            this.socket.on('billing_confirmed', (data) => {
+                console.log('[BillingNotifications] 📨 Socket.IO received billing_confirmed:', data);
+                this.broadcast(data);
+            });
+
+            // Listen for revision_requested events from server
+            this.socket.on('revision_requested', (data) => {
+                console.log('[BillingNotifications] 📨 Socket.IO received revision_requested:', data);
+                this.broadcast(data);
+            });
+
+            // Log all events for debugging
+            this.socket.onAny((eventName, ...args) => {
+                console.log('[BillingNotifications] 🔔 Socket event received:', eventName, args);
+            });
+            
+            console.log('[BillingNotifications] Event listeners registered');
+        } else {
+            console.error('[BillingNotifications] ❌ Socket.IO not available (io is undefined)');
+        }
     }
 
     /**
@@ -32,19 +89,22 @@ class BillingNotifications {
     }
 
     /**
-     * Broadcast revision request to dokter
+     * Broadcast revision request to dokter (only sends event, doesn't show dialog)
      */
-    broadcastRevisionRequest(mrId, patientName, message, requestedBy) {
+    broadcastRevisionRequest(mrId, patientName, message, requestedBy, revisionId) {
         const event = {
             type: 'revision_requested',
             mrId,
             patientName,
             message,
             requestedBy,
+            revisionId,
             timestamp: new Date().toISOString()
         };
 
+        // Just broadcast - dialog will be shown by receiver via Socket.IO event
         this.broadcast(event);
+        console.log('[BillingNotifications] Broadcasted revision_requested:', event);
     }
 
     /**
@@ -168,68 +228,20 @@ class BillingNotifications {
         // Auto-close after 10 seconds
         setTimeout(close, 10000);
     }
-}
 
-// Singleton instance
-const billingNotifications = new BillingNotifications();
-
-// Client-side integration
-if (typeof window !== 'undefined') {
-    window.billingNotifications = BillingNotifications;
-
-    // Setup event listener for realtime notifications
-    if (window.realtimeSync) {
-        window.realtimeSync.on('billing_confirmed', (data) => {
-            const userRole = window.currentStaffIdentity?.role || '';
-            const isDokter = userRole === 'dokter' || userRole === 'superadmin';
-
-            if (!isDokter) {
-                BillingNotifications.showClientNotification(
-                    `Dokter telah selesai memeriksa ${data.patientName}. Tagihan terkonfirmasi.`,
-                    'success'
-                );
-
-                // Reload billing if on billing page
-                if (window.location.hash.includes('billing')) {
-                    setTimeout(() => {
-                        if (window.handleSectionChange) {
-                            window.handleSectionChange('billing', { pushHistory: false });
-                        }
-                    }, 2000);
+    /**
+     * Simple event emitter functionality
+     */
+    on(eventType, callback) {
+        if (eventType === 'billing_confirmed' || eventType === 'revision_requested') {
+            this.addListener((event) => {
+                if (event.type === eventType) {
+                    callback(event);
                 }
-            }
-        });
-
-        window.realtimeSync.on('revision_requested', (data) => {
-            const userRole = window.currentStaffIdentity?.role || '';
-            const isDokter = userRole === 'dokter' || userRole === 'superadmin';
-
-            if (isDokter) {
-                const message = `Usulan revisi untuk ${data.patientName} dari ${data.requestedBy}:\n\n"${data.message}"`;
-                
-                setTimeout(() => {
-                    if (confirm(message + '\n\nSetujui usulan ini?')) {
-                        fetch(`/api/sunday-clinic/billing/revisions/${data.revisionId}/approve`, {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': `Bearer ${window.getToken()}`,
-                                'Content-Type': 'application/json'
-                            }
-                        })
-                        .then(res => res.json())
-                        .then(result => {
-                            if (result.success) {
-                                alert('Usulan disetujui. Silakan lakukan perubahan dan konfirmasi ulang.');
-                                if (window.handleSectionChange) {
-                                    window.handleSectionChange('billing', { pushHistory: false });
-                                }
-                            }
-                        });
-                    }
-                }, 1000);
-            }
-        });
+            });
+        }
     }
 }
 
-module.exports = billingNotifications;
+// Export the class
+export default BillingNotifications;

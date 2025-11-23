@@ -7,6 +7,7 @@ import { MR_CATEGORIES, SECTIONS } from './utils/constants.js';
 import apiClient from './utils/api-client.js';
 import stateManager from './utils/state-manager.js';
 import { getGMT7Timestamp } from './utils/helpers.js';
+import BillingNotifications from './utils/billing-notifications.js';
 
 class SundayClinicApp {
     constructor() {
@@ -14,6 +15,7 @@ class SundayClinicApp {
         this.currentCategory = null;
         this.components = {};
         this.initialized = false;
+        this.billingNotifications = null;
     }
 
     /**
@@ -49,6 +51,9 @@ class SundayClinicApp {
 
             // Render the application with active section
             await this.render(activeSection);
+
+            // Initialize real-time billing notifications
+            this.initializeBillingNotifications();
 
             this.initialized = true;
 
@@ -929,6 +934,93 @@ class SundayClinicApp {
         // Clear state and load new record
         stateManager.clear();
         await this.init(mrId);
+    }
+
+    /**
+     * Initialize real-time billing notifications
+     */
+    initializeBillingNotifications() {
+        if (!this.billingNotifications) {
+            this.billingNotifications = new BillingNotifications();
+            
+            // Make it globally available
+            window.realtimeSync = this.billingNotifications;
+            
+            // Setup event listeners for notifications
+            this.setupBillingEventListeners();
+            
+            console.log('[SundayClinic] Real-time billing notifications initialized');
+        }
+    }
+
+    /**
+     * Setup billing event listeners for auto-refresh
+     */
+    setupBillingEventListeners() {
+        console.log('[SundayClinic] Setting up billing event listeners');
+        
+        // Listen for billing confirmed event
+        this.billingNotifications.on('billing_confirmed', (data) => {
+            console.log('[SundayClinic] billing_confirmed listener triggered with data:', data);
+            const userRole = window.currentStaffIdentity?.role || '';
+            const isDokter = userRole === 'dokter' || userRole === 'superadmin';
+
+            if (!isDokter) {
+                BillingNotifications.showClientNotification(
+                    `Dokter telah selesai memeriksa ${data.patientName}. Tagihan terkonfirmasi.`,
+                    'success'
+                );
+
+                // Auto-refresh to reload billing data
+                setTimeout(() => {
+                    console.log('[SundayClinic] Auto-refreshing after billing confirmed');
+                    this.reload();
+                }, 2000);
+            }
+        });
+
+        // Listen for revision requested event
+        this.billingNotifications.on('revision_requested', (data) => {
+            console.log('[SundayClinic] revision_requested listener triggered with data:', data);
+            
+            const userRole = window.currentStaffIdentity?.role || '';
+            const isDokter = userRole === 'dokter' || userRole === 'superadmin';
+            console.log('[SundayClinic] User role:', userRole, 'isDokter:', isDokter);
+
+            if (isDokter) {
+                console.log('[SundayClinic] Dokter confirmed, showing dialog');
+                
+                // Show confirmation dialog to dokter
+                setTimeout(() => {
+                    const confirmMsg = `Usulan revisi untuk ${data.patientName} dari ${data.requestedBy}:\n\n"${data.message}"\n\nSetujui usulan ini?`;
+                    
+                    if (confirm(confirmMsg)) {
+                        fetch(`/api/sunday-clinic/billing/revisions/${data.revisionId}/approve`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${window.getToken()}`,
+                                'Content-Type': 'application/json'
+                            }
+                        })
+                        .then(res => res.json())
+                        .then(result => {
+                            if (result.success) {
+                                alert('Usulan disetujui. Billing dikembalikan ke draft. Silakan lakukan perubahan dan konfirmasi ulang.');
+                                
+                                // Auto-refresh to show draft state
+                                this.reload();
+                            } else {
+                                alert('Gagal menyetujui usulan: ' + (result.message || 'Unknown error'));
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error approving revision:', error);
+                            alert('Gagal menyetujui usulan');
+                        });
+                    }
+                }, 500);
+            }
+        });
     }
 }
 

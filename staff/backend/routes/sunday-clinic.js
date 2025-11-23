@@ -1142,8 +1142,15 @@ router.post('/billing/:mrId/request-revision', verifyToken, async (req, res, nex
         const patientName = record?.patient_name || 'Pasien';
 
         // Broadcast notification to dokter
+        logger.info('About to broadcast revision_requested', {
+            hasRealtimeSync: !!realtimeSync,
+            hasBroadcast: !!(realtimeSync && realtimeSync.broadcast),
+            mrId: normalizedMrId,
+            revisionId: result.insertId
+        });
+        
         if (realtimeSync && realtimeSync.broadcast) {
-            realtimeSync.broadcast({
+            const broadcastResult = realtimeSync.broadcast({
                 type: 'revision_requested',
                 mrId: normalizedMrId,
                 patientName,
@@ -1152,11 +1159,15 @@ router.post('/billing/:mrId/request-revision', verifyToken, async (req, res, nex
                 revisionId: result.insertId,
                 timestamp: new Date().toISOString()
             });
+            logger.info('Broadcast result:', { success: broadcastResult });
+        } else {
+            logger.warn('realtimeSync not available for broadcasting');
         }
 
         res.json({
             success: true,
-            message: 'Usulan revisi berhasil dikirim'
+            message: 'Usulan revisi berhasil dikirim',
+            revisionId: result.insertId
         });
     } catch (error) {
         logger.error('Failed to request revision', { error: error.message });
@@ -1828,4 +1839,13 @@ router.post('/generate-anamnesa/:mrId', verifyToken, async (req, res, next) => {
     }
 });
 
+// Socket.io handler for real-time billing notifications
+function setupSocketHandlers(io) {
+    logger.info('Setting up Socket.io handlers for Sunday Clinic billing');
+    
+    // No additional socket handlers needed - we're using broadcast from routes
+    // The realtime-sync module handles socket connections
+}
+
 module.exports = router;
+module.exports.setupSocketHandlers = setupSocketHandlers;
