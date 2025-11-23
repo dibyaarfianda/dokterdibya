@@ -230,6 +230,29 @@ class SundayClinicApp {
             });
         });
 
+        // Planning buttons (for old format obstetri category)
+        const inputTindakanBtn = document.getElementById('btn-input-tindakan');
+        const inputTerapiBtn = document.getElementById('btn-input-terapi');
+        const resetTindakanBtn = document.getElementById('btn-reset-tindakan');
+        const resetTerapiBtn = document.getElementById('btn-reset-terapi');
+        const savePlanBtn = document.getElementById('save-plan');
+
+        if (inputTindakanBtn && window.openTindakanModal) {
+            inputTindakanBtn.addEventListener('click', window.openTindakanModal);
+        }
+        if (inputTerapiBtn && window.openTerapiModal) {
+            inputTerapiBtn.addEventListener('click', window.openTerapiModal);
+        }
+        if (resetTindakanBtn && window.resetTindakan) {
+            resetTindakanBtn.addEventListener('click', window.resetTindakan);
+        }
+        if (resetTerapiBtn && window.resetTerapi) {
+            resetTerapiBtn.addEventListener('click', window.resetTerapi);
+        }
+        if (savePlanBtn) {
+            savePlanBtn.addEventListener('click', () => this.savePlanningObstetri());
+        }
+
         // Warn before leaving if there are unsaved changes
         window.addEventListener('beforeunload', (e) => {
             if (stateManager.hasUnsavedChanges()) {
@@ -279,6 +302,73 @@ class SundayClinicApp {
 
         } catch (error) {
             console.error('[SundayClinic] Save failed:', error);
+            this.showError(error.message);
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    /**
+     * Save Planning for obstetri category (old format)
+     */
+    async savePlanningObstetri() {
+        try {
+            this.showLoading('Menyimpan Planning...');
+
+            const data = {
+                tindakan: document.getElementById('planning-tindakan')?.value || '',
+                terapi: document.getElementById('planning-terapi')?.value || '',
+                rencana: document.getElementById('planning-rencana')?.value || ''
+            };
+
+            const state = stateManager.getState();
+            const patientId = state.recordData?.record?.patient_id;
+
+            if (!patientId) {
+                throw new Error('Patient ID tidak ditemukan');
+            }
+
+            const token = await apiClient.getToken();
+            if (!token) {
+                throw new Error('Authentication token tidak tersedia');
+            }
+
+            const recordPayload = {
+                patientId: patientId,
+                type: 'planning',
+                data: data,
+                timestamp: new Date().toISOString()
+            };
+
+            // Add doctor info if available
+            if (window.currentStaffIdentity?.name) {
+                recordPayload.doctorName = window.currentStaffIdentity.name;
+            }
+            if (window.currentStaffIdentity?.id) {
+                recordPayload.doctorId = window.currentStaffIdentity.id;
+            }
+
+            const response = await fetch('/api/medical-records', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(recordPayload)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+                throw new Error(errorData.message || `Server error: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('[SundayClinic] Planning saved successfully:', result);
+
+            this.showSuccess('Planning berhasil disimpan!');
+
+        } catch (error) {
+            console.error('[SundayClinic] Save Planning failed:', error);
             this.showError(error.message);
         } finally {
             this.hideLoading();
