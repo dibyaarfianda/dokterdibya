@@ -724,10 +724,16 @@ function escapeHtml(text) {
 
 // Refresh billing component if active
 function refreshBillingIfActive() {
-    // Force reload the billing section by triggering a section change
-    if (window.handleSectionChange) {
+    // Only refresh if user is currently on billing section
+    // Don't redirect from Planning to Billing
+    const state = window.stateManager?.getState();
+    const activeSection = state?.activeSection;
+    
+    if (activeSection === 'billing' && window.handleSectionChange) {
+        // Force reload the billing section if already there
         window.handleSectionChange('billing', { pushHistory: false });
     }
+    // If not on billing section, do nothing - stay on current section
 }
 
 // ============================================================================
