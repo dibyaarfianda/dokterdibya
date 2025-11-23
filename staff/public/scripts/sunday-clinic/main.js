@@ -6,6 +6,7 @@
 import { MR_CATEGORIES, SECTIONS } from './utils/constants.js';
 import apiClient from './utils/api-client.js';
 import stateManager from './utils/state-manager.js';
+import { getGMT7Timestamp } from './utils/helpers.js';
 
 class SundayClinicApp {
     constructor() {
@@ -554,8 +555,7 @@ class SundayClinicApp {
                 kepala_leher: document.getElementById('pe-kepala-leher')?.value || '',
                 thorax: document.getElementById('pe-thorax')?.value || '',
                 abdomen: document.getElementById('pe-abdomen')?.value || '',
-                ekstremitas: document.getElementById('pe-ekstremitas')?.value || '',
-                pemeriksaan_obstetri: document.getElementById('pe-obstetri')?.value || ''
+                ekstremitas: document.getElementById('pe-ekstremitas')?.value || ''
             };
 
             const state = stateManager.getState();
@@ -714,7 +714,7 @@ class SundayClinicApp {
                 patientId: patientId,
                 type: 'anamnesa',
                 data: data,
-                timestamp: window.getGMT7Timestamp()
+                timestamp: getGMT7Timestamp()
             };
 
             if (window.currentStaffIdentity?.name) {
@@ -830,7 +830,7 @@ class SundayClinicApp {
                 patientId: patientId,
                 type: 'diagnosis',
                 data: data,
-                timestamp: window.getGMT7Timestamp()
+                timestamp: getGMT7Timestamp()
             };
 
             if (window.currentStaffIdentity?.name) {
