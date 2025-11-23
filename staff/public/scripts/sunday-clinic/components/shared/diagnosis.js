@@ -123,17 +123,26 @@ export default {
      * Render old Obstetri format (simple)
      */
     async renderObstetriFormat(diagnosis, state) {
-        // Get metadata context for display
+        // Get metadata context for display AND saved data
         let metaHtml = '';
+        let savedData = {};
         try {
             const { getMedicalRecordContext, renderRecordMeta } = await import('../../utils/helpers.js');
             const context = getMedicalRecordContext(state, 'diagnosis');
             if (context) {
                 metaHtml = renderRecordMeta(context, 'diagnosis');
+                // Use saved data from medicalRecords if available
+                savedData = context.data || {};
             }
         } catch (error) {
             console.error('[Diagnosis] Failed to load metadata:', error);
         }
+
+        // Merge with passed diagnosis parameter (fallback to savedData from medicalRecords)
+        const diagnosisData = {
+            diagnosis_utama: savedData.diagnosis_utama || diagnosis.diagnosis_utama || '',
+            diagnosis_sekunder: savedData.diagnosis_sekunder || diagnosis.diagnosis_sekunder || ''
+        };
 
         const escapeHtml = (str) => {
             if (!str) return '';
@@ -157,12 +166,12 @@ export default {
                     <div class="mb-3">
                         <label class="font-weight-bold">Diagnosis Utama</label>
                         <textarea class="form-control" id="diagnosis-utama" name="diagnosis_utama" rows="1"
-                                  placeholder="Masukkan diagnosis utama">${escapeHtml(diagnosis.diagnosis_utama || '')}</textarea>
+                                  placeholder="Masukkan diagnosis utama">${escapeHtml(diagnosisData.diagnosis_utama)}</textarea>
                     </div>
                     <div class="mb-3">
                         <label class="font-weight-bold">Diagnosis Sekunder (jika ada)</label>
                         <textarea class="form-control" id="diagnosis-sekunder" name="diagnosis_sekunder" rows="1"
-                                  placeholder="Masukkan diagnosis sekunder jika ada">${escapeHtml(diagnosis.diagnosis_sekunder || '')}</textarea>
+                                  placeholder="Masukkan diagnosis sekunder jika ada">${escapeHtml(diagnosisData.diagnosis_sekunder)}</textarea>
                     </div>
                     <div class="mb-4 mt-4">
                         <p class="mb-0"><strong>${escapeHtml(signatureName)}</strong></p>
