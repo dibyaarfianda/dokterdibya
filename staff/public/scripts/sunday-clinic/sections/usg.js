@@ -141,9 +141,11 @@ export function renderUSG() {
     }
     
     // Override hasSavedRecord if no summary data exists
-    const showForm = !savedSummaryHtml;
+    // If no record OR no saved summary, always show form
+    const showForm = !hasSavedRecord || !savedSummaryHtml;
     
     console.log('[USG] hasSavedRecord:', hasSavedRecord);
+    console.log('[USG] savedData:', savedData);
     console.log('[USG] savedSummaryHtml length:', savedSummaryHtml.length);
     console.log('[USG] showForm:', showForm);
 
