@@ -886,7 +886,10 @@ export async function saveUSGExam() {
 
         let response;
         if (existingRecordId) {
-            response = await apiClient.put(`/api/medical-records/${existingRecordId}`, { data: usgData });
+            response = await apiClient.put(`/api/medical-records/${existingRecordId}`, { 
+                type: 'usg',
+                data: usgData 
+            });
         } else {
             response = await apiClient.post('/api/medical-records', payload);
         }
