@@ -185,32 +185,36 @@ export default {
                 <div class="sc-card">
                     <div class="mb-3">
                         <label class="font-weight-bold">Tindakan</label>
-                        <button type="button" class="btn btn-sm btn-primary mb-2" data-toggle="modal" data-target="#tindakan-modal">
-                            <i class="fas fa-plus mr-1"></i>Pilih Tindakan
-                        </button>
-                        <textarea class="form-control" name="tindakan" rows="4"
-                                  placeholder="Daftar tindakan...">${escapeHtml(plan.tindakan || '')}</textarea>
+                        <textarea class="form-control" id="planning-tindakan" rows="4"
+                                  placeholder="Klik tombol 'Input Tindakan' untuk memilih dari daftar...">${escapeHtml(plan.tindakan || '')}</textarea>
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary mr-2" id="btn-input-tindakan">
+                                <i class="fas fa-plus-circle mr-1"></i>Input Tindakan
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="btn-reset-tindakan">
+                                <i class="fas fa-trash mr-1"></i>Hapus Semua
+                            </button>
+                        </div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="font-weight-bold">Terapi / Resep Obat</label>
-                        <button type="button" class="btn btn-sm btn-success mb-2" data-toggle="modal" data-target="#terapi-modal">
-                            <i class="fas fa-plus mr-1"></i>Pilih Obat
-                        </button>
-                        <textarea class="form-control" name="resep" rows="5"
-                                  placeholder="Resep obat untuk pasien...">${escapeHtml(plan.resep || '')}</textarea>
+                        <label class="font-weight-bold">Terapi</label>
+                        <textarea class="form-control" id="planning-terapi" rows="4"
+                                  placeholder="Klik tombol 'Input Terapi' untuk memilih obat...">${escapeHtml(plan.terapi || '')}</textarea>
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary mr-2" id="btn-input-terapi">
+                                <i class="fas fa-plus-circle mr-1"></i>Input Terapi
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="btn-reset-terapi">
+                                <i class="fas fa-trash mr-1"></i>Hapus Semua
+                            </button>
+                        </div>
                     </div>
 
                     <div class="mb-3">
-                        <label class="font-weight-bold">Edukasi & Nasihat</label>
-                        <textarea class="form-control" name="edukasi" rows="3"
-                                  placeholder="Edukasi dan nasihat untuk pasien...">${escapeHtml(plan.edukasi || '')}</textarea>
-                    </div>
-
-                    <div class="mb-3">
-                        <label class="font-weight-bold">Rencana Kontrol</label>
-                        <textarea class="form-control" name="rencana_kontrol" rows="2"
-                                  placeholder="Jadwal kontrol berikutnya...">${escapeHtml(plan.rencana_kontrol || '')}</textarea>
+                        <label class="font-weight-bold">Rencana</label>
+                        <textarea class="form-control" id="planning-rencana" rows="4"
+                                  placeholder="Masukkan rencana tindak lanjut...">${escapeHtml(plan.rencana || '')}</textarea>
                     </div>
 
                     <div class="text-right mt-3">
