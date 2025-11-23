@@ -67,11 +67,11 @@ export default {
                 // Add Billing Item
                 window.addBillingItem = function() {
                     const index = window.billingItemCounter++;
-                    const html = \`
-                        <tr class="billing-item-row" data-index="\${index}">
+                    const html = `
+                        <tr class="billing-item-row" data-index="${index}">
                             <td>
-                                <select class="form-control form-control-sm" name="billing_items[\${index}][category]"
-                                        onchange="window.updateBillingCategory(\${index})">
+                                <select class="form-control form-control-sm" name="billing_items[${index}][category]"
+                                        onchange="window.updateBillingCategory(${index})">
                                     <option value="">-- Pilih --</option>
                                     <option value="konsultasi">Konsultasi</option>
                                     <option value="tindakan">Tindakan</option>
@@ -82,15 +82,15 @@ export default {
                                 </select>
                             </td>
                             <td>
-                                <input type="text" class="form-control form-control-sm" name="billing_items[\${index}][description]"
+                                <input type="text" class="form-control form-control-sm" name="billing_items[${index}][description]"
                                        placeholder="Deskripsi item" required>
                             </td>
                             <td>
-                                <input type="number" class="form-control form-control-sm text-center" name="billing_items[\${index}][quantity]"
+                                <input type="number" class="form-control form-control-sm text-center" name="billing_items[${index}][quantity]"
                                        value="1" min="1" onchange="window.calculateBillingTotal()">
                             </td>
                             <td>
-                                <input type="number" class="form-control form-control-sm text-right" name="billing_items[\${index}][price]"
+                                <input type="number" class="form-control form-control-sm text-right" name="billing_items[${index}][price]"
                                        placeholder="0" min="0" step="1000" onchange="window.calculateBillingTotal()">
                             </td>
                             <td class="text-right">
@@ -98,18 +98,18 @@ export default {
                             </td>
                             <td class="text-center">
                                 <button type="button" class="btn btn-danger btn-sm"
-                                        onclick="window.removeBillingItem(\${index})">
+                                        onclick="window.removeBillingItem(${index})">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </td>
                         </tr>
-                    \`;
+                    `;
                     document.querySelector('#billing-items-table tbody').insertAdjacentHTML('beforeend', html);
                     window.calculateBillingTotal();
                 };
 
                 window.removeBillingItem = function(index) {
-                    const row = document.querySelector(\`.billing-item-row[data-index="\${index}"]\`);
+                    const row = document.querySelector(`.billing-item-row[data-index="${index}"]`);
                     if (row) row.remove();
                     window.calculateBillingTotal();
                 };
@@ -125,8 +125,8 @@ export default {
 
                     document.querySelectorAll('.billing-item-row').forEach(row => {
                         const index = row.dataset.index;
-                        const quantity = parseFloat(document.querySelector(\`[name="billing_items[\${index}][quantity]"]\`)?.value) || 0;
-                        const price = parseFloat(document.querySelector(\`[name="billing_items[\${index}][price]"]\`)?.value) || 0;
+                        const quantity = parseFloat(document.querySelector(`[name="billing_items[${index}][quantity]"]`)?.value) || 0;
+                        const price = parseFloat(document.querySelector(`[name="billing_items[${index}][price]"]`)?.value) || 0;
                         const itemSubtotal = quantity * price;
 
                         // Update item subtotal display
@@ -878,10 +878,10 @@ export default {
                                     return;
                                 }
 
-                                const response = await fetch(\`/api/sunday-clinic/billing/\${mrId}/confirm\`, {
+                                const response = await fetch(`/api/sunday-clinic/billing/${mrId}/confirm`, {
                                     method: 'POST',
                                     headers: {
-                                        'Authorization': \`Bearer \${token}\`,
+                                        'Authorization': `Bearer ${token}`,
                                         'Content-Type': 'application/json'
                                     }
                                 });
@@ -925,10 +925,10 @@ export default {
                                 const token = window.getToken?.();
                                 const mrId = window.routeMrSlug;
                                 
-                                const response = await fetch(\`/api/sunday-clinic/billing/\${mrId}/print-etiket\`, {
+                                const response = await fetch(`/api/sunday-clinic/billing/${mrId}/print-etiket`, {
                                     method: 'POST',
                                     headers: {
-                                        'Authorization': \`Bearer \${token}\`,
+                                        'Authorization': `Bearer ${token}`,
                                         'Content-Type': 'application/json'
                                     }
                                 });
@@ -939,7 +939,7 @@ export default {
                                 const url = window.URL.createObjectURL(blob);
                                 const a = document.createElement('a');
                                 a.href = url;
-                                a.download = \`\${mrId}e.pdf\`;
+                                a.download = `${mrId}e.pdf`;
                                 document.body.appendChild(a);
                                 a.click();
                                 window.URL.revokeObjectURL(url);
@@ -972,10 +972,10 @@ export default {
                                 const token = window.getToken?.();
                                 const mrId = window.routeMrSlug;
                                 
-                                const response = await fetch(\`/api/sunday-clinic/billing/\${mrId}/print-invoice\`, {
+                                const response = await fetch(`/api/sunday-clinic/billing/${mrId}/print-invoice`, {
                                     method: 'POST',
                                     headers: {
-                                        'Authorization': \`Bearer \${token}\`,
+                                        'Authorization': `Bearer ${token}`,
                                         'Content-Type': 'application/json'
                                     }
                                 });
@@ -986,7 +986,7 @@ export default {
                                 const url = window.URL.createObjectURL(blob);
                                 const a = document.createElement('a');
                                 a.href = url;
-                                a.download = \`\${mrId}inv.pdf\`;
+                                a.download = `${mrId}inv.pdf`;
                                 document.body.appendChild(a);
                                 a.click();
                                 window.URL.revokeObjectURL(url);
@@ -1023,10 +1023,10 @@ export default {
                                 const mrId = window.routeMrSlug;
                                 const userName = window.currentStaffIdentity?.name || 'Staff';
                                 
-                                const response = await fetch(\`/api/sunday-clinic/billing/\${mrId}/request-revision\`, {
+                                const response = await fetch(`/api/sunday-clinic/billing/${mrId}/request-revision`, {
                                     method: 'POST',
                                     headers: {
-                                        'Authorization': \`Bearer \${token}\`,
+                                        'Authorization': `Bearer ${token}`,
                                         'Content-Type': 'application/json'
                                     },
                                     body: JSON.stringify({
