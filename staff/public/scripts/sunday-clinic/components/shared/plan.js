@@ -184,13 +184,19 @@ export default {
                 </div>
                 <div class="sc-card">
                     <div class="mb-3">
-                        <label class="font-weight-bold">Tatalaksana / Terapi</label>
-                        <textarea class="form-control" name="tatalaksana" rows="4"
-                                  placeholder="Rencana tatalaksana dan terapi...">${escapeHtml(plan.tatalaksana || '')}</textarea>
+                        <label class="font-weight-bold">Tindakan</label>
+                        <button type="button" class="btn btn-sm btn-primary mb-2" data-toggle="modal" data-target="#tindakan-modal">
+                            <i class="fas fa-plus mr-1"></i>Pilih Tindakan
+                        </button>
+                        <textarea class="form-control" name="tindakan" rows="4"
+                                  placeholder="Daftar tindakan...">${escapeHtml(plan.tindakan || '')}</textarea>
                     </div>
 
                     <div class="mb-3">
-                        <label class="font-weight-bold">Resep Obat</label>
+                        <label class="font-weight-bold">Terapi / Resep Obat</label>
+                        <button type="button" class="btn btn-sm btn-success mb-2" data-toggle="modal" data-target="#terapi-modal">
+                            <i class="fas fa-plus mr-1"></i>Pilih Obat
+                        </button>
                         <textarea class="form-control" name="resep" rows="5"
                                   placeholder="Resep obat untuk pasien...">${escapeHtml(plan.resep || '')}</textarea>
                     </div>
