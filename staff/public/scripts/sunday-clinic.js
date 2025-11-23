@@ -276,13 +276,6 @@ async function loadMedicalRecord(mrId, section = 'identitas') {
     try {
         showLoading();
 
-        // Fetch MR data from API
-        const response = await apiClient.get(`/api/sunday-clinic/records/${mrId}`);
-
-        if (!response.success || !response.data) {
-            throw new Error('Failed to load medical record');
-        }
-
         // Update app state
         appState.currentMrId = mrId;
         appState.currentSection = section;
@@ -290,8 +283,8 @@ async function loadMedicalRecord(mrId, section = 'identitas') {
         // Update route
         updateRoute(mrId, section);
 
-        // Initialize Sunday Clinic App with data
-        await SundayClinicApp.init(response.data);
+        // Initialize Sunday Clinic App with MR ID (it will fetch the data)
+        await SundayClinicApp.init(mrId);
 
         // Update section navigation
         updateSectionNavigation(section);
