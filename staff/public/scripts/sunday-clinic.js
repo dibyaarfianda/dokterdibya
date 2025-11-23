@@ -20,6 +20,7 @@ const SECTION_DEFS = [
     { id: 'identitas', label: 'Identitas', icon: 'fa-id-card' },
     { id: 'anamnesa', label: 'Anamnesa', icon: 'fa-clipboard-list' },
     { id: 'pemeriksaan', label: 'Pemeriksaan Fisik', icon: 'fa-stethoscope' },
+    { id: 'pemeriksaan-obstetri', label: 'Pemeriksaan Obstetri', icon: 'fa-heartbeat' },
     { id: 'usg', label: 'USG', icon: 'fa-baby' },
     { id: 'penunjang', label: 'Penunjang', icon: 'fa-flask' },
     { id: 'diagnosis', label: 'Diagnosis', icon: 'fa-diagnoses' },
