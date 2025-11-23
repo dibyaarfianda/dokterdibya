@@ -18,9 +18,9 @@ class SundayClinicApp {
     /**
      * Initialize the application
      */
-    async init(mrId) {
+    async init(mrId, activeSection = SECTIONS.IDENTITY) {
         try {
-            console.log('[SundayClinic] Initializing with MR ID:', mrId);
+            console.log('[SundayClinic] Initializing with MR ID:', mrId, 'Section:', activeSection);
 
             // Show loading state
             this.showLoading();
@@ -46,8 +46,8 @@ class SundayClinicApp {
             // Load template-specific components
             await this.loadComponents();
 
-            // Render the application
-            await this.render();
+            // Render the application with active section
+            await this.render(activeSection);
 
             this.initialized = true;
 
@@ -133,9 +133,9 @@ class SundayClinicApp {
     }
 
     /**
-     * Render all components
+     * Render specific section (one at a time)
      */
-    async render() {
+    async render(activeSection = SECTIONS.IDENTITY) {
         const container = document.getElementById('sunday-clinic-content');
         if (!container) {
             console.error('[SundayClinic] Container not found');
@@ -148,32 +148,41 @@ class SundayClinicApp {
         // Render category badge
         html += this.renderCategoryBadge();
 
-        // Render each section
-        const sections = Object.keys(this.components);
-        for (const section of sections) {
-            const component = this.components[section];
+        // Render ONLY the active section
+        const component = this.components[activeSection];
+        if (component) {
             try {
                 const sectionHtml = await component.render(state);
                 html += `
-                    <div class="section-container" data-section="${section}">
+                    <div class="section-container" data-section="${activeSection}">
                         ${sectionHtml}
                     </div>
                 `;
             } catch (error) {
-                console.error(`[SundayClinic] Error rendering ${section}:`, error);
+                console.error(`[SundayClinic] Error rendering ${activeSection}:`, error);
                 html += `
                     <div class="alert alert-danger">
                         <i class="fas fa-exclamation-triangle"></i>
-                        Error rendering section: ${section}
+                        Error rendering section: ${activeSection}
                     </div>
                 `;
             }
+        } else {
+            html += `
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle"></i>
+                    Section not found: ${activeSection}
+                </div>
+            `;
         }
 
         container.innerHTML = html;
 
         // Attach event listeners
         this.attachEventListeners();
+
+        // Store current section
+        stateManager.setActiveSection(activeSection);
 
         // Hide loading
         this.hideLoading();
@@ -277,13 +286,18 @@ class SundayClinicApp {
     }
 
     /**
-     * Scroll to section
+     * Navigate to specific section (one section per page)
      */
-    scrollToSection(section) {
-        const element = document.querySelector(`[data-section="${section}"]`);
-        if (element) {
-            element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            stateManager.setActiveSection(section);
+    async navigateToSection(section) {
+        console.log('[SundayClinic] Navigating to section:', section);
+
+        // Re-render with only the selected section
+        await this.render(section);
+
+        // Scroll to top of content
+        const content = document.getElementById('sunday-clinic-content');
+        if (content) {
+            content.scrollIntoView({ behavior: 'smooth', block: 'start' });
         }
     }
 
