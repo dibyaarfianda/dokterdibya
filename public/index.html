@@ -263,7 +263,7 @@
 				submitBtn.textContent = 'Loading...';
 
 				try {
-					const response = await apiService.post('/auth/login', {
+					const response = await apiService.post('/auth/patient-login', {
 						email,
 						password
 					});
