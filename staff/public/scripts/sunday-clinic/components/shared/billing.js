@@ -10,6 +10,12 @@
  * 4. Invoice Actions
  */
 
+// Format currency helper - no decimals, with thousands separator
+function formatRupiah(amount) {
+    const number = Math.round(amount || 0);
+    return 'Rp ' + number.toLocaleString('id-ID', { maximumFractionDigits: 0 });
+}
+
 export default {
     /**
      * Render the Billing form
@@ -126,14 +132,14 @@ export default {
                         // Update item subtotal display
                         const subtotalElement = row.querySelector('.item-subtotal');
                         if (subtotalElement) {
-                            subtotalElement.textContent = 'Rp ' + itemSubtotal.toLocaleString('id-ID');
+                            subtotalElement.textContent = 'Rp ' + Math.round(itemSubtotal).toLocaleString('id-ID', { maximumFractionDigits: 0 });
                         }
 
                         subtotal += itemSubtotal;
                     });
 
                     // Update subtotal
-                    document.getElementById('billing-subtotal').textContent = 'Rp ' + subtotal.toLocaleString('id-ID');
+                    document.getElementById('billing-subtotal').textContent = 'Rp ' + Math.round(subtotal).toLocaleString('id-ID', { maximumFractionDigits: 0 });
 
                     // Calculate discount
                     const discountType = document.querySelector('[name="discount_type"]')?.value || 'none';
@@ -146,18 +152,18 @@ export default {
                         discount = discountValue;
                     }
 
-                    document.getElementById('billing-discount').textContent = 'Rp ' + discount.toLocaleString('id-ID');
+                    document.getElementById('billing-discount').textContent = 'Rp ' + Math.round(discount).toLocaleString('id-ID', { maximumFractionDigits: 0 });
 
                     // Calculate tax (if applicable)
                     const taxRate = parseFloat(document.querySelector('[name="tax_rate"]')?.value) || 0;
                     const afterDiscount = subtotal - discount;
                     const tax = (afterDiscount * taxRate) / 100;
 
-                    document.getElementById('billing-tax').textContent = 'Rp ' + tax.toLocaleString('id-ID');
+                    document.getElementById('billing-tax').textContent = 'Rp ' + Math.round(tax).toLocaleString('id-ID', { maximumFractionDigits: 0 });
 
                     // Calculate grand total
                     const grandTotal = afterDiscount + tax;
-                    document.getElementById('billing-grand-total').textContent = 'Rp ' + grandTotal.toLocaleString('id-ID');
+                    document.getElementById('billing-grand-total').textContent = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID', { maximumFractionDigits: 0 });
 
                     // Update payment calculation
                     window.calculatePaymentBalance();
@@ -172,7 +178,7 @@ export default {
 
                     const balanceElement = document.getElementById('payment-balance');
                     if (balanceElement) {
-                        balanceElement.textContent = 'Rp ' + balance.toLocaleString('id-ID');
+                        balanceElement.textContent = 'Rp ' + Math.round(balance).toLocaleString('id-ID', { maximumFractionDigits: 0 });
                         if (balance > 0) {
                             balanceElement.className = 'text-danger font-weight-bold';
                         } else if (balance === 0) {
@@ -295,7 +301,7 @@ export default {
                                value="${price}" min="0" step="1000" onchange="window.calculateBillingTotal()">
                     </td>
                     <td class="text-right">
-                        <span class="item-subtotal">Rp ${subtotal.toLocaleString('id-ID')}</span>
+                        <span class="item-subtotal">Rp ${Math.round(subtotal).toLocaleString('id-ID', { maximumFractionDigits: 0 })}</span>
                     </td>
                     <td class="text-center">
                         <button type="button" class="btn btn-danger btn-sm"
@@ -375,7 +381,7 @@ export default {
                         <strong>Subtotal:</strong>
                     </div>
                     <div class="col-md-4 text-right">
-                        <span id="billing-subtotal" class="h6">Rp ${subtotal.toLocaleString('id-ID')}</span>
+                        <span id="billing-subtotal" class="h6">Rp ${Math.round(subtotal).toLocaleString('id-ID', { maximumFractionDigits: 0 })}</span>
                     </div>
                 </div>
 
@@ -384,7 +390,7 @@ export default {
                         <strong>Diskon:</strong>
                     </div>
                     <div class="col-md-4 text-right">
-                        <span id="billing-discount" class="text-danger">Rp ${discount.toLocaleString('id-ID')}</span>
+                        <span id="billing-discount" class="text-danger">Rp ${Math.round(discount).toLocaleString('id-ID', { maximumFractionDigits: 0 })}</span>
                     </div>
                 </div>
 
@@ -393,7 +399,7 @@ export default {
                         <strong>Pajak:</strong>
                     </div>
                     <div class="col-md-4 text-right">
-                        <span id="billing-tax">Rp ${tax.toLocaleString('id-ID')}</span>
+                        <span id="billing-tax">Rp ${Math.round(tax).toLocaleString('id-ID', { maximumFractionDigits: 0 })}</span>
                     </div>
                 </div>
 
@@ -405,7 +411,7 @@ export default {
                     </div>
                     <div class="col-md-4 text-right">
                         <span id="billing-grand-total" class="h4 text-primary font-weight-bold">
-                            Rp ${grandTotal.toLocaleString('id-ID')}
+                            Rp ${Math.round(grandTotal).toLocaleString('id-ID', { maximumFractionDigits: 0 })}
                         </span>
                     </div>
                 </div>
@@ -540,7 +546,7 @@ export default {
                         </div>
                         <div class="col-md-6 text-right">
                             <span id="payment-balance" class="${balanceClass} font-weight-bold h5">
-                                Rp ${balance.toLocaleString('id-ID')}
+                                Rp ${Math.round(balance).toLocaleString('id-ID', { maximumFractionDigits: 0 })}
                             </span>
                         </div>
                     </div>
@@ -739,8 +745,9 @@ export default {
                 .replace(/'/g, '&#039;');
         };
 
-        const formatRupiah = (amount) => {
-            return 'Rp ' + (amount || 0).toLocaleString('id-ID');
+        const formatRupiahLocal = (amount) => {
+            const number = Math.round(amount || 0);
+            return 'Rp ' + number.toLocaleString('id-ID', { maximumFractionDigits: 0 });
         };
 
         // Calculate total
@@ -752,8 +759,8 @@ export default {
                 <tr>
                     <td>${escapeHtml(item.item_name)}</td>
                     <td class="text-center">${item.quantity || 1}</td>
-                    <td class="text-right">${formatRupiah(item.price)}</td>
-                    <td class="text-right font-weight-bold">${formatRupiah(itemTotal)}</td>
+                    <td class="text-right">${formatRupiahLocal(item.price)}</td>
+                    <td class="text-right font-weight-bold">${formatRupiahLocal(itemTotal)}</td>
                 </tr>
             `;
         }).join('');
@@ -763,17 +770,42 @@ export default {
             ? '<span class="badge badge-success">Dikonfirmasi</span>'
             : '<span class="badge badge-warning">Draft</span>';
 
+        // Check user role - only dokter can confirm billing
+        const userRole = window.currentStaffIdentity?.role || '';
+        const isDokter = userRole === 'dokter' || userRole === 'superadmin';
+
         // Action buttons
-        const actionsHtml = status === 'draft'
-            ? `<button type="button" class="btn btn-primary" id="btn-confirm-billing">
-                   <i class="fas fa-check mr-2"></i>Konfirmasi Tagihan
-               </button>`
-            : `<button type="button" class="btn btn-success mr-2" id="btn-print-etiket">
-                   <i class="fas fa-tag mr-2"></i>Cetak Etiket
-               </button>
-               <button type="button" class="btn btn-info" id="btn-print-invoice">
-                   <i class="fas fa-receipt mr-2"></i>Cetak Invoice
-               </button>`;
+        let actionsHtml = '';
+        if (status === 'draft') {
+            if (isDokter) {
+                actionsHtml = `
+                    <button type="button" class="btn btn-primary" id="btn-confirm-billing">
+                        <i class="fas fa-check mr-2"></i>Konfirmasi Tagihan
+                    </button>`;
+            } else {
+                actionsHtml = `
+                    <div class="alert alert-info mb-0 d-inline-block">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Menunggu konfirmasi dokter
+                    </div>
+                    <button type="button" class="btn btn-warning ml-2" id="btn-request-revision">
+                        <i class="fas fa-edit mr-2"></i>Ajukan Usulan
+                    </button>`;
+            }
+        } else {
+            // Confirmed - show print buttons (disabled for non-dokter initially)
+            const printDisabled = !isDokter && !billing.printed_at ? 'disabled' : '';
+            const printClass = !isDokter && !billing.printed_at ? 'btn-secondary' : 'btn-success';
+            
+            actionsHtml = `
+                <button type="button" class="btn ${printClass} mr-2" id="btn-print-etiket" ${printDisabled}>
+                    <i class="fas fa-tag mr-2"></i>Cetak Etiket
+                </button>
+                <button type="button" class="btn ${printClass}" id="btn-print-invoice" ${printDisabled}>
+                    <i class="fas fa-receipt mr-2"></i>Cetak Invoice
+                </button>
+                ${billing.printed_at ? '<small class="text-muted ml-2">Telah dicetak</small>' : ''}`;
+        }
 
         return `
             <div class="sc-section">
@@ -800,7 +832,7 @@ export default {
                             ${itemsHtml ? `
                             <tr class="table-active font-weight-bold">
                                 <td colspan="3" class="text-right">GRAND TOTAL</td>
-                                <td class="text-right">${formatRupiah(subtotal)}</td>
+                                <td class="text-right">${formatRupiahLocal(subtotal)}</td>
                             </tr>
                             ` : ''}
                         </tbody>
@@ -811,6 +843,208 @@ export default {
                     </div>
                 </div>
             </div>
+
+            <script>
+                // Setup billing button handlers
+                setTimeout(() => {
+                    // 1. Confirm billing button (dokter only)
+                    const confirmBtn = document.getElementById('btn-confirm-billing');
+                    if (confirmBtn) {
+                        confirmBtn.addEventListener('click', async function() {
+                            const userRole = window.currentStaffIdentity?.role || '';
+                            const isDokter = userRole === 'dokter' || userRole === 'superadmin';
+                            
+                            if (!isDokter) {
+                                alert('Hanya dokter yang dapat mengkonfirmasi tagihan');
+                                return;
+                            }
+
+                            if (!confirm('Konfirmasi tagihan ini? Setelah dikonfirmasi, tagihan tidak dapat diubah.')) {
+                                return;
+                            }
+
+                            try {
+                                const token = window.getToken?.();
+                                if (!token) return;
+
+                                const mrId = window.routeMrSlug;
+                                if (!mrId) {
+                                    alert('MR ID tidak ditemukan');
+                                    return;
+                                }
+
+                                const response = await fetch(\`/api/sunday-clinic/billing/\${mrId}/confirm\`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Authorization': \`Bearer \${token}\`,
+                                        'Content-Type': 'application/json'
+                                    }
+                                });
+
+                                if (!response.ok) {
+                                    const error = await response.json();
+                                    throw new Error(error.message || 'Gagal mengkonfirmasi tagihan');
+                                }
+
+                                const result = await response.json();
+
+                                if (window.showSuccess) {
+                                    window.showSuccess('Tagihan berhasil dikonfirmasi!');
+                                }
+
+                                // Broadcast notification to other users
+                                if (window.realtimeSync?.broadcastBillingConfirmed && result.patientName) {
+                                    window.realtimeSync.broadcastBillingConfirmed(mrId, result.patientName);
+                                }
+
+                                // Reload billing section
+                                if (window.handleSectionChange) {
+                                    window.handleSectionChange('billing', { pushHistory: false });
+                                }
+                            } catch (error) {
+                                console.error('Error confirming billing:', error);
+                                if (window.showError) {
+                                    window.showError(error.message || 'Gagal mengkonfirmasi tagihan');
+                                } else {
+                                    alert(error.message || 'Gagal mengkonfirmasi tagihan');
+                                }
+                            }
+                        });
+                    }
+
+                    // 2. Print etiket button
+                    const etiketBtn = document.getElementById('btn-print-etiket');
+                    if (etiketBtn && !etiketBtn.disabled) {
+                        etiketBtn.addEventListener('click', async function() {
+                            try {
+                                const token = window.getToken?.();
+                                const mrId = window.routeMrSlug;
+                                
+                                const response = await fetch(\`/api/sunday-clinic/billing/\${mrId}/print-etiket\`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Authorization': \`Bearer \${token}\`,
+                                        'Content-Type': 'application/json'
+                                    }
+                                });
+
+                                if (!response.ok) throw new Error('Gagal mencetak etiket');
+
+                                const blob = await response.blob();
+                                const url = window.URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = \`\${mrId}e.pdf\`;
+                                document.body.appendChild(a);
+                                a.click();
+                                window.URL.revokeObjectURL(url);
+                                document.body.removeChild(a);
+
+                                if (window.showSuccess) {
+                                    window.showSuccess('Etiket berhasil dicetak!');
+                                }
+
+                                // Reload to update printed status
+                                setTimeout(() => {
+                                    if (window.handleSectionChange) {
+                                        window.handleSectionChange('billing', { pushHistory: false });
+                                    }
+                                }, 1000);
+                            } catch (error) {
+                                console.error('Error printing etiket:', error);
+                                if (window.showError) {
+                                    window.showError(error.message);
+                                }
+                            }
+                        });
+                    }
+
+                    // 3. Print invoice button
+                    const invoiceBtn = document.getElementById('btn-print-invoice');
+                    if (invoiceBtn && !invoiceBtn.disabled) {
+                        invoiceBtn.addEventListener('click', async function() {
+                            try {
+                                const token = window.getToken?.();
+                                const mrId = window.routeMrSlug;
+                                
+                                const response = await fetch(\`/api/sunday-clinic/billing/\${mrId}/print-invoice\`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Authorization': \`Bearer \${token}\`,
+                                        'Content-Type': 'application/json'
+                                    }
+                                });
+
+                                if (!response.ok) throw new Error('Gagal mencetak invoice');
+
+                                const blob = await response.blob();
+                                const url = window.URL.createObjectURL(blob);
+                                const a = document.createElement('a');
+                                a.href = url;
+                                a.download = \`\${mrId}inv.pdf\`;
+                                document.body.appendChild(a);
+                                a.click();
+                                window.URL.revokeObjectURL(url);
+                                document.body.removeChild(a);
+
+                                if (window.showSuccess) {
+                                    window.showSuccess('Invoice berhasil dicetak!');
+                                }
+
+                                // Reload to update printed status
+                                setTimeout(() => {
+                                    if (window.handleSectionChange) {
+                                        window.handleSectionChange('billing', { pushHistory: false });
+                                    }
+                                }, 1000);
+                            } catch (error) {
+                                console.error('Error printing invoice:', error);
+                                if (window.showError) {
+                                    window.showError(error.message);
+                                }
+                            }
+                        });
+                    }
+
+                    // 4. Request revision button (non-dokter only)
+                    const revisionBtn = document.getElementById('btn-request-revision');
+                    if (revisionBtn) {
+                        revisionBtn.addEventListener('click', async function() {
+                            const message = prompt('Masukkan usulan revisi untuk dokter:');
+                            if (!message || message.trim() === '') return;
+
+                            try {
+                                const token = window.getToken?.();
+                                const mrId = window.routeMrSlug;
+                                const userName = window.currentStaffIdentity?.name || 'Staff';
+                                
+                                const response = await fetch(\`/api/sunday-clinic/billing/\${mrId}/request-revision\`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Authorization': \`Bearer \${token}\`,
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        message: message.trim(),
+                                        requestedBy: userName
+                                    })
+                                });
+
+                                if (!response.ok) throw new Error('Gagal mengirim usulan');
+
+                                if (window.showSuccess) {
+                                    window.showSuccess('Usulan berhasil dikirim ke dokter!');
+                                }
+                            } catch (error) {
+                                console.error('Error requesting revision:', error);
+                                if (window.showError) {
+                                    window.showError(error.message);
+                                }
+                            }
+                        });
+                    }
+                }, 100);
+            </script>
         `;
     }
 };

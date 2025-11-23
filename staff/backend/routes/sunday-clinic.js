@@ -7,6 +7,14 @@ const logger = require('../utils/logger');
 const { verifyToken } = require('../middleware/auth');
 const { findRecordByMrId } = require('../services/sundayClinicService');
 
+// Import realtime sync for broadcasting notifications
+let realtimeSync = null;
+try {
+    realtimeSync = require('../realtime-sync');
+} catch (error) {
+    logger.warn('realtime-sync not available, notifications will not be broadcasted');
+}
+
 // Ensure billing tables exist
 async function ensureBillingTables() {
     try {
@@ -1045,11 +1053,22 @@ router.post('/billing/:mrId/obat', verifyToken, async (req, res, next) => {
     }
 });
 
-// Confirm billing (doctor action)
+// Confirm billing (doctor action only)
 router.post('/billing/:mrId/confirm', verifyToken, async (req, res, next) => {
     const normalizedMrId = normalizeMrId(req.params.mrId);
 
     try {
+        // Check if user is dokter or superadmin
+        const userRole = req.user.role || '';
+        const isDokter = userRole === 'dokter' || userRole === 'superadmin' || req.user.is_superadmin;
+
+        if (!isDokter) {
+            return res.status(403).json({
+                success: false,
+                message: 'Hanya dokter yang dapat mengkonfirmasi tagihan'
+            });
+        }
+
         const [result] = await db.query(
             `UPDATE sunday_clinic_billings
              SET status = 'confirmed', confirmed_at = NOW(), confirmed_by = ?
@@ -1064,12 +1083,257 @@ router.post('/billing/:mrId/confirm', verifyToken, async (req, res, next) => {
             });
         }
 
+        // Get patient name for notification
+        const [[record]] = await db.query(
+            `SELECT r.mr_id, p.full_name as patient_name
+             FROM sunday_clinic_records r
+             JOIN patients p ON r.patient_id = p.id
+             WHERE r.mr_id = ?`,
+            [normalizedMrId]
+        );
+
+        const patientName = record?.patient_name || 'Pasien';
+        const doctorName = req.user.name || req.user.id || 'Dokter';
+
+        // Broadcast notification to all connected clients
+        if (realtimeSync && realtimeSync.broadcast) {
+            realtimeSync.broadcast({
+                type: 'billing_confirmed',
+                mrId: normalizedMrId,
+                patientName,
+                doctorName,
+                timestamp: new Date().toISOString()
+            });
+        }
+
         res.json({
             success: true,
-            message: 'Billing berhasil dikonfirmasi'
+            message: 'Billing berhasil dikonfirmasi',
+            patientName
         });
     } catch (error) {
         logger.error('Failed to confirm billing', { error: error.message });
+        next(error);
+    }
+});
+
+// Request revision (non-dokter action)
+router.post('/billing/:mrId/request-revision', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+    const { message, requestedBy } = req.body;
+
+    try {
+        // Insert revision request
+        const [result] = await db.query(
+            `INSERT INTO sunday_clinic_billing_revisions (mr_id, message, requested_by, created_at)
+             VALUES (?, ?, ?, NOW())`,
+            [normalizedMrId, message, requestedBy || req.user.name]
+        );
+
+        // Get patient name for notification
+        const [[record]] = await db.query(
+            `SELECT r.mr_id, p.full_name as patient_name
+             FROM sunday_clinic_records r
+             JOIN patients p ON r.patient_id = p.id
+             WHERE r.mr_id = ?`,
+            [normalizedMrId]
+        );
+
+        const patientName = record?.patient_name || 'Pasien';
+
+        // Broadcast notification to dokter
+        if (realtimeSync && realtimeSync.broadcast) {
+            realtimeSync.broadcast({
+                type: 'revision_requested',
+                mrId: normalizedMrId,
+                patientName,
+                message,
+                requestedBy: requestedBy || req.user.name,
+                revisionId: result.insertId,
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Usulan revisi berhasil dikirim'
+        });
+    } catch (error) {
+        logger.error('Failed to request revision', { error: error.message });
+        next(error);
+    }
+});
+
+// Get pending revisions for dokter
+router.get('/billing/revisions/pending', verifyToken, async (req, res, next) => {
+    try {
+        const [revisions] = await db.query(
+            `SELECT r.*, p.full_name as patient_name
+             FROM sunday_clinic_billing_revisions r
+             JOIN sunday_clinic_records rec ON r.mr_id = rec.mr_id
+             JOIN patients p ON rec.patient_id = p.id
+             WHERE r.status = 'pending'
+             ORDER BY r.created_at DESC`
+        );
+
+        res.json({
+            success: true,
+            data: revisions
+        });
+    } catch (error) {
+        logger.error('Failed to get revisions', { error: error.message });
+        next(error);
+    }
+});
+
+// Approve revision (dokter only)
+router.post('/billing/revisions/:id/approve', verifyToken, async (req, res, next) => {
+    const revisionId = req.params.id;
+
+    try {
+        const userRole = req.user.role || '';
+        const isDokter = userRole === 'dokter' || userRole === 'superadmin' || req.user.is_superadmin;
+
+        if (!isDokter) {
+            return res.status(403).json({
+                success: false,
+                message: 'Hanya dokter yang dapat menyetujui usulan'
+            });
+        }
+
+        // Get revision details
+        const [[revision]] = await db.query(
+            'SELECT * FROM sunday_clinic_billing_revisions WHERE id = ?',
+            [revisionId]
+        );
+
+        if (!revision) {
+            return res.status(404).json({
+                success: false,
+                message: 'Usulan tidak ditemukan'
+            });
+        }
+
+        // Update revision status and revert billing to draft
+        await db.query(
+            `UPDATE sunday_clinic_billing_revisions SET status = 'approved' WHERE id = ?`,
+            [revisionId]
+        );
+
+        await db.query(
+            `UPDATE sunday_clinic_billings
+             SET status = 'draft', confirmed_at = NULL, confirmed_by = NULL
+             WHERE mr_id = ?`,
+            [revision.mr_id]
+        );
+
+        res.json({
+            success: true,
+            message: 'Usulan disetujui. Billing dikembalikan ke draft',
+            mrId: revision.mr_id
+        });
+    } catch (error) {
+        logger.error('Failed to approve revision', { error: error.message });
+        next(error);
+    }
+});
+
+// Print etiket
+router.post('/billing/:mrId/print-etiket', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+
+    try {
+        const pdfGenerator = require('../utils/pdf-generator');
+
+        // Get billing data
+        const [[billing]] = await db.query(
+            'SELECT * FROM sunday_clinic_billings WHERE mr_id = ?',
+            [normalizedMrId]
+        );
+
+        if (!billing || billing.status !== 'confirmed') {
+            return res.status(400).json({
+                success: false,
+                message: 'Billing belum dikonfirmasi'
+            });
+        }
+
+        // Get patient and record data
+        const [[record]] = await db.query(
+            `SELECT r.*, p.full_name, p.birth_date, p.phone
+             FROM sunday_clinic_records r
+             JOIN patients p ON r.patient_id = p.id
+             WHERE r.mr_id = ?`,
+            [normalizedMrId]
+        );
+
+        const result = await pdfGenerator.generateEtiket(
+            billing,
+            { fullName: record.full_name, birthDate: record.birth_date, phone: record.phone },
+            { mrId: normalizedMrId }
+        );
+
+        // Update printed status
+        await db.query(
+            `UPDATE sunday_clinic_billings
+             SET printed_at = NOW(), printed_by = ?
+             WHERE mr_id = ?`,
+            [req.user.name || req.user.id, normalizedMrId]
+        );
+
+        res.download(result.filepath, result.filename);
+    } catch (error) {
+        logger.error('Failed to print etiket', { error: error.message });
+        next(error);
+    }
+});
+
+// Print invoice
+router.post('/billing/:mrId/print-invoice', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+
+    try {
+        const pdfGenerator = require('../utils/pdf-generator');
+
+        // Get billing data
+        const [[billing]] = await db.query(
+            'SELECT * FROM sunday_clinic_billings WHERE mr_id = ?',
+            [normalizedMrId]
+        );
+
+        if (!billing || billing.status !== 'confirmed') {
+            return res.status(400).json({
+                success: false,
+                message: 'Billing belum dikonfirmasi'
+            });
+        }
+
+        // Get patient and record data
+        const [[record]] = await db.query(
+            `SELECT r.*, p.full_name, p.birth_date, p.phone
+             FROM sunday_clinic_records r
+             JOIN patients p ON r.patient_id = p.id
+             WHERE r.mr_id = ?`,
+            [normalizedMrId]
+        );
+
+        const result = await pdfGenerator.generateInvoice(
+            billing,
+            { fullName: record.full_name, birthDate: record.birth_date, phone: record.phone },
+            { mrId: normalizedMrId }
+        );
+
+        // Update printed status
+        await db.query(
+            `UPDATE sunday_clinic_billings
+             SET printed_at = NOW(), printed_by = ?
+             WHERE mr_id = ?`,
+            [req.user.name || req.user.id, normalizedMrId]
+        );
+
+        res.download(result.filepath, result.filename);
+    } catch (error) {
+        logger.error('Failed to print invoice', { error: error.message });
         next(error);
     }
 });
