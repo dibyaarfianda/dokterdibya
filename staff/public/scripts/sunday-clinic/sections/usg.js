@@ -143,11 +143,6 @@ export function renderUSG() {
     // Override hasSavedRecord if no summary data exists
     // If no record OR no saved summary, always show form
     const showForm = !hasSavedRecord || !savedSummaryHtml;
-    
-    console.log('[USG] hasSavedRecord:', hasSavedRecord);
-    console.log('[USG] savedData:', savedData);
-    console.log('[USG] savedSummaryHtml length:', savedSummaryHtml.length);
-    console.log('[USG] showForm:', showForm);
 
     const metaHtml = context ? `<div class="sc-note">Dicatat oleh ${escapeHtml(context.record.doctorName || 'N/A')} pada ${formatDateDMY(context.record.createdAt)}</div>` : '';
 
@@ -707,42 +702,18 @@ export function renderUSG() {
 
     // Attach event listeners after DOM is ready
     setTimeout(() => {
-        const container = document.querySelector('[data-section="usg"]');
+        const container = document.querySelector('.section-container[data-section="usg"]');
         if (!container) {
             console.error('[USG] Container not found');
             return;
         }
-
-        console.log('[USG] Container found:', container);
-        console.log('[USG] Container HTML length:', container.innerHTML.length);
-        console.log('[USG] Looking for buttons...');
 
         const saveBtn = container.querySelector('#btn-save-usg');
         const editBtn = container.querySelector('#btn-edit-usg');
         const resetBtn = container.querySelector('#btn-reset-usg');
         const editForm = container.querySelector('#usg-edit-form');
 
-        console.log('[USG] Save button found:', !!saveBtn, saveBtn);
-        console.log('[USG] Edit button found:', !!editBtn, editBtn);
-        console.log('[USG] Reset button found:', !!resetBtn, resetBtn);
-        console.log('[USG] Edit form found:', !!editForm);
-
-        // Try finding by document.getElementById as fallback
-        if (!saveBtn) {
-            const saveBtnById = document.getElementById('btn-save-usg');
-            console.log('[USG] Save button by getElementById:', !!saveBtnById, saveBtnById);
-            if (saveBtnById) {
-                console.log('[USG] Attaching via getElementById');
-                saveBtnById.addEventListener('click', saveUSGExam);
-            }
-        }
-
-        if (saveBtn) {
-            console.log('[USG] Attaching click event to Save button');
-            saveBtn.addEventListener('click', saveUSGExam);
-        } else {
-            console.error('[USG] Save button not found in DOM');
-        }
+        if (saveBtn) saveBtn.addEventListener('click', saveUSGExam);
         if (editBtn) {
             editBtn.addEventListener('click', async () => {
                 // Render ulang dengan mode edit
@@ -778,22 +749,12 @@ export function renderUSG() {
         }
     }, 100);
 
-    console.log('[USG] Returning HTML length:', html.length);
-    console.log('[USG] HTML preview:', html.substring(0, 200));
-    console.log('[USG] Checking for btn-save-usg in HTML:', html.includes('btn-save-usg'));
-    console.log('[USG] showForm value:', showForm);
     return html;
 }
 
 export async function saveUSGExam() {
-    console.log('[USG] saveUSGExam called');
     const btn = document.getElementById('btn-save-usg');
-    console.log('[USG] Button in saveUSGExam:', btn);
-    
-    if (!btn) {
-        console.error('[USG] Save button not found in saveUSGExam');
-        return;
-    }
+    if (!btn) return;
 
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
