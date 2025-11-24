@@ -46,6 +46,24 @@ async function ensureMedicalRecordsTable() {
             `);
             logger.info('Added visit_id column to medical_records table');
         }
+        
+        // Check if mr_id column exists for Sunday Clinic integration
+        const [mrIdColumns] = await db.query(`
+            SELECT COLUMN_NAME
+            FROM INFORMATION_SCHEMA.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'medical_records'
+            AND COLUMN_NAME = 'mr_id'
+        `);
+
+        if (mrIdColumns.length === 0) {
+            await db.query(`
+                ALTER TABLE medical_records
+                ADD COLUMN mr_id VARCHAR(20) NULL AFTER visit_id,
+                ADD INDEX idx_mr_id (mr_id)
+            `);
+            logger.info('Added mr_id column to medical_records table for Sunday Clinic integration');
+        }
 
         // Update record_type ENUM to include all types
         try {
@@ -133,14 +151,29 @@ router.post('/api/medical-records', verifyToken, async (req, res) => {
         
         // Convert ISO timestamp to MySQL datetime format (preserve GMT+7)
         const mysqlTimestamp = toMySQLTimestamp(timestamp);
+        
+        // Determine if visitId is numeric (legacy visit_id) or string MR ID (Sunday Clinic)
+        let numericVisitId = null;
+        let mrId = null;
+        
+        if (visitId) {
+            if (typeof visitId === 'string' && visitId.match(/^[A-Z]+\d+$/)) {
+                // String MR ID format (e.g., "DRD0001")
+                mrId = visitId;
+            } else {
+                // Numeric visit_id
+                numericVisitId = visitId;
+            }
+        }
 
         // Insert into database
         const [result] = await db.query(
-            `INSERT INTO medical_records (patient_id, visit_id, doctor_id, doctor_name, record_type, record_data, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?)`,
+            `INSERT INTO medical_records (patient_id, visit_id, mr_id, doctor_id, doctor_name, record_type, record_data, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
             [
                 patientId,
-                visitId || null,
+                numericVisitId,
+                mrId,
                 finalDoctorId,
                 finalDoctorName,
                 recordType,
@@ -149,7 +182,7 @@ router.post('/api/medical-records', verifyToken, async (req, res) => {
             ]
         );
         
-        logger.info(`Medical record saved: ID ${result.insertId}, Patient ${patientId}, Visit ${visitId || 'none'}, Type: ${recordType}, Doctor: ${finalDoctorName}`);
+        logger.info(`Medical record saved: ID ${result.insertId}, Patient ${patientId}, Visit ${numericVisitId || mrId || 'none'}, Type: ${recordType}, Doctor: ${finalDoctorName}`);
         
         res.json({ 
             success: true, 
@@ -363,10 +396,17 @@ router.post('/api/medical-records/generate-resume', verifyToken, async (req, res
                      WHERE patient_id = ?`;
         let params = [patientId];
         
-        // If visitId provided, only get records from that visit
+        // If visitId provided, filter by mr_id (Sunday Clinic) or visit_id (legacy)
         if (visitId) {
-            query += ` AND (visit_id = ? OR visit_id IS NULL)`;
-            params.push(visitId);
+            if (typeof visitId === 'string' && visitId.match(/^[A-Z]+\d+$/)) {
+                // Sunday Clinic MR ID format
+                query += ` AND (mr_id = ? OR mr_id IS NULL)`;
+                params.push(visitId);
+            } else {
+                // Legacy numeric visit_id
+                query += ` AND (visit_id = ? OR visit_id IS NULL)`;
+                params.push(visitId);
+            }
         }
         
         query += ` ORDER BY created_at DESC`;
