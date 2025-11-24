@@ -302,22 +302,11 @@ router.delete('/api/medical-records/:id', verifyToken, async (req, res) => {
 // Generate AI Resume Medis
 router.post('/api/medical-records/generate-resume', verifyToken, async (req, res) => {
     try {
-        console.log('=== GENERATE RESUME REQUEST RECEIVED ===');
-        console.log('All headers:', JSON.stringify(req.headers));
-        console.log('Content-Type:', req.headers['content-type']);
-        console.log('Content-Length:', req.headers['content-length']);
-        console.log('req.body exists:', !!req.body);
-        console.log('req.body type:', typeof req.body);
-        console.log('req.body:', req.body);
-        console.log('req.body JSON:', JSON.stringify(req.body));
-        console.log('req.body.patientId:', req.body?.patientId);
-        
         const { patientId } = req.body;
         
-        logger.info('=== GENERATE RESUME REQUEST ===');
-        logger.info('Request body:', JSON.stringify(req.body));
-        logger.info('Patient ID received:', patientId);
-        logger.info('Patient ID type:', typeof patientId);
+        console.log('=== GENERATE RESUME REQUEST ===');
+        console.log('Patient ID received:', patientId);
+        console.log('Patient ID type:', typeof patientId);
         
         if (!patientId) {
             return res.status(400).json({
@@ -381,19 +370,20 @@ router.post('/api/medical-records/generate-resume', verifyToken, async (req, res
             }
         });
 
-        logger.info('=== RESUME GENERATION DEBUG ===');
-        logger.info('Patient ID:', patientId);
-        logger.info('Total records found:', records.length);
-        logger.info('Records by type:', Object.keys(recordsByType));
+        console.log('=== RESUME GENERATION DEBUG ===');
+        console.log('Patient ID:', patientId);
+        console.log('Total records found:', records.length);
+        console.log('Records by type keys:', Object.keys(recordsByType));
         if (recordsByType.usg) {
-            logger.info('USG exists:', true);
-            logger.info('USG current_trimester:', recordsByType.usg.current_trimester);
-            logger.info('USG screening keys:', recordsByType.usg.screening ? Object.keys(recordsByType.usg.screening) : 'no screening');
-            logger.info('Full USG screening data:', JSON.stringify(recordsByType.usg.screening, null, 2));
+            console.log('USG exists: true');
+            console.log('USG current_trimester:', recordsByType.usg.current_trimester);
+            console.log('USG screening exists:', !!recordsByType.usg.screening);
+            console.log('USG screening keys:', recordsByType.usg.screening ? Object.keys(recordsByType.usg.screening) : 'no screening');
+            console.log('Full USG screening data:', JSON.stringify(recordsByType.usg.screening, null, 2));
         } else {
-            logger.info('USG exists:', false);
+            console.log('USG exists: false');
         }
-        logger.info('=== END DEBUG ===');
+        console.log('=== END DEBUG ===');
 
         // Generate resume using AI-like logic
         const resume = generateMedicalResume(identitas, recordsByType);
