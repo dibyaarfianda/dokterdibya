@@ -348,7 +348,7 @@ router.delete('/api/medical-records/:id', verifyToken, async (req, res) => {
 // Generate AI Resume Medis
 router.post('/api/medical-records/generate-resume', verifyToken, async (req, res) => {
     try {
-        const { patientId } = req.body;
+        const { patientId, visitId } = req.body;
         
         if (!patientId) {
             return res.status(400).json({
@@ -357,14 +357,21 @@ router.post('/api/medical-records/generate-resume', verifyToken, async (req, res
             });
         }
 
-        // Fetch all medical records for this patient
-        const [records] = await db.query(
-            `SELECT record_type, record_data, doctor_name, created_at 
-             FROM medical_records 
-             WHERE patient_id = ? 
-             ORDER BY created_at DESC`,
-            [patientId]
-        );
+        // Fetch medical records for this patient (optionally filtered by visit)
+        let query = `SELECT record_type, record_data, doctor_name, created_at 
+                     FROM medical_records 
+                     WHERE patient_id = ?`;
+        let params = [patientId];
+        
+        // If visitId provided, only get records from that visit
+        if (visitId) {
+            query += ` AND (visit_id = ? OR visit_id IS NULL)`;
+            params.push(visitId);
+        }
+        
+        query += ` ORDER BY created_at DESC`;
+        
+        const [records] = await db.query(query, params);
 
         if (records.length === 0) {
             return res.status(404).json({
