@@ -566,72 +566,48 @@ function generateMedicalResume(identitas, records) {
                 }
                 
                 // Kepala dan Otak
-                const headFindings = [];
-                if (scr.hemisphere) headFindings.push('Simetris hemisfer, Falx cerebri jelas');
-                if (scr.lateral_vent) headFindings.push('Ventrikel lateral, Atrium < 10 mm');
-                if (scr.cavum) headFindings.push('Cavum septum pellucidum');
-                if (headFindings.length > 0) {
-                    resume += 'Kepala dan Otak:\n';
-                    headFindings.forEach(f => resume += `✓ ${f}\n`);
-                    resume += '\n';
-                }
+                resume += 'Kepala dan Otak:\n';
+                resume += `${scr.hemisphere ? '✓' : '☐'} Simetris hemisfer, Falx cerebri jelas\n`;
+                resume += `${scr.lateral_vent ? '✓' : '☐'} Ventrikel lateral, Atrium < 10 mm\n`;
+                resume += `${scr.cavum ? '✓' : '☐'} Cavum septum pellucidum\n`;
+                resume += '\n';
                 
                 // Muka dan Leher
-                const faceFindings = [];
-                if (scr.profile) faceFindings.push('Profil muka normal');
-                if (scr.nasal_bone) faceFindings.push('Tulang hidung tampak, ukuran normal');
-                if (scr.upper_lip) faceFindings.push('Garis bibir atas menyambung');
-                if (faceFindings.length > 0) {
-                    resume += 'Muka dan Leher:\n';
-                    faceFindings.forEach(f => resume += `✓ ${f}\n`);
-                    resume += '\n';
-                }
+                resume += 'Muka dan Leher:\n';
+                resume += `${scr.profile ? '✓' : '☐'} Profil muka normal\n`;
+                resume += `${scr.nasal_bone ? '✓' : '☐'} Tulang hidung tampak, ukuran normal\n`;
+                resume += `${scr.upper_lip ? '✓' : '☐'} Garis bibir atas menyambung\n`;
+                resume += '\n';
                 
                 // Jantung dan Rongga Dada
-                const heartFindings = [];
-                if (scr.four_chamber || scr['4chamber']) heartFindings.push('Gambaran jelas 4-chamber view');
-                if (scr.heart_left) heartFindings.push('Jantung di sebelah kiri');
-                if (scr.apex) heartFindings.push('Apex jantung kearah kiri (~45°)');
-                if (scr.heart_size) heartFindings.push('Besar jantung <1/3 area dada');
-                if (heartFindings.length > 0) {
-                    resume += 'Jantung dan Rongga Dada:\n';
-                    heartFindings.forEach(f => resume += `✓ ${f}\n`);
-                    resume += '\n';
-                }
+                resume += 'Jantung dan Rongga Dada:\n';
+                resume += `${scr.four_chamber || scr['4chamber'] ? '✓' : '☐'} Gambaran jelas 4-chamber view\n`;
+                resume += `${scr.heart_left ? '✓' : '☐'} Jantung di sebelah kiri\n`;
+                resume += `${scr.apex ? '✓' : '☐'} Apex jantung kearah kiri (~45°)\n`;
+                resume += `${scr.heart_size ? '✓' : '☐'} Besar jantung <1/3 area dada\n`;
+                resume += '\n';
                 
                 // Tulang Belakang
-                const spineFindings = [];
-                if (scr.vertebra) spineFindings.push('Tidak tampak kelainan vertebra');
-                if (scr.skin) spineFindings.push('Garis kulit tampak baik');
-                if (spineFindings.length > 0) {
-                    resume += 'Tulang Belakang:\n';
-                    spineFindings.forEach(f => resume += `✓ ${f}\n`);
-                    resume += '\n';
-                }
+                resume += 'Tulang Belakang:\n';
+                resume += `${scr.vertebra ? '✓' : '☐'} Tidak tampak kelainan vertebra\n`;
+                resume += `${scr.skin ? '✓' : '☐'} Garis kulit tampak baik\n`;
+                resume += '\n';
                 
                 // Anggota Gerak
-                const limbFindings = [];
-                if (scr.upper_limbs) limbFindings.push('Alat gerak kiri kanan atas normal');
-                if (scr.lower_limbs) limbFindings.push('Alat gerak kiri kanan bawah normal');
-                if (limbFindings.length > 0) {
-                    resume += 'Anggota Gerak:\n';
-                    limbFindings.forEach(f => resume += `✓ ${f}\n`);
-                    resume += '\n';
-                }
+                resume += 'Anggota Gerak:\n';
+                resume += `${scr.upper_limbs ? '✓' : '☐'} Alat gerak kiri kanan atas normal\n`;
+                resume += `${scr.lower_limbs ? '✓' : '☐'} Alat gerak kiri kanan bawah normal\n`;
+                resume += '\n';
                 
                 // Rongga Perut
-                const abdomenFindings = [];
-                if (scr.stomach) abdomenFindings.push('Lambung di sebelah kiri');
-                if (scr.liver) abdomenFindings.push('Posisi liver dan echogenocity normal');
-                if (scr.kidneys) abdomenFindings.push('Terlihat ginjal kiri & kanan');
-                if (scr.bladder) abdomenFindings.push('Kandung kemih terisi');
-                if (scr.cord) abdomenFindings.push('Insersi tali pusat baik');
-                if (scr.abdominal_wall) abdomenFindings.push('Dinding perut tidak tampak defek');
-                if (abdomenFindings.length > 0) {
-                    resume += 'Rongga Perut:\n';
-                    abdomenFindings.forEach(f => resume += `✓ ${f}\n`);
-                    resume += '\n';
-                }
+                resume += 'Rongga Perut:\n';
+                resume += `${scr.stomach ? '✓' : '☐'} Lambung di sebelah kiri\n`;
+                resume += `${scr.liver ? '✓' : '☐'} Posisi liver dan echogenocity normal\n`;
+                resume += `${scr.kidneys ? '✓' : '☐'} Terlihat ginjal kiri & kanan\n`;
+                resume += `${scr.bladder ? '✓' : '☐'} Kandung kemih terisi\n`;
+                resume += `${scr.cord ? '✓' : '☐'} Insersi tali pusat baik\n`;
+                resume += `${scr.abdominal_wall ? '✓' : '☐'} Dinding perut tidak tampak defek\n`;
+                resume += '\n';
                 
                 // Kesimpulan Skrining
                 if (scr.no_anomaly) {
