@@ -1025,7 +1025,10 @@ class SundayClinicApp {
             this.showLoading('Membuat resume medis dengan AI...');
 
             const state = stateManager.getState();
+            console.log('[DEBUG] Full state:', state);
+            console.log('[DEBUG] state.derived:', state.derived);
             const patientId = state.derived?.patientId;
+            console.log('[DEBUG] patientId from state:', patientId);
             
             if (!patientId) {
                 throw new Error('Patient ID tidak ditemukan');
