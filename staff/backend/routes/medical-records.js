@@ -370,8 +370,14 @@ router.post('/api/medical-records/generate-resume', verifyToken, async (req, res
         logger.info('Patient ID:', patientId);
         logger.info('Total records found:', records.length);
         logger.info('Records by type:', Object.keys(recordsByType));
-        logger.info('Sample anamnesa:', recordsByType.anamnesa);
-        logger.info('USG data structure:', JSON.stringify(recordsByType.usg, null, 2));
+        if (recordsByType.usg) {
+            logger.info('USG exists:', true);
+            logger.info('USG current_trimester:', recordsByType.usg.current_trimester);
+            logger.info('USG screening keys:', recordsByType.usg.screening ? Object.keys(recordsByType.usg.screening) : 'no screening');
+            logger.info('Full USG screening data:', JSON.stringify(recordsByType.usg.screening, null, 2));
+        } else {
+            logger.info('USG exists:', false);
+        }
         logger.info('=== END DEBUG ===');
 
         // Generate resume using AI-like logic
