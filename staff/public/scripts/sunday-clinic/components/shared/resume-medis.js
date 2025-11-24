@@ -154,7 +154,7 @@ export default {
                     categories.push(currentCategory);
                 }
                 if (categories.length > 0) {
-                    result += '<div style="column-count: 2; column-gap: 40px; margin: 5px 0;">';
+                    result += '<div style="column-count: 2; column-gap: 15px; margin: 5px 0;">';
                     for (let cat of categories) {
                         result += '<div style="break-inside: avoid; margin-bottom: 10px;">';
                         result += this.escapeHtml(cat.title) + '<br>';
