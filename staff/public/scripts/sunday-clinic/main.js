@@ -1025,10 +1025,7 @@ class SundayClinicApp {
             this.showLoading('Membuat resume medis dengan AI...');
 
             const state = stateManager.getState();
-            console.log('[DEBUG] Full state:', state);
-            console.log('[DEBUG] state.derived:', state.derived);
             const patientId = state.derived?.patientId;
-            console.log('[DEBUG] patientId from state:', patientId);
             
             if (!patientId) {
                 throw new Error('Patient ID tidak ditemukan');
@@ -1039,17 +1036,13 @@ class SundayClinicApp {
                 throw new Error('Authentication token tidak tersedia');
             }
 
-            const requestBody = { patientId };
-            console.log('[DEBUG] Request body to send:', requestBody);
-            console.log('[DEBUG] Request body JSON:', JSON.stringify(requestBody));
-
             const response = await fetch('/api/medical-records/generate-resume', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(requestBody)
+                body: JSON.stringify({ patientId })
             });
 
             if (!response.ok) {
