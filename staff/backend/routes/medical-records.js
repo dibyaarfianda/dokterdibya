@@ -349,13 +349,25 @@ router.post('/api/medical-records/generate-resume', verifyToken, async (req, res
             logger.warn('Could not fetch patient data:', error.message);
         }
 
-        // Organize records by type
+        // Organize records by type (take the most recent one for each type)
         const recordsByType = {};
         records.forEach(record => {
             if (!recordsByType[record.record_type]) {
-                recordsByType[record.record_type] = record.record_data;
+                // Parse JSON if it's a string
+                let data = record.record_data;
+                if (typeof data === 'string') {
+                    try {
+                        data = JSON.parse(data);
+                    } catch (e) {
+                        logger.warn('Failed to parse record_data:', e.message);
+                    }
+                }
+                recordsByType[record.record_type] = data;
             }
         });
+
+        logger.info('Records by type:', Object.keys(recordsByType));
+        logger.info('Sample anamnesa:', recordsByType.anamnesa);
 
         // Generate resume using AI-like logic
         const resume = generateMedicalResume(identitas, recordsByType);
@@ -376,128 +388,291 @@ router.post('/api/medical-records/generate-resume', verifyToken, async (req, res
 });
 
 /**
- * Generate medical resume from patient data
+ * Generate professional medical resume from patient data
  */
 function generateMedicalResume(identitas, records) {
     let resume = '';
+    const today = new Date().toLocaleDateString('id-ID', { 
+        day: 'numeric', 
+        month: 'long', 
+        year: 'numeric' 
+    });
 
     // Header
-    resume += '═══════════════════════════════════════════════════\n';
-    resume += '           RESUME MEDIS PASIEN\n';
-    resume += '═══════════════════════════════════════════════════\n\n';
+    resume += '═══════════════════════════════════════════════════════════════\n';
+    resume += '                    RESUME MEDIS PROFESIONAL\n';
+    resume += '═══════════════════════════════════════════════════════════════\n';
+    resume += `Tanggal Pembuatan Resume: ${today}\n`;
+    resume += '═══════════════════════════════════════════════════════════════\n\n';
 
-    // Identitas Pasien
+    // I. IDENTITAS PASIEN
     if (identitas && Object.keys(identitas).length > 0) {
-        resume += '📋 IDENTITAS PASIEN\n';
-        resume += '───────────────────────────────────────────────────\n';
-        if (identitas.nama) resume += `Nama           : ${identitas.nama}\n`;
-        if (identitas.tanggal_lahir) resume += `Tanggal Lahir  : ${identitas.tanggal_lahir}\n`;
-        if (identitas.umur) resume += `Umur           : ${identitas.umur}\n`;
-        if (identitas.alamat) resume += `Alamat         : ${identitas.alamat}\n`;
-        if (identitas.no_telp) resume += `No. Telepon    : ${identitas.no_telp}\n`;
+        resume += 'I. IDENTITAS PASIEN\n';
+        resume += '───────────────────────────────────────────────────────────────\n';
+        if (identitas.nama) resume += `Nama               : ${identitas.nama}\n`;
+        if (identitas.tanggal_lahir) resume += `Tanggal Lahir      : ${identitas.tanggal_lahir}\n`;
+        if (identitas.umur) resume += `Usia               : ${identitas.umur} tahun\n`;
+        if (identitas.alamat) resume += `Alamat             : ${identitas.alamat}\n`;
+        if (identitas.no_telp) resume += `Nomor Telepon      : ${identitas.no_telp}\n`;
         resume += '\n';
     }
 
-    // Anamnesa
-    if (records.anamnesa) {
-        resume += '🩺 ANAMNESA\n';
-        resume += '───────────────────────────────────────────────────\n';
+    // II. ANAMNESA
+    if (records.anamnesa && typeof records.anamnesa === 'object') {
         const anamnesa = records.anamnesa;
-        if (anamnesa.keluhan_utama) resume += `Keluhan Utama: ${anamnesa.keluhan_utama}\n`;
-        if (anamnesa.hpht) resume += `HPHT: ${anamnesa.hpht}\n`;
-        if (anamnesa.hpl) resume += `HPL: ${anamnesa.hpl}\n`;
-        if (anamnesa.usia_kehamilan) resume += `Usia Kehamilan: ${anamnesa.usia_kehamilan}\n`;
-        if (anamnesa.gravida || anamnesa.para || anamnesa.abortus) {
-            resume += `G${anamnesa.gravida || 0}P${anamnesa.para || 0}A${anamnesa.abortus || 0}\n`;
+        const hasData = Object.values(anamnesa).some(val => val && val !== '');
+        
+        if (hasData) {
+            resume += 'II. ANAMNESA\n';
+            resume += '───────────────────────────────────────────────────────────────\n';
+            
+            // Keluhan Utama
+            if (anamnesa.keluhan_utama) {
+                resume += `Pasien datang dengan keluhan ${anamnesa.keluhan_utama}.\n\n`;
+            }
+            
+            // Riwayat Obstetri
+            if (anamnesa.gravida || anamnesa.para || anamnesa.abortus) {
+                resume += `Status Obstetri: Gravida ${anamnesa.gravida || 0}, Para ${anamnesa.para || 0}, Abortus ${anamnesa.abortus || 0} (G${anamnesa.gravida || 0}P${anamnesa.para || 0}A${anamnesa.abortus || 0})`;
+                if (anamnesa.anak_hidup) resume += `, dengan ${anamnesa.anak_hidup} anak hidup`;
+                resume += '.\n\n';
+            }
+            
+            // Riwayat Menstruasi dan Kehamilan
+            if (anamnesa.hpht || anamnesa.hpl || anamnesa.usia_kehamilan) {
+                resume += 'Riwayat Menstruasi dan Kehamilan:\n';
+                if (anamnesa.hpht) resume += `- Hari Pertama Haid Terakhir (HPHT): ${anamnesa.hpht}\n`;
+                if (anamnesa.hpl) resume += `- Hari Perkiraan Lahir (HPL): ${anamnesa.hpl}\n`;
+                if (anamnesa.usia_kehamilan) resume += `- Usia Kehamilan Saat Ini: ${anamnesa.usia_kehamilan}\n`;
+                if (anamnesa.usia_menarche) resume += `- Usia Menarche: ${anamnesa.usia_menarche} tahun\n`;
+                if (anamnesa.lama_siklus) resume += `- Lama Siklus Menstruasi: ${anamnesa.lama_siklus} hari\n`;
+                if (anamnesa.siklus_teratur) resume += `- Keteraturan Siklus: ${anamnesa.siklus_teratur === 'ya' ? 'Teratur' : 'Tidak Teratur'}\n`;
+                resume += '\n';
+            }
+            
+            // Riwayat Kehamilan Saat Ini
+            if (anamnesa.riwayat_kehamilan_saat_ini) {
+                resume += `Riwayat Kehamilan Saat Ini:\n${anamnesa.riwayat_kehamilan_saat_ini}\n\n`;
+            }
+            
+            // Riwayat Penyakit
+            if (anamnesa.detail_riwayat_penyakit) {
+                resume += `Riwayat Penyakit Terdahulu:\n${anamnesa.detail_riwayat_penyakit}\n\n`;
+            }
+            
+            if (anamnesa.riwayat_keluarga) {
+                resume += `Riwayat Penyakit Keluarga:\n${anamnesa.riwayat_keluarga}\n\n`;
+            }
+            
+            // Alergi
+            const alergiList = [];
+            if (anamnesa.alergi_obat && anamnesa.alergi_obat !== 'Tidak ada') alergiList.push(`Obat: ${anamnesa.alergi_obat}`);
+            if (anamnesa.alergi_makanan && anamnesa.alergi_makanan !== 'Tidak ada') alergiList.push(`Makanan: ${anamnesa.alergi_makanan}`);
+            if (anamnesa.alergi_lingkungan) alergiList.push(`Lingkungan: ${anamnesa.alergi_lingkungan}`);
+            
+            if (alergiList.length > 0) {
+                resume += `Riwayat Alergi: ${alergiList.join(', ')}\n\n`;
+            } else {
+                resume += 'Riwayat Alergi: Tidak ada alergi yang dilaporkan.\n\n';
+            }
         }
-        if (anamnesa.riwayat_kehamilan_saat_ini) resume += `Riwayat Kehamilan: ${anamnesa.riwayat_kehamilan_saat_ini}\n`;
-        if (anamnesa.alergi_obat) resume += `Alergi Obat: ${anamnesa.alergi_obat}\n`;
-        resume += '\n';
     }
 
-    // Pemeriksaan Fisik
-    if (records.physical_exam) {
-        resume += '🔬 PEMERIKSAAN FISIK\n';
-        resume += '───────────────────────────────────────────────────\n';
+    // III. PEMERIKSAAN FISIK
+    if (records.physical_exam && typeof records.physical_exam === 'object') {
         const pe = records.physical_exam;
-        resume += `Tanda Vital:\n`;
-        if (pe.tekanan_darah) resume += `  - TD: ${pe.tekanan_darah} mmHg\n`;
-        if (pe.nadi) resume += `  - Nadi: ${pe.nadi} x/menit\n`;
-        if (pe.suhu) resume += `  - Suhu: ${pe.suhu}°C\n`;
-        if (pe.respirasi) resume += `  - RR: ${pe.respirasi} x/menit\n`;
-        if (pe.tinggi_badan && pe.berat_badan) {
-            resume += `  - TB/BB: ${pe.tinggi_badan} cm / ${pe.berat_badan} kg\n`;
-            if (pe.imt) resume += `  - IMT: ${pe.imt} (${pe.kategori_imt})\n`;
+        const hasData = Object.values(pe).some(val => val && val !== '');
+        
+        if (hasData) {
+            resume += 'III. PEMERIKSAAN FISIK\n';
+            resume += '───────────────────────────────────────────────────────────────\n';
+            
+            // Tanda Vital
+            resume += 'Tanda-tanda Vital:\n';
+            if (pe.tekanan_darah) resume += `- Tekanan Darah    : ${pe.tekanan_darah} mmHg\n`;
+            if (pe.nadi) resume += `- Nadi             : ${pe.nadi} kali/menit\n`;
+            if (pe.suhu) resume += `- Suhu             : ${pe.suhu}°C\n`;
+            if (pe.respirasi) resume += `- Respirasi        : ${pe.respirasi} kali/menit\n`;
+            resume += '\n';
+            
+            // Antropometri
+            if (pe.tinggi_badan || pe.berat_badan) {
+                resume += 'Antropometri:\n';
+                if (pe.tinggi_badan) resume += `- Tinggi Badan     : ${pe.tinggi_badan} cm\n`;
+                if (pe.berat_badan) resume += `- Berat Badan      : ${pe.berat_badan} kg\n`;
+                if (pe.imt) resume += `- Indeks Massa Tubuh: ${pe.imt} kg/m² (${pe.kategori_imt || 'Normal'})\n`;
+                resume += '\n';
+            }
+            
+            // Pemeriksaan Sistemik
+            resume += 'Pemeriksaan Sistemik:\n';
+            if (pe.kepala_leher) {
+                resume += `- Kepala & Leher   : ${pe.kepala_leher}\n`;
+            }
+            if (pe.thorax) {
+                resume += `- Thorax           : ${pe.thorax}\n`;
+            }
+            if (pe.abdomen) {
+                resume += `- Abdomen          : ${pe.abdomen}\n`;
+            }
+            if (pe.ekstremitas) {
+                resume += `- Ekstremitas      : ${pe.ekstremitas}\n`;
+            }
+            resume += '\n';
         }
-        if (pe.kepala_leher) resume += `Kepala & Leher: ${pe.kepala_leher}\n`;
-        if (pe.thorax) resume += `Thorax: ${pe.thorax}\n`;
-        if (pe.abdomen) resume += `Abdomen: ${pe.abdomen}\n`;
-        if (pe.ekstremitas) resume += `Ekstremitas: ${pe.ekstremitas}\n`;
-        resume += '\n';
     }
 
-    // Pemeriksaan Obstetri
-    if (records.pemeriksaan_obstetri) {
-        resume += '🤰 PEMERIKSAAN OBSTETRI\n';
-        resume += '───────────────────────────────────────────────────\n';
+    // IV. PEMERIKSAAN OBSTETRI
+    if (records.pemeriksaan_obstetri && typeof records.pemeriksaan_obstetri === 'object') {
         const obs = records.pemeriksaan_obstetri;
-        if (obs.findings) resume += `${obs.findings}\n`;
-        resume += '\n';
+        if (obs.findings) {
+            resume += 'IV. PEMERIKSAAN OBSTETRI\n';
+            resume += '───────────────────────────────────────────────────────────────\n';
+            resume += `${obs.findings}\n\n`;
+        }
     }
 
-    // USG
-    if (records.usg) {
-        resume += '📡 USG\n';
-        resume += '───────────────────────────────────────────────────\n';
+    // V. PEMERIKSAAN ULTRASONOGRAFI (USG)
+    if (records.usg && typeof records.usg === 'object') {
         const usg = records.usg;
-        if (usg.trimester) resume += `Trimester: ${usg.trimester}\n`;
-        if (usg.date) resume += `Tanggal: ${usg.date}\n`;
-        if (usg.crl_cm) resume += `CRL: ${usg.crl_cm} cm\n`;
-        if (usg.heart_rate) resume += `DJJ: ${usg.heart_rate} bpm\n`;
-        if (usg.bpd) resume += `BPD: ${usg.bpd} cm\n`;
-        if (usg.ac) resume += `AC: ${usg.ac} cm\n`;
-        if (usg.fl) resume += `FL: ${usg.fl} cm\n`;
-        if (usg.efw) resume += `EFW: ${usg.efw} gram\n`;
-        if (usg.edd) resume += `EDD: ${usg.edd}\n`;
-        if (usg.notes) resume += `Catatan: ${usg.notes}\n`;
-        resume += '\n';
+        const hasData = Object.values(usg).some(val => val && val !== '' && val !== 'first');
+        
+        if (hasData) {
+            resume += 'V. PEMERIKSAAN ULTRASONOGRAFI (USG)\n';
+            resume += '───────────────────────────────────────────────────────────────\n';
+            
+            if (usg.date) resume += `Tanggal Pemeriksaan: ${usg.date}\n`;
+            if (usg.trimester) {
+                const trimesterMap = {
+                    'first': 'Trimester Pertama (1-13 minggu)',
+                    'second': 'Trimester Kedua (14-27 minggu)',
+                    'third': 'Trimester Ketiga (28+ minggu)',
+                    'screening': 'Skrining Kongenital (18-23 minggu)'
+                };
+                resume += `Jenis Pemeriksaan: ${trimesterMap[usg.trimester] || usg.trimester}\n\n`;
+            }
+            
+            // Biometri Janin
+            const biometri = [];
+            if (usg.crl_cm) biometri.push(`Crown-Rump Length (CRL): ${usg.crl_cm} cm`);
+            if (usg.bpd) biometri.push(`Biparietal Diameter (BPD): ${usg.bpd} cm`);
+            if (usg.ac) biometri.push(`Abdominal Circumference (AC): ${usg.ac} cm`);
+            if (usg.fl) biometri.push(`Femur Length (FL): ${usg.fl} cm`);
+            if (usg.hc) biometri.push(`Head Circumference (HC): ${usg.hc} cm`);
+            
+            if (biometri.length > 0) {
+                resume += 'Biometri Janin:\n';
+                biometri.forEach(item => resume += `- ${item}\n`);
+                resume += '\n';
+            }
+            
+            // Parameter Lainnya
+            if (usg.heart_rate) resume += `Denyut Jantung Janin (DJJ): ${usg.heart_rate} bpm\n`;
+            if (usg.efw) resume += `Estimasi Berat Janin (EFW): ${usg.efw} gram\n`;
+            if (usg.edd) resume += `Hari Perkiraan Lahir (EDD): ${usg.edd}\n`;
+            if (usg.ga_weeks) resume += `Usia Kehamilan: ${usg.ga_weeks} minggu\n`;
+            if (usg.placenta) resume += `Lokasi Plasenta: ${usg.placenta}\n`;
+            if (usg.afi) resume += `Amniotic Fluid Index (AFI): ${usg.afi} cm\n`;
+            if (usg.gender) resume += `Jenis Kelamin: ${usg.gender}\n`;
+            
+            if (usg.notes) {
+                resume += `\nCatatan Tambahan:\n${usg.notes}\n`;
+            }
+            resume += '\n';
+        }
     }
 
-    // Penunjang
-    if (records.penunjang) {
-        resume += '🧪 PEMERIKSAAN PENUNJANG\n';
-        resume += '───────────────────────────────────────────────────\n';
+    // VI. PEMERIKSAAN PENUNJANG
+    if (records.penunjang && typeof records.penunjang === 'object') {
         const penunjang = records.penunjang;
-        if (penunjang.lab_findings) resume += `Laboratorium:\n${penunjang.lab_findings}\n`;
-        if (penunjang.imaging_findings) resume += `Imaging:\n${penunjang.imaging_findings}\n`;
-        if (penunjang.other_findings) resume += `Lainnya:\n${penunjang.other_findings}\n`;
-        resume += '\n';
+        const hasData = Object.values(penunjang).some(val => val && val !== '');
+        
+        if (hasData) {
+            resume += 'VI. PEMERIKSAAN PENUNJANG\n';
+            resume += '───────────────────────────────────────────────────────────────\n';
+            
+            if (penunjang.lab_findings) {
+                resume += `A. Hasil Pemeriksaan Laboratorium:\n${penunjang.lab_findings}\n\n`;
+            }
+            
+            if (penunjang.imaging_findings) {
+                resume += `B. Hasil Pemeriksaan Pencitraan/Imaging:\n${penunjang.imaging_findings}\n\n`;
+            }
+            
+            if (penunjang.other_findings) {
+                resume += `C. Pemeriksaan Penunjang Lainnya:\n${penunjang.other_findings}\n\n`;
+            }
+            
+            resume += '\n';
+        }
     }
 
-    // Diagnosis
-    if (records.diagnosis) {
-        resume += '⚕️ DIAGNOSIS\n';
-        resume += '───────────────────────────────────────────────────\n';
+    // VII. DIAGNOSIS
+    if (records.diagnosis && typeof records.diagnosis === 'object') {
         const diagnosis = records.diagnosis;
-        if (diagnosis.diagnosis_utama) resume += `Diagnosis Utama: ${diagnosis.diagnosis_utama}\n`;
-        if (diagnosis.diagnosis_sekunder) resume += `Diagnosis Sekunder: ${diagnosis.diagnosis_sekunder}\n`;
-        resume += '\n';
+        const hasData = diagnosis.diagnosis_utama || diagnosis.diagnosis_sekunder;
+        
+        if (hasData) {
+            resume += 'VII. DIAGNOSIS\n';
+            resume += '───────────────────────────────────────────────────────────────\n';
+            
+            if (diagnosis.diagnosis_utama) {
+                resume += `Diagnosis Utama:\n${diagnosis.diagnosis_utama}\n\n`;
+            }
+            
+            if (diagnosis.diagnosis_sekunder) {
+                resume += `Diagnosis Sekunder:\n${diagnosis.diagnosis_sekunder}\n\n`;
+            }
+            
+            resume += '\n';
+        }
     }
 
-    // Planning
-    if (records.planning) {
-        resume += '📝 RENCANA TATALAKSANA\n';
-        resume += '───────────────────────────────────────────────────\n';
+    // VIII. RENCANA TATALAKSANA (PLANNING)
+    if (records.planning && typeof records.planning === 'object') {
         const planning = records.planning;
-        if (planning.tindakan) resume += `Tindakan: ${planning.tindakan}\n`;
-        if (planning.terapi) resume += `Terapi: ${planning.terapi}\n`;
-        if (planning.rencana) resume += `Rencana: ${planning.rencana}\n`;
-        resume += '\n';
+        const hasData = Object.values(planning).some(val => val && val !== '');
+        
+        if (hasData) {
+            resume += 'VIII. RENCANA TATALAKSANA\n';
+            resume += '───────────────────────────────────────────────────────────────\n';
+            
+            if (planning.tindakan) {
+                resume += `A. Tindakan Medis:\n${planning.tindakan}\n\n`;
+            }
+            
+            if (planning.terapi) {
+                resume += `B. Terapi:\n${planning.terapi}\n\n`;
+            }
+            
+            if (planning.rencana) {
+                resume += `C. Rencana Perawatan dan Follow-up:\n${planning.rencana}\n\n`;
+            }
+            
+            if (planning.edukasi) {
+                resume += `D. Edukasi Pasien:\n${planning.edukasi}\n\n`;
+            }
+            
+            if (planning.rujukan) {
+                resume += `E. Rujukan:\n${planning.rujukan}\n\n`;
+            }
+            
+            resume += '\n';
+        }
     }
 
     // Footer
-    resume += '═══════════════════════════════════════════════════\n';
-    resume += `Generated: ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}\n`;
+    resume += '═══════════════════════════════════════════════════════════════\n';
+    resume += `Tanggal Pembuatan Resume: ${new Date().toLocaleString('id-ID', { 
+        timeZone: 'Asia/Jakarta',
+        year: 'numeric',
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    })}\n`;
+    resume += '═══════════════════════════════════════════════════════════════\n\n';
+    resume += 'Dokumen ini dibuat secara otomatis oleh sistem Resume Medis AI.\n';
 
     return resume;
 }
