@@ -1042,7 +1042,10 @@ class SundayClinicApp {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ patientId })
+                body: JSON.stringify({ 
+                    patientId,
+                    visitId: this.currentMrId // Only use data from current visit
+                })
             });
 
             if (!response.ok) {
@@ -1143,6 +1146,7 @@ class SundayClinicApp {
 
             const recordPayload = {
                 patientId: patientId,
+                visitId: this.currentMrId, // Link to specific visit
                 type: 'resume_medis',
                 data: data,
                 timestamp: new Date().toISOString()
