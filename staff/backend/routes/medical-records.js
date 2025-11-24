@@ -300,16 +300,18 @@ router.delete('/api/medical-records/:id', verifyToken, async (req, res) => {
 });
 
 // Generate AI Resume Medis
-router.post('/api/medical-records/generate-resume', 
-    express.json(), // Force JSON parser
-    verifyToken, 
-    async (req, res) => {
+router.post('/api/medical-records/generate-resume', verifyToken, async (req, res) => {
     try {
         logger.info('=== GENERATE RESUME REQUEST RECEIVED ===');
+        logger.info('All headers:', JSON.stringify(req.headers));
         logger.info('Content-Type:', req.headers['content-type']);
+        logger.info('Content-Length:', req.headers['content-length']);
+        logger.info('req.body exists:', !!req.body);
         logger.info('req.body type:', typeof req.body);
-        logger.info('req.body keys:', Object.keys(req.body || {}));
-        logger.info('req.body full:', JSON.stringify(req.body));
+        logger.info('req.body constructor:', req.body?.constructor?.name);
+        logger.info('req.body keys:', req.body ? Object.keys(req.body) : 'null/undefined');
+        logger.info('req.body full:', req.body);
+        logger.info('req.body JSON:', JSON.stringify(req.body));
         logger.info('req.body.patientId:', req.body?.patientId);
         
         const { patientId } = req.body;
