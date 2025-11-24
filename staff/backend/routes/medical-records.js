@@ -588,15 +588,6 @@ function generateMedicalResume(identitas, records) {
             
             // Check current trimester
             const currentTrimester = usg.current_trimester || usg.trimester;
-            if (currentTrimester) {
-                const trimesterMap = {
-                    'first': 'Trimester Pertama (1-13 minggu)',
-                    'second': 'Trimester Kedua (14-27 minggu)',
-                    'third': 'Trimester Ketiga (28+ minggu)',
-                    'screening': 'Skrining Kongenital (18-23 minggu)'
-                };
-                resume += `Jenis Pemeriksaan: ${trimesterMap[currentTrimester] || currentTrimester}\n\n`;
-            }
             
             // Skrining Kongenital - Check for screening data (flat structure)
             if (currentTrimester === 'screening' || usg.trimester === 'screening') {
