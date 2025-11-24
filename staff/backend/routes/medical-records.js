@@ -304,10 +304,6 @@ router.post('/api/medical-records/generate-resume', verifyToken, async (req, res
     try {
         const { patientId } = req.body;
         
-        console.log('=== GENERATE RESUME REQUEST ===');
-        console.log('Patient ID received:', patientId);
-        console.log('Patient ID type:', typeof patientId);
-        
         if (!patientId) {
             return res.status(400).json({
                 success: false,
@@ -369,25 +365,6 @@ router.post('/api/medical-records/generate-resume', verifyToken, async (req, res
                 recordsByType[record.record_type] = data;
             }
         });
-
-        console.log('=== RESUME GENERATION DEBUG ===');
-        console.log('Patient ID:', patientId);
-        console.log('Total records found:', records.length);
-        console.log('Records by type keys:', Object.keys(recordsByType));
-        if (recordsByType.usg) {
-            console.log('USG exists: true');
-            console.log('USG data keys:', Object.keys(recordsByType.usg));
-            console.log('FULL USG DATA:', JSON.stringify(recordsByType.usg, null, 2));
-            console.log('USG current_trimester:', recordsByType.usg.current_trimester);
-            console.log('USG screening exists:', !!recordsByType.usg.screening);
-            if (recordsByType.usg.screening) {
-                console.log('USG screening keys:', Object.keys(recordsByType.usg.screening));
-                console.log('USG screening data:', JSON.stringify(recordsByType.usg.screening, null, 2));
-            }
-        } else {
-            console.log('USG exists: false');
-        }
-        console.log('=== END DEBUG ===');
 
         // Generate resume using AI-like logic
         const resume = generateMedicalResume(identitas, recordsByType);
@@ -575,23 +552,23 @@ function generateMedicalResume(identitas, records) {
                 resume += `Jenis Pemeriksaan: ${trimesterMap[currentTrimester] || currentTrimester}\n\n`;
             }
             
-            // Skrining Kongenital - Check for screening data (can be nested or flat)
-            const scr = usg.screening || (currentTrimester === 'screening' ? usg : null);
-            if (scr && typeof scr === 'object' && Object.keys(scr).length > 0) {
+            // Skrining Kongenital - Check for screening data (flat structure)
+            if (currentTrimester === 'screening' || usg.trimester === 'screening') {
                 resume += 'Hasil Skrining Kelainan Kongenital:\n\n';
                 
-                if (scr.date) resume += `Tanggal Pemeriksaan: ${scr.date}\n`;
-                if (scr.gender) {
+                if (usg.date) resume += `Tanggal Pemeriksaan: ${usg.date}\n`;
+                if (usg.gender) {
                     const genderMap = { 'male': 'Laki-laki', 'female': 'Perempuan' };
-                    resume += `Jenis Kelamin: ${genderMap[scr.gender] || scr.gender}\n`;
+                    resume += `Jenis Kelamin: ${genderMap[usg.gender] || usg.gender}\n`;
                 }
                 resume += '\n';
                 
                 // Kepala dan Otak
                 const headItems = [];
-                if (scr.hemisphere) headItems.push('Simetris hemisfer, Falx cerebri jelas');
-                if (scr.lateral_vent) headItems.push('Ventrikel lateral, Atrium < 10 mm');
-                if (scr.cavum) headItems.push('Cavum septum pellucidum');
+                if (usg.simetris_hemisfer) headItems.push('Simetris hemisfer');
+                if (usg.falx_bpd) headItems.push('Falx cerebri jelas, BPD sesuai usia kehamilan');
+                if (usg.ventrikel) headItems.push('Ventrikel lateral, Atrium < 10 mm');
+                if (usg.cavum_septum) headItems.push('Cavum septum pellucidum');
                 if (headItems.length > 0) {
                     resume += 'Kepala dan Otak:\n';
                     headItems.forEach(item => resume += `• ${item}\n`);
@@ -600,9 +577,9 @@ function generateMedicalResume(identitas, records) {
                 
                 // Muka dan Leher
                 const faceItems = [];
-                if (scr.profile) faceItems.push('Profil muka normal');
-                if (scr.nasal_bone) faceItems.push('Tulang hidung tampak, ukuran normal');
-                if (scr.upper_lip) faceItems.push('Garis bibir atas menyambung');
+                if (usg.profil_muka) faceItems.push('Profil muka normal');
+                if (usg.tulang_hidung) faceItems.push('Tulang hidung tampak, ukuran normal');
+                if (usg.garis_bibir) faceItems.push('Garis bibir atas menyambung');
                 if (faceItems.length > 0) {
                     resume += 'Muka dan Leher:\n';
                     faceItems.forEach(item => resume += `• ${item}\n`);
@@ -611,10 +588,14 @@ function generateMedicalResume(identitas, records) {
                 
                 // Jantung dan Rongga Dada
                 const heartItems = [];
-                if (scr.four_chamber || scr['4chamber']) heartItems.push('Gambaran jelas 4-chamber view');
-                if (scr.heart_left) heartItems.push('Jantung di sebelah kiri');
-                if (scr.apex) heartItems.push('Apex jantung kearah kiri (~45°)');
-                if (scr.heart_size) heartItems.push('Besar jantung <1/3 area dada');
+                if (usg.four_chamber) heartItems.push('Gambaran jelas 4-chamber view');
+                if (usg.jantung_kiri) heartItems.push('Jantung di sebelah kiri');
+                if (usg.septum_interv) heartItems.push('Septum interventrikular intak');
+                if (usg.besar_jantung) heartItems.push('Besar jantung <1/3 area dada');
+                if (usg.dua_atrium) heartItems.push('Terlihat 2 atrium');
+                if (usg.katup_atrioventricular) heartItems.push('Katup atrioventricular terlihat');
+                if (usg.ritme_jantung) heartItems.push('Ritme jantung normal');
+                if (usg.echogenic_pads) heartItems.push('Tidak ada echogenic intracardiac focus');
                 if (heartItems.length > 0) {
                     resume += 'Jantung dan Rongga Dada:\n';
                     heartItems.forEach(item => resume += `• ${item}\n`);
@@ -623,8 +604,8 @@ function generateMedicalResume(identitas, records) {
                 
                 // Tulang Belakang
                 const spineItems = [];
-                if (scr.vertebra) spineItems.push('Tidak tampak kelainan vertebra');
-                if (scr.skin) spineItems.push('Garis kulit tampak baik');
+                if (usg.vertebra) spineItems.push('Tidak tampak kelainan vertebra');
+                if (usg.kulit_dorsal) spineItems.push('Garis kulit dorsal tampak baik');
                 if (spineItems.length > 0) {
                     resume += 'Tulang Belakang:\n';
                     spineItems.forEach(item => resume += `• ${item}\n`);
@@ -633,8 +614,9 @@ function generateMedicalResume(identitas, records) {
                 
                 // Anggota Gerak
                 const limbItems = [];
-                if (scr.upper_limbs) limbItems.push('Alat gerak kiri kanan atas normal');
-                if (scr.lower_limbs) limbItems.push('Alat gerak kiri kanan bawah normal');
+                if (usg.alat_gerak_atas) limbItems.push('Alat gerak kiri kanan atas normal');
+                if (usg.alat_gerak_bawah) limbItems.push('Alat gerak kiri kanan bawah normal');
+                if (usg.visual_tangan) limbItems.push('Visualisasi tulang tangan dan kaki baik');
                 if (limbItems.length > 0) {
                     resume += 'Anggota Gerak:\n';
                     limbItems.forEach(item => resume += `• ${item}\n`);
@@ -643,12 +625,13 @@ function generateMedicalResume(identitas, records) {
                 
                 // Rongga Perut
                 const abdomenItems = [];
-                if (scr.stomach) abdomenItems.push('Lambung di sebelah kiri');
-                if (scr.liver) abdomenItems.push('Posisi liver dan echogenocity normal');
-                if (scr.kidneys) abdomenItems.push('Terlihat ginjal kiri & kanan');
-                if (scr.bladder) abdomenItems.push('Kandung kemih terisi');
-                if (scr.cord) abdomenItems.push('Insersi tali pusat baik');
-                if (scr.abdominal_wall) abdomenItems.push('Dinding perut tidak tampak defek');
+                if (usg.lambung_kiri) abdomenItems.push('Lambung di sebelah kiri');
+                if (usg.posisi_liver) abdomenItems.push('Posisi liver dan echogenicity normal');
+                if (usg.ginjal_kiri_kanan) abdomenItems.push('Terlihat ginjal kiri & kanan');
+                if (usg.ginjal_echohypoic) abdomenItems.push('Ginjal tampak echohypoic normal');
+                if (usg.kandung_kemih) abdomenItems.push('Kandung kemih terisi');
+                if (usg.insersi_tali_pusat) abdomenItems.push('Insersi tali pusat baik');
+                if (usg.dinding_perut) abdomenItems.push('Dinding perut tidak tampak defek');
                 if (abdomenItems.length > 0) {
                     resume += 'Rongga Perut:\n';
                     abdomenItems.forEach(item => resume += `• ${item}\n`);
@@ -656,11 +639,11 @@ function generateMedicalResume(identitas, records) {
                 }
                 
                 // Kesimpulan Skrining
-                if (scr.no_anomaly) {
+                if (usg.tidak_kelainan) {
                     resume += 'Kesimpulan: Tidak tampak kelainan kongenital mayor\n\n';
-                } else if (scr.suspect) {
+                } else if (usg.kecurigaan) {
                     resume += 'Kesimpulan: Dicurigai ada kelainan\n';
-                    if (scr.suspect_notes) resume += `Catatan: ${scr.suspect_notes}\n\n`;
+                    if (usg.kecurigaan_text) resume += `Catatan: ${usg.kecurigaan_text}\n\n`;
                 }
             }
             
