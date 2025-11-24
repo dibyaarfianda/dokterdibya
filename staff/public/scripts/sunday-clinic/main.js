@@ -1039,13 +1039,17 @@ class SundayClinicApp {
                 throw new Error('Authentication token tidak tersedia');
             }
 
+            const requestBody = { patientId };
+            console.log('[DEBUG] Request body to send:', requestBody);
+            console.log('[DEBUG] Request body JSON:', JSON.stringify(requestBody));
+
             const response = await fetch('/api/medical-records/generate-resume', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ patientId })
+                body: JSON.stringify(requestBody)
             });
 
             if (!response.ok) {

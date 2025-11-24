@@ -302,6 +302,11 @@ router.delete('/api/medical-records/:id', verifyToken, async (req, res) => {
 // Generate AI Resume Medis
 router.post('/api/medical-records/generate-resume', verifyToken, async (req, res) => {
     try {
+        logger.info('=== GENERATE RESUME REQUEST RECEIVED ===');
+        logger.info('req.body type:', typeof req.body);
+        logger.info('req.body keys:', Object.keys(req.body || {}));
+        logger.info('req.body full:', req.body);
+        
         const { patientId } = req.body;
         
         logger.info('=== GENERATE RESUME REQUEST ===');
