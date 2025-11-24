@@ -128,10 +128,10 @@ export default {
                         
                         // Render categories in 2 columns
                         if (categories.length > 0) {
-                            result += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 10px 0;">';
+                            result += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; column-gap: 30px; margin: 5px 0;">';
                             for (let cat of categories) {
-                                result += '<div>';
-                                result += '<strong>' + this.escapeHtml(cat.title) + '</strong><br>';
+                                result += '<div style="margin-bottom: 8px;">';
+                                result += this.escapeHtml(cat.title) + '<br>';
                                 for (let item of cat.items) {
                                     result += this.escapeHtml(item) + '<br>';
                                 }
@@ -154,10 +154,10 @@ export default {
                     categories.push(currentCategory);
                 }
                 if (categories.length > 0) {
-                    result += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 10px 0;">';
+                    result += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; column-gap: 30px; margin: 5px 0;">';
                     for (let cat of categories) {
-                        result += '<div>';
-                        result += '<strong>' + this.escapeHtml(cat.title) + '</strong><br>';
+                        result += '<div style="margin-bottom: 8px;">';
+                        result += this.escapeHtml(cat.title) + '<br>';
                         for (let item of cat.items) {
                             result += this.escapeHtml(item) + '<br>';
                         }
