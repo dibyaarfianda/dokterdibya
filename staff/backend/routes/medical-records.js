@@ -302,17 +302,15 @@ router.delete('/api/medical-records/:id', verifyToken, async (req, res) => {
 // Generate AI Resume Medis
 router.post('/api/medical-records/generate-resume', verifyToken, async (req, res) => {
     try {
-        logger.info('=== GENERATE RESUME REQUEST RECEIVED ===');
-        logger.info('All headers:', JSON.stringify(req.headers));
-        logger.info('Content-Type:', req.headers['content-type']);
-        logger.info('Content-Length:', req.headers['content-length']);
-        logger.info('req.body exists:', !!req.body);
-        logger.info('req.body type:', typeof req.body);
-        logger.info('req.body constructor:', req.body?.constructor?.name);
-        logger.info('req.body keys:', req.body ? Object.keys(req.body) : 'null/undefined');
-        logger.info('req.body full:', req.body);
-        logger.info('req.body JSON:', JSON.stringify(req.body));
-        logger.info('req.body.patientId:', req.body?.patientId);
+        console.log('=== GENERATE RESUME REQUEST RECEIVED ===');
+        console.log('All headers:', JSON.stringify(req.headers));
+        console.log('Content-Type:', req.headers['content-type']);
+        console.log('Content-Length:', req.headers['content-length']);
+        console.log('req.body exists:', !!req.body);
+        console.log('req.body type:', typeof req.body);
+        console.log('req.body:', req.body);
+        console.log('req.body JSON:', JSON.stringify(req.body));
+        console.log('req.body.patientId:', req.body?.patientId);
         
         const { patientId } = req.body;
         
