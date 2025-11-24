@@ -276,6 +276,47 @@ router.put('/api/medical-records/:id', verifyToken, async (req, res) => {
 });
 
 // Delete medical record
+// Delete all medical records by type
+router.delete('/api/medical-records/by-type/:recordType', verifyToken, async (req, res) => {
+    try {
+        const { recordType } = req.params;
+        const { patientId, mrId } = req.query;
+        
+        if (!patientId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Patient ID is required'
+            });
+        }
+        
+        let query = 'DELETE FROM medical_records WHERE patient_id = ? AND record_type = ?';
+        let params = [patientId, recordType];
+        
+        if (mrId && mrId !== 'null' && mrId !== 'undefined') {
+            query += ' AND mr_id = ?';
+            params.push(mrId);
+        }
+        
+        const [result] = await db.query(query, params);
+        
+        logger.info(`Medical records deleted: Type ${recordType}, Patient ${patientId}, MR ${mrId || 'none'}, Count: ${result.affectedRows}`);
+        
+        res.json({ 
+            success: true, 
+            message: `${result.affectedRows} record(s) deleted successfully`,
+            deletedCount: result.affectedRows
+        });
+        
+    } catch (error) {
+        logger.error('Error deleting medical records by type:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Failed to delete medical records',
+            error: error.message 
+        });
+    }
+});
+
 router.delete('/api/medical-records/:id', verifyToken, async (req, res) => {
     try {
         const { id } = req.params;
