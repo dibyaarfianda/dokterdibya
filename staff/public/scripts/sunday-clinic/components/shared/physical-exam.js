@@ -165,13 +165,13 @@ export default {
                             <label class="font-weight-bold">Tinggi Badan (cm)</label>
                             <input type="number" step="0.1" class="form-control" id="pe-tinggi-badan"
                                    value="${escapeHtml(exam.tinggi_badan || '')}"
-                                   placeholder="160" onchange="window.calculateBMI()">
+                                   placeholder="160">
                         </div>
                         <div class="col-md-3">
                             <label class="font-weight-bold">Berat Badan (kg)</label>
                             <input type="number" step="0.1" class="form-control" id="pe-berat-badan"
                                    value="${escapeHtml(exam.berat_badan || '')}"
-                                   placeholder="55" onchange="window.calculateBMI()">
+                                   placeholder="55">
                         </div>
                         <div class="col-md-3">
                             <label class="font-weight-bold">IMT (kg/m²)</label>
@@ -212,49 +212,6 @@ export default {
                     </div>
                 </div>
             </div>
-
-            <script>
-                // Auto-calculate BMI for Obstetri format
-                window.calculateBMI = function() {
-                    const tinggi = parseFloat(document.getElementById('pe-tinggi-badan')?.value);
-                    const berat = parseFloat(document.getElementById('pe-berat-badan')?.value);
-
-                    if (tinggi && berat && tinggi > 0) {
-                        const tinggiMeter = tinggi / 100;
-                        const imt = (berat / (tinggiMeter * tinggiMeter)).toFixed(1);
-                        
-                        document.getElementById('pe-imt').value = imt;
-
-                        // Kategorikan IMT berdasarkan WHO Asia Pacific
-                        let kategori = '';
-                        const imtNum = parseFloat(imt);
-                        
-                        if (imtNum < 17.0) {
-                            kategori = 'Kurang Energi Kronis';
-                        } else if (imtNum >= 17.0 && imtNum < 18.5) {
-                            kategori = 'Kurang Energi Kronis';
-                        } else if (imtNum >= 18.5 && imtNum < 25.0) {
-                            kategori = 'Normal';
-                        } else if (imtNum >= 25.0 && imtNum < 30.0) {
-                            kategori = 'Kelebihan Berat Badan';
-                        } else if (imtNum >= 30.0 && imtNum < 35.0) {
-                            kategori = 'Obesitas Grade 1';
-                        } else if (imtNum >= 35.0 && imtNum < 40.0) {
-                            kategori = 'Obesitas Grade 2';
-                        } else {
-                            kategori = 'Obesitas Grade 3';
-                        }
-
-                        document.getElementById('pe-kategori-imt').value = kategori;
-                    }
-                };
-
-                // Calculate on load if values exist
-                setTimeout(() => {
-                    window.calculateBMI();
-                }, 100);
-            </script>
-
         `;
     },
 
@@ -734,5 +691,77 @@ export default {
             extremities: document.querySelector('[name="extremities"]')?.value || '',
             additional_findings: document.querySelector('[name="additional_findings"]')?.value || ''
         };
+    },
+
+    /**
+     * After render hook - called after HTML is injected into DOM
+     */
+    afterRender() {
+        // Setup BMI calculator for Obstetri format
+        this.setupBMICalculator();
+    },
+
+    /**
+     * Setup BMI auto-calculator
+     */
+    setupBMICalculator() {
+        const tinggiEl = document.getElementById('pe-tinggi-badan');
+        const beratEl = document.getElementById('pe-berat-badan');
+        
+        if (!tinggiEl || !beratEl) {
+            return; // Not in Obstetri format
+        }
+
+        // Define calculator function
+        const calculateBMI = () => {
+            const imtEl = document.getElementById('pe-imt');
+            const kategoriEl = document.getElementById('pe-kategori-imt');
+            
+            if (!imtEl || !kategoriEl) return;
+
+            const tinggi = parseFloat(tinggiEl.value);
+            const berat = parseFloat(beratEl.value);
+
+            if (tinggi && berat && tinggi > 0) {
+                const tinggiMeter = tinggi / 100;
+                const imt = (berat / (tinggiMeter * tinggiMeter)).toFixed(1);
+                
+                imtEl.value = imt;
+
+                // Kategorikan IMT
+                let kategori = '';
+                const imtNum = parseFloat(imt);
+                
+                if (imtNum < 17.0) {
+                    kategori = 'Kurang Energi Kronis';
+                } else if (imtNum >= 17.0 && imtNum < 18.5) {
+                    kategori = 'Kurang Energi Kronis';
+                } else if (imtNum >= 18.5 && imtNum < 25.0) {
+                    kategori = 'Normal';
+                } else if (imtNum >= 25.0 && imtNum < 30.0) {
+                    kategori = 'Kelebihan Berat Badan';
+                } else if (imtNum >= 30.0 && imtNum < 35.0) {
+                    kategori = 'Obesitas Grade 1';
+                } else if (imtNum >= 35.0 && imtNum < 40.0) {
+                    kategori = 'Obesitas Grade 2';
+                } else {
+                    kategori = 'Obesitas Grade 3';
+                }
+
+                kategoriEl.value = kategori;
+            } else {
+                imtEl.value = '';
+                kategoriEl.value = '';
+            }
+        };
+
+        // Attach event listeners
+        tinggiEl.addEventListener('input', calculateBMI);
+        tinggiEl.addEventListener('change', calculateBMI);
+        beratEl.addEventListener('input', calculateBMI);
+        beratEl.addEventListener('change', calculateBMI);
+        
+        // Calculate immediately if values exist
+        calculateBMI();
     }
 };
