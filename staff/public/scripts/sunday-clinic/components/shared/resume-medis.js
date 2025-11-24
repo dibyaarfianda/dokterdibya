@@ -57,11 +57,12 @@ export default {
         }
 
         if (resume) {
+            const formattedResume = this.formatResumeWithColumns(resume);
             return `
                 <div class="resume-display" id="resume-display">
                     <div class="card bg-light">
                         <div class="card-body">
-                            <div id="resume-content" style="white-space: pre-wrap; line-height: 1.8; font-family: 'Frutiger Roman', 'Frutiger', 'Segoe UI', Arial, sans-serif; font-size: 12px;">${this.escapeHtml(resume)}</div>
+                            <div id="resume-content" style="line-height: 1.8; font-family: 'Frutiger Roman', 'Frutiger', 'Segoe UI', Arial, sans-serif; font-size: 12px;">${formattedResume}</div>
                         </div>
                     </div>
                 </div>
@@ -74,6 +75,105 @@ export default {
                 Resume medis belum dibuat. Klik tombol "Generate Resume AI" untuk membuat resume otomatis dari data pemeriksaan.
             </div>
         `;
+    },
+
+    /**
+     * Format resume with 2 columns for USG screening section
+     */
+    formatResumeWithColumns(resume) {
+        if (!resume) return '';
+        
+        // Split by sections
+        const sections = resume.split(/(?=V\. PEMERIKSAAN ULTRASONOGRAFI)/);
+        let formatted = '';
+        
+        for (let section of sections) {
+            if (section.includes('Hasil Skrining Kelainan Kongenital:')) {
+                // Format USG screening section with 2 columns
+                const lines = section.split('\n');
+                let result = '';
+                let inScreening = false;
+                let categories = [];
+                let currentCategory = null;
+                
+                for (let line of lines) {
+                    if (line.includes('Hasil Skrining Kelainan Kongenital:')) {
+                        inScreening = true;
+                        result += '<div style="white-space: pre-wrap;">' + this.escapeHtml(line) + '\n\n';
+                        continue;
+                    }
+                    
+                    if (inScreening && (line.match(/^(Kepala dan Otak|Muka dan Leher|Jantung dan Rongga Dada|Tulang Belakang|Anggota Gerak|Rongga Perut):/))) {
+                        if (currentCategory) {
+                            categories.push(currentCategory);
+                        }
+                        currentCategory = {
+                            title: line,
+                            items: []
+                        };
+                        continue;
+                    }
+                    
+                    if (inScreening && currentCategory && line.trim().startsWith('•')) {
+                        currentCategory.items.push(line);
+                        continue;
+                    }
+                    
+                    if (inScreening && line.includes('Kesimpulan:')) {
+                        if (currentCategory) {
+                            categories.push(currentCategory);
+                            currentCategory = null;
+                        }
+                        inScreening = false;
+                        
+                        // Render categories in 2 columns
+                        if (categories.length > 0) {
+                            result += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 10px 0;">';
+                            for (let cat of categories) {
+                                result += '<div>';
+                                result += '<strong>' + this.escapeHtml(cat.title) + '</strong><br>';
+                                for (let item of cat.items) {
+                                    result += this.escapeHtml(item) + '<br>';
+                                }
+                                result += '</div>';
+                            }
+                            result += '</div>\n\n';
+                            categories = [];
+                        }
+                        
+                        result += this.escapeHtml(line) + '\n';
+                        continue;
+                    }
+                    
+                    if (!inScreening || !currentCategory) {
+                        result += this.escapeHtml(line) + '\n';
+                    }
+                }
+                
+                if (currentCategory) {
+                    categories.push(currentCategory);
+                }
+                if (categories.length > 0) {
+                    result += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 10px 0;">';
+                    for (let cat of categories) {
+                        result += '<div>';
+                        result += '<strong>' + this.escapeHtml(cat.title) + '</strong><br>';
+                        for (let item of cat.items) {
+                            result += this.escapeHtml(item) + '<br>';
+                        }
+                        result += '</div>';
+                    }
+                    result += '</div></div>';
+                }
+                
+                formatted += result;
+            } else {
+                // Regular section - escape and preserve whitespace
+                formatted += '<div style="white-space: pre-wrap;">' + this.escapeHtml(section) + '</div>';
+            }
+        }
+        
+        return formatted;
     },
 
     /**
