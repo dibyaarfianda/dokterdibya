@@ -69,6 +69,7 @@ function initPages() {
     pages.finance = grab('finance-page');
     pages.kelolaPasien = grab('manage-patients-page') || grab('kelola-pasien-page');
     pages.kelolaPasienLegacy = grab('kelola-pasien-page');
+    pages.kelolaPengumuman = grab('kelola-pengumuman-page');
     pages.kelolaAppointment = grab('kelola-appointment-page');
     pages.kelolaJadwal = grab('kelola-jadwal-page');
     pages.kelolaTindakan = grab('kelola-tindakan-page');
@@ -426,6 +427,22 @@ function showKelolaTindakanPage() {
 }
 function showKelolaObatManagementPage() {
     showKelolaObatPage();
+}
+function showKelolaPengumumanPage() {
+    hideAllPages();
+    pages.kelolaPengumuman?.classList.remove('d-none');
+    setTitleAndActive('Kelola Pengumuman', 'nav-kelola-pengumuman', 'kelola-pengumuman');
+    
+    // Dynamically import and initialize the Kelola Pengumuman module
+    importWithVersion('./kelola-announcement.js').then(module => {
+        if (typeof window.initKelolaAnnouncement === 'function') {
+            window.initKelolaAnnouncement();
+        } else {
+            console.error('Kelola Announcement module loaded, but initKelolaAnnouncement function not found on window.');
+        }
+    }).catch(error => {
+        console.error('Failed to load kelola-announcement.js:', error);
+    });
 }
 function showFinanceAnalysisPage() { 
     hideAllPages(); 
@@ -1085,6 +1102,7 @@ window.showAppointmentsPage = showAppointmentsPage;
 window.showAnalyticsPage = showAnalyticsPage;
 window.showFinancePage = showFinancePage;
 window.showKelolaPasienPage = showKelolaPasienPage;
+window.showKelolaPengumumanPage = showKelolaPengumumanPage;
 window.showKelolaAppointmentPage = showKelolaAppointmentPage;
 window.showKelolaJadwalPage = showKelolaJadwalPage;
 window.showKelolaTindakanPage = showKelolaTindakanPage;
