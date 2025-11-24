@@ -645,14 +645,23 @@ function openSundayClinicViewer() {
 }
 
 function bindSundayClinicLauncher() {
-    const navLink = document.getElementById('nav-open-sunday-clinic');
-    if (!navLink) {
+    const button = document.getElementById('btn-open-sunday-clinic');
+    if (!button) {
         return;
     }
-    navLink.addEventListener('click', event => {
+    
+    // Prevent multiple event listeners by checking if already bound
+    if (button.dataset.sundayClinicBound === 'true') {
+        return;
+    }
+    
+    button.addEventListener('click', event => {
         event.preventDefault();
         openSundayClinicViewer();
     });
+    
+    // Mark as bound
+    button.dataset.sundayClinicBound = 'true';
 }
 
 function initializeApp(user) {

@@ -30,11 +30,11 @@
 
         /* Smaller sidebar navigation font */
         .sidebar .nav-sidebar .nav-link {
-            font-size: 13px !important;
+            font-size: 15px !important;
         }
 
         .sidebar .nav-sidebar .nav-link .nav-icon {
-            font-size: 14px !important;
+            font-size: 16px !important;
         }
 
         /* Tighter vertical spacing for sidebar menu items */
@@ -45,6 +45,7 @@
         .sidebar .nav-sidebar .nav-link {
             padding-top: 0.4rem !important;
             padding-bottom: 0.4rem !important;
+            padding-left: 6px !important;
         }
 
         /* Sidebar color and width */
@@ -425,6 +426,16 @@
             box-shadow: none !important;
             border: none !important;
         }
+
+        /* Avatar hover animation */
+        #navbar-user-avatar {
+            transition: transform 0.3s ease;
+            cursor: pointer;
+        }
+
+        #navbar-user-avatar:hover {
+            transform: scale(1.1);
+        }
     </style>
 
         <!-- Mobile Responsive Styles -->
@@ -736,7 +747,7 @@
 <div class="wrapper" id="main-app">
 
     <!-- Navbar -->
-    <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light" style= "height: 70.76923099999999px;">
         <ul class="navbar-nav">
             <li class="nav-item d-none d-sm-inline-block">
                 <span class="nav-link">
@@ -751,7 +762,7 @@
                 </span>
             </li>
         </ul>
-        <ul class="navbar-nav ml-auto">
+        <ul class="navbar-nav ml-auto" style="height: 68px">
             <li class="nav-item">
                 <span id="status-banner" class="nav-link d-none">
                     <span class="badge badge-warning">Loading...</span>
@@ -759,8 +770,7 @@
             </li>
             <li class="nav-item dropdown">
                 <a class="nav-link" data-toggle="dropdown" href="#">
-                    <img id="navbar-user-avatar" src="" alt="User" class="img-circle elevation-2 mr-2" style="width: 50px; height: 50px; object-fit: cover; display: none;">
-                    <span id="user-info"></span>
+                    <img id="navbar-user-avatar" src="" alt="User" class="img-circle elevation-2 mr-2" style="width: 50px; height: 50px; object-fit: cover; display: none;" data-toggle="tooltip" data-placement="bottom" title="">
                 </a>
                 <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
                     <a href="#" class="dropdown-item" id="navbar-profile-btn" onclick="showProfileSettings(); return false;">
@@ -793,12 +803,6 @@
                         <a href="#" class="nav-link" onclick="showKlinikPrivatePage(); return false;">
                             <i class="nav-icon fas fa-clinic-medical"></i>
                             <p>Klinik Private</p>
-                        </a>
-                    </li>
-                    <li class="nav-item" id="nav-sunday-clinic-launcher">
-                        <a href="#" class="nav-link" id="nav-open-sunday-clinic" title="Buka rekam medis Sunday Clinic">
-                            <i class="nav-icon fas fa-notes-medical"></i>
-                            <p>Sunday Clinic Viewer</p>
                         </a>
                     </li>
 
@@ -1024,6 +1028,23 @@
                                             <tbody id="klinik-private-tbody"></tbody>
                                         </table>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Sunday Clinic Viewer Section -->
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <div class="card card-info card-outline">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-notes-medical mr-2"></i>Sunday Clinic Viewer</h3>
+                                </div>
+                                <div class="card-body">
+                                    <p class="text-muted mb-3">Buka dan lihat rekam medis pasien Sunday Clinic berdasarkan MR ID.</p>
+                                    <button class="btn btn-primary" id="btn-open-sunday-clinic">
+                                        <i class="fas fa-folder-open mr-2"></i>Buka Rekam Medis Sunday Clinic
+                                    </button>
                                 </div>
                             </div>
                         </div>
