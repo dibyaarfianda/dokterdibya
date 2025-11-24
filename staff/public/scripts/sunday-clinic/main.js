@@ -1122,8 +1122,11 @@ class SundayClinicApp {
                 throw new Error('Resume content tidak ditemukan');
             }
 
+            // Get plain text from data attribute (original unformatted text)
+            const plainText = resumeContent.getAttribute('data-plain-text');
+            
             const data = {
-                resume: resumeContent.textContent || resumeContent.innerText
+                resume: plainText || resumeContent.textContent || resumeContent.innerText
             };
 
             const state = stateManager.getState();
