@@ -157,12 +157,15 @@ router.post('/api/medical-records', verifyToken, async (req, res) => {
         let mrId = null;
         
         if (visitId) {
-            if (typeof visitId === 'string' && visitId.match(/^[A-Z]+\d+$/)) {
-                // String MR ID format (e.g., "DRD0001")
-                mrId = visitId;
-            } else {
+            if (typeof visitId === 'string' && visitId.match(/^[A-Za-z]+\d+$/i)) {
+                // String MR ID format (e.g., "DRD0001" or "drd0001")
+                mrId = visitId.toUpperCase(); // Normalize to uppercase
+            } else if (!isNaN(visitId)) {
                 // Numeric visit_id
                 numericVisitId = visitId;
+            } else {
+                // If not matching either pattern, treat as string MR ID
+                mrId = visitId.toUpperCase();
             }
         }
 
@@ -398,14 +401,18 @@ router.post('/api/medical-records/generate-resume', verifyToken, async (req, res
         
         // If visitId provided, filter by mr_id (Sunday Clinic) or visit_id (legacy)
         if (visitId) {
-            if (typeof visitId === 'string' && visitId.match(/^[A-Z]+\d+$/)) {
-                // Sunday Clinic MR ID format
+            if (typeof visitId === 'string' && visitId.match(/^[A-Za-z]+\d+$/i)) {
+                // Sunday Clinic MR ID format (case-insensitive)
                 query += ` AND (mr_id = ? OR mr_id IS NULL)`;
-                params.push(visitId);
-            } else {
+                params.push(visitId.toUpperCase()); // Normalize to uppercase
+            } else if (!isNaN(visitId)) {
                 // Legacy numeric visit_id
                 query += ` AND (visit_id = ? OR visit_id IS NULL)`;
                 params.push(visitId);
+            } else {
+                // Default to mr_id for any other string format
+                query += ` AND (mr_id = ? OR mr_id IS NULL)`;
+                params.push(visitId.toUpperCase());
             }
         }
         
