@@ -40,56 +40,74 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 function setupEventListeners() {
-    // Logout
-    document.getElementById('btn-logout').addEventListener('click', async (e) => {
-        e.preventDefault();
-        try {
-            await signOut();
-            window.location.href = 'login.html';
-        } catch (err) {
-            console.error('Logout error:', err);
-            window.location.href = 'login.html';
-        }
-    });
+    // Logout (only for standalone page)
+    const btnLogout = document.getElementById('btn-logout');
+    if (btnLogout) {
+        btnLogout.addEventListener('click', async (e) => {
+            e.preventDefault();
+            try {
+                await signOut();
+                window.location.href = 'login.html';
+            } catch (err) {
+                console.error('Logout error:', err);
+                window.location.href = 'login.html';
+            }
+        });
+    }
 
-    // New announcement button
-    document.getElementById('btn-new-announcement').addEventListener('click', () => {
-        openModal();
-    });
+    // New announcement button (standalone page)
+    const btnNew = document.getElementById('btn-new-announcement');
+    if (btnNew) {
+        btnNew.addEventListener('click', () => {
+            openModal();
+        });
+    }
 
     // Save button
-    document.getElementById('btn-save').addEventListener('click', async () => {
-        await saveAnnouncement();
-    });
+    const btnSave = document.getElementById('btn-save');
+    if (btnSave) {
+        btnSave.addEventListener('click', async () => {
+            await saveAnnouncement();
+        });
+    }
 
     // Update preview button
-    document.getElementById('btn-update-preview').addEventListener('click', () => {
-        updatePreview();
-    });
+    const btnUpdatePreview = document.getElementById('btn-update-preview');
+    if (btnUpdatePreview) {
+        btnUpdatePreview.addEventListener('click', () => {
+            updatePreview();
+        });
+    }
 
     // Content type change event
-    document.getElementById('contentType').addEventListener('change', (e) => {
-        const toolbar = document.getElementById('formatToolbar');
-        const messageHelp = document.getElementById('messageHelp');
+    const contentType = document.getElementById('contentType');
+    if (contentType) {
+        contentType.addEventListener('change', (e) => {
+            const toolbar = document.getElementById('formatToolbar');
+            const messageHelp = document.getElementById('messageHelp');
 
-        if (e.target.value === 'markdown') {
-            toolbar.style.display = 'block';
-            messageHelp.innerHTML = 'Gunakan markdown untuk pemformatan. <a href="https://www.markdownguide.org/basic-syntax/" target="_blank">Panduan Markdown</a>';
-        } else {
-            toolbar.style.display = 'none';
-            messageHelp.textContent = 'Masukkan teks biasa tanpa pemformatan.';
-        }
-    });
+            if (e.target.value === 'markdown') {
+                if (toolbar) toolbar.style.display = 'block';
+                if (messageHelp) messageHelp.innerHTML = 'Gunakan markdown untuk pemformatan. <a href="https://www.markdownguide.org/basic-syntax/" target="_blank">Panduan Markdown</a>';
+            } else {
+                if (toolbar) toolbar.style.display = 'none';
+                if (messageHelp) messageHelp.textContent = 'Masukkan teks biasa tanpa pemformatan.';
+            }
+        });
+    }
 
     // Auto-update preview when switching to preview tab
-    document.getElementById('preview-tab').addEventListener('shown.bs.tab', () => {
-        updatePreview();
-    });
+    const previewTab = document.getElementById('preview-tab');
+    if (previewTab) {
+        $(previewTab).on('shown.bs.tab', () => {
+            updatePreview();
+        });
+    }
 }
 
 async function loadAnnouncements() {
     try {
-        const token = await getIdToken();
+        const token = window.getIdTokenOverride ? await window.getIdTokenOverride() : await getIdToken();
         const response = await fetch(`${API_URL}/announcements`, {
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -109,7 +127,12 @@ async function loadAnnouncements() {
 }
 
 function displayAnnouncements(announcements) {
-    const container = document.getElementById('announcements-container');
+    const container = document.getElementById('announcements-container-inline') || document.getElementById('announcements-container');
+    
+    if (!container) {
+        console.error('Announcements container not found');
+        return;
+    }
 
     if (announcements.length === 0) {
         container.innerHTML = `
@@ -454,3 +477,59 @@ function showAlert(type, message) {
         $('.alert').alert('close');
     }, 5000);
 }
+
+// Export init function for embedding in index-adminlte
+window.initKelolaAnnouncement = async function() {
+    try {
+        // Get current user from window.auth (set by index-adminlte)
+        currentUser = window.auth?.currentUser;
+        if (!currentUser) {
+            console.error('No authenticated user found');
+            return;
+        }
+
+        // Override getIdToken to use window.getIdToken when embedded
+        if (window.getIdToken && typeof window.getIdToken === 'function') {
+            window.getIdTokenOverride = window.getIdToken;
+        }
+
+        // Initialize Socket.io if not already connected
+        if (!window.socket) {
+            const socketUrl = window.location.hostname === 'localhost' 
+                ? 'http://localhost:3000' 
+                : 'https://dokterdibya.com';
+            window.socket = io(socketUrl);
+        }
+        socket = window.socket;
+
+        socket.on('connect', () => {
+            console.log('Socket connected for announcements');
+        });
+
+        // Update container references for inline mode
+        const announcementsContainer = document.getElementById('announcements-container-inline') || document.getElementById('announcements-container');
+        
+        // Load announcements
+        await loadAnnouncements();
+
+        // Setup event listeners for inline mode
+        const btnNew = document.getElementById('btn-new-announcement-inline') || document.getElementById('btn-new-announcement');
+        if (btnNew) {
+            btnNew.addEventListener('click', () => {
+                document.getElementById('announcementId').value = '';
+                document.getElementById('title').value = '';
+                document.getElementById('message').value = '';
+                document.getElementById('imageUrl').value = '';
+                document.getElementById('contentType').value = 'plain';
+                document.getElementById('priority').value = 'normal';
+                document.getElementById('status').value = 'active';
+                document.getElementById('modalTitle').textContent = 'Buat Pengumuman Baru';
+                $('#announcementModal').modal('show');
+            });
+        }
+
+        setupEventListeners();
+    } catch (error) {
+        console.error('Kelola Announcement initialization error:', error);
+    }
+};
