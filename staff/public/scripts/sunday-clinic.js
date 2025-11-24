@@ -238,6 +238,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     window.currentStaffIdentity.id = identity.id;
                     window.currentStaffIdentity.name = identity.name;
                     window.currentStaffIdentity.role = identity.role;
+                    
+                    // Update staff name display
+                    const staffNameDisplay = document.getElementById('user-name');
+                    if (staffNameDisplay) {
+                        staffNameDisplay.textContent = identity.name || 'Staff';
+                    }
+                    
                     console.log('[SundayClinic] Staff identity set:', identity);
                 }
             }
