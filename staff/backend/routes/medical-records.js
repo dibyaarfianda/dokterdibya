@@ -390,20 +390,22 @@ router.post('/api/medical-records/generate-resume', verifyToken, async (req, res
 
 /**
  * Generate professional medical resume from patient data
+ * This creates a comprehensive medical summary similar to hospital discharge summaries
  */
 function generateMedicalResume(identitas, records) {
     let resume = '';
     const today = new Date().toLocaleDateString('id-ID', { 
         day: 'numeric', 
         month: 'long', 
-        year: 'numeric' 
+        year: 'numeric',
+        timeZone: 'Asia/Jakarta'
     });
 
-    // Header
+    // Header - Professional Format
     resume += '═══════════════════════════════════════════════════════════════\n';
-    resume += 'RESUME MEDIS DR. DIBYA ARFIANDA, SPOG, M.KED.KLIN.\n';
+    resume += '           RESUME MEDIS DR. DIBYA ARFIANDA, SPOG, M.KED.KLIN.\n';
     resume += '═══════════════════════════════════════════════════════════════\n';
-    resume += `Tanggal Pembuatan Resume: ${today}\n`;
+    resume += `Tanggal: ${today}\n`;
     resume += '═══════════════════════════════════════════════════════════════\n\n';
 
     // I. IDENTITAS PASIEN
