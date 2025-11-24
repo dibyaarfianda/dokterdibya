@@ -559,57 +559,82 @@ function generateMedicalResume(identitas, records) {
             // Skrining Kongenital - Check for screening data (can be nested or flat)
             const scr = usg.screening || (currentTrimester === 'screening' ? usg : null);
             if (scr && typeof scr === 'object' && Object.keys(scr).length > 0) {
-                resume += 'Hasil Skrining Kelainan Kongenital:\n';
+                resume += 'Hasil Skrining Kelainan Kongenital:\n\n';
                 
                 if (scr.date) resume += `Tanggal Pemeriksaan: ${scr.date}\n`;
                 if (scr.gender) {
                     const genderMap = { 'male': 'Laki-laki', 'female': 'Perempuan' };
-                    resume += `Jenis Kelamin: ${genderMap[scr.gender] || scr.gender}\n\n`;
+                    resume += `Jenis Kelamin: ${genderMap[scr.gender] || scr.gender}\n`;
                 }
+                resume += '\n';
                 
                 // Kepala dan Otak
-                resume += 'Kepala dan Otak:\n';
-                resume += `${scr.hemisphere ? '✓' : '☐'} Simetris hemisfer, Falx cerebri jelas\n`;
-                resume += `${scr.lateral_vent ? '✓' : '☐'} Ventrikel lateral, Atrium < 10 mm\n`;
-                resume += `${scr.cavum ? '✓' : '☐'} Cavum septum pellucidum\n`;
-                resume += '\n';
+                const headItems = [];
+                if (scr.hemisphere) headItems.push('Simetris hemisfer, Falx cerebri jelas');
+                if (scr.lateral_vent) headItems.push('Ventrikel lateral, Atrium < 10 mm');
+                if (scr.cavum) headItems.push('Cavum septum pellucidum');
+                if (headItems.length > 0) {
+                    resume += 'Kepala dan Otak:\n';
+                    headItems.forEach(item => resume += `• ${item}\n`);
+                    resume += '\n';
+                }
                 
                 // Muka dan Leher
-                resume += 'Muka dan Leher:\n';
-                resume += `${scr.profile ? '✓' : '☐'} Profil muka normal\n`;
-                resume += `${scr.nasal_bone ? '✓' : '☐'} Tulang hidung tampak, ukuran normal\n`;
-                resume += `${scr.upper_lip ? '✓' : '☐'} Garis bibir atas menyambung\n`;
-                resume += '\n';
+                const faceItems = [];
+                if (scr.profile) faceItems.push('Profil muka normal');
+                if (scr.nasal_bone) faceItems.push('Tulang hidung tampak, ukuran normal');
+                if (scr.upper_lip) faceItems.push('Garis bibir atas menyambung');
+                if (faceItems.length > 0) {
+                    resume += 'Muka dan Leher:\n';
+                    faceItems.forEach(item => resume += `• ${item}\n`);
+                    resume += '\n';
+                }
                 
                 // Jantung dan Rongga Dada
-                resume += 'Jantung dan Rongga Dada:\n';
-                resume += `${scr.four_chamber || scr['4chamber'] ? '✓' : '☐'} Gambaran jelas 4-chamber view\n`;
-                resume += `${scr.heart_left ? '✓' : '☐'} Jantung di sebelah kiri\n`;
-                resume += `${scr.apex ? '✓' : '☐'} Apex jantung kearah kiri (~45°)\n`;
-                resume += `${scr.heart_size ? '✓' : '☐'} Besar jantung <1/3 area dada\n`;
-                resume += '\n';
+                const heartItems = [];
+                if (scr.four_chamber || scr['4chamber']) heartItems.push('Gambaran jelas 4-chamber view');
+                if (scr.heart_left) heartItems.push('Jantung di sebelah kiri');
+                if (scr.apex) heartItems.push('Apex jantung kearah kiri (~45°)');
+                if (scr.heart_size) heartItems.push('Besar jantung <1/3 area dada');
+                if (heartItems.length > 0) {
+                    resume += 'Jantung dan Rongga Dada:\n';
+                    heartItems.forEach(item => resume += `• ${item}\n`);
+                    resume += '\n';
+                }
                 
                 // Tulang Belakang
-                resume += 'Tulang Belakang:\n';
-                resume += `${scr.vertebra ? '✓' : '☐'} Tidak tampak kelainan vertebra\n`;
-                resume += `${scr.skin ? '✓' : '☐'} Garis kulit tampak baik\n`;
-                resume += '\n';
+                const spineItems = [];
+                if (scr.vertebra) spineItems.push('Tidak tampak kelainan vertebra');
+                if (scr.skin) spineItems.push('Garis kulit tampak baik');
+                if (spineItems.length > 0) {
+                    resume += 'Tulang Belakang:\n';
+                    spineItems.forEach(item => resume += `• ${item}\n`);
+                    resume += '\n';
+                }
                 
                 // Anggota Gerak
-                resume += 'Anggota Gerak:\n';
-                resume += `${scr.upper_limbs ? '✓' : '☐'} Alat gerak kiri kanan atas normal\n`;
-                resume += `${scr.lower_limbs ? '✓' : '☐'} Alat gerak kiri kanan bawah normal\n`;
-                resume += '\n';
+                const limbItems = [];
+                if (scr.upper_limbs) limbItems.push('Alat gerak kiri kanan atas normal');
+                if (scr.lower_limbs) limbItems.push('Alat gerak kiri kanan bawah normal');
+                if (limbItems.length > 0) {
+                    resume += 'Anggota Gerak:\n';
+                    limbItems.forEach(item => resume += `• ${item}\n`);
+                    resume += '\n';
+                }
                 
                 // Rongga Perut
-                resume += 'Rongga Perut:\n';
-                resume += `${scr.stomach ? '✓' : '☐'} Lambung di sebelah kiri\n`;
-                resume += `${scr.liver ? '✓' : '☐'} Posisi liver dan echogenocity normal\n`;
-                resume += `${scr.kidneys ? '✓' : '☐'} Terlihat ginjal kiri & kanan\n`;
-                resume += `${scr.bladder ? '✓' : '☐'} Kandung kemih terisi\n`;
-                resume += `${scr.cord ? '✓' : '☐'} Insersi tali pusat baik\n`;
-                resume += `${scr.abdominal_wall ? '✓' : '☐'} Dinding perut tidak tampak defek\n`;
-                resume += '\n';
+                const abdomenItems = [];
+                if (scr.stomach) abdomenItems.push('Lambung di sebelah kiri');
+                if (scr.liver) abdomenItems.push('Posisi liver dan echogenocity normal');
+                if (scr.kidneys) abdomenItems.push('Terlihat ginjal kiri & kanan');
+                if (scr.bladder) abdomenItems.push('Kandung kemih terisi');
+                if (scr.cord) abdomenItems.push('Insersi tali pusat baik');
+                if (scr.abdominal_wall) abdomenItems.push('Dinding perut tidak tampak defek');
+                if (abdomenItems.length > 0) {
+                    resume += 'Rongga Perut:\n';
+                    abdomenItems.forEach(item => resume += `• ${item}\n`);
+                    resume += '\n';
+                }
                 
                 // Kesimpulan Skrining
                 if (scr.no_anomaly) {
