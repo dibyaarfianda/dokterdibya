@@ -542,22 +542,24 @@ function generateMedicalResume(identitas, records) {
             resume += 'V. PEMERIKSAAN ULTRASONOGRAFI (USG)\n';
             resume += '───────────────────────────────────────────────────────────────\n';
             
-            if (usg.date) resume += `Tanggal Pemeriksaan: ${usg.date}\n`;
-            if (usg.trimester) {
+            // Check current trimester
+            const currentTrimester = usg.current_trimester || usg.trimester;
+            if (currentTrimester) {
                 const trimesterMap = {
                     'first': 'Trimester Pertama (1-13 minggu)',
                     'second': 'Trimester Kedua (14-27 minggu)',
                     'third': 'Trimester Ketiga (28+ minggu)',
                     'screening': 'Skrining Kongenital (18-23 minggu)'
                 };
-                resume += `Jenis Pemeriksaan: ${trimesterMap[usg.trimester] || usg.trimester}\n\n`;
+                resume += `Jenis Pemeriksaan: ${trimesterMap[currentTrimester] || currentTrimester}\n\n`;
             }
             
-            // Skrining Kongenital - Check for screening data
-            if (usg.screening) {
-                const scr = usg.screening;
+            // Skrining Kongenital - Check for screening data (can be nested or flat)
+            const scr = usg.screening || (currentTrimester === 'screening' ? usg : null);
+            if (scr && typeof scr === 'object' && Object.keys(scr).length > 0) {
                 resume += 'Hasil Skrining Kelainan Kongenital:\n';
                 
+                if (scr.date) resume += `Tanggal Pemeriksaan: ${scr.date}\n`;
                 if (scr.gender) {
                     const genderMap = { 'male': 'Laki-laki', 'female': 'Perempuan' };
                     resume += `Jenis Kelamin: ${genderMap[scr.gender] || scr.gender}\n\n`;
@@ -640,13 +642,20 @@ function generateMedicalResume(identitas, records) {
                 }
             }
             
+            // Get data from current trimester
+            let trimesterData = usg;
+            if (currentTrimester === 'first' && usg.trimester_1) trimesterData = usg.trimester_1;
+            if (currentTrimester === 'second' && usg.trimester_2) trimesterData = usg.trimester_2;
+            if (currentTrimester === 'third' && usg.trimester_3) trimesterData = usg.trimester_3;
+            if (currentTrimester === 'screening' && usg.screening) trimesterData = usg.screening;
+            
             // Biometri Janin
             const biometri = [];
-            if (usg.crl_cm) biometri.push(`Crown-Rump Length (CRL): ${usg.crl_cm} cm`);
-            if (usg.bpd) biometri.push(`Biparietal Diameter (BPD): ${usg.bpd} cm`);
-            if (usg.ac) biometri.push(`Abdominal Circumference (AC): ${usg.ac} cm`);
-            if (usg.fl) biometri.push(`Femur Length (FL): ${usg.fl} cm`);
-            if (usg.hc) biometri.push(`Head Circumference (HC): ${usg.hc} cm`);
+            if (trimesterData.crl_cm) biometri.push(`Crown-Rump Length (CRL): ${trimesterData.crl_cm} cm`);
+            if (trimesterData.bpd) biometri.push(`Biparietal Diameter (BPD): ${trimesterData.bpd} cm`);
+            if (trimesterData.ac) biometri.push(`Abdominal Circumference (AC): ${trimesterData.ac} cm`);
+            if (trimesterData.fl) biometri.push(`Femur Length (FL): ${trimesterData.fl} cm`);
+            if (trimesterData.hc) biometri.push(`Head Circumference (HC): ${trimesterData.hc} cm`);
             
             if (biometri.length > 0) {
                 resume += 'Biometri Janin:\n';
@@ -655,13 +664,16 @@ function generateMedicalResume(identitas, records) {
             }
             
             // Parameter Lainnya
-            if (usg.heart_rate) resume += `Denyut Jantung Janin (DJJ): ${usg.heart_rate} bpm\n`;
-            if (usg.efw) resume += `Estimasi Berat Janin (EFW): ${usg.efw} gram\n`;
-            if (usg.edd) resume += `Hari Perkiraan Lahir (EDD): ${usg.edd}\n`;
-            if (usg.ga_weeks) resume += `Usia Kehamilan: ${usg.ga_weeks} minggu\n`;
-            if (usg.placenta) resume += `Lokasi Plasenta: ${usg.placenta}\n`;
-            if (usg.afi) resume += `Amniotic Fluid Index (AFI): ${usg.afi} cm\n`;
-            if (usg.gender) resume += `Jenis Kelamin: ${usg.gender}\n`;
+            if (trimesterData.heart_rate) resume += `Denyut Jantung Janin (DJJ): ${trimesterData.heart_rate} bpm\n`;
+            if (trimesterData.efw) resume += `Estimasi Berat Janin (EFW): ${trimesterData.efw} gram\n`;
+            if (trimesterData.edd) resume += `Hari Perkiraan Lahir (EDD): ${trimesterData.edd}\n`;
+            if (trimesterData.ga_weeks) resume += `Usia Kehamilan: ${trimesterData.ga_weeks} minggu\n`;
+            if (trimesterData.placenta) resume += `Lokasi Plasenta: ${trimesterData.placenta}\n`;
+            if (trimesterData.afi) resume += `Amniotic Fluid Index (AFI): ${trimesterData.afi} cm\n`;
+            if (trimesterData.gender && currentTrimester !== 'screening') {
+                const genderMap = { 'male': 'Laki-laki', 'female': 'Perempuan' };
+                resume += `Jenis Kelamin: ${genderMap[trimesterData.gender] || trimesterData.gender}\n`;
+            }
             
             if (usg.notes) {
                 resume += `\nCatatan Tambahan:\n${usg.notes}\n`;
