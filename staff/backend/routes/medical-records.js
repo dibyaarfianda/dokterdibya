@@ -376,10 +376,14 @@ router.post('/api/medical-records/generate-resume', verifyToken, async (req, res
         console.log('Records by type keys:', Object.keys(recordsByType));
         if (recordsByType.usg) {
             console.log('USG exists: true');
+            console.log('USG data keys:', Object.keys(recordsByType.usg));
+            console.log('FULL USG DATA:', JSON.stringify(recordsByType.usg, null, 2));
             console.log('USG current_trimester:', recordsByType.usg.current_trimester);
             console.log('USG screening exists:', !!recordsByType.usg.screening);
-            console.log('USG screening keys:', recordsByType.usg.screening ? Object.keys(recordsByType.usg.screening) : 'no screening');
-            console.log('Full USG screening data:', JSON.stringify(recordsByType.usg.screening, null, 2));
+            if (recordsByType.usg.screening) {
+                console.log('USG screening keys:', Object.keys(recordsByType.usg.screening));
+                console.log('USG screening data:', JSON.stringify(recordsByType.usg.screening, null, 2));
+            }
         } else {
             console.log('USG exists: false');
         }
