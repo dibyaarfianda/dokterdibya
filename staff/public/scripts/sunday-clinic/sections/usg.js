@@ -822,10 +822,18 @@ export function renderUSG() {
         }
         if (resetBtn) {
             resetBtn.addEventListener('click', async () => {
-                if (confirm('Are you sure you want to reset this USG data?')) {
+                if (confirm('Are you sure you want to reset ALL USG data for this patient?')) {
                     try {
-                        await apiClient.delete(`/api/medical-records/${context.record.id}`);
-                        window.showSuccess('USG data has been reset.');
+                        const patientId = state.derived?.patientId;
+                        const mrId = state.currentMrId;
+                        
+                        if (!patientId) {
+                            throw new Error('Patient ID not found');
+                        }
+                        
+                        const response = await apiClient.delete(`/api/medical-records/by-type/usg?patientId=${patientId}&mrId=${mrId}`);
+                        window.showSuccess(response.data?.message || 'USG data has been reset.');
+                        
                         const SundayClinicApp = (await import('../main.js')).default;
                         await SundayClinicApp.fetchRecord(state.currentMrId);
                         SundayClinicApp.render(state.activeSection);
