@@ -51,9 +51,9 @@ async function ensureMedicalRecordsTable() {
         try {
             await db.query(`
                 ALTER TABLE medical_records
-                MODIFY COLUMN record_type ENUM('identitas', 'anamnesa', 'physical_exam', 'pemeriksaan_obstetri', 'usg', 'lab', 'diagnosis', 'planning', 'complete') NOT NULL
+                MODIFY COLUMN record_type ENUM('identitas', 'anamnesa', 'physical_exam', 'pemeriksaan_obstetri', 'usg', 'lab', 'diagnosis', 'planning', 'resume_medis', 'complete') NOT NULL
             `);
-            logger.info('Updated record_type ENUM to include pemeriksaan_obstetri');
+            logger.info('Updated record_type ENUM to include pemeriksaan_obstetri and resume_medis');
         } catch (enumError) {
             // Ignore if already updated
             if (!enumError.message.includes('Duplicate')) {
@@ -298,5 +298,197 @@ router.delete('/api/medical-records/:id', verifyToken, async (req, res) => {
         });
     }
 });
+
+// Generate AI Resume Medis
+router.post('/api/medical-records/generate-resume', verifyToken, async (req, res) => {
+    try {
+        const { patientId } = req.body;
+        
+        if (!patientId) {
+            return res.status(400).json({
+                success: false,
+                message: 'Patient ID is required'
+            });
+        }
+
+        // Fetch all medical records for this patient
+        const [records] = await db.query(
+            `SELECT record_type, record_data, doctor_name, created_at 
+             FROM medical_records 
+             WHERE patient_id = ? 
+             ORDER BY created_at DESC`,
+            [patientId]
+        );
+
+        if (records.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'No medical records found for this patient'
+            });
+        }
+
+        // Fetch patient intake data
+        const [intakeRecords] = await db.query(
+            'SELECT payload FROM patient_intake WHERE patient_id = ? ORDER BY created_at DESC LIMIT 1',
+            [patientId]
+        );
+
+        let identitas = {};
+        if (intakeRecords.length > 0) {
+            identitas = intakeRecords[0].payload;
+        }
+
+        // Organize records by type
+        const recordsByType = {};
+        records.forEach(record => {
+            if (!recordsByType[record.record_type]) {
+                recordsByType[record.record_type] = record.record_data;
+            }
+        });
+
+        // Generate resume using AI-like logic
+        const resume = generateMedicalResume(identitas, recordsByType);
+
+        res.json({
+            success: true,
+            data: { resume }
+        });
+
+    } catch (error) {
+        logger.error('Error generating resume:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to generate resume',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * Generate medical resume from patient data
+ */
+function generateMedicalResume(identitas, records) {
+    let resume = '';
+
+    // Header
+    resume += '═══════════════════════════════════════════════════\n';
+    resume += '           RESUME MEDIS PASIEN\n';
+    resume += '═══════════════════════════════════════════════════\n\n';
+
+    // Identitas Pasien
+    if (identitas && Object.keys(identitas).length > 0) {
+        resume += '📋 IDENTITAS PASIEN\n';
+        resume += '───────────────────────────────────────────────────\n';
+        if (identitas.nama) resume += `Nama           : ${identitas.nama}\n`;
+        if (identitas.tanggal_lahir) resume += `Tanggal Lahir  : ${identitas.tanggal_lahir}\n`;
+        if (identitas.umur) resume += `Umur           : ${identitas.umur}\n`;
+        if (identitas.alamat) resume += `Alamat         : ${identitas.alamat}\n`;
+        if (identitas.no_telp) resume += `No. Telepon    : ${identitas.no_telp}\n`;
+        resume += '\n';
+    }
+
+    // Anamnesa
+    if (records.anamnesa) {
+        resume += '🩺 ANAMNESA\n';
+        resume += '───────────────────────────────────────────────────\n';
+        const anamnesa = records.anamnesa;
+        if (anamnesa.keluhan_utama) resume += `Keluhan Utama: ${anamnesa.keluhan_utama}\n`;
+        if (anamnesa.hpht) resume += `HPHT: ${anamnesa.hpht}\n`;
+        if (anamnesa.hpl) resume += `HPL: ${anamnesa.hpl}\n`;
+        if (anamnesa.usia_kehamilan) resume += `Usia Kehamilan: ${anamnesa.usia_kehamilan}\n`;
+        if (anamnesa.gravida || anamnesa.para || anamnesa.abortus) {
+            resume += `G${anamnesa.gravida || 0}P${anamnesa.para || 0}A${anamnesa.abortus || 0}\n`;
+        }
+        if (anamnesa.riwayat_kehamilan_saat_ini) resume += `Riwayat Kehamilan: ${anamnesa.riwayat_kehamilan_saat_ini}\n`;
+        if (anamnesa.alergi_obat) resume += `Alergi Obat: ${anamnesa.alergi_obat}\n`;
+        resume += '\n';
+    }
+
+    // Pemeriksaan Fisik
+    if (records.physical_exam) {
+        resume += '🔬 PEMERIKSAAN FISIK\n';
+        resume += '───────────────────────────────────────────────────\n';
+        const pe = records.physical_exam;
+        resume += `Tanda Vital:\n`;
+        if (pe.tekanan_darah) resume += `  - TD: ${pe.tekanan_darah} mmHg\n`;
+        if (pe.nadi) resume += `  - Nadi: ${pe.nadi} x/menit\n`;
+        if (pe.suhu) resume += `  - Suhu: ${pe.suhu}°C\n`;
+        if (pe.respirasi) resume += `  - RR: ${pe.respirasi} x/menit\n`;
+        if (pe.tinggi_badan && pe.berat_badan) {
+            resume += `  - TB/BB: ${pe.tinggi_badan} cm / ${pe.berat_badan} kg\n`;
+            if (pe.imt) resume += `  - IMT: ${pe.imt} (${pe.kategori_imt})\n`;
+        }
+        if (pe.kepala_leher) resume += `Kepala & Leher: ${pe.kepala_leher}\n`;
+        if (pe.thorax) resume += `Thorax: ${pe.thorax}\n`;
+        if (pe.abdomen) resume += `Abdomen: ${pe.abdomen}\n`;
+        if (pe.ekstremitas) resume += `Ekstremitas: ${pe.ekstremitas}\n`;
+        resume += '\n';
+    }
+
+    // Pemeriksaan Obstetri
+    if (records.pemeriksaan_obstetri) {
+        resume += '🤰 PEMERIKSAAN OBSTETRI\n';
+        resume += '───────────────────────────────────────────────────\n';
+        const obs = records.pemeriksaan_obstetri;
+        if (obs.findings) resume += `${obs.findings}\n`;
+        resume += '\n';
+    }
+
+    // USG
+    if (records.usg) {
+        resume += '📡 USG\n';
+        resume += '───────────────────────────────────────────────────\n';
+        const usg = records.usg;
+        if (usg.trimester) resume += `Trimester: ${usg.trimester}\n`;
+        if (usg.date) resume += `Tanggal: ${usg.date}\n`;
+        if (usg.crl_cm) resume += `CRL: ${usg.crl_cm} cm\n`;
+        if (usg.heart_rate) resume += `DJJ: ${usg.heart_rate} bpm\n`;
+        if (usg.bpd) resume += `BPD: ${usg.bpd} cm\n`;
+        if (usg.ac) resume += `AC: ${usg.ac} cm\n`;
+        if (usg.fl) resume += `FL: ${usg.fl} cm\n`;
+        if (usg.efw) resume += `EFW: ${usg.efw} gram\n`;
+        if (usg.edd) resume += `EDD: ${usg.edd}\n`;
+        if (usg.notes) resume += `Catatan: ${usg.notes}\n`;
+        resume += '\n';
+    }
+
+    // Penunjang
+    if (records.penunjang) {
+        resume += '🧪 PEMERIKSAAN PENUNJANG\n';
+        resume += '───────────────────────────────────────────────────\n';
+        const penunjang = records.penunjang;
+        if (penunjang.lab_findings) resume += `Laboratorium:\n${penunjang.lab_findings}\n`;
+        if (penunjang.imaging_findings) resume += `Imaging:\n${penunjang.imaging_findings}\n`;
+        if (penunjang.other_findings) resume += `Lainnya:\n${penunjang.other_findings}\n`;
+        resume += '\n';
+    }
+
+    // Diagnosis
+    if (records.diagnosis) {
+        resume += '⚕️ DIAGNOSIS\n';
+        resume += '───────────────────────────────────────────────────\n';
+        const diagnosis = records.diagnosis;
+        if (diagnosis.diagnosis_utama) resume += `Diagnosis Utama: ${diagnosis.diagnosis_utama}\n`;
+        if (diagnosis.diagnosis_sekunder) resume += `Diagnosis Sekunder: ${diagnosis.diagnosis_sekunder}\n`;
+        resume += '\n';
+    }
+
+    // Planning
+    if (records.planning) {
+        resume += '📝 RENCANA TATALAKSANA\n';
+        resume += '───────────────────────────────────────────────────\n';
+        const planning = records.planning;
+        if (planning.tindakan) resume += `Tindakan: ${planning.tindakan}\n`;
+        if (planning.terapi) resume += `Terapi: ${planning.terapi}\n`;
+        if (planning.rencana) resume += `Rencana: ${planning.rencana}\n`;
+        resume += '\n';
+    }
+
+    // Footer
+    resume += '═══════════════════════════════════════════════════\n';
+    resume += `Generated: ${new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}\n`;
+
+    return resume;
+}
 
 module.exports = router;

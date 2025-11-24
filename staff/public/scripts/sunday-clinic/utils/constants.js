@@ -31,6 +31,7 @@ export const SECTIONS = {
     PENUNJANG: 'penunjang',  // Renamed from laboratorium
     DIAGNOSIS: 'diagnosis',
     PLAN: 'plan',
+    RESUME_MEDIS: 'resume-medis',
     BILLING: 'billing'
 };
 
@@ -43,6 +44,7 @@ export const SECTION_LABELS = {
     [SECTIONS.PENUNJANG]: 'Penunjang',  // Changed from "Laboratorium"
     [SECTIONS.DIAGNOSIS]: 'Diagnosis',
     [SECTIONS.PLAN]: 'Plan',
+    [SECTIONS.RESUME_MEDIS]: 'Resume Medis',
     [SECTIONS.BILLING]: 'Tagihan'
 };
 
