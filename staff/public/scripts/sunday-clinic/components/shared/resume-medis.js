@@ -59,7 +59,7 @@ export default {
                 <div class="resume-display" id="resume-display">
                     <div class="card bg-light">
                         <div class="card-body">
-                            <div id="resume-content" style="white-space: pre-wrap; line-height: 1.8;">${this.escapeHtml(resume)}</div>
+                            <div id="resume-content" style="white-space: pre-wrap; line-height: 1.8; font-family: 'Frutiger Roman', 'Frutiger', 'Segoe UI', Arial, sans-serif; font-size: 12px;">${this.escapeHtml(resume)}</div>
                         </div>
                     </div>
                 </div>
