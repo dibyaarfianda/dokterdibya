@@ -71,13 +71,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 130px; /* Fixed height to prevent jumping */
-            padding: 0.5rem;
+            min-height: 70px; /* Reduced from 130px */
+            padding: 0.5rem 0.5rem; /* Reduced vertical padding */
         }
 
         /* Logo sizing */
         .sidebar-logo img {
-            max-height: 112px;
+            max-height: 60px; /* Reduced from 112px */
             max-width: 100%; /* Prevent overflow */
             width: auto;
             height: auto;
@@ -94,13 +94,13 @@
 
         /* Logo when sidebar collapsed - shrink to fit with smooth scale */
         body.sidebar-collapse .sidebar-logo {
-            min-height: 95px; /* Smaller container when collapsed */
+            min-height: 60px; /* Reduced from 95px */
             padding: 0.25rem;
         }
 
         body.sidebar-collapse .sidebar-logo img {
-            max-height: 78px; /* Smaller max size */
-            max-width: 78px;
+            max-height: 50px; /* Reduced from 78px */
+            max-width: 50px;
         }
         
         /* Adjust content area to match sidebar width when expanded */
@@ -415,6 +415,15 @@
         .stats-card:hover {
             transform: translateY(-5px);
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        /* Remove blue outline/border on profile dropdown */
+        .navbar-nav .nav-item.dropdown .nav-link:focus,
+        .navbar-nav .nav-item.dropdown .nav-link:active,
+        .navbar-nav .nav-item.dropdown .nav-link {
+            outline: none !important;
+            box-shadow: none !important;
+            border: none !important;
         }
     </style>
 
@@ -770,7 +779,7 @@
     <aside class="main-sidebar sidebar-dark-primary elevation-4">
         <div class="sidebar">
             <div class="p-3 text-center sidebar-logo">
-                <img src="images/DIBYA.svg" alt="Logo" class="sidebar-logo-img" title="Admin Panel">
+                <img src="images/dokterDIBYA.svg" alt="Logo" class="sidebar-logo-img" title="Admin Panel">
             </div>
             <nav class="mt-2">
                 <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
@@ -793,14 +802,14 @@
                         </a>
                     </li>
 
-                    <li class="nav-item" id="nav-announcements">
-                        <a href="kelola-announcement.html" class="nav-link">
+                    <li class="nav-header" id="management-header">MANAGEMENT</li>
+                    
+                    <li class="nav-item" id="nav-kelola-pengumuman">
+                        <a href="#" class="nav-link" onclick="showKelolaPengumumanPage(); return false;">
                             <i class="nav-icon fas fa-bullhorn"></i>
-                            <p>Pengumuman</p>
+                            <p>Kelola Pengumuman</p>
                         </a>
                     </li>
-
-                    <li class="nav-header" id="management-header">MANAGEMENT</li>
 
                     <li class="nav-item superadmin-only d-none" id="finance-analysis-nav">
                         <a href="#" class="nav-link" onclick="showFinanceAnalysisPage(); return false;">
@@ -2296,6 +2305,28 @@
                 <!-- KELOLA PASIEN PAGE -->
                 <div id="kelola-pasien-page" class="d-none"></div>
 
+                <!-- KELOLA PENGUMUMAN PAGE -->
+                <div id="kelola-pengumuman-page" class="d-none">
+                    <div class="container-fluid">
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h4><i class="fas fa-bullhorn"></i> Kelola Pengumuman</h4>
+                                    <button class="btn btn-primary" id="btn-new-announcement-inline">
+                                        <i class="fas fa-plus"></i> Buat Pengumuman Baru
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="announcements-container-inline" class="row">
+                            <div class="col-12 text-center py-5">
+                                <i class="fas fa-spinner fa-spin fa-2x"></i>
+                                <p class="mt-2">Memuat pengumuman...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- KELOLA APPOINTMENT PAGE -->
                 <div id="kelola-appointment-page" class="d-none">
                     <!-- Kelola Appointment Page -->
@@ -3079,6 +3110,71 @@
 </div>
 
 
+<!-- Kelola Pengumuman Modal -->
+<div class="modal fade" id="announcementModal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalTitle">Buat Pengumuman Baru</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="announcementForm">
+                    <input type="hidden" id="announcementId">
+                    <div class="form-group">
+                        <label for="title">Judul Pengumuman *</label>
+                        <input type="text" class="form-control" id="title" required maxlength="255">
+                    </div>
+                    <div class="form-group">
+                        <label for="imageUrl">URL Gambar (opsional)</label>
+                        <input type="url" class="form-control" id="imageUrl" placeholder="https://example.com/image.jpg">
+                    </div>
+                    <div class="form-group">
+                        <label for="contentType">Tipe Konten</label>
+                        <select class="form-control" id="contentType">
+                            <option value="plain">Teks Biasa</option>
+                            <option value="markdown">Markdown</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Pesan *</label>
+                        <textarea class="form-control" id="message" rows="8" required></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="priority">Prioritas</label>
+                                <select class="form-control" id="priority">
+                                    <option value="normal">Normal</option>
+                                    <option value="important">Penting</option>
+                                    <option value="urgent">Mendesak</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label for="status">Status</label>
+                                <select class="form-control" id="status">
+                                    <option value="active">Aktif</option>
+                                    <option value="inactive">Tidak Aktif</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-primary" id="btn-save">
+                    <i class="fas fa-save"></i> Simpan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Kelola Appointment Modals -->
 <!-- Detail Modal -->
 <div class="modal fade" id="detailModal" tabindex="-1" role="dialog" aria-labelledby="detailModalLabel" aria-hidden="true">
@@ -3338,6 +3434,9 @@
 <!-- ApexCharts for Finance Analysis -->
 <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+<!-- Markdown parser and HTML sanitizer for announcements -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
 
 <!-- Core app modules -->
 <!-- Mobile Menu Handler -->
@@ -3549,6 +3648,7 @@
         'showKlinikPrivatePage',
         'showFinanceAnalysisPage',
         'showKelolaPasienPage',
+        'showKelolaPengumumanPage',
         'showKelolaAppointmentPage',
         'showKelolaJadwalPage',
         'showKelolaTindakanPage',
