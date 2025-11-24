@@ -105,19 +105,27 @@ class StateManager {
                 throw new Error('MR ID not found in record data');
             }
 
-            // Extract anamnesa data from medical records
+            // Extract data from medical records
             let anamnesaData = {};
+            let pemeriksaanObstetriData = {};
+            
             if (recordData.medicalRecords) {
                 const anamnesaRecord = recordData.medicalRecords.byType?.anamnesa;
                 if (anamnesaRecord && anamnesaRecord.data) {
                     anamnesaData = anamnesaRecord.data;
                 }
+                
+                const pemeriksaanObstetriRecord = recordData.medicalRecords.byType?.pemeriksaan_obstetri;
+                if (pemeriksaanObstetriRecord && pemeriksaanObstetriRecord.data) {
+                    pemeriksaanObstetriData = pemeriksaanObstetriRecord.data;
+                }
             }
 
-            // Merge anamnesa data into record
+            // Merge data into record
             const enrichedRecord = {
                 ...recordData.record,
-                anamnesa: anamnesaData
+                anamnesa: anamnesaData,
+                pemeriksaan_obstetri: pemeriksaanObstetriData
             };
 
             // Compute derived state EXACTLY like backup
