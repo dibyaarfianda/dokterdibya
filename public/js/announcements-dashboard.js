@@ -31,6 +31,13 @@ function initializeSocket() {
         // Show notification
         showNotification(announcement);
     });
+
+    // Listen for updated announcements
+    socket.on('announcement:updated', (announcement) => {
+        console.log('Announcement updated:', announcement);
+        // Reload announcements to reflect changes
+        loadAnnouncements();
+    });
 }
 
 async function loadAnnouncements() {

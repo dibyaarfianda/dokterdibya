@@ -36,7 +36,7 @@ async function setAuthUI(user) {
             // Set tooltip with user name
             navbarAvatar.setAttribute('title', name);
             // Initialize Bootstrap tooltip
-            if (typeof $ !== 'undefined' && $.fn.tooltip) {
+            if (typeof $ !== 'undefined' && $.fn && $.fn.tooltip) {
                 $(navbarAvatar).tooltip('dispose').tooltip();
             }
         } else if (navbarAvatar) {

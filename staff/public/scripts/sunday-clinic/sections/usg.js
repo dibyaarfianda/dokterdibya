@@ -879,9 +879,22 @@ export function renderUSG() {
     return html;
 }
 
+// Private flag to prevent double submission
+let _savingUSGExam = false;
+
 export async function saveUSGExam() {
+    // Prevent double submission
+    if (_savingUSGExam) {
+        console.warn('[SundayClinic] USG save already in progress, ignoring duplicate call');
+        return;
+    }
+    _savingUSGExam = true;
+    
     const btn = document.getElementById('btn-save-usg');
-    if (!btn) return;
+    if (!btn) {
+        _savingUSGExam = false;
+        return;
+    }
 
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
@@ -1039,6 +1052,7 @@ export async function saveUSGExam() {
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-save"></i> Simpan';
         }
+        _savingUSGExam = false;
     }
 }
 

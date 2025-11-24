@@ -185,19 +185,7 @@ export default {
                 </div>
             </div>
 
-            <script>
-            // Initialize Diagnosis save handler
-            setTimeout(() => {
-                const saveBtn = document.getElementById('save-diagnosis');
-                if (saveBtn) {
-                    saveBtn.onclick = () => {
-                        if (window.saveDiagnosis) {
-                            window.saveDiagnosis();
-                        }
-                    };
-                }
-            }, 100);
-            </script>
+
         `;
     },
 

@@ -80,6 +80,7 @@ export default {
         const riwayatKehamilan = anamnesa.riwayat_kehamilan_saat_ini ?? '';
         const hpht = anamnesa.hpht ?? derived.pregnancyDetails?.lmp ?? '';
         const hpl = anamnesa.hpl ?? derived.pregnancyDetails?.edd ?? '';
+        const usiaKehamilan = anamnesa.usia_kehamilan ?? '';
         const detailRiwayat = anamnesa.detail_riwayat_penyakit ?? '';
         const riwayatKeluarga = anamnesa.riwayat_keluarga ?? '';
         const alergiObat = anamnesa.alergi_obat ?? derived.allergies?.medications ?? '';
@@ -121,8 +122,13 @@ export default {
                             <input type="date" class="form-control anamnesa-field" id="anamnesa-hpht" value="${escapeHtml(hpht)}">
                         </div>
                         <div class="form-group mb-3">
-                            <label class="font-weight-bold">HPL (Hari Perkiraan Lahir)</label>
-                            <input type="date" class="form-control anamnesa-field" id="anamnesa-hpl" value="${escapeHtml(hpl)}">
+                            <label class="font-weight-bold">HPL (Hari Perkiraan Lahir) <small class="text-muted">- Auto-calculate dari HPHT</small></label>
+                            <input type="text" class="form-control" id="anamnesa-hpl-display" value="${escapeHtml(hpl)}" readonly style="background-color: #f8f9fa; cursor: not-allowed;">
+                            <input type="hidden" class="anamnesa-field" id="anamnesa-hpl" value="${escapeHtml(hpl)}">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="font-weight-bold">Perkiraan Usia Kehamilan Saat Ini</label>
+                            <input type="text" class="form-control" id="anamnesa-usia-kehamilan-display" value="${escapeHtml(usiaKehamilan)}" readonly style="background-color: #f8f9fa; cursor: not-allowed;" placeholder="Otomatis dari HPHT">
                         </div>
 
                         <h4>Riwayat Penyakit</h4>
@@ -217,28 +223,165 @@ export default {
                 </div>
             </div>
 
-            <script>
-            // Initialize Anamnesa save handler
-            setTimeout(() => {
-                const fields = document.querySelectorAll('.anamnesa-field');
-                const updateBtn = document.getElementById('btn-update-anamnesa');
 
-                if (fields && updateBtn) {
-                    fields.forEach(field => {
-                        field.addEventListener('input', () => {
-                            updateBtn.style.display = 'inline-block';
-                        });
-                    });
-
-                    updateBtn.addEventListener('click', () => {
-                        if (window.saveAnamnesa) {
-                            window.saveAnamnesa();
-                        }
-                    });
-                }
-            }, 100);
-            </script>
         `;
+    },
+
+    /**
+     * Called after component is rendered
+     */
+    async afterRender(state) {
+        // Cleanup old listeners first
+        this.cleanup();
+        
+        // Setup HPHT calculator
+        setTimeout(() => {
+            this.setupHPHTCalculator();
+            this.setupSaveHandler();
+        }, 100);
+    },
+
+    /**
+     * Cleanup event listeners
+     */
+    cleanup() {
+        // Remove old listeners by replacing elements or using AbortController
+        // Store references for cleanup
+        if (this._abortController) {
+            this._abortController.abort();
+        }
+        this._abortController = new AbortController();
+    },
+
+    /**
+     * Setup HPHT to HPL and gestational age calculator
+     */
+    setupHPHTCalculator() {
+        const hphtInput = document.getElementById('anamnesa-hpht');
+        const hplHidden = document.getElementById('anamnesa-hpl');
+        const hplDisplay = document.getElementById('anamnesa-hpl-display');
+        const usiaKehamilanDisplay = document.getElementById('anamnesa-usia-kehamilan-display');
+
+        if (!hphtInput) return;
+
+        // Calculate on load if HPHT already has value
+        if (hphtInput.value) {
+            this.updateHPLAndGA(hphtInput.value, hplHidden, hplDisplay, usiaKehamilanDisplay);
+        }
+
+        const signal = this._abortController.signal;
+
+        // Calculate on change
+        hphtInput.addEventListener('change', () => {
+            this.updateHPLAndGA(hphtInput.value, hplHidden, hplDisplay, usiaKehamilanDisplay);
+            const updateBtn = document.getElementById('btn-update-anamnesa');
+            if (updateBtn) updateBtn.style.display = 'inline-block';
+        }, { signal });
+
+        // Also listen to input event for immediate feedback
+        hphtInput.addEventListener('input', () => {
+            if (hphtInput.value && hphtInput.value.length === 10) { // YYYY-MM-DD format
+                this.updateHPLAndGA(hphtInput.value, hplHidden, hplDisplay, usiaKehamilanDisplay);
+            }
+        }, { signal });
+    },
+
+    /**
+     * Update HPL and gestational age displays
+     */
+    updateHPLAndGA(lmpDate, hplHidden, hplDisplay, usiaKehamilanDisplay) {
+        const edd = this.calculateEDD(lmpDate);
+        const ga = this.calculateGestationalAge(lmpDate);
+
+        if (edd && hplHidden && hplDisplay) {
+            const eddFormatted = this.formatDate(edd);
+            hplHidden.value = eddFormatted;
+            hplDisplay.value = this.formatDateIndo(edd);
+        } else if (hplHidden && hplDisplay) {
+            hplHidden.value = '';
+            hplDisplay.value = '';
+        }
+
+        if (ga && usiaKehamilanDisplay) {
+            usiaKehamilanDisplay.value = `${ga.weeks} minggu ${ga.days} hari`;
+        } else if (usiaKehamilanDisplay) {
+            usiaKehamilanDisplay.value = '';
+        }
+    },
+
+    /**
+     * Calculate EDD (HPL) from LMP (HPHT) using Naegele's Rule
+     */
+    calculateEDD(lmpDate) {
+        if (!lmpDate) return null;
+        const lmp = new Date(lmpDate);
+        if (isNaN(lmp.getTime())) return null;
+
+        // Naegele's Rule: LMP + 280 days (40 weeks)
+        const edd = new Date(lmp);
+        edd.setDate(edd.getDate() + 280);
+
+        return edd;
+    },
+
+    /**
+     * Calculate gestational age from LMP
+     */
+    calculateGestationalAge(lmpDate) {
+        if (!lmpDate) return null;
+        const lmp = new Date(lmpDate);
+        if (isNaN(lmp.getTime())) return null;
+
+        const today = new Date();
+        const diffTime = today - lmp;
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays < 0) return null;
+
+        const weeks = Math.floor(diffDays / 7);
+        const days = diffDays % 7;
+
+        return { weeks, days, totalDays: diffDays };
+    },
+
+    /**
+     * Format date to YYYY-MM-DD
+     */
+    formatDate(date) {
+        if (!date) return '';
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    },
+
+    /**
+     * Format date to Indonesian
+     */
+    formatDateIndo(date) {
+        if (!date) return '';
+        const options = { day: 'numeric', month: 'long', year: 'numeric' };
+        return date.toLocaleDateString('id-ID', options);
+    },
+
+    /**
+     * Setup save button handler
+     */
+    setupSaveHandler() {
+        const fields = document.querySelectorAll('.anamnesa-field');
+        const updateBtn = document.getElementById('btn-update-anamnesa');
+        const signal = this._abortController.signal;
+
+        if (fields && updateBtn) {
+            fields.forEach(field => {
+                field.addEventListener('input', () => {
+                    updateBtn.style.display = 'inline-block';
+                }, { signal });
+            });
+
+            // NOTE: Button already has onclick="window.saveAnamnesa()" in HTML
+            // No need to add addEventListener here to prevent double save
+        }
     },
 
     /**

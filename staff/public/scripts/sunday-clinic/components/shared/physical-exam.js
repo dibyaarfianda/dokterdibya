@@ -159,6 +159,34 @@ export default {
                         </div>
                     </div>
 
+                    <!-- Anthropometry (Height, Weight, BMI) -->
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label class="font-weight-bold">Tinggi Badan (cm)</label>
+                            <input type="number" step="0.1" class="form-control" id="pe-tinggi-badan"
+                                   value="${escapeHtml(exam.tinggi_badan || '')}"
+                                   placeholder="160" onchange="window.calculateBMI()">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="font-weight-bold">Berat Badan (kg)</label>
+                            <input type="number" step="0.1" class="form-control" id="pe-berat-badan"
+                                   value="${escapeHtml(exam.berat_badan || '')}"
+                                   placeholder="55" onchange="window.calculateBMI()">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="font-weight-bold">IMT (kg/m²)</label>
+                            <input type="text" class="form-control" id="pe-imt" readonly
+                                   value="${escapeHtml(exam.imt || '')}"
+                                   placeholder="Auto">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="font-weight-bold">Kategori IMT</label>
+                            <input type="text" class="form-control" id="pe-kategori-imt" readonly
+                                   value="${escapeHtml(exam.kategori_imt || '')}"
+                                   placeholder="Auto">
+                        </div>
+                    </div>
+
                     <!-- Examination Findings -->
                     <div class="mb-3">
                         <label class="font-weight-bold">Pemeriksaan Kepala & Leher</label>
@@ -186,18 +214,47 @@ export default {
             </div>
 
             <script>
-            // Initialize Physical Exam save handler
-            setTimeout(() => {
-                const saveBtn = document.getElementById('save-physical-exam');
-                if (saveBtn) {
-                    saveBtn.onclick = () => {
-                        if (window.savePhysicalExam) {
-                            window.savePhysicalExam();
+                // Auto-calculate BMI for Obstetri format
+                window.calculateBMI = function() {
+                    const tinggi = parseFloat(document.getElementById('pe-tinggi-badan')?.value);
+                    const berat = parseFloat(document.getElementById('pe-berat-badan')?.value);
+
+                    if (tinggi && berat && tinggi > 0) {
+                        const tinggiMeter = tinggi / 100;
+                        const imt = (berat / (tinggiMeter * tinggiMeter)).toFixed(1);
+                        
+                        document.getElementById('pe-imt').value = imt;
+
+                        // Kategorikan IMT berdasarkan WHO Asia Pacific
+                        let kategori = '';
+                        const imtNum = parseFloat(imt);
+                        
+                        if (imtNum < 17.0) {
+                            kategori = 'Kurang Energi Kronis';
+                        } else if (imtNum >= 17.0 && imtNum < 18.5) {
+                            kategori = 'Kurang Energi Kronis';
+                        } else if (imtNum >= 18.5 && imtNum < 25.0) {
+                            kategori = 'Normal';
+                        } else if (imtNum >= 25.0 && imtNum < 30.0) {
+                            kategori = 'Kelebihan Berat Badan';
+                        } else if (imtNum >= 30.0 && imtNum < 35.0) {
+                            kategori = 'Obesitas Grade 1';
+                        } else if (imtNum >= 35.0 && imtNum < 40.0) {
+                            kategori = 'Obesitas Grade 2';
+                        } else {
+                            kategori = 'Obesitas Grade 3';
                         }
-                    };
-                }
-            }, 100);
+
+                        document.getElementById('pe-kategori-imt').value = kategori;
+                    }
+                };
+
+                // Calculate on load if values exist
+                setTimeout(() => {
+                    window.calculateBMI();
+                }, 100);
             </script>
+
         `;
     },
 

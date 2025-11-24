@@ -105,6 +105,21 @@ class StateManager {
                 throw new Error('MR ID not found in record data');
             }
 
+            // Extract anamnesa data from medical records
+            let anamnesaData = {};
+            if (recordData.medicalRecords) {
+                const anamnesaRecord = recordData.medicalRecords.byType?.anamnesa;
+                if (anamnesaRecord && anamnesaRecord.data) {
+                    anamnesaData = anamnesaRecord.data;
+                }
+            }
+
+            // Merge anamnesa data into record
+            const enrichedRecord = {
+                ...recordData.record,
+                anamnesa: anamnesaData
+            };
+
             // Compute derived state EXACTLY like backup
             const derived = computeDerived({
                 record: recordData.record,
@@ -117,7 +132,7 @@ class StateManager {
             this.setState({
                 currentMrId: mrId,
                 currentCategory: recordData.record.mrCategory || recordData.record.mr_category || 'obstetri',
-                recordData: recordData.record,
+                recordData: enrichedRecord,
                 patientData: recordData.patient,
                 appointmentData: recordData.appointment,
                 intakeData: recordData.intake,

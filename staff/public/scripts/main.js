@@ -180,7 +180,7 @@ function showDashboardPage() { hideAllPages(); pages.dashboard?.classList.remove
 function showKlinikPrivatePage() {
     hideAllPages();
     pages.klinikPrivate?.classList.remove('d-none');
-    setTitleAndActive('Klinik Private', 'nav-klinik-private', 'klinik-private');
+    setTitleAndActive('Klinik Privat', 'nav-klinik-private', 'klinik-private');
 
     importWithVersion('./klinik-private.js').then(module => {
         if (module && typeof module.initKlinikPrivatePage === 'function') {
@@ -644,6 +644,22 @@ function openSundayClinicViewer() {
     window.open(targetUrl, '_blank', 'noopener');
 }
 
+function openSundayClinicWithMrId(mrId) {
+    if (!mrId) {
+        showWarning('MR ID tidak valid.');
+        return;
+    }
+
+    const slug = normalizeMrSlug(mrId);
+    if (!slug) {
+        showWarning('Tidak dapat membuka Sunday Clinic tanpa MR ID.');
+        return;
+    }
+
+    const targetUrl = `/sunday-clinic/${encodeURIComponent(slug)}/identitas`;
+    window.open(targetUrl, '_blank', 'noopener');
+}
+
 function bindSundayClinicLauncher() {
     const button = document.getElementById('btn-open-sunday-clinic');
     if (!button) {
@@ -1092,6 +1108,7 @@ async function showPatientDetail(patientId) {
 
 // Export showPatientDetail to global scope for onclick handlers
 window.showPatientDetail = showPatientDetail;
+window.openSundayClinicWithMrId = openSundayClinicWithMrId;
 
 // Export for manual initialization if needed
 export { initMain };

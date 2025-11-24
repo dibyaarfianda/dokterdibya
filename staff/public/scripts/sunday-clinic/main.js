@@ -364,6 +364,13 @@ class SundayClinicApp {
      * Save Planning for obstetri category (old format)
      */
     async savePlanningObstetri() {
+        // Prevent double submission
+        if (this._savingPlanning) {
+            console.warn('[SundayClinic] Planning save already in progress, ignoring duplicate call');
+            return;
+        }
+        this._savingPlanning = true;
+        
         try {
             this.showLoading('Menyimpan Planning...');
 
@@ -428,6 +435,7 @@ class SundayClinicApp {
             this.showError(error.message);
         } finally {
             this.hideLoading();
+            this._savingPlanning = false;
         }
     }
 
@@ -561,6 +569,14 @@ class SundayClinicApp {
      * Save Physical Exam for obstetri category (old format)
      */
     async savePhysicalExam() {
+        // Prevent double submission
+        if (this._savingPhysicalExam) {
+            console.warn('[SundayClinic] Physical Exam save already in progress, ignoring duplicate call');
+            return;
+        }
+        
+        this._savingPhysicalExam = true;
+        
         try {
             this.showLoading('Menyimpan Pemeriksaan Fisik...');
 
@@ -569,6 +585,10 @@ class SundayClinicApp {
                 nadi: document.getElementById('pe-nadi')?.value || '',
                 suhu: document.getElementById('pe-suhu')?.value || '',
                 respirasi: document.getElementById('pe-respirasi')?.value || '',
+                tinggi_badan: document.getElementById('pe-tinggi-badan')?.value || '',
+                berat_badan: document.getElementById('pe-berat-badan')?.value || '',
+                imt: document.getElementById('pe-imt')?.value || '',
+                kategori_imt: document.getElementById('pe-kategori-imt')?.value || '',
                 kepala_leher: document.getElementById('pe-kepala-leher')?.value || '',
                 thorax: document.getElementById('pe-thorax')?.value || '',
                 abdomen: document.getElementById('pe-abdomen')?.value || '',
@@ -633,6 +653,7 @@ class SundayClinicApp {
             this.showError(error.message);
         } finally {
             this.hideLoading();
+            this._savingPhysicalExam = false;
         }
     }
 
@@ -677,8 +698,18 @@ class SundayClinicApp {
      * Save Anamnesa
      */
     async saveAnamnesa() {
+        // Prevent double submission
+        if (this._savingAnamnesa) {
+            console.warn('[SundayClinic] Anamnesa save already in progress, ignoring duplicate call');
+            return;
+        }
+        this._savingAnamnesa = true;
+        
         const btn = document.getElementById('btn-update-anamnesa');
-        if (!btn) return;
+        if (!btn) {
+            this._savingAnamnesa = false;
+            return;
+        }
 
         // Disable button
         btn.disabled = true;
@@ -691,6 +722,7 @@ class SundayClinicApp {
                 riwayat_kehamilan_saat_ini: document.getElementById('anamnesa-riwayat-kehamilan')?.value || '',
                 hpht: document.getElementById('anamnesa-hpht')?.value || '',
                 hpl: document.getElementById('anamnesa-hpl')?.value || '',
+                usia_kehamilan: document.getElementById('anamnesa-usia-kehamilan-display')?.value || '',
                 detail_riwayat_penyakit: document.getElementById('anamnesa-detail-riwayat')?.value || '',
                 riwayat_keluarga: document.getElementById('anamnesa-riwayat-keluarga')?.value || '',
                 alergi_obat: document.getElementById('anamnesa-alergi-obat')?.value || '',
@@ -774,6 +806,8 @@ class SundayClinicApp {
             // Re-enable button
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-save"></i> Simpan';
+        } finally {
+            this._savingAnamnesa = false;
         }
     }
 
@@ -827,6 +861,13 @@ class SundayClinicApp {
      * Save Diagnosis
      */
     async saveDiagnosis() {
+        // Prevent double submission
+        if (this._savingDiagnosis) {
+            console.warn('[SundayClinic] Diagnosis save already in progress, ignoring duplicate call');
+            return;
+        }
+        this._savingDiagnosis = true;
+        
         try {
             const data = {
                 diagnosis_utama: document.getElementById('diagnosis-utama')?.value || '',
@@ -883,6 +924,8 @@ class SundayClinicApp {
         } catch (error) {
             console.error('Error saving diagnosis:', error);
             this.showError('Gagal menyimpan diagnosis: ' + error.message);
+        } finally {
+            this._savingDiagnosis = false;
         }
     }
 

@@ -30,11 +30,11 @@
 
         /* Smaller sidebar navigation font */
         .sidebar .nav-sidebar .nav-link {
-            font-size: 15px !important;
+            font-size: 18px !important;
         }
 
         .sidebar .nav-sidebar .nav-link .nav-icon {
-            font-size: 16px !important;
+            font-size: 19px !important;
         }
 
         /* Tighter vertical spacing for sidebar menu items */
@@ -436,6 +436,27 @@
         #navbar-user-avatar:hover {
             transform: scale(1.1);
         }
+
+        /* Announcement card font size - increased by 30% from previous size */
+        .announcement-card .card-body {
+            font-size: 0.78rem !important;
+        }
+
+        .announcement-card .card-title {
+            font-size: 1.17rem !important;
+        }
+
+        .announcement-card .announcement-preview {
+            font-size: 0.78rem !important;
+        }
+
+        .announcement-card .btn-sm {
+            font-size: 0.65rem !important;
+        }
+
+        .announcement-card small {
+            font-size: 0.65rem !important;
+        }
     </style>
 
         <!-- Mobile Responsive Styles -->
@@ -802,7 +823,7 @@
                     <li class="nav-item" id="nav-klinik-private">
                         <a href="#" class="nav-link" onclick="showKlinikPrivatePage(); return false;">
                             <i class="nav-icon fas fa-clinic-medical"></i>
-                            <p>Klinik Private</p>
+                            <p>Klinik Privat</p>
                         </a>
                     </li>
 
@@ -811,7 +832,7 @@
                     <li class="nav-item" id="nav-kelola-pengumuman">
                         <a href="#" class="nav-link" onclick="showKelolaPengumumanPage(); return false;">
                             <i class="nav-icon fas fa-bullhorn"></i>
-                            <p>Kelola Pengumuman</p>
+                            <p>Pengumuman</p>
                         </a>
                     </li>
 
@@ -825,35 +846,35 @@
                     <li class="nav-item" id="management-nav-kelola-pasien">
                         <a href="#" class="nav-link" onclick="showKelolaPasienPage(); return false;">
                             <i class="nav-icon fas fa-users"></i>
-                            <p>Kelola Pasien</p>
+                            <p>Pasien</p>
                         </a>
                     </li>
 
                     <li class="nav-item" id="management-nav-kelola-appointment">
                         <a href="#" class="nav-link" onclick="showKelolaAppointmentPage(); return false;">
                             <i class="nav-icon fas fa-calendar-check"></i>
-                            <p>Kelola Appointment</p>
+                            <p>Appointment</p>
                         </a>
                     </li>
 
                     <li class="nav-item" id="management-nav-kelola-jadwal">
                         <a href="#" class="nav-link" onclick="showKelolaJadwalPage(); return false;">
                             <i class="nav-icon fas fa-calendar-alt"></i>
-                            <p>Kelola Jadwal</p>
+                            <p>Jadwal</p>
                         </a>
                     </li>
 
                     <li class="nav-item" id="management-nav-kelola-tindakan">
                         <a href="#" class="nav-link" onclick="showKelolaTindakanPage(); return false;">
                             <i class="nav-icon fas fa-stethoscope"></i>
-                            <p>Kelola Tindakan</p>
+                            <p>Tindakan</p>
                         </a>
                     </li>
 
                     <li class="nav-item" id="management-nav-kelola-obat">
                         <a href="#" class="nav-link" onclick="showKelolaObatManagementPage(); return false;">
                             <i class="nav-icon fas fa-pills"></i>
-                            <p>Kelola Obat</p>
+                            <p>Obat</p>
                         </a>
                     </li>
 
@@ -993,7 +1014,7 @@
                             <div class="card card-primary card-outline">
                                 <div class="card-header d-flex justify-content-between align-items-center flex-wrap">
                                     <div class="mb-2 mb-md-0">
-                                        <h3 class="card-title mb-1"><i class="fas fa-clinic-medical mr-2"></i>Klinik Private Minggu</h3>
+                                        <h3 class="card-title mb-1"><i class="fas nav-icon fas fa-user-plus mr-2"></i>Pasien Terjadwal</h3>
                                         <div class="text-muted small"><span id="klinik-private-date-label">-</span></div>
                                     </div>
                                     <div class="d-flex align-items-center">
@@ -1006,12 +1027,12 @@
                                 <div class="card-body p-0">
                                     <div id="klinik-private-loading" class="text-center py-5 text-muted">
                                         <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
-                                        <p class="mb-0">Memuat daftar pasien Klinik Private...</p>
+                                        <p class="mb-0">Memuat daftar pasien Klinik Privat...</p>
                                     </div>
                                     <div id="klinik-private-error" class="alert alert-danger m-3 d-none"></div>
                                     <div id="klinik-private-empty" class="text-center py-5 text-muted d-none">
                                         <i class="fas fa-calendar-times fa-2x mb-2"></i>
-                                        <p class="mb-0">Belum ada pasien yang terjadwal untuk Klinik Private Minggu ini.</p>
+                                        <p class="mb-0">Belum ada pasien yang terjadwal</p>
                                     </div>
                                     <div id="klinik-private-table-wrapper" class="table-responsive d-none">
                                         <table class="table table-hover mb-0">
@@ -1042,9 +1063,34 @@
                                 </div>
                                 <div class="card-body">
                                     <p class="text-muted mb-3">Buka dan lihat rekam medis pasien Sunday Clinic berdasarkan MR ID.</p>
-                                    <button class="btn btn-primary" id="btn-open-sunday-clinic">
+                                    <button class="btn btn-primary mb-4" id="btn-open-sunday-clinic">
                                         <i class="fas fa-folder-open mr-2"></i>Buka Rekam Medis Sunday Clinic
                                     </button>
+                                    
+                                    <div id="sunday-clinic-recent-patients">
+                                        <h5 class="mb-3"><i class="fas fa-history mr-2"></i>10 Pasien Terakhir</h5>
+                                        <div id="sunday-clinic-patients-loading" class="text-center py-3">
+                                            <i class="fas fa-spinner fa-spin"></i> Memuat...
+                                        </div>
+                                        <div id="sunday-clinic-patients-list" class="d-none">
+                                            <div class="table-responsive">
+                                                <table class="table table-sm table-hover">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>MR ID</th>
+                                                            <th>Nama</th>
+                                                            <th>Kunjungan Terakhir</th>
+                                                            <th>Aksi</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="sunday-clinic-patients-tbody"></tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                        <div id="sunday-clinic-patients-error" class="alert alert-warning d-none">
+                                            <i class="fas fa-exclamation-triangle mr-2"></i>Gagal memuat daftar pasien
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2332,7 +2378,6 @@
                         <div class="row mb-3">
                             <div class="col-12">
                                 <div class="d-flex justify-content-between align-items-center">
-                                    <h4><i class="fas fa-bullhorn"></i> Kelola Pengumuman</h4>
                                     <button class="btn btn-primary" id="btn-new-announcement-inline">
                                         <i class="fas fa-plus"></i> Buat Pengumuman Baru
                                     </button>
