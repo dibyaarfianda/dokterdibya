@@ -102,17 +102,8 @@ export default {
                     });
                 });
 
-                // Attach save handler
-                const btnSave = document.getElementById('btn-save-usg');
-                if (btnSave) {
-                    btnSave.onclick = () => {
-                        if (window.SundayClinicApp && window.SundayClinicApp.saveUSGExam) {
-                            window.SundayClinicApp.saveUSGExam();
-                        } else if (window.saveUSGExam) {
-                            window.saveUSGExam();
-                        }
-                    };
-                }
+                // NOTE: Button already has onclick="window.saveUSGExam()" in HTML
+                // No need to add onclick handler here to prevent double save
             }, 100);
             </script>
         `;

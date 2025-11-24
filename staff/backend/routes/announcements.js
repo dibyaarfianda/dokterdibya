@@ -226,10 +226,18 @@ router.post('/', verifyToken, async (req, res) => {
             [result.insertId]
         );
 
+        const newAnnouncement = newAnnouncementResult[0];
+
+        // Emit Socket.IO event if announcement is active
+        if (newAnnouncement.status === 'active' && req.app.get('io')) {
+            req.app.get('io').emit('announcement:new', newAnnouncement);
+            logger.info('Emitted announcement:new event', { id: newAnnouncement.id, title: newAnnouncement.title });
+        }
+
         res.json({
             success: true,
             message: 'Announcement created successfully',
-            data: newAnnouncementResult[0]
+            data: newAnnouncement
         });
     } catch (error) {
         console.error('Error creating announcement:', error);
@@ -308,10 +316,18 @@ router.put('/:id', verifyToken, async (req, res) => {
             [id]
         );
 
+        const updatedAnnouncement = updated[0];
+
+        // Emit Socket.IO event if announcement is active
+        if (updatedAnnouncement.status === 'active' && req.app.get('io')) {
+            req.app.get('io').emit('announcement:updated', updatedAnnouncement);
+            logger.info('Emitted announcement:updated event', { id: updatedAnnouncement.id, title: updatedAnnouncement.title });
+        }
+
         res.json({
             success: true,
             message: 'Announcement updated successfully',
-            data: updated[0]
+            data: updatedAnnouncement
         });
     } catch (error) {
         console.error('Error updating announcement:', error);

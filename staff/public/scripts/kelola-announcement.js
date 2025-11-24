@@ -149,7 +149,8 @@ function displayAnnouncements(announcements) {
         const imageHtml = announcement.image_url ?
             `<img src="${escapeHtml(announcement.image_url)}" class="announcement-image" alt="Announcement image" onerror="this.style.display='none'">` : '';
 
-        const previewContent = renderContent(announcement.message, announcement.content_type || 'plain', true);
+        // Always render as plain text for preview, disable markdown
+        const previewContent = escapeHtml(announcement.message).replace(/\n/g, '<br>');
 
         return `
             <div class="col-md-6 col-lg-4 mb-4">
@@ -165,14 +166,23 @@ function displayAnnouncements(announcements) {
                         </div>
                     </div>
                     <div class="card-body">
-                        <h5 class="card-title">${escapeHtml(announcement.title)}</h5>
-                        ${imageHtml}
-                        <div class="announcement-preview text-muted">
-                            ${previewContent}
+                        <div class="row">
+                            <div class="col-12 mb-3">
+                                <h5 class="card-title mb-0">${escapeHtml(announcement.title)}</h5>
+                            </div>
+                            <div class="col-12">
+                                <div class="announcement-preview text-muted collapsed" id="preview-${announcement.id}" style="max-height: 140px; overflow: hidden; position: relative;">
+                                    ${previewContent}
+                                </div>
+                                <button class="btn btn-sm btn-link p-0 mt-2" onclick="togglePreview(${announcement.id})" id="toggle-btn-${announcement.id}">
+                                    <i class="fas fa-chevron-down"></i> Show More
+                                </button>
+                                ${imageHtml}
+                                <small class="text-muted d-block mt-2">
+                                    <i class="far fa-clock"></i> ${formatDate(announcement.created_at)}
+                                </small>
+                            </div>
                         </div>
-                        <small class="text-muted">
-                            <i class="far fa-clock"></i> ${formatDate(announcement.created_at)}
-                        </small>
                     </div>
                     <div class="card-footer bg-transparent">
                         <button class="btn btn-sm btn-primary" onclick="editAnnouncement(${announcement.id})">
@@ -220,6 +230,26 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+// Toggle preview expand/collapse
+window.togglePreview = function(announcementId) {
+    const preview = document.getElementById(`preview-${announcementId}`);
+    const toggleBtn = document.getElementById(`toggle-btn-${announcementId}`);
+    
+    if (!preview || !toggleBtn) return;
+    
+    if (preview.classList.contains('collapsed')) {
+        // Expand
+        preview.style.maxHeight = 'none';
+        preview.classList.remove('collapsed');
+        toggleBtn.innerHTML = '<i class="fas fa-chevron-up"></i> Show Less';
+    } else {
+        // Collapse
+        preview.style.maxHeight = '140px';
+        preview.classList.add('collapsed');
+        toggleBtn.innerHTML = '<i class="fas fa-chevron-down"></i> Show More';
+    }
+};
 
 function renderContent(content, contentType, isPreview = false) {
     if (!content) return '';
@@ -299,18 +329,26 @@ window.insertFormat = function(before, after, placeholder) {
     messageField.setSelectionRange(newCursorPos, newCursorPos + (selectedText ? 0 : placeholder.length));
 };
 
-function openModal(announcement = null) {
+window.openModal = function(announcement = null) {
     const modal = $('#announcementModal');
     const title = document.getElementById('modalTitle');
     const form = document.getElementById('announcementForm');
     const toolbar = document.getElementById('formatToolbar');
 
+    if (!modal || !title || !form) {
+        console.error('Required modal elements not found');
+        return;
+    }
+
     // Reset form
     form.reset();
     document.getElementById('announcementId').value = '';
 
-    // Reset tabs to form tab
-    $('#form-tab').tab('show');
+    // Reset tabs to form tab if available
+    const formTab = document.getElementById('form-tab');
+    if (formTab) {
+        $('#form-tab').tab('show');
+    }
 
     if (announcement) {
         // Edit mode
@@ -323,11 +361,13 @@ function openModal(announcement = null) {
         document.getElementById('priority').value = announcement.priority;
         document.getElementById('status').value = announcement.status;
 
-        // Show toolbar if markdown
-        if (announcement.content_type === 'markdown') {
-            toolbar.style.display = 'block';
-        } else {
-            toolbar.style.display = 'none';
+        // Show toolbar if markdown (only if toolbar exists)
+        if (toolbar) {
+            if (announcement.content_type === 'markdown') {
+                toolbar.style.display = 'block';
+            } else {
+                toolbar.style.display = 'none';
+            }
         }
     } else {
         // Create mode
@@ -335,7 +375,9 @@ function openModal(announcement = null) {
         document.getElementById('status').value = 'active';
         document.getElementById('priority').value = 'normal';
         document.getElementById('contentType').value = 'plain';
-        toolbar.style.display = 'none';
+        if (toolbar) {
+            toolbar.style.display = 'none';
+        }
     }
 
     modal.modal('show');
@@ -411,7 +453,7 @@ async function saveAnnouncement() {
 
 window.editAnnouncement = async function(id) {
     try {
-        const token = await getIdToken();
+        const token = window.getIdTokenOverride ? await window.getIdTokenOverride() : await getIdToken();
         const response = await fetch(`${API_URL}/announcements/${id}`, {
             headers: {
                 'Authorization': `Bearer ${token}`
@@ -436,7 +478,7 @@ window.deleteAnnouncement = async function(id, title) {
     }
 
     try {
-        const token = await getIdToken();
+        const token = window.getIdTokenOverride ? await window.getIdTokenOverride() : await getIdToken();
         const response = await fetch(`${API_URL}/announcements/${id}`, {
             method: 'DELETE',
             headers: {
@@ -457,7 +499,25 @@ window.deleteAnnouncement = async function(id, title) {
 };
 
 function showAlert(type, message) {
+    // Use toast notification if available (for embedded mode)
+    if (window.showSuccess && window.showError && window.showWarning) {
+        if (type === 'success') {
+            window.showSuccess(message);
+        } else if (type === 'error') {
+            window.showError(message);
+        } else {
+            window.showWarning(message);
+        }
+        return;
+    }
+    
+    // Fallback to alert container for standalone mode
     const alertContainer = document.getElementById('alert-container');
+    if (!alertContainer) {
+        console.warn('Alert container not found, using console:', type, message);
+        return;
+    }
+    
     const alertClass = type === 'error' ? 'danger' : type;
     
     const alert = `
@@ -516,15 +576,7 @@ window.initKelolaAnnouncement = async function() {
         const btnNew = document.getElementById('btn-new-announcement-inline') || document.getElementById('btn-new-announcement');
         if (btnNew) {
             btnNew.addEventListener('click', () => {
-                document.getElementById('announcementId').value = '';
-                document.getElementById('title').value = '';
-                document.getElementById('message').value = '';
-                document.getElementById('imageUrl').value = '';
-                document.getElementById('contentType').value = 'plain';
-                document.getElementById('priority').value = 'normal';
-                document.getElementById('status').value = 'active';
-                document.getElementById('modalTitle').textContent = 'Buat Pengumuman Baru';
-                $('#announcementModal').modal('show');
+                window.openModal();
             });
         }
 
