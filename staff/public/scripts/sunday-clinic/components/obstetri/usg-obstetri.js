@@ -752,10 +752,7 @@ export default {
                 </div>
             </div>
 
-            <div class="mb-4 mt-4">
-                <p class="mb-0"><strong>dr. Dibya Arfianda, SpOG, M.Ked.Klin.</strong></p>
-                <p class="text-muted small">Obstetrician Gynaecologist</p>
-            </div>
+
         `;
     },
 

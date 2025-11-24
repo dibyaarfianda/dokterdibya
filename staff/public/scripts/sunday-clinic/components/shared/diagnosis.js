@@ -154,7 +154,7 @@ export default {
                 .replace(/'/g, '&#039;');
         };
 
-        const signatureName = 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.';
+        const signatureName = window.currentStaffIdentity?.name || 'Dokter';
 
         return `
             <div class="sc-section">
