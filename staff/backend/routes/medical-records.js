@@ -368,6 +368,7 @@ router.post('/api/medical-records/generate-resume', verifyToken, async (req, res
 
         logger.info('Records by type:', Object.keys(recordsByType));
         logger.info('Sample anamnesa:', recordsByType.anamnesa);
+        logger.info('USG data structure:', JSON.stringify(recordsByType.usg, null, 2));
 
         // Generate resume using AI-like logic
         const resume = generateMedicalResume(identitas, recordsByType);
