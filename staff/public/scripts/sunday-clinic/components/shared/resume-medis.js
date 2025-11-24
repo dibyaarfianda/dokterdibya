@@ -20,7 +20,7 @@ export default {
             <div class="sc-section">
                 <div class="sc-section-header">
                     <h3><i class="fas fa-file-medical-alt"></i> Resume Medis</h3>
-                    <p class="text-muted mb-0">Resume medis yang dihasilkan oleh AI dari seluruh data pemeriksaan</p>
+                    <p class="text-muted mb-0">Resume medis yang dihasilkan dari seluruh data pemeriksaan</p>
                 </div>
                 ${metaHtml}
                 <div class="sc-card">
