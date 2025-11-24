@@ -34,6 +34,9 @@ export default {
                             <button type="button" class="btn btn-success ml-2" id="btn-save-resume" onclick="window.saveResumeMedis()">
                                 <i class="fas fa-save mr-2"></i>Simpan Resume
                             </button>
+                            <button type="button" class="btn btn-warning ml-2" id="btn-reset-resume" onclick="window.resetResumeMedis()">
+                                <i class="fas fa-redo mr-2"></i>Reset Resume
+                            </button>
                         ` : ''}
                     </div>
                 </div>

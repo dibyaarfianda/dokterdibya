@@ -1184,6 +1184,44 @@ class SundayClinicApp {
     }
 
     /**
+     * Reset Resume Medis (clear generated content)
+     */
+    async resetResumeMedis() {
+        const confirmed = confirm('Apakah Anda yakin ingin mereset resume medis? Data yang belum disimpan akan hilang.');
+        if (!confirmed) return;
+
+        try {
+            this.showLoading('Mereset resume medis...');
+
+            // Clear the resume display
+            const resumeDisplay = document.getElementById('resume-display');
+            if (resumeDisplay) {
+                resumeDisplay.innerHTML = `
+                    <div class="alert alert-warning" id="resume-empty">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Resume medis belum dibuat. Klik tombol "Generate Resume AI" untuk membuat resume otomatis dari data pemeriksaan.
+                    </div>
+                `;
+            }
+
+            // Remove save button
+            const saveButton = document.getElementById('btn-save-resume');
+            if (saveButton) saveButton.remove();
+            
+            const resetButton = document.getElementById('btn-reset-resume');
+            if (resetButton) resetButton.remove();
+
+            this.showSuccess('Resume medis berhasil direset!');
+
+        } catch (error) {
+            console.error('[SundayClinic] Reset resume failed:', error);
+            this.showError(error.message);
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    /**
      * Escape HTML
      */
     escapeHtml(str) {
@@ -1350,3 +1388,4 @@ window.savePlanningObstetri = () => app.savePlanningObstetri();
 window.saveDiagnosis = () => app.saveDiagnosis();
 window.generateResumeMedis = () => app.generateResumeMedis();
 window.saveResumeMedis = () => app.saveResumeMedis();
+window.resetResumeMedis = () => app.resetResumeMedis();
