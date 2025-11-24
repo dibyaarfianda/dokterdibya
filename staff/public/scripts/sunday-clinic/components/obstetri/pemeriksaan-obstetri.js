@@ -43,6 +43,12 @@ export default {
                             TFU = Tinggi Fundus Uteri, DJJ = Denyut Jantung Janin, VT = Vaginal Toucher
                         </small>
                     </div>
+
+                    <div class="text-right mt-3">
+                        <button type="button" class="btn btn-primary" id="save-pemeriksaan-obstetri" onclick="window.savePemeriksaanObstetri()">
+                            <i class="fas fa-save mr-2"></i>Simpan Pemeriksaan Obstetri
+                        </button>
+                    </div>
                 </div>
             </div>
         `;

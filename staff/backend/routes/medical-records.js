@@ -47,13 +47,13 @@ async function ensureMedicalRecordsTable() {
             logger.info('Added visit_id column to medical_records table');
         }
 
-        // Update record_type ENUM to include identitas, diagnosis and planning
+        // Update record_type ENUM to include all types
         try {
             await db.query(`
                 ALTER TABLE medical_records
-                MODIFY COLUMN record_type ENUM('identitas', 'anamnesa', 'physical_exam', 'usg', 'lab', 'diagnosis', 'planning', 'complete') NOT NULL
+                MODIFY COLUMN record_type ENUM('identitas', 'anamnesa', 'physical_exam', 'pemeriksaan_obstetri', 'usg', 'lab', 'diagnosis', 'planning', 'complete') NOT NULL
             `);
-            logger.info('Updated record_type ENUM to include identitas, diagnosis and planning');
+            logger.info('Updated record_type ENUM to include pemeriksaan_obstetri');
         } catch (enumError) {
             // Ignore if already updated
             if (!enumError.message.includes('Duplicate')) {

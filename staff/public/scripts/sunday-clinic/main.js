@@ -164,15 +164,6 @@ class SundayClinicApp {
                         ${sectionHtml}
                     </div>
                 `;
-                
-                // Call afterRender if available
-                if (component.afterRender) {
-                    setTimeout(() => {
-                        component.afterRender(state).catch(err => {
-                            console.error(`[SundayClinic] Error in afterRender for ${activeSection}:`, err);
-                        });
-                    }, 50);
-                }
             } catch (error) {
                 console.error(`[SundayClinic] Error rendering ${activeSection}:`, error);
                 html += `
@@ -195,6 +186,18 @@ class SundayClinicApp {
         console.log('[SundayClinic] Container element:', container);
         container.innerHTML = html;
         console.log('[SundayClinic] Container innerHTML after set:', container.innerHTML.length);
+
+        // Call afterRender if available (after DOM is updated)
+        if (component && component.afterRender) {
+            setTimeout(() => {
+                try {
+                    component.afterRender(state);
+                    console.log('[SundayClinic] afterRender called for:', activeSection);
+                } catch (err) {
+                    console.error(`[SundayClinic] Error in afterRender for ${activeSection}:`, err);
+                }
+            }, 100);
+        }
 
         // Attach event listeners
         this.attachEventListeners();
@@ -436,6 +439,84 @@ class SundayClinicApp {
         } finally {
             this.hideLoading();
             this._savingPlanning = false;
+        }
+    }
+
+    /**
+     * Save Pemeriksaan Obstetri
+     */
+    async savePemeriksaanObstetri() {
+        // Prevent double submission
+        if (this._savingPemeriksaanObstetri) {
+            console.warn('[SundayClinic] Pemeriksaan Obstetri save already in progress, ignoring duplicate call');
+            return;
+        }
+        this._savingPemeriksaanObstetri = true;
+        
+        try {
+            this.showLoading('Menyimpan Pemeriksaan Obstetri...');
+
+            const data = {
+                findings: document.getElementById('pemeriksaan-obstetri-findings')?.value || ''
+            };
+
+            const state = stateManager.getState();
+            const patientId = state.derived?.patientId ||
+                             state.recordData?.patientId ||
+                             state.patientData?.id;
+
+            if (!patientId) {
+                throw new Error('Patient ID tidak ditemukan');
+            }
+
+            const token = window.getToken();
+            if (!token) {
+                throw new Error('Authentication token tidak tersedia');
+            }
+
+            const recordPayload = {
+                patientId: patientId,
+                type: 'pemeriksaan_obstetri',
+                data: data,
+                timestamp: new Date().toISOString()
+            };
+
+            // Add doctor info if available
+            if (window.currentStaffIdentity?.name) {
+                recordPayload.doctorName = window.currentStaffIdentity.name;
+            }
+            if (window.currentStaffIdentity?.id) {
+                recordPayload.doctorId = window.currentStaffIdentity.id;
+            }
+
+            const response = await fetch('/api/medical-records', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(recordPayload)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+                throw new Error(errorData.message || `Server error: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('[SundayClinic] Pemeriksaan Obstetri saved successfully:', result);
+
+            this.showSuccess('Pemeriksaan Obstetri berhasil disimpan!');
+
+            // Reload the record to show updated data with timestamp
+            await this.fetchRecord(this.currentMrId);
+
+        } catch (error) {
+            console.error('[SundayClinic] Save Pemeriksaan Obstetri failed:', error);
+            this.showError(error.message);
+        } finally {
+            this.hideLoading();
+            this._savingPemeriksaanObstetri = false;
         }
     }
 
@@ -1077,6 +1158,7 @@ window.SundayClinicApp = app;
 // Also make save functions globally available for button handlers
 window.saveAnamnesa = () => app.saveAnamnesa();
 window.savePhysicalExam = () => app.savePhysicalExam();
+window.savePemeriksaanObstetri = () => app.savePemeriksaanObstetri();
 // window.saveUSGExam = () => app.saveUSGExam();
 window.savePlanningObstetri = () => app.savePlanningObstetri();
 window.saveDiagnosis = () => app.saveDiagnosis();
