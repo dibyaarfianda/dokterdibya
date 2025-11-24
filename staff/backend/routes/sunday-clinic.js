@@ -370,6 +370,7 @@ function formatMedicalRecordRow(row) {
         id: row.id,
         patientId: row.patient_id,
         visitId: row.visit_id,
+        mrId: row.mr_id, // Include mr_id for Sunday Clinic visit tracking
         doctorId: row.doctor_id,
         doctorName: row.doctor_name,
         recordType: row.record_type,
@@ -379,20 +380,27 @@ function formatMedicalRecordRow(row) {
     };
 }
 
-async function loadMedicalRecordsBundle(patientId) {
+async function loadMedicalRecordsBundle(patientId, mrId = null) {
     if (!patientId) {
         return null;
     }
 
-    const [rows] = await db.query(
-        `SELECT id, patient_id, visit_id, doctor_id, doctor_name, record_type, record_data,
+    // Build query with optional mr_id filter for visit-specific records
+    let query = `SELECT id, patient_id, visit_id, mr_id, doctor_id, doctor_name, record_type, record_data,
                 created_at, updated_at
          FROM medical_records
-         WHERE patient_id = ?
-         ORDER BY created_at DESC
-         LIMIT 50`,
-        [patientId]
-    );
+         WHERE patient_id = ?`;
+    let params = [patientId];
+    
+    // If mrId provided, filter by mr_id or get records without mr_id (shared records)
+    if (mrId) {
+        query += ` AND (mr_id = ? OR mr_id IS NULL)`;
+        params.push(mrId);
+    }
+    
+    query += ` ORDER BY created_at DESC LIMIT 50`;
+
+    const [rows] = await db.query(query, params);
 
     if (!rows.length) {
         return null;
@@ -416,7 +424,11 @@ async function loadMedicalRecordsBundle(patientId) {
             latestComplete = formatted;
         }
 
+        // Prioritize records with matching mr_id over NULL mr_id records
         if (!byType[row.record_type]) {
+            byType[row.record_type] = formatted;
+        } else if (row.mr_id === mrId && (!byType[row.record_type].mrId)) {
+            // Replace NULL mr_id record with visit-specific one
             byType[row.record_type] = formatted;
         }
     });
@@ -608,7 +620,7 @@ router.get('/records/:mrId', verifyToken, async (req, res, next) => {
 
         const [intakeRow, medicalRecords] = await Promise.all([
             findLatestIntake(record.patientId, phoneCandidates),
-            loadMedicalRecordsBundle(record.patientId)
+            loadMedicalRecordsBundle(record.patientId, record.mrId) // Pass mrId for visit-specific records
         ]);
         const intake = formatIntakeRow(intakeRow);
 
