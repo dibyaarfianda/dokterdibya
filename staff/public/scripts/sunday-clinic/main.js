@@ -1194,39 +1194,41 @@ class SundayClinicApp {
      * Reset Resume Medis (clear generated content and delete from database)
      */
     async resetResumeMedis() {
-        const confirmed = confirm('Apakah Anda yakin ingin mereset resume medis? Data yang tersimpan akan dihapus dari database.');
+        const confirmed = confirm('Apakah Anda yakin ingin mereset resume medis? Semua resume medis untuk visit ini akan dihapus dari database.');
         if (!confirmed) return;
 
         try {
             this.showLoading('Mereset resume medis...');
 
-            // Get the saved resume record ID
             const state = stateManager.getState();
-            const { getMedicalRecordContext } = await import('./utils/helpers.js');
-            const context = getMedicalRecordContext(state, 'resume_medis');
-            const recordId = context?.record?.id;
+            const patientId = state.derived?.patientId;
+            const mrId = this.currentMrId;
 
-            // Delete from database if exists
-            if (recordId) {
-                const token = window.getToken();
-                if (!token) {
-                    throw new Error('Authentication token tidak tersedia');
-                }
-
-                const response = await fetch(`/api/medical-records/${recordId}`, {
-                    method: 'DELETE',
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
-                    throw new Error(errorData.message || `Server error: ${response.status}`);
-                }
-
-                console.log('[SundayClinic] Resume record deleted:', recordId);
+            if (!patientId || !mrId) {
+                throw new Error('Patient ID atau MR ID tidak ditemukan');
             }
+
+            const token = window.getToken();
+            if (!token) {
+                throw new Error('Authentication token tidak tersedia');
+            }
+
+            // Delete all resume_medis records for this visit
+            const response = await fetch(`/api/medical-records/by-type/resume_medis?patientId=${patientId}&mrId=${mrId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+                throw new Error(errorData.message || `Server error: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('[SundayClinic] Resume records deleted:', result.deletedCount || 0);
+        
 
             // Clear the resume display
             const resumeDisplay = document.getElementById('resume-display');
