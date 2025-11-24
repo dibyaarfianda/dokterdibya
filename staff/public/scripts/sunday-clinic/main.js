@@ -1184,14 +1184,42 @@ class SundayClinicApp {
     }
 
     /**
-     * Reset Resume Medis (clear generated content)
+     * Reset Resume Medis (clear generated content and delete from database)
      */
     async resetResumeMedis() {
-        const confirmed = confirm('Apakah Anda yakin ingin mereset resume medis? Data yang belum disimpan akan hilang.');
+        const confirmed = confirm('Apakah Anda yakin ingin mereset resume medis? Data yang tersimpan akan dihapus dari database.');
         if (!confirmed) return;
 
         try {
             this.showLoading('Mereset resume medis...');
+
+            // Get the saved resume record ID
+            const state = stateManager.getState();
+            const { getMedicalRecordContext } = await import('./utils/helpers.js');
+            const context = getMedicalRecordContext(state, 'resume_medis');
+            const recordId = context?.record?.id;
+
+            // Delete from database if exists
+            if (recordId) {
+                const token = window.getToken();
+                if (!token) {
+                    throw new Error('Authentication token tidak tersedia');
+                }
+
+                const response = await fetch(`/api/medical-records/${recordId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+                    throw new Error(errorData.message || `Server error: ${response.status}`);
+                }
+
+                console.log('[SundayClinic] Resume record deleted:', recordId);
+            }
 
             // Clear the resume display
             const resumeDisplay = document.getElementById('resume-display');
@@ -1211,7 +1239,10 @@ class SundayClinicApp {
             const resetButton = document.getElementById('btn-reset-resume');
             if (resetButton) resetButton.remove();
 
-            this.showSuccess('Resume medis berhasil direset!');
+            this.showSuccess('Resume medis berhasil direset dan dihapus dari database!');
+
+            // Reload to update state
+            await this.fetchRecord(this.currentMrId);
 
         } catch (error) {
             console.error('[SundayClinic] Reset resume failed:', error);
