@@ -289,16 +289,21 @@ router.delete('/api/medical-records/by-type/:recordType', verifyToken, async (re
             });
         }
         
+        // Build query - if mrId provided, use it; otherwise delete all for patient+type
         let query = 'DELETE FROM medical_records WHERE patient_id = ? AND record_type = ?';
         let params = [patientId, recordType];
         
         if (mrId && mrId !== 'null' && mrId !== 'undefined') {
-            query += ' AND mr_id = ?';
+            query += ' AND (mr_id = ? OR mr_id IS NULL)';
             params.push(mrId);
         }
         
+        console.log('DELETE Query:', query);
+        console.log('DELETE Params:', params);
+        
         const [result] = await db.query(query, params);
         
+        console.log('DELETE Result:', result.affectedRows, 'rows deleted');
         logger.info(`Medical records deleted: Type ${recordType}, Patient ${patientId}, MR ${mrId || 'none'}, Count: ${result.affectedRows}`);
         
         res.json({ 
