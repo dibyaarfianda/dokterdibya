@@ -448,7 +448,7 @@ function generateMedicalResume(identitas, records) {
     // I. IDENTITAS PASIEN
     if (identitas && Object.keys(identitas).length > 0) {
         resume += 'I. IDENTITAS PASIEN\n';
-        resume += '───────────────────────────────────────────────────────────────\n';
+        resume += '──────────────────────────────────────────────────\n';
         if (identitas.nama) resume += `Nama               : ${identitas.nama}\n`;
         if (identitas.tanggal_lahir) resume += `Tanggal Lahir      : ${identitas.tanggal_lahir}\n`;
         if (identitas.umur) resume += `Usia               : ${identitas.umur} tahun\n`;
@@ -464,7 +464,7 @@ function generateMedicalResume(identitas, records) {
         
         if (hasData) {
             resume += 'II. ANAMNESA\n';
-            resume += '───────────────────────────────────────────────────────────────\n';
+            resume += '──────────────────────────────────────────────────\n';
             
             // Keluhan Utama
             if (anamnesa.keluhan_utama) {
@@ -525,7 +525,7 @@ function generateMedicalResume(identitas, records) {
         
         if (hasData) {
             resume += 'III. PEMERIKSAAN FISIK\n';
-            resume += '───────────────────────────────────────────────────────────────\n';
+            resume += '──────────────────────────────────────────────────\n';
             
             // Tanda Vital
             resume += 'Tanda-tanda Vital:\n';
@@ -567,7 +567,7 @@ function generateMedicalResume(identitas, records) {
         const obs = records.pemeriksaan_obstetri;
         if (obs.findings) {
             resume += 'IV. PEMERIKSAAN OBSTETRI\n';
-            resume += '───────────────────────────────────────────────────────────────\n';
+            resume += '──────────────────────────────────────────────────\n';
             resume += `${obs.findings}\n\n`;
         }
     }
@@ -579,7 +579,7 @@ function generateMedicalResume(identitas, records) {
         
         if (hasData) {
             resume += 'V. PEMERIKSAAN ULTRASONOGRAFI (USG)\n';
-            resume += '───────────────────────────────────────────────────────────────\n';
+            resume += '──────────────────────────────────────────────────\n';
             
             // Check current trimester
             const currentTrimester = usg.current_trimester || usg.trimester;
@@ -735,7 +735,7 @@ function generateMedicalResume(identitas, records) {
         
         if (hasData) {
             resume += 'VI. PEMERIKSAAN PENUNJANG\n';
-            resume += '───────────────────────────────────────────────────────────────\n';
+            resume += '──────────────────────────────────────────────────\n';
             
             if (penunjang.lab_findings) {
                 resume += `A. Hasil Pemeriksaan Laboratorium:\n${penunjang.lab_findings}\n\n`;
@@ -760,7 +760,7 @@ function generateMedicalResume(identitas, records) {
         
         if (hasData) {
             resume += 'VII. DIAGNOSIS\n';
-            resume += '───────────────────────────────────────────────────────────────\n';
+            resume += '──────────────────────────────────────────────────\n';
             
             if (diagnosis.diagnosis_utama) {
                 resume += `Diagnosis Utama:\n${diagnosis.diagnosis_utama}\n\n`;
@@ -781,7 +781,7 @@ function generateMedicalResume(identitas, records) {
         
         if (hasData) {
             resume += 'VIII. RENCANA TATALAKSANA\n';
-            resume += '───────────────────────────────────────────────────────────────\n';
+            resume += '──────────────────────────────────────────────────\n';
             
             if (planning.tindakan) {
                 resume += `A. Tindakan Medis:\n${planning.tindakan}\n\n`;
