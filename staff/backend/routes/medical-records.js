@@ -304,6 +304,11 @@ router.post('/api/medical-records/generate-resume', verifyToken, async (req, res
     try {
         const { patientId } = req.body;
         
+        logger.info('=== GENERATE RESUME REQUEST ===');
+        logger.info('Request body:', JSON.stringify(req.body));
+        logger.info('Patient ID received:', patientId);
+        logger.info('Patient ID type:', typeof patientId);
+        
         if (!patientId) {
             return res.status(400).json({
                 success: false,
