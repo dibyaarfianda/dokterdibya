@@ -78,6 +78,7 @@ class SundayClinicApp {
             { section: SECTIONS.PENUNJANG, path: `${basePath}/shared/penunjang.js` },
             { section: SECTIONS.DIAGNOSIS, path: `${basePath}/shared/diagnosis.js` },
             { section: SECTIONS.PLAN, path: `${basePath}/shared/plan.js` },
+            { section: SECTIONS.RESUME_MEDIS, path: `${basePath}/shared/resume-medis.js` },
             { section: SECTIONS.BILLING, path: `${basePath}/shared/billing.js` }
         ];
 
@@ -1011,6 +1012,191 @@ class SundayClinicApp {
     }
 
     /**
+     * Generate Resume Medis using AI
+     */
+    async generateResumeMedis() {
+        if (this._generatingResume) {
+            console.warn('[SundayClinic] Resume generation already in progress');
+            return;
+        }
+        this._generatingResume = true;
+
+        try {
+            this.showLoading('Membuat resume medis dengan AI...');
+
+            const state = stateManager.getState();
+            const patientId = state.derived?.patientId;
+            
+            if (!patientId) {
+                throw new Error('Patient ID tidak ditemukan');
+            }
+
+            const token = window.getToken();
+            if (!token) {
+                throw new Error('Authentication token tidak tersedia');
+            }
+
+            const response = await fetch('/api/medical-records/generate-resume', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ patientId })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+                throw new Error(errorData.message || `Server error: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('[SundayClinic] Resume generated:', result);
+
+            // Update display with generated resume
+            const resumeContent = document.getElementById('resume-content');
+            const resumeDisplay = document.getElementById('resume-display');
+            const resumeEmpty = document.getElementById('resume-empty');
+            
+            if (resumeContent && result.data?.resume) {
+                resumeContent.textContent = result.data.resume;
+            } else if (resumeDisplay && result.data?.resume) {
+                resumeDisplay.innerHTML = `
+                    <div class="card bg-light">
+                        <div class="card-body">
+                            <div id="resume-content" style="white-space: pre-wrap; line-height: 1.8;">${this.escapeHtml(result.data.resume)}</div>
+                        </div>
+                    </div>
+                `;
+            } else if (resumeEmpty && result.data?.resume) {
+                resumeEmpty.outerHTML = `
+                    <div class="resume-display" id="resume-display">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <div id="resume-content" style="white-space: pre-wrap; line-height: 1.8;">${this.escapeHtml(result.data.resume)}</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            // Show save button
+            const buttonGroup = document.querySelector('.button-group');
+            if (buttonGroup && !document.getElementById('btn-save-resume')) {
+                buttonGroup.innerHTML = `
+                    <button type="button" class="btn btn-primary" id="btn-generate-resume" onclick="window.generateResumeMedis()">
+                        <i class="fas fa-magic mr-2"></i>Generate Resume AI
+                    </button>
+                    <button type="button" class="btn btn-success ml-2" id="btn-save-resume" onclick="window.saveResumeMedis()">
+                        <i class="fas fa-save mr-2"></i>Simpan Resume
+                    </button>
+                `;
+            }
+
+            this.showSuccess('Resume medis berhasil dibuat!');
+
+        } catch (error) {
+            console.error('[SundayClinic] Generate resume failed:', error);
+            this.showError(error.message);
+        } finally {
+            this.hideLoading();
+            this._generatingResume = false;
+        }
+    }
+
+    /**
+     * Save Resume Medis
+     */
+    async saveResumeMedis() {
+        if (this._savingResume) {
+            console.warn('[SundayClinic] Resume save already in progress');
+            return;
+        }
+        this._savingResume = true;
+
+        try {
+            this.showLoading('Menyimpan resume medis...');
+
+            const resumeContent = document.getElementById('resume-content');
+            if (!resumeContent) {
+                throw new Error('Resume content tidak ditemukan');
+            }
+
+            const data = {
+                resume: resumeContent.textContent || resumeContent.innerText
+            };
+
+            const state = stateManager.getState();
+            const patientId = state.derived?.patientId;
+
+            if (!patientId) {
+                throw new Error('Patient ID tidak ditemukan');
+            }
+
+            const token = window.getToken();
+            if (!token) {
+                throw new Error('Authentication token tidak tersedia');
+            }
+
+            const recordPayload = {
+                patientId: patientId,
+                type: 'resume_medis',
+                data: data,
+                timestamp: new Date().toISOString()
+            };
+
+            if (window.currentStaffIdentity?.name) {
+                recordPayload.doctorName = window.currentStaffIdentity.name;
+            }
+            if (window.currentStaffIdentity?.id) {
+                recordPayload.doctorId = window.currentStaffIdentity.id;
+            }
+
+            const response = await fetch('/api/medical-records', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(recordPayload)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
+                throw new Error(errorData.message || `Server error: ${response.status}`);
+            }
+
+            const result = await response.json();
+            console.log('[SundayClinic] Resume saved:', result);
+
+            this.showSuccess('Resume medis berhasil disimpan!');
+
+            // Reload to show metadata
+            await this.fetchRecord(this.currentMrId);
+
+        } catch (error) {
+            console.error('[SundayClinic] Save resume failed:', error);
+            this.showError(error.message);
+        } finally {
+            this.hideLoading();
+            this._savingResume = false;
+        }
+    }
+
+    /**
+     * Escape HTML
+     */
+    escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    /**
      * Show success message
      */
     showSuccess(message) {
@@ -1162,3 +1348,5 @@ window.savePemeriksaanObstetri = () => app.savePemeriksaanObstetri();
 // window.saveUSGExam = () => app.saveUSGExam();
 window.savePlanningObstetri = () => app.savePlanningObstetri();
 window.saveDiagnosis = () => app.saveDiagnosis();
+window.generateResumeMedis = () => app.generateResumeMedis();
+window.saveResumeMedis = () => app.saveResumeMedis();
