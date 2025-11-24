@@ -363,9 +363,82 @@ async function loadUpcomingAppointments({ force = false } = {}) {
     }
 }
 
+async function loadRecentPatients() {
+    const loadingEl = document.getElementById('sunday-clinic-patients-loading');
+    const listEl = document.getElementById('sunday-clinic-patients-list');
+    const errorEl = document.getElementById('sunday-clinic-patients-error');
+    const tbody = document.getElementById('sunday-clinic-patients-tbody');
+
+    if (!tbody) return;
+
+    try {
+        // Show loading
+        if (loadingEl) loadingEl.classList.remove('d-none');
+        if (listEl) listEl.classList.add('d-none');
+        if (errorEl) errorEl.classList.add('d-none');
+
+        const token = getToken();
+        const response = await fetch(`/api/sunday-clinic/directory?_=${Date.now()}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Cache-Control': 'no-cache'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch Sunday Clinic patients');
+        }
+
+        const result = await response.json();
+        const patients = result.success && result.data && result.data.patients ? result.data.patients : [];
+
+        // Get last 10 patients with their most recent visit
+        const recentPatients = patients.slice(0, 10).map(patient => {
+            const latestVisit = patient.visits && patient.visits.length > 0 ? patient.visits[0] : null;
+            return {
+                mrId: latestVisit ? latestVisit.mrId : null,
+                fullName: patient.fullName,
+                appointmentDate: latestVisit ? latestVisit.appointmentDate : null
+            };
+        }).filter(p => p.mrId); // Only show patients with MR ID
+
+        // Render patients
+        tbody.innerHTML = recentPatients.map(patient => {
+            const lastVisit = patient.appointmentDate ? new Date(patient.appointmentDate).toLocaleDateString('id-ID', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            }) : '-';
+
+            return `
+                <tr>
+                    <td><strong>${patient.mrId}</strong></td>
+                    <td>${patient.fullName || '-'}</td>
+                    <td>${lastVisit}</td>
+                    <td>
+                        <button class="btn btn-sm btn-info" onclick="window.openSundayClinicWithMrId('${patient.mrId}')">
+                            <i class="fas fa-folder-open"></i> Buka
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        // Show list
+        if (loadingEl) loadingEl.classList.add('d-none');
+        if (listEl) listEl.classList.remove('d-none');
+
+    } catch (error) {
+        console.error('Error loading recent patients:', error);
+        if (loadingEl) loadingEl.classList.add('d-none');
+        if (errorEl) errorEl.classList.remove('d-none');
+    }
+}
+
 export function initKlinikPrivatePage() {
     ensureElements();
     loadUpcomingAppointments();
+    loadRecentPatients();
 }
 
 window.klinikPrivate = {

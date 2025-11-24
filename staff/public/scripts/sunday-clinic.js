@@ -340,7 +340,7 @@ function initializeDOMReferences() {
     DOM.directorySearch = document.getElementById('sc-directory-search');
     DOM.openDirectoryBtn = document.getElementById('sc-open-directory');
     DOM.closeDirectoryBtn = document.getElementById('sc-directory-close');
-    DOM.staffNameDisplay = document.getElementById('staff-name-display');
+    DOM.staffNameDisplay = document.getElementById('user-name');
 
     // Verify critical DOM elements
     if (!DOM.root || !DOM.content) {
