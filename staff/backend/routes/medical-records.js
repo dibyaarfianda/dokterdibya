@@ -327,15 +327,26 @@ router.post('/api/medical-records/generate-resume', verifyToken, async (req, res
             });
         }
 
-        // Fetch patient intake data
-        const [intakeRecords] = await db.query(
-            'SELECT payload FROM patient_intake WHERE patient_id = ? ORDER BY created_at DESC LIMIT 1',
-            [patientId]
-        );
-
+        // Fetch patient data from patients table
         let identitas = {};
-        if (intakeRecords.length > 0) {
-            identitas = intakeRecords[0].payload;
+        try {
+            const [patients] = await db.query(
+                'SELECT * FROM patients WHERE id = ? OR mr_id = ?',
+                [patientId, patientId]
+            );
+            
+            if (patients.length > 0) {
+                const patient = patients[0];
+                identitas = {
+                    nama: patient.nama || patient.name,
+                    tanggal_lahir: patient.tanggal_lahir || patient.birth_date,
+                    umur: patient.umur || patient.age,
+                    alamat: patient.alamat || patient.address,
+                    no_telp: patient.no_telp || patient.phone
+                };
+            }
+        } catch (error) {
+            logger.warn('Could not fetch patient data:', error.message);
         }
 
         // Organize records by type
