@@ -64,7 +64,7 @@ export default {
                         <div class="card-body">
                             <div id="resume-content" 
                                  data-plain-text="${this.escapeHtml(resume)}"
-                                 style="line-height: 1.8; font-family: 'Frutiger Roman', 'Frutiger', 'Segoe UI', Arial, sans-serif; font-size: 12px;">${formattedResume}</div>
+                                 style="line-height: 1.8; font-family: 'Frutiger Roman', 'Frutiger', 'Segoe UI', Arial, sans-serif; font-size: 12px; color: #000;">${formattedResume}</div>
                         </div>
                     </div>
                 </div>
@@ -130,12 +130,12 @@ export default {
                         
                         // Render categories in 2 columns
                         if (categories.length > 0) {
-                            result += '<div style="column-count: 2; column-gap: 15px; margin: 5px 0;">';
+                            result += '<div style="column-count: 2; column-gap: 15px; margin: 5px 0; color: #000;">';
                             for (let cat of categories) {
                                 result += '<div style="break-inside: avoid; margin-bottom: 10px;">';
                                 result += this.escapeHtml(cat.title) + '<br>';
                                 for (let item of cat.items) {
-                                    result += this.escapeHtml(item) + '<br>';
+                                    result += '<span style="color: #000; text-decoration: none;">' + this.escapeHtml(item) + '</span><br>';
                                 }
                                 result += '</div>';
                             }
@@ -156,12 +156,12 @@ export default {
                     categories.push(currentCategory);
                 }
                 if (categories.length > 0) {
-                    result += '<div style="column-count: 2; column-gap: 15px; margin: 5px 0;">';
+                    result += '<div style="column-count: 2; column-gap: 15px; margin: 5px 0; color: #000;">';
                     for (let cat of categories) {
                         result += '<div style="break-inside: avoid; margin-bottom: 10px;">';
                         result += this.escapeHtml(cat.title) + '<br>';
                         for (let item of cat.items) {
-                            result += this.escapeHtml(item) + '<br>';
+                            result += '<span style="color: #000; text-decoration: none;">' + this.escapeHtml(item) + '</span><br>';
                         }
                         result += '</div>';
                     }
