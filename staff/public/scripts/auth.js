@@ -33,6 +33,12 @@ async function setAuthUI(user) {
         if (photoURL && navbarAvatar) {
             navbarAvatar.src = photoURL;
             navbarAvatar.style.display = 'inline-block';
+            // Set tooltip with user name
+            navbarAvatar.setAttribute('title', name);
+            // Initialize Bootstrap tooltip
+            if (typeof $ !== 'undefined' && $.fn.tooltip) {
+                $(navbarAvatar).tooltip('dispose').tooltip();
+            }
         } else if (navbarAvatar) {
             navbarAvatar.style.display = 'none';
         }

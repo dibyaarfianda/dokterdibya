@@ -49,23 +49,33 @@ function renderVisitsChart(dailyData) {
 
     const maxCount = Math.max(...dailyData.map(day => day.count), 1);
 
-    const bars = dailyData.map(day => {
+    const barCount = dailyData.length;
+    const barWidth = barCount > 0 ? `calc((100% - ${(barCount - 1) * 8}px) / ${barCount})` : '28px';
+    
+    const bars = dailyData.map((day, index) => {
         const percentage = maxCount === 0 ? 0 : (day.count / maxCount) * 100;
         const height = day.count === 0 ? 4 : Math.max(percentage, 6);
+        
+        // Add vertical dashed line on month change (extend to top padding)
+        const verticalLine = day.isNewMonth ? `
+            <div style="position: absolute; left: -4px; top: -25px; bottom: 0; width: 1px; border-left: 2px dashed #d1d5db;"></div>
+        ` : '';
+        
         return `
-            <div class="d-flex flex-column align-items-center" style="min-width: 28px; gap: 6px;">
+            <div class="d-flex flex-column align-items-center" style="width: ${barWidth}; gap: 6px; position: relative;">
+                ${verticalLine}
                 <div style="font-size: 11px; font-weight: 600;">${day.count}</div>
-                <div class="w-100" style="height: ${height}%; min-height: ${day.count === 0 ? 4 : 12}px; background: linear-gradient(180deg, #4f46ef, #6366f1); border-radius: 6px 6px 0 0;" title="${day.label}: ${day.count} kunjungan"></div>
-                <div style="font-size: 10px; color: #6b7280;">${day.label}</div>
+                <div class="w-100" style="height: ${height}%; min-height: ${day.count === 0 ? 4 : 12}px; background: linear-gradient(180deg, #4f46ef, #6366f1); border-radius: 6px 6px 0 0;" title="${day.fullLabel}: ${day.count} kunjungan"></div>
+                <div style="font-size: 10px; color: #6b7280; text-align: center;">${day.label}</div>
             </div>
         `;
     }).join('');
 
     container.innerHTML = `
-        <div style="display: flex; align-items: flex-end; height: 200px; gap: 8px; overflow-x: auto; padding-bottom: 8px;">
+        <div style="display: flex; align-items: flex-end; height: 200px; gap: 8px; padding-bottom: 8px; padding-top: 25px;">
             ${bars}
         </div>
-        <div class="text-muted" style="font-size: 11px; text-align: right;">* Menampilkan 30 hari terakhir</div>
+        <div class="text-muted" style="font-size: 11px; text-align: right;">* Menampilkan hari Minggu dalam 30 hari terakhir</div>
     `;
 }
 
@@ -116,13 +126,32 @@ async function fetchVisitStats(token) {
 
     const daily = [];
     const cursor = new Date(thirtyDayStart);
+    const monthNames = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+    let previousMonth = null;
+    
     for (let i = 0; i < 30; i++) {
         const key = formatDateLocal(cursor);
-        daily.push({
-            date: key,
-            label: cursor.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }),
-            count: counts.get(key) || 0
-        });
+        const dayOfWeek = cursor.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        
+        // Only include Sundays (dayOfWeek === 0)
+        if (dayOfWeek === 0) {
+            const dayOfMonth = cursor.getDate();
+            const currentMonth = cursor.getMonth();
+            const monthName = monthNames[currentMonth];
+            const year = cursor.getFullYear();
+            const isNewMonth = previousMonth !== null && previousMonth !== currentMonth;
+            
+            daily.push({
+                date: key,
+                label: `${dayOfMonth} ${monthName} ${year}`,
+                fullLabel: `${dayOfMonth} ${monthName} ${year}`,
+                dayOfMonth: dayOfMonth,
+                isNewMonth: isNewMonth,
+                count: counts.get(key) || 0
+            });
+            
+            previousMonth = currentMonth;
+        }
         cursor.setDate(cursor.getDate() + 1);
     }
 
