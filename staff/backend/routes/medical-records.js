@@ -400,7 +400,7 @@ function generateMedicalResume(identitas, records) {
 
     // Header
     resume += '═══════════════════════════════════════════════════════════════\n';
-    resume += '                    RESUME MEDIS PROFESIONAL\n';
+    resume += 'RESUME MEDIS DR. DIBYA ARFIANDA, SPOG, M.KED.KLIN.\n';
     resume += '═══════════════════════════════════════════════════════════════\n';
     resume += `Tanggal Pembuatan Resume: ${today}\n`;
     resume += '═══════════════════════════════════════════════════════════════\n\n';
@@ -672,7 +672,7 @@ function generateMedicalResume(identitas, records) {
         minute: '2-digit'
     })}\n`;
     resume += '═══════════════════════════════════════════════════════════════\n\n';
-    resume += 'Dokumen ini dibuat secara otomatis oleh sistem Resume Medis AI.\n';
+    resume += 'Dokumen ini di generate oleh sistem\n';
 
     return resume;
 }
