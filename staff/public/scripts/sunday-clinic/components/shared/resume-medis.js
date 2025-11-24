@@ -62,7 +62,9 @@ export default {
                 <div class="resume-display" id="resume-display">
                     <div class="card bg-light">
                         <div class="card-body">
-                            <div id="resume-content" style="line-height: 1.8; font-family: 'Frutiger Roman', 'Frutiger', 'Segoe UI', Arial, sans-serif; font-size: 12px;">${formattedResume}</div>
+                            <div id="resume-content" 
+                                 data-plain-text="${this.escapeHtml(resume)}"
+                                 style="line-height: 1.8; font-family: 'Frutiger Roman', 'Frutiger', 'Segoe UI', Arial, sans-serif; font-size: 12px;">${formattedResume}</div>
                         </div>
                     </div>
                 </div>
