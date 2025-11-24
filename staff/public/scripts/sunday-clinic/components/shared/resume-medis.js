@@ -128,9 +128,9 @@ export default {
                         
                         // Render categories in 2 columns
                         if (categories.length > 0) {
-                            result += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; column-gap: 30px; margin: 5px 0;">';
+                            result += '<div style="column-count: 2; column-gap: 40px; margin: 5px 0;">';
                             for (let cat of categories) {
-                                result += '<div style="margin-bottom: 8px;">';
+                                result += '<div style="break-inside: avoid; margin-bottom: 10px;">';
                                 result += this.escapeHtml(cat.title) + '<br>';
                                 for (let item of cat.items) {
                                     result += this.escapeHtml(item) + '<br>';
@@ -154,9 +154,9 @@ export default {
                     categories.push(currentCategory);
                 }
                 if (categories.length > 0) {
-                    result += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; column-gap: 30px; margin: 5px 0;">';
+                    result += '<div style="column-count: 2; column-gap: 40px; margin: 5px 0;">';
                     for (let cat of categories) {
-                        result += '<div style="margin-bottom: 8px;">';
+                        result += '<div style="break-inside: avoid; margin-bottom: 10px;">';
                         result += this.escapeHtml(cat.title) + '<br>';
                         for (let item of cat.items) {
                             result += this.escapeHtml(item) + '<br>';
