@@ -8,9 +8,10 @@
  * Old file backed up as: sunday-clinic.js.backup
  */
 
-import SundayClinicApp from './sunday-clinic/main.js';
-import apiClient from './sunday-clinic/utils/api-client.js';
-import stateManager from './sunday-clinic/utils/state-manager.js';
+// Version 2.0.1 - cache buster for penunjang fixes
+import SundayClinicApp from './sunday-clinic/main.js?v=2.0.1';
+import apiClient from './sunday-clinic/utils/api-client.js?v=2.0.1';
+import stateManager from './sunday-clinic/utils/state-manager.js?v=2.0.1';
 
 // ============================================================================
 // CONSTANTS

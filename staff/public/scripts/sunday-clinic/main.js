@@ -104,10 +104,13 @@ class SundayClinicApp {
      */
     async loadComponents() {
         const componentPaths = this.getComponentPaths();
+        // Hard version number - increment this to force reload
+        const COMPONENT_VERSION = '2.0.2';
+        const cacheBuster = `?v=${COMPONENT_VERSION}-${Date.now()}`;
 
         for (const { section, path } of componentPaths) {
             try {
-                const module = await import(path);
+                const module = await import(path + cacheBuster);
                 this.components[section] = module.default || module;
                 console.log(`[SundayClinic] Loaded component: ${section}`);
             } catch (error) {

@@ -122,7 +122,8 @@
         /* Default (not selected) link/icon color - black */
         .sidebar .nav-sidebar .nav-link {
             color: #000000 !important;
-            font-size: 1.08em !important;
+            font-size: 14px !important;
+            padding-left: 5px !important;
         }
         .sidebar .nav-sidebar .nav-link .nav-icon {
             color: #000000 !important;
@@ -224,12 +225,20 @@
             background-color: #17a2b8;
             color: white;
         }
+
+        /* Chat popup position - match index-adminlte */
+        #chat-popup-container {
+            position: fixed !important;
+            bottom: 20px !important;
+            right: 20px !important;
+            z-index: 9999 !important;
+        }
     </style>
 
     <!-- Mobile Responsive CSS -->
     <link rel="stylesheet" href="/staff/public/css/mobile-responsive.css">
 </head>
-<body class="hold-transition sidebar-mini">
+<body class="hold-transition sidebar-mini layout-fixed">
     <div class="wrapper">
         <!-- Navbar -->
         <nav class="main-header navbar navbar-expand navbar-white navbar-light shadow-sm">
@@ -284,7 +293,7 @@
                 </div>
                 <nav class="mt-2">
                     <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-                        <li class="nav-header" style="font-size: 1.32rem; font-weight: 300;">REKAM MEDIS</li>
+                        <li class="nav-header" style="font-size: 1.06rem; font-weight: 300;">REKAM MEDIS</li>
                         <li class="nav-item">
                             <a href="#" class="nav-link sc-nav-link" data-section="identity">
                                 <i class="nav-icon fas fa-id-card"></i>
@@ -531,10 +540,10 @@
     <!-- AdminLTE App -->
     <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
 
-    <script type="module" src="/staff/public/scripts/sunday-clinic.js"></script>
+    <script type="module" src="/staff/public/scripts/sunday-clinic.js?v=2.0.2"></script>
 
     <!-- Planning Helpers (for old format obstetri category) - must load AFTER main script -->
-    <script src="/staff/public/scripts/sunday-clinic/utils/planning-helpers.js"></script>
+    <script src="/staff/public/scripts/sunday-clinic/utils/planning-helpers.js?v=2.0.1"></script>
     <!-- Socket.io Client -->
     <script src="/socket.io/socket.io.js"></script>
     <script>
