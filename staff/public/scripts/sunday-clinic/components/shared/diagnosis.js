@@ -154,8 +154,6 @@ export default {
                 .replace(/'/g, '&#039;');
         };
 
-        const signatureName = window.currentStaffIdentity?.name || 'Dokter';
-
         return `
             <div class="sc-section">
                 <div class="sc-section-header">
@@ -172,10 +170,6 @@ export default {
                         <label class="font-weight-bold">Diagnosis Sekunder (jika ada)</label>
                         <textarea class="form-control" id="diagnosis-sekunder" name="diagnosis_sekunder" rows="1"
                                   placeholder="Masukkan diagnosis sekunder jika ada">${escapeHtml(diagnosisData.diagnosis_sekunder)}</textarea>
-                    </div>
-                    <div class="mb-4 mt-4">
-                        <p class="mb-0"><strong>${escapeHtml(signatureName)}</strong></p>
-                        <p class="text-muted mb-0">Obstetrician Gynaecologist</p>
                     </div>
                     <div class="text-right mt-3">
                         <button type="button" class="btn btn-primary" id="save-diagnosis" onclick="window.saveDiagnosis()">
