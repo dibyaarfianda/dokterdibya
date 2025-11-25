@@ -1,6 +1,7 @@
 /**
  * Lab Results Routes
  * Handles file upload and AI interpretation for laboratory results
+ * Supports both Cloudflare R2 (cloud) and local storage
  */
 
 const express = require('express');
@@ -10,9 +11,13 @@ const path = require('path');
 const fs = require('fs').promises;
 const logger = require('../utils/logger');
 const { OPENAI_API_KEY, OPENAI_API_URL } = require('../services/openaiService');
+const r2Storage = require('../services/r2Storage');
 
-// Configure multer for file uploads
-const storage = multer.diskStorage({
+// Configure multer for memory storage (for R2 upload)
+const memoryStorage = multer.memoryStorage();
+
+// Configure multer for disk storage (fallback)
+const diskStorage = multer.diskStorage({
     destination: async (req, file, cb) => {
         const uploadDir = path.join(__dirname, '../../uploads/lab-results');
         try {
@@ -31,6 +36,9 @@ const storage = multer.diskStorage({
         cb(null, `${name}-${uniqueSuffix}${ext}`);
     }
 });
+
+// Use memory storage if R2 is configured, otherwise disk storage
+const storage = r2Storage.isR2Configured() ? memoryStorage : diskStorage;
 
 const upload = multer({
     storage: storage,
@@ -52,7 +60,7 @@ const upload = multer({
 
 /**
  * POST /api/lab-results/upload
- * Upload lab result files
+ * Upload lab result files to R2 or local storage
  */
 router.post('/upload', upload.array('files', 10), async (req, res) => {
     try {
@@ -60,23 +68,74 @@ router.post('/upload', upload.array('files', 10), async (req, res) => {
             return res.status(400).json({ error: 'No files uploaded' });
         }
 
-        const files = req.files.map(file => ({
-            name: file.originalname,
-            filename: file.filename,
-            url: `/uploads/lab-results/${file.filename}`,
-            type: file.mimetype,
-            size: file.size,
-            uploadedAt: new Date().toISOString()
-        }));
+        const files = [];
 
-        logger.info('Lab results uploaded', {
-            count: files.length,
-            files: files.map(f => f.name)
-        });
+        // Check if R2 is configured
+        if (r2Storage.isR2Configured()) {
+            // Upload to Cloudflare R2
+            for (const file of req.files) {
+                logger.info(`Uploading file: ${file.originalname}, buffer size: ${file.buffer?.length || 0}, reported size: ${file.size}`);
+                try {
+                    const result = await r2Storage.uploadFile(
+                        file.buffer,
+                        file.originalname,
+                        file.mimetype,
+                        'lab-results'
+                    );
+
+                    files.push({
+                        name: file.originalname,
+                        filename: result.filename,
+                        key: result.key,
+                        // Use proxy URL instead of direct R2 URL to avoid regional network issues
+                        url: `/api/lab-results/file/${result.key}`,
+                        directUrl: result.url, // Keep direct URL for server-side use
+                        type: file.mimetype,
+                        size: file.size,
+                        storage: 'r2',
+                        uploadedAt: new Date().toISOString()
+                    });
+                } catch (uploadError) {
+                    logger.error('R2 upload failed for file', {
+                        file: file.originalname,
+                        error: uploadError.message
+                    });
+                    // Continue with other files
+                }
+            }
+
+            logger.info('Lab results uploaded to R2', {
+                count: files.length,
+                files: files.map(f => f.name)
+            });
+        } else {
+            // Fallback to local storage
+            for (const file of req.files) {
+                files.push({
+                    name: file.originalname,
+                    filename: file.filename,
+                    url: `/uploads/lab-results/${file.filename}`,
+                    type: file.mimetype,
+                    size: file.size,
+                    storage: 'local',
+                    uploadedAt: new Date().toISOString()
+                });
+            }
+
+            logger.info('Lab results uploaded locally', {
+                count: files.length,
+                files: files.map(f => f.name)
+            });
+        }
+
+        if (files.length === 0) {
+            return res.status(500).json({ error: 'Failed to upload files' });
+        }
 
         res.json({
             success: true,
-            files
+            files,
+            storage: r2Storage.isR2Configured() ? 'r2' : 'local'
         });
 
     } catch (error) {
@@ -111,11 +170,25 @@ router.post('/interpret', async (req, res) => {
             }
 
             if (file.type?.startsWith('image/')) {
-                // Read file and convert to base64
-                const filePath = path.join(__dirname, '../../uploads/lab-results', file.filename);
+                let base64Image;
+
                 try {
-                    const fileBuffer = await fs.readFile(filePath);
-                    const base64Image = fileBuffer.toString('base64');
+                    if (file.storage === 'r2' && file.key) {
+                        // Fetch from R2
+                        const fileBuffer = await r2Storage.getFileBuffer(file.key);
+                        base64Image = fileBuffer.toString('base64');
+                    } else if (file.url?.startsWith('http')) {
+                        // Fetch from URL (R2 public URL)
+                        const response = await fetch(file.url);
+                        const arrayBuffer = await response.arrayBuffer();
+                        base64Image = Buffer.from(arrayBuffer).toString('base64');
+                    } else {
+                        // Read from local storage
+                        const filePath = path.join(__dirname, '../../uploads/lab-results', file.filename);
+                        const fileBuffer = await fs.readFile(filePath);
+                        base64Image = fileBuffer.toString('base64');
+                    }
+
                     const dataUrl = `data:${file.type};base64,${base64Image}`;
 
                     imageContents.push({
@@ -126,7 +199,10 @@ router.post('/interpret', async (req, res) => {
                         }
                     });
                 } catch (error) {
-                    logger.error(`Failed to read file ${file.filename}`, error);
+                    logger.error(`Failed to read file for interpretation`, {
+                        file: file.filename || file.key,
+                        error: error.message
+                    });
                 }
             }
         }
@@ -212,6 +288,91 @@ Gunakan bahasa Indonesia yang profesional dan mudah dipahami.`
     } catch (error) {
         logger.error('Lab results interpretation error', error);
         res.status(500).json({ error: 'Interpretation failed: ' + error.message });
+    }
+});
+
+/**
+ * DELETE /api/lab-results/:key
+ * Delete a lab result file
+ */
+router.delete('/:key(*)', async (req, res) => {
+    try {
+        const { key } = req.params;
+
+        if (!key) {
+            return res.status(400).json({ error: 'File key is required' });
+        }
+
+        if (r2Storage.isR2Configured() && key.includes('/')) {
+            // Delete from R2
+            await r2Storage.deleteFile(key);
+            logger.info('Lab result deleted from R2', { key });
+        } else {
+            // Delete from local storage
+            const filePath = path.join(__dirname, '../../uploads/lab-results', key);
+            await fs.unlink(filePath);
+            logger.info('Lab result deleted locally', { key });
+        }
+
+        res.json({ success: true });
+
+    } catch (error) {
+        logger.error('Lab result delete error', error);
+        res.status(500).json({ error: 'Delete failed' });
+    }
+});
+
+/**
+ * GET /api/lab-results/status
+ * Check storage configuration status
+ */
+router.get('/status', (req, res) => {
+    res.json({
+        storage: r2Storage.isR2Configured() ? 'r2' : 'local',
+        r2Configured: r2Storage.isR2Configured(),
+        bucket: r2Storage.isR2Configured() ? r2Storage.R2_BUCKET_NAME : null
+    });
+});
+
+/**
+ * GET /api/lab-results/file/:key(*)
+ * Proxy to serve R2 files through the backend (avoids regional network issues)
+ */
+router.get('/file/*', async (req, res) => {
+    try {
+        const key = req.params[0];
+
+        if (!key) {
+            return res.status(400).json({ error: 'File key is required' });
+        }
+
+        if (r2Storage.isR2Configured()) {
+            // Get file from R2
+            const fileBuffer = await r2Storage.getFileBuffer(key);
+
+            // Determine content type from extension
+            const ext = path.extname(key).toLowerCase();
+            const contentTypes = {
+                '.png': 'image/png',
+                '.jpg': 'image/jpeg',
+                '.jpeg': 'image/jpeg',
+                '.pdf': 'application/pdf',
+                '.gif': 'image/gif'
+            };
+            const contentType = contentTypes[ext] || 'application/octet-stream';
+
+            res.setHeader('Content-Type', contentType);
+            res.setHeader('Cache-Control', 'public, max-age=31536000');
+            res.send(fileBuffer);
+        } else {
+            // Serve from local storage
+            const filePath = path.join(__dirname, '../../uploads/lab-results', key);
+            res.sendFile(filePath);
+        }
+
+    } catch (error) {
+        logger.error('File proxy error', { error: error.message });
+        res.status(404).json({ error: 'File not found' });
     }
 });
 

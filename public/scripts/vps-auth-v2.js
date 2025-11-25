@@ -3,7 +3,7 @@
 const API_BASE = (() => {
     // Check if running locally
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        return 'http://localhost:3001';
+        return 'http://localhost:3000';
     }
     // Default to the current origin so API calls stay same-host in production
     return window.location.origin.replace(/\/$/, '');

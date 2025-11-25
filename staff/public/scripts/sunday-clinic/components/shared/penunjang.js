@@ -8,12 +8,23 @@
  * - Professional display with clinic logo
  */
 
+import stateManager from '../../utils/state-manager.js';
+
 export default {
     /**
      * Render the Penunjang form
      */
     async render(state) {
-        const penunjang = state.recordData?.penunjang || {};
+        // Try to load from medicalRecords (database) first, then fallback to recordData
+        const penunjangFromDb = state.medicalRecords?.byType?.penunjang?.data || {};
+        const penunjangFromState = state.recordData?.penunjang || {};
+
+        // Merge database and state data (state takes priority for real-time updates)
+        const penunjang = {
+            ...penunjangFromDb,
+            ...penunjangFromState
+        };
+
         const uploadedFiles = penunjang.files || [];
         const interpretation = penunjang.interpretation || '';
 
@@ -178,10 +189,15 @@ ${interpretation}
      * Initialize event handlers
      */
     async initHandlers(state) {
+        console.log('[Penunjang] initHandlers called');
+
         // File upload handler
         const fileInput = document.getElementById('penunjang-file-upload');
+        console.log('[Penunjang] fileInput found:', !!fileInput);
+
         if (fileInput) {
             fileInput.addEventListener('change', async (e) => {
+                console.log('[Penunjang] File selected:', e.target.files);
                 await this.handleFileUpload(e, state);
             });
         }
@@ -234,10 +250,11 @@ ${interpretation}
             const formData = new FormData();
             files.forEach(file => formData.append('files', file));
 
+            const token = window.getToken?.() || localStorage.getItem('vps_auth_token');
             const response = await fetch('/api/lab-results/upload', {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${token}`
                 },
                 body: formData
             });
@@ -248,20 +265,91 @@ ${interpretation}
 
             const result = await response.json();
 
-            // Update state with new files
-            const penunjang = state.recordData?.penunjang || {};
-            penunjang.files = [...(penunjang.files || []), ...result.files];
+            // Get current state from stateManager (not local copy)
+            const currentState = stateManager.getState();
+            const recordData = currentState.recordData || {};
+            const penunjang = recordData.penunjang || {};
 
-            if (!state.recordData) state.recordData = {};
-            state.recordData.penunjang = penunjang;
+            // Merge new files with existing
+            const updatedFiles = [...(penunjang.files || []), ...result.files];
 
-            // Re-render component
-            await this.refresh(state);
+            // Update recordData with new penunjang files
+            recordData.penunjang = {
+                ...penunjang,
+                files: updatedFiles
+            };
+
+            // Update stateManager directly
+            stateManager.setState({ recordData: recordData });
+
+            // Save to database
+            await this.savePenunjangToDatabase(updatedFiles, penunjang.interpretation || '');
+
+            // Re-render component with updated state
+            await this.refresh(stateManager.getState());
 
             alert('File berhasil diupload!');
         } catch (error) {
             console.error('Upload error:', error);
             alert('Gagal upload file. Silakan coba lagi.');
+        }
+    },
+
+    /**
+     * Save penunjang data to database
+     */
+    async savePenunjangToDatabase(files, interpretation) {
+        try {
+            const state = stateManager.getState();
+            const patientId = state.derived?.patientId ||
+                             state.recordData?.patientId ||
+                             state.patientData?.id;
+
+            // Get the current MR ID (visit ID) for proper record association
+            const mrId = state.currentMrId ||
+                        state.recordData?.mrId ||
+                        state.recordData?.mr_id;
+
+            console.log('[Penunjang] Saving to database:', { patientId, mrId, filesCount: files.length });
+
+            if (!patientId) {
+                console.warn('[Penunjang] Patient ID not found, skipping database save');
+                return;
+            }
+
+            const token = window.getToken?.() || localStorage.getItem('vps_auth_token');
+            if (!token) {
+                console.warn('[Penunjang] No auth token, skipping database save');
+                return;
+            }
+
+            const response = await fetch('/api/medical-records', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    patientId: patientId,
+                    visitId: mrId, // Associate with current visit
+                    type: 'penunjang',
+                    data: {
+                        files: files,
+                        interpretation: interpretation
+                    },
+                    timestamp: new Date().toISOString()
+                })
+            });
+
+            if (!response.ok) {
+                const errText = await response.text();
+                console.error('[Penunjang] Failed to save to database:', errText);
+            } else {
+                const result = await response.json();
+                console.log('[Penunjang] Saved to database successfully:', result);
+            }
+        } catch (error) {
+            console.error('[Penunjang] Error saving to database:', error);
         }
     },
 
@@ -274,19 +362,25 @@ ${interpretation}
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menginterpretasi...';
 
         try {
-            const penunjang = state.recordData?.penunjang || {};
+            // Get current state from stateManager
+            const currentState = stateManager.getState();
+            const recordData = currentState.recordData || {};
+            const penunjang = recordData.penunjang || {};
             const files = penunjang.files || [];
 
             if (files.length === 0) {
                 alert('Tidak ada file untuk diinterpretasi');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-robot"></i> Interpretasi dengan AI';
                 return;
             }
 
+            const token = window.getToken?.() || localStorage.getItem('vps_auth_token');
             const response = await fetch('/api/lab-results/interpret', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                    'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({ files })
             });
@@ -297,12 +391,20 @@ ${interpretation}
 
             const result = await response.json();
 
-            // Update state with interpretation
-            penunjang.interpretation = result.interpretation;
-            state.recordData.penunjang = penunjang;
+            // Update recordData with interpretation
+            recordData.penunjang = {
+                ...penunjang,
+                interpretation: result.interpretation
+            };
 
-            // Re-render component
-            await this.refresh(state);
+            // Update stateManager directly
+            stateManager.setState({ recordData: recordData });
+
+            // Save to database
+            await this.savePenunjangToDatabase(files, result.interpretation);
+
+            // Re-render component with updated state
+            await this.refresh(stateManager.getState());
 
         } catch (error) {
             console.error('Interpretation error:', error);
@@ -315,26 +417,52 @@ ${interpretation}
     /**
      * Remove uploaded file
      */
-    removeFile(index, state) {
+    async removeFile(index, state) {
         if (!confirm('Hapus file ini?')) return;
 
-        const penunjang = state.recordData?.penunjang || {};
-        penunjang.files = penunjang.files || [];
-        penunjang.files.splice(index, 1);
+        // Get current state from stateManager
+        const currentState = stateManager.getState();
+        const recordData = currentState.recordData || {};
+        const penunjang = recordData.penunjang || {};
+        const files = [...(penunjang.files || [])];
 
-        state.recordData.penunjang = penunjang;
+        // Remove the file at index
+        files.splice(index, 1);
 
-        this.refresh(state);
+        // Update recordData
+        recordData.penunjang = {
+            ...penunjang,
+            files: files
+        };
+
+        // Update stateManager
+        stateManager.setState({ recordData: recordData });
+
+        // Save to database
+        await this.savePenunjangToDatabase(files, penunjang.interpretation || '');
+
+        // Refresh with updated state
+        await this.refresh(stateManager.getState());
     },
 
     /**
      * Refresh component display
      */
     async refresh(state) {
-        const container = document.querySelector('.card:has(#penunjang-file-upload)');
+        // IMPORTANT: Find the outer .sc-section container first to avoid duplicate headers
+        // The render() method outputs the full section including header, so we must replace the whole section
+        let container = document.querySelector('.sc-section:has(#penunjang-file-upload)');
+
+        if (!container) {
+            container = document.querySelector('[data-section="penunjang"]');
+        }
+
         if (container) {
-            container.outerHTML = await this.render(state);
+            const html = await this.render(state);
+            container.outerHTML = html;
             await this.initHandlers(state);
+        } else {
+            console.warn('[Penunjang] Container not found for refresh');
         }
     },
 
@@ -358,5 +486,13 @@ ${interpretation}
     async validate() {
         // Penunjang is optional
         return { valid: true, errors: [] };
+    },
+
+    /**
+     * Called after component is rendered to DOM
+     */
+    async afterRender(state) {
+        console.log('[Penunjang] afterRender called');
+        await this.initHandlers(state);
     }
 };
