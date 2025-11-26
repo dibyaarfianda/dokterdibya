@@ -1,11 +1,7 @@
-// Booking Appointment Script
-const token = localStorage.getItem('patient_token');
+// Booking Appointment Script v2.0
+// Auth check is done inline in HTML before this script loads
+const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
 const API_BASE = '/api/sunday-appointments';
-
-// Redirect if not authenticated
-if (!token) {
-    window.location.href = '/index.html';
-}
 
 // Booking state
 let currentStep = 1;
