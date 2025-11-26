@@ -105,7 +105,7 @@ class SundayClinicApp {
     async loadComponents() {
         const componentPaths = this.getComponentPaths();
         // Hard version number - increment this to force reload
-        const COMPONENT_VERSION = '2.0.2';
+        const COMPONENT_VERSION = '2.0.3';
         const cacheBuster = `?v=${COMPONENT_VERSION}-${Date.now()}`;
 
         for (const { section, path } of componentPaths) {
@@ -1370,47 +1370,109 @@ class SundayClinicApp {
             }
         });
 
-        // Listen for revision requested event
+        // Listen for revision requested event (with deduplication guard)
+        let lastRevisionId = null;
+        let revisionDialogShowing = false;
+
         this.billingNotifications.on('revision_requested', (data) => {
             console.log('[SundayClinic] revision_requested listener triggered with data:', data);
-            
+
+            // Prevent duplicate dialogs for the same revision
+            if (data.revisionId === lastRevisionId || revisionDialogShowing) {
+                console.log('[SundayClinic] Skipping duplicate revision notification');
+                return;
+            }
+
             const userRole = window.currentStaffIdentity?.role || '';
             const isDokter = userRole === 'dokter' || userRole === 'superadmin';
             console.log('[SundayClinic] User role:', userRole, 'isDokter:', isDokter);
 
             if (isDokter) {
                 console.log('[SundayClinic] Dokter confirmed, showing dialog');
-                
-                // Show confirmation dialog to dokter
-                setTimeout(() => {
-                    const confirmMsg = `Usulan revisi untuk ${data.patientName} dari ${data.requestedBy}:\n\n"${data.message}"\n\nSetujui usulan ini?`;
-                    
-                    if (confirm(confirmMsg)) {
-                        fetch(`/api/sunday-clinic/billing/revisions/${data.revisionId}/approve`, {
-                            method: 'POST',
-                            headers: {
-                                'Authorization': `Bearer ${window.getToken()}`,
-                                'Content-Type': 'application/json'
-                            }
-                        })
-                        .then(res => res.json())
-                        .then(result => {
-                            if (result.success) {
-                                alert('Usulan disetujui. Billing dikembalikan ke draft. Silakan lakukan perubahan dan konfirmasi ulang.');
-                                
-                                // Auto-refresh to show draft state
-                                this.reload();
-                            } else {
-                                alert('Gagal menyetujui usulan: ' + (result.message || 'Unknown error'));
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error approving revision:', error);
-                            alert('Gagal menyetujui usulan');
-                        });
-                    }
-                }, 500);
+                lastRevisionId = data.revisionId;
+                revisionDialogShowing = true;
+
+                // Use custom modal instead of native confirm (native may be blocked)
+                this.showRevisionDialog(data).finally(() => {
+                    revisionDialogShowing = false;
+                });
             }
+        });
+    }
+
+    /**
+     * Show custom revision approval dialog
+     */
+    showRevisionDialog(data) {
+        return new Promise((resolve) => {
+            const overlay = document.createElement('div');
+            overlay.style.cssText = `
+                position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+                background: rgba(0,0,0,0.7); display: flex;
+                align-items: center; justify-content: center; z-index: 10000;
+            `;
+
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                background: white; padding: 30px; border-radius: 12px;
+                box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 500px; width: 90%;
+            `;
+            modal.innerHTML = `
+                <div style="text-align: center; margin-bottom: 20px;">
+                    <div style="width: 60px; height: 60px; border-radius: 50%; background: #f59e0b;
+                        color: white; display: flex; align-items: center; justify-content: center;
+                        font-size: 32px; margin: 0 auto 15px;">⚠</div>
+                    <h3 style="color: #1e293b; margin: 0;">Usulan Revisi Billing</h3>
+                </div>
+                <div style="background: #f8fafc; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <p style="margin: 0 0 10px; color: #64748b;"><strong>Pasien:</strong> ${data.patientName || 'Unknown'}</p>
+                    <p style="margin: 0 0 10px; color: #64748b;"><strong>Dari:</strong> ${data.requestedBy || 'Staff'}</p>
+                    <p style="margin: 0; color: #1e293b;"><strong>Pesan:</strong></p>
+                    <p style="margin: 5px 0 0; color: #334155; font-style: italic;">"${data.message || 'No message'}"</p>
+                </div>
+                <p style="text-align: center; color: #64748b; margin-bottom: 20px;">Setujui usulan revisi ini?</p>
+                <div style="display: flex; gap: 10px; justify-content: center;">
+                    <button id="revision-reject" style="padding: 12px 24px; border: 1px solid #e2e8f0;
+                        background: white; border-radius: 8px; cursor: pointer; font-size: 14px;">Tolak</button>
+                    <button id="revision-approve" style="padding: 12px 24px; border: none;
+                        background: #10b981; color: white; border-radius: 8px; cursor: pointer; font-size: 14px;">Setujui</button>
+                </div>
+            `;
+
+            overlay.appendChild(modal);
+            document.body.appendChild(overlay);
+
+            const cleanup = () => {
+                if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+                resolve();
+            };
+
+            modal.querySelector('#revision-approve').addEventListener('click', async () => {
+                try {
+                    const response = await fetch(`/api/sunday-clinic/billing/revisions/${data.revisionId}/approve`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${window.getToken()}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    const result = await response.json();
+
+                    if (result.success) {
+                        cleanup();
+                        if (window.showSuccess) window.showSuccess('Usulan disetujui. Billing dikembalikan ke draft.');
+                        this.reload();
+                    } else {
+                        if (window.showError) window.showError('Gagal: ' + (result.message || 'Unknown error'));
+                    }
+                } catch (error) {
+                    console.error('Error approving revision:', error);
+                    if (window.showError) window.showError('Gagal menyetujui usulan');
+                }
+            });
+
+            modal.querySelector('#revision-reject').addEventListener('click', cleanup);
+            overlay.addEventListener('click', (e) => { if (e.target === overlay) cleanup(); });
         });
     }
 }
