@@ -10,6 +10,7 @@ const path = require('path');
 class PDFGenerator {
     constructor() {
         this.invoicesDir = path.join(__dirname, '../../../database/invoices');
+        this.logoPath = path.join(__dirname, '../../public/images/logodpc.png');
         this.ensureDirectoryExists();
     }
 
@@ -20,13 +21,22 @@ class PDFGenerator {
     }
 
     /**
-     * Generate Invoice PDF (A6 Format - matching index-new.html)
+     * Generate Invoice PDF (A6 Format - matching screenshot format)
      */
     async generateInvoice(billingData, patientData, recordData) {
         return new Promise((resolve, reject) => {
             try {
                 // A6 format: 105mm x 148mm = 297.6 x 419.5 points
-                const doc = new PDFDocument({ size: [297.6, 419.5], margin: 20 });
+                const doc = new PDFDocument({
+                    size: 'A6',
+                    margin: 15,
+                    info: {
+                        Title: `Invoice ${recordData.mrId}`,
+                        Author: 'Dr. Dibya Private Clinic',
+                        Subject: 'Invoice Pembayaran',
+                        Creator: 'Sunday Clinic System'
+                    }
+                });
                 const filename = `${recordData.mrId}inv.pdf`;
                 const filepath = path.join(this.invoicesDir, filename);
                 const stream = fs.createWriteStream(filepath);
@@ -34,152 +44,136 @@ class PDFGenerator {
                 doc.pipe(stream);
 
                 const pageWidth = doc.page.width;
-                const leftMargin = 20;
-                const rightMargin = 20;
+                const leftMargin = 15;
+                const rightMargin = 15;
                 const rightEdge = pageWidth - rightMargin;
-                const center = pageWidth / 2;
-                let y = 25;
+                const contentWidth = rightEdge - leftMargin;
+                let y = 15;
 
-                // Header - Clinic Info
-                doc.fontSize(8)
-                   .font('Helvetica')
-                   .text('RSIA Melinda - Jl. Balowerti 2 No. 59, Kediri', center, y, { align: 'center' });
-                
-                y += 12;
-                doc.text('SIP: 503/0126/SIP-SIK/419.104/2024', center, y, { align: 'center' });
-                
-                y += 20;
-                doc.fontSize(11)
+                // Header - Clinic Name
+                doc.fontSize(14)
                    .font('Helvetica-Bold')
-                   .text('Invoice Pembayaran', center, y, { align: 'center' });
-                
-                y += 6;
-                doc.moveTo(leftMargin, y)
-                   .lineTo(rightEdge, y)
-                   .lineWidth(0.5)
-                   .stroke();
-                
+                   .text('Klinik Privat Dr. Dibya', leftMargin, y, { width: contentWidth, align: 'center' });
+
                 y += 18;
+                doc.fontSize(7)
+                   .font('Helvetica')
+                   .text('RSIA Melinda - Jl. Balowerti 2 No. 59, Kediri', leftMargin, y, { width: contentWidth, align: 'center' });
+                y += 10;
+                doc.text('SIP: 503/0126/SIP-SIK/419.104/2024', leftMargin, y, { width: contentWidth, align: 'center' });
+
+                // Invoice Title with underline
+                y += 18;
+                doc.fontSize(12)
+                   .font('Helvetica-Bold')
+                   .text('Invoice Pembayaran', leftMargin, y, { width: contentWidth, align: 'center' });
+                y += 16;
+                doc.moveTo(leftMargin, y).lineTo(rightEdge, y).lineWidth(0.5).stroke();
 
                 // Patient Info and Date
-                doc.fontSize(8)
-                   .font('Helvetica');
+                y += 15;
+                doc.fontSize(8).font('Helvetica');
                 doc.text(`Nama Pasien: ${patientData.fullName || patientData.full_name || '-'}`, leftMargin, y);
-                doc.text(`Tanggal: ${new Date().toLocaleDateString('id-ID')}`, rightEdge, y, { align: 'right' });
-                
-                y += 18;
+                doc.text(`Tanggal: ${new Date().toLocaleDateString('id-ID')}`, leftMargin, y, { width: contentWidth, align: 'right' });
 
-                // Calculate totals
-                const tindakanItems = (billingData.items || []).filter(item => 
+                // Separate items by type
+                const tindakanItems = (billingData.items || []).filter(item =>
                     item.item_type === 'tindakan' || item.item_type === 'konsultasi'
                 );
-                const obatItems = (billingData.items || []).filter(item => 
+                const obatItems = (billingData.items || []).filter(item =>
                     item.item_type === 'obat' || item.item_type === 'alkes'
                 );
-                
-                const tindakanTotal = tindakanItems.reduce((sum, item) => 
+
+                const tindakanTotal = tindakanItems.reduce((sum, item) =>
                     sum + ((item.quantity || 1) * (item.price || 0)), 0
                 );
-                const obatTotal = obatItems.reduce((sum, item) => 
+                const obatTotal = obatItems.reduce((sum, item) =>
                     sum + ((item.quantity || 1) * (item.price || 0)), 0
                 );
 
-                // Tindakan Section
+                // Rincian Layanan & Tindakan
                 if (tindakanItems.length > 0) {
-                    y += 6;
-                    doc.fontSize(10)
-                       .font('Helvetica-Bold')
+                    y += 20;
+                    doc.fontSize(9).font('Helvetica-Bold')
                        .text('Rincian Layanan & Tindakan', leftMargin, y);
-                    
-                    y += 15;
-                    doc.fontSize(8)
-                       .text('Deskripsi', leftMargin, y);
-                    doc.text('Harga', rightEdge, y, { align: 'right' });
-                    
-                    y += 6;
-                    doc.moveTo(leftMargin, y)
-                       .lineTo(rightEdge, y)
-                       .lineWidth(0.2)
-                       .stroke();
-                    
-                    y += 12;
-                    doc.font('Helvetica');
 
+                    y += 12;
+                    doc.fontSize(8).font('Helvetica-Bold');
+                    doc.text('Deskripsi', leftMargin, y);
+                    doc.text('Harga', leftMargin, y, { width: contentWidth, align: 'right' });
+
+                    y += 8;
+                    doc.moveTo(leftMargin, y).lineTo(rightEdge, y).lineWidth(0.3).stroke();
+
+                    y += 8;
+                    doc.font('Helvetica');
                     tindakanItems.forEach((item) => {
                         const itemName = item.item_name || item.description || '-';
-                        doc.text(itemName, leftMargin, y, { width: 150 });
-                        doc.text(this.formatRupiahSimple(item.price), rightEdge, y, { align: 'right' });
-                        y += 14;
+                        const price = (item.quantity || 1) * (item.price || 0);
+                        doc.text(itemName, leftMargin, y, { width: contentWidth - 60 });
+                        doc.text(this.formatRupiahSimple(price), leftMargin, y, { width: contentWidth, align: 'right' });
+                        y += 12;
                     });
 
-                    y += 6;
-                    doc.font('Helvetica-Bold')
-                       .text('Subtotal Tindakan', rightEdge - 60, y, { align: 'right' });
-                    doc.text(this.formatRupiah(tindakanTotal), rightEdge, y, { align: 'right' });
-                    y += 15;
+                    // Subtotal Tindakan
+                    y += 5;
+                    doc.font('Helvetica-Bold');
+                    doc.text('Subtotal Tindakan', leftMargin + 80, y);
+                    doc.text(this.formatRupiah(tindakanTotal), leftMargin, y, { width: contentWidth, align: 'right' });
                 }
 
-                // Obat Section
+                // Rincian Obat & Alkes
                 if (obatItems.length > 0) {
-                    y += 15;
-                    doc.fontSize(10)
-                       .font('Helvetica-Bold')
+                    y += 20;
+                    doc.fontSize(9).font('Helvetica-Bold')
                        .text('Rincian Obat & Alkes', leftMargin, y);
-                    
-                    y += 15;
-                    doc.fontSize(8);
-                    const jmlCol = rightEdge - 90;
-                    const hargaCol = rightEdge - 50;
-                    
-                    doc.text('Deskripsi', leftMargin, y);
-                    doc.text('Jml', jmlCol, y, { align: 'center' });
-                    doc.text('Harga', hargaCol, y, { align: 'right' });
-                    doc.text('Subtotal', rightEdge, y, { align: 'right' });
-                    
-                    y += 6;
-                    doc.moveTo(leftMargin, y)
-                       .lineTo(rightEdge, y)
-                       .lineWidth(0.2)
-                       .stroke();
-                    
-                    y += 12;
-                    doc.font('Helvetica');
 
+                    y += 12;
+                    doc.fontSize(8).font('Helvetica-Bold');
+                    // Column positions for obat table
+                    const col1 = leftMargin;           // Deskripsi
+                    const col2 = leftMargin + 100;     // Jml
+                    const col3 = leftMargin + 130;     // Harga
+                    const col4 = leftMargin + 190;     // Subtotal
+
+                    doc.text('Deskripsi', col1, y);
+                    doc.text('Jml', col2, y);
+                    doc.text('Harga', col3, y);
+                    doc.text('Subtotal', col4, y);
+
+                    y += 8;
+                    doc.moveTo(leftMargin, y).lineTo(rightEdge, y).lineWidth(0.3).stroke();
+
+                    y += 8;
+                    doc.font('Helvetica');
                     obatItems.forEach((item) => {
                         const itemName = item.item_name || item.description || '-';
-                        const itemSubtotal = (item.quantity || 1) * (item.price || 0);
-                        
-                        doc.text(itemName, leftMargin, y, { width: 110 });
-                        doc.text(String(item.quantity || 1), jmlCol, y, { align: 'center' });
-                        doc.text(this.formatRupiahSimple(item.price), hargaCol, y, { align: 'right' });
-                        doc.text(this.formatRupiahSimple(itemSubtotal), rightEdge, y, { align: 'right' });
-                        y += 14;
+                        const qty = item.quantity || 1;
+                        const price = item.price || 0;
+                        const subtotal = qty * price;
+
+                        doc.text(itemName, col1, y, { width: 95 });
+                        doc.text(String(qty), col2, y);
+                        doc.text(this.formatRupiahSimple(price), col3, y);
+                        doc.text(this.formatRupiahSimple(subtotal), col4, y);
+                        y += 12;
                     });
 
-                    y += 6;
-                    doc.font('Helvetica-Bold')
-                       .text('Subtotal Obat & Alkes', rightEdge - 60, y, { align: 'right' });
-                    doc.text(this.formatRupiah(obatTotal), rightEdge, y, { align: 'right' });
-                    y += 15;
+                    // Subtotal Obat & Alkes
+                    y += 5;
+                    doc.font('Helvetica-Bold');
+                    doc.text('Subtotal Obat & Alkes', leftMargin + 80, y);
+                    doc.text(this.formatRupiah(obatTotal), leftMargin, y, { width: contentWidth, align: 'right' });
                 }
 
                 // Grand Total
-                y += 15;
-                doc.moveTo(leftMargin, y)
-                   .lineTo(rightEdge, y)
-                   .lineWidth(0.5)
-                   .stroke();
-                
-                y += 15;
-                doc.fontSize(11)
-                   .font('Helvetica-Bold')
-                   .text('GRAND TOTAL', rightEdge - 80, y, { align: 'right' });
-                doc.text(this.formatRupiah(tindakanTotal + obatTotal), rightEdge, y, { align: 'right' });
-                
-                y += 30;
-                doc.fontSize(8)
-                   .font('Helvetica')
-                   .text(`Kasir: ${billingData.confirmed_by || 'Admin'}`, leftMargin, y);
+                y += 18;
+                doc.moveTo(leftMargin, y).lineTo(rightEdge, y).lineWidth(0.5).stroke();
+
+                y += 12;
+                doc.fontSize(11).font('Helvetica-Bold');
+                doc.text('GRAND TOTAL', leftMargin + 50, y);
+                doc.text(this.formatRupiah(tindakanTotal + obatTotal), leftMargin, y, { width: contentWidth, align: 'right' });
 
                 doc.end();
 
@@ -222,15 +216,21 @@ class PDFGenerator {
                 let currentY = marginY;
                 let col = 0;
 
-                // Filter obat items for etiket
-                const obatItems = (billingData.items || []).filter(item => 
-                    item.item_type === 'obat' || item.item_type === 'alkes'
+                // Filter obat items with caraPakai (matching index-new.html logic)
+                let drugsToPrint = (billingData.items || []).filter(item =>
+                    item.item_type === 'obat' &&
+                    (item.item_data?.caraPakai || item.item_data?.cara_pakai) &&
+                    item.quantity > 0
                 );
 
-                // If no obat, create one label with all items
-                const itemsToPrint = obatItems.length > 0 ? obatItems : (billingData.items || []).slice(0, 5);
+                // Fallback: print all obat items if none have caraPakai
+                if (drugsToPrint.length === 0) {
+                    drugsToPrint = (billingData.items || []).filter(item =>
+                        item.item_type === 'obat' && item.quantity > 0
+                    );
+                }
 
-                itemsToPrint.forEach((item, index) => {
+                drugsToPrint.forEach((item, index) => {
                     // Check if need new page
                     if (currentY + labelHeight > doc.page.height - marginY) {
                         doc.addPage();
@@ -327,10 +327,17 @@ class PDFGenerator {
     }
 
     /**
-     * Format number to Rupiah
+     * Format number to Rupiah with 'Rp' prefix
      */
     formatRupiah(amount) {
         return 'Rp ' + Math.round(amount || 0).toLocaleString('id-ID');
+    }
+
+    /**
+     * Format number to Rupiah without 'Rp' prefix (for table columns)
+     */
+    formatRupiahSimple(amount) {
+        return Math.round(amount || 0).toLocaleString('id-ID');
     }
 }
 

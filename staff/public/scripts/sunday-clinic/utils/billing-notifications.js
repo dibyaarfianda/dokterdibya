@@ -210,13 +210,20 @@ class BillingNotifications {
         `;
         document.head.appendChild(style);
 
-        // Close handler
+        // Close handler with guard against multiple calls
         const closeBtn = modal.querySelector('#notification-close-btn');
+        let isClosed = false;
         const close = () => {
+            if (isClosed) return; // Prevent duplicate removal
+            isClosed = true;
             overlay.style.animation = 'fadeOut 0.3s ease-out';
             setTimeout(() => {
-                document.body.removeChild(overlay);
-                document.head.removeChild(style);
+                if (overlay.parentNode) {
+                    overlay.parentNode.removeChild(overlay);
+                }
+                if (style.parentNode) {
+                    style.parentNode.removeChild(style);
+                }
             }, 300);
         };
 

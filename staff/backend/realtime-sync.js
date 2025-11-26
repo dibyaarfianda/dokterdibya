@@ -26,7 +26,7 @@ function broadcast(event) {
         // Get all connected socket IDs
         const sockets = Array.from(io.sockets.sockets.keys());
         const clientCount = sockets.length;
-        
+
         console.log(`[RealTimeSync] Broadcasting ${event.type} to ${clientCount} clients:`, {
             socketIds: sockets,
             eventData: {
@@ -37,18 +37,11 @@ function broadcast(event) {
                 message: event.message?.substring(0, 50)
             }
         });
-        
-        // Emit to all connected clients
+
+        // Emit to all connected clients (only once!)
         io.emit(event.type, event);
-        
-        // Also try emitting to each socket individually to verify
-        let successCount = 0;
-        io.sockets.sockets.forEach((socket, socketId) => {
-            socket.emit(event.type, event);
-            successCount++;
-        });
-        
-        console.log(`[RealTimeSync] ✅ Successfully emitted to ${successCount} sockets`);
+
+        console.log(`[RealTimeSync] ✅ Successfully emitted to ${clientCount} sockets`);
         return true;
     } catch (error) {
         console.error('[RealTimeSync] Broadcast failed:', error);
