@@ -249,6 +249,76 @@ async function handlePeriksa(appointment) {
         return;
     }
 
+    // Show category selection modal
+    showCategoryModal(appointment);
+}
+
+function showCategoryModal(appointment) {
+    // Remove existing modal if any
+    const existingModal = document.getElementById('category-select-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    const defaultCategory = appointment.consultation_category || 'obstetri';
+
+    const modalHtml = `
+        <div class="modal fade" id="category-select-modal" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            <i class="fas fa-stethoscope mr-2"></i>Pilih Kategori Konsultasi
+                        </h5>
+                        <button type="button" class="close text-white" data-dismiss="modal">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-3">Pasien: <strong>${escapeHtml(appointment.patient_name || '-')}</strong></p>
+                        <div class="category-options">
+                            <label class="category-option d-block mb-2">
+                                <input type="radio" name="mr_category" value="obstetri" ${defaultCategory === 'obstetri' ? 'checked' : ''}>
+                                <span class="ml-2"><i class="fas fa-baby text-info mr-1"></i> <strong>Obstetri</strong> - Kehamilan & Persalinan</span>
+                            </label>
+                            <label class="category-option d-block mb-2">
+                                <input type="radio" name="mr_category" value="gyn_repro" ${defaultCategory === 'gyn_repro' ? 'checked' : ''}>
+                                <span class="ml-2"><i class="fas fa-venus text-success mr-1"></i> <strong>Ginekologi Reproduksi</strong> - Program Hamil, KB</span>
+                            </label>
+                            <label class="category-option d-block mb-2">
+                                <input type="radio" name="mr_category" value="gyn_special" ${defaultCategory === 'gyn_special' ? 'checked' : ''}>
+                                <span class="ml-2"><i class="fas fa-microscope text-warning mr-1"></i> <strong>Ginekologi Khusus</strong> - Kista, Miom, dll</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                        <button type="button" class="btn btn-primary" id="btn-start-with-category">
+                            <i class="fas fa-check mr-1"></i>Mulai Konsultasi
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    const modal = $('#category-select-modal');
+    modal.modal('show');
+
+    document.getElementById('btn-start-with-category').addEventListener('click', async () => {
+        const selectedCategory = document.querySelector('input[name="mr_category"]:checked').value;
+        modal.modal('hide');
+        await startClinicRecord(appointment, selectedCategory);
+    });
+
+    modal.on('hidden.bs.modal', function() {
+        this.remove();
+    });
+}
+
+async function startClinicRecord(appointment, category) {
     try {
         const token = getToken();
         if (!token) {
@@ -260,7 +330,8 @@ async function handlePeriksa(appointment) {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({ category: category })
         });
 
         if (!response.ok) {

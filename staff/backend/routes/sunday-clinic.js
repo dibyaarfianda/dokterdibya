@@ -304,6 +304,7 @@ function formatRecord(row) {
     return {
         id: row.id,
         mrId: row.mr_id,
+        mr_category: row.mr_category, // Include category for template selection
         patientId: row.patient_id,
         appointmentId: row.appointment_id,
         folderPath: row.folder_path,
@@ -385,19 +386,24 @@ async function loadMedicalRecordsBundle(patientId, mrId = null) {
         return null;
     }
 
-    // Build query with optional mr_id filter for visit-specific records
+    // Build query with mr_id filter for visit-specific records ONLY
+    // Each visit should start fresh - don't load legacy records with null mr_id
     let query = `SELECT id, patient_id, visit_id, mr_id, doctor_id, doctor_name, record_type, record_data,
                 created_at, updated_at
          FROM medical_records
          WHERE patient_id = ?`;
     let params = [patientId];
-    
-    // If mrId provided, filter by mr_id or get records without mr_id (shared records)
+
+    // ONLY load records for this specific visit (mr_id must match)
+    // This ensures new consultations start with empty forms
     if (mrId) {
-        query += ` AND (mr_id = ? OR mr_id IS NULL)`;
+        query += ` AND mr_id = ?`;
         params.push(mrId);
+    } else {
+        // No mr_id provided - don't load any records (shouldn't happen normally)
+        return null;
     }
-    
+
     query += ` ORDER BY created_at DESC LIMIT 50`;
 
     const [rows] = await db.query(query, params);
@@ -424,11 +430,8 @@ async function loadMedicalRecordsBundle(patientId, mrId = null) {
             latestComplete = formatted;
         }
 
-        // Prioritize records with matching mr_id over NULL mr_id records
+        // Only use records with matching mr_id (visit-specific)
         if (!byType[row.record_type]) {
-            byType[row.record_type] = formatted;
-        } else if (row.mr_id === mrId && (!byType[row.record_type].mrId)) {
-            // Replace NULL mr_id record with visit-specific one
             byType[row.record_type] = formatted;
         }
     });
@@ -640,6 +643,91 @@ router.get('/records/:mrId', verifyToken, async (req, res, next) => {
     } catch (error) {
         logger.error('Failed to load Sunday clinic record', {
             mrId: normalizedMrId,
+            error: error.message
+        });
+        next(error);
+    }
+});
+
+// Save section data for a Sunday Clinic record
+router.post('/records/:mrId/:section', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+    const section = req.params.section;
+    const data = req.body;
+
+    if (!normalizedMrId) {
+        return res.status(400).json({
+            success: false,
+            message: 'MR ID tidak valid.'
+        });
+    }
+
+    const validSections = ['anamnesa', 'pemeriksaan_ginekologi', 'usg', 'diagnosis', 'planning', 'physical_exam', 'pemeriksaan_obstetri'];
+    if (!validSections.includes(section)) {
+        return res.status(400).json({
+            success: false,
+            message: `Section tidak valid. Gunakan: ${validSections.join(', ')}`
+        });
+    }
+
+    try {
+        const recordRow = await findRecordByMrId(normalizedMrId);
+        if (!recordRow) {
+            return res.status(404).json({
+                success: false,
+                message: 'Rekam medis Sunday Clinic tidak ditemukan.'
+            });
+        }
+
+        // Check if record exists for this section and mr_id
+        const [existingRows] = await db.query(
+            `SELECT id FROM medical_records WHERE patient_id = ? AND mr_id = ? AND record_type = ?`,
+            [recordRow.patient_id, normalizedMrId, section]
+        );
+
+        if (existingRows.length > 0) {
+            // Update existing record
+            await db.query(
+                `UPDATE medical_records SET record_data = ?, updated_at = NOW() WHERE id = ?`,
+                [JSON.stringify(data), existingRows[0].id]
+            );
+        } else {
+            // Insert new record with mr_id
+            await db.query(
+                `INSERT INTO medical_records (patient_id, mr_id, record_type, record_data, doctor_id, doctor_name, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+                [
+                    recordRow.patient_id,
+                    normalizedMrId,
+                    section,
+                    JSON.stringify(data),
+                    req.user.id || null,
+                    req.user.name || null
+                ]
+            );
+        }
+
+        // Update last_activity_at on the Sunday Clinic record
+        await db.query(
+            `UPDATE sunday_clinic_records SET last_activity_at = NOW() WHERE mr_id = ?`,
+            [normalizedMrId]
+        );
+
+        logger.info('Saved section data for Sunday Clinic', {
+            mrId: normalizedMrId,
+            section,
+            patientId: recordRow.patient_id,
+            userId: req.user.id
+        });
+
+        res.json({
+            success: true,
+            message: `Data ${section} berhasil disimpan`
+        });
+    } catch (error) {
+        logger.error('Failed to save section data', {
+            mrId: normalizedMrId,
+            section,
             error: error.message
         });
         next(error);

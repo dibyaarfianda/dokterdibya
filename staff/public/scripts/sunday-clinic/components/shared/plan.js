@@ -18,12 +18,11 @@ export default {
         const record = state.recordData?.record || {};
         const category = record?.mr_category || 'obstetri';
 
-        // Use old simple format for obstetri category
-        if (category === 'obstetri') {
-            return this.renderObstetriFormat(state);
-        }
+        // Use obstetri format for all categories (as per user request)
+        // Planning is the same across obstetri, gyn_repro, gyn_special
+        return this.renderObstetriFormat(state);
 
-        // Use new detailed format for other categories
+        /* Disabled: Use new detailed format for other categories
         const plan = state.recordData?.plan || {};
         const medications = plan.medications || [];
 

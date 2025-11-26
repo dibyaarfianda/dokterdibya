@@ -420,6 +420,7 @@ router.put('/:id/cancel', verifyToken, async (req, res) => {
 router.post('/:id/start-clinic-record', verifyToken, async (req, res) => {
     try {
         const { id } = req.params;
+        const { category: requestCategory } = req.body || {};
 
         const [appointments] = await db.query(
             `SELECT a.*, a.consultation_category, p.id AS patient_db_id, p.full_name
@@ -462,11 +463,16 @@ router.post('/:id/start-clinic-record', verifyToken, async (req, res) => {
             console.error('Failed to fetch intake data, will use default category:', intakeError);
         }
 
-        // Use appointment's consultation_category if available, otherwise fall back to intake data
+        // Priority: 1) Staff selection from modal, 2) Appointment category, 3) Intake data
+        const validCategories = ['obstetri', 'gyn_repro', 'gyn_special'];
+        const finalCategory = validCategories.includes(requestCategory)
+            ? requestCategory
+            : (appointment.consultation_category || null);
+
         const { record, created } = await createSundayClinicRecord({
             appointmentId: appointment.id,
             patientId: appointment.patient_db_id,
-            category: appointment.consultation_category || null,
+            category: finalCategory,
             intakeData: intakeData,
             createdBy: userId
         });

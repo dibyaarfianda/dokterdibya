@@ -19,12 +19,11 @@ export default {
         const record = state.recordData?.record || {};
         const category = record?.mr_category || 'obstetri';
 
-        // Use old simple format for obstetri category
-        if (category === 'obstetri') {
-            return this.renderObstetriFormat(diagnosis, state);
-        }
+        // Use obstetri format for all categories (as per user request)
+        // Diagnosis is the same across obstetri, gyn_repro, gyn_special
+        return this.renderObstetriFormat(diagnosis, state);
 
-        // Use new detailed format for other categories
+        /* Disabled: Use new detailed format for other categories
         return `
             <div class="card mb-3">
                 <div class="card-header bg-warning text-dark">

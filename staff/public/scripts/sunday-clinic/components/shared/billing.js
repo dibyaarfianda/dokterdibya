@@ -24,12 +24,11 @@ export default {
         const record = state.recordData || {};
         const category = record?.mrCategory || record?.mr_category || 'obstetri';
 
-        // Use old read-only format for obstetri category
-        if (category === 'obstetri') {
-            return await this.renderObstetriFormat(state);
-        }
+        // Use obstetri format for all categories (as per user request)
+        // Tagihan is the same across obstetri, gyn_repro, gyn_special
+        return await this.renderObstetriFormat(state);
 
-        // Use new detailed format for other categories
+        /* Disabled: Use new detailed format for other categories
         const billing = state.billingData || state.recordData?.billing || {};
         const items = billing.items || [];
 
