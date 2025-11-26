@@ -167,11 +167,13 @@ export default {
     async renderObstetriFormat(state) {
         // Get saved data from medicalRecords if available
         let savedData = {};
+        let metaHtml = '';
         try {
-            const { getMedicalRecordContext } = await import('../../utils/helpers.js');
+            const { getMedicalRecordContext, renderRecordMeta } = await import('../../utils/helpers.js');
             const context = getMedicalRecordContext(state, 'planning');
             if (context) {
                 savedData = context.data || {};
+                metaHtml = renderRecordMeta(context, 'planning');
             }
         } catch (error) {
             console.error('[Plan] Failed to load saved data:', error);
@@ -200,6 +202,7 @@ export default {
                 <div class="sc-section-header">
                     <h3>Planning</h3>
                 </div>
+                ${metaHtml}
                 <div class="sc-card">
                     <div class="mb-3">
                         <label class="font-weight-bold">Tindakan</label>

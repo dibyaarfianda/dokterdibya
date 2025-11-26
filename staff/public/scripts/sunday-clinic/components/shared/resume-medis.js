@@ -32,7 +32,7 @@ export default {
                         <small class="text-muted" id="resume-status">
                             ${savedResume ? 'Resume sudah tersedia' : 'Belum ada resume'}
                         </small>
-                        <div>
+                        <div class="button-group" id="resume-button-group">
                             <button type="button" class="btn btn-primary" id="btn-generate-resume" onclick="window.generateResumeMedis()">
                                 <i class="fas fa-magic"></i> Generate Resume AI
                             </button>
