@@ -399,19 +399,20 @@ router.post('/api/medical-records/generate-resume', verifyToken, async (req, res
                      WHERE patient_id = ?`;
         let params = [patientId];
         
-        // If visitId provided, filter by mr_id (Sunday Clinic) or visit_id (legacy)
+        // If visitId provided, filter ONLY by mr_id (no legacy null records)
+        // This ensures new visits don't include old obstetri data
         if (visitId) {
             if (typeof visitId === 'string' && visitId.match(/^[A-Za-z]+\d+$/i)) {
-                // Sunday Clinic MR ID format (case-insensitive)
-                query += ` AND (mr_id = ? OR mr_id IS NULL)`;
-                params.push(visitId.toUpperCase()); // Normalize to uppercase
+                // Sunday Clinic MR ID format - ONLY matching mr_id, no NULL
+                query += ` AND mr_id = ?`;
+                params.push(visitId.toUpperCase());
             } else if (!isNaN(visitId)) {
                 // Legacy numeric visit_id
-                query += ` AND (visit_id = ? OR visit_id IS NULL)`;
+                query += ` AND visit_id = ?`;
                 params.push(visitId);
             } else {
                 // Default to mr_id for any other string format
-                query += ` AND (mr_id = ? OR mr_id IS NULL)`;
+                query += ` AND mr_id = ?`;
                 params.push(visitId.toUpperCase());
             }
         }
