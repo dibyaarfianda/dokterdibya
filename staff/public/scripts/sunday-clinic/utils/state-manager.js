@@ -105,27 +105,51 @@ class StateManager {
                 throw new Error('MR ID not found in record data');
             }
 
-            // Extract data from medical records
+            // Extract data from medical records for all section types
             let anamnesaData = {};
             let pemeriksaanObstetriData = {};
-            
-            if (recordData.medicalRecords) {
-                const anamnesaRecord = recordData.medicalRecords.byType?.anamnesa;
-                if (anamnesaRecord && anamnesaRecord.data) {
-                    anamnesaData = anamnesaRecord.data;
+            let pemeriksaanGinekologiData = {};
+            let usgData = {};
+            let diagnosisData = {};
+            let planningData = {};
+            let physicalExamData = {};
+
+            if (recordData.medicalRecords && recordData.medicalRecords.byType) {
+                const byType = recordData.medicalRecords.byType;
+
+                if (byType.anamnesa?.data) {
+                    anamnesaData = byType.anamnesa.data;
                 }
-                
-                const pemeriksaanObstetriRecord = recordData.medicalRecords.byType?.pemeriksaan_obstetri;
-                if (pemeriksaanObstetriRecord && pemeriksaanObstetriRecord.data) {
-                    pemeriksaanObstetriData = pemeriksaanObstetriRecord.data;
+                if (byType.pemeriksaan_obstetri?.data) {
+                    pemeriksaanObstetriData = byType.pemeriksaan_obstetri.data;
+                }
+                if (byType.pemeriksaan_ginekologi?.data) {
+                    pemeriksaanGinekologiData = byType.pemeriksaan_ginekologi.data;
+                }
+                if (byType.usg?.data) {
+                    usgData = byType.usg.data;
+                }
+                if (byType.diagnosis?.data) {
+                    diagnosisData = byType.diagnosis.data;
+                }
+                if (byType.planning?.data) {
+                    planningData = byType.planning.data;
+                }
+                if (byType.physical_exam?.data) {
+                    physicalExamData = byType.physical_exam.data;
                 }
             }
 
-            // Merge data into record
+            // Merge data into record - each visit starts fresh if no data for this mr_id
             const enrichedRecord = {
                 ...recordData.record,
                 anamnesa: anamnesaData,
-                pemeriksaan_obstetri: pemeriksaanObstetriData
+                pemeriksaan_obstetri: pemeriksaanObstetriData,
+                pemeriksaan_ginekologi: pemeriksaanGinekologiData,
+                usg: usgData,
+                diagnosis: diagnosisData,
+                planning: planningData,
+                physical_exam: physicalExamData
             };
 
             // Compute derived state EXACTLY like backup
@@ -210,6 +234,31 @@ class StateManager {
      */
     hasUnsavedChanges() {
         return this.state.isDirty;
+    }
+
+    /**
+     * Update section data within recordData
+     * Used by components to update local state after saving
+     */
+    updateSectionData(sectionName, data) {
+        if (!this.state.recordData) {
+            console.warn('[StateManager] Cannot update section data: recordData is null');
+            return;
+        }
+
+        const updatedRecordData = {
+            ...this.state.recordData,
+            [sectionName]: {
+                ...(this.state.recordData[sectionName] || {}),
+                ...data
+            }
+        };
+
+        this.setState({
+            recordData: updatedRecordData
+        });
+
+        console.log(`[StateManager] Section data updated: ${sectionName}`, data);
     }
 }
 
