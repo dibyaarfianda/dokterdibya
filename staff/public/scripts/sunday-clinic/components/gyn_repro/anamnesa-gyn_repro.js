@@ -436,9 +436,15 @@ export default {
      * Save anamnesa data
      */
     async save() {
-        const mrId = stateManager.getState().recordData?.mrId || stateManager.getState().recordData?.mr_id;
+        const state = stateManager.getState();
+        const mrId = state.currentMrId ||
+                     state.recordData?.mrId ||
+                     state.recordData?.mr_id ||
+                     state.recordData?.record?.mrId ||
+                     state.recordData?.record?.mr_id;
 
         if (!mrId) {
+            console.error('[AnamnesaGynRepro] MR ID not found in state:', state);
             alert('Error: MR ID tidak ditemukan');
             return { success: false };
         }
