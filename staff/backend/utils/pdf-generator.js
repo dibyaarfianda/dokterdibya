@@ -190,26 +190,25 @@ class PDFGenerator {
     }
 
     /**
-     * Generate Etiket (Label) PDF (matching index-new.html format)
-     * Multiple labels per page, drug-focused
+     * Generate Etiket (Label) PDF - 2 columns per page with colored text
      */
     async generateEtiket(billingData, patientData, recordData) {
         return new Promise((resolve, reject) => {
             try {
-                const doc = new PDFDocument({ size: 'A4', margin: 15 });
+                const doc = new PDFDocument({ size: 'A4', margin: 20 });
                 const filename = `${recordData.mrId}e.pdf`;
                 const filepath = path.join(this.invoicesDir, filename);
                 const stream = fs.createWriteStream(filepath);
 
                 doc.pipe(stream);
 
-                // Label dimensions (60mm x 40mm ≈ 170 x 113 points)
-                const labelWidth = 170;
-                const labelHeight = 113;
+                // Label dimensions for 3-column layout
+                const labelWidth = 180;
+                const labelHeight = 130;
                 const marginX = 15;
                 const marginY = 15;
-                const gapX = 15;
-                const gapY = 15;
+                const gapX = 12;
+                const gapY = 12;
                 const cols = 3;
 
                 let currentX = marginX;
@@ -242,64 +241,61 @@ class PDFGenerator {
                     // Draw label border
                     doc.rect(currentX, currentY, labelWidth, labelHeight).stroke();
 
-                    let textY = currentY + 8;
-                    const labelCenter = currentX + labelWidth / 2;
+                    let textY = currentY + 10;
 
                     // Clinic header
-                    doc.fontSize(8)
+                    doc.fontSize(9)
                        .font('Helvetica-Bold')
-                       .text('Dr. Dibya Private Clinic', labelCenter, textY, { align: 'center' });
-                    
-                    textY += 10;
+                       .text('Dr. Dibya Private Clinic', currentX + 5, textY, { width: labelWidth - 10, align: 'center' });
+
+                    textY += 11;
                     doc.fontSize(7)
                        .font('Helvetica')
-                       .text('RSIA Melinda', labelCenter, textY, { align: 'center' });
-                    
-                    textY += 10;
-                    doc.text('Jl. Balowerti 2 No. 59, Kediri', labelCenter, textY, { align: 'center' });
-                    
-                    textY += 10;
-                    doc.text('SIPA: 503/0522/SIP-SIK/419.104/2024', labelCenter, textY, { align: 'center' });
-                    
+                       .text('RSIA Melinda', currentX + 5, textY, { width: labelWidth - 10, align: 'center' });
+
+                    textY += 9;
+                    doc.text('Jl. Balowerti 2 No. 59, Kediri', currentX + 5, textY, { width: labelWidth - 10, align: 'center' });
+
+                    textY += 9;
+                    doc.text('SIPA: 503/0522/SIP-SIK/419.104/2024', currentX + 5, textY, { width: labelWidth - 10, align: 'center' });
+
+                    // Separator line
                     textY += 8;
                     doc.moveTo(currentX + 5, textY)
                        .lineTo(currentX + labelWidth - 5, textY)
-                       .lineWidth(0.2)
+                       .lineWidth(0.3)
                        .stroke();
-                    
-                    textY += 12;
 
-                    // Patient info
-                    doc.fontSize(8)
+                    textY += 8;
+
+                    // Patient info line
+                    doc.fontSize(7)
                        .font('Helvetica');
-                    doc.text(`Pasien: ${patientData.fullName || patientData.full_name || '-'}`, 
-                             currentX + 8, textY, { width: labelWidth - 50 });
-                    doc.text(new Date().toLocaleDateString('id-ID'), 
-                             currentX + labelWidth - 8, textY, { align: 'right' });
-                    
+                    const patientName = patientData.fullName || patientData.full_name || '-';
+                    doc.text(`Pasien: ${patientName}`, currentX + 5, textY, { width: labelWidth - 55 });
+                    doc.text(new Date().toLocaleDateString('id-ID'), currentX + labelWidth - 55, textY);
+
                     textY += 12;
 
-                    // Item name (drug name)
+                    // Drug name (bold)
                     doc.fontSize(10)
                        .font('Helvetica-Bold');
                     const itemName = item.item_name || item.description || '-';
-                    const itemLines = doc.heightOfString(itemName, { width: labelWidth - 16 });
-                    doc.text(itemName, currentX + 8, textY, { width: labelWidth - 16 });
-                    
-                    textY += itemLines + 8;
+                    doc.text(itemName, currentX + 5, textY, { width: labelWidth - 10 });
 
-                    // Usage instructions (if available in item_data)
+                    textY += 14;
+
+                    // Dosage - format as "1x1" from caraPakai
                     doc.fontSize(9)
                        .font('Helvetica');
-                    const caraPakai = item.item_data?.cara_pakai || item.item_data?.instruction || 
-                                     `${item.quantity}x sehari`;
-                    doc.text(caraPakai, currentX + 8, textY, { width: labelWidth - 16 });
-                    
+                    const caraPakai = item.item_data?.caraPakai || item.item_data?.cara_pakai || '1x1';
+                    doc.text(caraPakai, currentX + 5, textY, { width: labelWidth - 10 });
+
                     // Footer
-                    doc.fontSize(7)
+                    doc.fontSize(6)
                        .font('Helvetica-Bold')
-                       .text('Diminum sebelum/sesudah makan', 
-                             currentX + 8, currentY + labelHeight - 10);
+                       .text('Diminum sebelum/sesudah makan',
+                             currentX + 5, currentY + labelHeight - 14, { width: labelWidth - 10 });
 
                     // Move to next position
                     col++;

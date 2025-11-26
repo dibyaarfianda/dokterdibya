@@ -12,7 +12,16 @@ const bookingData = {
     sessionLabel: null,
     slot: null,
     slotTime: null,
+    consultationCategory: 'obstetri',
+    consultationCategoryLabel: 'Kehamilan (Obstetri)',
     chiefComplaint: null
+};
+
+// Category labels map
+const categoryLabels = {
+    'obstetri': 'Kehamilan (Obstetri)',
+    'gyn_repro': 'Program Hamil (Reproduksi)',
+    'gyn_special': 'Ginekologi Umum'
 };
 
 // Initialize
@@ -26,6 +35,13 @@ function setupEventListeners() {
     $('#btn-back').click(prevStep);
     $('#btn-submit').click(submitBooking);
     $('#chief-complaint').on('input', validateComplaint);
+
+    // Category selection
+    $('input[name="consultation_category"]').on('change', function() {
+        const value = $(this).val();
+        bookingData.consultationCategory = value;
+        bookingData.consultationCategoryLabel = categoryLabels[value] || value;
+    });
 }
 
 function showAlert(message, type = 'info') {
@@ -243,6 +259,7 @@ function showSummary() {
     $('#summary-date').text(bookingData.dateFormatted);
     $('#summary-session').text(bookingData.sessionLabel);
     $('#summary-time').text(bookingData.slotTime);
+    $('#summary-category').text(bookingData.consultationCategoryLabel);
     $('#summary-complaint').text(bookingData.chiefComplaint);
 }
 
@@ -260,7 +277,8 @@ async function submitBooking() {
                 appointment_date: bookingData.date,
                 session: bookingData.session,
                 slot_number: bookingData.slot,
-                chief_complaint: bookingData.chiefComplaint
+                chief_complaint: bookingData.chiefComplaint,
+                consultation_category: bookingData.consultationCategory
             })
         });
         

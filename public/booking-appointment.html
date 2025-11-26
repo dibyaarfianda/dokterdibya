@@ -418,6 +418,48 @@
         .text-danger {
             color: var(--danger);
         }
+
+        /* Category Selection Styles */
+        .category-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 10px;
+        }
+        .category-option {
+            cursor: pointer;
+        }
+        .category-option input[type="radio"] {
+            display: none;
+        }
+        .category-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .category-card strong {
+            display: block;
+            color: #fff;
+            margin: 10px 0 5px;
+            font-size: 14px;
+        }
+        .category-card small {
+            display: block;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 12px;
+        }
+        .category-option input[type="radio"]:checked + .category-card {
+            background: rgba(0, 102, 255, 0.2);
+            border-color: var(--primary);
+            box-shadow: 0 0 15px rgba(0, 102, 255, 0.3);
+        }
+        .category-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body>
@@ -480,9 +522,40 @@
 
             <!-- Step 3: Chief Complaint -->
             <div class="booking-step" id="step-3">
-                <h3>Keluhan Utama</h3>
-                <p class="text-muted">Ceritakan keluhan atau tujuan konsultasi Anda</p>
+                <h3>Jenis Konsultasi</h3>
+                <p class="text-muted">Pilih jenis konsultasi dan ceritakan keluhan Anda</p>
+
                 <div class="form-group">
+                    <label for="consultation-category">Jenis Konsultasi <span class="text-danger">*</span></label>
+                    <div class="category-options">
+                        <label class="category-option">
+                            <input type="radio" name="consultation_category" value="obstetri" checked>
+                            <div class="category-card">
+                                <i class="fa fa-child" style="font-size: 24px; color: #e91e63;"></i>
+                                <strong>Kehamilan (Obstetri)</strong>
+                                <small>Kontrol kehamilan, USG janin, persalinan</small>
+                            </div>
+                        </label>
+                        <label class="category-option">
+                            <input type="radio" name="consultation_category" value="gyn_repro">
+                            <div class="category-card">
+                                <i class="fa fa-heart" style="font-size: 24px; color: #9c27b0;"></i>
+                                <strong>Program Hamil (Reproduksi)</strong>
+                                <small>Promil, fertilitas, inseminasi</small>
+                            </div>
+                        </label>
+                        <label class="category-option">
+                            <input type="radio" name="consultation_category" value="gyn_special">
+                            <div class="category-card">
+                                <i class="fa fa-stethoscope" style="font-size: 24px; color: #2196f3;"></i>
+                                <strong>Ginekologi Umum</strong>
+                                <small>Mioma, kista, masalah haid, dll</small>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-top: 20px;">
                     <label for="chief-complaint">Keluhan / Tujuan Konsultasi <span class="text-danger">*</span></label>
                     <textarea id="chief-complaint" class="form-control" placeholder="Contoh: Kontrol kehamilan rutin, konsultasi masalah haid, dll..." required></textarea>
                     <small class="help-block">Informasi ini membantu dokter mempersiapkan konsultasi Anda</small>
@@ -505,6 +578,10 @@
                     <div class="summary-row">
                         <span class="summary-label">Waktu:</span>
                         <span class="summary-value" id="summary-time">-</span>
+                    </div>
+                    <div class="summary-row">
+                        <span class="summary-label">Jenis Konsultasi:</span>
+                        <span class="summary-value" id="summary-category">-</span>
                     </div>
                     <div class="summary-row">
                         <span class="summary-label">Keluhan:</span>

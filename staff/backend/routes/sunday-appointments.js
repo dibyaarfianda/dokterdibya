@@ -66,6 +66,16 @@ function getSlotTime(session, slotNumber) {
     return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 }
 
+// Helper function to get category label
+function getCategoryLabel(category) {
+    const labels = {
+        'obstetri': 'Kehamilan (Obstetri)',
+        'gyn_repro': 'Program Hamil (Reproduksi)',
+        'gyn_special': 'Ginekologi Umum'
+    };
+    return labels[category] || category || '-';
+}
+
 function calculateAge(birthDate) {
     if (!(birthDate instanceof Date) || isNaN(birthDate.getTime())) {
         return null;
@@ -177,7 +187,7 @@ router.get('/sundays', verifyToken, async (req, res) => {
  */
 router.post('/book', verifyToken, async (req, res) => {
     try {
-        const { appointment_date, session, slot_number, chief_complaint } = req.body;
+        const { appointment_date, session, slot_number, chief_complaint, consultation_category } = req.body;
         
         // Validation
         if (!appointment_date || !session || !slot_number || !chief_complaint) {
@@ -238,12 +248,16 @@ router.post('/book', verifyToken, async (req, res) => {
             });
         }
         
+        // Validate consultation category
+        const validCategories = ['obstetri', 'gyn_repro', 'gyn_special'];
+        const category = validCategories.includes(consultation_category) ? consultation_category : 'obstetri';
+
         // Create appointment
         const [result] = await db.query(
-            `INSERT INTO sunday_appointments 
-             (patient_id, patient_name, patient_phone, appointment_date, session, slot_number, chief_complaint, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
-            [patient.id, patient.full_name, patient.phone, appointment_date, session, slot_number, chief_complaint]
+            `INSERT INTO sunday_appointments
+             (patient_id, patient_name, patient_phone, appointment_date, session, slot_number, chief_complaint, consultation_category, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+            [patient.id, patient.full_name, patient.phone, appointment_date, session, slot_number, chief_complaint, category]
         );
         
         res.status(201).json({
@@ -278,7 +292,7 @@ router.post('/book', verifyToken, async (req, res) => {
 router.get('/patient', verifyToken, async (req, res) => {
     try {
         const [appointments] = await db.query(
-            `SELECT id, appointment_date, session, slot_number, chief_complaint, status, notes,
+            `SELECT id, appointment_date, session, slot_number, chief_complaint, consultation_category, status, notes,
                     cancellation_reason, cancelled_by, cancelled_at, created_at
              FROM sunday_appointments
              WHERE patient_id = ?
@@ -313,18 +327,19 @@ router.get('/patient', verifyToken, async (req, res) => {
                 
             return {
                 ...apt,
-                dateFormatted: new Date(apt.appointment_date).toLocaleDateString('id-ID', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
+                dateFormatted: new Date(apt.appointment_date).toLocaleDateString('id-ID', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
                 }),
                 sessionLabel: getSessionLabel(apt.session),
                 time: slotTime,
                 startDateTime,
                 arrivalTime,
                 arrivalTimeFormatted,
-                isPast
+                isPast,
+                categoryLabel: getCategoryLabel(apt.consultation_category)
             };
         });
 
@@ -407,7 +422,7 @@ router.post('/:id/start-clinic-record', verifyToken, async (req, res) => {
         const { id } = req.params;
 
         const [appointments] = await db.query(
-            `SELECT a.*, p.id AS patient_db_id, p.full_name
+            `SELECT a.*, a.consultation_category, p.id AS patient_db_id, p.full_name
              FROM sunday_appointments a
              LEFT JOIN patients p ON CAST(a.patient_id AS CHAR) = CAST(p.id AS CHAR)
              WHERE a.id = ?
@@ -447,9 +462,11 @@ router.post('/:id/start-clinic-record', verifyToken, async (req, res) => {
             console.error('Failed to fetch intake data, will use default category:', intakeError);
         }
 
+        // Use appointment's consultation_category if available, otherwise fall back to intake data
         const { record, created } = await createSundayClinicRecord({
             appointmentId: appointment.id,
             patientId: appointment.patient_db_id,
+            category: appointment.consultation_category || null,
             intakeData: intakeData,
             createdBy: userId
         });
@@ -523,17 +540,18 @@ router.get('/list', verifyToken, async (req, res) => {
                 ...apt,
                 patientAge,
                 patientBirthDate: birthIso,
-                dateFormatted: new Date(apt.appointment_date).toLocaleDateString('id-ID', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
+                dateFormatted: new Date(apt.appointment_date).toLocaleDateString('id-ID', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
                 }),
                 sessionLabel: getSessionLabel(apt.session),
-                time: getSlotTime(apt.session, apt.slot_number)
+                time: getSlotTime(apt.session, apt.slot_number),
+                categoryLabel: getCategoryLabel(apt.consultation_category)
             };
         });
-        
+
         res.json({ appointments: formatted });
         
     } catch (error) {
