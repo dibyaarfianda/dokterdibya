@@ -860,6 +860,10 @@
                     <div class="user-role">Pasien</div>
                 </div>
                 <div class="dropdown-menu-custom" id="user-dropdown">
+                    <a href="#" onclick="openProfileModal(); toggleDropdown(event);">
+                        <i class="fa fa-edit"></i>
+                        <span>Edit Profil</span>
+                    </a>
                     <a href="#" onclick="openProfileViewModal(event)">
                         <i class="fa fa-cog"></i>
                         <span>Setting</span>
@@ -1054,9 +1058,9 @@
                                    style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
                         </div>
                         <div class="form-group">
-                            <label style="color: #28a7e9;">Email *</label>
-                            <input type="email" class="form-control" id="edit-email" required
-                                   style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
+                            <label style="color: #28a7e9;">Email <small style="color: #888;">(tidak dapat diubah)</small></label>
+                            <input type="email" class="form-control" id="edit-email" readonly disabled
+                                   style="background: rgba(255,255,255,0.02); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); color: #888; cursor: not-allowed;">
                         </div>
                         <div class="form-group">
                             <label style="color: #28a7e9;">Nomor WhatsApp *</label>
@@ -1295,9 +1299,11 @@
 
         async function loadUserProfile() {
             try {
-                const response = await fetch('/api/patients/profile', {
+                // Add cache-busting timestamp to prevent browser caching
+                const response = await fetch('/api/patients/profile?_=' + Date.now(), {
                     headers: {
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${token}`,
+                        'Cache-Control': 'no-cache'
                     }
                 });
 
@@ -1353,9 +1359,15 @@
                     };
                 }
 
-                // Format birth date
+                // Format birth date - avoid timezone issues by parsing date parts directly
                 if (profile.birth_date) {
-                    const birthDate = new Date(profile.birth_date);
+                    let birthDateStr = profile.birth_date;
+                    if (birthDateStr.includes('T')) {
+                        birthDateStr = birthDateStr.split('T')[0];
+                    }
+                    // Parse as local date to avoid timezone shift
+                    const [year, month, day] = birthDateStr.split('-').map(Number);
+                    const birthDate = new Date(year, month - 1, day); // month is 0-indexed
                     document.getElementById('profile-birthdate').textContent = birthDate.toLocaleDateString('id-ID', {
                         year: 'numeric',
                         month: 'long',
@@ -1908,8 +1920,14 @@
             }
 
             if (window.currentProfile.birth_date) {
-                const birthDate = new Date(window.currentProfile.birth_date);
-                document.getElementById('edit-birthdate').value = birthDate.toISOString().split('T')[0];
+                // Use the date string directly to avoid timezone conversion issues
+                // birth_date from DB is in YYYY-MM-DD format or ISO string
+                let birthDateStr = window.currentProfile.birth_date;
+                if (birthDateStr.includes('T')) {
+                    // If it's an ISO string, extract just the date part
+                    birthDateStr = birthDateStr.split('T')[0];
+                }
+                document.getElementById('edit-birthdate').value = birthDateStr;
             }
 
             document.getElementById('edit-age').value = window.currentProfile.age || '';
@@ -2083,6 +2101,9 @@
             localStorage.removeItem('vps_auth_token');
             sessionStorage.removeItem('vps_auth_token');
             localStorage.removeItem('patient_user');
+            localStorage.removeItem('patient_token');
+            localStorage.removeItem('auth_provider');
+            localStorage.removeItem('patient_intake_draft_v3'); // Clear intake draft to prevent data leakage
             window.location.href = '/index.html';
         }
 

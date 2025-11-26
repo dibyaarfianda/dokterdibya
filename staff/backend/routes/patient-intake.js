@@ -4,6 +4,7 @@ const express = require('express');
 const fs = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 const logger = require('../utils/logger');
 const PatientIntakeIntegrationService = require('../services/PatientIntakeIntegrationService');
 const { verifyToken } = require('../middleware/auth');
@@ -590,8 +591,36 @@ router.post('/api/patient-intake', async (req, res, next) => {
             // Don't fail the response, data is already integrated
         }
 
-        res.status(201).json({ 
-            success: true, 
+        // IMPORTANT: Update intake_completed and link submission to the LOGGED-IN patient directly
+        // This ensures the correct patient account is marked, regardless of phone number lookups
+        try {
+            const authHeader = req.headers.authorization;
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                const token = authHeader.substring(7);
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                if (decoded && decoded.id) {
+                    // Update the intake submission to be linked to the authenticated patient
+                    await db.query(
+                        'UPDATE patient_intake_submissions SET patient_id = ? WHERE submission_id = ?',
+                        [decoded.id, submissionId]
+                    );
+                    logger.info(`Linked intake submission ${submissionId} to authenticated patient: ${decoded.id}`);
+
+                    // Mark intake as completed for the patient
+                    await db.query(
+                        'UPDATE patients SET intake_completed = 1 WHERE id = ?',
+                        [decoded.id]
+                    );
+                    logger.info(`Marked intake_completed=1 for authenticated patient: ${decoded.id}`);
+                }
+            }
+        } catch (tokenError) {
+            // Token verification failed or not present - that's OK, not all submissions are authenticated
+            logger.debug('Could not mark intake_completed from token', { error: tokenError.message });
+        }
+
+        res.status(201).json({
+            success: true,
             submissionId,
             quickId,
             status,

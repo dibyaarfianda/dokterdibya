@@ -3,7 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Buat Janji Konsultasi - Klinik Dr. Dibya</title>
+    <!-- Early auth check v3 - in HEAD for fastest execution -->
+    <script>
+        (function() {
+            console.log('[Booking-HEAD] Auth check v3');
+            var t = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+            console.log('[Booking-HEAD] Token:', t ? 'YES' : 'NO');
+            if (!t) {
+                console.log('[Booking-HEAD] Redirecting...');
+                window.location.replace('/index.html#masuk');
+            }
+        })();
+    </script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
     <style>
@@ -76,6 +91,30 @@
         .booking-header p {
             margin: 0;
             opacity: 0.9;
+        }
+
+        .back-btn {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.3);
+            color: white;
+            text-decoration: none;
         }
 
         .booking-content {
@@ -385,7 +424,10 @@
     <div class="bg-animation" id="bgAnimation"></div>
 
     <div class="booking-container">
-        <div class="booking-header">
+        <div class="booking-header" style="position: relative;">
+            <a href="/patient-dashboard.html" class="back-btn">
+                <i class="fa fa-arrow-left"></i> Kembali
+            </a>
             <h1><i class="fa fa-calendar-check-o"></i> Buat Janji Konsultasi</h1>
             <p>Pilih tanggal dan waktu yang sesuai untuk konsultasi Anda</p>
         </div>
@@ -491,7 +533,7 @@
 
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-    <script src="/scripts/booking-appointment.js"></script>
+    <script src="/scripts/booking-appointment.js?v=3.0"></script>
 
     <script>
         // Create floating bubbles animation
