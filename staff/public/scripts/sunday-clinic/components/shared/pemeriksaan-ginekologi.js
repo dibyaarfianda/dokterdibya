@@ -76,9 +76,15 @@ Contoh:
      */
     async save() {
         const content = document.getElementById('gyn-exam-content')?.value || '';
-        const mrId = stateManager.getState().recordData?.record?.mr_id;
+        const state = stateManager.getState();
+        const mrId = state.currentMrId ||
+                     state.recordData?.mrId ||
+                     state.recordData?.mr_id ||
+                     state.recordData?.record?.mrId ||
+                     state.recordData?.record?.mr_id;
 
         if (!mrId) {
+            console.error('[PemeriksaanGinekologi] MR ID not found in state:', state);
             alert('Error: MR ID tidak ditemukan');
             return { success: false };
         }
