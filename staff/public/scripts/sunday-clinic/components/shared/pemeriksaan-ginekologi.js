@@ -1,6 +1,7 @@
 /**
  * Pemeriksaan Ginekologi Component (Shared for gyn_repro & gyn_special)
  * Simple text area for gynecological examination notes
+ * Using obstetri-style CSS (sc-section, sc-grid, sc-card)
  */
 
 import stateManager from '../../utils/state-manager.js';
@@ -15,19 +16,34 @@ export default {
         const savedContent = gynExam.content || '';
         const isSaved = !!gynExam.saved_at;
 
+        // Get metadata context for display
+        let metaHtml = '';
+        try {
+            const { getMedicalRecordContext, renderRecordMeta } = await import('../../utils/helpers.js');
+            const context = getMedicalRecordContext(state, 'pemeriksaan_ginekologi');
+            if (context) {
+                metaHtml = renderRecordMeta(context, 'pemeriksaan_ginekologi');
+            }
+        } catch (error) {
+            console.error('[PemeriksaanGinekologi] Failed to load metadata:', error);
+        }
+
         return `
-            <div class="card mb-3">
-                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="fas fa-venus"></i> Pemeriksaan Ginekologi
-                    </h5>
-                    ${isSaved ? '<span class="badge badge-light"><i class="fas fa-check"></i> Tersimpan</span>' : ''}
+            <div class="sc-section">
+                <div class="sc-section-header">
+                    <h3>Pemeriksaan Ginekologi</h3>
+                    <button class="btn btn-primary btn-sm" id="gyn-exam-save">
+                        <i class="fas fa-save"></i> Simpan
+                    </button>
                 </div>
-                <div class="card-body">
-                    <div class="form-group">
-                        <label>Hasil Pemeriksaan Ginekologi:</label>
-                        <textarea id="gyn-exam-content" class="form-control" rows="12"
-                                  placeholder="Tuliskan hasil pemeriksaan ginekologi...
+                ${metaHtml}
+
+                <div class="sc-grid two">
+                    <div class="sc-card">
+                        <h4>Hasil Pemeriksaan</h4>
+                        <div class="form-group mb-3">
+                            <textarea id="gyn-exam-content" class="form-control" rows="15"
+                                placeholder="Tuliskan hasil pemeriksaan ginekologi...
 
 Contoh:
 - Inspeksi vulva: normal / kelainan
@@ -35,21 +51,46 @@ Contoh:
 - Pemeriksaan bimanual: uterus, adneksa
 - Pemeriksaan rektovaginal (jika diperlukan)
 - Temuan lain">${this.escapeHtml(savedContent)}</textarea>
-                    </div>
-
-                    <div class="d-flex justify-content-between align-items-center mt-3">
-                        <small class="text-muted" id="gyn-exam-status">
-                            ${isSaved ? `Terakhir disimpan: ${new Date(gynExam.saved_at).toLocaleString('id-ID')}` : 'Belum disimpan'}
-                        </small>
-                        <div>
-                            <button type="button" class="btn btn-outline-secondary btn-sm mr-2" id="gyn-exam-reset">
-                                <i class="fas fa-undo"></i> Reset
-                            </button>
-                            <button type="button" class="btn btn-success" id="gyn-exam-save">
-                                <i class="fas fa-save"></i> Simpan
-                            </button>
                         </div>
                     </div>
+
+                    <div class="sc-card">
+                        <h4>Panduan Pemeriksaan</h4>
+                        <div class="alert alert-light border">
+                            <strong>Inspeksi Vulva:</strong>
+                            <ul class="mb-2 small">
+                                <li>Bentuk, warna, edema</li>
+                                <li>Lesi, massa, discharge</li>
+                                <li>Klitoris, labia, introitus</li>
+                            </ul>
+
+                            <strong>Pemeriksaan Inspekulo:</strong>
+                            <ul class="mb-2 small">
+                                <li>Vagina: mukosa, discharge</li>
+                                <li>Porsio: warna, konsistensi, lesi</li>
+                                <li>Fluor albus: warna, bau, konsistensi</li>
+                            </ul>
+
+                            <strong>Pemeriksaan Bimanual:</strong>
+                            <ul class="mb-2 small">
+                                <li>Uterus: ukuran, posisi, konsistensi, nyeri</li>
+                                <li>Adneksa: massa, nyeri</li>
+                                <li>Forniks: bebas, nyeri</li>
+                            </ul>
+
+                            <strong>Temuan Abnormal:</strong>
+                            <ul class="mb-0 small">
+                                <li>Massa / Tumor</li>
+                                <li>Perdarahan</li>
+                                <li>Discharge abnormal</li>
+                                <li>Nyeri tekan / Nyeri goyang</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-3 text-muted small" id="gyn-exam-status">
+                    ${isSaved ? `<i class="fas fa-check text-success"></i> Terakhir disimpan: ${new Date(gynExam.saved_at).toLocaleString('id-ID')}` : '<i class="fas fa-info-circle"></i> Belum disimpan'}
                 </div>
             </div>
         `;
@@ -60,14 +101,9 @@ Contoh:
      */
     afterRender(state) {
         const saveBtn = document.getElementById('gyn-exam-save');
-        const resetBtn = document.getElementById('gyn-exam-reset');
 
         if (saveBtn) {
             saveBtn.addEventListener('click', () => this.save());
-        }
-
-        if (resetBtn) {
-            resetBtn.addEventListener('click', () => this.reset(state));
         }
     },
 
@@ -111,7 +147,7 @@ Contoh:
                 // Update UI
                 const statusEl = document.getElementById('gyn-exam-status');
                 if (statusEl) {
-                    statusEl.textContent = `Terakhir disimpan: ${new Date().toLocaleString('id-ID')}`;
+                    statusEl.innerHTML = `<i class="fas fa-check text-success"></i> Terakhir disimpan: ${new Date().toLocaleString('id-ID')}`;
                 }
 
                 // Show success feedback
@@ -137,17 +173,6 @@ Contoh:
             }
 
             return { success: false, error: error.message };
-        }
-    },
-
-    /**
-     * Reset form to original state
-     */
-    reset(state) {
-        const originalContent = state.recordData?.pemeriksaan_ginekologi?.content || '';
-        const textarea = document.getElementById('gyn-exam-content');
-        if (textarea) {
-            textarea.value = originalContent;
         }
     },
 

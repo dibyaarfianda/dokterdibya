@@ -662,7 +662,7 @@ router.post('/records/:mrId/:section', verifyToken, async (req, res, next) => {
         });
     }
 
-    const validSections = ['anamnesa', 'pemeriksaan_ginekologi', 'usg', 'diagnosis', 'planning', 'physical_exam', 'pemeriksaan_obstetri'];
+    const validSections = ['anamnesa', 'pemeriksaan_ginekologi', 'usg', 'diagnosis', 'planning', 'physical_exam', 'pemeriksaan_obstetri', 'resume_medis', 'penunjang'];
     if (!validSections.includes(section)) {
         return res.status(400).json({
             success: false,

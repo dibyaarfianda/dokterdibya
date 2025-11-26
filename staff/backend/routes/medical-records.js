@@ -532,8 +532,8 @@ function generateMedicalResume(identitas, records) {
             }
             
             // Riwayat Obstetri
-            if (anamnesa.gravida || anamnesa.para || anamnesa.abortus) {
-                resume += `Status Obstetri: Gravida ${anamnesa.gravida || 0}, Para ${anamnesa.para || 0}, Abortus ${anamnesa.abortus || 0} (G${anamnesa.gravida || 0}P${anamnesa.para || 0}A${anamnesa.abortus || 0})`;
+            if (anamnesa.para || anamnesa.abortus) {
+                resume += `Status Obstetri: Para ${anamnesa.para || 0}, Abortus ${anamnesa.abortus || 0} (P${anamnesa.para || 0}A${anamnesa.abortus || 0})`;
                 if (anamnesa.anak_hidup) resume += `, dengan ${anamnesa.anak_hidup} anak hidup`;
                 resume += '.\n\n';
             }
@@ -636,11 +636,87 @@ function generateMedicalResume(identitas, records) {
     if (records.usg && typeof records.usg === 'object') {
         const usg = records.usg;
         const hasData = Object.values(usg).some(val => val && val !== '' && val !== 'first');
-        
+
         if (hasData) {
             resume += 'V. PEMERIKSAAN ULTRASONOGRAFI (USG)\n';
             resume += '──────────────────────────────────────────────────\n';
-            
+
+            // Check if this is gynecology USG (has uterus or ovarium data but no trimester)
+            const isGynecologyUSG = (usg.uterus_posisi || usg.uterus_length || usg.kesan ||
+                                     usg.ovarium_kanan_visible || usg.ovarium_kiri_visible) &&
+                                    !usg.trimester && !usg.current_trimester;
+
+            if (isGynecologyUSG) {
+                // Gynecology USG format
+                if (usg.transabdominal || usg.transvaginal) {
+                    const methods = [];
+                    if (usg.transabdominal) methods.push('Transabdominal');
+                    if (usg.transvaginal) methods.push('Transvaginal');
+                    resume += `Metode: ${methods.join(' + ')}\n\n`;
+                }
+
+                // Uterus
+                if (usg.uterus_posisi || usg.uterus_length) {
+                    resume += 'Uterus:\n';
+                    if (usg.uterus_posisi) resume += `- Posisi: ${usg.uterus_posisi}\n`;
+                    if (usg.uterus_length && usg.uterus_width && usg.uterus_depth) {
+                        resume += `- Ukuran: ${usg.uterus_length} x ${usg.uterus_width} x ${usg.uterus_depth} cm\n`;
+                    }
+                    if (usg.uterus_volume) resume += `- Volume: ${usg.uterus_volume} ml\n`;
+                    if (usg.mioma === 'ada') {
+                        resume += '- Mioma: Ada';
+                        const miomaTypes = [];
+                        if (usg.mioma_submukosa) miomaTypes.push('Submukosa');
+                        if (usg.mioma_intramural) miomaTypes.push('Intramural');
+                        if (usg.mioma_subserosa) miomaTypes.push('Subserosa');
+                        if (miomaTypes.length > 0) resume += ` (${miomaTypes.join(', ')})`;
+                        if (usg.mioma_size_1) resume += ` ukuran ${usg.mioma_size_1}x${usg.mioma_size_2 || '?'}x${usg.mioma_size_3 || '?'} cm`;
+                        resume += '\n';
+                    } else if (usg.mioma === 'tidak_ada') {
+                        resume += '- Mioma: Tidak ada\n';
+                    }
+                    if (usg.adenomyosis === 'ada') resume += '- Adenomyosis: Ada\n';
+                    resume += '\n';
+                }
+
+                // Endometrium
+                if (usg.endometrium_thickness) {
+                    resume += 'Endometrium:\n';
+                    resume += `- Ketebalan: ${usg.endometrium_thickness} mm\n`;
+                    const morphology = [];
+                    if (usg.endo_trilaminar) morphology.push('Trilaminar');
+                    if (usg.endo_echogenic) morphology.push('Echogenic');
+                    if (usg.endo_normal) morphology.push('Normal');
+                    if (usg.endo_polyp) morphology.push('Polip');
+                    if (morphology.length > 0) resume += `- Morfologi: ${morphology.join(', ')}\n`;
+                    resume += '\n';
+                }
+
+                // Ovarium
+                if (usg.ovarium_kanan_visible || usg.ovarium_kiri_visible) {
+                    resume += 'Ovarium:\n';
+                    if (usg.ovarium_kanan_visible && usg.ovarium_kanan_1) {
+                        resume += `- Kanan: ${usg.ovarium_kanan_1} x ${usg.ovarium_kanan_2 || '?'} x ${usg.ovarium_kanan_3 || '?'} cm\n`;
+                    }
+                    if (usg.ovarium_kiri_visible && usg.ovarium_kiri_1) {
+                        resume += `- Kiri: ${usg.ovarium_kiri_1} x ${usg.ovarium_kiri_2 || '?'} x ${usg.ovarium_kiri_3 || '?'} cm\n`;
+                    }
+                    if (usg.ovarium_pco) resume += '- PCO (Polycystic Ovary): Ya\n';
+                    if (usg.ovarium_massa) {
+                        resume += '- Massa: Ada';
+                        if (usg.massa_size_1) resume += ` ukuran ${usg.massa_size_1}x${usg.massa_size_2 || '?'} cm`;
+                        resume += '\n';
+                    }
+                    resume += '\n';
+                }
+
+                // Kesan/Kesimpulan
+                if (usg.kesan) {
+                    resume += `Kesan/Kesimpulan:\n${usg.kesan}\n\n`;
+                }
+            } else {
+                // Obstetri USG format (original)
+
             // Check current trimester
             const currentTrimester = usg.current_trimester || usg.trimester;
             
@@ -776,30 +852,54 @@ function generateMedicalResume(identitas, records) {
                 resume += `\nCatatan Tambahan:\n${usg.notes}\n`;
             }
             resume += '\n';
+            } // End of else (obstetri USG)
         }
     }
 
     // VI. PEMERIKSAAN PENUNJANG
     if (records.penunjang && typeof records.penunjang === 'object') {
         const penunjang = records.penunjang;
-        const hasData = Object.values(penunjang).some(val => val && val !== '');
-        
-        if (hasData) {
+
+        // Skip placeholder text
+        const placeholderText = 'Mohon menunggu';
+        const skipValues = [placeholderText, '', null, undefined];
+
+        // Check for actual data (not placeholders)
+        const hasInterpretation = penunjang.interpretation &&
+                                  !penunjang.interpretation.includes(placeholderText) &&
+                                  penunjang.interpretation.trim() !== '';
+        const hasLabFindings = penunjang.lab_findings &&
+                               !penunjang.lab_findings.includes(placeholderText) &&
+                               penunjang.lab_findings.trim() !== '';
+        const hasImagingFindings = penunjang.imaging_findings &&
+                                   !penunjang.imaging_findings.includes(placeholderText) &&
+                                   penunjang.imaging_findings.trim() !== '';
+        const hasOtherFindings = penunjang.other_findings &&
+                                 !penunjang.other_findings.includes(placeholderText) &&
+                                 penunjang.other_findings.trim() !== '';
+        const hasFiles = penunjang.files && penunjang.files.length > 0;
+
+        if (hasInterpretation || hasLabFindings || hasImagingFindings || hasOtherFindings) {
             resume += 'VI. PEMERIKSAAN PENUNJANG\n';
             resume += '──────────────────────────────────────────────────\n';
-            
-            if (penunjang.lab_findings) {
+
+            // AI interpretation from uploaded files
+            if (hasInterpretation) {
+                resume += `Hasil Interpretasi:\n${penunjang.interpretation}\n\n`;
+            }
+
+            if (hasLabFindings) {
                 resume += `A. Hasil Pemeriksaan Laboratorium:\n${penunjang.lab_findings}\n\n`;
             }
-            
-            if (penunjang.imaging_findings) {
+
+            if (hasImagingFindings) {
                 resume += `B. Hasil Pemeriksaan Pencitraan/Imaging:\n${penunjang.imaging_findings}\n\n`;
             }
-            
-            if (penunjang.other_findings) {
+
+            if (hasOtherFindings) {
                 resume += `C. Pemeriksaan Penunjang Lainnya:\n${penunjang.other_findings}\n\n`;
             }
-            
+
             resume += '\n';
         }
     }
@@ -869,7 +969,7 @@ function generateMedicalResume(identitas, records) {
         minute: '2-digit'
     })}\n`;
     resume += '═══════════════════════════════════════════════════════════════\n\n';
-    resume += 'Dokumen ini di generate oleh sistem\n';
+    resume += 'File USG dan Lab/Hasil Tes akan segera dikirimkan ke Portal Anda\n';
 
     return resume;
 }
