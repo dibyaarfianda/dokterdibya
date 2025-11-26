@@ -656,9 +656,11 @@
             }
 
             try {
-                const response = await fetch('/api/patients/profile', {
+                // Add cache-busting timestamp to prevent browser caching
+                const response = await fetch('/api/patients/profile?_=' + Date.now(), {
                     headers: {
-                        'Authorization': `Bearer ${token}`
+                        'Authorization': `Bearer ${token}`,
+                        'Cache-Control': 'no-cache'
                     }
                 });
 
@@ -683,10 +685,14 @@
                     }
 
                     if (profile.birth_date) {
-                        const birthDate = new Date(profile.birth_date);
+                        // Use the date string directly to avoid timezone issues
+                        let birthDateStr = profile.birth_date;
+                        if (birthDateStr.includes('T')) {
+                            birthDateStr = birthDateStr.split('T')[0];
+                        }
                         const dobInput = document.getElementById('dob');
                         if (dobInput) {
-                            dobInput.value = birthDate.toISOString().split('T')[0];
+                            dobInput.value = birthDateStr;
                         }
 
                         // Auto-calculate age
@@ -829,6 +835,20 @@
             };
         }
 
+        // Get user-specific draft key to prevent cross-account data leakage
+        function getDraftKey() {
+            try {
+                const userData = localStorage.getItem('patient_user');
+                if (userData) {
+                    const user = JSON.parse(userData);
+                    if (user.email) {
+                        return 'patient_intake_draft_v3_' + user.email;
+                    }
+                }
+            } catch (e) {}
+            return 'patient_intake_draft_v3';
+        }
+
         // Auto-save draft to localStorage
         const saveDraft = debounce(() => {
             const formData = new FormData(form);
@@ -848,13 +868,13 @@
             data.currentStep = currentStep;
             data.timestamp = new Date().toISOString();
 
-            localStorage.setItem('patient_intake_draft_v3', JSON.stringify(data));
+            localStorage.setItem(getDraftKey(), JSON.stringify(data));
             showSaveIndicator();
         }, 300);
 
         // Restore draft from localStorage
         function restoreDraft() {
-            const draft = localStorage.getItem('patient_intake_draft_v3');
+            const draft = localStorage.getItem(getDraftKey());
             if (draft) {
                 try {
                     const data = JSON.parse(draft);

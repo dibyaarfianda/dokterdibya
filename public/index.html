@@ -301,7 +301,14 @@
 							sessionStorage.setItem('user_type', 'staff');
 							window.location.href = '/staff/index.html';
 						} else {
-							// Patient login - use localStorage with vps_auth_token (consistent with vps-auth-v2.js)
+							// Patient login - clear old data first to prevent cache issues
+							localStorage.removeItem('vps_auth_token');
+							sessionStorage.removeItem('vps_auth_token');
+							localStorage.removeItem('patient_user');
+							localStorage.removeItem('patient_token');
+							localStorage.removeItem('patient_intake_draft_v3'); // Clear intake draft from previous account
+
+							// Set new token and user data
 							localStorage.setItem('vps_auth_token', response.data.token);
 							localStorage.setItem('patient_user', JSON.stringify({
 								id: response.data.user.id,
