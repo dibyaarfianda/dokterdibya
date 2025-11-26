@@ -206,6 +206,14 @@ function renderAppointments(appointments) {
         }
         const infoLine = infoParts.length ? `<div class="small text-muted">${infoParts.join(' · ')}</div>` : '';
 
+        // Category badge
+        const categoryBadges = {
+            'obstetri': '<span class="badge badge-info">Obstetri</span>',
+            'gyn_repro': '<span class="badge badge-success">Reproduksi</span>',
+            'gyn_special': '<span class="badge badge-warning">Ginekologi</span>'
+        };
+        const categoryBadge = categoryBadges[appointment.consultation_category] || '<span class="badge badge-secondary">-</span>';
+
         const complaint = appointment.chief_complaint ? escapeHtml(appointment.chief_complaint) : '-';
         const statusMeta = getStatusMeta(appointment.status);
         const statusBadge = `<span class="badge ${statusMeta.className}">${escapeHtml(statusMeta.label)}</span>`;
@@ -217,6 +225,7 @@ function renderAppointments(appointments) {
                 ${infoLine}
             </td>
             <td>${formatAge(appointment.patientAge)}</td>
+            <td>${categoryBadge}</td>
             <td>${complaint}</td>
             <td>${statusBadge}</td>
             <td class="text-center">

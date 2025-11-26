@@ -46,6 +46,9 @@ class SundayClinicApp {
 
             console.log('[SundayClinic] Category detected:', this.currentCategory);
 
+            // Update sidebar based on category
+            this.updateSidebarForCategory();
+
             // Load template-specific components
             await this.loadComponents();
 
@@ -85,14 +88,22 @@ class SundayClinicApp {
         // Template-specific components (vary by category)
         const categoryFolder = this.currentCategory;
         const specific = [
-            { section: SECTIONS.ANAMNESA, path: `${basePath}/${categoryFolder}/anamnesa-${categoryFolder}.js` },
-            { section: SECTIONS.USG, path: `/staff/public/scripts/sunday-clinic/sections/usg.js` }
+            { section: SECTIONS.ANAMNESA, path: `${basePath}/${categoryFolder}/anamnesa-${categoryFolder}.js` }
         ];
 
-        // Obstetri-specific components
+        // Category-specific USG components
         if (this.currentCategory === MR_CATEGORIES.OBSTETRI) {
             specific.push(
+                { section: SECTIONS.USG, path: `/staff/public/scripts/sunday-clinic/sections/usg.js` },
                 { section: SECTIONS.PEMERIKSAAN_OBSTETRI, path: `${basePath}/obstetri/pemeriksaan-obstetri.js` }
+            );
+        } else if (this.currentCategory === MR_CATEGORIES.GYN_REPRO) {
+            specific.push(
+                { section: SECTIONS.USG, path: `${basePath}/gyn_repro/usg-gyn_repro.js` }
+            );
+        } else if (this.currentCategory === MR_CATEGORIES.GYN_SPECIAL) {
+            specific.push(
+                { section: SECTIONS.USG, path: `${basePath}/gyn_special/usg-gyn_special.js` }
             );
         }
 
@@ -105,7 +116,7 @@ class SundayClinicApp {
     async loadComponents() {
         const componentPaths = this.getComponentPaths();
         // Hard version number - increment this to force reload
-        const COMPONENT_VERSION = '2.0.3';
+        const COMPONENT_VERSION = '2.0.4';
         const cacheBuster = `?v=${COMPONENT_VERSION}-${Date.now()}`;
 
         for (const { section, path } of componentPaths) {
@@ -235,6 +246,45 @@ class SundayClinicApp {
                 </span>
             </div>
         `;
+    }
+
+    /**
+     * Update sidebar menu based on category
+     * Hide/show menu items that are category-specific
+     */
+    updateSidebarForCategory() {
+        console.log('[SundayClinic] Updating sidebar for category:', this.currentCategory);
+
+        // Get all sidebar nav links
+        const pemeriksaanObstetriLink = document.querySelector('.sc-nav-link[data-section="pemeriksaan-obstetri"]');
+
+        // Pemeriksaan Obstetri - only show for obstetri category
+        if (pemeriksaanObstetriLink) {
+            const navItem = pemeriksaanObstetriLink.closest('.nav-item');
+            if (navItem) {
+                if (this.currentCategory === MR_CATEGORIES.OBSTETRI) {
+                    navItem.style.display = '';
+                    console.log('[SundayClinic] Showing Pemeriksaan Obstetri menu');
+                } else {
+                    navItem.style.display = 'none';
+                    console.log('[SundayClinic] Hiding Pemeriksaan Obstetri menu');
+                }
+            }
+        }
+
+        // Update USG label based on category
+        const usgLink = document.querySelector('.sc-nav-link[data-section="usg"]');
+        if (usgLink) {
+            const label = usgLink.querySelector('p');
+
+            if (this.currentCategory === MR_CATEGORIES.OBSTETRI) {
+                if (label) label.textContent = 'USG Obstetri';
+            } else if (this.currentCategory === MR_CATEGORIES.GYN_REPRO) {
+                if (label) label.textContent = 'USG Reproduksi';
+            } else if (this.currentCategory === MR_CATEGORIES.GYN_SPECIAL) {
+                if (label) label.textContent = 'USG Ginekologi';
+            }
+        }
     }
 
     /**
