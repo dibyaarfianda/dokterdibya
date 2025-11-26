@@ -372,18 +372,28 @@ router.get('/verify', verifyToken, (req, res) => {
 
 // Get current user profile
 router.get('/profile', verifyToken, async (req, res) => {
+    // Prevent browser caching - critical for multi-account scenarios
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     try {
         const [patients] = await db.query(
-            'SELECT id, full_name, email, phone, photo_url, birth_date, age, registration_date, profile_completed, email_verified, google_id, intake_completed, password FROM patients WHERE id = ?',
+            `SELECT id, full_name, email, phone, photo_url,
+                    DATE_FORMAT(birth_date, '%Y-%m-%d') as birth_date,
+                    age, registration_date, profile_completed, email_verified, google_id, intake_completed, password
+             FROM patients WHERE id = ?`,
             [req.user.id]
         );
-        
+
         if (patients.length === 0) {
             return res.status(404).json({ message: 'Pasien tidak ditemukan' });
         }
-        
+
         // Map full_name to fullname and photo_url to profile_picture for frontend compatibility
         const patient = patients[0];
+
+        // birth_date is already formatted as YYYY-MM-DD string from SQL DATE_FORMAT
         const mappedPatient = {
             ...patient,
             fullname: patient.full_name,

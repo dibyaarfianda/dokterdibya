@@ -1281,6 +1281,18 @@ router.post('/billing/:mrId/print-etiket', verifyToken, async (req, res, next) =
             });
         }
 
+        // Get billing items from sunday_clinic_billing_items
+        const [items] = await db.query(
+            `SELECT * FROM sunday_clinic_billing_items WHERE billing_id = ?`,
+            [billing.id]
+        );
+
+        // Parse item_data JSON for each item
+        billing.items = items.map(item => ({
+            ...item,
+            item_data: typeof item.item_data === 'string' ? JSON.parse(item.item_data || '{}') : (item.item_data || {})
+        }));
+
         // Get patient and record data
         const [[record]] = await db.query(
             `SELECT r.*, p.full_name, p.birth_date, p.phone
@@ -1330,6 +1342,18 @@ router.post('/billing/:mrId/print-invoice', verifyToken, async (req, res, next) 
                 message: 'Billing belum dikonfirmasi'
             });
         }
+
+        // Get billing items from sunday_clinic_billing_items
+        const [items] = await db.query(
+            `SELECT * FROM sunday_clinic_billing_items WHERE billing_id = ?`,
+            [billing.id]
+        );
+
+        // Parse item_data JSON for each item
+        billing.items = items.map(item => ({
+            ...item,
+            item_data: typeof item.item_data === 'string' ? JSON.parse(item.item_data || '{}') : (item.item_data || {})
+        }));
 
         // Get patient and record data
         const [[record]] = await db.query(
