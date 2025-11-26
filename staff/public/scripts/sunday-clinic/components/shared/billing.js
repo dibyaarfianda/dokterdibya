@@ -210,6 +210,7 @@ export default {
                 document.querySelector('[name="amount_paid"]')?.addEventListener('input', window.calculatePaymentBalance);
             </script>
         `;
+    */
     },
 
     /**
