@@ -91,19 +91,19 @@ class SundayClinicApp {
             { section: SECTIONS.ANAMNESA, path: `${basePath}/${categoryFolder}/anamnesa-${categoryFolder}.js` }
         ];
 
-        // Category-specific USG components
+        // Category-specific components
         if (this.currentCategory === MR_CATEGORIES.OBSTETRI) {
+            // Obstetri: Pemeriksaan Obstetri + USG Obstetri
             specific.push(
-                { section: SECTIONS.USG, path: `/staff/public/scripts/sunday-clinic/sections/usg.js` },
-                { section: SECTIONS.PEMERIKSAAN_OBSTETRI, path: `${basePath}/obstetri/pemeriksaan-obstetri.js` }
+                { section: SECTIONS.PEMERIKSAAN_OBSTETRI, path: `${basePath}/obstetri/pemeriksaan-obstetri.js` },
+                { section: SECTIONS.USG, path: `/staff/public/scripts/sunday-clinic/sections/usg.js` }
             );
-        } else if (this.currentCategory === MR_CATEGORIES.GYN_REPRO) {
+        } else if (this.currentCategory === MR_CATEGORIES.GYN_REPRO ||
+                   this.currentCategory === MR_CATEGORIES.GYN_SPECIAL) {
+            // Gynecology: Pemeriksaan Ginekologi + USG Ginekologi (both text areas)
             specific.push(
-                { section: SECTIONS.USG, path: `${basePath}/gyn_repro/usg-gyn_repro.js` }
-            );
-        } else if (this.currentCategory === MR_CATEGORIES.GYN_SPECIAL) {
-            specific.push(
-                { section: SECTIONS.USG, path: `${basePath}/gyn_special/usg-gyn_special.js` }
+                { section: SECTIONS.PEMERIKSAAN_GINEKOLOGI, path: `${basePath}/shared/pemeriksaan-ginekologi.js` },
+                { section: SECTIONS.USG, path: `${basePath}/shared/usg-ginekologi.js` }
             );
         }
 
@@ -116,7 +116,7 @@ class SundayClinicApp {
     async loadComponents() {
         const componentPaths = this.getComponentPaths();
         // Hard version number - increment this to force reload
-        const COMPONENT_VERSION = '2.0.4';
+        const COMPONENT_VERSION = '3.0.0';
         const cacheBuster = `?v=${COMPONENT_VERSION}-${Date.now()}`;
 
         for (const { section, path } of componentPaths) {
@@ -255,33 +255,36 @@ class SundayClinicApp {
     updateSidebarForCategory() {
         console.log('[SundayClinic] Updating sidebar for category:', this.currentCategory);
 
-        // Get all sidebar nav links
-        const pemeriksaanObstetriLink = document.querySelector('.sc-nav-link[data-section="pemeriksaan-obstetri"]');
+        const isObstetri = this.currentCategory === MR_CATEGORIES.OBSTETRI;
+        const isGynecology = this.currentCategory === MR_CATEGORIES.GYN_REPRO ||
+                            this.currentCategory === MR_CATEGORIES.GYN_SPECIAL;
 
         // Pemeriksaan Obstetri - only show for obstetri category
-        if (pemeriksaanObstetriLink) {
-            const navItem = pemeriksaanObstetriLink.closest('.nav-item');
-            if (navItem) {
-                if (this.currentCategory === MR_CATEGORIES.OBSTETRI) {
-                    navItem.style.display = '';
-                    console.log('[SundayClinic] Showing Pemeriksaan Obstetri menu');
-                } else {
-                    navItem.style.display = 'none';
-                    console.log('[SundayClinic] Hiding Pemeriksaan Obstetri menu');
-                }
-            }
+        const menuObstetri = document.getElementById('menu-pemeriksaan-obstetri');
+        if (menuObstetri) {
+            menuObstetri.style.display = isObstetri ? '' : 'none';
+            console.log('[SundayClinic] Pemeriksaan Obstetri:', isObstetri ? 'show' : 'hide');
         }
 
-        // Update USG label based on category
-        const usgLink = document.querySelector('.sc-nav-link[data-section="usg"]');
-        if (usgLink) {
-            const label = usgLink.querySelector('p');
+        // Pemeriksaan Ginekologi - only show for gyn_repro and gyn_special
+        const menuGinekologi = document.getElementById('menu-pemeriksaan-ginekologi');
+        if (menuGinekologi) {
+            menuGinekologi.style.display = isGynecology ? '' : 'none';
+            console.log('[SundayClinic] Pemeriksaan Ginekologi:', isGynecology ? 'show' : 'hide');
+        }
 
-            if (this.currentCategory === MR_CATEGORIES.OBSTETRI) {
+        // Update USG label and icon based on category
+        const usgMenu = document.getElementById('menu-usg');
+        if (usgMenu) {
+            const usgLink = usgMenu.querySelector('.sc-nav-link');
+            const icon = usgLink?.querySelector('.nav-icon');
+            const label = usgLink?.querySelector('p');
+
+            if (isObstetri) {
+                if (icon) icon.className = 'nav-icon fas fa-baby';
                 if (label) label.textContent = 'USG Obstetri';
-            } else if (this.currentCategory === MR_CATEGORIES.GYN_REPRO) {
-                if (label) label.textContent = 'USG Reproduksi';
-            } else if (this.currentCategory === MR_CATEGORIES.GYN_SPECIAL) {
+            } else {
+                if (icon) icon.className = 'nav-icon fas fa-venus';
                 if (label) label.textContent = 'USG Ginekologi';
             }
         }

@@ -20,12 +20,11 @@ export default {
         const record = state.recordData || {};
         const category = record?.mrCategory || record?.mr_category || 'obstetri';
 
-        // Use old simple format for obstetri category
-        if (category === 'obstetri') {
-            return await this.renderObstetriFormat(state, exam);
-        }
+        // Use obstetri format for all categories (as per user request)
+        // Pemeriksaan Fisik is the same across obstetri, gyn_repro, gyn_special
+        return await this.renderObstetriFormat(state, exam);
 
-        // Use new detailed format for other categories
+        /* Disabled: Use new detailed format for other categories
         return `
             <div class="card mb-3">
                 <div class="card-header bg-primary text-white">

@@ -1,612 +1,556 @@
 /**
- * Anamnesa Component for Gyn Repro Patients
- * Focus: Reproductive goals, fertility assessment, menstrual history
+ * Anamnesa Component for Gyn Repro (Reproductive/Fertility)
+ * Structured form for gynecological reproductive anamnesis
  */
+
+import stateManager from '../../utils/state-manager.js';
+import apiClient from '../../utils/api-client.js';
 
 export default {
     /**
-     * Render Anamnesa form for Gyn Repro
+     * Render the Anamnesa form
      */
     async render(state) {
-        const intake = state.intakeData?.payload || {};
-        const summary = state.intakeData?.summary || {};
-        const metadata = intake.metadata || {};
+        const anamnesa = state.recordData?.anamnesa || {};
+        const chiefComplaint = state.recordData?.appointment?.chief_complaint || '';
+        const isSaved = !!anamnesa.saved_at;
 
         return `
-            <div class="card">
-                <div class="card-header bg-success text-white">
+            <div class="card mb-3">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
-                        <i class="fas fa-notes-medical"></i> Anamnesa (Ginekologi Reproduksi)
+                        <i class="fas fa-clipboard-list"></i> Anamnesa Ginekologi Reproduksi
                     </h5>
+                    ${isSaved ? '<span class="badge badge-light"><i class="fas fa-check"></i> Tersimpan</span>' : ''}
                 </div>
                 <div class="card-body">
-                    ${this.renderReproductiveGoals(intake)}
-                    ${this.renderMenstrualHistory(intake)}
-                    ${this.renderContraceptionHistory(intake)}
-                    ${this.renderFertilityAssessment(intake)}
-                    ${this.renderGeneralMedicalHistory(intake)}
-                    ${this.renderCurrentMedications(intake)}
-                </div>
-                <div class="card-footer">
-                    <button type="button" class="btn btn-success" onclick="saveAnamnesaData()">
-                        <i class="fas fa-save"></i> Simpan Anamnesa
-                    </button>
-                </div>
-            </div>
-        `;
-    },
+                    ${chiefComplaint ? `
+                    <div class="alert alert-info mb-3">
+                        <strong><i class="fas fa-comment-medical"></i> Keluhan dari Booking:</strong><br>
+                        ${this.escapeHtml(chiefComplaint)}
+                    </div>
+                    ` : ''}
 
-    /**
-     * Reproductive Goals & Chief Complaints
-     */
-    renderReproductiveGoals(intake) {
-        const reproGoals = intake.repro_goals || [];
-
-        return `
-            <h6 class="font-weight-bold text-success mt-3">TUJUAN KONSULTASI</h6>
-            <div class="form-group">
-                <label>Kebutuhan Reproduksi:</label>
-                <div class="ml-3">
-                    ${this.renderCheckboxGroup('repro_goals', [
-                        { value: 'promil', label: 'Program hamil / promil' },
-                        { value: 'kb_setup', label: 'Pasang/lepas alat kontrasepsi' },
-                        { value: 'fertility_check', label: 'Pemeriksaan kesuburan' },
-                        { value: 'pre_marital', label: 'Konsultasi pra-nikah' },
-                        { value: 'cycle_planning', label: 'Mengatur siklus/menunda haid' },
-                        { value: 'other', label: 'Lainnya' }
-                    ], reproGoals)}
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Detail Kebutuhan:</label>
-                <textarea class="form-control" name="repro_goal_detail" rows="3"
-                          placeholder="Jelaskan lebih detail tentang kebutuhan konsultasi...">${intake.repro_goal_detail || intake.goalDetail || ''}</textarea>
-            </div>
-
-            <div id="promil-section" style="display: ${reproGoals.includes('promil') ? 'block' : 'none'}">
-                <div class="row">
-                    <div class="col-md-6">
+                    <!-- Keluhan Utama -->
+                    <div class="form-section mb-4">
+                        <h6 class="section-title text-primary border-bottom pb-2 mb-3">
+                            <i class="fas fa-notes-medical"></i> Keluhan Utama
+                        </h6>
                         <div class="form-group">
-                            <label>Berapa lama sudah mencoba hamil?</label>
-                            <input type="text" class="form-control" name="repro_trying_duration"
-                                   value="${intake.repro_trying_duration || intake.tryingDuration || ''}"
-                                   placeholder="Contoh: 1 tahun, 6 bulan, dll">
+                            <textarea id="anamnesa-keluhan-utama" class="form-control" rows="4"
+                                placeholder="Keluhan yang dirasakan, sejak kapan, memberat/tidak, sudah dapat terapi/belum, sudah pernah periksa/belum, dulu pernah merasakan keluhan yang sama atau tidak">${this.escapeHtml(anamnesa.keluhan_utama || '')}</textarea>
                         </div>
                     </div>
-                    <div class="col-md-6">
+
+                    <!-- Riwayat Menstruasi -->
+                    <div class="form-section mb-4">
+                        <h6 class="section-title text-primary border-bottom pb-2 mb-3">
+                            <i class="fas fa-calendar-alt"></i> Riwayat Menstruasi
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Usia Menarche (menstruasi pertama)</label>
+                                    <div class="input-group">
+                                        <input type="number" id="anamnesa-usia-menarche" class="form-control"
+                                            placeholder="Contoh: 12" min="8" max="20"
+                                            value="${this.escapeHtml(anamnesa.usia_menarche || '')}">
+                                        <div class="input-group-append">
+                                            <span class="input-group-text">tahun</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Siklus Menstruasi</label>
+                                    <div class="input-group">
+                                        <input type="number" id="anamnesa-siklus-mens" class="form-control"
+                                            placeholder="21-35 hari (normal)" min="14" max="60"
+                                            value="${this.escapeHtml(anamnesa.siklus_mens || '')}">
+                                        <div class="input-group-append">
+                                            <span class="input-group-text">hari</span>
+                                        </div>
+                                    </div>
+                                    <small class="text-muted">Hari pertama mens bulan kemarin s/d hari pertama mens saat ini</small>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Tanggal HPHT (Hari Pertama Haid Terakhir)</label>
+                                    <input type="date" id="anamnesa-hpht" class="form-control"
+                                        value="${this.escapeHtml(anamnesa.hpht || '')}">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Durasi Menstruasi</label>
+                                    <div class="input-group">
+                                        <input type="number" id="anamnesa-durasi-mens" class="form-control"
+                                            placeholder="5-7 hari (normal)" min="1" max="14"
+                                            value="${this.escapeHtml(anamnesa.durasi_mens || '')}">
+                                        <div class="input-group-append">
+                                            <span class="input-group-text">hari</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Jumlah Perdarahan</label>
+                                    <select id="anamnesa-jumlah-perdarahan" class="form-control">
+                                        <option value="">-- Pilih --</option>
+                                        <option value="sedikit" ${anamnesa.jumlah_perdarahan === 'sedikit' ? 'selected' : ''}>Sedikit</option>
+                                        <option value="normal" ${anamnesa.jumlah_perdarahan === 'normal' ? 'selected' : ''}>Normal</option>
+                                        <option value="banyak" ${anamnesa.jumlah_perdarahan === 'banyak' ? 'selected' : ''}>Banyak</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Intensitas Nyeri Menstruasi (Dismenore)</label>
+                                    <select id="anamnesa-dismenore" class="form-control">
+                                        <option value="">-- Pilih --</option>
+                                        <option value="tidak_ada" ${anamnesa.dismenore === 'tidak_ada' ? 'selected' : ''}>Tidak Ada Nyeri</option>
+                                        <option value="ringan" ${anamnesa.dismenore === 'ringan' ? 'selected' : ''}>Nyeri Ringan</option>
+                                        <option value="berat" ${anamnesa.dismenore === 'berat' ? 'selected' : ''}>Nyeri Berat (mengganggu aktivitas)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Riwayat Obstetri -->
+                    <div class="form-section mb-4">
+                        <h6 class="section-title text-primary border-bottom pb-2 mb-3">
+                            <i class="fas fa-baby"></i> Riwayat Obstetri (bila sudah menikah)
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Gravida (G)</label>
+                                    <input type="number" id="anamnesa-gravida" class="form-control"
+                                        placeholder="Jumlah kehamilan" min="0"
+                                        value="${this.escapeHtml(anamnesa.gravida || '')}">
+                                    <small class="text-muted">Jumlah kehamilan</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Para (P)</label>
+                                    <input type="number" id="anamnesa-para" class="form-control"
+                                        placeholder="Jumlah persalinan" min="0"
+                                        value="${this.escapeHtml(anamnesa.para || '')}">
+                                    <small class="text-muted">Jumlah persalinan</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Abortus (A)</label>
+                                    <input type="number" id="anamnesa-abortus" class="form-control"
+                                        placeholder="Jumlah keguguran" min="0"
+                                        value="${this.escapeHtml(anamnesa.abortus || '')}">
+                                    <small class="text-muted">Jumlah keguguran</small>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label>Anak Hidup</label>
+                                    <input type="number" id="anamnesa-anak-hidup" class="form-control"
+                                        placeholder="Jumlah anak" min="0"
+                                        value="${this.escapeHtml(anamnesa.anak_hidup || '')}">
+                                    <small class="text-muted">Jumlah anak hidup</small>
+                                </div>
+                            </div>
+                        </div>
                         <div class="form-group">
-                            <label>Sedang mengikuti program hamil?</label>
-                            <div class="ml-2">
-                                ${this.renderRadioGroup('fertility_program_interest', [
-                                    { value: 'yes', label: 'Ya' },
-                                    { value: 'no', label: 'Tidak' },
-                                    { value: 'considering', label: 'Sedang pertimbangkan' }
-                                ], intake.fertility_program_interest || intake.programInterest)}
+                            <label>Cara Persalinan Terakhir</label>
+                            <select id="anamnesa-cara-persalinan" class="form-control">
+                                <option value="">-- Pilih --</option>
+                                <option value="belum_pernah" ${anamnesa.cara_persalinan === 'belum_pernah' ? 'selected' : ''}>Belum Pernah Melahirkan</option>
+                                <option value="normal" ${anamnesa.cara_persalinan === 'normal' ? 'selected' : ''}>Normal (Pervaginam)</option>
+                                <option value="sesar" ${anamnesa.cara_persalinan === 'sesar' ? 'selected' : ''}>Operasi Sesar</option>
+                                <option value="vakum" ${anamnesa.cara_persalinan === 'vakum' ? 'selected' : ''}>Vakum/Forceps</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Riwayat Penyakit Kandungan -->
+                    <div class="form-section mb-4">
+                        <h6 class="section-title text-primary border-bottom pb-2 mb-3">
+                            <i class="fas fa-venus"></i> Riwayat Penyakit Kandungan
+                        </h6>
+                        <div class="form-group">
+                            <label>Penyakit kandungan yang pernah/sedang dialami</label>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="custom-control custom-checkbox mb-2">
+                                        <input type="checkbox" class="custom-control-input" id="riwayat-kista"
+                                            ${anamnesa.riwayat_kista ? 'checked' : ''}>
+                                        <label class="custom-control-label" for="riwayat-kista">Kista</label>
+                                    </div>
+                                    <div class="custom-control custom-checkbox mb-2">
+                                        <input type="checkbox" class="custom-control-input" id="riwayat-mioma"
+                                            ${anamnesa.riwayat_mioma ? 'checked' : ''}>
+                                        <label class="custom-control-label" for="riwayat-mioma">Mioma/Fibroid</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="custom-control custom-checkbox mb-2">
+                                        <input type="checkbox" class="custom-control-input" id="riwayat-benjolan"
+                                            ${anamnesa.riwayat_benjolan ? 'checked' : ''}>
+                                        <label class="custom-control-label" for="riwayat-benjolan">Benjolan di Kemaluan</label>
+                                    </div>
+                                    <div class="custom-control custom-checkbox mb-2">
+                                        <input type="checkbox" class="custom-control-input" id="riwayat-perdarahan-hub"
+                                            ${anamnesa.riwayat_perdarahan_hub ? 'checked' : ''}>
+                                        <label class="custom-control-label" for="riwayat-perdarahan-hub">Perdarahan Setelah Berhubungan</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="custom-control custom-checkbox mb-2">
+                                        <input type="checkbox" class="custom-control-input" id="riwayat-keputihan"
+                                            ${anamnesa.riwayat_keputihan ? 'checked' : ''}>
+                                        <label class="custom-control-label" for="riwayat-keputihan">Keputihan Berulang</label>
+                                    </div>
+                                    <div class="custom-control custom-checkbox mb-2">
+                                        <input type="checkbox" class="custom-control-input" id="riwayat-endometriosis"
+                                            ${anamnesa.riwayat_endometriosis ? 'checked' : ''}>
+                                        <label class="custom-control-label" for="riwayat-endometriosis">Endometriosis</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group mt-2">
+                                <label>Penyakit kandungan lainnya (jika ada)</label>
+                                <input type="text" id="anamnesa-penyakit-kandungan-lain" class="form-control"
+                                    placeholder="Sebutkan penyakit kandungan lainnya..."
+                                    value="${this.escapeHtml(anamnesa.penyakit_kandungan_lain || '')}">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Pengobatan/Operasi Ginekologi yang Pernah Dijalani</label>
+                            <textarea id="anamnesa-riwayat-pengobatan-gyn" class="form-control" rows="2"
+                                placeholder="Contoh: minum obat hormon, pernah operasi kista/mioma, dll">${this.escapeHtml(anamnesa.riwayat_pengobatan_gyn || '')}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Riwayat Skrining Mulut Rahim</label>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <div class="custom-control custom-checkbox mb-2">
+                                        <input type="checkbox" class="custom-control-input" id="skrining-iva"
+                                            ${anamnesa.skrining_iva ? 'checked' : ''}>
+                                        <label class="custom-control-label" for="skrining-iva">IVA</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="custom-control custom-checkbox mb-2">
+                                        <input type="checkbox" class="custom-control-input" id="skrining-papsmear"
+                                            ${anamnesa.skrining_papsmear ? 'checked' : ''}>
+                                        <label class="custom-control-label" for="skrining-papsmear">Pap Smear</label>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="custom-control custom-checkbox mb-2">
+                                        <input type="checkbox" class="custom-control-input" id="skrining-kolposkopi"
+                                            ${anamnesa.skrining_kolposkopi ? 'checked' : ''}>
+                                        <label class="custom-control-label" for="skrining-kolposkopi">Kolposkopi</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="form-group mt-2">
+                                <label>Hasil Skrining (jika pernah)</label>
+                                <input type="text" id="anamnesa-hasil-skrining" class="form-control"
+                                    placeholder="Tuliskan hasil skrining jika ada..."
+                                    value="${this.escapeHtml(anamnesa.hasil_skrining || '')}">
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="form-group">
-                    <label>Pemeriksaan yang pernah dilakukan:</label>
-                    <textarea class="form-control" name="repro_previous_evaluations" rows="2"
-                              placeholder="Contoh: USG transvaginal, HSG, analisa sperma, dll...">${intake.repro_previous_evaluations || intake.previousEvaluations || ''}</textarea>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Harapan dari konsultasi ini:</label>
-                <textarea class="form-control" name="repro_expectation" rows="2"
-                          placeholder="Apa yang diharapkan dari kunjungan ini...">${intake.repro_expectation || intake.expectation || ''}</textarea>
-            </div>
-            <hr>
-        `;
-    },
-
-    /**
-     * Menstrual History
-     */
-    renderMenstrualHistory(intake) {
-        return `
-            <h6 class="font-weight-bold text-success mt-3">RIWAYAT MENSTRUASI</h6>
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label>Usia pertama kali menstruasi (menarche):</label>
-                        <div class="input-group">
-                            <input type="number" class="form-control" name="menarche_age"
-                                   value="${intake.menarche_age || intake.menarcheAge || ''}"
-                                   placeholder="12" min="8" max="18">
-                            <div class="input-group-append">
-                                <span class="input-group-text">tahun</span>
+                    <!-- Riwayat Penyakit Lainnya -->
+                    <div class="form-section mb-4">
+                        <h6 class="section-title text-primary border-bottom pb-2 mb-3">
+                            <i class="fas fa-history"></i> Riwayat Penyakit Lainnya
+                        </h6>
+                        <div class="form-group">
+                            <label>Riwayat Penyakit Keluarga</label>
+                            <textarea id="anamnesa-riwayat-keluarga" class="form-control" rows="2"
+                                placeholder="Contoh: DM, Hipertensi, Kanker, Penyakit jantung, dll">${this.escapeHtml(anamnesa.riwayat_keluarga || '')}</textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Riwayat Alergi</label>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label class="small text-muted">Alergi Obat</label>
+                                    <input type="text" id="anamnesa-alergi-obat" class="form-control"
+                                        placeholder="Nama obat yang alergi..."
+                                        value="${this.escapeHtml(anamnesa.alergi_obat || '')}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="small text-muted">Alergi Makanan</label>
+                                    <input type="text" id="anamnesa-alergi-makanan" class="form-control"
+                                        placeholder="Nama makanan yang alergi..."
+                                        value="${this.escapeHtml(anamnesa.alergi_makanan || '')}">
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="small text-muted">Alergi Lingkungan</label>
+                                    <input type="text" id="anamnesa-alergi-lingkungan" class="form-control"
+                                        placeholder="Contoh: debu, dingin, dll"
+                                        value="${this.escapeHtml(anamnesa.alergi_lingkungan || '')}">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Riwayat Kontrasepsi (KB)</label>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <label class="small text-muted">Metode KB Terakhir</label>
+                                    <select id="anamnesa-metode-kb" class="form-control">
+                                        <option value="">-- Pilih --</option>
+                                        <option value="tidak_pernah" ${anamnesa.metode_kb === 'tidak_pernah' ? 'selected' : ''}>Tidak Pernah KB</option>
+                                        <option value="pil" ${anamnesa.metode_kb === 'pil' ? 'selected' : ''}>Pil KB</option>
+                                        <option value="suntik_1bln" ${anamnesa.metode_kb === 'suntik_1bln' ? 'selected' : ''}>Suntik 1 Bulan</option>
+                                        <option value="suntik_3bln" ${anamnesa.metode_kb === 'suntik_3bln' ? 'selected' : ''}>Suntik 3 Bulan</option>
+                                        <option value="implant" ${anamnesa.metode_kb === 'implant' ? 'selected' : ''}>Implant/Susuk</option>
+                                        <option value="iud" ${anamnesa.metode_kb === 'iud' ? 'selected' : ''}>IUD/Spiral</option>
+                                        <option value="kondom" ${anamnesa.metode_kb === 'kondom' ? 'selected' : ''}>Kondom</option>
+                                        <option value="steril" ${anamnesa.metode_kb === 'steril' ? 'selected' : ''}>Sterilisasi (MOW/MOP)</option>
+                                        <option value="kalender" ${anamnesa.metode_kb === 'kalender' ? 'selected' : ''}>Kalender/Alami</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="small text-muted">Riwayat Kegagalan KB</label>
+                                    <select id="anamnesa-kegagalan-kb" class="form-control">
+                                        <option value="">-- Pilih --</option>
+                                        <option value="tidak" ${anamnesa.kegagalan_kb === 'tidak' ? 'selected' : ''}>Tidak Pernah</option>
+                                        <option value="ya" ${anamnesa.kegagalan_kb === 'ya' ? 'selected' : ''}>Pernah (hamil saat KB)</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label>Panjang siklus menstruasi:</label>
-                        <div class="input-group">
-                            <input type="number" class="form-control" name="cycle_length"
-                                   value="${intake.cycle_length || intake.cycleLength || ''}"
-                                   placeholder="28" min="21" max="35">
-                            <div class="input-group-append">
-                                <span class="input-group-text">hari</span>
-                            </div>
-                        </div>
-                        <small class="text-muted">Normal: 21-35 hari</small>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="form-group">
-                        <label>Lama menstruasi:</label>
-                        <div class="input-group">
-                            <input type="number" class="form-control" name="menstruation_duration"
-                                   value="${intake.menstruation_duration || intake.menstruationDuration || ''}"
-                                   placeholder="5" min="2" max="10">
-                            <div class="input-group-append">
-                                <span class="input-group-text">hari</span>
-                            </div>
+
+                    <!-- Catatan Tambahan -->
+                    <div class="form-section mb-3">
+                        <h6 class="section-title text-primary border-bottom pb-2 mb-3">
+                            <i class="fas fa-sticky-note"></i> Catatan Tambahan
+                        </h6>
+                        <div class="form-group">
+                            <textarea id="anamnesa-catatan" class="form-control" rows="3"
+                                placeholder="Catatan tambahan lainnya...">${this.escapeHtml(anamnesa.catatan || '')}</textarea>
                         </div>
                     </div>
-                </div>
-            </div>
 
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Siklus menstruasi teratur?</label>
-                        <div class="ml-2">
-                            ${this.renderRadioGroup('cycle_regular', [
-                                { value: 'yes', label: 'Ya, teratur' },
-                                { value: 'no', label: 'Tidak, tidak teratur' },
-                                { value: 'sometimes', label: 'Kadang-kadang' }
-                            ], intake.cycle_regular || intake.cycleRegular)}
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Hari pertama haid terakhir (HPHT):</label>
-                        <input type="date" class="form-control" name="lmp"
-                               value="${intake.lmp || intake.lmp_date || ''}">
-                    </div>
-                </div>
-            </div>
-
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Jumlah perdarahan:</label>
-                        <div class="ml-2">
-                            ${this.renderRadioGroup('menstruation_flow', [
-                                { value: 'light', label: 'Ringan/sedikit' },
-                                { value: 'moderate', label: 'Sedang/normal' },
-                                { value: 'heavy', label: 'Banyak' },
-                                { value: 'very_heavy', label: 'Sangat banyak (ganti pembalut tiap jam)' }
-                            ], intake.menstruation_flow || intake.menstruationFlow)}
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Nyeri menstruasi (dismenore):</label>
-                        <div class="ml-2">
-                            ${this.renderRadioGroup('dysmenorrhea_level', [
-                                { value: 'none', label: 'Tidak ada' },
-                                { value: 'mild', label: 'Ringan (masih bisa aktivitas)' },
-                                { value: 'moderate', label: 'Sedang (perlu obat)' },
-                                { value: 'severe', label: 'Berat (mengganggu aktivitas)' }
-                            ], intake.dysmenorrhea_level || intake.dysmenorrheaLevel)}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="spotting_outside_cycle"
-                           ${intake.spotting_outside_cycle || intake.spottingOutsideCycle ? 'checked' : ''}>
-                    <label class="form-check-label">Ada perdarahan/bercak di luar siklus menstruasi (spotting)</label>
-                </div>
-            </div>
-            <hr>
-        `;
-    },
-
-    /**
-     * Contraception History
-     */
-    renderContraceptionHistory(intake) {
-        return `
-            <h6 class="font-weight-bold text-success mt-3">RIWAYAT KONTRASEPSI</h6>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Sedang/pernah menggunakan KB?</label>
-                        <div class="ml-2">
-                            ${this.renderRadioGroup('using_contraception', [
-                                { value: 'currently', label: 'Sedang menggunakan' },
-                                { value: 'past', label: 'Pernah, tapi sudah berhenti' },
-                                { value: 'never', label: 'Tidak pernah' }
-                            ], intake.using_contraception)}
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Metode kontrasepsi terakhir:</label>
-                        <input type="text" class="form-control" name="repro_last_contraception"
-                               value="${intake.repro_last_contraception || intake.lastContraception || ''}"
-                               placeholder="Contoh: Pil KB, Suntik, IUD, Implant, dll">
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Catatan KB:</label>
-                <textarea class="form-control" name="contraception_notes" rows="2"
-                          placeholder="Efek samping, alasan berhenti, dll...">${intake.contraception_notes || ''}</textarea>
-            </div>
-            <hr>
-        `;
-    },
-
-    /**
-     * Fertility Assessment (for promil patients)
-     */
-    renderFertilityAssessment(intake) {
-        return `
-            <h6 class="font-weight-bold text-success mt-3">PENILAIAN KESUBURAN</h6>
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" name="diagnosed_pcos"
-                               ${intake.diagnosed_pcos === 'yes' ? 'checked' : ''}>
-                        <label class="form-check-label">Diagnosis PCOS sebelumnya</label>
-                    </div>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" name="diagnosed_gyne_conditions"
-                               ${intake.diagnosed_gyne_conditions === 'yes' ? 'checked' : ''}>
-                        <label class="form-check-label">Riwayat miom/kista/endometriosis</label>
-                    </div>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" name="transvaginal_usg"
-                               ${intake.transvaginal_usg === 'yes' ? 'checked' : ''}>
-                        <label class="form-check-label">Pernah USG transvaginal kesuburan</label>
-                    </div>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" name="hsg_history"
-                               ${intake.hsg_history === 'yes' ? 'checked' : ''}>
-                        <label class="form-check-label">Pernah pemeriksaan HSG</label>
-                    </div>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" name="previous_programs"
-                               ${intake.previous_programs === 'yes' ? 'checked' : ''}>
-                        <label class="form-check-label">Program hamil sebelumnya</label>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" name="partner_smoking"
-                               ${intake.partner_smoking === 'yes' ? 'checked' : ''}>
-                        <label class="form-check-label">Pasangan merokok</label>
-                    </div>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" name="partner_alcohol"
-                               ${intake.partner_alcohol === 'yes' ? 'checked' : ''}>
-                        <label class="form-check-label">Pasangan mengonsumsi alkohol</label>
-                    </div>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" name="sperm_analysis"
-                               ${intake.sperm_analysis === 'yes' ? 'checked' : ''}>
-                        <label class="form-check-label">Pasangan pernah analisa sperma</label>
-                    </div>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" name="prefer_natural_program"
-                               ${intake.prefer_natural_program === 'yes' ? 'checked' : ''}>
-                        <label class="form-check-label">Lebih suka program alami</label>
-                    </div>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" name="willing_hormonal_therapy"
-                               ${intake.willing_hormonal_therapy === 'yes' ? 'checked' : ''}>
-                        <label class="form-check-label">Bersedia terapi hormonal jika perlu</label>
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-group mt-3">
-                <label>Riwayat Kehamilan Sebelumnya (jika ada):</label>
-                <div class="row">
-                    <div class="col-md-3">
-                        <label>Gravida:</label>
-                        <input type="number" class="form-control" name="gravida"
-                               value="${intake.gravida || ''}" min="0">
-                    </div>
-                    <div class="col-md-3">
-                        <label>Para:</label>
-                        <input type="number" class="form-control" name="para"
-                               value="${intake.para || ''}" min="0">
-                    </div>
-                    <div class="col-md-3">
-                        <label>Abortus:</label>
-                        <input type="number" class="form-control" name="abortus"
-                               value="${intake.abortus || ''}" min="0">
-                    </div>
-                    <div class="col-md-3">
-                        <label>Anak Hidup:</label>
-                        <input type="number" class="form-control" name="living"
-                               value="${intake.living || intake.living_children || ''}" min="0">
-                    </div>
-                </div>
-            </div>
-            <hr>
-        `;
-    },
-
-    /**
-     * General Medical History (simplified for gyn repro)
-     */
-    renderGeneralMedicalHistory(intake) {
-        const pastConditions = intake.past_conditions || [];
-
-        return `
-            <h6 class="font-weight-bold text-success mt-3">RIWAYAT MEDIS UMUM</h6>
-
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Golongan Darah:</label>
-                        <select class="form-control" name="blood_type">
-                            <option value="">Pilih...</option>
-                            <option value="A" ${intake.blood_type === 'A' ? 'selected' : ''}>A</option>
-                            <option value="B" ${intake.blood_type === 'B' ? 'selected' : ''}>B</option>
-                            <option value="AB" ${intake.blood_type === 'AB' ? 'selected' : ''}>AB</option>
-                            <option value="O" ${intake.blood_type === 'O' ? 'selected' : ''}>O</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label>Rhesus:</label>
-                        <select class="form-control" name="rhesus">
-                            <option value="">Pilih...</option>
-                            <option value="positive" ${intake.rhesus === 'positive' ? 'selected' : ''}>Positif (+)</option>
-                            <option value="negative" ${intake.rhesus === 'negative' ? 'selected' : ''}>Negatif (-)</option>
-                        </select>
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Alergi:</label>
-                <div class="row">
-                    <div class="col-md-4">
-                        <input type="text" class="form-control" name="allergy_drugs"
-                               value="${intake.allergy_drugs || ''}" placeholder="Obat-obatan">
-                    </div>
-                    <div class="col-md-4">
-                        <input type="text" class="form-control" name="allergy_food"
-                               value="${intake.allergy_food || ''}" placeholder="Makanan">
-                    </div>
-                    <div class="col-md-4">
-                        <input type="text" class="form-control" name="allergy_env"
-                               value="${intake.allergy_env || ''}" placeholder="Lingkungan">
-                    </div>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Riwayat Penyakit:</label>
-                <div class="ml-3">
-                    ${this.renderCheckboxGroup('past_conditions', [
-                        { value: 'hipertensi', label: 'Hipertensi' },
-                        { value: 'diabetes', label: 'Diabetes' },
-                        { value: 'thyroid', label: 'Gangguan tiroid' },
-                        { value: 'cyst_myoma', label: 'Kista/Myoma' },
-                        { value: 'surgery', label: 'Riwayat operasi' }
-                    ], pastConditions)}
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Detail Riwayat Penyakit:</label>
-                <textarea class="form-control" name="past_conditions_detail" rows="2"
-                          placeholder="Jelaskan riwayat penyakit yang dipilih di atas...">${intake.past_conditions_detail || ''}</textarea>
-            </div>
-            <hr>
-        `;
-    },
-
-    /**
-     * Current Medications
-     */
-    renderCurrentMedications(intake) {
-        const medications = intake.medications || [];
-
-        return `
-            <h6 class="font-weight-bold text-success mt-3">OBAT YANG SEDANG DIKONSUMSI</h6>
-            <div id="medications-list">
-                ${this.renderMedicationsList(medications)}
-            </div>
-            <button type="button" class="btn btn-sm btn-outline-success mt-2" onclick="addMedication()">
-                <i class="fas fa-plus"></i> Tambah Obat
-            </button>
-        `;
-    },
-
-    /**
-     * Render medications list
-     */
-    renderMedicationsList(medications) {
-        if (!medications || medications.length === 0) {
-            return '<p class="text-muted">Tidak ada obat yang sedang dikonsumsi</p>';
-        }
-
-        return medications.map((med, index) => `
-            <div class="card mb-2">
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-4">
-                            <input type="text" class="form-control form-control-sm"
-                                   name="med_name_${index}" value="${med.name || ''}"
-                                   placeholder="Nama obat">
-                        </div>
-                        <div class="col-md-3">
-                            <input type="text" class="form-control form-control-sm"
-                                   name="med_dose_${index}" value="${med.dose || ''}"
-                                   placeholder="Dosis">
-                        </div>
-                        <div class="col-md-4">
-                            <input type="text" class="form-control form-control-sm"
-                                   name="med_freq_${index}" value="${med.freq || med.frequency || ''}"
-                                   placeholder="Frekuensi">
-                        </div>
-                        <div class="col-md-1">
-                            <button type="button" class="btn btn-sm btn-danger" onclick="removeMedication(${index})">
-                                <i class="fas fa-times"></i>
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <small class="text-muted" id="anamnesa-status">
+                            ${isSaved ? `Terakhir disimpan: ${new Date(anamnesa.saved_at).toLocaleString('id-ID')}` : 'Belum disimpan'}
+                        </small>
+                        <div>
+                            <button type="button" class="btn btn-outline-secondary btn-sm mr-2" id="anamnesa-reset">
+                                <i class="fas fa-undo"></i> Reset
+                            </button>
+                            <button type="button" class="btn btn-primary" id="anamnesa-save">
+                                <i class="fas fa-save"></i> Simpan
                             </button>
                         </div>
                     </div>
                 </div>
             </div>
-        `).join('');
+        `;
     },
 
     /**
-     * Helper: Render radio group
+     * Setup event listeners after render
      */
-    renderRadioGroup(name, options, selectedValue) {
-        return options.map(opt => `
-            <div class="form-check">
-                <input class="form-check-input" type="radio" name="${name}"
-                       value="${opt.value}" ${selectedValue === opt.value ? 'checked' : ''}>
-                <label class="form-check-label">${opt.label}</label>
-            </div>
-        `).join('');
+    afterRender(state) {
+        const saveBtn = document.getElementById('anamnesa-save');
+        const resetBtn = document.getElementById('anamnesa-reset');
+
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => this.save());
+        }
+
+        if (resetBtn) {
+            resetBtn.addEventListener('click', () => this.reset(state));
+        }
     },
 
     /**
-     * Helper: Render checkbox group
+     * Collect form data
      */
-    renderCheckboxGroup(name, options, selectedValues = []) {
-        return options.map(opt => `
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="${name}[]"
-                       value="${opt.value}" ${selectedValues.includes(opt.value) ? 'checked' : ''}>
-                <label class="form-check-label">${opt.label}</label>
-            </div>
-        `).join('');
+    collectFormData() {
+        return {
+            // Keluhan Utama
+            keluhan_utama: document.getElementById('anamnesa-keluhan-utama')?.value || '',
+
+            // Riwayat Menstruasi
+            usia_menarche: document.getElementById('anamnesa-usia-menarche')?.value || '',
+            siklus_mens: document.getElementById('anamnesa-siklus-mens')?.value || '',
+            hpht: document.getElementById('anamnesa-hpht')?.value || '',
+            durasi_mens: document.getElementById('anamnesa-durasi-mens')?.value || '',
+            jumlah_perdarahan: document.getElementById('anamnesa-jumlah-perdarahan')?.value || '',
+            dismenore: document.getElementById('anamnesa-dismenore')?.value || '',
+
+            // Riwayat Obstetri
+            gravida: document.getElementById('anamnesa-gravida')?.value || '',
+            para: document.getElementById('anamnesa-para')?.value || '',
+            abortus: document.getElementById('anamnesa-abortus')?.value || '',
+            anak_hidup: document.getElementById('anamnesa-anak-hidup')?.value || '',
+            cara_persalinan: document.getElementById('anamnesa-cara-persalinan')?.value || '',
+
+            // Riwayat Penyakit Kandungan - Checkboxes
+            riwayat_kista: document.getElementById('riwayat-kista')?.checked || false,
+            riwayat_mioma: document.getElementById('riwayat-mioma')?.checked || false,
+            riwayat_benjolan: document.getElementById('riwayat-benjolan')?.checked || false,
+            riwayat_perdarahan_hub: document.getElementById('riwayat-perdarahan-hub')?.checked || false,
+            riwayat_keputihan: document.getElementById('riwayat-keputihan')?.checked || false,
+            riwayat_endometriosis: document.getElementById('riwayat-endometriosis')?.checked || false,
+            penyakit_kandungan_lain: document.getElementById('anamnesa-penyakit-kandungan-lain')?.value || '',
+            riwayat_pengobatan_gyn: document.getElementById('anamnesa-riwayat-pengobatan-gyn')?.value || '',
+
+            // Skrining
+            skrining_iva: document.getElementById('skrining-iva')?.checked || false,
+            skrining_papsmear: document.getElementById('skrining-papsmear')?.checked || false,
+            skrining_kolposkopi: document.getElementById('skrining-kolposkopi')?.checked || false,
+            hasil_skrining: document.getElementById('anamnesa-hasil-skrining')?.value || '',
+
+            // Riwayat Penyakit Lainnya
+            riwayat_keluarga: document.getElementById('anamnesa-riwayat-keluarga')?.value || '',
+            alergi_obat: document.getElementById('anamnesa-alergi-obat')?.value || '',
+            alergi_makanan: document.getElementById('anamnesa-alergi-makanan')?.value || '',
+            alergi_lingkungan: document.getElementById('anamnesa-alergi-lingkungan')?.value || '',
+            metode_kb: document.getElementById('anamnesa-metode-kb')?.value || '',
+            kegagalan_kb: document.getElementById('anamnesa-kegagalan-kb')?.value || '',
+
+            // Catatan
+            catatan: document.getElementById('anamnesa-catatan')?.value || '',
+
+            saved_at: new Date().toISOString()
+        };
     },
 
     /**
-     * Save Anamnesa data
+     * Save anamnesa data
      */
-    async save(state) {
+    async save() {
+        const mrId = stateManager.getState().recordData?.mrId || stateManager.getState().recordData?.mr_id;
+
+        if (!mrId) {
+            alert('Error: MR ID tidak ditemukan');
+            return { success: false };
+        }
+
+        const saveBtn = document.getElementById('anamnesa-save');
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+        }
+
         try {
-            const formData = {
-                reproductiveGoals: this.collectReproductiveGoals(),
-                menstrualHistory: this.collectMenstrualHistory(),
-                contraceptionHistory: this.collectContraceptionHistory(),
-                fertilityAssessment: this.collectFertilityAssessment(),
-                generalMedical: this.collectGeneralMedicalData(),
-                medications: this.collectMedications()
-            };
+            const data = this.collectFormData();
 
-            console.log('[Anamnesa Gyn Repro] Saving data:', formData);
+            const response = await apiClient.saveSection(mrId, 'anamnesa', data);
 
-            return { success: true, data: formData };
+            if (response.success) {
+                // Update state
+                stateManager.updateSectionData('anamnesa', data);
+
+                // Update UI
+                const statusEl = document.getElementById('anamnesa-status');
+                if (statusEl) {
+                    statusEl.textContent = `Terakhir disimpan: ${new Date().toLocaleString('id-ID')}`;
+                }
+
+                // Show success feedback
+                if (saveBtn) {
+                    saveBtn.innerHTML = '<i class="fas fa-check"></i> Tersimpan!';
+                    setTimeout(() => {
+                        saveBtn.innerHTML = '<i class="fas fa-save"></i> Simpan';
+                        saveBtn.disabled = false;
+                    }, 2000);
+                }
+            } else {
+                throw new Error(response.message || 'Gagal menyimpan');
+            }
+
+            return response;
         } catch (error) {
-            console.error('[Anamnesa Gyn Repro] Save failed:', error);
+            console.error('Error saving anamnesa:', error);
+            alert('Gagal menyimpan: ' + error.message);
+
+            if (saveBtn) {
+                saveBtn.innerHTML = '<i class="fas fa-save"></i> Simpan';
+                saveBtn.disabled = false;
+            }
+
             return { success: false, error: error.message };
         }
     },
 
-    collectReproductiveGoals() {
-        return {
-            reproGoals: Array.from(document.querySelectorAll('[name="repro_goals[]"]:checked')).map(el => el.value),
-            reproGoalDetail: document.querySelector('[name="repro_goal_detail"]')?.value,
-            tryingDuration: document.querySelector('[name="repro_trying_duration"]')?.value,
-            fertilityProgramInterest: document.querySelector('input[name="fertility_program_interest"]:checked')?.value,
-            previousEvaluations: document.querySelector('[name="repro_previous_evaluations"]')?.value,
-            expectation: document.querySelector('[name="repro_expectation"]')?.value
-        };
+    /**
+     * Reset form to original state
+     */
+    reset(state) {
+        const anamnesa = state.recordData?.anamnesa || {};
+
+        // Reset all text inputs
+        const textFields = [
+            'anamnesa-keluhan-utama', 'anamnesa-usia-menarche', 'anamnesa-siklus-mens',
+            'anamnesa-hpht', 'anamnesa-durasi-mens', 'anamnesa-gravida', 'anamnesa-para',
+            'anamnesa-abortus', 'anamnesa-anak-hidup', 'anamnesa-penyakit-kandungan-lain',
+            'anamnesa-riwayat-pengobatan-gyn', 'anamnesa-hasil-skrining', 'anamnesa-riwayat-keluarga',
+            'anamnesa-alergi-obat', 'anamnesa-alergi-makanan', 'anamnesa-alergi-lingkungan',
+            'anamnesa-catatan'
+        ];
+
+        textFields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                const fieldName = id.replace('anamnesa-', '').replace(/-/g, '_');
+                el.value = anamnesa[fieldName] || '';
+            }
+        });
+
+        // Reset select fields
+        const selectFields = [
+            'anamnesa-jumlah-perdarahan', 'anamnesa-dismenore', 'anamnesa-cara-persalinan',
+            'anamnesa-metode-kb', 'anamnesa-kegagalan-kb'
+        ];
+
+        selectFields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                const fieldName = id.replace('anamnesa-', '').replace(/-/g, '_');
+                el.value = anamnesa[fieldName] || '';
+            }
+        });
+
+        // Reset checkboxes
+        const checkboxFields = [
+            'riwayat-kista', 'riwayat-mioma', 'riwayat-benjolan', 'riwayat-perdarahan-hub',
+            'riwayat-keputihan', 'riwayat-endometriosis', 'skrining-iva', 'skrining-papsmear',
+            'skrining-kolposkopi'
+        ];
+
+        checkboxFields.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                const fieldName = id.replace(/-/g, '_');
+                el.checked = anamnesa[fieldName] || false;
+            }
+        });
     },
 
-    collectMenstrualHistory() {
-        return {
-            menarcheAge: document.querySelector('[name="menarche_age"]')?.value,
-            cycleLength: document.querySelector('[name="cycle_length"]')?.value,
-            menstruationDuration: document.querySelector('[name="menstruation_duration"]')?.value,
-            cycleRegular: document.querySelector('input[name="cycle_regular"]:checked')?.value,
-            lmp: document.querySelector('[name="lmp"]')?.value,
-            menstruationFlow: document.querySelector('input[name="menstruation_flow"]:checked')?.value,
-            dysmenorrheaLevel: document.querySelector('input[name="dysmenorrhea_level"]:checked')?.value,
-            spottingOutsideCycle: document.querySelector('[name="spotting_outside_cycle"]')?.checked
-        };
-    },
-
-    collectContraceptionHistory() {
-        return {
-            usingContraception: document.querySelector('input[name="using_contraception"]:checked')?.value,
-            lastContraception: document.querySelector('[name="repro_last_contraception"]')?.value,
-            contraceptionNotes: document.querySelector('[name="contraception_notes"]')?.value
-        };
-    },
-
-    collectFertilityAssessment() {
-        return {
-            diagnosedPcos: document.querySelector('[name="diagnosed_pcos"]')?.checked,
-            diagnosedGyneConditions: document.querySelector('[name="diagnosed_gyne_conditions"]')?.checked,
-            transvaginalUsg: document.querySelector('[name="transvaginal_usg"]')?.checked,
-            hsgHistory: document.querySelector('[name="hsg_history"]')?.checked,
-            previousPrograms: document.querySelector('[name="previous_programs"]')?.checked,
-            partnerSmoking: document.querySelector('[name="partner_smoking"]')?.checked,
-            partnerAlcohol: document.querySelector('[name="partner_alcohol"]')?.checked,
-            spermAnalysis: document.querySelector('[name="sperm_analysis"]')?.checked,
-            preferNaturalProgram: document.querySelector('[name="prefer_natural_program"]')?.checked,
-            willingHormonalTherapy: document.querySelector('[name="willing_hormonal_therapy"]')?.checked,
-            gravida: document.querySelector('[name="gravida"]')?.value,
-            para: document.querySelector('[name="para"]')?.value,
-            abortus: document.querySelector('[name="abortus"]')?.value,
-            living: document.querySelector('[name="living"]')?.value
-        };
-    },
-
-    collectGeneralMedicalData() {
-        return {
-            bloodType: document.querySelector('[name="blood_type"]')?.value,
-            rhesus: document.querySelector('[name="rhesus"]')?.value,
-            allergyDrugs: document.querySelector('[name="allergy_drugs"]')?.value,
-            allergyFood: document.querySelector('[name="allergy_food"]')?.value,
-            allergyEnv: document.querySelector('[name="allergy_env"]')?.value,
-            pastConditions: Array.from(document.querySelectorAll('[name="past_conditions[]"]:checked')).map(el => el.value),
-            pastConditionsDetail: document.querySelector('[name="past_conditions_detail"]')?.value
-        };
-    },
-
-    collectMedications() {
-        return []; // TODO: Collect from dynamic list
+    /**
+     * Escape HTML to prevent XSS
+     */
+    escapeHtml(text) {
+        if (!text) return '';
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     }
 };
-
-// Attach event listeners
-document.addEventListener('DOMContentLoaded', () => {
-    // Show/hide promil section based on repro_goals
-    document.querySelectorAll('[name="repro_goals[]"]').forEach(checkbox => {
-        checkbox.addEventListener('change', () => {
-            const promilChecked = document.querySelector('[name="repro_goals[]"][value="promil"]')?.checked;
-            document.getElementById('promil-section').style.display = promilChecked ? 'block' : 'none';
-        });
-    });
-
-    // Dynamic list handlers
-    window.addMedication = function() {
-        alert('Add medication functionality to be implemented');
-    };
-
-    window.removeMedication = function(index) {
-        alert('Remove medication functionality to be implemented');
-    };
-});

@@ -17,26 +17,34 @@ export default {
         const isGenerating = false;
 
         return `
-            <div class="sc-section">
-                <div class="sc-section-header">
-                    <h3><i class="fas fa-file-medical-alt"></i> Resume Medis</h3>
+            <div class="card mb-3">
+                <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-file-medical-alt"></i> Resume Medis
+                    </h5>
+                    ${savedResume ? '<span class="badge badge-light"><i class="fas fa-check"></i> Tersimpan</span>' : ''}
                 </div>
                 ${metaHtml}
-                <div class="sc-card">
+                <div class="card-body">
                     ${this.renderResumeContent(savedResume, isGenerating)}
-                    
-                    <div class="button-group mt-4">
-                        <button type="button" class="btn btn-primary" id="btn-generate-resume" onclick="window.generateResumeMedis()">
-                            <i class="fas fa-magic mr-2"></i>Generate Resume AI
-                        </button>
-                        ${savedResume ? `
-                            <button type="button" class="btn btn-success ml-2" id="btn-save-resume" onclick="window.saveResumeMedis()">
-                                <i class="fas fa-save mr-2"></i>Simpan Resume
+
+                    <div class="d-flex justify-content-between align-items-center mt-4">
+                        <small class="text-muted" id="resume-status">
+                            ${savedResume ? 'Resume sudah tersedia' : 'Belum ada resume'}
+                        </small>
+                        <div>
+                            <button type="button" class="btn btn-primary" id="btn-generate-resume" onclick="window.generateResumeMedis()">
+                                <i class="fas fa-magic"></i> Generate Resume AI
                             </button>
-                            <button type="button" class="btn btn-warning ml-2" id="btn-reset-resume" onclick="window.resetResumeMedis()">
-                                <i class="fas fa-redo mr-2"></i>Reset Resume
-                            </button>
-                        ` : ''}
+                            ${savedResume ? `
+                                <button type="button" class="btn btn-success ml-2" id="btn-save-resume" onclick="window.saveResumeMedis()">
+                                    <i class="fas fa-save"></i> Simpan
+                                </button>
+                                <button type="button" class="btn btn-outline-warning ml-2" id="btn-reset-resume" onclick="window.resetResumeMedis()">
+                                    <i class="fas fa-redo"></i> Reset
+                                </button>
+                            ` : ''}
+                        </div>
                     </div>
                 </div>
             </div>
