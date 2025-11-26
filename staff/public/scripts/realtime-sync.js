@@ -579,24 +579,13 @@ function renderOnlineUsers() {
     
     onlineUsersList.innerHTML = usersArray.map(([userId, user]) => {
         const roleColor = getRoleColor(user.role);
-        const activityIcon = getActivityIcon(user.activity);
-        const timeAgo = getTimeAgo(user.timestamp);
-        
+
         return `
-            <li class="list-group-item">
-                <div class="d-flex align-items-start">
+            <li class="list-group-item py-1">
+                <div class="d-flex align-items-center">
                     <span class="user-status-indicator user-status-online"></span>
-                    <div class="flex-grow-1" style="min-width: 0;">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <strong class="text-truncate" style="font-size: 0.85rem;">${user.name}</strong>
-                            <span class="badge badge-${roleColor} ml-1">${user.role}</span>
-                        </div>
-                        <div class="user-activity">
-                            <i class="fas ${activityIcon} user-activity-icon"></i>
-                            <span class="text-truncate d-inline-block" style="max-width: 150px;">${user.activity}</span>
-                        </div>
-                        <div class="text-muted" style="font-size: 0.7rem;">${timeAgo}</div>
-                    </div>
+                    <strong class="text-truncate" style="font-size: 12px;">${user.name}</strong>
+                    <span class="badge badge-${roleColor} ml-auto" style="font-size: 10px;">${user.role}</span>
                 </div>
             </li>
         `;

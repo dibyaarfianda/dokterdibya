@@ -430,25 +430,26 @@ class SundayClinicApp {
             return;
         }
         this._savingPlanning = true;
-        
+
         try {
             this.showLoading('Menyimpan Planning...');
 
             const data = {
                 tindakan: document.getElementById('planning-tindakan')?.value || '',
                 terapi: document.getElementById('planning-terapi')?.value || '',
-                rencana: document.getElementById('planning-rencana')?.value || ''
+                rencana: document.getElementById('planning-rencana')?.value || '',
+                saved_at: new Date().toISOString()
             };
 
             const state = stateManager.getState();
+            const mrId = state.currentMrId ||
+                        state.recordData?.mrId ||
+                        state.recordData?.mr_id ||
+                        state.recordData?.record?.mrId ||
+                        state.recordData?.record?.mr_id;
 
-            // Patient ID is in recordData.patientId (not recordData.record.patient_id)
-            const patientId = state.recordData?.patientId ||
-                             state.patientData?.id ||
-                             state.intakeData?.patientId;
-
-            if (!patientId) {
-                throw new Error('Patient ID tidak ditemukan');
+            if (!mrId) {
+                throw new Error('MR ID tidak ditemukan');
             }
 
             const token = window.getToken();
@@ -456,28 +457,13 @@ class SundayClinicApp {
                 throw new Error('Authentication token tidak tersedia');
             }
 
-            const recordPayload = {
-                patientId: patientId,
-                type: 'planning',
-                data: data,
-                timestamp: new Date().toISOString()
-            };
-
-            // Add doctor info if available
-            if (window.currentStaffIdentity?.name) {
-                recordPayload.doctorName = window.currentStaffIdentity.name;
-            }
-            if (window.currentStaffIdentity?.id) {
-                recordPayload.doctorId = window.currentStaffIdentity.id;
-            }
-
-            const response = await fetch('/api/medical-records', {
+            const response = await fetch(`/api/sunday-clinic/records/${mrId}/planning`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(recordPayload)
+                body: JSON.stringify(data)
             });
 
             if (!response.ok) {
@@ -488,7 +474,13 @@ class SundayClinicApp {
             const result = await response.json();
             console.log('[SundayClinic] Planning saved successfully:', result);
 
+            // Update state
+            stateManager.updateSectionData('planning', data);
+
             this.showSuccess('Planning berhasil disimpan!');
+
+            // Reload the record to show updated metadata
+            await this.fetchRecord(this.currentMrId);
 
         } catch (error) {
             console.error('[SundayClinic] Save Planning failed:', error);
@@ -997,44 +989,39 @@ class SundayClinicApp {
             return;
         }
         this._savingDiagnosis = true;
-        
+
         try {
+            this.showLoading('Menyimpan Diagnosis...');
+
             const data = {
                 diagnosis_utama: document.getElementById('diagnosis-utama')?.value || '',
-                diagnosis_sekunder: document.getElementById('diagnosis-sekunder')?.value || ''
+                diagnosis_sekunder: document.getElementById('diagnosis-sekunder')?.value || '',
+                saved_at: new Date().toISOString()
             };
 
             const state = stateManager.getState();
-            const patientId = state.derived?.patientId;
-            if (!patientId) {
-                this.showError('Patient ID tidak ditemukan');
-                return;
+            const mrId = state.currentMrId ||
+                        state.recordData?.mrId ||
+                        state.recordData?.mr_id ||
+                        state.recordData?.record?.mrId ||
+                        state.recordData?.record?.mr_id;
+
+            if (!mrId) {
+                throw new Error('MR ID tidak ditemukan');
             }
 
             const token = window.getToken();
-            if (!token) return;
-
-            const recordPayload = {
-                patientId: patientId,
-                type: 'diagnosis',
-                data: data,
-                timestamp: getGMT7Timestamp()
-            };
-
-            if (window.currentStaffIdentity?.name) {
-                recordPayload.doctorName = window.currentStaffIdentity.name;
-            }
-            if (window.currentStaffIdentity?.id) {
-                recordPayload.doctorId = window.currentStaffIdentity.id;
+            if (!token) {
+                throw new Error('Authentication token tidak tersedia');
             }
 
-            const response = await fetch('/api/medical-records', {
+            const response = await fetch(`/api/sunday-clinic/records/${mrId}/diagnosis`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(recordPayload)
+                body: JSON.stringify(data)
             });
 
             if (!response.ok) {
@@ -1044,17 +1031,21 @@ class SundayClinicApp {
             }
 
             const result = await response.json();
-            console.log('Save successful:', result);
+            console.log('[SundayClinic] Diagnosis saved successfully:', result);
+
+            // Update state
+            stateManager.updateSectionData('diagnosis', data);
 
             this.showSuccess('Diagnosis berhasil disimpan!');
 
-            // Reload the record to show updated data
+            // Reload the record to show updated metadata
             await this.fetchRecord(this.currentMrId);
 
         } catch (error) {
             console.error('Error saving diagnosis:', error);
             this.showError('Gagal menyimpan diagnosis: ' + error.message);
         } finally {
+            this.hideLoading();
             this._savingDiagnosis = false;
         }
     }
@@ -1108,23 +1099,26 @@ class SundayClinicApp {
             const resumeContent = document.getElementById('resume-content');
             const resumeDisplay = document.getElementById('resume-display');
             const resumeEmpty = document.getElementById('resume-empty');
-            
-            if (resumeContent && result.data?.resume) {
-                resumeContent.textContent = result.data.resume;
-            } else if (resumeDisplay && result.data?.resume) {
+            const resumeText = result.data?.resume || '';
+            const escapedForAttr = resumeText.replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+
+            if (resumeContent && resumeText) {
+                resumeContent.textContent = resumeText;
+                resumeContent.setAttribute('data-plain-text', resumeText);
+            } else if (resumeDisplay && resumeText) {
                 resumeDisplay.innerHTML = `
                     <div class="card bg-light">
                         <div class="card-body">
-                            <div id="resume-content" style="white-space: pre-wrap; line-height: 1.8;">${this.escapeHtml(result.data.resume)}</div>
+                            <div id="resume-content" data-plain-text="${escapedForAttr}" style="white-space: pre-wrap; line-height: 1.8;">${this.escapeHtml(resumeText)}</div>
                         </div>
                     </div>
                 `;
-            } else if (resumeEmpty && result.data?.resume) {
+            } else if (resumeEmpty && resumeText) {
                 resumeEmpty.outerHTML = `
                     <div class="resume-display" id="resume-display">
                         <div class="card bg-light">
                             <div class="card-body">
-                                <div id="resume-content" style="white-space: pre-wrap; line-height: 1.8;">${this.escapeHtml(result.data.resume)}</div>
+                                <div id="resume-content" data-plain-text="${escapedForAttr}" style="white-space: pre-wrap; line-height: 1.8;">${this.escapeHtml(resumeText)}</div>
                             </div>
                         </div>
                     </div>
@@ -1132,7 +1126,7 @@ class SundayClinicApp {
             }
 
             // Show save button
-            const buttonGroup = document.querySelector('.button-group');
+            const buttonGroup = document.getElementById('resume-button-group');
             if (buttonGroup && !document.getElementById('btn-save-resume')) {
                 buttonGroup.innerHTML = `
                     <button type="button" class="btn btn-primary" id="btn-generate-resume" onclick="window.generateResumeMedis()">
@@ -1175,16 +1169,22 @@ class SundayClinicApp {
 
             // Get plain text from data attribute (original unformatted text)
             const plainText = resumeContent.getAttribute('data-plain-text');
-            
+
             const data = {
-                resume: plainText || resumeContent.textContent || resumeContent.innerText
+                resume: plainText || resumeContent.textContent || resumeContent.innerText,
+                saved_at: new Date().toISOString()
             };
 
             const state = stateManager.getState();
-            const patientId = state.derived?.patientId;
+            const mrId = state.currentMrId ||
+                        state.recordData?.mrId ||
+                        state.recordData?.mr_id ||
+                        state.recordData?.record?.mrId ||
+                        state.recordData?.record?.mr_id ||
+                        this.currentMrId;
 
-            if (!patientId) {
-                throw new Error('Patient ID tidak ditemukan');
+            if (!mrId) {
+                throw new Error('MR ID tidak ditemukan');
             }
 
             const token = window.getToken();
@@ -1192,28 +1192,13 @@ class SundayClinicApp {
                 throw new Error('Authentication token tidak tersedia');
             }
 
-            const recordPayload = {
-                patientId: patientId,
-                visitId: this.currentMrId, // Link to specific visit
-                type: 'resume_medis',
-                data: data,
-                timestamp: new Date().toISOString()
-            };
-
-            if (window.currentStaffIdentity?.name) {
-                recordPayload.doctorName = window.currentStaffIdentity.name;
-            }
-            if (window.currentStaffIdentity?.id) {
-                recordPayload.doctorId = window.currentStaffIdentity.id;
-            }
-
-            const response = await fetch('/api/medical-records', {
+            const response = await fetch(`/api/sunday-clinic/records/${mrId}/resume_medis`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(recordPayload)
+                body: JSON.stringify(data)
             });
 
             if (!response.ok) {
@@ -1224,9 +1209,12 @@ class SundayClinicApp {
             const result = await response.json();
             console.log('[SundayClinic] Resume saved:', result);
 
+            // Update state
+            stateManager.updateSectionData('resume_medis', data);
+
             this.showSuccess('Resume medis berhasil disimpan!');
 
-            // Reload to show metadata
+            // Reload record to show updated metadata
             await this.fetchRecord(this.currentMrId);
 
         } catch (error) {
