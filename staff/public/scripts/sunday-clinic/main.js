@@ -749,28 +749,20 @@ class SundayClinicApp {
                 throw new Error('Authentication token tidak tersedia');
             }
 
-            const recordPayload = {
-                patientId: patientId,
-                type: 'physical_exam',
-                data: data,
-                timestamp: new Date().toISOString()
-            };
-
-            // Add doctor info if available
-            if (window.currentStaffIdentity?.name) {
-                recordPayload.doctorName = window.currentStaffIdentity.name;
-            }
-            if (window.currentStaffIdentity?.id) {
-                recordPayload.doctorId = window.currentStaffIdentity.id;
+            // Get MR ID from state
+            const mrId = state.currentMrId || state.recordData?.mrId || state.recordData?.mr_id;
+            if (!mrId) {
+                throw new Error('MR ID tidak ditemukan');
             }
 
-            const response = await fetch('/api/medical-records', {
+            // Use the new section save endpoint with mr_id
+            const response = await fetch(`/api/sunday-clinic/records/${mrId}/physical_exam`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(recordPayload)
+                body: JSON.stringify(data)
             });
 
             if (!response.ok) {
