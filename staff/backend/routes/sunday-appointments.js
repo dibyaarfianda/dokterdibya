@@ -46,8 +46,60 @@ function getNextSundays(count = 8) {
     return sundays;
 }
 
-// Helper function to get session time label
+// Cache for session settings
+let sessionSettingsCache = null;
+let sessionSettingsCacheTime = 0;
+const CACHE_TTL = 60000; // 1 minute cache
+
+// Helper function to get session settings from database
+async function getSessionSettings() {
+    const now = Date.now();
+    if (sessionSettingsCache && (now - sessionSettingsCacheTime) < CACHE_TTL) {
+        return sessionSettingsCache;
+    }
+
+    try {
+        const [settings] = await db.query(
+            `SELECT session_number, session_name, start_time, end_time, slot_duration, max_slots
+             FROM booking_settings WHERE is_active = 1 ORDER BY session_number ASC`
+        );
+
+        sessionSettingsCache = settings.map(s => ({
+            session: s.session_number,
+            name: s.session_name,
+            startTime: s.start_time.substring(0, 5),
+            endTime: s.end_time.substring(0, 5),
+            slotDuration: s.slot_duration,
+            maxSlots: s.max_slots,
+            label: `${s.start_time.substring(0, 5)} - ${s.end_time.substring(0, 5)} (${s.session_name})`
+        }));
+        sessionSettingsCacheTime = now;
+        return sessionSettingsCache;
+    } catch (error) {
+        console.error('Error fetching session settings:', error);
+        // Fallback to default if DB fails
+        return [
+            { session: 1, name: 'Pagi', startTime: '09:00', endTime: '11:30', slotDuration: 15, maxSlots: 10, label: '09:00 - 11:30 (Pagi)' },
+            { session: 2, name: 'Siang', startTime: '12:00', endTime: '14:30', slotDuration: 15, maxSlots: 10, label: '12:00 - 14:30 (Siang)' },
+            { session: 3, name: 'Sore', startTime: '15:00', endTime: '17:30', slotDuration: 15, maxSlots: 10, label: '15:00 - 17:30 (Sore)' }
+        ];
+    }
+}
+
+// Helper function to get session time label (async version with fallback)
+async function getSessionLabelAsync(session) {
+    const settings = await getSessionSettings();
+    const found = settings.find(s => s.session === parseInt(session));
+    return found ? found.label : 'Unknown';
+}
+
+// Sync version for backward compatibility (uses cache)
 function getSessionLabel(session) {
+    if (sessionSettingsCache) {
+        const found = sessionSettingsCache.find(s => s.session === parseInt(session));
+        return found ? found.label : 'Unknown';
+    }
+    // Fallback to hardcoded if cache not loaded
     const labels = {
         1: '09:00 - 11:30 (Pagi)',
         2: '12:00 - 14:30 (Siang)',
@@ -56,10 +108,43 @@ function getSessionLabel(session) {
     return labels[session] || 'Unknown';
 }
 
-// Helper function to calculate slot time
+// Helper function to calculate slot time (async version)
+async function getSlotTimeAsync(session, slotNumber) {
+    const settings = await getSessionSettings();
+    const found = settings.find(s => s.session === parseInt(session));
+
+    if (!found) {
+        // Fallback
+        const startHours = { 1: 9, 2: 12, 3: 15 };
+        const startHour = startHours[session] || 9;
+        const minutes = (slotNumber - 1) * 15;
+        const hour = startHour + Math.floor(minutes / 60);
+        const minute = minutes % 60;
+        return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    }
+
+    const [hours, mins] = found.startTime.split(':').map(Number);
+    const totalMinutes = (hours * 60 + mins) + (slotNumber - 1) * found.slotDuration;
+    const hour = Math.floor(totalMinutes / 60);
+    const minute = totalMinutes % 60;
+    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
+// Sync version for backward compatibility
 function getSlotTime(session, slotNumber) {
+    if (sessionSettingsCache) {
+        const found = sessionSettingsCache.find(s => s.session === parseInt(session));
+        if (found) {
+            const [hours, mins] = found.startTime.split(':').map(Number);
+            const totalMinutes = (hours * 60 + mins) + (slotNumber - 1) * found.slotDuration;
+            const hour = Math.floor(totalMinutes / 60);
+            const minute = totalMinutes % 60;
+            return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+        }
+    }
+    // Fallback to hardcoded
     const startHours = { 1: 9, 2: 12, 3: 15 };
-    const startHour = startHours[session];
+    const startHour = startHours[session] || 9;
     const minutes = (slotNumber - 1) * 15;
     const hour = startHour + Math.floor(minutes / 60);
     const minute = minutes % 60;
@@ -117,30 +202,38 @@ router.get('/available', verifyToken, async (req, res) => {
         
         // Get booked slots for this date
         const [bookedSlots] = await db.query(
-            `SELECT session, slot_number FROM sunday_appointments 
+            `SELECT session, slot_number FROM sunday_appointments
              WHERE appointment_date = ? AND status NOT IN ('cancelled', 'no_show')`,
             [date]
         );
-        
-        // Build available slots structure
-        const sessions = [
-            { session: 1, label: '09:00 - 11:30 (Pagi)', slots: [] },
-            { session: 2, label: '12:00 - 14:30 (Siang)', slots: [] },
-            { session: 3, label: '15:00 - 17:30 (Sore)', slots: [] }
-        ];
-        
-        sessions.forEach(sessionObj => {
-            for (let slot = 1; slot <= 10; slot++) {
+
+        // Get dynamic session settings from database
+        const sessionSettings = await getSessionSettings();
+
+        // Build available slots structure from dynamic settings
+        const sessions = sessionSettings.map(setting => ({
+            session: setting.session,
+            label: setting.label,
+            slots: []
+        }));
+
+        // Populate slots for each session
+        for (const sessionObj of sessions) {
+            const setting = sessionSettings.find(s => s.session === sessionObj.session);
+            const maxSlots = setting ? setting.maxSlots : 10;
+
+            for (let slot = 1; slot <= maxSlots; slot++) {
                 const isBooked = bookedSlots.some(
                     b => b.session === sessionObj.session && b.slot_number === slot
                 );
+                const slotTime = await getSlotTimeAsync(sessionObj.session, slot);
                 sessionObj.slots.push({
                     number: slot,
-                    time: getSlotTime(sessionObj.session, slot),
+                    time: slotTime,
                     available: !isBooked
                 });
             }
-        });
+        }
         
         res.json({
             date,
@@ -193,13 +286,19 @@ router.post('/book', verifyToken, async (req, res) => {
         if (!appointment_date || !session || !slot_number || !chief_complaint) {
             return res.status(400).json({ message: 'Semua field harus diisi' });
         }
-        
-        if (![1, 2, 3].includes(parseInt(session))) {
-            return res.status(400).json({ message: 'Sesi tidak valid (harus 1, 2, atau 3)' });
+
+        // Get dynamic session settings for validation
+        const sessionSettings = await getSessionSettings();
+        const validSessions = sessionSettings.map(s => s.session);
+        const sessionSetting = sessionSettings.find(s => s.session === parseInt(session));
+
+        if (!validSessions.includes(parseInt(session))) {
+            return res.status(400).json({ message: `Sesi tidak valid (pilihan: ${validSessions.join(', ')})` });
         }
-        
-        if (slot_number < 1 || slot_number > 10) {
-            return res.status(400).json({ message: 'Nomor slot harus antara 1-10' });
+
+        const maxSlots = sessionSetting ? sessionSetting.maxSlots : 10;
+        if (slot_number < 1 || slot_number > maxSlots) {
+            return res.status(400).json({ message: `Nomor slot harus antara 1-${maxSlots}` });
         }
         
         const appointmentDate = new Date(appointment_date);
