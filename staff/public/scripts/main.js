@@ -75,6 +75,7 @@ function initPages() {
     pages.kelolaTindakan = grab('kelola-tindakan-page');
     pages.kelolaObatManagement = grab('kelola-obat-management-page');
     pages.financeAnalysis = grab('finance-analysis-page');
+    pages.kelolaRoles = grab('kelola-roles-page');
 }
 function loadExternalPage(containerId, htmlFile, options = {}) {
     const { forceReload = false } = options;
@@ -444,6 +445,23 @@ function showKelolaPengumumanPage() {
         console.error('Failed to load kelola-announcement.js:', error);
     });
 }
+
+function showKelolaRolesPage() {
+    hideAllPages();
+    pages.kelolaRoles?.classList.remove('d-none');
+    setTitleAndActive('Roles Manajemen', 'management-nav-kelola-roles', 'kelola-roles');
+    
+    // Dynamically import and initialize the Roles Management module
+    importWithVersion('./kelola-roles.js').then(module => {
+        if (typeof window.initKelolaRoles === 'function') {
+            window.initKelolaRoles();
+        } else {
+            console.error('Kelola Roles module loaded, but initKelolaRoles function not found on window.');
+        }
+    }).catch(error => {
+        console.error('Failed to load kelola-roles.js:', error);
+    });
+}
 function showFinanceAnalysisPage() { 
     hideAllPages(); 
     pages.financeAnalysis?.classList.remove('d-none'); 
@@ -695,16 +713,19 @@ function initializeApp(user) {
         const kelolaJadwalNav = document.getElementById('management-nav-kelola-jadwal');
         const kelolaTindakanNav = document.getElementById('management-nav-kelola-tindakan');
         const kelolaObatNav = document.getElementById('management-nav-kelola-obat');
+        const kelolaRolesNav = document.getElementById('management-nav-kelola-roles');
 
         if (isDokter) {
             // Dokter sees everything - no hiding
         } else if (isManagerial) {
-            // Managerial: Hide only patient management
+            // Managerial: Hide only patient management and roles (sensitive)
             if (kelolaPasienNav) kelolaPasienNav.style.display = 'none';
+            if (kelolaRolesNav) kelolaRolesNav.style.display = 'none';
         } else if (isBidan) {
-            // Bidan: Hide patient management and finance
+            // Bidan: Hide patient management, finance, and roles
             if (financeNav) financeNav.style.display = 'none';
             if (kelolaPasienNav) kelolaPasienNav.style.display = 'none';
+            if (kelolaRolesNav) kelolaRolesNav.style.display = 'none';
         } else {
             // Other roles: Hide all management
             if (managementHeader) managementHeader.style.display = 'none';
@@ -714,6 +735,7 @@ function initializeApp(user) {
             if (kelolaJadwalNav) kelolaJadwalNav.style.display = 'none';
             if (kelolaTindakanNav) kelolaTindakanNav.style.display = 'none';
             if (kelolaObatNav) kelolaObatNav.style.display = 'none';
+            if (kelolaRolesNav) kelolaRolesNav.style.display = 'none';
         }
     } else {
         // User is not logged in, or session expired
@@ -1134,6 +1156,7 @@ window.showKelolaJadwalPage = showKelolaJadwalPage;
 window.showKelolaTindakanPage = showKelolaTindakanPage;
 window.showKelolaObatManagementPage = showKelolaObatManagementPage;
 window.showFinanceAnalysisPage = showFinanceAnalysisPage;
+window.showKelolaRolesPage = showKelolaRolesPage;
 window.showProfileSettings = showProfileSettings;
 // REMOVED: window.showEmailSettingsPage = showEmailSettingsPage;
 window.showStokOpnamePage = showStokOpnamePage;

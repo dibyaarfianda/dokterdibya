@@ -1,0 +1,41 @@
+id	name	display_name	category	description	created_at
+1	dashboard.view	Akses Dashboard	Dashboard	View dashboard analytics and statistics	2025-11-07 09:02:25
+2	patients.view	Lihat Data Pasien	Data Pasien	View patient list and details	2025-11-07 09:02:25
+3	patients.create	Tambah Pasien	Data Pasien	Register new patients	2025-11-07 09:02:25
+4	patients.edit	Edit Pasien	Data Pasien	Edit patient information	2025-11-07 09:02:25
+5	patients.delete	Hapus Pasien	Data Pasien	Delete patient records	2025-11-07 09:02:25
+6	anamnesa.view	Lihat Anamnesa	Anamnesa	View patient anamnesis/medical history	2025-11-07 09:02:25
+7	anamnesa.create	Buat Anamnesa	Anamnesa	Create anamnesis records	2025-11-07 09:02:25
+8	anamnesa.edit	Edit Anamnesa	Anamnesa	Edit anamnesis records	2025-11-07 09:02:25
+9	physical_exam.view	Lihat Pemeriksaan Fisik	Pemeriksaan Fisik	View physical examination records	2025-11-07 09:02:25
+10	physical_exam.create	Buat Pemeriksaan Fisik	Pemeriksaan Fisik	Create physical examination records	2025-11-07 09:02:25
+11	physical_exam.edit	Edit Pemeriksaan Fisik	Pemeriksaan Fisik	Edit physical examination records	2025-11-07 09:02:25
+12	usg_exam.view	Lihat Pemeriksaan USG	Pemeriksaan USG	View USG examination records	2025-11-07 09:02:25
+13	usg_exam.create	Buat Pemeriksaan USG	Pemeriksaan USG	Create USG examination records	2025-11-07 09:02:25
+14	usg_exam.edit	Edit Pemeriksaan USG	Pemeriksaan USG	Edit USG examination records	2025-11-07 09:02:25
+15	lab_exam.view	Lihat Pemeriksaan Penunjang	Pemeriksaan Penunjang	View lab/supporting examination records	2025-11-07 09:02:25
+16	lab_exam.create	Buat Pemeriksaan Penunjang	Pemeriksaan Penunjang	Create lab examination records	2025-11-07 09:02:25
+17	lab_exam.edit	Edit Pemeriksaan Penunjang	Pemeriksaan Penunjang	Edit lab examination records	2025-11-07 09:02:25
+18	services.view	Lihat Tindakan	Tindakan	View medical services/procedures	2025-11-07 09:02:25
+19	services.select	Pilih Tindakan	Tindakan	Select services for billing	2025-11-07 09:02:25
+20	medications.view	Lihat Obat	Obat	View medication inventory	2025-11-07 09:02:25
+21	medications.select	Pilih Obat	Obat	Select medications for billing	2025-11-07 09:02:25
+22	billing.view	Lihat Rincian Tagihan	Rincian Tagihan	View billing details	2025-11-07 09:02:25
+23	billing.create	Buat Tagihan	Rincian Tagihan	Create bills	2025-11-07 09:02:25
+24	billing.process_payment	Proses Pembayaran	Rincian Tagihan	Process payments and print receipts	2025-11-07 09:02:25
+25	appointments.view	Lihat Appointment	Appointment	View appointments	2025-11-07 09:02:25
+26	appointments.create	Tambah Appointment	Appointment	Create new appointments	2025-11-07 09:02:25
+27	appointments.edit	Edit Appointment	Appointment	Edit appointments	2025-11-07 09:02:25
+28	appointments.delete	Hapus Appointment	Appointment	Cancel/delete appointments	2025-11-07 09:02:25
+29	stock.view	Lihat Stok Opname	Stok Opname	View stock opname/inventory	2025-11-07 09:02:25
+30	stock.update	Update Stok	Stok Opname	Update stock levels	2025-11-07 09:02:25
+31	settings.services_manage	Kelola Tindakan	Pengaturan	Manage medical services/procedures list	2025-11-07 09:02:25
+32	settings.medications_manage	Kelola Obat	Pengaturan	Manage medications inventory	2025-11-07 09:02:25
+33	settings.system	Pengaturan Sistem	Pengaturan	Manage system settings	2025-11-07 09:02:25
+34	roles.view	Lihat Role	Kelola Role	View roles and permissions	2025-11-07 09:02:25
+35	roles.create	Tambah Role	Kelola Role	Create new roles	2025-11-07 09:02:25
+36	roles.edit	Edit Role	Kelola Role	Edit existing roles	2025-11-07 09:02:25
+37	roles.delete	Hapus Role	Kelola Role	Delete custom roles	2025-11-07 09:02:25
+38	roles.manage_permissions	Kelola Permission	Kelola Role	Assign permissions to roles	2025-11-07 09:02:25
+39	users.manage_roles	Assign Role ke User	Kelola Role	Assign roles to users	2025-11-07 09:02:25
+40	logs.view	Lihat Log Aktivitas	Log Aktivitas	View system activity logs	2025-11-07 09:02:25
