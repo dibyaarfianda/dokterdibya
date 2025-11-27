@@ -21,6 +21,7 @@
     if (roleId === ROLE_IDS.DOKTER) return '#ff6b6b';      // lighter red for dokter (badge-danger)
     if (roleId === ROLE_IDS.ADMIN) return '#ffc107';       // yellow/gold for admin (badge-warning)
     if (roleId === ROLE_IDS.MANAGERIAL) return '#17a2b8'; // cyan for managerial (badge-info)
+    if (roleId === ROLE_IDS.BIDAN) return '#e91e63';      // pink for bidan
     return '#adb5bd'; // lighter gray for others (badge-secondary)
   }
 

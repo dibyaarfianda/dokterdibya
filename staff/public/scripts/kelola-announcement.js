@@ -6,6 +6,7 @@ const API_URL = window.location.hostname === 'localhost'
 
 let socket = null;
 let currentUser = null;
+let userPermissions = []; // Store user permissions
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', async () => {
@@ -185,10 +186,14 @@ function displayAnnouncements(announcements) {
                         </div>
                     </div>
                     <div class="card-footer bg-transparent">
-                        <button class="btn btn-sm btn-primary" onclick="editAnnouncement(${announcement.id})">
+                        <button class="btn btn-sm btn-primary ${!hasPermission('announcements.edit') ? 'disabled' : ''}" 
+                            onclick="${hasPermission('announcements.edit') ? `editAnnouncement(${announcement.id})` : 'return false'}"
+                            ${!hasPermission('announcements.edit') ? 'disabled title="Anda tidak memiliki izin untuk mengedit pengumuman"' : ''}>
                             <i class="fas fa-edit"></i> Edit
                         </button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteAnnouncement(${announcement.id}, '${escapeHtml(announcement.title)}')">
+                        <button class="btn btn-sm btn-danger ${!hasPermission('announcements.delete') ? 'disabled' : ''}" 
+                            onclick="${hasPermission('announcements.delete') ? `deleteAnnouncement(${announcement.id}, '${escapeHtml(announcement.title)}')` : 'return false'}"
+                            ${!hasPermission('announcements.delete') ? 'disabled title="Anda tidak memiliki izin untuk menghapus pengumuman"' : ''}>
                             <i class="fas fa-trash"></i> Hapus
                         </button>
                     </div>
@@ -553,6 +558,21 @@ window.initKelolaAnnouncement = async function() {
             window.getIdTokenOverride = window.getIdToken;
         }
 
+        // Fetch user permissions from API
+        try {
+            const token = window.getIdTokenOverride ? await window.getIdTokenOverride() : await getIdToken();
+            const response = await fetch(`${API_URL}/auth/me`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                userPermissions = data.data?.user?.permissions || [];
+                console.log('User permissions:', userPermissions);
+            }
+        } catch (err) {
+            console.error('Failed to fetch user permissions:', err);
+        }
+
         // Initialize Socket.io if not already connected
         if (!window.socket) {
             const socketUrl = window.location.hostname === 'localhost' 
@@ -569,19 +589,35 @@ window.initKelolaAnnouncement = async function() {
         // Update container references for inline mode
         const announcementsContainer = document.getElementById('announcements-container-inline') || document.getElementById('announcements-container');
         
-        // Load announcements
-        await loadAnnouncements();
-
-        // Setup event listeners for inline mode
+        // Check permission for "Buat Pengumuman Baru" button
         const btnNew = document.getElementById('btn-new-announcement-inline') || document.getElementById('btn-new-announcement');
         if (btnNew) {
-            btnNew.addEventListener('click', () => {
-                window.openModal();
-            });
+            if (!hasPermission('announcements.create')) {
+                btnNew.disabled = true;
+                btnNew.classList.add('disabled');
+                btnNew.title = 'Anda tidak memiliki izin untuk membuat pengumuman';
+            } else {
+                btnNew.disabled = false;
+                btnNew.classList.remove('disabled');
+                btnNew.addEventListener('click', () => {
+                    window.openModal();
+                });
+            }
         }
+
+        // Load announcements
+        await loadAnnouncements();
 
         setupEventListeners();
     } catch (error) {
         console.error('Kelola Announcement initialization error:', error);
     }
 };
+
+// Helper function to check if user has permission
+function hasPermission(permissionName) {
+    return userPermissions.includes(permissionName);
+}
+
+// Export hasPermission for use in displayAnnouncements
+window.hasAnnouncementPermission = hasPermission;

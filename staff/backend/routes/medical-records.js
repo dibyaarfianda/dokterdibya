@@ -477,14 +477,14 @@ router.post('/api/medical-records/generate-resume', verifyToken, async (req, res
         let identitas = {};
         try {
             const [patients] = await db.query(
-                'SELECT * FROM patients WHERE id = ? OR mr_id = ?',
-                [patientId, patientId]
+                'SELECT * FROM patients WHERE id = ? OR mr_id = ? OR new_id = ?',
+                [patientId, patientId, patientId]
             );
             
             if (patients.length > 0) {
                 const patient = patients[0];
                 identitas = {
-                    nama: patient.nama || patient.name,
+                    nama: patient.full_name || patient.nama || patient.name,
                     tanggal_lahir: patient.tanggal_lahir || patient.birth_date,
                     umur: patient.umur || patient.age,
                     alamat: patient.alamat || patient.address,
@@ -543,9 +543,12 @@ function generateMedicalResume(identitas, records) {
         timeZone: 'Asia/Jakarta'
     });
 
+    // Get patient name for header
+    const patientName = identitas?.nama || 'PASIEN';
+
     // Header - Professional Format
     resume += '═══════════════════════════════════════════════════════════════\n';
-    resume += '           RESUME MEDIS DR. DIBYA ARFIANDA, SPOG, M.KED.KLIN.\n';
+    resume += `                    RESUME MEDIS ${patientName.toUpperCase()}\n`;
     resume += '═══════════════════════════════════════════════════════════════\n';
     resume += `Tanggal: ${today}\n`;
     resume += '═══════════════════════════════════════════════════════════════\n\n';
@@ -1014,7 +1017,7 @@ function generateMedicalResume(identitas, records) {
         minute: '2-digit'
     })}\n`;
     resume += '═══════════════════════════════════════════════════════════════\n\n';
-    resume += 'File USG dan Lab/Hasil Tes akan segera dikirimkan ke Portal Anda\n';
+    resume += 'Bila ada file USG dan Lab/Hasil Tes akan segera dikirimkan ke Portal Anda\n';
 
     return resume;
 }

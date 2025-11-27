@@ -87,6 +87,9 @@ async function setAuthUI(user) {
                 navbarUserRole.classList.add('badge-warning');
             } else if (user.role_id === ROLE_IDS.MANAGERIAL) {
                 navbarUserRole.classList.add('badge-info');
+            } else if (user.role_id === ROLE_IDS.BIDAN) {
+                navbarUserRole.style.backgroundColor = '#e91e63';
+                navbarUserRole.style.color = 'white';
             } else {
                 navbarUserRole.classList.add('badge-secondary');
             }

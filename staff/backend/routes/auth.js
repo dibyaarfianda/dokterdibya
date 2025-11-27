@@ -216,6 +216,24 @@ router.get('/api/auth/me', verifyToken, asyncHandler(async (req, res) => {
     const resolvedRoleDisplay = user.resolved_role_display || resolvedRole || null;
     const roleForClient = resolvedRole || 'viewer';
 
+    // Get user permissions based on role_id
+    let permissions = [];
+    if (user.role_id) {
+        const [permRows] = await db.query(
+            `SELECT p.name FROM permissions p
+             JOIN role_permissions rp ON p.id = rp.permission_id
+             WHERE rp.role_id = ?`,
+            [user.role_id]
+        );
+        permissions = permRows.map(p => p.name);
+    }
+    
+    // Superadmin has all permissions
+    if (user.is_superadmin || user.role === 'dokter') {
+        const [allPerms] = await db.query('SELECT name FROM permissions');
+        permissions = allPerms.map(p => p.name);
+    }
+
     sendSuccess(res, {
         user: {
             id: user.new_id,
@@ -227,7 +245,8 @@ router.get('/api/auth/me', verifyToken, asyncHandler(async (req, res) => {
             photo_url: user.photo_url,
             user_type: user.user_type || 'patient',
             is_superadmin: user.is_superadmin || false,
-            profile_completed: user.profile_completed || false
+            profile_completed: user.profile_completed || false,
+            permissions: permissions
         }
     });
 }));
