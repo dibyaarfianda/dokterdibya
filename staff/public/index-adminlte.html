@@ -2661,23 +2661,47 @@
                 <!-- BOOKING SETTINGS PAGE (Superadmin Only) -->
                 <div id="booking-settings-page" class="d-none">
                     <div class="container-fluid">
-                        <div class="row mb-3">
-                            <div class="col-12">
-                                <div class="d-flex justify-content-between align-items-center flex-wrap">
-                                    <div class="mb-2">
-                                        <h5 class="mb-1"><i class="fas fa-info-circle text-info mr-2"></i>Pengaturan Jadwal Booking Klinik Minggu</h5>
-                                        <small class="text-muted">Kontrol jam operasional dan jumlah slot untuk setiap sesi pada halaman booking pasien</small>
-                                    </div>
-                                    <button class="btn btn-primary" id="btn-add-session">
+                        <!-- Session Settings Section -->
+                        <div class="card card-primary card-outline">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fas fa-cog mr-2"></i>Pengaturan Sesi Booking</h3>
+                                <div class="card-tools">
+                                    <button class="btn btn-primary btn-sm" id="btn-add-session">
                                         <i class="fas fa-plus"></i> Tambah Sesi Baru
                                     </button>
                                 </div>
                             </div>
+                            <div class="card-body">
+                                <p class="text-muted mb-3">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    Kontrol jam operasional dan jumlah slot untuk setiap sesi pada halaman booking pasien
+                                </p>
+                                <div id="booking-settings-container" class="row">
+                                    <div class="col-12 text-center py-5">
+                                        <i class="fas fa-spinner fa-spin fa-2x"></i>
+                                        <p class="mt-2">Memuat pengaturan sesi...</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div id="booking-settings-container" class="row">
-                            <div class="col-12 text-center py-5">
-                                <i class="fas fa-spinner fa-spin fa-2x"></i>
-                                <p class="mt-2">Memuat pengaturan sesi...</p>
+
+                        <!-- Bookings Management Section -->
+                        <div class="card card-danger card-outline">
+                            <div class="card-header">
+                                <h3 class="card-title"><i class="fas fa-calendar-times mr-2"></i>Kelola Booking Aktif</h3>
+                                <div class="card-tools">
+                                    <button class="btn btn-outline-secondary btn-sm" onclick="window.loadBookings()">
+                                        <i class="fas fa-sync-alt"></i> Refresh
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div id="bookings-container" class="p-3">
+                                    <div class="text-center py-4">
+                                        <i class="fas fa-spinner fa-spin fa-2x"></i>
+                                        <p class="mt-2">Memuat data booking...</p>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>

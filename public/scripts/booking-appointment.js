@@ -122,12 +122,13 @@ async function loadSlots() {
 function renderSessions(sessions) {
     $('#session-loading').hide();
     $('#session-container').show();
-    
+
     const html = sessions.map(session => {
+        const totalSlots = session.slots.length;
         const availableCount = session.slots.filter(s => s.available).length;
         let badgeClass = 'badge-available';
-        let badgeText = `${availableCount}/10 tersedia`;
-        
+        let badgeText = `${availableCount}/${totalSlots} tersedia`;
+
         if (availableCount === 0) {
             badgeClass = 'badge-full';
             badgeText = 'Penuh';
