@@ -1591,6 +1591,94 @@ router.delete('/billing/:mrId/items/:itemType', verifyToken, async (req, res, ne
     }
 });
 
+// Delete billing item by item_code
+router.delete('/billing/:mrId/items/code/:code', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+    const itemCode = req.params.code;
+
+    let connection;
+
+    try {
+        const recordRow = await findRecordByMrId(normalizedMrId);
+        if (!recordRow) {
+            return res.status(404).json({
+                success: false,
+                message: 'Rekam medis Sunday Clinic tidak ditemukan.'
+            });
+        }
+
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        // Get billing record
+        const [billingRows] = await connection.query(
+            `SELECT id FROM sunday_clinic_billings WHERE mr_id = ? FOR UPDATE`,
+            [normalizedMrId]
+        );
+
+        if (billingRows.length === 0) {
+            await connection.rollback();
+            return res.json({
+                success: true,
+                message: `Tidak ada billing ditemukan.`
+            });
+        }
+
+        const billingId = billingRows[0].id;
+
+        // Delete item by code
+        const [deleteResult] = await connection.query(
+            `DELETE FROM sunday_clinic_billing_items WHERE billing_id = ? AND item_code = ?`,
+            [billingId, itemCode]
+        );
+
+        // Recalculate billing totals
+        const [[totals]] = await connection.query(
+            `SELECT COALESCE(SUM(total), 0) AS subtotal FROM sunday_clinic_billing_items WHERE billing_id = ?`,
+            [billingId]
+        );
+
+        await connection.query(
+            `UPDATE sunday_clinic_billings
+             SET subtotal = ?, total = ?, updated_at = NOW()
+             WHERE id = ?`,
+            [totals.subtotal, totals.subtotal, billingId]
+        );
+
+        await connection.commit();
+
+        res.json({
+            success: true,
+            message: `Item dengan kode ${itemCode} berhasil dihapus`,
+            data: {
+                mrId: normalizedMrId,
+                billingId,
+                deletedCount: deleteResult.affectedRows,
+                newSubtotal: totals.subtotal
+            }
+        });
+    } catch (error) {
+        if (connection) {
+            try {
+                await connection.rollback();
+            } catch (rollbackError) {
+                logger.error('Failed to rollback item deletion by code', { error: rollbackError.message });
+            }
+        }
+
+        logger.error('Failed to delete billing item by code', {
+            mrId: normalizedMrId,
+            itemCode,
+            error: error.message
+        });
+        next(error);
+    } finally {
+        if (connection) {
+            connection.release();
+        }
+    }
+});
+
 // Request change to billing (anyone can request)
 router.post('/billing/:mrId/request-change', verifyToken, async (req, res, next) => {
     const normalizedMrId = normalizeMrId(req.params.mrId);

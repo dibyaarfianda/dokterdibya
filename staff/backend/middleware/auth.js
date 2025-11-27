@@ -173,6 +173,85 @@ function requireRole(...allowedRoles) {
 }
 
 /**
+ * Middleware to verify patient JWT token
+ * Similar to verifyToken but ensures user is a patient
+ */
+function verifyPatientToken(req, res, next) {
+    const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+    const requestId = req.context?.requestId || 'unknown';
+
+    if (!authHeader) {
+        logger.warn('Missing authorization header (patient)', {
+            requestId,
+            ip: req.ip,
+            path: req.path
+        });
+        return res.status(401).json({
+            success: false,
+            message: 'Missing authorization header'
+        });
+    }
+
+    const parts = authHeader.split(' ');
+
+    if (parts.length !== 2 || parts[0] !== 'Bearer') {
+        return res.status(401).json({
+            success: false,
+            message: 'Invalid authorization header format'
+        });
+    }
+
+    const token = parts[1];
+
+    try {
+        const payload = jwt.verify(token, JWT_SECRET);
+
+        // Ensure this is a patient token
+        if (payload.user_type !== 'patient' && payload.role !== 'patient') {
+            logger.warn('Non-patient token used on patient endpoint', {
+                requestId,
+                userId: payload.id,
+                userType: payload.user_type,
+                role: payload.role
+            });
+            return res.status(403).json({
+                success: false,
+                message: 'This endpoint is for patients only'
+            });
+        }
+
+        req.patient = payload;
+        req.user = payload; // Also set req.user for compatibility
+
+        logger.debug('Patient token verified', {
+            requestId,
+            patientId: payload.id,
+            email: payload.email
+        });
+
+        next();
+    } catch (err) {
+        logger.warn('Patient token verification failed', {
+            requestId,
+            errorName: err.name,
+            message: err.message,
+            ip: req.ip
+        });
+
+        if (err.name === 'TokenExpiredError') {
+            return res.status(401).json({
+                success: false,
+                message: 'Token has expired'
+            });
+        }
+        return res.status(401).json({
+            success: false,
+            message: 'Invalid token'
+        });
+    }
+}
+
+/**
  * Optional authentication middleware (doesn't fail if missing)
  */
 function optionalAuth(req, res, next) {
@@ -286,13 +365,14 @@ function requirePermission(...requiredPermissions) {
     };
 }
 
-module.exports = { 
-    verifyToken, 
+module.exports = {
+    verifyToken,
+    verifyPatientToken,
     requireRole,
     requirePermission,
     optionalAuth,
     recordFailedAttempt,
     isAccountLocked,
     clearFailedAttempts,
-    JWT_SECRET 
+    JWT_SECRET
 };

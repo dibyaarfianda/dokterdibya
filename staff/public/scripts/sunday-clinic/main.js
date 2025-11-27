@@ -8,6 +8,7 @@ import apiClient from './utils/api-client.js';
 import stateManager from './utils/state-manager.js';
 import { getGMT7Timestamp } from './utils/helpers.js';
 import BillingNotifications from './utils/billing-notifications.js';
+import SendToPatient from './components/shared/send-to-patient.js';
 
 class SundayClinicApp {
     constructor() {
@@ -57,6 +58,9 @@ class SundayClinicApp {
 
             // Initialize real-time billing notifications
             this.initializeBillingNotifications();
+
+            // Initialize send to patient modal
+            this.initializeSendToPatientModal();
 
             this.initialized = true;
 
@@ -1431,6 +1435,22 @@ class SundayClinicApp {
                 });
             }
         });
+    }
+
+    /**
+     * Initialize send to patient modal
+     */
+    initializeSendToPatientModal() {
+        // Check if modal already exists
+        if (document.getElementById('sendToPatientModal')) {
+            return;
+        }
+
+        // Inject modal HTML into the DOM
+        const modalHtml = SendToPatient.renderModal();
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        console.log('[SundayClinic] Send to patient modal initialized');
     }
 
     /**
