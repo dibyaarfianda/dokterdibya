@@ -6,17 +6,19 @@
 
     const API_BASE = '/api/booking-settings';
     let settings = [];
+    let bookings = [];
     let isLoading = false;
 
     // Get auth token
     function getToken() {
-        return localStorage.getItem('staff_token') || sessionStorage.getItem('staff_token');
+        return localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
     }
 
     // Initialize module
     function initKelolaBookingSettings() {
         console.log('[Booking Settings] Initializing...');
         loadSettings();
+        loadBookings();
         setupEventListeners();
     }
 
@@ -330,10 +332,236 @@
         }
     }
 
+    // ==================== BOOKINGS MANAGEMENT ====================
+
+    // Load all bookings
+    async function loadBookings() {
+        const container = document.getElementById('bookings-container');
+        if (!container) return;
+
+        container.innerHTML = `
+            <div class="text-center py-4">
+                <i class="fas fa-spinner fa-spin fa-2x"></i>
+                <p class="mt-2">Memuat data booking...</p>
+            </div>
+        `;
+
+        try {
+            const response = await fetch(`${API_BASE}/bookings`, {
+                headers: { 'Authorization': `Bearer ${getToken()}` }
+            });
+
+            if (!response.ok) throw new Error('Failed to fetch bookings');
+
+            const data = await response.json();
+            bookings = data.bookings || [];
+            renderBookings();
+        } catch (error) {
+            console.error('Error loading bookings:', error);
+            container.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                    Gagal memuat data booking. <button class="btn btn-sm btn-outline-danger ml-2" onclick="window.loadBookings()">Coba Lagi</button>
+                </div>
+            `;
+        }
+    }
+
+    // Render bookings table
+    function renderBookings() {
+        const container = document.getElementById('bookings-container');
+        if (!container) return;
+
+        // Filter only active bookings (not cancelled, not completed)
+        const activeBookings = bookings.filter(b => !['cancelled', 'completed', 'no_show'].includes(b.status));
+
+        if (activeBookings.length === 0) {
+            container.innerHTML = `
+                <div class="alert alert-info mb-0">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    Tidak ada booking aktif yang akan datang.
+                </div>
+            `;
+            return;
+        }
+
+        const statusBadge = (status) => {
+            const badges = {
+                'pending': '<span class="badge badge-warning">Menunggu</span>',
+                'confirmed': '<span class="badge badge-primary">Dikonfirmasi</span>',
+                'arrived': '<span class="badge badge-info">Hadir</span>',
+                'in_progress': '<span class="badge badge-success">Sedang Diperiksa</span>'
+            };
+            return badges[status] || `<span class="badge badge-secondary">${status}</span>`;
+        };
+
+        const tableHtml = `
+            <div class="table-responsive">
+                <table class="table table-bordered table-striped table-sm">
+                    <thead class="thead-dark">
+                        <tr>
+                            <th>Tanggal</th>
+                            <th>Waktu</th>
+                            <th>Pasien</th>
+                            <th>Telepon</th>
+                            <th>Keluhan</th>
+                            <th>Status</th>
+                            <th width="100">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${activeBookings.map(b => {
+                            const date = new Date(b.appointment_date);
+                            const formattedDate = date.toLocaleDateString('id-ID', {
+                                weekday: 'short',
+                                day: 'numeric',
+                                month: 'short'
+                            });
+                            return `
+                                <tr>
+                                    <td>${formattedDate}</td>
+                                    <td><strong>${b.slot_time}</strong><br><small class="text-muted">${b.session_label}</small></td>
+                                    <td>${b.patient_name}</td>
+                                    <td><a href="tel:${b.patient_phone}">${b.patient_phone}</a></td>
+                                    <td><small>${b.chief_complaint?.substring(0, 50)}${b.chief_complaint?.length > 50 ? '...' : ''}</small></td>
+                                    <td>${statusBadge(b.status)}</td>
+                                    <td class="text-center">
+                                        <button class="btn btn-xs btn-danger" onclick="window.openCancelModal(${b.id})" title="Batalkan">
+                                            <i class="fas fa-times"></i> Batalkan
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        container.innerHTML = tableHtml;
+    }
+
+    // Open cancel modal
+    function openCancelModal(bookingId) {
+        const booking = bookings.find(b => b.id === bookingId);
+        if (!booking) return;
+
+        const date = new Date(booking.appointment_date);
+        const formattedDate = date.toLocaleDateString('id-ID', {
+            weekday: 'long',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        });
+
+        // Create modal if not exists
+        let modal = document.getElementById('cancel-booking-modal');
+        if (!modal) {
+            modal = document.createElement('div');
+            modal.id = 'cancel-booking-modal';
+            modal.className = 'modal fade';
+            modal.tabIndex = -1;
+            document.body.appendChild(modal);
+        }
+
+        modal.innerHTML = `
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title"><i class="fas fa-exclamation-triangle mr-2"></i>Batalkan Booking</h5>
+                        <button type="button" class="close text-white" data-dismiss="modal">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-warning">
+                            <strong>Perhatian!</strong> Anda akan membatalkan booking berikut:
+                        </div>
+                        <table class="table table-sm table-bordered mb-3">
+                            <tr><td width="120"><strong>Pasien</strong></td><td>${booking.patient_name}</td></tr>
+                            <tr><td><strong>Telepon</strong></td><td>${booking.patient_phone}</td></tr>
+                            <tr><td><strong>Tanggal</strong></td><td>${formattedDate}</td></tr>
+                            <tr><td><strong>Waktu</strong></td><td>${booking.slot_time} (${booking.session_label})</td></tr>
+                        </table>
+                        <div class="form-group">
+                            <label for="cancel-reason"><strong>Alasan Pembatalan <span class="text-danger">*</span></strong></label>
+                            <textarea class="form-control" id="cancel-reason" rows="3" placeholder="Contoh: Jadwal dokter berubah, Libur mendadak, dll..." required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input" id="notify-patient" checked>
+                                <label class="custom-control-label" for="notify-patient">
+                                    <i class="fab fa-whatsapp text-success mr-1"></i>
+                                    Kirim notifikasi ke pasien (WhatsApp/Email)
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                        <button type="button" class="btn btn-danger" onclick="window.forceCancelBooking(${booking.id})">
+                            <i class="fas fa-times"></i> Ya, Batalkan Booking
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        $(modal).modal('show');
+    }
+
+    // Force cancel booking
+    async function forceCancelBooking(bookingId) {
+        const reason = document.getElementById('cancel-reason')?.value?.trim();
+        const notifyPatient = document.getElementById('notify-patient')?.checked;
+
+        if (!reason) {
+            showToast('Harap isi alasan pembatalan', 'error');
+            return;
+        }
+
+        if (reason.length < 10) {
+            showToast('Alasan pembatalan minimal 10 karakter', 'error');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE}/force-cancel/${bookingId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${getToken()}`
+                },
+                body: JSON.stringify({
+                    reason: reason,
+                    notify_patient: notifyPatient
+                })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || 'Gagal membatalkan booking');
+            }
+
+            // Close modal
+            $('#cancel-booking-modal').modal('hide');
+
+            showToast(result.message, 'success');
+            loadBookings();
+        } catch (error) {
+            console.error('Error cancelling booking:', error);
+            showToast(error.message || 'Gagal membatalkan booking', 'error');
+        }
+    }
+
     // Export functions to window
     window.initKelolaBookingSettings = initKelolaBookingSettings;
     window.editSession = editSession;
     window.toggleSessionActive = toggleSessionActive;
     window.deleteSession = deleteSession;
+    window.loadBookings = loadBookings;
+    window.openCancelModal = openCancelModal;
+    window.forceCancelBooking = forceCancelBooking;
 
 })();
