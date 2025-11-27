@@ -21,7 +21,7 @@ router.get('/api/roles', verifyToken, requirePermission('roles.view'), asyncHand
         LEFT JOIN role_permissions rp ON r.id = rp.role_id
         LEFT JOIN users u ON r.id = u.role_id
         GROUP BY r.id
-        ORDER BY r.is_system DESC, r.name ASC
+        ORDER BY permission_count DESC, r.name ASC
     `);
 
     sendSuccess(res, roles, 'Roles retrieved successfully');
@@ -90,9 +90,9 @@ router.put('/api/roles/:id', verifyToken, requirePermission('roles.edit'), async
 
     const role = roleRows[0];
 
-    // Don't allow editing system roles
-    if (role.is_system) {
-        throw new AppError('Role sistem tidak dapat diubah', HTTP_STATUS.FORBIDDEN);
+    // Don't allow editing dokter role (superadmin)
+    if (role.name === 'dokter') {
+        throw new AppError('Role dokter (superadmin) tidak dapat diubah', HTTP_STATUS.FORBIDDEN);
     }
 
     await db.query(
@@ -117,9 +117,9 @@ router.delete('/api/roles/:id', verifyToken, requirePermission('roles.delete'), 
 
     const role = roleRows[0];
 
-    // Don't allow deleting system roles
-    if (role.is_system) {
-        throw new AppError('Role sistem tidak dapat dihapus', HTTP_STATUS.FORBIDDEN);
+    // Don't allow deleting dokter role (superadmin)
+    if (role.name === 'dokter') {
+        throw new AppError('Role dokter (superadmin) tidak dapat dihapus', HTTP_STATUS.FORBIDDEN);
     }
 
     // Check if role is assigned to users
@@ -152,9 +152,9 @@ router.put('/api/roles/:id/permissions', verifyToken, requirePermission('roles.e
 
     const role = roleRows[0];
 
-    // Don't allow editing system role permissions (except superadmin can edit admin)
-    if (role.is_system && role.name !== 'admin') {
-        throw new AppError('Permission role sistem tidak dapat diubah', HTTP_STATUS.FORBIDDEN);
+    // Don't allow editing dokter role permissions (superadmin)
+    if (role.name === 'dokter') {
+        throw new AppError('Permission role dokter (superadmin) tidak dapat diubah', HTTP_STATUS.FORBIDDEN);
     }
 
     // Start transaction
