@@ -314,4 +314,103 @@ router.post('/api/ai/interview/process', verifyToken, async (req, res) => {
     }
 });
 
+/**
+ * GET /api/ai/daily-greeting
+ * Generate daily motivational greeting using AI
+ * Cached per user per day (changes at midnight)
+ *
+ * Returns: {
+ *   success: boolean,
+ *   data: {
+ *     greeting: string,
+ *     day: string,
+ *     time: string,
+ *     cachedUntil: string (ISO date)
+ *   }
+ * }
+ */
+router.get('/api/ai/daily-greeting', verifyToken, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const userName = req.user.name || req.user.email;
+        const roleName = req.user.role_display_name || req.user.role || 'Staff';
+
+        // Check cache first (stored in memory with date key)
+        const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+        const cacheKey = `greeting_${userId}_${today}`;
+
+        // Simple in-memory cache (consider Redis for production scaling)
+        if (!global.greetingCache) {
+            global.greetingCache = new Map();
+        }
+
+        // Clean old cache entries (older than today)
+        for (const [key, value] of global.greetingCache.entries()) {
+            if (!key.includes(today)) {
+                global.greetingCache.delete(key);
+            }
+        }
+
+        // Return cached greeting if exists
+        if (global.greetingCache.has(cacheKey)) {
+            const cached = global.greetingCache.get(cacheKey);
+            return res.json({
+                success: true,
+                data: {
+                    ...cached,
+                    cached: true
+                }
+            });
+        }
+
+        // Generate new greeting
+        const result = await aiService.generateDailyGreeting({
+            userId,
+            userName,
+            roleName
+        });
+
+        if (result.success) {
+            // Calculate midnight for cache expiry
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(0, 0, 0, 0);
+
+            const greetingData = {
+                greeting: result.data.greeting,
+                day: result.data.day,
+                time: result.data.time,
+                isWeekend: result.data.isWeekend,
+                cachedUntil: tomorrow.toISOString(),
+                generatedAt: new Date().toISOString()
+            };
+
+            // Cache for today
+            global.greetingCache.set(cacheKey, greetingData);
+
+            return res.json({
+                success: true,
+                data: {
+                    ...greetingData,
+                    cached: false
+                },
+                tokensUsed: result.tokensUsed
+            });
+        }
+
+        res.json(result);
+
+    } catch (error) {
+        console.error('AI Daily Greeting API Error:', error);
+        // Return fallback greeting on error
+        res.json({
+            success: true,
+            data: {
+                greeting: 'Selamat bekerja, semoga harimu menyenangkan!',
+                fallback: true
+            }
+        });
+    }
+});
+
 module.exports = router;
