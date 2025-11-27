@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../db');
 const { createSundayClinicRecord } = require('../services/sundayClinicService');
 const { getGMT7Date, getGMT7Timestamp } = require('../utils/idGenerator');
+const { createPatientNotification } = require('./patient-notifications');
 
 // Middleware to verify JWT token
 const verifyToken = (req, res, next) => {
@@ -761,6 +762,21 @@ router.put('/:id/status', verifyToken, async (req, res) => {
         const cancelledByValue = status === 'cancelled' ? 'staff' : null;
         const cancelledAtClause = status === 'cancelled' ? 'NOW()' : 'NULL';
 
+        // Get appointment details first for notification
+        const [appointments] = await db.query(
+            `SELECT sa.*, bs.session_name, bs.start_time
+             FROM sunday_appointments sa
+             LEFT JOIN booking_settings bs ON sa.session = bs.session_number
+             WHERE sa.id = ?`,
+            [id]
+        );
+
+        if (appointments.length === 0) {
+            return res.status(404).json({ message: 'Appointment tidak ditemukan' });
+        }
+
+        const appointment = appointments[0];
+
         await db.query(
             `UPDATE sunday_appointments
              SET status = ?,
@@ -772,9 +788,65 @@ router.put('/:id/status', verifyToken, async (req, res) => {
              WHERE id = ?`,
             [status, trimmedNotes, cancellationReasonToSave, cancelledByValue, id]
         );
-        
+
+        // Create patient notification based on status change
+        try {
+            const appointmentDate = new Date(appointment.appointment_date);
+            const formattedDate = appointmentDate.toLocaleDateString('id-ID', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+
+            // Calculate slot time
+            const startTime = appointment.start_time ? appointment.start_time.substring(0, 5) : '09:00';
+            const [hours, mins] = startTime.split(':').map(Number);
+            const totalMinutes = (hours * 60 + mins) + (appointment.slot_number - 1) * 15;
+            const slotHour = Math.floor(totalMinutes / 60);
+            const slotMinute = totalMinutes % 60;
+            const slotTime = `${String(slotHour).padStart(2, '0')}:${String(slotMinute).padStart(2, '0')}`;
+
+            const statusMessages = {
+                'confirmed': {
+                    title: 'Janji Temu Dikonfirmasi',
+                    message: `Janji temu Anda pada ${formattedDate} pukul ${slotTime} telah dikonfirmasi. Sampai jumpa di klinik!`,
+                    icon: 'fa fa-check-circle',
+                    icon_color: 'text-success'
+                },
+                'cancelled': {
+                    title: 'Janji Temu Dibatalkan',
+                    message: `Janji temu Anda pada ${formattedDate} pukul ${slotTime} telah dibatalkan.${cancellationReasonToSave ? ' Alasan: ' + cancellationReasonToSave : ''}`,
+                    icon: 'fa fa-times-circle',
+                    icon_color: 'text-danger'
+                },
+                'completed': {
+                    title: 'Kunjungan Selesai',
+                    message: `Terima kasih telah berkunjung pada ${formattedDate}. Semoga lekas sembuh!`,
+                    icon: 'fa fa-heart',
+                    icon_color: 'text-info'
+                },
+                'no_show': {
+                    title: 'Tidak Hadir',
+                    message: `Anda tidak hadir pada janji temu ${formattedDate} pukul ${slotTime}. Silakan booking ulang jika masih membutuhkan konsultasi.`,
+                    icon: 'fa fa-user-times',
+                    icon_color: 'text-warning'
+                }
+            };
+
+            if (statusMessages[status] && appointment.patient_id) {
+                await createPatientNotification({
+                    patient_id: appointment.patient_id,
+                    type: 'appointment',
+                    ...statusMessages[status]
+                });
+            }
+        } catch (notifError) {
+            console.error('Failed to create patient notification:', notifError);
+        }
+
         res.json({ message: 'Status berhasil diupdate' });
-        
+
     } catch (error) {
         console.error('Error updating appointment status:', error);
         res.status(500).json({ message: 'Terjadi kesalahan' });

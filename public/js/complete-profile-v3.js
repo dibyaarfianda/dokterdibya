@@ -1,7 +1,7 @@
-// Complete Profile Form Handler v4.0 - New Registration Flow
+// Complete Profile Form Handler v4.1 - New Registration Flow with Registration Code
 
 // Wait for DOM to be ready
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     // Check if we're coming from email verification
     const verifiedToken = sessionStorage.getItem('verified_token');
     const email = sessionStorage.getItem('registration_email');
@@ -9,6 +9,27 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!verifiedToken || !email) {
         window.location.href = '/register.html';
         return;
+    }
+
+    // Check if registration code is required
+    let registrationCodeRequired = false;
+    try {
+        const response = await fetch('/api/registration-codes/settings');
+        const data = await response.json();
+        registrationCodeRequired = data.registration_code_required === true;
+    } catch (error) {
+        console.log('Could not check registration code settings, assuming required');
+        registrationCodeRequired = true;
+    }
+
+    // Show registration code field if required
+    const regCodeGroup = document.getElementById('registration-code-group');
+    const regCodeInput = document.getElementById('registration_code');
+    if (registrationCodeRequired && regCodeGroup) {
+        regCodeGroup.style.display = 'block';
+        if (regCodeInput) {
+            regCodeInput.required = true;
+        }
     }
 
     // Phone number auto-formatting (08 → 628, +628 → 628, 8 → 628)
@@ -73,15 +94,28 @@ document.addEventListener('DOMContentLoaded', function() {
         const phoneInput = document.getElementById('phone');
         const birthdateInput = document.getElementById('birthdate');
         const ageInput = document.getElementById('age');
+        const regCodeInput = document.getElementById('registration_code');
 
         const fullname = fullnameInput ? fullnameInput.value.trim() : '';
         const phone = phoneInput ? phoneInput.value.trim() : '';
         const birthdate = birthdateInput ? birthdateInput.value : '';
         const age = ageInput ? ageInput.value : '';
+        const registrationCode = regCodeInput ? regCodeInput.value.trim().toUpperCase() : '';
 
         // Validation
         if (!fullname || !phone || !birthdate) {
             showError('Semua field yang bertanda (*) harus diisi!');
+            return;
+        }
+
+        // Validate registration code if required
+        if (registrationCodeRequired && !registrationCode) {
+            showError('Kode registrasi harus diisi. Hubungi klinik untuk mendapatkan kode.');
+            return;
+        }
+
+        if (registrationCodeRequired && registrationCode.length !== 6) {
+            showError('Kode registrasi harus 6 karakter.');
             return;
         }
 
@@ -106,7 +140,8 @@ document.addEventListener('DOMContentLoaded', function() {
             phone,
             birth_date: birthdate,
             age: age ? parseInt(age) : null,
-            email: email
+            email: email,
+            registration_code: registrationCode || null
         };
 
         sessionStorage.setItem('profile_data', JSON.stringify(profileData));

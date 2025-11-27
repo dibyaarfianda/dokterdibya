@@ -69,6 +69,15 @@ class NotificationService {
             );
         }
 
+        // Fonnte WhatsApp API configuration
+        this.fonnteEnabled = process.env.FONNTE_ENABLED === 'true';
+        this.fonnteToken = process.env.FONNTE_TOKEN || '';
+        this.fonnteApiUrl = process.env.FONNTE_API_URL || 'https://api.fonnte.com/send';
+
+        if (this.fonnteEnabled && this.fonnteToken) {
+            logger.info('Fonnte WhatsApp API configured');
+        }
+
         // Simple in-memory cache for templates
         this.templateCache = new Map();
         this.senderCache = { value: null, expiresAt: 0 };
@@ -401,6 +410,122 @@ class NotificationService {
         }
     }
 
+    /**
+     * Send WhatsApp message via Fonnte API
+     */
+    async sendFonnte(to, message, options = {}) {
+        if (!this.fonnteEnabled) {
+            logger.warn('Fonnte WhatsApp notifications disabled');
+            return { success: false, message: 'Fonnte disabled' };
+        }
+
+        if (!this.fonnteToken) {
+            logger.error('Fonnte token not configured');
+            return { success: false, message: 'Fonnte token not configured' };
+        }
+
+        try {
+            // Normalize phone number (ensure starts with 62, no +)
+            let formattedTo = to.replace(/[^0-9]/g, '');
+            if (formattedTo.startsWith('0')) {
+                formattedTo = '62' + formattedTo.substring(1);
+            } else if (!formattedTo.startsWith('62')) {
+                formattedTo = '62' + formattedTo;
+            }
+
+            const payload = {
+                target: formattedTo,
+                message: message,
+                countryCode: '62'
+            };
+
+            // Add optional image/file if provided
+            if (options.imageUrl) {
+                payload.url = options.imageUrl;
+            }
+            if (options.filename) {
+                payload.filename = options.filename;
+            }
+
+            const response = await fetch(this.fonnteApiUrl, {
+                method: 'POST',
+                headers: {
+                    'Authorization': this.fonnteToken,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+
+            if (result.status === true || result.status === 'true') {
+                logger.info('Fonnte WhatsApp sent successfully', {
+                    to: formattedTo,
+                    id: result.id,
+                    detail: result.detail
+                });
+                return {
+                    success: true,
+                    id: result.id,
+                    detail: result.detail,
+                    method: 'fonnte'
+                };
+            } else {
+                logger.error('Fonnte WhatsApp send failed', {
+                    to: formattedTo,
+                    error: result.reason || result.detail || 'Unknown error'
+                });
+                return {
+                    success: false,
+                    error: result.reason || result.detail || 'Failed to send'
+                };
+            }
+        } catch (error) {
+            logger.error('Failed to send Fonnte WhatsApp', { to, error: error.message });
+            return { success: false, error: error.message };
+        }
+    }
+
+    /**
+     * Send WhatsApp message - tries Fonnte first, then Twilio, then manual link
+     */
+    async sendWhatsAppAuto(to, message, options = {}) {
+        // Try Fonnte first
+        if (this.fonnteEnabled && this.fonnteToken) {
+            const fonnteResult = await this.sendFonnte(to, message, options);
+            if (fonnteResult.success) {
+                return fonnteResult;
+            }
+            logger.warn('Fonnte failed, trying fallback', { error: fonnteResult.error });
+        }
+
+        // Try Twilio if configured
+        if (this.whatsappEnabled && this.twilioClient) {
+            const twilioResult = await this.sendWhatsApp(to, message);
+            if (twilioResult.success) {
+                return { ...twilioResult, method: 'twilio' };
+            }
+            logger.warn('Twilio failed, returning manual link', { error: twilioResult.error });
+        }
+
+        // Return manual wa.me link as last resort
+        let formattedTo = to.replace(/[^0-9]/g, '');
+        if (formattedTo.startsWith('0')) {
+            formattedTo = '62' + formattedTo.substring(1);
+        } else if (!formattedTo.startsWith('62')) {
+            formattedTo = '62' + formattedTo;
+        }
+
+        const encodedMessage = encodeURIComponent(message);
+        const waLink = `https://wa.me/${formattedTo}?text=${encodedMessage}`;
+
+        return {
+            success: true,
+            method: 'manual',
+            waLink
+        };
+    }
+
     async testEmail(to) {
         const clinicName = process.env.CLINIC_NAME || 'Klinik Dr. Dibya';
         const subject = `Test Email - ${clinicName}`;
@@ -411,6 +536,10 @@ class NotificationService {
 
     async testWhatsApp(phone) {
         return this.sendWhatsApp(phone, 'Ini adalah pesan percobaan untuk memastikan konfigurasi WhatsApp berjalan.');
+    }
+
+    async testFonnte(phone) {
+        return this.sendFonnte(phone, 'Ini adalah pesan percobaan dari Fonnte untuk memastikan konfigurasi WhatsApp berjalan.');
     }
 
     async sendAppointmentReminder(appointment = {}) {

@@ -21,6 +21,7 @@ const logger = require('../utils/logger');
 const { verifyToken, verifyPatientToken } = require('../middleware/auth');
 const r2Storage = require('../services/r2Storage');
 const whatsappService = require('../services/whatsappService');
+const { createPatientNotification } = require('./patient-notifications');
 
 // =====================================================
 // MULTER CONFIGURATION
@@ -236,8 +237,50 @@ router.post('/publish', verifyToken, async (req, res) => {
             publishedBy
         });
 
-        // TODO: Send notifications (WhatsApp, Email) if requested
-        // This will be implemented in a separate service
+        // Create patient notifications for each unique patient
+        const patientDocs = {};
+        for (const doc of documents) {
+            if (!patientDocs[doc.patient_id]) {
+                patientDocs[doc.patient_id] = [];
+            }
+            patientDocs[doc.patient_id].push(doc);
+        }
+
+        for (const [patientId, docs] of Object.entries(patientDocs)) {
+            for (const doc of docs) {
+                let notifTitle = 'Dokumen Baru';
+                let notifMessage = `Dokter telah mengirimkan dokumen: ${doc.title}`;
+                let notifIcon = 'fa fa-file-text';
+                let notifIconColor = 'text-info';
+
+                if (doc.document_type === 'resume_medis') {
+                    notifTitle = 'Resume Medis Baru';
+                    notifMessage = `Resume medis Anda telah tersedia.`;
+                    notifIcon = 'fa fa-file-medical-alt';
+                    notifIconColor = 'text-success';
+                } else if (doc.document_type === 'usg_photo') {
+                    notifTitle = 'Foto USG Baru';
+                    notifMessage = `Foto USG Anda telah tersedia.`;
+                    notifIcon = 'fa fa-image';
+                    notifIconColor = 'text-primary';
+                } else if (doc.document_type === 'lab_result') {
+                    notifTitle = 'Hasil Lab Baru';
+                    notifMessage = `Hasil laboratorium Anda telah tersedia.`;
+                    notifIcon = 'fa fa-flask';
+                    notifIconColor = 'text-warning';
+                }
+
+                await createPatientNotification({
+                    patient_id: patientId,
+                    type: 'document',
+                    title: notifTitle,
+                    message: notifMessage,
+                    link: `/patient-dashboard.html#documents`,
+                    icon: notifIcon,
+                    icon_color: notifIconColor
+                });
+            }
+        }
 
         res.json({
             success: true,
@@ -274,6 +317,32 @@ router.post('/publish-from-mr', verifyToken, async (req, res) => {
         for (const doc of documents) {
             // For resume_medis, we store the text content as source_data
             // For files (usg_photo, lab_result), we expect file_path/file_url
+
+            // Check for duplicate - same patient, mr_id, and document_type
+            if (mrId) {
+                const [existing] = await db.query(`
+                    SELECT id FROM patient_documents
+                    WHERE patient_id = ? AND mr_id = ? AND document_type = ? AND status = 'published'
+                `, [patientId, mrId, doc.type]);
+
+                if (existing.length > 0) {
+                    logger.info('Duplicate document skipped', {
+                        patientId,
+                        mrId,
+                        documentType: doc.type,
+                        existingId: existing[0].id
+                    });
+                    // Return existing document instead of creating duplicate
+                    createdDocuments.push({
+                        id: existing[0].id,
+                        type: doc.type,
+                        title: doc.title,
+                        status: 'already_published',
+                        message: 'Dokumen ini sudah pernah dikirim sebelumnya'
+                    });
+                    continue;
+                }
+            }
 
             const [insertResult] = await db.query(`
                 INSERT INTO patient_documents (
@@ -314,6 +383,57 @@ router.post('/publish-from-mr', verifyToken, async (req, res) => {
             documentCount: createdDocuments.length,
             publishedBy
         });
+
+        // Create patient notifications for newly published documents
+        const newlyPublished = createdDocuments.filter(d => d.status === 'published');
+        if (newlyPublished.length > 0) {
+            // Get patient name for notification
+            const [patientInfo] = await db.query(
+                'SELECT full_name FROM patients WHERE id = ?',
+                [patientId]
+            );
+            const patientName = patientInfo[0]?.full_name || 'Pasien';
+
+            for (const doc of newlyPublished) {
+                let notifTitle = 'Dokumen Baru';
+                let notifMessage = `Dokter telah mengirimkan dokumen: ${doc.title}`;
+                let notifIcon = 'fa fa-file-text';
+                let notifIconColor = 'text-info';
+
+                // Customize notification based on document type
+                if (doc.type === 'resume_medis') {
+                    notifTitle = 'Resume Medis Baru';
+                    notifMessage = `Resume medis Anda telah tersedia. Klik untuk melihat.`;
+                    notifIcon = 'fa fa-file-medical-alt';
+                    notifIconColor = 'text-success';
+                } else if (doc.type === 'usg_photo') {
+                    notifTitle = 'Foto USG Baru';
+                    notifMessage = `Foto USG Anda telah tersedia. Klik untuk melihat.`;
+                    notifIcon = 'fa fa-image';
+                    notifIconColor = 'text-primary';
+                } else if (doc.type === 'lab_result') {
+                    notifTitle = 'Hasil Lab Baru';
+                    notifMessage = `Hasil laboratorium Anda telah tersedia. Klik untuk melihat.`;
+                    notifIcon = 'fa fa-flask';
+                    notifIconColor = 'text-warning';
+                }
+
+                await createPatientNotification({
+                    patient_id: patientId,
+                    type: 'document',
+                    title: notifTitle,
+                    message: notifMessage,
+                    link: `/patient-dashboard.html#documents`,
+                    icon: notifIcon,
+                    icon_color: notifIconColor
+                });
+            }
+
+            logger.info('Patient notifications created for documents', {
+                patientId,
+                documentCount: newlyPublished.length
+            });
+        }
 
         res.json({
             success: true,
@@ -424,24 +544,37 @@ router.delete('/:id', verifyToken, async (req, res) => {
 /**
  * GET /api/patient-documents/my-documents
  * Get documents for authenticated patient
+ * Query params: type (optional) - filter by document_type
  */
 router.get('/my-documents', verifyPatientToken, async (req, res) => {
     try {
         const patientId = req.patient?.patientId || req.patient?.id;
+        const { type } = req.query;
 
         if (!patientId) {
             return res.status(401).json({ success: false, message: 'Patient not authenticated' });
         }
 
-        const [documents] = await db.query(`
+        let query = `
             SELECT
                 id, document_type, title, description,
                 file_url, file_name, file_type, file_size,
-                published_at, first_viewed_at, view_count, download_count
+                published_at, first_viewed_at, view_count, download_count,
+                created_at
             FROM patient_documents
             WHERE patient_id = ? AND status = 'published'
-            ORDER BY published_at DESC
-        `, [patientId]);
+        `;
+        const params = [patientId];
+
+        // Filter by type if provided
+        if (type) {
+            query += ' AND document_type = ?';
+            params.push(type);
+        }
+
+        query += ' ORDER BY published_at DESC';
+
+        const [documents] = await db.query(query, params);
 
         res.json({
             success: true,
@@ -450,6 +583,61 @@ router.get('/my-documents', verifyPatientToken, async (req, res) => {
 
     } catch (error) {
         logger.error('Get my documents error', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+/**
+ * GET /api/patient-documents/:id/content
+ * Get document content (for resume_medis without file)
+ */
+router.get('/:id/content', verifyPatientToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const patientId = req.patient?.patientId || req.patient?.id;
+
+        if (!patientId) {
+            return res.status(401).json({ success: false, message: 'Patient not authenticated' });
+        }
+
+        const [documents] = await db.query(`
+            SELECT id, document_type, title, description, source_data, file_url, file_name
+            FROM patient_documents
+            WHERE id = ? AND patient_id = ? AND status = 'published'
+        `, [id, patientId]);
+
+        if (documents.length === 0) {
+            return res.status(404).json({ success: false, message: 'Document not found' });
+        }
+
+        const doc = documents[0];
+
+        // Parse source_data if exists
+        let content = null;
+        if (doc.source_data) {
+            try {
+                const sourceData = JSON.parse(doc.source_data);
+                content = sourceData.content || null;
+            } catch (e) {
+                content = doc.source_data;
+            }
+        }
+
+        res.json({
+            success: true,
+            document: {
+                id: doc.id,
+                title: doc.title,
+                description: doc.description,
+                documentType: doc.document_type,
+                content: content,
+                fileUrl: doc.file_url,
+                fileName: doc.file_name
+            }
+        });
+
+    } catch (error) {
+        logger.error('Get document content error', error);
         res.status(500).json({ success: false, message: error.message });
     }
 });

@@ -732,6 +732,86 @@
             margin-right: 5px;
         }
 
+        /* Notification Bell Styles */
+        .notification-bell {
+            position: relative;
+            cursor: pointer;
+            padding: 10px 15px;
+            margin-right: 10px;
+            transition: transform 0.3s ease;
+        }
+        .notification-bell:hover {
+            transform: scale(1.1);
+        }
+        .notification-bell i {
+            font-size: 22px;
+            color: #cccccc;
+            transition: color 0.3s;
+        }
+        .notification-bell:hover i {
+            color: #28a7e9;
+        }
+        .notification-badge {
+            position: absolute;
+            top: 5px;
+            right: 8px;
+            background: #dc3545;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            min-width: 18px;
+            height: 18px;
+            line-height: 18px;
+            text-align: center;
+            border-radius: 50%;
+            padding: 0 4px;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        /* Notification Inbox Modal Styles */
+        .notification-item {
+            padding: 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            transition: background 0.2s;
+            cursor: pointer;
+        }
+        .notification-item:hover {
+            background: rgba(255,255,255,0.05);
+        }
+        .notification-item.unread {
+            background: rgba(40,167,233,0.1);
+            border-left: 3px solid #28a7e9;
+        }
+        .notification-item .notif-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.1);
+            flex-shrink: 0;
+        }
+        .notification-item .notif-time {
+            font-size: 11px;
+            color: #888;
+        }
+        .notification-item .notif-title {
+            font-weight: 600;
+            font-size: 14px;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+        .notification-item .notif-message {
+            font-size: 13px;
+            color: #aaa;
+            margin-bottom: 0;
+        }
+
         .user-avatar-nav {
             position: relative;
             display: flex;
@@ -987,6 +1067,11 @@
                     <p class="welcome-subtitle">Portal privat milik Anda</p>
                 </div>
             </div>
+            <!-- Notification Bell -->
+            <div class="notification-bell" id="notification-bell" onclick="openNotificationsInbox()" title="Notifikasi">
+                <i class="fa fa-bell"></i>
+                <span class="notification-badge" id="notification-badge" style="display: none;">0</span>
+            </div>
       <div class="user-avatar-nav" onclick="toggleDropdown(event)" style="
     padding-left: `00;
     padding-left: 300px;
@@ -1094,18 +1179,16 @@
                     </div>
                 </div>
 
-                <!-- Galeri USG -->
+                <!-- Galeri USG dari Dokter -->
                 <div class="dashboard-card" style="margin-bottom: 20px;">
-                    <h3><i class="fa fa-picture-o"></i> Galeri USG</h3>
+                    <h3><i class="fa fa-picture-o"></i> Foto USG</h3>
+                    <p class="text-muted" style="font-size: 12px; margin-bottom: 10px;">Foto USG yang dikirim oleh dokter Anda</p>
                     <div id="ultrasound-gallery-mini">
                         <p class="empty-state">
                             <i class="fa fa-image"></i>
-                            Belum ada foto USG
+                            Belum ada foto USG dari dokter
                         </p>
                     </div>
-                    <button class="action-btn" onclick="openUploadUltrasoundModal()" style="margin-top: 15px;">
-                        <i class="fa fa-upload"></i> Upload Foto USG
-                    </button>
                 </div>
 
                 <!-- Dokumen Medis Saya -->
@@ -2510,7 +2593,7 @@
                 const emptyState = `
                     <p class="empty-state">
                         <i class="fa fa-image"></i>
-                        Belum ada foto USG
+                        Belum ada foto USG dari dokter
                     </p>
                 `;
                 if (gallery) gallery.innerHTML = emptyState;
@@ -2526,16 +2609,15 @@
                     day: 'numeric'
                 });
 
+                const safeNotes = (img.notes || img.title || '').replace(/'/g, "\\'");
+
                 return `
-                    <div class="ultrasound-item" onclick="viewUltrasoundImage('${img.url}', '${formattedDate}', '${img.notes || ''}')">
+                    <div class="ultrasound-item" onclick="viewUltrasoundImage('${img.url}', '${formattedDate}', '${safeNotes}')" style="cursor: pointer;">
                         <img src="${img.url}" alt="USG ${formattedDate}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27200%27 height=%27200%27%3E%3Crect width=%27200%27 height=%27200%27 fill=%27%23404040%27/%3E%3Ctext x=%2750%25%27 y=%2750%25%27 font-size=%2720%27 fill=%27%2328a7e9%27 text-anchor=%27middle%27 dy=%27.3em%27%3EGambar Error%3C/text%3E%3C/svg%3E'">
                         <div class="overlay">
                             ${formattedDate}
-                            ${img.notes ? '<br>' + img.notes : ''}
+                            ${img.title ? '<br>' + img.title : ''}
                         </div>
-                        <button class="delete-btn" onclick="deleteUltrasound(event, ${img.id})">
-                            <i class="fa fa-trash"></i>
-                        </button>
                     </div>
                 `;
             }).join('');
@@ -2594,12 +2676,31 @@
             document.getElementById('ultrasound-error').style.display = 'none';
         }
 
-        // Load ultrasound images from localStorage
-        function loadUltrasoundImages() {
-            const stored = localStorage.getItem('ultrasound_images');
-            if (stored) {
-                ultrasoundImages = JSON.parse(stored);
-                renderUltrasoundGallery();
+        // Load ultrasound images from patient documents API (sent by staff)
+        async function loadUltrasoundImages() {
+            try {
+                const token = localStorage.getItem('patient_token');
+                if (!token) return;
+
+                const response = await fetch('/api/patient-documents/my-documents?type=usg_photo', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success && result.documents) {
+                        ultrasoundImages = result.documents.map(doc => ({
+                            id: doc.id,
+                            url: doc.file_url,
+                            date: doc.published_at || doc.created_at,
+                            notes: doc.description || doc.title,
+                            title: doc.title
+                        }));
+                        renderUltrasoundGallery();
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load USG images:', error);
             }
         }
 
@@ -2978,9 +3079,68 @@
             if (fileUrl) {
                 window.open(fileUrl, '_blank');
             } else if (docType === 'resume_medis') {
-                // For resume medis without file, show content in modal
-                showToast('Membuka resume medis...');
-                // TODO: Implement resume viewer modal
+                // For resume medis without file, fetch and show content in modal
+                openResumeModal(docId);
+            }
+        }
+
+        /**
+         * Open resume viewer modal and fetch content
+         */
+        async function openResumeModal(docId) {
+            const modal = $('#resumeViewerModal');
+            const loadingEl = document.getElementById('resume-loading');
+            const contentEl = document.getElementById('resume-content');
+            const errorEl = document.getElementById('resume-error');
+            const textEl = document.getElementById('resume-text');
+            const titleEl = document.getElementById('resume-modal-title');
+
+            // Reset modal state
+            loadingEl.style.display = 'block';
+            contentEl.style.display = 'none';
+            errorEl.style.display = 'none';
+            titleEl.textContent = 'Resume Medis';
+
+            // Show modal
+            modal.modal('show');
+
+            try {
+                const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+                const response = await fetch(`/api/patient-documents/${docId}/content`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Gagal memuat dokumen');
+                }
+
+                if (data.success && data.document) {
+                    titleEl.textContent = data.document.title || 'Resume Medis';
+
+                    if (data.document.content) {
+                        textEl.textContent = data.document.content;
+                        loadingEl.style.display = 'none';
+                        contentEl.style.display = 'block';
+                    } else if (data.document.fileUrl) {
+                        // If there's a file URL after all, open it
+                        modal.modal('hide');
+                        window.open(data.document.fileUrl, '_blank');
+                    } else {
+                        throw new Error('Konten resume tidak tersedia');
+                    }
+                } else {
+                    throw new Error(data.message || 'Gagal memuat dokumen');
+                }
+            } catch (error) {
+                console.error('Error loading resume:', error);
+                loadingEl.style.display = 'none';
+                errorEl.style.display = 'block';
+                document.getElementById('resume-error-text').textContent = error.message || 'Gagal memuat resume medis';
             }
         }
 
@@ -3038,6 +3198,282 @@
         }
 
         createBubbles();
+    </script>
+
+    <!-- Resume Viewer Modal -->
+    <div class="modal fade" id="resumeViewerModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); color: #ffffff; border: 1px solid rgba(255,255,255,0.2);">
+                <div class="modal-header" style="border-bottom: 1px solid #404040;">
+                    <button type="button" class="close" data-dismiss="modal" style="color: #ffffff; opacity: 0.8;">&times;</button>
+                    <h4 class="modal-title" style="color: #28a7e9;"><i class="fa fa-file-text-o"></i> <span id="resume-modal-title">Resume Medis</span></h4>
+                </div>
+                <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                    <div id="resume-loading" style="text-align: center; padding: 40px;">
+                        <i class="fa fa-spinner fa-spin fa-3x" style="color: #28a7e9;"></i>
+                        <p style="margin-top: 15px; color: #888;">Memuat resume medis...</p>
+                    </div>
+                    <div id="resume-content" style="display: none;">
+                        <div id="resume-text" style="
+                            background: rgba(0,0,0,0.3);
+                            padding: 20px;
+                            border-radius: 10px;
+                            white-space: pre-wrap;
+                            font-family: 'Segoe UI', sans-serif;
+                            line-height: 1.6;
+                            font-size: 14px;
+                        "></div>
+                    </div>
+                    <div id="resume-error" style="display: none; text-align: center; padding: 40px;">
+                        <i class="fa fa-exclamation-triangle fa-3x" style="color: #f39c12;"></i>
+                        <p style="margin-top: 15px; color: #888;" id="resume-error-text">Gagal memuat resume medis</p>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #404040;">
+                    <button type="button" class="btn btn-default" data-dismiss="modal"
+                            style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Inbox Modal -->
+    <div class="modal fade" id="notificationsModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); color: #ffffff; border: 1px solid rgba(255,255,255,0.2);">
+                <div class="modal-header" style="border-bottom: 1px solid #404040;">
+                    <button type="button" class="close" data-dismiss="modal" style="color: #ffffff; opacity: 0.8;">&times;</button>
+                    <h4 class="modal-title" style="color: #28a7e9;">
+                        <i class="fa fa-bell"></i> Notifikasi & Pengumuman
+                        <span id="modal-unread-badge" class="badge badge-danger ml-2" style="display: none;">0</span>
+                    </h4>
+                </div>
+                <div class="modal-body" style="max-height: 70vh; overflow-y: auto; padding: 0;">
+                    <div id="notifications-loading" style="text-align: center; padding: 40px;">
+                        <i class="fa fa-spinner fa-spin fa-3x" style="color: #28a7e9;"></i>
+                        <p style="margin-top: 15px; color: #888;">Memuat notifikasi...</p>
+                    </div>
+                    <div id="notifications-list" style="display: none;"></div>
+                    <div id="notifications-empty" style="display: none; text-align: center; padding: 40px;">
+                        <i class="fa fa-inbox fa-3x" style="color: #666;"></i>
+                        <p style="margin-top: 15px; color: #888;">Tidak ada notifikasi</p>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #404040; justify-content: space-between;">
+                    <button type="button" class="btn btn-sm" onclick="markAllNotificationsRead()" style="background: transparent; border: 1px solid rgba(255,255,255,0.2); color: #28a7e9;">
+                        <i class="fa fa-check-double"></i> Tandai Semua Dibaca
+                    </button>
+                    <button type="button" class="btn btn-default" data-dismiss="modal"
+                            style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient Notifications Script -->
+    <script>
+        // Notification variables
+        let patientNotifications = [];
+        const NOTIF_API = '/api/patient-notifications';
+
+        // Initialize notifications on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            updateNotificationBadge();
+            // Poll for notifications every 60 seconds
+            setInterval(updateNotificationBadge, 60000);
+        });
+
+        // Update notification badge count
+        async function updateNotificationBadge() {
+            try {
+                const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+                if (!token) return;
+
+                const response = await fetch(NOTIF_API + '/count', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (!response.ok) return;
+
+                const data = await response.json();
+                const badge = document.getElementById('notification-badge');
+                const modalBadge = document.getElementById('modal-unread-badge');
+
+                if (badge) {
+                    if (data.count > 0) {
+                        badge.textContent = data.count > 99 ? '99+' : data.count;
+                        badge.style.display = 'inline-block';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+
+                if (modalBadge) {
+                    if (data.count > 0) {
+                        modalBadge.textContent = data.count + ' baru';
+                        modalBadge.style.display = 'inline-block';
+                    } else {
+                        modalBadge.style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                console.error('Error updating notification badge:', error);
+            }
+        }
+
+        // Open notifications inbox modal
+        function openNotificationsInbox() {
+            $('#notificationsModal').modal('show');
+            loadNotifications();
+        }
+
+        // Load notifications
+        async function loadNotifications() {
+            const loadingEl = document.getElementById('notifications-loading');
+            const listEl = document.getElementById('notifications-list');
+            const emptyEl = document.getElementById('notifications-empty');
+
+            loadingEl.style.display = 'block';
+            listEl.style.display = 'none';
+            emptyEl.style.display = 'none';
+
+            try {
+                const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+                const response = await fetch(NOTIF_API + '/with-announcements?limit=30', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (!response.ok) throw new Error('Failed to load notifications');
+
+                const data = await response.json();
+                patientNotifications = data.items || [];
+
+                loadingEl.style.display = 'none';
+
+                if (patientNotifications.length === 0) {
+                    emptyEl.style.display = 'block';
+                    return;
+                }
+
+                renderNotifications();
+                listEl.style.display = 'block';
+            } catch (error) {
+                console.error('Error loading notifications:', error);
+                loadingEl.innerHTML = '<p style="color: #dc3545; padding: 20px;">Gagal memuat notifikasi</p>';
+            }
+        }
+
+        // Render notifications list
+        function renderNotifications() {
+            const listEl = document.getElementById('notifications-list');
+
+            const html = patientNotifications.map(n => {
+                const timeAgo = formatNotifTimeAgo(n.created_at);
+                const isUnread = !n.is_read;
+                const iconClass = n.icon || 'fa fa-bell';
+                const iconColor = n.icon_color || 'text-primary';
+
+                // Type-specific styling
+                let typeBadge = '';
+                if (n.type === 'appointment') {
+                    typeBadge = '<span class="badge badge-success" style="font-size: 10px;"><i class="fa fa-calendar-check"></i> Appointment</span>';
+                } else if (n.type === 'document') {
+                    typeBadge = '<span class="badge badge-info" style="font-size: 10px;"><i class="fa fa-file"></i> Dokumen</span>';
+                } else if (n.source === 'announcement') {
+                    typeBadge = '<span class="badge badge-warning" style="font-size: 10px;"><i class="fa fa-bullhorn"></i> Pengumuman</span>';
+                }
+
+                return '<div class="notification-item ' + (isUnread ? 'unread' : '') + '" data-id="' + n.id + '" data-source="' + n.source + '" onclick="handleNotifClick(' + n.id + ', \'' + n.source + '\')">' +
+                    '<div style="display: flex; align-items: flex-start; gap: 12px;">' +
+                        '<div class="notif-icon ' + iconColor + '">' +
+                            '<i class="' + iconClass + '"></i>' +
+                        '</div>' +
+                        '<div style="flex: 1; min-width: 0;">' +
+                            '<div style="display: flex; justify-content: space-between; align-items: flex-start;">' +
+                                '<div class="notif-title">' + escapeHtml(n.title) + '</div>' +
+                                '<span class="notif-time">' + timeAgo + '</span>' +
+                            '</div>' +
+                            '<p class="notif-message">' + escapeHtml(truncateText(n.message, 120)) + '</p>' +
+                            '<div style="margin-top: 5px;">' + typeBadge + (isUnread ? ' <span class="badge badge-primary" style="font-size: 10px;">Baru</span>' : '') + '</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</div>';
+            }).join('');
+
+            listEl.innerHTML = html;
+        }
+
+        // Handle notification click
+        async function handleNotifClick(id, source) {
+            if (source === 'notification') {
+                try {
+                    const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+                    await fetch(NOTIF_API + '/' + id + '/read', {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    });
+
+                    // Update UI
+                    const item = document.querySelector('.notification-item[data-id="' + id + '"][data-source="notification"]');
+                    if (item) {
+                        item.classList.remove('unread');
+                        const newBadge = item.querySelector('.badge-primary');
+                        if (newBadge) newBadge.remove();
+                    }
+                    updateNotificationBadge();
+                } catch (error) {
+                    console.error('Error marking notification as read:', error);
+                }
+            }
+        }
+
+        // Mark all notifications as read
+        async function markAllNotificationsRead() {
+            try {
+                const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+                const response = await fetch(NOTIF_API + '/read-all', {
+                    method: 'POST',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (!response.ok) throw new Error('Failed');
+
+                // Update UI
+                document.querySelectorAll('.notification-item.unread').forEach(item => {
+                    item.classList.remove('unread');
+                    const newBadge = item.querySelector('.badge-primary');
+                    if (newBadge) newBadge.remove();
+                });
+                updateNotificationBadge();
+                showToast('Semua notifikasi ditandai sudah dibaca');
+            } catch (error) {
+                console.error('Error marking all as read:', error);
+            }
+        }
+
+        // Format time ago
+        function formatNotifTimeAgo(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const seconds = Math.floor((now - date) / 1000);
+
+            if (seconds < 60) return 'Baru saja';
+            if (seconds < 3600) return Math.floor(seconds / 60) + ' menit lalu';
+            if (seconds < 86400) return Math.floor(seconds / 3600) + ' jam lalu';
+            if (seconds < 604800) return Math.floor(seconds / 86400) + ' hari lalu';
+
+            return date.toLocaleDateString('id-ID', {
+                day: 'numeric',
+                month: 'short'
+            });
+        }
+
+        // Truncate text
+        function truncateText(text, maxLen) {
+            if (!text) return '';
+            if (text.length <= maxLen) return text;
+            return text.substring(0, maxLen) + '...';
+        }
     </script>
 </body>
 </html>
