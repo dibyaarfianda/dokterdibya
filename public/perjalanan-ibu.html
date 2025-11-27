@@ -377,6 +377,17 @@
     </div>
 
     <script>
+        // Check authentication - redirect to login if not authenticated
+        (function() {
+            const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+            const user = JSON.parse(localStorage.getItem('patient_user') || '{}');
+
+            if (!token || !user.id) {
+                window.location.href = '/index.html#masuk';
+                return;
+            }
+        })();
+
         // Create floating bubbles
         function createBubbles() {
             const bgAnimation = document.getElementById('bgAnimation');

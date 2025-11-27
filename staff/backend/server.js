@@ -175,6 +175,14 @@ if (sundayClinicRoutes.setupSocketHandlers) {
 const labResultsRoutes = require('./routes/lab-results');
 app.use('/api/lab-results', labResultsRoutes);
 
+// Patient documents routes (share documents with patients)
+const patientDocumentsRoutes = require('./routes/patient-documents');
+app.use('/api/patient-documents', patientDocumentsRoutes);
+
+// R2 storage proxy (for CDN connectivity issues)
+const r2ProxyRoutes = require('./routes/r2-proxy');
+app.use('/api/r2', r2ProxyRoutes);
+
 // Practice schedules routes
 const practiceSchedulesRoutes = require('./routes/practice-schedules');
 app.use('/api/practice-schedules', practiceSchedulesRoutes);

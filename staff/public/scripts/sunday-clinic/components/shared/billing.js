@@ -833,12 +833,59 @@ export default {
             }
         }
 
+        // Check which admin items are already in billing
+        const existingAdminCodes = items
+            .filter(item => item.item_type === 'tindakan' && item.item_code && item.item_code.startsWith('S0'))
+            .map(item => item.item_code);
+
+        // Admin items with their codes and prices
+        const adminItems = [
+            { code: 'S01', name: 'Biaya Admin', price: 5000 },
+            { code: 'S03', name: 'Buku Kontrol', price: 25000 },
+            { code: 'S04', name: 'Buku Panduan Lengkap & ANC', price: 50000 },
+            { code: 'S02', name: 'Surat Keterangan SpOG', price: 20000 }
+        ];
+
+        const adminCheckboxesHtml = adminItems.map(item => {
+            const isChecked = existingAdminCodes.includes(item.code);
+            return `
+                <div class="col-md-6 col-lg-3 mb-2">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input admin-item-checkbox"
+                               id="admin-${item.code}"
+                               data-code="${item.code}"
+                               data-name="${escapeHtml(item.name)}"
+                               data-price="${item.price}"
+                               ${isChecked ? 'checked' : ''}
+                               ${status === 'confirmed' ? 'disabled' : ''}>
+                        <label class="custom-control-label" for="admin-${item.code}">
+                            ${escapeHtml(item.name)}
+                            <small class="text-muted d-block">${formatRupiahLocal(item.price)}</small>
+                        </label>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
         return `
             <div class="sc-section">
                 <div class="sc-section-header">
                     <h3>Tagihan & Pembayaran</h3>
                 </div>
                 <div class="sc-card">
+                    <!-- Admin Items Section -->
+                    <div class="mb-4">
+                        <h6 class="text-primary mb-3">
+                            <i class="fas fa-clipboard-list mr-2"></i>Biaya Administratif
+                        </h6>
+                        <div class="row">
+                            ${adminCheckboxesHtml}
+                        </div>
+                        ${status === 'confirmed' ? '<small class="text-muted"><i class="fas fa-lock mr-1"></i>Tagihan sudah dikonfirmasi, tidak dapat diubah.</small>' : ''}
+                    </div>
+
+                    <hr>
+
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="mb-0">Rincian Tagihan</h5>
                         ${statusBadge}
@@ -878,6 +925,111 @@ export default {
     async afterRender(state) {
         // Setup billing button handlers
         setTimeout(() => {
+            // 0. Admin item checkboxes
+            const adminCheckboxes = document.querySelectorAll('.admin-item-checkbox');
+            adminCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', async function() {
+                    const code = this.dataset.code;
+                    const name = this.dataset.name;
+                    const price = parseFloat(this.dataset.price);
+                    const isChecked = this.checked;
+
+                    try {
+                        const token = window.getToken?.();
+                        if (!token) return;
+
+                        const mrId = window.routeMrSlug;
+                        if (!mrId) {
+                            alert('MR ID tidak ditemukan');
+                            return;
+                        }
+
+                        // Disable checkbox during request
+                        this.disabled = true;
+
+                        if (isChecked) {
+                            // Add admin item to billing
+                            // First fetch existing items
+                            let existingItems = [];
+                            const fetchResponse = await fetch(`/api/sunday-clinic/billing/${mrId}`, {
+                                method: 'GET',
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            });
+
+                            if (fetchResponse.ok) {
+                                const billingData = await fetchResponse.json();
+                                if (billingData.data && billingData.data.items) {
+                                    existingItems = billingData.data.items.map(item => ({
+                                        item_type: item.item_type,
+                                        item_code: item.item_code,
+                                        item_name: item.item_name,
+                                        quantity: item.quantity,
+                                        item_data: item.item_data
+                                    }));
+                                }
+                            }
+
+                            // Add new admin item
+                            existingItems.push({
+                                item_type: 'tindakan',
+                                item_code: code,
+                                item_name: name,
+                                quantity: 1
+                            });
+
+                            // Save all items
+                            const response = await fetch(`/api/sunday-clinic/billing/${mrId}`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify({ items: existingItems })
+                            });
+
+                            if (!response.ok) {
+                                throw new Error('Gagal menambahkan item');
+                            }
+
+                            if (window.showSuccess) {
+                                window.showSuccess(`${name} ditambahkan ke tagihan`);
+                            }
+                        } else {
+                            // Remove admin item from billing
+                            const response = await fetch(`/api/sunday-clinic/billing/${mrId}/items/code/${code}`, {
+                                method: 'DELETE',
+                                headers: {
+                                    'Authorization': `Bearer ${token}`,
+                                    'Content-Type': 'application/json'
+                                }
+                            });
+
+                            if (!response.ok) {
+                                throw new Error('Gagal menghapus item');
+                            }
+
+                            if (window.showSuccess) {
+                                window.showSuccess(`${name} dihapus dari tagihan`);
+                            }
+                        }
+
+                        // Reload billing section to show updated items
+                        if (window.handleSectionChange) {
+                            window.handleSectionChange('billing', { pushHistory: false });
+                        }
+
+                    } catch (error) {
+                        console.error('Error updating admin item:', error);
+                        // Revert checkbox state
+                        this.checked = !isChecked;
+                        this.disabled = false;
+                        if (window.showError) {
+                            window.showError(error.message || 'Gagal mengubah item');
+                        }
+                    }
+                });
+            });
+
             // 1. Confirm billing button (dokter only)
                     const confirmBtn = document.getElementById('btn-confirm-billing');
                     if (confirmBtn) {

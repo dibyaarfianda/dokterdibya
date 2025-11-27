@@ -452,6 +452,133 @@
             background: rgba(239, 68, 68, 1);
         }
 
+        /* My Documents Section */
+        .documents-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .document-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            transition: all 0.3s ease;
+        }
+
+        .document-card:hover {
+            border-color: #28a7e9;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(40, 167, 233, 0.2);
+        }
+
+        .document-card .doc-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 12px;
+        }
+
+        .document-card .doc-icon.resume { background: rgba(40, 167, 233, 0.2); color: #28a7e9; }
+        .document-card .doc-icon.usg { background: rgba(236, 72, 153, 0.2); color: #ec4899; }
+        .document-card .doc-icon.lab { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+        .document-card .doc-icon.other { background: rgba(168, 162, 158, 0.2); color: #a8a29e; }
+
+        .document-card .doc-title {
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 5px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .document-card .doc-date {
+            font-size: 12px;
+            color: #888888;
+            margin-bottom: 12px;
+        }
+
+        .document-card .doc-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .document-card .doc-btn {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-align: center;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .document-card .doc-btn.view-btn {
+            background: rgba(40, 167, 233, 0.2);
+            color: #28a7e9;
+            border: 1px solid rgba(40, 167, 233, 0.3);
+        }
+
+        .document-card .doc-btn.view-btn:hover {
+            background: #28a7e9;
+            color: #ffffff;
+        }
+
+        .document-card .doc-btn.download-btn {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .document-card .doc-btn.download-btn:hover {
+            background: #22c55e;
+            color: #ffffff;
+        }
+
+        .documents-empty {
+            text-align: center;
+            padding: 30px;
+            color: #888888;
+        }
+
+        .documents-empty i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: #555555;
+        }
+
+        .documents-empty p {
+            margin: 0;
+            font-size: 14px;
+        }
+
+        .document-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-left: 8px;
+        }
+
+        .document-badge.new {
+            background: rgba(40, 167, 233, 0.2);
+            color: #28a7e9;
+        }
+
         /* Profile Info */
         .profile-info {
             list-style: none;
@@ -835,6 +962,16 @@
                 font-size: 14px;
             }
         }
+
+        /* Toast animations */
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
     </style>
 </head>
 <body>
@@ -854,7 +991,10 @@
     padding-left: `00;
     padding-left: 300px;
 ">
-                <div class="avatar-circle" id="user-avatar">NA</div>
+                <div class="avatar-circle" id="user-avatar">
+                    <img id="user-avatar-img" src="" alt="" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: none;">
+                    <span id="user-avatar-initials">NA</span>
+                </div>
                 <div class="user-info-nav">
                     <div class="user-name" id="user-name-nav">Nanda Ananda</div>
                     <div class="user-role">Pasien</div>
@@ -929,9 +1069,9 @@
         <div class="row" style="margin-bottom: 30px;">
             <!-- Left Column: Upcoming Appointments (Smaller) -->
             <div class="col-md-5">
-                <!-- Janji Temu Mendatang -->
+                <!-- Janji Temu dr. Dibya -->
                 <div class="dashboard-card" id="appointments-section" style="margin-bottom: 20px;">
-                    <h3><i class="fa fa-calendar-check-o"></i> Janji Temu Mendatang</h3>
+                    <h3><i class="fa fa-calendar-check-o"></i> Janji Temu dr. Dibya</h3>
                     <div id="booking-status-container">
                         <p class="empty-state">
                             <i class="fa fa-calendar-o"></i>
@@ -941,6 +1081,17 @@
                     <a href="/booking-appointment.html" class="action-btn" id="booking-create-btn">
                         <i class="fa fa-plus"></i> Buat Janji Temu
                     </a>
+                </div>
+
+                <!-- Riwayat Janji Temu -->
+                <div class="dashboard-card" id="appointments-history-section" style="margin-bottom: 20px;">
+                    <h3><i class="fa fa-history"></i> Riwayat Janji Temu</h3>
+                    <div id="booking-history-container">
+                        <p class="empty-state">
+                            <i class="fa fa-calendar-o"></i>
+                            Belum ada riwayat janji temu
+                        </p>
+                    </div>
                 </div>
 
                 <!-- Galeri USG -->
@@ -957,6 +1108,16 @@
                     </button>
                 </div>
 
+                <!-- Dokumen Medis Saya -->
+                <div class="dashboard-card" style="margin-bottom: 20px;">
+                    <h3><i class="fa fa-folder-open"></i> Dokumen Medis Saya</h3>
+                    <div id="my-documents-container">
+                        <div class="documents-loading" style="text-align: center; padding: 20px;">
+                            <i class="fa fa-spinner fa-spin"></i> Memuat dokumen...
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Rekam Medis -->
                 <div class="dashboard-card" style="min-height: 400px; display: flex; flex-direction: column;">
                     <h3 style="font-size: 19.2px;"><i class="fa fa-file-text"></i> IDENTITAS PRIBADI</h3>
@@ -970,26 +1131,31 @@
 
             <!-- Right Column: Journey Book with Image (Larger) -->
             <div class="col-md-7">
-                <div class="dashboard-card" style="cursor: pointer; position: relative; overflow: hidden; min-height: 400px; background: linear-gradient(135deg, rgba(0, 102, 255, 0.15) 0%, rgba(255, 255, 255, 0.1) 100%);" onclick="window.location.href='/perjalanan-ibu.html'">
-                    <!-- Background Image -->
-                    <div style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; opacity: 0.3; background-image: url('/images/dokter-dibya-book/1.png'); background-size: cover; background-position: center; filter: blur(2px);"></div>
+                <div class="dashboard-card" style="cursor: pointer; position: relative; overflow: hidden; min-height: 400px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); border: 1px solid rgba(212, 175, 55, 0.3);" onclick="window.location.href='/perjalanan-ibu.html'">
+                    <!-- Background Pattern -->
+                    <div style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; opacity: 0.08; background-image: url('/images/dokter-dibya-book/1.png'); background-size: cover; background-position: center;"></div>
+
+                    <!-- Decorative Gold Corner Accents -->
+                    <div style="position: absolute; top: 0; left: 0; width: 60px; height: 60px; border-top: 2px solid #d4af37; border-left: 2px solid #d4af37;"></div>
+                    <div style="position: absolute; top: 0; right: 0; width: 60px; height: 60px; border-top: 2px solid #d4af37; border-right: 2px solid #d4af37;"></div>
+                    <div style="position: absolute; bottom: 0; left: 0; width: 60px; height: 60px; border-bottom: 2px solid #d4af37; border-left: 2px solid #d4af37;"></div>
+                    <div style="position: absolute; bottom: 0; right: 0; width: 60px; height: 60px; border-bottom: 2px solid #d4af37; border-right: 2px solid #d4af37;"></div>
 
                     <!-- Content Overlay -->
                     <div style="position: relative; z-index: 1; padding: 40px; text-align: center;">
-                        <div style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 12px; padding: 30px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);">
-                            <i class="fa fa-book" style="font-size: 64px; color: var(--primary); margin-bottom: 20px; display: block;"></i>
-                            <h2 style="color: #333; font-size: 32px; font-weight: 700; margin-bottom: 10px;">Perjalanan menjadi Ibu</h2>
-                            <p style="color: #666; font-size: 14px; font-style: italic; margin-bottom: 25px;">by dokter<span style="color: var(--primary); font-weight: 600;">DIBYA</span></p>
+                        <div style="background: rgba(26, 26, 46, 0.9); backdrop-filter: blur(10px); border-radius: 12px; padding: 30px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); border: 1px solid rgba(212, 175, 55, 0.2);">
+                            <h2 style="color: #f5f5f5; font-size: 32px; font-weight: 400; margin-bottom: 10px; font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif; letter-spacing: 3px; text-shadow: 0 2px 4px rgba(0,0,0,0.3); font-style: italic;">Perjalanan menjadi Ibu</h2>
+                            <p style="font-size: 14px; font-style: italic; margin-bottom: 25px; font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;">by <span style="color: #ffffff; font-weight: 600;">dokter</span><span style="color: var(--primary); font-weight: 600;">DIBYA</span></p>
 
                             <!-- Preview Image -->
                             <div style="margin: 25px 0;">
-                                <img src="/images/dokter-dibya-book/1.png" alt="Perjalanan menjadi Ibu" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);">
+                                <img src="/images/dokter-dibya-book/1.png" alt="Perjalanan menjadi Ibu" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4); border: 2px solid rgba(212, 175, 55, 0.3);">
                             </div>
 
-                            <div style="margin-top: 25px; padding: 15px; background: rgba(0, 102, 255, 0.1); border-radius: 8px; border-left: 4px solid var(--primary);">
-                                <p style="color: #333; font-size: 15px; line-height: 1.6; margin: 0;">
-                                    <i class="fa fa-hand-pointer-o" style="color: var(--primary); margin-right: 8px;"></i>
-                                    <strong>Klik untuk membuka</strong> buku interaktif berisi momen indah perjalanan kehamilan Anda
+                            <div style="margin-top: 25px; padding: 15px; background: rgba(212, 175, 55, 0.1); border-radius: 8px; border-left: 4px solid #d4af37;">
+                                <p style="color: #e0e0e0; font-size: 15px; line-height: 1.6; margin: 0; font-family: 'Georgia', serif;">
+                                    <i class="fa fa-hand-pointer-o" style="color: #d4af37; margin-right: 8px;"></i>
+                                    <strong style="color: #d4af37;">Klik untuk membuka</strong> buku interaktif berisi momen indah perjalanan kehamilan Anda
                                 </p>
                             </div>
                         </div>
@@ -1044,12 +1210,23 @@
                                 <img id="edit-profile-picture-preview"
                                      src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23404040'/%3E%3Ctext x='50%25' y='50%25' font-size='40' fill='%2328a7e9' text-anchor='middle' dy='.3em'%3E👤%3C/text%3E%3C/svg%3E"
                                      alt="Preview"
-                                     style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid #28a7e9; margin-bottom: 10px;">
+                                     style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid #28a7e9; margin-bottom: 10px; cursor: pointer;"
+                                     onclick="document.getElementById('edit-profile-picture-file').click()">
+                                <div style="margin-top: 5px;">
+                                    <label for="edit-profile-picture-file" class="btn btn-sm" style="background: rgba(40,167,233,0.2); border: 1px solid #28a7e9; color: #28a7e9; cursor: pointer;">
+                                        <i class="fa fa-camera"></i> Pilih Foto
+                                    </label>
+                                </div>
                             </div>
-                            <input type="url" class="form-control" id="edit-profile-picture"
-                                   placeholder="Masukkan URL foto profil"
-                                   style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
-                            <small style="color: #999;">Masukkan URL gambar profil Anda (misalnya dari Imgur, Google Drive, dll)</small>
+                            <input type="file" id="edit-profile-picture-file" accept="image/jpeg,image/png,image/webp" style="display: none;">
+                            <input type="hidden" id="edit-profile-picture" value="">
+                            <small style="color: #999;">Klik foto atau tombol untuk upload (Maks. 2MB, format: JPEG, PNG, WebP)</small>
+                            <div id="photo-upload-progress" style="display: none; margin-top: 10px;">
+                                <div style="background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                                    <div id="photo-upload-bar" style="height: 4px; background: #28a7e9; width: 0%; transition: width 0.3s;"></div>
+                                </div>
+                                <small style="color: #28a7e9;">Mengupload foto...</small>
+                            </div>
                         </div>
 
                         <div class="form-group">
@@ -1333,20 +1510,41 @@
 
                 // Update navigation avatar
                 const userNameNav = document.getElementById('user-name-nav');
-                const userAvatar = document.getElementById('user-avatar');
                 if (userNameNav && profile.fullname) {
                     userNameNav.textContent = profile.fullname;
                 }
-                if (userAvatar && profile.fullname) {
-                    // Get initials from fullname
+
+                // Update avatar - show photo if available, otherwise show initials
+                const avatarImg = document.getElementById('user-avatar-img');
+                const avatarInitials = document.getElementById('user-avatar-initials');
+
+                // Always prepare initials first (needed for fallback when image fails)
+                let initials = 'NA';
+                if (profile.fullname) {
                     const nameParts = profile.fullname.trim().split(' ');
-                    let initials = '';
                     if (nameParts.length === 1) {
                         initials = nameParts[0].substring(0, 2).toUpperCase();
                     } else {
                         initials = (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
                     }
-                    userAvatar.textContent = initials;
+                }
+                if (avatarInitials) {
+                    avatarInitials.textContent = initials;
+                }
+
+                if (profile.profile_picture && avatarImg && avatarInitials) {
+                    avatarImg.src = profile.profile_picture;
+                    avatarImg.style.display = 'block';
+                    avatarInitials.style.display = 'none';
+                    avatarImg.onerror = function() {
+                        // If image fails to load, show initials
+                        this.style.display = 'none';
+                        avatarInitials.style.display = 'block';
+                    };
+                } else if (avatarInitials) {
+                    // No profile picture, show initials
+                    avatarInitials.style.display = 'block';
+                    if (avatarImg) avatarImg.style.display = 'none';
                 }
 
                 // Update profile picture
@@ -1468,10 +1666,12 @@
 
         function renderBookingStatus(appointments) {
             const container = document.getElementById('booking-status-container');
+            const historyContainer = document.getElementById('booking-history-container');
             if (!container) return;
 
+            // Filter upcoming appointments (exclude completed, cancelled, no_show)
             const upcoming = (appointments || [])
-                .filter(apt => !apt.isPast && apt.status !== 'cancelled' && apt.status !== 'no_show')
+                .filter(apt => !apt.isPast && apt.status !== 'cancelled' && apt.status !== 'no_show' && apt.status !== 'completed')
                 .sort((a, b) => {
                     const dateDiff = new Date(a.appointment_date) - new Date(b.appointment_date);
                     if (dateDiff !== 0) return dateDiff;
@@ -1479,6 +1679,35 @@
                     if (sessionDiff !== 0) return sessionDiff;
                     return (a.slot_number || 0) - (b.slot_number || 0);
                 });
+
+            // Filter completed appointments for history
+            const completed = (appointments || [])
+                .filter(apt => apt.status === 'completed')
+                .sort((a, b) => new Date(b.appointment_date) - new Date(a.appointment_date)); // Most recent first
+
+            // Render history section
+            if (historyContainer) {
+                if (completed.length === 0) {
+                    historyContainer.innerHTML = `
+                        <p class="empty-state">
+                            <i class="fa fa-calendar-o"></i>
+                            Belum ada riwayat janji temu
+                        </p>
+                    `;
+                } else {
+                    historyContainer.innerHTML = completed.slice(0, 5).map(apt => `
+                        <div class="history-item" style="padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <div style="font-weight: 600; color: #333;">${apt.dateFormatted || '-'}</div>
+                                <div style="font-size: 12px; color: #666;">${apt.sessionLabel || '-'} - ${apt.time || '-'} WIB</div>
+                            </div>
+                            <span style="background: #28a745; color: #fff; padding: 4px 10px; border-radius: 12px; font-size: 11px;">
+                                <i class="fa fa-check"></i> Selesai
+                            </span>
+                        </div>
+                    `).join('');
+                }
+            }
 
             if (upcoming.length === 0) {
                 container.innerHTML = `
@@ -1917,7 +2146,15 @@
                 previewImg.onerror = function() {
                     this.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23404040'/%3E%3Ctext x='50%25' y='50%25' font-size='40' fill='%2328a7e9' text-anchor='middle' dy='.3em'%3E👤%3C/text%3E%3C/svg%3E";
                 };
+            } else {
+                previewImg.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23404040'/%3E%3Ctext x='50%25' y='50%25' font-size='40' fill='%2328a7e9' text-anchor='middle' dy='.3em'%3E👤%3C/text%3E%3C/svg%3E";
             }
+
+            // Reset file input and progress bar
+            document.getElementById('edit-profile-picture-file').value = '';
+            document.getElementById('photo-upload-progress').style.display = 'none';
+            document.getElementById('photo-upload-bar').style.width = '0%';
+            document.getElementById('profile-error').style.display = 'none';
 
             if (window.currentProfile.birth_date) {
                 // Use the date string directly to avoid timezone conversion issues
@@ -1931,20 +2168,6 @@
             }
 
             document.getElementById('edit-age').value = window.currentProfile.age || '';
-
-            // Add listener for profile picture URL input to update preview
-            document.getElementById('edit-profile-picture').addEventListener('input', function(e) {
-                const url = e.target.value.trim();
-                const preview = document.getElementById('edit-profile-picture-preview');
-                if (url) {
-                    preview.src = url;
-                    preview.onerror = function() {
-                        this.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23404040'/%3E%3Ctext x='50%25' y='50%25' font-size='40' fill='%2328a7e9' text-anchor='middle' dy='.3em'%3E👤%3C/text%3E%3C/svg%3E";
-                    };
-                } else {
-                    preview.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23404040'/%3E%3Ctext x='50%25' y='50%25' font-size='40' fill='%2328a7e9' text-anchor='middle' dy='.3em'%3E👤%3C/text%3E%3C/svg%3E";
-                }
-            });
 
             // Show modal
             $('#profileModal').modal('show');
@@ -2042,23 +2265,123 @@
             }
         }
 
-        // Auto-calculate age from birth date
+        // Auto-calculate age from birth date and profile photo upload
         document.addEventListener('DOMContentLoaded', function() {
             const birthdateInput = document.getElementById('edit-birthdate');
             const ageInput = document.getElementById('edit-age');
-            
+
             if (birthdateInput && ageInput) {
                 birthdateInput.addEventListener('change', function() {
                     const birthDate = new Date(this.value);
                     const today = new Date();
                     let age = today.getFullYear() - birthDate.getFullYear();
                     const monthDiff = today.getMonth() - birthDate.getMonth();
-                    
+
                     if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
                         age--;
                     }
-                    
+
                     ageInput.value = age >= 0 ? age : '';
+                });
+            }
+
+            // Profile photo file upload handler
+            const photoFileInput = document.getElementById('edit-profile-picture-file');
+            if (photoFileInput) {
+                photoFileInput.addEventListener('change', async function(e) {
+                    const file = e.target.files[0];
+                    if (!file) return;
+
+                    // Validate file size (2MB max)
+                    if (file.size > 2 * 1024 * 1024) {
+                        document.getElementById('profile-error').textContent = 'Ukuran file maksimal 2MB';
+                        document.getElementById('profile-error').style.display = 'block';
+                        e.target.value = '';
+                        return;
+                    }
+
+                    // Validate file type
+                    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+                        document.getElementById('profile-error').textContent = 'Format file harus JPEG, PNG, atau WebP';
+                        document.getElementById('profile-error').style.display = 'block';
+                        e.target.value = '';
+                        return;
+                    }
+
+                    // Show preview immediately using FileReader
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        document.getElementById('edit-profile-picture-preview').src = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+
+                    // Upload to server
+                    document.getElementById('profile-error').style.display = 'none';
+                    document.getElementById('photo-upload-progress').style.display = 'block';
+                    document.getElementById('photo-upload-bar').style.width = '30%';
+
+                    try {
+                        const formData = new FormData();
+                        formData.append('photo', file);
+
+                        document.getElementById('photo-upload-bar').style.width = '60%';
+
+                        const response = await fetch('/api/patients/upload-photo', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: formData
+                        });
+
+                        document.getElementById('photo-upload-bar').style.width = '90%';
+
+                        const data = await response.json();
+
+                        if (data.success) {
+                            document.getElementById('photo-upload-bar').style.width = '100%';
+                            document.getElementById('edit-profile-picture').value = data.photo_url;
+
+                            // Update preview with actual URL from server
+                            document.getElementById('edit-profile-picture-preview').src = data.photo_url;
+
+                            // Update currentProfile so change detection works correctly
+                            if (window.currentProfile) {
+                                window.currentProfile.profile_picture = data.photo_url;
+                            }
+
+                            // Also update the Settings modal profile picture
+                            const settingsProfilePic = document.getElementById('profile-picture');
+                            if (settingsProfilePic) {
+                                settingsProfilePic.src = data.photo_url;
+                            }
+
+                            // Update navigation avatar
+                            const navAvatarImg = document.getElementById('user-avatar-img');
+                            const navAvatarInitials = document.getElementById('user-avatar-initials');
+                            if (navAvatarImg && navAvatarInitials) {
+                                navAvatarImg.src = data.photo_url;
+                                navAvatarImg.style.display = 'block';
+                                navAvatarInitials.style.display = 'none';
+                            }
+
+                            setTimeout(() => {
+                                document.getElementById('photo-upload-progress').style.display = 'none';
+                                document.getElementById('photo-upload-bar').style.width = '0%';
+                            }, 500);
+
+                            showToast('Foto profil berhasil diupload', 'success');
+                        } else {
+                            throw new Error(data.message || 'Gagal mengupload foto');
+                        }
+                    } catch (error) {
+                        console.error('Photo upload error:', error);
+                        document.getElementById('photo-upload-progress').style.display = 'none';
+                        document.getElementById('photo-upload-bar').style.width = '0%';
+                        document.getElementById('profile-error').textContent = error.message || 'Gagal mengupload foto';
+                        document.getElementById('profile-error').style.display = 'block';
+                        e.target.value = '';
+                    }
                 });
             }
         });
@@ -2427,6 +2750,268 @@
                     }
                 }
             }
+        });
+
+        // =====================================================
+        // MY DOCUMENTS SECTION
+        // =====================================================
+
+        /**
+         * Load and display patient's documents
+         */
+        async function loadMyDocuments() {
+            const container = document.getElementById('my-documents-container');
+            if (!container) return;
+
+            const token = localStorage.getItem('vps_auth_token');
+            if (!token) {
+                container.innerHTML = renderDocumentsEmpty('Silakan login untuk melihat dokumen Anda');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/patient-documents/my-documents', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        container.innerHTML = renderDocumentsEmpty('Sesi telah berakhir. Silakan login kembali.');
+                        return;
+                    }
+                    throw new Error('Failed to fetch documents');
+                }
+
+                const data = await response.json();
+
+                if (!data.success || !data.documents || data.documents.length === 0) {
+                    container.innerHTML = renderDocumentsEmpty('Belum ada dokumen medis yang dikirimkan oleh dokter.');
+                    return;
+                }
+
+                container.innerHTML = renderDocumentsGrid(data.documents);
+
+            } catch (error) {
+                console.error('Error loading documents:', error);
+                container.innerHTML = renderDocumentsEmpty('Gagal memuat dokumen. Silakan coba lagi.');
+            }
+        }
+
+        /**
+         * Render empty state for documents
+         */
+        function renderDocumentsEmpty(message) {
+            return `
+                <div class="documents-empty">
+                    <i class="fa fa-folder-open-o"></i>
+                    <p>${message}</p>
+                </div>
+            `;
+        }
+
+        /**
+         * Render documents grid
+         */
+        function renderDocumentsGrid(documents) {
+            const cards = documents.map(doc => renderDocumentCard(doc)).join('');
+            return `<div class="documents-grid">${cards}</div>`;
+        }
+
+        /**
+         * Render a single document card
+         */
+        function renderDocumentCard(doc) {
+            const iconClass = getDocumentIconClass(doc.document_type);
+            const iconName = getDocumentIcon(doc.document_type);
+            const formattedDate = formatDocumentDate(doc.published_at);
+            const isNew = isDocumentNew(doc);
+            const newBadge = isNew ? '<span class="document-badge new">Baru</span>' : '';
+
+            return `
+                <div class="document-card" data-doc-id="${doc.id}">
+                    <div class="doc-icon ${iconClass}">
+                        <i class="fa ${iconName}"></i>
+                    </div>
+                    <div class="doc-title">${escapeHtml(doc.title)}${newBadge}</div>
+                    <div class="doc-date">
+                        <i class="fa fa-calendar-o"></i> ${formattedDate}
+                    </div>
+                    <div class="doc-actions">
+                        <button class="doc-btn view-btn" onclick="viewDocument(${doc.id}, '${escapeHtml(doc.file_url || '')}', '${escapeHtml(doc.document_type)}')">
+                            <i class="fa fa-eye"></i> Lihat
+                        </button>
+                        ${doc.file_url ? `
+                            <button class="doc-btn download-btn" onclick="downloadDocument(${doc.id}, '${escapeHtml(doc.file_url)}', '${escapeHtml(doc.file_name || doc.title)}')">
+                                <i class="fa fa-download"></i> Unduh
+                            </button>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        /**
+         * Get icon class based on document type
+         */
+        function getDocumentIconClass(type) {
+            const typeMap = {
+                'resume_medis': 'resume',
+                'usg_2d': 'usg',
+                'usg_4d': 'usg',
+                'lab_result': 'lab',
+                'lab_interpretation': 'lab',
+                'prescription': 'other',
+                'referral': 'other',
+                'certificate': 'other'
+            };
+            return typeMap[type] || 'other';
+        }
+
+        /**
+         * Get icon name based on document type
+         */
+        function getDocumentIcon(type) {
+            const iconMap = {
+                'resume_medis': 'fa-file-text-o',
+                'usg_2d': 'fa-picture-o',
+                'usg_4d': 'fa-video-camera',
+                'lab_result': 'fa-flask',
+                'lab_interpretation': 'fa-stethoscope',
+                'prescription': 'fa-medkit',
+                'referral': 'fa-share-square-o',
+                'certificate': 'fa-certificate'
+            };
+            return iconMap[type] || 'fa-file-o';
+        }
+
+        /**
+         * Format date for display
+         */
+        function formatDocumentDate(dateStr) {
+            if (!dateStr) return '-';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('id-ID', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            });
+        }
+
+        /**
+         * Check if document is new (not viewed yet)
+         */
+        function isDocumentNew(doc) {
+            return !doc.first_viewed_at;
+        }
+
+        /**
+         * Escape HTML to prevent XSS
+         */
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        /**
+         * Show toast notification
+         */
+        function showToast(message, type = 'info') {
+            // Create toast container if not exists
+            let container = document.getElementById('toast-container');
+            if (!container) {
+                container = document.createElement('div');
+                container.id = 'toast-container';
+                container.style.cssText = 'position:fixed;top:20px;right:20px;z-index:9999;';
+                document.body.appendChild(container);
+            }
+
+            // Create toast
+            const toast = document.createElement('div');
+            toast.className = 'toast-notification';
+            const bgColor = type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#17a2b8';
+            toast.style.cssText = `
+                background: ${bgColor};
+                color: white;
+                padding: 12px 24px;
+                border-radius: 8px;
+                margin-bottom: 10px;
+                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                animation: slideIn 0.3s ease;
+            `;
+            toast.innerHTML = message;
+            container.appendChild(toast);
+
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        /**
+         * View document
+         */
+        async function viewDocument(docId, fileUrl, docType) {
+            // Track view
+            try {
+                await fetch(`/api/patient-documents/${docId}/track`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'view' })
+                });
+            } catch (e) {
+                console.error('Failed to track view:', e);
+            }
+
+            // Remove "new" badge from this document
+            const card = document.querySelector(`[data-doc-id="${docId}"]`);
+            if (card) {
+                const badge = card.querySelector('.document-badge.new');
+                if (badge) badge.remove();
+            }
+
+            // Open document
+            if (fileUrl) {
+                window.open(fileUrl, '_blank');
+            } else if (docType === 'resume_medis') {
+                // For resume medis without file, show content in modal
+                showToast('Membuka resume medis...');
+                // TODO: Implement resume viewer modal
+            }
+        }
+
+        /**
+         * Download document
+         */
+        async function downloadDocument(docId, fileUrl, fileName) {
+            // Track download
+            try {
+                await fetch(`/api/patient-documents/${docId}/track`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'download' })
+                });
+            } catch (e) {
+                console.error('Failed to track download:', e);
+            }
+
+            // Download file
+            const link = document.createElement('a');
+            link.href = fileUrl;
+            link.download = fileName;
+            link.target = '_blank';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Load documents on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadMyDocuments();
         });
     </script>
 
