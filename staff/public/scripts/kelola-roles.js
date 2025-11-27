@@ -1,6 +1,6 @@
 /**
  * Kelola Roles Management Module
- * Handles CRUD operations for roles and permissions
+ * Handles CRUD operations for roles, permissions, and user role assignments
  */
 
 const API_BASE = '/api';
@@ -8,7 +8,9 @@ const API_BASE = '/api';
 // State
 let roles = [];
 let permissions = [];
+let users = [];
 let selectedRoleId = null;
+let selectedUserId = null;
 let isInitialized = false;
 
 // DOM Elements
@@ -17,7 +19,9 @@ const DOM = {
     modal: null,
     form: null,
     permissionsCard: null,
-    permissionsContainer: null
+    permissionsContainer: null,
+    usersTbody: null,
+    userRolesModal: null
 };
 
 /**
@@ -449,6 +453,7 @@ function init() {
     if (isInitialized) {
         // Just reload data if already initialized
         loadRoles();
+        loadUsers();
         return;
     }
 
@@ -458,6 +463,8 @@ function init() {
     DOM.form = document.getElementById('role-form');
     DOM.permissionsCard = document.getElementById('permissions-card');
     DOM.permissionsContainer = document.getElementById('permissions-container');
+    DOM.usersTbody = document.getElementById('users-roles-tbody');
+    DOM.userRolesModal = document.getElementById('user-roles-modal');
 
     if (!DOM.tbody) {
         console.error('Roles table body not found');
@@ -471,13 +478,178 @@ function init() {
     document.getElementById('btn-deselect-all-perms')?.addEventListener('click', deselectAllPermissions);
     document.getElementById('btn-save-permissions')?.addEventListener('click', savePermissions);
     document.getElementById('btn-close-permissions')?.addEventListener('click', closePermissions);
+    document.getElementById('btn-save-user-roles')?.addEventListener('click', saveUserRoles);
 
     // Load data
     loadRoles();
     loadPermissions();
+    loadUsers();
 
     isInitialized = true;
     console.log('✅ Kelola Roles module initialized');
+}
+
+// ==========================================
+// USER ROLE MANAGEMENT FUNCTIONS
+// ==========================================
+
+/**
+ * Load all staff users with their roles
+ */
+async function loadUsers() {
+    if (!DOM.usersTbody) return;
+
+    DOM.usersTbody.innerHTML = `
+        <tr>
+            <td colspan="6" class="text-center py-4">
+                <i class="fas fa-spinner fa-spin fa-2x"></i>
+                <p class="mt-2 mb-0">Memuat data users...</p>
+            </td>
+        </tr>
+    `;
+
+    try {
+        const response = await apiRequest('/users');
+        users = response.data || [];
+        renderUsersTable();
+    } catch (error) {
+        console.error('Failed to load users:', error);
+        DOM.usersTbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center text-danger py-4">
+                    <i class="fas fa-exclamation-triangle fa-2x"></i>
+                    <p class="mt-2 mb-0">Gagal memuat data: ${error.message}</p>
+                </td>
+            </tr>
+        `;
+    }
+}
+
+/**
+ * Render users table
+ */
+function renderUsersTable() {
+    if (!DOM.usersTbody) return;
+
+    if (users.length === 0) {
+        DOM.usersTbody.innerHTML = `
+            <tr>
+                <td colspan="6" class="text-center text-muted py-4">
+                    <i class="fas fa-users fa-2x"></i>
+                    <p class="mt-2 mb-0">Belum ada staff user</p>
+                </td>
+            </tr>
+        `;
+        return;
+    }
+
+    DOM.usersTbody.innerHTML = users.map((user, index) => {
+        const rolesHtml = (user.roles || []).map(role => {
+            const badgeClass = role.is_primary ? 'badge-primary' : 'badge-secondary';
+            const primaryIcon = role.is_primary ? '<i class="fas fa-star text-warning mr-1" title="Primary Role"></i>' : '';
+            return `<span class="badge ${badgeClass} mr-1">${primaryIcon}${escapeHtml(role.display_name)}</span>`;
+        }).join('') || '<span class="text-muted">Belum ada role</span>';
+
+        const statusBadge = user.is_active
+            ? '<span class="badge badge-success">Aktif</span>'
+            : '<span class="badge badge-danger">Nonaktif</span>';
+
+        return `
+        <tr>
+            <td>${index + 1}</td>
+            <td><strong>${escapeHtml(user.name || '-')}</strong></td>
+            <td><small>${escapeHtml(user.email)}</small></td>
+            <td>${rolesHtml}</td>
+            <td class="text-center">${statusBadge}</td>
+            <td class="text-center">
+                <button class="btn btn-info btn-xs" onclick="editUserRoles('${user.id}')" title="Kelola Roles">
+                    <i class="fas fa-user-tag"></i>
+                </button>
+            </td>
+        </tr>
+    `}).join('');
+}
+
+/**
+ * Open modal to edit user roles
+ */
+async function editUserRoles(userId) {
+    selectedUserId = userId;
+    const user = users.find(u => u.id === userId);
+    if (!user) return;
+
+    document.getElementById('user-roles-modal-name').textContent = user.name || user.email;
+    document.getElementById('user-roles-user-id').value = userId;
+
+    // Get current user roles
+    const currentRoleIds = (user.roles || []).map(r => r.id);
+
+    // Render role checkboxes
+    const checkboxesHtml = roles.map(role => {
+        const isChecked = currentRoleIds.includes(role.id);
+        const isPrimary = (user.roles || []).find(r => r.id === role.id && r.is_primary);
+        const isDokter = role.name === 'dokter';
+
+        return `
+            <div class="custom-control custom-checkbox mb-2">
+                <input type="checkbox" class="custom-control-input user-role-checkbox"
+                       id="user-role-${role.id}" value="${role.id}" ${isChecked ? 'checked' : ''}>
+                <label class="custom-control-label" for="user-role-${role.id}">
+                    <strong>${escapeHtml(role.display_name)}</strong>
+                    ${isDokter ? '<span class="badge badge-warning ml-1">Superadmin</span>' : ''}
+                    ${isPrimary ? '<span class="badge badge-primary ml-1">Primary</span>' : ''}
+                    <br><small class="text-muted">${escapeHtml(role.description || '')}</small>
+                    <br><small class="text-info">${role.permission_count || 0} permissions</small>
+                </label>
+            </div>
+        `;
+    }).join('');
+
+    document.getElementById('user-roles-checkboxes').innerHTML = checkboxesHtml;
+
+    $(DOM.userRolesModal).modal('show');
+}
+
+/**
+ * Save user roles
+ */
+async function saveUserRoles() {
+    const userId = document.getElementById('user-roles-user-id').value;
+    if (!userId) return;
+
+    const selectedRoleIds = [];
+    document.querySelectorAll('.user-role-checkbox:checked').forEach(cb => {
+        selectedRoleIds.push(parseInt(cb.value));
+    });
+
+    if (selectedRoleIds.length === 0) {
+        Swal.fire('Error', 'Pilih minimal satu role', 'error');
+        return;
+    }
+
+    try {
+        const btn = document.getElementById('btn-save-user-roles');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+
+        await apiRequest(`/users/${userId}/roles`, {
+            method: 'PUT',
+            body: JSON.stringify({ role_ids: selectedRoleIds })
+        });
+
+        Swal.fire('Berhasil', 'Roles berhasil disimpan', 'success');
+        $(DOM.userRolesModal).modal('hide');
+
+        // Reload users table
+        await loadUsers();
+    } catch (error) {
+        console.error('Failed to save user roles:', error);
+        Swal.fire('Error', error.message || 'Gagal menyimpan roles', 'error');
+    } finally {
+        const btn = document.getElementById('btn-save-user-roles');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-save"></i> Simpan Roles';
+    }
 }
 
 // Export to window
@@ -485,5 +657,7 @@ window.initKelolaRoles = init;
 window.editRole = editRole;
 window.deleteRole = deleteRole;
 window.showPermissions = showPermissions;
+window.editUserRoles = editUserRoles;
+window.saveUserRoles = saveUserRoles;
 
 export { init };

@@ -797,15 +797,22 @@
                 </span>
             </li>
         </ul>
-        <ul class="navbar-nav ml-auto" style="height: 68px">
-            <li class="nav-item">
+        <ul class="navbar-nav ml-auto" style="height: 68px; display: flex; align-items: center;">
+            <li class="nav-item" style="display: flex; align-items: center;">
                 <span id="status-banner" class="nav-link d-none">
                     <span class="badge badge-warning">Loading...</span>
                 </span>
             </li>
-            <li class="nav-item dropdown">
-                <a class="nav-link" data-toggle="dropdown" href="#">
-                    <img id="navbar-user-avatar" src="" alt="User" class="img-circle elevation-2 mr-2" style="width: 50px; height: 50px; object-fit: cover; display: none;" data-toggle="tooltip" data-placement="bottom" title="">
+            <li class="nav-item dropdown user-menu" style="display: flex; align-items: center; height: 100%;">
+                <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" style="display: flex !important; flex-direction: row !important; align-items: center !important; padding: 0 1rem; height: 100%;">
+                    <div class="d-none d-md-block" style="text-align: right; margin-right: 10px; line-height: 1.3;">
+                        <div id="navbar-user-name" style="font-weight: 600; color: #333; font-size: 14px;">User</div>
+                        <span id="navbar-user-role" class="badge badge-info" style="font-size: 10px; padding: 2px 6px;">Role</span>
+                    </div>
+                    <img id="navbar-user-avatar" src="" alt="User" class="img-circle elevation-2" style="width: 40px; height: 40px; object-fit: cover; display: none;">
+                    <span id="navbar-user-avatar-placeholder" class="img-circle elevation-2 bg-secondary text-white" style="width: 40px; height: 40px; font-size: 16px; display: none; align-items: center; justify-content: center;">
+                        <i class="fas fa-user"></i>
+                    </span>
                 </a>
                 <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right">
                     <a href="#" class="dropdown-item" id="navbar-profile-btn" onclick="showProfileSettings(); return false;">
@@ -936,11 +943,11 @@
 
     <!-- Content Wrapper -->
     <div class="content-wrapper">
-        <div class="content-header">
+        <div class="content-header d-none" id="content-header-wrapper">
             <div class="container-fluid">
                 <div class="row mb-2">
                     <div class="col-sm-6">
-                        <h1 class="m-0" id="page-title">Dashboard</h1>
+                        <h1 class="m-0" id="page-title"></h1>
                     </div>
                 </div>
             </div>
@@ -950,6 +957,29 @@
             <div class="container-fluid">
                 <!-- DASHBOARD PAGE -->
                 <div id="dashboard-page">
+                    <!-- Welcome Card -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="card" id="welcome-card" style="border: none; border-radius: 12px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);">
+                                <div class="card-body py-4 px-4">
+                                    <p class="mb-1" style="font-size: 13px; letter-spacing: 1px; color: #6c757d;">SELAMAT DATANG DI</p>
+                                    <h3 class="font-weight-bold mb-3" style="font-size: 1.75rem; color: #343a40;">dokter<span style="color: #007BFF;">DIBYA</span></h3>
+                                    <h5 class="mb-4" id="welcome-greeting" style="color: #495057;">
+                                        Halo, <span id="welcome-name" class="font-weight-bold" style="color: #212529;"></span>
+                                    </h5>
+                                    <div id="welcome-jobdesk">
+                                        <div id="roles-description-list">
+                                            <!-- Role descriptions will be inserted here -->
+                                        </div>
+                                    </div>
+                                    <p class="mt-4 mb-0" id="daily-greeting" style="font-size: 17px; color: #343a40; font-weight: 500; line-height: 1.5;">
+                                        Selamat bekerja, semoga harimu menyenangkan!
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="row">
                         <div class="col-lg-3 col-6">
                             <div class="small-box bg-primary">
@@ -2517,6 +2547,35 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- User Management Card -->
+                        <div class="card mt-4">
+                            <div class="card-header bg-info">
+                                <h3 class="card-title"><i class="fas fa-users-cog mr-2"></i>Staff dan Admin</h3>
+                            </div>
+                            <div class="card-body">
+                                <table id="users-roles-table" class="table table-bordered table-striped table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th width="5%">#</th>
+                                            <th width="20%">Nama</th>
+                                            <th width="25%">Email</th>
+                                            <th width="30%">Roles</th>
+                                            <th width="10%">Status</th>
+                                            <th width="10%">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="users-roles-tbody">
+                                        <tr>
+                                            <td colspan="6" class="text-center py-4">
+                                                <i class="fas fa-spinner fa-spin fa-2x"></i>
+                                                <p class="mt-2 mb-0">Memuat data users...</p>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -2535,7 +2594,7 @@
                                     <input type="hidden" id="role-id">
                                     <div class="form-group">
                                         <label for="role-name">Nama Role <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control" id="role-name" required 
+                                        <input type="text" class="form-control" id="role-name" required
                                                pattern="[a-z_]+" title="Hanya huruf kecil dan underscore">
                                         <small class="text-muted">Hanya huruf kecil dan underscore (contoh: admin_klinik)</small>
                                     </div>
@@ -2556,6 +2615,38 @@
                                     </button>
                                 </div>
                             </form>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Role Assignment Modal -->
+                <div class="modal fade" id="user-roles-modal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header bg-info">
+                                <h5 class="modal-title">
+                                    <i class="fas fa-user-tag mr-2"></i>Kelola Roles: <span id="user-roles-modal-name"></span>
+                                </h5>
+                                <button type="button" class="close text-white" data-dismiss="modal">
+                                    <span>&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body">
+                                <input type="hidden" id="user-roles-user-id">
+                                <p class="text-muted mb-3">
+                                    <i class="fas fa-info-circle"></i>
+                                    Pilih satu atau lebih role untuk user ini. Permission akan digabungkan dari semua role yang dipilih.
+                                </p>
+                                <div id="user-roles-checkboxes">
+                                    <!-- Checkboxes will be loaded here -->
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                                <button type="button" class="btn btn-info" id="btn-save-user-roles">
+                                    <i class="fas fa-save"></i> Simpan Roles
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -5270,6 +5361,269 @@ Apakah Anda yakin ingin melanjutkan?`;
  <script src="scripts/mobile-helper.js"></script>
     <!-- Global Chat Loader -->
     <script src="/staff/public/scripts/global-chat-loader.js"></script>
+
+<!-- Profile Completion Modal -->
+<div class="modal fade" id="profile-completion-modal" tabindex="-1" data-backdrop="static" data-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-edit mr-2"></i>Lengkapi Profil Anda
+                </h5>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle mr-2"></i>
+                    <strong>Upload foto profil dan ganti password untuk mengakses website ini.</strong>
+                </div>
+
+                <form id="profile-completion-form">
+                    <!-- Profile Picture Upload -->
+                    <div class="form-group text-center">
+                        <label class="font-weight-bold">Foto Profil <span class="text-danger">*</span></label>
+                        <div class="d-flex justify-content-center mb-3">
+                            <div class="position-relative" style="width: 120px; height: 120px;">
+                                <div id="completion-avatar-preview" class="rounded-circle bg-secondary d-flex align-items-center justify-content-center"
+                                     style="width: 120px; height: 120px; overflow: hidden; border: 3px dashed #ccc;">
+                                    <i id="completion-avatar-icon" class="fas fa-camera fa-3x text-muted"></i>
+                                    <img id="completion-avatar-img" src="" alt="Preview"
+                                         style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                                </div>
+                            </div>
+                        </div>
+                        <input type="file" id="completion-photo-input" accept="image/*" class="d-none">
+                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="document.getElementById('completion-photo-input').click()">
+                            <i class="fas fa-upload mr-1"></i>Pilih Foto
+                        </button>
+                        <small class="d-block text-muted mt-1">Format: JPG, PNG. Maksimal 2MB</small>
+                    </div>
+
+                    <hr>
+
+                    <!-- Password Change -->
+                    <div class="form-group">
+                        <label class="font-weight-bold">Password Baru <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="completion-new-password"
+                                   placeholder="Masukkan password baru" minlength="6" required>
+                            <div class="input-group-append">
+                                <button type="button" class="btn btn-outline-secondary" onclick="toggleCompletionPassword('completion-new-password')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <small class="text-muted">Minimal 6 karakter</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="font-weight-bold">Konfirmasi Password <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="password" class="form-control" id="completion-confirm-password"
+                                   placeholder="Ulangi password baru" minlength="6" required>
+                            <div class="input-group-append">
+                                <button type="button" class="btn btn-outline-secondary" onclick="toggleCompletionPassword('completion-confirm-password')">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-secondary" id="btn-skip-completion">
+                    <i class="fas fa-sign-out-alt mr-1"></i>Keluar
+                </button>
+                <button type="button" class="btn btn-success" id="btn-save-completion" disabled>
+                    <i class="fas fa-check mr-1"></i>Simpan & Lanjutkan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Profile Completion Handler
+window.profileCompletionData = {
+    photo: null,
+    password: null
+};
+
+// Toggle password visibility
+window.toggleCompletionPassword = function(inputId) {
+    const input = document.getElementById(inputId);
+    const icon = input.nextElementSibling.querySelector('i');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+};
+
+// Photo input handler
+document.getElementById('completion-photo-input')?.addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+        Swal.fire('Error', 'File harus berupa gambar (JPG, PNG)', 'error');
+        return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+        Swal.fire('Error', 'Ukuran file maksimal 2MB', 'error');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        window.profileCompletionData.photo = event.target.result;
+        document.getElementById('completion-avatar-img').src = event.target.result;
+        document.getElementById('completion-avatar-img').style.display = 'block';
+        document.getElementById('completion-avatar-icon').style.display = 'none';
+        validateCompletionForm();
+    };
+    reader.readAsDataURL(file);
+});
+
+// Password input handlers
+document.getElementById('completion-new-password')?.addEventListener('input', validateCompletionForm);
+document.getElementById('completion-confirm-password')?.addEventListener('input', validateCompletionForm);
+
+function validateCompletionForm() {
+    const photo = window.profileCompletionData.photo;
+    const newPassword = document.getElementById('completion-new-password')?.value || '';
+    const confirmPassword = document.getElementById('completion-confirm-password')?.value || '';
+
+    const isValid = photo &&
+                    newPassword.length >= 6 &&
+                    newPassword === confirmPassword;
+
+    const saveBtn = document.getElementById('btn-save-completion');
+    if (saveBtn) {
+        saveBtn.disabled = !isValid;
+    }
+
+    return isValid;
+}
+
+// Skip button - logout
+document.getElementById('btn-skip-completion')?.addEventListener('click', async function() {
+    const result = await Swal.fire({
+        title: 'Keluar?',
+        text: 'Anda harus melengkapi profil untuk mengakses website ini.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Keluar',
+        cancelButtonText: 'Batal'
+    });
+
+    if (result.isConfirmed) {
+        localStorage.removeItem('vps_auth_token');
+        localStorage.removeItem('vps_auth_user');
+        window.location.href = 'login.html';
+    }
+});
+
+// Save completion
+document.getElementById('btn-save-completion')?.addEventListener('click', async function() {
+    if (!validateCompletionForm()) {
+        Swal.fire('Error', 'Lengkapi semua field yang diperlukan', 'error');
+        return;
+    }
+
+    const btn = this;
+    const originalText = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Menyimpan...';
+
+    try {
+        const token = localStorage.getItem('vps_auth_token');
+        const apiBase = window.location.origin;
+
+        // Update photo
+        const photoResponse = await fetch(`${apiBase}/api/auth/profile`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ photo_url: window.profileCompletionData.photo })
+        });
+
+        if (!photoResponse.ok) {
+            throw new Error('Gagal menyimpan foto profil');
+        }
+
+        // Update password - need to use default password as current
+        const newPassword = document.getElementById('completion-new-password').value;
+        const passwordResponse = await fetch(`${apiBase}/api/auth/set-initial-password`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ newPassword })
+        });
+
+        if (!passwordResponse.ok) {
+            const errData = await passwordResponse.json();
+            throw new Error(errData.message || 'Gagal mengubah password');
+        }
+
+        // Mark profile as completed
+        await fetch(`${apiBase}/api/auth/mark-profile-completed`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        // Update local user data
+        const userData = JSON.parse(localStorage.getItem('vps_auth_user') || '{}');
+        userData.photo_url = window.profileCompletionData.photo;
+        userData.profile_completed = true;
+        localStorage.setItem('vps_auth_user', JSON.stringify(userData));
+
+        $('#profile-completion-modal').modal('hide');
+
+        Swal.fire({
+            title: 'Berhasil!',
+            text: 'Profil Anda telah dilengkapi. Selamat bekerja!',
+            icon: 'success',
+            timer: 2000,
+            showConfirmButton: false
+        }).then(() => {
+            // Refresh page to update UI
+            window.location.reload();
+        });
+
+    } catch (error) {
+        console.error('Profile completion error:', error);
+        Swal.fire('Error', error.message || 'Gagal menyimpan profil', 'error');
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+    }
+});
+
+// Function to show profile completion modal
+window.showProfileCompletionModal = function() {
+    // Reset form
+    window.profileCompletionData.photo = null;
+    document.getElementById('completion-avatar-img').style.display = 'none';
+    document.getElementById('completion-avatar-icon').style.display = 'block';
+    document.getElementById('completion-new-password').value = '';
+    document.getElementById('completion-confirm-password').value = '';
+    document.getElementById('btn-save-completion').disabled = true;
+
+    $('#profile-completion-modal').modal('show');
+};
+</script>
+
 </body>
 </html>
 

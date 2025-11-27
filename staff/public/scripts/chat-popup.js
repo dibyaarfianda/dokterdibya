@@ -6,12 +6,29 @@
 (function () {
   'use strict';
 
-  // ---------- UTIL: color per name + avatar ----------
+  // ---------- UTIL: color per role + avatar ----------
+  // Role ID constants (match backend constants/roles.js)
+  const ROLE_IDS = {
+    DOKTER: 1,
+    MANAGERIAL: 7,
+    BIDAN: 22,
+    ADMIN: 24,
+    FRONT_OFFICE: 25
+  };
+
+  // Badge colors for chat name (matching auth.js badge colors)
+  function colorFromRoleId(roleId) {
+    if (roleId === ROLE_IDS.DOKTER) return '#ff6b6b';      // lighter red for dokter (badge-danger)
+    if (roleId === ROLE_IDS.ADMIN) return '#ffc107';       // yellow/gold for admin (badge-warning)
+    if (roleId === ROLE_IDS.MANAGERIAL) return '#17a2b8'; // cyan for managerial (badge-info)
+    return '#adb5bd'; // lighter gray for others (badge-secondary)
+  }
+
   const namePalette = [
-    "#ffd6a5", "#b5ead7", "#a0c4ff", "#fdffb6", 
+    "#ffd6a5", "#b5ead7", "#a0c4ff", "#fdffb6",
     "#cdb4db", "#fbc4ab", "#d0f4de", "#ffc6ff"
   ];
-  
+
   function colorFromName(name = '') {
     let h = 0;
     for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
@@ -195,9 +212,9 @@
         box-shadow: 0 1px 2px rgba(0,0,0,.1);
       }
 
-      /* Incoming: #737373, teks putih; Outgoing: biru */
+      /* Incoming: biru gelap, teks putih; Outgoing: biru terang */
       .chat-message.received .chat-message-content {
-        background: #737373; color: #fff; text-align: left;
+        background: #0056b3; color: #fff; text-align: left;
       }
       .chat-message.sent .chat-message-content {
         background: #007bff; color: #fff; text-align: right;
@@ -334,6 +351,7 @@
   let isHistoryLoading = false;
   let lastSender = null; // Track last message sender for avatar grouping
   const userPhotoCache = new Map();
+  const userRoleCache = new Map(); // Cache role_id for badge colors
   
         // Show clear button only for superadmin
         function checkClearButtonVisibility() {
@@ -439,9 +457,10 @@
       if (!curUser) { console.error('User not authenticated'); return; }
 
       const userPhoto = curUser.photo_url || curUser.photoURL || null;
+      const userRoleId = curUser.role_id || null;
 
       // Show immediately
-      addMessage(message, 'sent', null, curUser.name || curUser.email, userPhoto, curUser.id);
+      addMessage(message, 'sent', null, curUser.name || curUser.email, userPhoto, curUser.id, userRoleId);
       if (sendAudio && typeof sendAudio.play === 'function') {
         try {
           sendAudio.currentTime = 0;
@@ -499,7 +518,7 @@
                         resetChatState(); // Reset block tracking
             result.data.forEach(msg => {
               const type = msg.user_id === user.id ? 'sent' : 'received';
-              addMessage(msg.message, type, msg.created_at, msg.user_name, msg.user_photo, msg.user_id);
+              addMessage(msg.message, type, msg.created_at, msg.user_name, msg.user_photo, msg.user_id, msg.role_id);
                         });
           }
         }
@@ -512,7 +531,7 @@
         }
 
     // Add message with avatar support
-    function addMessage(text, type, timestamp = null, userName = null, userPhoto = null, userId = null) {
+    function addMessage(text, type, timestamp = null, userName = null, userPhoto = null, userId = null, roleId = null) {
       const time = timestamp
         ? new Date(timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' })
         : new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' });
@@ -524,9 +543,13 @@
       if (userId && userPhoto) {
         userPhotoCache.set(userId, userPhoto);
       }
+      if (userId && roleId) {
+        userRoleCache.set(userId, roleId);
+      }
 
-      // Color for name and avatar
-      const nameColor = isSelf ? '#dbeafe' : colorFromName(userName || '');
+      // Color for name based on role (badge colors), avatar based on name
+      const cachedRoleId = roleId || (userId ? userRoleCache.get(userId) : null);
+      const nameColor = isSelf ? '#dbeafe' : colorFromRoleId(cachedRoleId);
       const avatarBg = isSelf ? '#111827' : colorFromName(userName || '');
 
       let messageHTML = `<div class="chat-message ${type}">`;
@@ -598,7 +621,7 @@
                 console.log('[ChatPopup] My user.id:', user.id, 'Message user_id:', data.user_id);
                 if (data.user_id !== user.id && data.user_id !== user.uid) {
                     console.log('[ChatPopup] Adding received message');
-                    addMessage(data.message, 'received', data.created_at, data.user_name, data.user_photo, data.user_id);
+                    addMessage(data.message, 'received', data.created_at, data.user_name, data.user_photo, data.user_id, data.role_id);
                 } else {
                     console.log('[ChatPopup] Skipping own message');
                 }

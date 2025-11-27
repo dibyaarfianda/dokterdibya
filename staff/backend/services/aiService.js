@@ -730,11 +730,134 @@ async function logInterviewCompletion(data) {
     }
 }
 
+// ============ DAILY GREETING ============
+
+/**
+ * Generate daily motivational greeting using AI
+ * Changes once per day at midnight (based on date string)
+ * @param {Object} params - Greeting parameters
+ * @param {string} params.userId - User ID for personalization seed
+ * @param {string} params.userName - User's name
+ * @param {string} params.roleName - User's role display name
+ * @returns {Promise<Object>} Generated greeting
+ */
+async function generateDailyGreeting({ userId, userName, roleName }) {
+    try {
+        // Get current date info for context
+        const now = new Date();
+        const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        const dayName = days[now.getDay()];
+        const hour = now.getHours();
+        const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+
+        // Determine time of day
+        let timeContext = 'pagi';
+        if (hour >= 11 && hour < 15) timeContext = 'siang';
+        else if (hour >= 15 && hour < 18) timeContext = 'sore';
+        else if (hour >= 18) timeContext = 'malam';
+
+        // Special context for weekend
+        const isWeekend = now.getDay() === 0 || now.getDay() === 6;
+        const isSunday = now.getDay() === 0;
+
+        // Generate unique seed for each user to ensure different greetings
+        // Combine date + userId for uniqueness
+        const uniqueSeed = `${dateStr}-${userId}`;
+        const seedHash = uniqueSeed.split('').reduce((a, b) => ((a << 5) - a) + b.charCodeAt(0), 0);
+        const styleVariant = Math.abs(seedHash) % 5; // 0-4 different styles
+
+        // Style variants for variety
+        const styleDescriptions = [
+            'gaya santai dan humoris, seperti teman kerja',
+            'gaya motivasi yang membangkitkan semangat',
+            'gaya bijak dengan sentuhan filosofis ringan',
+            'gaya ceria dan menghibur',
+            'gaya apresiasi dan penuh dukungan'
+        ];
+        const selectedStyle = styleDescriptions[styleVariant];
+
+        const prompt = `Kamu adalah asisten yang ramah di klinik dokterDIBYA.
+
+Buatkan SATU ucapan UNIK untuk staff klinik ini:
+- Nama: ${userName || 'Staff'}
+- Role: ${roleName || 'Staff'}
+- Hari: ${dayName}
+- Waktu: ${timeContext}
+- Unique ID: ${uniqueSeed}
+${isSunday ? '- PENTING: Hari Minggu adalah hari libur, apresiasi dedikasi mereka yang tetap bekerja' : ''}
+${isWeekend && !isSunday ? '- Ini hari Sabtu (akhir pekan)' : ''}
+
+Gaya ucapan yang diminta: ${selectedStyle}
+
+Kriteria:
+1. Maksimal 2 kalimat pendek
+2. Bahasa Indonesia santai tapi sopan
+3. TANPA emoji atau icon
+4. Ucapan harus BERBEDA untuk setiap user (gunakan Unique ID sebagai inspirasi variasi)
+5. Boleh menyebut nama "${userName}" secara natural
+6. Relevan dengan hari dan waktu
+
+Contoh variasi:
+- "${userName}, hari ${dayName} menanti kontribusimu!"
+- "Siap melayani dengan senyum hari ini, ${userName}?"
+- "Satu hari lagi untuk membuat perbedaan, semangat!"
+
+Balas HANYA dengan ucapannya saja.`;
+
+        const response = await openai.chat.completions.create({
+            model: AI_MODEL,
+            messages: [
+                {
+                    role: 'system',
+                    content: `Kamu adalah pembuat ucapan harian yang kreatif. Setiap ucapan harus UNIK berdasarkan kombinasi nama user dan tanggal. Gunakan gaya: ${selectedStyle}. Balas hanya dengan ucapan saja.`
+                },
+                {
+                    role: 'user',
+                    content: prompt
+                }
+            ],
+            max_tokens: 100,
+            temperature: 0.95, // Higher temperature for more variety between users
+            seed: Math.abs(seedHash) % 1000000 // Use seed for reproducibility per user per day
+        });
+
+        const greeting = response.choices[0]?.message?.content?.trim() || 'Selamat bekerja, semoga harimu menyenangkan!';
+        const tokensUsed = response.usage?.total_tokens || 0;
+
+        return {
+            success: true,
+            data: {
+                greeting: greeting,
+                day: dayName,
+                time: timeContext,
+                isWeekend: isWeekend
+            },
+            tokensUsed
+        };
+
+    } catch (error) {
+        console.error('AI Daily Greeting Error:', error);
+        // Fallback greeting
+        return {
+            success: true,
+            data: {
+                greeting: 'Selamat bekerja, semoga harimu menyenangkan!',
+                day: null,
+                time: null,
+                isWeekend: false,
+                fallback: true
+            },
+            tokensUsed: 0
+        };
+    }
+}
+
 module.exports = {
     detectVisitCategory,
     generateMedicalSummary,
     validateAnamnesa,
     chatbotResponse,
     generateInterviewQuestions,
-    processInterviewAnswers
+    processInterviewAnswers,
+    generateDailyGreeting
 };

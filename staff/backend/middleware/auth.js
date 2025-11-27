@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const logger = require('../utils/logger');
+const { ROLE_IDS, isSuperadminRole, isAdminRole } = require('../constants/roles');
 
 // Ensure JWT_SECRET is set - fail fast if not
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -130,44 +131,57 @@ function verifyToken(req, res, next) {
 
 /**
  * Middleware to check if user has required role
- * Enhanced with audit logging
+ * Now uses role_id (INT) for consistency
+ * @param {...number} allowedRoleIds - Role IDs from ROLE_IDS constants
  */
-function requireRole(...allowedRoles) {
+function requireRole(...allowedRoleIds) {
     return (req, res, next) => {
         const requestId = req.context?.requestId || 'unknown';
-        
+
         if (!req.user) {
             logger.warn('Missing user in requireRole middleware', {
                 requestId,
                 ip: req.ip,
                 path: req.path
             });
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Authentication required' 
+            return res.status(401).json({
+                success: false,
+                message: 'Authentication required'
             });
         }
 
-        if (!allowedRoles.includes(req.user.role)) {
+        const userRoleId = req.user.role_id;
+
+        // Superadmin (dokter) always has access
+        if (req.user.is_superadmin || isSuperadminRole(userRoleId)) {
+            logger.debug('Superadmin access granted', {
+                requestId,
+                userId: req.user.id,
+                role_id: userRoleId
+            });
+            return next();
+        }
+
+        if (!allowedRoleIds.includes(userRoleId)) {
             logger.warn('Insufficient permissions', {
                 requestId,
                 userId: req.user.id,
-                userRole: req.user.role,
-                allowedRoles,
+                userRoleId,
+                allowedRoleIds,
                 path: req.path
             });
-            return res.status(403).json({ 
-                success: false, 
-                message: 'Insufficient permissions' 
+            return res.status(403).json({
+                success: false,
+                message: 'Insufficient permissions'
             });
         }
 
         logger.debug('Role authorization successful', {
             requestId,
             userId: req.user.id,
-            role: req.user.role
+            role_id: userRoleId
         });
-        
+
         next();
     };
 }
@@ -281,26 +295,26 @@ function optionalAuth(req, res, next) {
 
 /**
  * Middleware to check if user has required permissions
- * Enhanced with permission-based authorization
+ * Aggregates permissions from ALL assigned roles (multiple roles support)
  */
 function requirePermission(...requiredPermissions) {
     return async (req, res, next) => {
         const requestId = req.context?.requestId || 'unknown';
-        
+
         if (!req.user) {
             logger.warn('Missing user in requirePermission middleware', {
                 requestId,
                 ip: req.ip,
                 path: req.path
             });
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Authentication required' 
+            return res.status(401).json({
+                success: false,
+                message: 'Authentication required'
             });
         }
 
         // Superadmin has all permissions
-        if (req.user.is_superadmin || req.user.role === 'dokter') {
+        if (req.user.is_superadmin || isSuperadminRole(req.user.role_id)) {
             logger.debug('Superadmin access granted', {
                 requestId,
                 userId: req.user.id,
@@ -311,21 +325,21 @@ function requirePermission(...requiredPermissions) {
         }
 
         try {
-            // Get user's permissions from database
+            // Get user's permissions from ALL assigned roles (aggregated)
             const db = require('../db');
 
             const [rows] = await db.query(`
                 SELECT DISTINCT p.name
                 FROM permissions p
                 INNER JOIN role_permissions rp ON p.id = rp.permission_id
-                INNER JOIN users u ON u.role_id = rp.role_id
-                WHERE u.new_id = ?
+                INNER JOIN user_roles ur ON ur.role_id = rp.role_id
+                WHERE ur.user_id = ?
             `, [req.user.id]);
 
             const userPermissions = rows.map(row => row.name);
 
             // Check if user has at least one of the required permissions
-            const hasPermission = requiredPermissions.some(permission => 
+            const hasPermission = requiredPermissions.some(permission =>
                 userPermissions.includes(permission)
             );
 
@@ -338,9 +352,9 @@ function requirePermission(...requiredPermissions) {
                     requiredPermissions,
                     path: req.path
                 });
-                return res.status(403).json({ 
-                    success: false, 
-                    message: 'Insufficient permissions' 
+                return res.status(403).json({
+                    success: false,
+                    message: 'Insufficient permissions'
                 });
             }
 
@@ -349,7 +363,7 @@ function requirePermission(...requiredPermissions) {
                 userId: req.user.id,
                 grantedPermission: requiredPermissions.find(p => userPermissions.includes(p))
             });
-            
+
             next();
         } catch (error) {
             logger.error('Error checking permissions', {

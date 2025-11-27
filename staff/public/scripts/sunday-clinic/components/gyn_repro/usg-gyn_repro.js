@@ -1,6 +1,6 @@
 /**
  * USG Component for Gyn Repro Patients
- * Focus: Fertility assessment, follicle monitoring, reproductive organs
+ * Focus: Gynecological pathology, masses, abnormalities
  */
 
 import stateManager from '../../utils/state-manager.js';
@@ -35,15 +35,17 @@ export function render() {
         if (savedData.uterus?.length && savedData.uterus?.width && savedData.uterus?.depth) {
             summaryItems.push(`<strong>Ukuran Rahim:</strong> ${savedData.uterus.length} × ${savedData.uterus.width} × ${savedData.uterus.depth} cm`);
         }
+        if (savedData.uterus?.hasMyoma) summaryItems.push(`<strong>Mioma:</strong> Ya - ${savedData.uterus.myomaSize || ''}`);
+        if (savedData.uterus?.hasAdenomyosis) summaryItems.push(`<strong>Adenomyosis:</strong> Ya`);
         if (savedData.endometrium?.thickness) summaryItems.push(`<strong>Endometrium:</strong> ${savedData.endometrium.thickness} mm`);
-        if (savedData.ovaries?.right?.follicleCount) summaryItems.push(`<strong>Folikel Kanan:</strong> ${savedData.ovaries.right.follicleCount}`);
-        if (savedData.ovaries?.left?.follicleCount) summaryItems.push(`<strong>Folikel Kiri:</strong> ${savedData.ovaries.left.follicleCount}`);
+        if (savedData.ovaries?.right?.hasMass) summaryItems.push(`<strong>Massa Ovarium Kanan:</strong> ${savedData.ovaries.right.massSize || ''}`);
+        if (savedData.ovaries?.left?.hasMass) summaryItems.push(`<strong>Massa Ovarium Kiri:</strong> ${savedData.ovaries.left.massSize || ''}`);
         if (savedData.notes) summaryItems.push(`<strong>Catatan:</strong> ${escapeHtml(savedData.notes)}`);
 
         if (summaryItems.length > 0) {
             savedSummaryHtml = `<div class="alert mb-3" style="background-color: #EDEDED; border-color: #DEDEDE;" id="usg-summary-container">
                 <h5 style="cursor: pointer; margin-bottom: 0;" data-toggle="collapse" data-target="#usg-summary-collapse">
-                    <i class="fas fa-check-circle" style="color: #28a745;"></i> USG Ginekologi Reproduksi - <span style="color: #007bff;">Data Tersimpan</span>
+                    <i class="fas fa-check-circle" style="color: #28a745;"></i> USG Ginekologi - <span style="color: #007bff;">Data Tersimpan</span>
                     <i class="fas fa-chevron-down float-right" style="transition: transform 0.3s; transform: rotate(-90deg);"></i>
                 </h5>
                 <div id="usg-summary-collapse" class="collapse">
@@ -68,7 +70,7 @@ export function render() {
 
     const html = `
         <div class="sc-section-header d-flex justify-content-between">
-            <h3>USG Ginekologi Reproduksi</h3>
+            <h3>USG Ginekologi</h3>
         </div>
         ${metaHtml}
         <div class="sc-card">
@@ -101,7 +103,7 @@ export function render() {
                 <hr>
 
                 <!-- Uterus Section -->
-                <h5 class="text-success font-weight-bold"><i class="fas fa-female"></i> RAHIM (UTERUS)</h5>
+                <h5 class="text-info font-weight-bold"><i class="fas fa-female"></i> RAHIM (UTERUS)</h5>
                 <div class="form-row">
                     <div class="form-group col-md-6">
                         <label class="font-weight-bold">Posisi</label>
@@ -133,7 +135,20 @@ export function render() {
                             <label class="custom-control-label" for="has-myoma">Mioma</label>
                         </div>
                         <div id="myoma-details" class="ml-4 mt-2" style="display: ${savedData.uterus?.hasMyoma ? 'block' : 'none'};">
-                            <input type="text" class="form-control form-control-sm" id="myoma-size" placeholder="Ukuran mioma (cm)" value="${escapeHtml(savedData.uterus?.myomaSize || '')}">
+                            <label>Lokasi:</label>
+                            <div class="mb-2">
+                                ${['submucosa', 'intramural', 'subserosa'].map(loc => `
+                                    <div class="custom-control custom-checkbox custom-control-inline">
+                                        <input type="checkbox" class="custom-control-input" name="myoma_location" id="myoma-${loc}" value="${loc}" ${(savedData.uterus?.myomaLocation || []).includes(loc) ? 'checked' : ''}>
+                                        <label class="custom-control-label" for="myoma-${loc}">${loc.charAt(0).toUpperCase() + loc.slice(1)}</label>
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <input type="text" class="form-control form-control-sm" id="myoma-size" placeholder="Ukuran mioma (L × W × D cm)" value="${escapeHtml(savedData.uterus?.myomaSize || '')}">
+                            <div class="custom-control custom-checkbox mt-2">
+                                <input type="checkbox" class="custom-control-input" id="multiple-myoma" ${savedData.uterus?.multipleMyoma ? 'checked' : ''}>
+                                <label class="custom-control-label" for="multiple-myoma">Multiple Myoma</label>
+                            </div>
                         </div>
                     </div>
                     <div class="form-group col-md-6">
@@ -146,7 +161,7 @@ export function render() {
                 <hr>
 
                 <!-- Endometrium Section -->
-                <h5 class="text-success font-weight-bold"><i class="fas fa-layer-group"></i> DINDING RAHIM (ENDOMETRIUM)</h5>
+                <h5 class="text-info font-weight-bold"><i class="fas fa-layer-group"></i> DINDING RAHIM (ENDOMETRIUM)</h5>
                 <div class="form-row">
                     <div class="form-group col-md-4">
                         <label>Ketebalan</label>
@@ -169,7 +184,7 @@ export function render() {
                 <hr>
 
                 <!-- Ovaries Section -->
-                <h5 class="text-success font-weight-bold"><i class="fas fa-circle"></i> INDUNG TELUR (OVARIUM)</h5>
+                <h5 class="text-info font-weight-bold"><i class="fas fa-circle"></i> INDUNG TELUR (OVARIUM)</h5>
                 <div class="row">
                     ${['right', 'left'].map(side => {
                         const sideData = savedData.ovaries?.[side] || {};
@@ -190,38 +205,55 @@ export function render() {
                                 <input type="number" class="form-control form-control-sm" id="ovary-${side}-depth" placeholder="D" value="${escapeHtml(sideData.depth || '')}" step="0.1">
                                 <div class="input-group-append"><span class="input-group-text">cm</span></div>
                             </div>
-                            <label>Folikel:</label>
-                            <div class="form-row mb-2">
-                                <div class="col-6">
-                                    <div class="input-group input-group-sm">
-                                        <div class="input-group-prepend"><span class="input-group-text">Jml</span></div>
-                                        <input type="number" class="form-control" id="ovary-${side}-follicle-count" value="${escapeHtml(sideData.follicleCount || '')}" placeholder="0">
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div class="input-group input-group-sm">
-                                        <input type="number" class="form-control" id="ovary-${side}-follicle-max" placeholder="max" value="${escapeHtml(sideData.follicleMaxSize || '')}" step="0.1">
-                                        <div class="input-group-append"><span class="input-group-text">mm</span></div>
-                                    </div>
-                                </div>
-                            </div>
+
                             <div class="custom-control custom-checkbox mb-2">
                                 <input type="checkbox" class="custom-control-input" id="ovary-${side}-pco" ${sideData.pco ? 'checked' : ''}>
                                 <label class="custom-control-label" for="ovary-${side}-pco">Penampakan PCO</label>
                             </div>
+
                             <div class="custom-control custom-checkbox mb-2">
                                 <input type="checkbox" class="custom-control-input" id="ovary-${side}-has-mass" ${sideData.hasMass ? 'checked' : ''}>
                                 <label class="custom-control-label" for="ovary-${side}-has-mass">Ada Massa/Kista</label>
                             </div>
                             <div id="ovary-${side}-mass-details" class="ml-4" style="display: ${sideData.hasMass ? 'block' : 'none'};">
-                                <input type="text" class="form-control form-control-sm mb-2" id="ovary-${side}-mass-size" placeholder="Ukuran massa" value="${escapeHtml(sideData.massSize || '')}">
-                                <select class="form-control form-control-sm" id="ovary-${side}-mass-type">
-                                    <option value="">Jenis massa</option>
-                                    <option value="simple_cyst" ${sideData.massType === 'simple_cyst' ? 'selected' : ''}>Kista sederhana</option>
-                                    <option value="complex_cyst" ${sideData.massType === 'complex_cyst' ? 'selected' : ''}>Kista kompleks</option>
-                                    <option value="solid" ${sideData.massType === 'solid' ? 'selected' : ''}>Padat</option>
-                                    <option value="mixed" ${sideData.massType === 'mixed' ? 'selected' : ''}>Campuran</option>
-                                </select>
+                                <div class="form-group mb-2">
+                                    <input type="text" class="form-control form-control-sm" id="ovary-${side}-mass-size" placeholder="Ukuran massa (cm)" value="${escapeHtml(sideData.massSize || '')}">
+                                </div>
+                                <div class="form-group mb-2">
+                                    <label class="small">Jenis:</label>
+                                    <select class="form-control form-control-sm" id="ovary-${side}-mass-type">
+                                        <option value="">-- Pilih --</option>
+                                        <option value="simple_cyst" ${sideData.massType === 'simple_cyst' ? 'selected' : ''}>Kista sederhana</option>
+                                        <option value="complex_cyst" ${sideData.massType === 'complex_cyst' ? 'selected' : ''}>Kista kompleks</option>
+                                        <option value="solid" ${sideData.massType === 'solid' ? 'selected' : ''}>Padat</option>
+                                        <option value="mixed" ${sideData.massType === 'mixed' ? 'selected' : ''}>Campuran</option>
+                                    </select>
+                                </div>
+                                <div class="form-group mb-2">
+                                    <label class="small">Internal echo:</label>
+                                    <select class="form-control form-control-sm" id="ovary-${side}-internal-echo">
+                                        <option value="">-- Pilih --</option>
+                                        <option value="anechoic" ${sideData.internalEcho === 'anechoic' ? 'selected' : ''}>Anekoit</option>
+                                        <option value="low_level" ${sideData.internalEcho === 'low_level' ? 'selected' : ''}>Tingkat rendah</option>
+                                        <option value="echogenic" ${sideData.internalEcho === 'echogenic' ? 'selected' : ''}>Echogenik</option>
+                                    </select>
+                                </div>
+                                <div class="form-group mb-2">
+                                    <label class="small">Bersepta:</label>
+                                    <select class="form-control form-control-sm" id="ovary-${side}-septated">
+                                        <option value="none" ${(sideData.septated || 'none') === 'none' ? 'selected' : ''}>Tidak ada</option>
+                                        <option value="thin" ${sideData.septated === 'thin' ? 'selected' : ''}>Tipis</option>
+                                        <option value="thick" ${sideData.septated === 'thick' ? 'selected' : ''}>Tebal</option>
+                                    </select>
+                                </div>
+                                <div class="form-group mb-2">
+                                    <label class="small">Dinding:</label>
+                                    <select class="form-control form-control-sm" id="ovary-${side}-wall">
+                                        <option value="">-- Pilih --</option>
+                                        <option value="smooth" ${sideData.wall === 'smooth' ? 'selected' : ''}>Halus</option>
+                                        <option value="irregular" ${sideData.wall === 'irregular' ? 'selected' : ''}>Tidak teratur</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>`;
                     }).join('')}
@@ -229,12 +261,18 @@ export function render() {
                 <hr>
 
                 <!-- Additional Findings -->
-                <h5 class="text-success font-weight-bold"><i class="fas fa-plus-circle"></i> TEMUAN TAMBAHAN</h5>
+                <h5 class="text-info font-weight-bold"><i class="fas fa-plus-circle"></i> TEMUAN TAMBAHAN</h5>
                 <div class="form-row">
                     <div class="form-group col-md-6">
                         <div class="custom-control custom-checkbox">
                             <input type="checkbox" class="custom-control-input" id="free-fluid" ${savedData.additional?.freeFluid ? 'checked' : ''}>
                             <label class="custom-control-label" for="free-fluid">Free fluid di cavum douglas</label>
+                        </div>
+                    </div>
+                    <div class="form-group col-md-6">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="cervical-assessment" ${savedData.additional?.cervicalAssessment ? 'checked' : ''}>
+                            <label class="custom-control-label" for="cervical-assessment">Pemeriksaan serviks dilakukan</label>
                         </div>
                     </div>
                 </div>
@@ -344,6 +382,9 @@ async function saveUSGGynRepro() {
         const context = getMedicalRecordContext(state, 'usg');
         const existingRecordId = context?.record?.id;
 
+        // Collect myoma locations
+        const myomaLocations = Array.from(document.querySelectorAll('input[name="myoma_location"]:checked')).map(el => el.value);
+
         const usgData = {
             date: document.getElementById('usg-date')?.value || '',
             type: document.querySelector('input[name="usg_type"]:checked')?.value || 'transabdominal',
@@ -353,7 +394,9 @@ async function saveUSGGynRepro() {
                 width: document.getElementById('uterus-width')?.value || '',
                 depth: document.getElementById('uterus-depth')?.value || '',
                 hasMyoma: document.getElementById('has-myoma')?.checked || false,
+                myomaLocation: myomaLocations,
                 myomaSize: document.getElementById('myoma-size')?.value || '',
+                multipleMyoma: document.getElementById('multiple-myoma')?.checked || false,
                 hasAdenomyosis: document.getElementById('has-adenomyosis')?.checked || false
             },
             endometrium: {
@@ -365,7 +408,8 @@ async function saveUSGGynRepro() {
                 left: collectOvaryData('left')
             },
             additional: {
-                freeFluid: document.getElementById('free-fluid')?.checked || false
+                freeFluid: document.getElementById('free-fluid')?.checked || false,
+                cervicalAssessment: document.getElementById('cervical-assessment')?.checked || false
             },
             notes: document.getElementById('usg-notes')?.value || ''
         };
@@ -404,12 +448,13 @@ function collectOvaryData(side) {
         length: document.getElementById(`ovary-${side}-length`)?.value || '',
         width: document.getElementById(`ovary-${side}-width`)?.value || '',
         depth: document.getElementById(`ovary-${side}-depth`)?.value || '',
-        follicleCount: document.getElementById(`ovary-${side}-follicle-count`)?.value || '',
-        follicleMaxSize: document.getElementById(`ovary-${side}-follicle-max`)?.value || '',
         pco: document.getElementById(`ovary-${side}-pco`)?.checked || false,
         hasMass: document.getElementById(`ovary-${side}-has-mass`)?.checked || false,
         massSize: document.getElementById(`ovary-${side}-mass-size`)?.value || '',
-        massType: document.getElementById(`ovary-${side}-mass-type`)?.value || ''
+        massType: document.getElementById(`ovary-${side}-mass-type`)?.value || '',
+        internalEcho: document.getElementById(`ovary-${side}-internal-echo`)?.value || '',
+        septated: document.getElementById(`ovary-${side}-septated`)?.value || 'none',
+        wall: document.getElementById(`ovary-${side}-wall`)?.value || ''
     };
 }
 

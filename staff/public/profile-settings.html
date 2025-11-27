@@ -154,17 +154,17 @@
 
     // Show toast message
     function showToast(message, type = 'success') {
-        const bgColor = type === 'success' ? 'bg-success' : type === 'error' ? 'bg-danger' : 'bg-warning';
+        const bgColor = type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#ffc107';
+        const textColor = type === 'warning' ? '#212529' : '#ffffff';
         const toast = $(`
-            <div class="toast ${bgColor}" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 250px;">
-                <div class="toast-body text-white">
-                    ${message}
-                </div>
+            <div style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 250px;
+                        background: ${bgColor}; color: ${textColor}; padding: 15px 20px;
+                        border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+                ${message}
             </div>
         `);
         $('body').append(toast);
-        toast.toast({ delay: 3000 }).toast('show');
-        setTimeout(() => toast.remove(), 3500);
+        setTimeout(() => toast.fadeOut(500, function() { $(this).remove(); }), 3000);
     }
 
     // Load profile data

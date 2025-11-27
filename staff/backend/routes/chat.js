@@ -12,14 +12,26 @@ const { verifyToken } = require('../middleware/auth');
 router.get('/api/chat/messages', verifyToken, async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 100;
+        // JOIN with users table to get latest photo_url and role_id
         const [rows] = await db.query(
-            'SELECT id, user_id, user_name, user_photo, message, timestamp as created_at FROM chat_messages ORDER BY timestamp DESC LIMIT ?',
+            `SELECT
+                cm.id,
+                cm.user_id,
+                COALESCE(u.name, cm.user_name) as user_name,
+                COALESCE(u.photo_url, cm.user_photo) as user_photo,
+                u.role_id,
+                cm.message,
+                cm.timestamp as created_at
+            FROM chat_messages cm
+            LEFT JOIN users u ON cm.user_id = u.new_id
+            ORDER BY cm.timestamp DESC
+            LIMIT ?`,
             [limit]
         );
-        
+
         // Reverse to show oldest first
         rows.reverse();
-        
+
         res.json({
             success: true,
             data: rows
@@ -51,11 +63,12 @@ router.post('/api/chat/send', verifyToken, validateChatMessage, async (req, res)
 
     let userName = null;
     let finalPhoto = null;
+    let userRoleId = null;
     const requestPhoto = typeof req.body.user_photo === 'string' ? req.body.user_photo : null;
 
         try {
             const [userRows] = await db.query(
-                'SELECT name, email, photo_url FROM users WHERE new_id = ? LIMIT 1',
+                'SELECT name, email, photo_url, role_id FROM users WHERE new_id = ? LIMIT 1',
                 [userId]
             );
 
@@ -69,6 +82,7 @@ router.post('/api/chat/send', verifyToken, validateChatMessage, async (req, res)
             const userRecord = userRows[0];
             userName = userRecord.name || userRecord.email || userEmail;
             finalPhoto = userRecord.photo_url || null;
+            userRoleId = userRecord.role_id || null;
             if (finalPhoto && finalPhoto.startsWith('data:')) {
                 finalPhoto = null;
             }
@@ -101,8 +115,10 @@ router.post('/api/chat/send', verifyToken, validateChatMessage, async (req, res)
                     newMessage[0].user_photo = requestPhoto;
                 }
             }
+            // Add role_id for badge color in chat
+            newMessage[0].role_id = userRoleId;
         }
-        
+
         // Emit to all connected clients via Socket.io
         if (router.io) {
             router.io.emit('chat:message', newMessage[0]);

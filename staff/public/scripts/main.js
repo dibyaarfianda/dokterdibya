@@ -698,8 +698,230 @@ function bindSundayClinicLauncher() {
     button.dataset.sundayClinicBound = 'true';
 }
 
+// Markdown parser for role descriptions
+function parseMarkdown(text) {
+    if (!text) return '';
+
+    let html = text
+        // Headers: ### Header
+        .replace(/^###\s+(.*)$/gm, '<h6 style="font-weight: 600; margin: 8px 0 4px 0; color: #343a40;">$1</h6>')
+        .replace(/^##\s+(.*)$/gm, '<h5 style="font-weight: 600; margin: 10px 0 6px 0; color: #343a40;">$1</h5>')
+        .replace(/^#\s+(.*)$/gm, '<h4 style="font-weight: 700; margin: 12px 0 8px 0; color: #343a40;">$1</h4>')
+        // Bold: **text** or __text__
+        .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+        .replace(/__(.*?)__/g, '<strong>$1</strong>')
+        // Italic: *text* or _text_
+        .replace(/\*(?!\*)(.*?)\*/g, '<em>$1</em>')
+        .replace(/_(?!_)(.*?)_/g, '<em>$1</em>')
+        // Inline code: `code`
+        .replace(/`([^`]+)`/g, '<code style="background: #f4f4f4; padding: 2px 6px; border-radius: 4px; font-size: 12px;">$1</code>')
+        // Horizontal rule: ---
+        .replace(/^---$/gm, '<hr style="border: 0; border-top: 1px solid #dee2e6; margin: 10px 0;">')
+        // Blockquote: > text
+        .replace(/^>\s+(.*)$/gm, '<blockquote style="border-left: 3px solid #6c757d; padding-left: 12px; margin: 8px 0; color: #6c757d; font-style: italic;">$1</blockquote>');
+
+    // Process lists separately to handle properly
+    const lines = html.split('\n');
+    let result = [];
+    let inList = false;
+    let listType = null;
+
+    for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const unorderedMatch = line.match(/^[\-\*]\s+(.*)$/);
+        const orderedMatch = line.match(/^\d+\.\s+(.*)$/);
+
+        if (unorderedMatch) {
+            if (!inList || listType !== 'ul') {
+                if (inList) result.push(listType === 'ol' ? '</ol>' : '</ul>');
+                result.push('<ul style="margin: 6px 0; padding-left: 20px; list-style-type: disc;">');
+                inList = true;
+                listType = 'ul';
+            }
+            result.push(`<li style="margin: 3px 0; line-height: 1.5;">${unorderedMatch[1]}</li>`);
+        } else if (orderedMatch) {
+            if (!inList || listType !== 'ol') {
+                if (inList) result.push(listType === 'ol' ? '</ol>' : '</ul>');
+                result.push('<ol style="margin: 6px 0; padding-left: 20px;">');
+                inList = true;
+                listType = 'ol';
+            }
+            result.push(`<li style="margin: 3px 0; line-height: 1.5;">${orderedMatch[1]}</li>`);
+        } else {
+            if (inList) {
+                result.push(listType === 'ol' ? '</ol>' : '</ul>');
+                inList = false;
+                listType = null;
+            }
+            // Only add <br> for non-empty lines that aren't already block elements
+            if (line.trim() && !line.startsWith('<h') && !line.startsWith('<hr') && !line.startsWith('<blockquote')) {
+                result.push(line + '<br>');
+            } else if (line.trim()) {
+                result.push(line);
+            }
+        }
+    }
+
+    if (inList) {
+        result.push(listType === 'ol' ? '</ol>' : '</ul>');
+    }
+
+    return result.join('\n')
+        // Clean up trailing <br> before block elements
+        .replace(/<br>\n*(<\/?(ul|ol|h[1-6]|hr|blockquote))/g, '$1')
+        // Clean up multiple <br>
+        .replace(/(<br>\s*){2,}/g, '<br><br>');
+}
+
+// Fallback greetings when API fails
+const FALLBACK_GREETINGS = [
+    "Selamat bekerja, semoga harimu menyenangkan!",
+    "Semangat menjalani hari ini!",
+    "Terima kasih atas dedikasimu hari ini.",
+    "Satu langkah kecil, dampak besar untuk pasien.",
+    "Kamu hebat sudah sampai di sini!"
+];
+
+/**
+ * Get daily greeting from AI API (cached per day per user)
+ * Changes once per day at midnight
+ * Falls back to local greeting if API fails
+ */
+async function fetchDailyGreeting(userId) {
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    const storageKey = `daily_greeting_ai_${userId}`;
+    const stored = localStorage.getItem(storageKey);
+
+    // Check if we have a valid cached greeting for today
+    if (stored) {
+        try {
+            const { date, greeting } = JSON.parse(stored);
+            if (date === today && greeting) {
+                return greeting;
+            }
+        } catch (e) {
+            // Invalid stored data, fetch new
+        }
+    }
+
+    // Fetch from AI API
+    try {
+        const token = localStorage.getItem('vps_auth_token') || localStorage.getItem('token');
+        const response = await fetch('/api/ai/daily-greeting', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success && result.data?.greeting) {
+                const greeting = result.data.greeting;
+                // Cache locally until midnight
+                localStorage.setItem(storageKey, JSON.stringify({ date: today, greeting }));
+                return greeting;
+            }
+        }
+    } catch (error) {
+        console.error('Failed to fetch AI greeting:', error);
+    }
+
+    // Fallback to random local greeting
+    const fallbackIndex = Math.floor(Math.random() * FALLBACK_GREETINGS.length);
+    const fallbackGreeting = FALLBACK_GREETINGS[fallbackIndex];
+    localStorage.setItem(storageKey, JSON.stringify({ date: today, greeting: fallbackGreeting }));
+    return fallbackGreeting;
+}
+
+/**
+ * Update daily greeting element with AI-generated greeting
+ */
+async function updateDailyGreeting(userId) {
+    const greetingEl = document.getElementById('daily-greeting');
+    if (!greetingEl) return;
+
+    // Show loading state briefly
+    greetingEl.style.opacity = '0.6';
+    greetingEl.textContent = 'Memuat ucapan hari ini...';
+
+    try {
+        const greeting = await fetchDailyGreeting(userId);
+        greetingEl.textContent = greeting;
+    } catch (error) {
+        greetingEl.textContent = 'Selamat bekerja, semoga harimu menyenangkan!';
+    }
+
+    greetingEl.style.opacity = '1';
+}
+
+// Update welcome card with user roles and job descriptions
+async function updateWelcomeCard(user) {
+    const welcomeName = document.getElementById('welcome-name');
+    const rolesDescList = document.getElementById('roles-description-list');
+
+    if (!welcomeName || !rolesDescList) return;
+
+    // Set name - special greeting for superadmin (dr. Dibya)
+    if (user.is_superadmin || user.role_id === 1) {
+        welcomeName.innerHTML = '<strong>BOSS</strong>';
+    } else {
+        welcomeName.textContent = user.name || user.email || 'User';
+    }
+
+    // Update daily greeting
+    updateDailyGreeting(user.id);
+
+    try {
+        // Fetch user's roles with descriptions
+        const token = localStorage.getItem('vps_auth_token') || localStorage.getItem('token');
+        const response = await fetch(`/api/users/${user.id}/roles`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('Failed to fetch roles');
+
+        const data = await response.json();
+        const roles = data.data || [];
+
+        if (roles.length === 0) {
+            rolesDescList.innerHTML = '<p style="color: #6c757d;"><em>Tidak ada deskripsi role tersedia.</em></p>';
+            return;
+        }
+
+        // Sort by is_primary DESC, then by permission_count DESC
+        roles.sort((a, b) => {
+            if (b.is_primary !== a.is_primary) return b.is_primary - a.is_primary;
+            return (b.permission_count || 0) - (a.permission_count || 0);
+        });
+
+        // Build role descriptions HTML - elegant style for light grey card
+        let descriptionsHtml = '';
+        roles.forEach((role, index) => {
+            const isPrimary = role.is_primary;
+            const description = role.description || 'Tidak ada deskripsi untuk role ini.';
+
+            descriptionsHtml += `
+                <div style="background: #fff; border-radius: 8px; padding: 12px 16px; margin-bottom: 10px; border: 1px solid #dee2e6;">
+                    <div style="font-weight: 600; color: #343a40; margin-bottom: 6px; font-size: 14px;">
+                        ${role.display_name || role.name}
+                        ${isPrimary ? '<span style="font-size: 11px; background: #e9ecef; color: #495057; padding: 2px 8px; border-radius: 10px; margin-left: 8px;">Primary</span>' : ''}
+                    </div>
+                    <div style="color: #495057; font-size: 13px; line-height: 1.5;">${parseMarkdown(description)}</div>
+                </div>
+            `;
+        });
+
+        rolesDescList.innerHTML = descriptionsHtml;
+
+    } catch (error) {
+        console.error('Error loading role descriptions:', error);
+        rolesDescList.innerHTML = '<p style="color: #6c757d;"><em>Gagal memuat deskripsi role.</em></p>';
+    }
+}
+
 function initializeApp(user) {
     if (user) {
+        // Update welcome card
+        updateWelcomeCard(user);
+
         // User is logged in, check roles
         const isDokter = user.is_superadmin || user.role === 'dokter' || user.role === 'superadmin';
         const isManagerial = user.role === 'managerial';

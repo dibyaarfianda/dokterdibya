@@ -11,6 +11,7 @@ const { sendSuccess, sendError } = require('../utils/response');
 const { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } = require('../config/constants');
 const logger = require('../utils/logger');
 const { deletePatientWithRelations, deletePatientByEmail } = require('../services/patientDeletion');
+const { ROLE_IDS, isSuperadminRole } = require('../constants/roles');
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
@@ -29,6 +30,7 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
             u.photo_url,
             u.user_type,
             u.is_superadmin,
+            u.profile_completed,
             r.name AS resolved_role_name,
             r.display_name AS resolved_role_display
         FROM users u
@@ -78,6 +80,7 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
             id: userId,
             name: user.name || 'Staff',
             role: roleForToken,
+            role_id: user.role_id || null,
             user_type: user.user_type || 'patient',
             is_superadmin: user.is_superadmin || false
         },
@@ -98,7 +101,8 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
             role_display_name: resolvedRoleDisplay || roleForToken,
             photo_url: user.photo_url,
             user_type: user.user_type || 'patient',
-            is_superadmin: user.is_superadmin || false
+            is_superadmin: user.is_superadmin || false,
+            profile_completed: user.profile_completed || false
         }
     }, SUCCESS_MESSAGES.LOGIN_SUCCESS);
 }));
@@ -194,6 +198,7 @@ router.get('/api/auth/me', verifyToken, asyncHandler(async (req, res) => {
             u.photo_url,
             u.user_type,
             u.is_superadmin,
+            u.profile_completed,
             r.name AS resolved_role_name,
             r.display_name AS resolved_role_display
         FROM users u
@@ -221,7 +226,8 @@ router.get('/api/auth/me', verifyToken, asyncHandler(async (req, res) => {
             role_display_name: resolvedRoleDisplay || roleForClient,
             photo_url: user.photo_url,
             user_type: user.user_type || 'patient',
-            is_superadmin: user.is_superadmin || false
+            is_superadmin: user.is_superadmin || false,
+            profile_completed: user.profile_completed || false
         }
     });
 }));
@@ -312,6 +318,56 @@ router.put('/api/auth/profile', verifyToken, async (req, res) => {
         res.status(500).json({ success: false, message: 'Failed to update profile', error: err.message });
     }
 });
+
+// POST /api/auth/set-initial-password - Set password for first time (no current password required)
+router.post('/api/auth/set-initial-password', verifyToken, asyncHandler(async (req, res) => {
+    const userId = req.user?.id;
+
+    if (!userId) {
+        throw new AppError('Invalid token payload', HTTP_STATUS.BAD_REQUEST);
+    }
+
+    const { newPassword } = req.body;
+
+    if (!newPassword || newPassword.length < 6) {
+        throw new AppError('Password minimal 6 karakter', HTTP_STATUS.BAD_REQUEST);
+    }
+
+    // Check if user exists and is eligible for initial password set
+    const [rows] = await db.query('SELECT profile_completed FROM users WHERE new_id = ?', [userId]);
+
+    if (rows.length === 0) {
+        throw new AppError(ERROR_MESSAGES.NOT_FOUND, HTTP_STATUS.NOT_FOUND);
+    }
+
+    // Only allow if profile not yet completed
+    if (rows[0].profile_completed) {
+        throw new AppError('Profile sudah lengkap. Gunakan fitur ubah password.', HTTP_STATUS.BAD_REQUEST);
+    }
+
+    // Hash and update new password
+    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+    await db.query('UPDATE users SET password_hash = ? WHERE new_id = ?', [newPasswordHash, userId]);
+
+    logger.info(`Initial password set for user ID: ${userId}`);
+
+    sendSuccess(res, null, 'Password berhasil disimpan');
+}));
+
+// POST /api/auth/mark-profile-completed - Mark profile as completed
+router.post('/api/auth/mark-profile-completed', verifyToken, asyncHandler(async (req, res) => {
+    const userId = req.user?.id;
+
+    if (!userId) {
+        throw new AppError('Invalid token payload', HTTP_STATUS.BAD_REQUEST);
+    }
+
+    await db.query('UPDATE users SET profile_completed = 1 WHERE new_id = ?', [userId]);
+
+    logger.info(`Profile marked as completed for user ID: ${userId}`);
+
+    sendSuccess(res, null, 'Profile berhasil dilengkapi');
+}));
 
 // POST /api/auth/change-password - Change user password
 router.post('/api/auth/change-password', verifyToken, validatePasswordChange, asyncHandler(async (req, res) => {
@@ -466,8 +522,8 @@ router.patch('/api/admin/web-patients/:id/status', verifyToken, asyncHandler(asy
 // Clear all chat logs (Superadmin only)
 router.delete('/api/admin/clear-chat-logs', verifyToken, asyncHandler(async (req, res) => {
     // Check if user is superadmin
-    if (!req.user.is_superadmin && req.user.role !== 'dokter') {
-        logger.warn(`Unauthorized chat logs deletion attempt by ${req.user.email} (${req.user.role})`);
+    if (!req.user.is_superadmin && !isSuperadminRole(req.user.role_id)) {
+        logger.warn(`Unauthorized chat logs deletion attempt by ${req.user.email} (role_id: ${req.user.role_id})`);
         throw new AppError('Unauthorized access - Superadmin role required', HTTP_STATUS.FORBIDDEN);
     }
     
@@ -486,8 +542,8 @@ router.delete('/api/admin/clear-chat-logs', verifyToken, asyncHandler(async (req
 // Sync all web patients to patients table (Superadmin only)
 router.post('/api/admin/sync-web-patients', verifyToken, asyncHandler(async (req, res) => {
     // Check if user is superadmin
-    if (!req.user.is_superadmin && req.user.role !== 'dokter') {
-        logger.warn(`Unauthorized sync attempt by ${req.user.email} (${req.user.role})`);
+    if (!req.user.is_superadmin && !isSuperadminRole(req.user.role_id)) {
+        logger.warn(`Unauthorized sync attempt by ${req.user.email} (role_id: ${req.user.role_id})`);
         throw new AppError('Unauthorized access - Superadmin role required', HTTP_STATUS.FORBIDDEN);
     }
     
@@ -957,8 +1013,8 @@ router.post('/api/auth/resend-verification', asyncHandler(async (req, res) => {
 // DELETE /api/admin/cleanup-email - Clean up patient by email from dual-table system (Superadmin only)
 router.delete('/api/admin/cleanup-email/:email', verifyToken, asyncHandler(async (req, res) => {
     // Check if user is superadmin
-    if (!req.user.is_superadmin && req.user.role !== 'dokter') {
-        logger.warn(`Unauthorized email cleanup attempt by ${req.user.email} (${req.user.role})`);
+    if (!req.user.is_superadmin && !isSuperadminRole(req.user.role_id)) {
+        logger.warn(`Unauthorized email cleanup attempt by ${req.user.email} (role_id: ${req.user.role_id})`);
         throw new AppError('Unauthorized access - Superadmin role required', HTTP_STATUS.FORBIDDEN);
     }
 
