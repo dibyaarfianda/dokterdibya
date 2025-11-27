@@ -4,9 +4,31 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
 const crypto = require('crypto');
+const multer = require('multer');
+const path = require('path');
 const db = require('../db');
 const cache = require('../utils/cache');
 const { deletePatientWithRelations } = require('../services/patientDeletion');
+const r2Storage = require('../services/r2Storage');
+const logger = require('../utils/logger');
+
+// Configure multer for profile photo upload (memory storage for R2)
+const photoUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 2 * 1024 * 1024 // 2MB max for profile photos
+    },
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = /jpeg|jpg|png|webp/;
+        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+        const mimetype = allowedTypes.test(file.mimetype);
+
+        if (mimetype && extname) {
+            return cb(null, true);
+        }
+        cb(new Error('Hanya file gambar (JPEG, PNG, WebP) yang diperbolehkan'));
+    }
+});
 
 // JWT Secret - Should be in environment variable in production
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
@@ -479,6 +501,85 @@ router.put('/profile', verifyToken, async (req, res) => {
     } catch (error) {
         console.error('Update profile error:', error);
         res.status(500).json({ message: 'Terjadi kesalahan saat menyimpan profil' });
+    }
+});
+
+/**
+ * POST /api/patients/upload-photo
+ * Upload profile photo to Cloudflare R2
+ * Max size: 2MB, Allowed: JPEG, PNG, WebP
+ */
+router.post('/upload-photo', verifyToken, photoUpload.single('photo'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tidak ada file yang diupload'
+            });
+        }
+
+        const patientId = req.user.id;
+
+        // Check if R2 is configured
+        if (!r2Storage.isR2Configured()) {
+            return res.status(500).json({
+                success: false,
+                message: 'Storage tidak dikonfigurasi'
+            });
+        }
+
+        // Upload to R2
+        const result = await r2Storage.uploadFile(
+            req.file.buffer,
+            req.file.originalname,
+            req.file.mimetype,
+            'profile-photos'
+        );
+
+        // Use proxy URL instead of direct R2 URL (avoids CDN connectivity issues)
+        const proxyUrl = `/api/r2/${result.key}`;
+
+        // Update patient photo_url in database with proxy URL
+        await db.query(
+            'UPDATE patients SET photo_url = ?, updated_at = NOW() WHERE id = ?',
+            [proxyUrl, patientId]
+        );
+
+        logger.info('Profile photo uploaded', {
+            patientId,
+            fileKey: result.key,
+            proxyUrl,
+            size: req.file.size
+        });
+
+        res.json({
+            success: true,
+            message: 'Foto profil berhasil diupload',
+            photo_url: proxyUrl
+        });
+
+    } catch (error) {
+        logger.error('Upload photo error', { error: error.message });
+
+        // Handle multer errors
+        if (error.message.includes('File too large')) {
+            return res.status(400).json({
+                success: false,
+                message: 'Ukuran file maksimal 2MB'
+            });
+        }
+
+        if (error.message.includes('Hanya file gambar')) {
+            return res.status(400).json({
+                success: false,
+                message: error.message
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: 'Gagal mengupload foto profil'
+        });
     }
 });
 

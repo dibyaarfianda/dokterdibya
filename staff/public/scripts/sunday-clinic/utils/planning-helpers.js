@@ -62,27 +62,171 @@ function showTindakanModal(tindakanList) {
     // Store tindakan list for later use
     window.availableTindakanList = tindakanList;
 
-    // Populate table
-    tindakanList.forEach(item => {
+    // Populate table with checkboxes
+    tindakanList.forEach((item, index) => {
         const row = document.createElement('tr');
         const escapedName = escapeHtml(item.name || '');
         const escapedCode = escapeHtml(item.code || '');
 
         row.innerHTML = `
+            <td>
+                <div class="custom-control custom-checkbox">
+                    <input type="checkbox" class="custom-control-input tindakan-checkbox"
+                           id="tindakan-${index}"
+                           data-tindakan-name="${escapedName}"
+                           data-tindakan-code="${escapedCode}"
+                           data-tindakan-id="${item.id || ''}">
+                    <label class="custom-control-label" for="tindakan-${index}"></label>
+                </div>
+            </td>
             <td>${escapedCode}</td>
             <td>${escapedName}</td>
             <td>${escapeHtml(item.category || '')}</td>
-            <td>
-                <button type="button" class="btn btn-sm btn-success" onclick="window.addTindakan('${escapedName}', '${escapedCode}', ${item.id || 'null'})">
-                    <i class="fas fa-plus"></i> Tambah
-                </button>
-            </td>
         `;
         tbody.appendChild(row);
     });
 
+    // Add select all functionality
+    const selectAllCheckbox = document.getElementById('select-all-tindakan');
+    if (selectAllCheckbox) {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.onchange = function() {
+            const checkboxes = document.querySelectorAll('.tindakan-checkbox');
+            checkboxes.forEach(cb => cb.checked = this.checked);
+            updateTindakanCount();
+        };
+    }
+
+    // Add change listener to each checkbox to update count
+    const checkboxes = document.querySelectorAll('.tindakan-checkbox');
+    checkboxes.forEach(cb => {
+        cb.onchange = updateTindakanCount;
+    });
+
+    // Reset count
+    updateTindakanCount();
+
     // Show modal using Bootstrap
     $('#tindakan-modal').modal('show');
+}
+
+function updateTindakanCount() {
+    const selectedCount = document.querySelectorAll('.tindakan-checkbox:checked').length;
+    const countEl = document.getElementById('selected-tindakan-count');
+    if (countEl) {
+        countEl.innerHTML = `<small>${selectedCount} tindakan dipilih</small>`;
+    }
+}
+
+async function addSelectedTindakan() {
+    // Get all selected tindakan
+    const selectedCheckboxes = document.querySelectorAll('.tindakan-checkbox:checked');
+
+    if (selectedCheckboxes.length === 0) {
+        if (typeof showError === 'function') {
+            showError('Silakan pilih minimal satu tindakan');
+        } else {
+            alert('Silakan pilih minimal satu tindakan');
+        }
+        return;
+    }
+
+    const selectedTindakan = Array.from(selectedCheckboxes).map(cb => ({
+        name: cb.dataset.tindakanName,
+        code: cb.dataset.tindakanCode,
+        id: cb.dataset.tindakanId
+    }));
+
+    const textarea = document.getElementById('planning-tindakan');
+    if (!textarea) return;
+
+    try {
+        // Save to billing database first
+        const token = await window.getToken();
+        if (token) {
+            const mrSlug = window.routeMrSlug;
+
+            // First, fetch existing billing items to append to them
+            let existingItems = [];
+            try {
+                const fetchResponse = await fetch(`/api/sunday-clinic/billing/${mrSlug}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (fetchResponse.ok) {
+                    const billingData = await fetchResponse.json();
+                    if (billingData.data && billingData.data.items) {
+                        // Keep all existing items
+                        existingItems = billingData.data.items.map(item => ({
+                            item_type: item.item_type,
+                            item_code: item.item_code,
+                            item_name: item.item_name,
+                            quantity: item.quantity,
+                            item_data: item.item_data
+                        }));
+                    }
+                }
+            } catch (fetchError) {
+                console.log('No existing billing found, creating new one');
+            }
+
+            // Append all new tindakan to existing items
+            const newItems = selectedTindakan.map(t => ({
+                item_type: 'tindakan',
+                item_code: t.code || null,
+                item_name: t.name,
+                quantity: 1
+            }));
+
+            const allItems = [...existingItems, ...newItems];
+
+            // Save all items together
+            const response = await fetch(`/api/sunday-clinic/billing/${mrSlug}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ items: allItems })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.message || 'Gagal menyimpan ke tagihan');
+            }
+        }
+
+        // Add all selected tindakan to textarea
+        const currentValue = textarea.value.trim();
+        const newEntries = selectedTindakan.map(t => t.name).join('\n');
+
+        if (currentValue) {
+            textarea.value = currentValue + '\n' + newEntries;
+        } else {
+            textarea.value = newEntries;
+        }
+
+        // Hide modal
+        $('#tindakan-modal').modal('hide');
+
+        if (typeof showSuccess === 'function') {
+            showSuccess(`${selectedTindakan.length} tindakan ditambahkan ke Planning dan Tagihan`);
+        }
+
+        // Refresh billing component if it exists
+        refreshBillingIfActive();
+
+    } catch (error) {
+        console.error('Error adding tindakan:', error);
+        if (typeof showError === 'function') {
+            showError('Gagal menambahkan tindakan: ' + error.message);
+        } else {
+            alert('Gagal menambahkan tindakan: ' + error.message);
+        }
+    }
 }
 
 async function addTindakan(tindakanName, tindakanCode, tindakanId) {
@@ -744,6 +888,8 @@ function refreshBillingIfActive() {
 window.openTindakanModal = openTindakanModal;
 window.openTerapiModal = openTerapiModal;
 window.addTindakan = addTindakan;
+window.addSelectedTindakan = addSelectedTindakan;
+window.updateTindakanCount = updateTindakanCount;
 window.resetTindakan = resetTindakan;
 window.resetTerapi = resetTerapi;
 window.proceedToCaraPakai = proceedToCaraPakai;

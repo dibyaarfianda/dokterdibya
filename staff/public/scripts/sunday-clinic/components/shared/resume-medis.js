@@ -43,6 +43,9 @@ export default {
                                 <button type="button" class="btn btn-outline-warning ml-2" id="btn-reset-resume" onclick="window.resetResumeMedis()">
                                     <i class="fas fa-redo"></i> Reset
                                 </button>
+                                <button type="button" class="btn btn-info ml-2" id="btn-send-to-patient" onclick="window.openSendToPatientModal()">
+                                    <i class="fas fa-share-alt"></i> Kirim ke Pasien
+                                </button>
                             ` : ''}
                         </div>
                     </div>

@@ -435,14 +435,23 @@
                     </button>
                 </div>
                 <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Pilih tindakan yang akan dilakukan dengan mencentang checkbox, lalu klik "Masukkan"
+                    </div>
                     <div class="table-responsive">
                         <table class="table table-hover table-sm">
                             <thead class="thead-light">
                                 <tr>
-                                    <th width="15%">Kode</th>
-                                    <th width="40%">Nama Tindakan</th>
+                                    <th width="5%">
+                                        <div class="custom-control custom-checkbox">
+                                            <input type="checkbox" class="custom-control-input" id="select-all-tindakan">
+                                            <label class="custom-control-label" for="select-all-tindakan"></label>
+                                        </div>
+                                    </th>
+                                    <th width="12%">Kode</th>
+                                    <th width="43%">Nama Tindakan</th>
                                     <th width="25%">Kategori</th>
-                                    <th width="20%">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody id="tindakan-modal-body">
@@ -454,10 +463,16 @@
                             </tbody>
                         </table>
                     </div>
+                    <div id="selected-tindakan-count" class="mt-2 text-muted">
+                        <small>0 tindakan dipilih</small>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">
                         <i class="fas fa-times mr-1"></i>Tutup
+                    </button>
+                    <button type="button" class="btn btn-primary" id="btn-masukkan-tindakan" onclick="window.addSelectedTindakan()">
+                        <i class="fas fa-check mr-1"></i>Masukkan
                     </button>
                 </div>
             </div>
