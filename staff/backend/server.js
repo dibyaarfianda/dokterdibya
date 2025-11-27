@@ -225,6 +225,10 @@ app.use('/', aiRoutes);
 const rolesRoutes = require('./routes/roles');
 app.use('/', rolesRoutes);
 
+// Booking Settings routes (admin control for patient booking sessions)
+const bookingSettingsRoutes = require('./routes/booking-settings');
+app.use('/api/booking-settings', bookingSettingsRoutes);
+
 // API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
     customSiteTitle: 'Dibya Klinik API Documentation',

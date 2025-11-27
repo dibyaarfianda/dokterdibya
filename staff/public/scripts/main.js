@@ -76,6 +76,7 @@ function initPages() {
     pages.kelolaObatManagement = grab('kelola-obat-management-page');
     pages.financeAnalysis = grab('finance-analysis-page');
     pages.kelolaRoles = grab('kelola-roles-page');
+    pages.bookingSettings = grab('booking-settings-page');
 }
 function loadExternalPage(containerId, htmlFile, options = {}) {
     const { forceReload = false } = options;
@@ -462,9 +463,9 @@ function showKelolaRolesPage() {
         console.error('Failed to load kelola-roles.js:', error);
     });
 }
-function showFinanceAnalysisPage() { 
-    hideAllPages(); 
-    pages.financeAnalysis?.classList.remove('d-none'); 
+function showFinanceAnalysisPage() {
+    hideAllPages();
+    pages.financeAnalysis?.classList.remove('d-none');
     setTitleAndActive('Finance Analysis', 'nav-finance-analysis', 'finance-analysis');
     // Call embedded initialization function after page is visible
     setTimeout(() => {
@@ -472,6 +473,23 @@ function showFinanceAnalysisPage() {
             window.initFinanceAnalysisPage();
         }
     }, 100);
+}
+
+function showBookingSettingsPage() {
+    hideAllPages();
+    pages.bookingSettings?.classList.remove('d-none');
+    setTitleAndActive('Pengaturan Booking', 'nav-booking-settings', 'booking-settings');
+
+    // Dynamically import and initialize the Booking Settings module
+    importWithVersion('./kelola-booking-settings.js').then(module => {
+        if (typeof window.initKelolaBookingSettings === 'function') {
+            window.initKelolaBookingSettings();
+        } else {
+            console.error('Kelola Booking Settings module loaded, but initKelolaBookingSettings function not found on window.');
+        }
+    }).catch(error => {
+        console.error('Failed to load kelola-booking-settings.js:', error);
+    });
 }
 
 function showProfileSettings() {
@@ -1379,6 +1397,7 @@ window.showKelolaTindakanPage = showKelolaTindakanPage;
 window.showKelolaObatManagementPage = showKelolaObatManagementPage;
 window.showFinanceAnalysisPage = showFinanceAnalysisPage;
 window.showKelolaRolesPage = showKelolaRolesPage;
+window.showBookingSettingsPage = showBookingSettingsPage;
 window.showProfileSettings = showProfileSettings;
 // REMOVED: window.showEmailSettingsPage = showEmailSettingsPage;
 window.showStokOpnamePage = showStokOpnamePage;

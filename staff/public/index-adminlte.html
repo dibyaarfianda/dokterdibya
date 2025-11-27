@@ -906,6 +906,13 @@
                         </a>
                     </li>
 
+                    <li class="nav-item superadmin-only d-none" id="nav-booking-settings">
+                        <a href="#" class="nav-link" onclick="showBookingSettingsPage(); return false;">
+                            <i class="nav-icon fas fa-calendar-cog"></i>
+                            <p>Pengaturan Booking</p>
+                        </a>
+                    </li>
+
                     <!-- REMOVED: Email Settings -->
 
                     <!-- HIDDEN: Log Aktivitas
@@ -2647,6 +2654,108 @@
                                     <i class="fas fa-save"></i> Simpan Roles
                                 </button>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BOOKING SETTINGS PAGE (Superadmin Only) -->
+                <div id="booking-settings-page" class="d-none">
+                    <div class="container-fluid">
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <div class="d-flex justify-content-between align-items-center flex-wrap">
+                                    <div class="mb-2">
+                                        <h5 class="mb-1"><i class="fas fa-info-circle text-info mr-2"></i>Pengaturan Jadwal Booking Klinik Minggu</h5>
+                                        <small class="text-muted">Kontrol jam operasional dan jumlah slot untuk setiap sesi pada halaman booking pasien</small>
+                                    </div>
+                                    <button class="btn btn-primary" id="btn-add-session">
+                                        <i class="fas fa-plus"></i> Tambah Sesi Baru
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="booking-settings-container" class="row">
+                            <div class="col-12 text-center py-5">
+                                <i class="fas fa-spinner fa-spin fa-2x"></i>
+                                <p class="mt-2">Memuat pengaturan sesi...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Session Settings Modal -->
+                <div class="modal fade" id="session-modal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header bg-primary">
+                                <h5 class="modal-title" id="session-modal-title">Tambah Sesi Baru</h5>
+                                <button type="button" class="close text-white" data-dismiss="modal">
+                                    <span>&times;</span>
+                                </button>
+                            </div>
+                            <form id="session-form">
+                                <div class="modal-body">
+                                    <input type="hidden" id="session-id">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="session-number">Nomor Sesi <span class="text-danger">*</span></label>
+                                                <input type="number" class="form-control" id="session-number" min="1" max="10" required>
+                                                <small class="text-muted">Urutan tampil di halaman booking</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="session-name">Nama Sesi <span class="text-danger">*</span></label>
+                                                <input type="text" class="form-control" id="session-name" placeholder="Contoh: Pagi, Siang, Sore" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="session-start-time">Waktu Mulai <span class="text-danger">*</span></label>
+                                                <input type="time" class="form-control" id="session-start-time" required>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="session-end-time">Waktu Selesai <span class="text-danger">*</span></label>
+                                                <input type="time" class="form-control" id="session-end-time" required>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="session-slot-duration">Durasi Per Slot (menit)</label>
+                                                <input type="number" class="form-control" id="session-slot-duration" min="5" max="60" value="15">
+                                                <small class="text-muted">Waktu antara setiap slot</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label for="session-max-slots">Maksimal Slot</label>
+                                                <input type="number" class="form-control" id="session-max-slots" min="1" max="30" value="10">
+                                                <small class="text-muted">Jumlah pasien per sesi</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="custom-control custom-switch">
+                                            <input type="checkbox" class="custom-control-input" id="session-is-active" checked>
+                                            <label class="custom-control-label" for="session-is-active">Sesi Aktif</label>
+                                        </div>
+                                        <small class="text-muted">Nonaktifkan jika sesi ini tidak tersedia untuk booking</small>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                                    <button type="submit" class="btn btn-primary" id="btn-save-session">
+                                        <i class="fas fa-save"></i> Simpan
+                                    </button>
+                                </div>
+                            </form>
                         </div>
                     </div>
                 </div>
