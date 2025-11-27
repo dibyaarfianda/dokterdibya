@@ -294,6 +294,47 @@ function optionalAuth(req, res, next) {
 }
 
 /**
+ * Middleware to require superadmin access
+ * Only allows users with is_superadmin=true or role_id=1 (dokter)
+ */
+function requireSuperadmin(req, res, next) {
+    const requestId = req.context?.requestId || 'unknown';
+
+    if (!req.user) {
+        logger.warn('Missing user in requireSuperadmin middleware', {
+            requestId,
+            ip: req.ip,
+            path: req.path
+        });
+        return res.status(401).json({
+            success: false,
+            message: 'Authentication required'
+        });
+    }
+
+    if (req.user.is_superadmin || isSuperadminRole(req.user.role_id)) {
+        logger.debug('Superadmin access granted', {
+            requestId,
+            userId: req.user.id,
+            role_id: req.user.role_id,
+            is_superadmin: req.user.is_superadmin
+        });
+        return next();
+    }
+
+    logger.warn('Superadmin access denied', {
+        requestId,
+        userId: req.user.id,
+        role_id: req.user.role_id,
+        path: req.path
+    });
+    return res.status(403).json({
+        success: false,
+        message: 'Superadmin access required'
+    });
+}
+
+/**
  * Middleware to check if user has required permissions
  * Aggregates permissions from ALL assigned roles (multiple roles support)
  */
@@ -383,6 +424,7 @@ module.exports = {
     verifyToken,
     verifyPatientToken,
     requireRole,
+    requireSuperadmin,
     requirePermission,
     optionalAuth,
     recordFailedAttempt,
