@@ -15,6 +15,170 @@ function getTodayDate() {
     return gmt7Time.toISOString().split('T')[0];
 }
 
+// Render photos grid
+function renderPhotosGrid(photos) {
+    if (!photos || photos.length === 0) {
+        return '<div class="col-12"><p class="text-muted">Belum ada foto USG</p></div>';
+    }
+    return photos.map((photo, index) => `
+        <div class="col-md-3 col-sm-4 col-6 mb-3">
+            <div class="card h-100">
+                <a href="${photo.url}" target="_blank">
+                    <img src="${photo.url}" class="card-img-top" alt="${photo.name}" style="height: 120px; object-fit: cover;">
+                </a>
+                <div class="card-body p-2">
+                    <small class="text-truncate d-block">${photo.name}</small>
+                    <button type="button" class="btn btn-xs btn-danger mt-1 usg-remove-photo" data-index="${index}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Handle photo upload
+async function handlePhotoUpload(event) {
+    const files = Array.from(event.target.files);
+    if (files.length === 0) return;
+
+    const maxSize = 10 * 1024 * 1024;
+    for (const file of files) {
+        if (file.size > maxSize) {
+            alert(`File ${file.name} terlalu besar. Maksimal 10MB.`);
+            return;
+        }
+    }
+
+    const label = event.target.nextElementSibling;
+    const originalLabel = label.textContent;
+    label.textContent = 'Mengupload...';
+
+    try {
+        const formData = new FormData();
+        files.forEach(file => formData.append('files', file));
+
+        const token = window.getToken?.() || localStorage.getItem('vps_auth_token');
+        const response = await fetch('/api/usg-photos/upload', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            body: formData
+        });
+
+        if (!response.ok) throw new Error('Upload failed');
+
+        const result = await response.json();
+        const photosData = document.getElementById('usg-photos-data');
+        let currentPhotos = [];
+        try {
+            currentPhotos = JSON.parse(photosData.value.replace(/&quot;/g, '"') || '[]');
+        } catch (e) { currentPhotos = []; }
+
+        const updatedPhotos = [...currentPhotos, ...result.files];
+        photosData.value = JSON.stringify(updatedPhotos).replace(/"/g, '&quot;');
+
+        // Update state
+        const state = stateManager.getState();
+        const recordData = state.recordData || {};
+        const usg = recordData.usg || {};
+        usg.photos = updatedPhotos;
+        recordData.usg = usg;
+        stateManager.setState({ recordData });
+
+        // Refresh grid
+        const grid = document.getElementById('usg-photos-grid');
+        if (grid) {
+            grid.innerHTML = renderPhotosGrid(updatedPhotos);
+            initPhotoRemoveHandlers();
+        }
+
+        // Save to database
+        await savePhotosToDatabase(updatedPhotos);
+
+        event.target.value = '';
+        label.textContent = originalLabel;
+        alert(`${result.files.length} foto berhasil diupload!`);
+    } catch (error) {
+        console.error('Upload error:', error);
+        alert('Gagal upload foto.');
+        label.textContent = originalLabel;
+    }
+}
+
+// Remove photo
+async function removePhoto(index) {
+    if (!confirm('Hapus foto ini?')) return;
+
+    const photosData = document.getElementById('usg-photos-data');
+    let photos = [];
+    try {
+        photos = JSON.parse(photosData.value.replace(/&quot;/g, '"') || '[]');
+    } catch (e) { photos = []; }
+
+    photos.splice(index, 1);
+    photosData.value = JSON.stringify(photos).replace(/"/g, '&quot;');
+
+    const state = stateManager.getState();
+    const recordData = state.recordData || {};
+    const usg = recordData.usg || {};
+    usg.photos = photos;
+    recordData.usg = usg;
+    stateManager.setState({ recordData });
+
+    const grid = document.getElementById('usg-photos-grid');
+    if (grid) {
+        grid.innerHTML = renderPhotosGrid(photos);
+        initPhotoRemoveHandlers();
+    }
+
+    await savePhotosToDatabase(photos);
+}
+
+// Initialize photo remove handlers
+function initPhotoRemoveHandlers() {
+    document.querySelectorAll('.usg-remove-photo').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const index = parseInt(e.currentTarget.dataset.index);
+            removePhoto(index);
+        });
+    });
+}
+
+// Save photos to database
+async function savePhotosToDatabase(photos) {
+    try {
+        const state = stateManager.getState();
+        const patientId = state.derived?.patientId || state.recordData?.patientId || state.patientData?.id;
+        const mrId = state.currentMrId || state.recordData?.mrId || state.recordData?.mr_id;
+
+        if (!patientId || !mrId) return;
+
+        const token = window.getToken?.() || localStorage.getItem('vps_auth_token');
+        if (!token) return;
+
+        const context = getMedicalRecordContext(state, 'usg');
+        const existingData = context?.data || {};
+
+        await fetch('/api/medical-records', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                patientId,
+                visitId: mrId,
+                type: 'usg',
+                data: { ...existingData, photos },
+                timestamp: new Date().toISOString()
+            })
+        });
+        console.log('[USG GynRepro] Photos saved to database');
+    } catch (error) {
+        console.error('[USG GynRepro] Error saving photos:', error);
+    }
+}
+
 export function render() {
     const state = stateManager.getState();
     const context = getMedicalRecordContext(state, 'usg');
@@ -280,6 +444,21 @@ export function render() {
                     <label>Catatan Tambahan:</label>
                     <textarea class="form-control" id="usg-notes" rows="3" placeholder="Temuan lain atau interpretasi...">${escapeHtml(savedData.notes || '')}</textarea>
                 </div>
+                <hr>
+
+                <!-- USG Photos Section -->
+                <h5 class="text-info font-weight-bold"><i class="fas fa-camera"></i> FOTO USG</h5>
+                <div class="form-group">
+                    <div class="custom-file mb-3">
+                        <input type="file" class="custom-file-input" id="usg-photo-upload" accept="image/*" multiple>
+                        <label class="custom-file-label" for="usg-photo-upload">Pilih foto USG...</label>
+                    </div>
+                    <small class="form-text text-muted">Format: JPG, PNG. Maksimal 10MB per file.</small>
+                </div>
+                <div id="usg-photos-grid" class="row mb-3">
+                    ${renderPhotosGrid(savedData.photos || [])}
+                </div>
+                <input type="hidden" id="usg-photos-data" value="${JSON.stringify(savedData.photos || []).replace(/"/g, '&quot;')}">
 
                 <div class="mt-3 text-right">
                     <button class="btn btn-primary" id="btn-save-usg">
@@ -301,6 +480,14 @@ export function render() {
         const editForm = container.querySelector('#usg-edit-form');
 
         if (saveBtn) saveBtn.addEventListener('click', saveUSGGynRepro);
+
+        // Photo upload handler
+        const photoInput = container.querySelector('#usg-photo-upload');
+        if (photoInput) {
+            photoInput.addEventListener('change', handlePhotoUpload);
+        }
+        initPhotoRemoveHandlers();
+
         if (editBtn) {
             editBtn.addEventListener('click', () => {
                 const summaryContainer = container.querySelector('#usg-summary-container');

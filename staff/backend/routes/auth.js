@@ -1034,9 +1034,22 @@ router.delete('/api/admin/cleanup-email/:email', verifyToken, asyncHandler(async
     }, `Email ${email} cleaned up from all tables successfully`);
 }));
 
+// Helper: Check if registration code is required
+async function isRegistrationCodeRequired() {
+    try {
+        const [settings] = await db.query(
+            "SELECT setting_value FROM settings WHERE setting_key = 'registration_code_required'"
+        );
+        return settings.length > 0 && settings[0].setting_value === 'true';
+    } catch (error) {
+        // Default to required if settings table doesn't exist
+        return true;
+    }
+}
+
 // POST /api/auth/set-password - Set password after verification (with profile data)
 router.post('/api/auth/set-password', asyncHandler(async (req, res) => {
-    const { email, password, verified_token, fullname, phone, birth_date, age } = req.body;
+    const { email, password, verified_token, fullname, phone, birth_date, age, registration_code } = req.body;
 
     if (!email || !password || !verified_token) {
         throw new AppError('Email, password, and verified token are required', HTTP_STATUS.BAD_REQUEST);
@@ -1044,6 +1057,40 @@ router.post('/api/auth/set-password', asyncHandler(async (req, res) => {
 
     if (password.length < 8) {
         throw new AppError('Password harus minimal 8 karakter', HTTP_STATUS.BAD_REQUEST);
+    }
+
+    // Check if registration code is required
+    const codeRequired = await isRegistrationCodeRequired();
+    if (codeRequired) {
+        if (!registration_code) {
+            return sendError(res, 'Kode registrasi diperlukan. Hubungi klinik untuk mendapatkan kode.', HTTP_STATUS.BAD_REQUEST, { code_required: true });
+        }
+
+        const normalizedCode = registration_code.toUpperCase().trim();
+        const [validCodes] = await db.query(
+            `SELECT * FROM registration_codes
+             WHERE code = ? AND status = 'active' AND expires_at > NOW()`,
+            [normalizedCode]
+        );
+
+        if (validCodes.length === 0) {
+            // Check if code exists but expired or used
+            const [expiredCodes] = await db.query(
+                'SELECT * FROM registration_codes WHERE code = ?',
+                [normalizedCode]
+            );
+
+            if (expiredCodes.length > 0) {
+                const existingCode = expiredCodes[0];
+                if (existingCode.status === 'used') {
+                    return sendError(res, 'Kode registrasi sudah digunakan', HTTP_STATUS.BAD_REQUEST);
+                } else if (existingCode.status === 'expired' || new Date(existingCode.expires_at) < new Date()) {
+                    return sendError(res, 'Kode registrasi sudah kadaluarsa', HTTP_STATUS.BAD_REQUEST);
+                }
+            }
+
+            return sendError(res, 'Kode registrasi tidak valid', HTTP_STATUS.BAD_REQUEST);
+        }
     }
 
     // Check if email already exists
@@ -1092,6 +1139,18 @@ router.post('/api/auth/set-password', asyncHandler(async (req, res) => {
          VALUES (?, ?, ?, ?, ?, ?, ?, 'active', 'web', NOW())`,
         [userId, email, patientName, patientPhone, patientPhone, patientBirthDate, patientAge]
     );
+
+    // Mark registration code as used (if code was required)
+    if (codeRequired && registration_code) {
+        const normalizedCode = registration_code.toUpperCase().trim();
+        await db.query(
+            `UPDATE registration_codes
+             SET status = 'used', used_at = NOW(), used_by_patient_id = ?
+             WHERE code = ?`,
+            [userId, normalizedCode]
+        );
+        logger.info(`Registration code ${normalizedCode} used by patient ${userId}`);
+    }
 
     // Generate JWT token
     const token = jwt.sign(

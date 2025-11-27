@@ -96,10 +96,66 @@ const verifyToken = (req, res, next) => {
     }
 };
 
+// Check if registration code is required
+async function isRegistrationCodeRequired() {
+    try {
+        const [settings] = await db.query(
+            "SELECT setting_value FROM settings WHERE setting_key = 'registration_code_required'"
+        );
+        return settings.length > 0 && settings[0].setting_value === 'true';
+    } catch (error) {
+        // Default to required if settings table doesn't exist
+        return true;
+    }
+}
+
+// Validate and consume registration code
+async function validateAndConsumeCode(code, patientId) {
+    if (!code) return { valid: false, message: 'Kode registrasi harus diisi' };
+
+    const normalizedCode = code.toUpperCase().trim();
+
+    // Check if code exists and is valid
+    const [codes] = await db.query(
+        `SELECT * FROM registration_codes
+         WHERE code = ? AND status = 'active' AND expires_at > NOW()`,
+        [normalizedCode]
+    );
+
+    if (codes.length === 0) {
+        // Check if code exists but expired or used
+        const [expiredCodes] = await db.query(
+            'SELECT * FROM registration_codes WHERE code = ?',
+            [normalizedCode]
+        );
+
+        if (expiredCodes.length > 0) {
+            const existingCode = expiredCodes[0];
+            if (existingCode.status === 'used') {
+                return { valid: false, message: 'Kode registrasi sudah digunakan' };
+            } else if (existingCode.status === 'expired' || new Date(existingCode.expires_at) < new Date()) {
+                return { valid: false, message: 'Kode registrasi sudah kadaluarsa' };
+            }
+        }
+
+        return { valid: false, message: 'Kode registrasi tidak valid' };
+    }
+
+    // Mark code as used
+    await db.query(
+        `UPDATE registration_codes
+         SET status = 'used', used_at = NOW(), used_by_patient_id = ?
+         WHERE code = ?`,
+        [patientId, normalizedCode]
+    );
+
+    return { valid: true, codeData: codes[0] };
+}
+
 // Register with email
 async function handlePatientRegister(req, res) {
     try {
-        const { fullname, email, phone, password } = req.body;
+        const { fullname, email, phone, password, registration_code } = req.body;
 
         // Validation
         if (!fullname || !email || !phone || !password) {
@@ -108,6 +164,44 @@ async function handlePatientRegister(req, res) {
 
         if (password.length < 6) {
             return res.status(400).json({ message: 'Password minimal 6 karakter' });
+        }
+
+        // Check if registration code is required
+        const codeRequired = await isRegistrationCodeRequired();
+        if (codeRequired && !registration_code) {
+            return res.status(400).json({
+                message: 'Kode registrasi diperlukan. Hubungi klinik untuk mendapatkan kode.',
+                code_required: true
+            });
+        }
+
+        // Validate registration code (if required)
+        if (codeRequired) {
+            const normalizedCode = registration_code.toUpperCase().trim();
+            const [validCodes] = await db.query(
+                `SELECT * FROM registration_codes
+                 WHERE code = ? AND status = 'active' AND expires_at > NOW()`,
+                [normalizedCode]
+            );
+
+            if (validCodes.length === 0) {
+                // Check if code exists but expired or used
+                const [expiredCodes] = await db.query(
+                    'SELECT * FROM registration_codes WHERE code = ?',
+                    [normalizedCode]
+                );
+
+                if (expiredCodes.length > 0) {
+                    const existingCode = expiredCodes[0];
+                    if (existingCode.status === 'used') {
+                        return res.status(400).json({ message: 'Kode registrasi sudah digunakan' });
+                    } else if (existingCode.status === 'expired' || new Date(existingCode.expires_at) < new Date()) {
+                        return res.status(400).json({ message: 'Kode registrasi sudah kadaluarsa' });
+                    }
+                }
+
+                return res.status(400).json({ message: 'Kode registrasi tidak valid' });
+            }
         }
 
         // Check if email already exists
@@ -142,6 +236,18 @@ async function handlePatientRegister(req, res) {
 
         // For VARCHAR primary key, insertId is 0. Use medicalRecordId instead
         const patientId = medicalRecordId;
+
+        // Mark registration code as used (if code was required)
+        if (codeRequired && registration_code) {
+            const normalizedCode = registration_code.toUpperCase().trim();
+            await db.query(
+                `UPDATE registration_codes
+                 SET status = 'used', used_at = NOW(), used_by_patient_id = ?
+                 WHERE code = ?`,
+                [patientId, normalizedCode]
+            );
+            console.log(`Registration code ${normalizedCode} used by patient ${patientId}`);
+        }
 
         // Send verification email
         try {
