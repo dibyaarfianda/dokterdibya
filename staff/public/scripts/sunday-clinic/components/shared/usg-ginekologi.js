@@ -491,6 +491,40 @@ export default {
                     </div>
                 </div>
 
+                <!-- USG Photos Section -->
+                <div class="sc-card mt-3">
+                    <h4><i class="fas fa-camera text-info"></i> Foto USG</h4>
+                    <div class="form-group">
+                        <div class="custom-file mb-3">
+                            <input
+                                type="file"
+                                class="custom-file-input"
+                                id="usg-photo-upload"
+                                accept="image/*"
+                                multiple
+                            >
+                            <label class="custom-file-label" for="usg-photo-upload">
+                                Pilih foto USG...
+                            </label>
+                        </div>
+                        <small class="form-text text-muted">
+                            Format: JPG, PNG. Maksimal 10MB per file. Bisa upload multiple foto.
+                        </small>
+                    </div>
+
+                    <!-- Uploaded Photos Grid -->
+                    <div id="usg-photos-grid" class="row">
+                        ${this.renderPhotosGrid(usg.photos || [])}
+                    </div>
+
+                    <!-- Hidden field to store photo data -->
+                    <input
+                        type="hidden"
+                        id="usg-photos-data"
+                        value="${JSON.stringify(usg.photos || []).replace(/"/g, '&quot;')}"
+                    >
+                </div>
+
                 <div class="mt-3 text-muted small" id="usg-status">
                     ${isSaved ? `<i class="fas fa-check text-success"></i> Terakhir disimpan: ${new Date(usg.saved_at).toLocaleString('id-ID')}` : '<i class="fas fa-info-circle"></i> Belum disimpan'}
                 </div>
@@ -528,6 +562,26 @@ export default {
                 }
             });
         }
+
+        // Photo upload handler
+        const photoInput = document.getElementById('usg-photo-upload');
+        if (photoInput) {
+            photoInput.addEventListener('change', (e) => this.handlePhotoUpload(e));
+
+            // Custom file input label update
+            photoInput.addEventListener('change', function() {
+                const fileName = this.files.length > 1
+                    ? `${this.files.length} foto dipilih`
+                    : (this.files[0]?.name || 'Pilih foto USG...');
+                const label = this.nextElementSibling;
+                if (label && !label.textContent.includes('upload')) {
+                    label.textContent = fileName;
+                }
+            });
+        }
+
+        // Initialize photo remove handlers
+        this.initPhotoRemoveHandlers();
     },
 
     /**
@@ -600,8 +654,24 @@ export default {
             // Kesan
             kesan: document.getElementById('usg-kesan')?.value || '',
 
+            // Photos
+            photos: this.getPhotosFromHiddenField(),
+
             saved_at: new Date().toISOString()
         };
+    },
+
+    /**
+     * Get photos from hidden field
+     */
+    getPhotosFromHiddenField() {
+        const photosData = document.getElementById('usg-photos-data');
+        if (!photosData || !photosData.value) return [];
+        try {
+            return JSON.parse(photosData.value.replace(/&quot;/g, '"') || '[]');
+        } catch (e) {
+            return [];
+        }
     },
 
     /**
@@ -676,5 +746,225 @@ export default {
         const div = document.createElement('div');
         div.textContent = text;
         return div.innerHTML;
+    },
+
+    /**
+     * Render photos grid
+     */
+    renderPhotosGrid(photos) {
+        if (!photos || photos.length === 0) {
+            return '<div class="col-12"><p class="text-muted">Belum ada foto USG yang diupload</p></div>';
+        }
+
+        return photos.map((photo, index) => `
+            <div class="col-md-3 col-sm-4 col-6 mb-3">
+                <div class="card h-100">
+                    <a href="${photo.url}" target="_blank">
+                        <img src="${photo.url}" class="card-img-top" alt="${photo.name}"
+                            style="height: 150px; object-fit: cover;">
+                    </a>
+                    <div class="card-body p-2">
+                        <small class="text-truncate d-block">${photo.name}</small>
+                        <button type="button" class="btn btn-sm btn-danger mt-1 usg-remove-photo"
+                            data-index="${index}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    },
+
+    /**
+     * Handle photo upload
+     */
+    async handlePhotoUpload(event) {
+        const files = Array.from(event.target.files);
+        if (files.length === 0) return;
+
+        // Validate file size (10MB max per file)
+        const maxSize = 10 * 1024 * 1024;
+        for (const file of files) {
+            if (file.size > maxSize) {
+                alert(`File ${file.name} terlalu besar. Maksimal 10MB.`);
+                return;
+            }
+        }
+
+        // Show loading
+        const label = event.target.nextElementSibling;
+        const originalLabel = label.textContent;
+        label.textContent = 'Mengupload...';
+
+        try {
+            const formData = new FormData();
+            files.forEach(file => formData.append('files', file));
+
+            const token = window.getToken?.() || localStorage.getItem('vps_auth_token');
+            const response = await fetch('/api/usg-photos/upload', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error('Upload failed');
+            }
+
+            const result = await response.json();
+
+            // Get current photos from hidden field
+            const photosData = document.getElementById('usg-photos-data');
+            let currentPhotos = [];
+            try {
+                currentPhotos = JSON.parse(photosData.value.replace(/&quot;/g, '"') || '[]');
+            } catch (e) {
+                currentPhotos = [];
+            }
+
+            // Merge new photos with existing
+            const updatedPhotos = [...currentPhotos, ...result.files];
+
+            // Update hidden field
+            photosData.value = JSON.stringify(updatedPhotos).replace(/"/g, '&quot;');
+
+            // Update state
+            const state = stateManager.getState();
+            const recordData = state.recordData || {};
+            const usg = recordData.usg || {};
+            usg.photos = updatedPhotos;
+            recordData.usg = usg;
+            stateManager.setState({ recordData });
+
+            // Refresh photos grid
+            const grid = document.getElementById('usg-photos-grid');
+            if (grid) {
+                grid.innerHTML = this.renderPhotosGrid(updatedPhotos);
+                this.initPhotoRemoveHandlers();
+            }
+
+            // Save to database immediately
+            await this.savePhotosToDatabase(updatedPhotos);
+
+            // Reset file input
+            event.target.value = '';
+            label.textContent = originalLabel;
+
+            alert(`${result.files.length} foto berhasil diupload!`);
+        } catch (error) {
+            console.error('Upload error:', error);
+            alert('Gagal upload foto. Silakan coba lagi.');
+            label.textContent = originalLabel;
+        }
+    },
+
+    /**
+     * Save photos to database
+     */
+    async savePhotosToDatabase(photos) {
+        try {
+            const state = stateManager.getState();
+            const patientId = state.derived?.patientId ||
+                             state.recordData?.patientId ||
+                             state.patientData?.id;
+            const mrId = state.currentMrId ||
+                        state.recordData?.mrId ||
+                        state.recordData?.mr_id;
+
+            if (!patientId || !mrId) {
+                console.warn('[USG] Patient ID or MR ID not found, skipping database save');
+                return;
+            }
+
+            const token = window.getToken?.() || localStorage.getItem('vps_auth_token');
+            if (!token) {
+                console.warn('[USG] No auth token, skipping database save');
+                return;
+            }
+
+            // Get current USG data from state
+            const usg = state.recordData?.usg || {};
+
+            const response = await fetch('/api/medical-records', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    patientId: patientId,
+                    visitId: mrId,
+                    type: 'usg',
+                    data: {
+                        ...usg,
+                        photos: photos
+                    },
+                    timestamp: new Date().toISOString()
+                })
+            });
+
+            if (!response.ok) {
+                const errText = await response.text();
+                console.error('[USG] Failed to save photos to database:', errText);
+            } else {
+                console.log('[USG] Photos saved to database successfully');
+            }
+        } catch (error) {
+            console.error('[USG] Error saving photos to database:', error);
+        }
+    },
+
+    /**
+     * Remove photo
+     */
+    async removePhoto(index) {
+        if (!confirm('Hapus foto ini?')) return;
+
+        // Get current photos
+        const photosData = document.getElementById('usg-photos-data');
+        let photos = [];
+        try {
+            photos = JSON.parse(photosData.value.replace(/&quot;/g, '"') || '[]');
+        } catch (e) {
+            photos = [];
+        }
+
+        // Remove photo at index
+        photos.splice(index, 1);
+
+        // Update hidden field
+        photosData.value = JSON.stringify(photos).replace(/"/g, '&quot;');
+
+        // Update state
+        const state = stateManager.getState();
+        const recordData = state.recordData || {};
+        const usg = recordData.usg || {};
+        usg.photos = photos;
+        recordData.usg = usg;
+        stateManager.setState({ recordData });
+
+        // Refresh photos grid
+        const grid = document.getElementById('usg-photos-grid');
+        if (grid) {
+            grid.innerHTML = this.renderPhotosGrid(photos);
+            this.initPhotoRemoveHandlers();
+        }
+
+        // Save to database
+        await this.savePhotosToDatabase(photos);
+    },
+
+    /**
+     * Initialize photo remove handlers
+     */
+    initPhotoRemoveHandlers() {
+        document.querySelectorAll('.usg-remove-photo').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const index = parseInt(e.currentTarget.dataset.index);
+                this.removePhoto(index);
+            });
+        });
     }
 };

@@ -78,6 +78,22 @@ export default {
                         ${this.renderTrimester3(data)}
                     </div>
 
+                    <!-- USG Photos Section -->
+                    <div class="border-top pt-4 mt-4">
+                        <h5 class="text-info font-weight-bold"><i class="fas fa-camera"></i> FOTO USG</h5>
+                        <div class="form-group">
+                            <div class="custom-file mb-3">
+                                <input type="file" class="custom-file-input" id="usg-photo-upload" accept="image/*" multiple>
+                                <label class="custom-file-label" for="usg-photo-upload">Pilih foto USG...</label>
+                            </div>
+                            <small class="form-text text-muted">Format: JPG, PNG. Maksimal 10MB per file.</small>
+                        </div>
+                        <div id="usg-photos-grid" class="row mb-3">
+                            ${this.renderPhotosGrid(data.photos || [])}
+                        </div>
+                        <input type="hidden" id="usg-photos-data" value="${JSON.stringify(data.photos || []).replace(/"/g, '&quot;')}">
+                    </div>
+
                     <!-- Save Button -->
                     <div class="text-right mt-4">
                         <button type="button" class="btn btn-primary" id="btn-save-usg" onclick="window.saveUSGExam()">
@@ -89,7 +105,7 @@ export default {
 
             <script>
             // Initialize USG save handler
-            setTimeout(() => {
+            setTimeout(async () => {
                 // Show save button on any field change
                 document.querySelectorAll('.usg-field').forEach(field => {
                     field.addEventListener('input', () => {
@@ -101,6 +117,14 @@ export default {
                         if (btn) btn.style.display = 'inline-block';
                     });
                 });
+
+                // Photo upload handler
+                const USGObstetri = (await import('./usg-obstetri.js')).default;
+                const photoInput = document.getElementById('usg-photo-upload');
+                if (photoInput) {
+                    photoInput.addEventListener('change', (e) => USGObstetri.handlePhotoUpload(e));
+                }
+                USGObstetri.initPhotoRemoveHandlers();
 
                 // NOTE: Button already has onclick="window.saveUSGExam()" in HTML
                 // No need to add onclick handler here to prevent double save
@@ -869,5 +893,152 @@ export default {
             membrane_sweep: document.querySelector('input[name="t3_membrane_sweep"]:checked')?.value,
             contraception: contraception
         };
+    },
+
+    // Photo helper methods
+    renderPhotosGrid(photos) {
+        if (!photos || photos.length === 0) {
+            return '<div class="col-12"><p class="text-muted">Belum ada foto USG</p></div>';
+        }
+        return photos.map((photo, index) => `
+            <div class="col-md-3 col-sm-4 col-6 mb-3">
+                <div class="card h-100">
+                    <a href="${photo.url}" target="_blank">
+                        <img src="${photo.url}" class="card-img-top" alt="${photo.name}" style="height: 120px; object-fit: cover;">
+                    </a>
+                    <div class="card-body p-2">
+                        <small class="text-truncate d-block">${photo.name}</small>
+                        <button type="button" class="btn btn-xs btn-danger mt-1 usg-remove-photo" data-index="${index}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    },
+
+    async handlePhotoUpload(event) {
+        const files = Array.from(event.target.files);
+        if (files.length === 0) return;
+
+        const maxSize = 10 * 1024 * 1024;
+        for (const file of files) {
+            if (file.size > maxSize) {
+                alert(`File ${file.name} terlalu besar. Maksimal 10MB.`);
+                return;
+            }
+        }
+
+        const label = event.target.nextElementSibling;
+        const originalLabel = label.textContent;
+        label.textContent = 'Mengupload...';
+
+        try {
+            const formData = new FormData();
+            files.forEach(file => formData.append('files', file));
+
+            const token = window.getToken?.() || localStorage.getItem('vps_auth_token');
+            const response = await fetch('/api/usg-photos/upload', {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+
+            if (!response.ok) throw new Error('Upload failed');
+
+            const result = await response.json();
+            const photosData = document.getElementById('usg-photos-data');
+            let currentPhotos = [];
+            try {
+                currentPhotos = JSON.parse(photosData.value.replace(/&quot;/g, '"') || '[]');
+            } catch (e) { currentPhotos = []; }
+
+            const updatedPhotos = [...currentPhotos, ...result.files];
+            photosData.value = JSON.stringify(updatedPhotos).replace(/"/g, '&quot;');
+
+            const grid = document.getElementById('usg-photos-grid');
+            if (grid) {
+                grid.innerHTML = this.renderPhotosGrid(updatedPhotos);
+                this.initPhotoRemoveHandlers();
+            }
+
+            await this.savePhotosToDatabase(updatedPhotos);
+
+            event.target.value = '';
+            label.textContent = originalLabel;
+            alert(`${result.files.length} foto berhasil diupload!`);
+        } catch (error) {
+            console.error('Upload error:', error);
+            alert('Gagal upload foto.');
+            label.textContent = originalLabel;
+        }
+    },
+
+    async removePhoto(index) {
+        if (!confirm('Hapus foto ini?')) return;
+
+        const photosData = document.getElementById('usg-photos-data');
+        let photos = [];
+        try {
+            photos = JSON.parse(photosData.value.replace(/&quot;/g, '"') || '[]');
+        } catch (e) { photos = []; }
+
+        photos.splice(index, 1);
+        photosData.value = JSON.stringify(photos).replace(/"/g, '&quot;');
+
+        const grid = document.getElementById('usg-photos-grid');
+        if (grid) {
+            grid.innerHTML = this.renderPhotosGrid(photos);
+            this.initPhotoRemoveHandlers();
+        }
+
+        await this.savePhotosToDatabase(photos);
+    },
+
+    initPhotoRemoveHandlers() {
+        const self = this;
+        document.querySelectorAll('.usg-remove-photo').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const index = parseInt(e.currentTarget.dataset.index);
+                self.removePhoto(index);
+            });
+        });
+    },
+
+    async savePhotosToDatabase(photos) {
+        try {
+            const { default: stateManager } = await import('../../utils/state-manager.js');
+            const state = stateManager.getState();
+            const patientId = state.derived?.patientId || state.recordData?.patientId || state.patientData?.id;
+            const mrId = state.currentMrId || state.recordData?.mrId || state.recordData?.mr_id;
+
+            if (!patientId || !mrId) return;
+
+            const token = window.getToken?.() || localStorage.getItem('vps_auth_token');
+            if (!token) return;
+
+            // Get existing USG data
+            const { getMedicalRecordContext } = await import('../../utils/helpers.js');
+            const context = getMedicalRecordContext(state, 'usg');
+            const existingData = context?.data || {};
+
+            await fetch('/api/medical-records', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    patientId,
+                    visitId: mrId,
+                    type: 'usg',
+                    data: { ...existingData, photos },
+                    timestamp: new Date().toISOString()
+                })
+            });
+            console.log('[USG Obstetri] Photos saved to database');
+        } catch (error) {
+            console.error('[USG Obstetri] Error saving photos:', error);
+        }
     }
 };

@@ -169,23 +169,68 @@ router.post('/api/medical-records', verifyToken, async (req, res) => {
             }
         }
 
-        // Insert into database
-        const [result] = await db.query(
-            `INSERT INTO medical_records (patient_id, visit_id, mr_id, doctor_id, doctor_name, record_type, record_data, created_at)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-                patientId,
-                numericVisitId,
-                mrId,
-                finalDoctorId,
-                finalDoctorName,
-                recordType,
-                JSON.stringify(recordData),
-                mysqlTimestamp
-            ]
-        );
-        
-        logger.info(`Medical record saved: ID ${result.insertId}, Patient ${patientId}, Visit ${numericVisitId || mrId || 'none'}, Type: ${recordType}, Doctor: ${finalDoctorName}`);
+        // Check if record already exists for this patient, mr_id, and type
+        let existingRecordId = null;
+        if (mrId) {
+            const [existing] = await db.query(
+                `SELECT id FROM medical_records
+                 WHERE patient_id = ? AND mr_id = ? AND record_type = ?
+                 ORDER BY created_at DESC LIMIT 1`,
+                [patientId, mrId, recordType]
+            );
+            if (existing.length > 0) {
+                existingRecordId = existing[0].id;
+            }
+        }
+
+        let result;
+        if (existingRecordId) {
+            // Update existing record (merge data to preserve existing fields)
+            const [currentRecord] = await db.query(
+                `SELECT record_data FROM medical_records WHERE id = ?`,
+                [existingRecordId]
+            );
+
+            let mergedData = recordData;
+            if (currentRecord.length > 0 && currentRecord[0].record_data) {
+                try {
+                    const existingData = typeof currentRecord[0].record_data === 'string'
+                        ? JSON.parse(currentRecord[0].record_data)
+                        : currentRecord[0].record_data;
+                    mergedData = { ...existingData, ...recordData };
+                } catch (e) {
+                    // If parsing fails, just use new data
+                    mergedData = recordData;
+                }
+            }
+
+            await db.query(
+                `UPDATE medical_records
+                 SET record_data = ?, doctor_id = ?, doctor_name = ?, updated_at = ?
+                 WHERE id = ?`,
+                [JSON.stringify(mergedData), finalDoctorId, finalDoctorName, mysqlTimestamp, existingRecordId]
+            );
+            result = { insertId: existingRecordId, updated: true };
+            logger.info(`Medical record updated: ID ${existingRecordId}, Patient ${patientId}, Visit ${mrId}, Type: ${recordType}, Doctor: ${finalDoctorName}`);
+        } else {
+            // Insert new record
+            const [insertResult] = await db.query(
+                `INSERT INTO medical_records (patient_id, visit_id, mr_id, doctor_id, doctor_name, record_type, record_data, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                [
+                    patientId,
+                    numericVisitId,
+                    mrId,
+                    finalDoctorId,
+                    finalDoctorName,
+                    recordType,
+                    JSON.stringify(recordData),
+                    mysqlTimestamp
+                ]
+            );
+            result = insertResult;
+            logger.info(`Medical record saved: ID ${result.insertId}, Patient ${patientId}, Visit ${numericVisitId || mrId || 'none'}, Type: ${recordType}, Doctor: ${finalDoctorName}`);
+        }
         
         res.json({ 
             success: true, 

@@ -159,6 +159,18 @@ const SendToPatient = {
             labContainer.style.display = 'none';
         }
 
+        // Check if USG photos exist
+        const usgPhotos = state.recordData?.usg?.photos || [];
+        const usgContainer = document.getElementById('send-usg-container');
+        const usgCount = document.getElementById('send-usg-count');
+        if (usgPhotos.length > 0) {
+            usgContainer.style.display = 'block';
+            usgCount.textContent = `${usgPhotos.length} foto`;
+            document.getElementById('send-usg-photos').checked = true;
+        } else {
+            usgContainer.style.display = 'none';
+        }
+
         // Clear status message
         const statusEl = document.getElementById('send-status-message');
         if (statusEl) {
@@ -275,6 +287,23 @@ const SendToPatient = {
                     type: 'lab_interpretation',
                     title: 'Interpretasi Hasil Lab',
                     sourceData: { content: labInterpretation }
+                });
+            }
+        }
+
+        // USG Photos
+        const sendUsg = document.getElementById('send-usg-photos')?.checked;
+        if (sendUsg) {
+            const usgPhotos = state.recordData?.usg?.photos || [];
+            for (const photo of usgPhotos) {
+                documents.push({
+                    type: 'usg_photo',
+                    title: photo.name || 'Foto USG',
+                    filePath: photo.key || photo.filename,
+                    fileUrl: photo.url,
+                    fileName: photo.name,
+                    fileType: photo.type,
+                    fileSize: photo.size
                 });
             }
         }

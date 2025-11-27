@@ -175,6 +175,10 @@ if (sundayClinicRoutes.setupSocketHandlers) {
 const labResultsRoutes = require('./routes/lab-results');
 app.use('/api/lab-results', labResultsRoutes);
 
+// USG photos routes (upload ultrasound images)
+const usgPhotosRoutes = require('./routes/usg-photos');
+app.use('/api/usg-photos', usgPhotosRoutes);
+
 // Patient documents routes (share documents with patients)
 const patientDocumentsRoutes = require('./routes/patient-documents');
 app.use('/api/patient-documents', patientDocumentsRoutes);
@@ -228,6 +232,18 @@ app.use('/', rolesRoutes);
 // Booking Settings routes (admin control for patient booking sessions)
 const bookingSettingsRoutes = require('./routes/booking-settings');
 app.use('/api/booking-settings', bookingSettingsRoutes);
+
+// Staff Notifications routes
+const notificationsRoutes = require('./routes/notifications');
+app.use('/api/notifications', notificationsRoutes);
+
+// Patient Notifications routes (for patient portal)
+const patientNotificationsRoutes = require('./routes/patient-notifications');
+app.use('/api/patient-notifications', patientNotificationsRoutes);
+
+// Registration Codes routes (for patient registration control)
+const registrationCodesRoutes = require('./routes/registration-codes');
+app.use('/api/registration-codes', registrationCodesRoutes);
 
 // API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {

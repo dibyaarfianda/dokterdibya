@@ -118,6 +118,99 @@
 
         <section class="content">
             <div class="container-fluid">
+                <!-- Registration Codes Section -->
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <div class="card card-warning collapsed-card">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-key mr-2"></i>Kode Registrasi Pasien
+                                </h3>
+                                <div class="card-tools">
+                                    <span class="badge badge-warning mr-2" id="active-codes-count">0 aktif</span>
+                                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                        <i class="fas fa-plus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <p class="text-muted mb-2">
+                                            <i class="fas fa-info-circle"></i>
+                                            Generate kode untuk pasien yang akan mendaftar di portal.
+                                            Kode dikirim via WhatsApp.
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6 text-right">
+                                        <button class="btn btn-warning" onclick="openGenerateCodeModal()">
+                                            <i class="fas fa-plus-circle"></i> Generate Kode Baru
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="table-responsive">
+                                    <table id="registration-codes-table" class="table table-sm table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Kode</th>
+                                                <th>Nama Pasien</th>
+                                                <th>No. HP</th>
+                                                <th>Status</th>
+                                                <th>Dibuat</th>
+                                                <th>Kadaluarsa</th>
+                                                <th>Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="registration-codes-tbody">
+                                            <tr><td colspan="7" class="text-center">Memuat...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Generate Code Modal -->
+                <div class="modal fade" id="generateCodeModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header bg-warning">
+                                <h5 class="modal-title"><i class="fas fa-key"></i> Generate Kode Registrasi</h5>
+                                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <label>Nama Pasien (opsional)</label>
+                                    <input type="text" class="form-control" id="gen-patient-name" placeholder="Masukkan nama pasien">
+                                </div>
+                                <div class="form-group">
+                                    <label>No. HP (WhatsApp) <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="gen-phone" placeholder="08xxxxxxxxxx" required>
+                                    <small class="text-muted">Nomor WhatsApp pasien untuk menerima kode</small>
+                                </div>
+                                <div id="generated-code-result" style="display: none;">
+                                    <hr>
+                                    <div class="text-center">
+                                        <p class="mb-2">Kode Registrasi:</p>
+                                        <h2 class="text-warning font-weight-bold" id="generated-code-display"></h2>
+                                        <p class="text-muted">Berlaku 7 hari</p>
+                                        <button class="btn btn-success btn-lg" id="btn-send-whatsapp" onclick="sendCodeWhatsApp()">
+                                            <i class="fab fa-whatsapp"></i> Kirim via WhatsApp
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                                <button type="button" class="btn btn-warning" id="btn-generate-code" onclick="generateRegistrationCode()">
+                                    <i class="fas fa-key"></i> Generate Kode
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="row">
                     <div class="col-12">
                         <div class="card card-primary">
@@ -389,7 +482,240 @@ Apakah Anda yakin ingin melanjutkan?`;
     // Load on page ready
     $(document).ready(function() {
         loadPatients();
+        loadRegistrationCodes();
     });
+
+    // ============================================
+    // Registration Codes Functions
+    // ============================================
+
+    let currentGeneratedCode = null;
+    let currentGeneratedPhone = null;
+    let currentPatientName = null;
+
+    // Load Registration Codes
+    async function loadRegistrationCodes() {
+        try {
+            const response = await fetch('/api/registration-codes?limit=50', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error('Failed to load codes');
+
+            const data = await response.json();
+            const tbody = document.getElementById('registration-codes-tbody');
+
+            if (!data.data || data.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Belum ada kode registrasi</td></tr>';
+                document.getElementById('active-codes-count').textContent = '0 aktif';
+                return;
+            }
+
+            // Count active codes
+            const activeCodes = data.data.filter(c => c.status === 'active' && new Date(c.expires_at) > new Date());
+            document.getElementById('active-codes-count').textContent = `${activeCodes.length} aktif`;
+
+            tbody.innerHTML = data.data.map(code => {
+                const createdDate = new Date(code.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+                const expiresDate = new Date(code.expires_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+                const isExpired = new Date(code.expires_at) < new Date();
+
+                let statusBadge = '';
+                if (code.status === 'used') {
+                    statusBadge = '<span class="badge badge-success">Terpakai</span>';
+                } else if (isExpired) {
+                    statusBadge = '<span class="badge badge-secondary">Kadaluarsa</span>';
+                } else {
+                    statusBadge = '<span class="badge badge-warning">Aktif</span>';
+                }
+
+                return `
+                    <tr>
+                        <td><code class="font-weight-bold">${code.code}</code></td>
+                        <td>${code.patient_name || '-'}</td>
+                        <td>${code.phone || '-'}</td>
+                        <td>${statusBadge}</td>
+                        <td>${createdDate}</td>
+                        <td>${expiresDate}</td>
+                        <td>
+                            ${code.status === 'active' && !isExpired ? `
+                                <button class="btn btn-xs btn-success" onclick="resendCodeWhatsApp('${code.code}', '${code.phone}', '${code.patient_name || ''}')" title="Kirim ulang via WhatsApp">
+                                    <i class="fab fa-whatsapp"></i>
+                                </button>
+                                <button class="btn btn-xs btn-danger" onclick="deleteCode(${code.id})" title="Hapus">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            ` : ''}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+        } catch (error) {
+            console.error('Load registration codes error:', error);
+            document.getElementById('registration-codes-tbody').innerHTML =
+                '<tr><td colspan="7" class="text-center text-danger">Gagal memuat data</td></tr>';
+        }
+    }
+
+    // Open Generate Code Modal
+    function openGenerateCodeModal() {
+        // Reset form
+        document.getElementById('gen-patient-name').value = '';
+        document.getElementById('gen-phone').value = '';
+        document.getElementById('generated-code-result').style.display = 'none';
+        document.getElementById('btn-generate-code').style.display = 'inline-block';
+        currentGeneratedCode = null;
+        currentGeneratedPhone = null;
+        currentPatientName = null;
+
+        $('#generateCodeModal').modal('show');
+    }
+
+    // Generate Registration Code
+    async function generateRegistrationCode() {
+        const patientName = document.getElementById('gen-patient-name').value.trim();
+        const phone = document.getElementById('gen-phone').value.trim();
+
+        if (!phone) {
+            alert('Nomor HP harus diisi');
+            return;
+        }
+
+        const btn = document.getElementById('btn-generate-code');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+
+        try {
+            const response = await fetch('/api/registration-codes/generate', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    patient_name: patientName || null,
+                    phone: phone
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || 'Gagal generate kode');
+            }
+
+            // Show generated code
+            currentGeneratedCode = data.code;
+            currentGeneratedPhone = data.phone;
+            currentPatientName = patientName;
+
+            document.getElementById('generated-code-display').textContent = data.code;
+            document.getElementById('generated-code-result').style.display = 'block';
+            btn.style.display = 'none';
+
+            // Reload codes table
+            loadRegistrationCodes();
+
+        } catch (error) {
+            alert('Error: ' + error.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-key"></i> Generate Kode';
+        }
+    }
+
+    // Send Code via WhatsApp
+    async function sendCodeWhatsApp() {
+        if (!currentGeneratedCode || !currentGeneratedPhone) {
+            alert('Kode belum di-generate');
+            return;
+        }
+
+        const btn = document.getElementById('btn-send-whatsapp');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengirim...';
+
+        try {
+            const response = await fetch('/api/registration-codes/send-whatsapp', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    code: currentGeneratedCode,
+                    phone: currentGeneratedPhone,
+                    patient_name: currentPatientName
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.method === 'fonnte') {
+                alert('Kode berhasil dikirim via WhatsApp!');
+                $('#generateCodeModal').modal('hide');
+            } else if (data.waLink) {
+                // Open WhatsApp link
+                window.open(data.waLink, '_blank');
+                alert('Link WhatsApp terbuka di tab baru. Klik kirim untuk mengirim pesan.');
+                $('#generateCodeModal').modal('hide');
+            } else {
+                throw new Error(data.message || 'Gagal mengirim');
+            }
+
+        } catch (error) {
+            alert('Error: ' + error.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fab fa-whatsapp"></i> Kirim via WhatsApp';
+        }
+    }
+
+    // Resend Code WhatsApp (for existing codes)
+    async function resendCodeWhatsApp(code, phone, patientName) {
+        try {
+            const response = await fetch('/api/registration-codes/send-whatsapp', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ code, phone, patient_name: patientName })
+            });
+
+            const data = await response.json();
+
+            if (data.method === 'fonnte') {
+                alert('Kode berhasil dikirim ulang via WhatsApp!');
+            } else if (data.waLink) {
+                window.open(data.waLink, '_blank');
+                alert('Link WhatsApp terbuka di tab baru.');
+            }
+
+        } catch (error) {
+            alert('Error: ' + error.message);
+        }
+    }
+
+    // Delete Registration Code
+    async function deleteCode(codeId) {
+        if (!confirm('Hapus kode registrasi ini?')) return;
+
+        try {
+            const response = await fetch(`/api/registration-codes/${codeId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error('Gagal menghapus');
+
+            loadRegistrationCodes();
+
+        } catch (error) {
+            alert('Error: ' + error.message);
+        }
+    }
 </script>
 
 <!-- Mobile Helper Script -->

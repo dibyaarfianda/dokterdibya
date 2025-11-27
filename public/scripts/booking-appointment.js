@@ -267,7 +267,7 @@ function showSummary() {
 async function submitBooking() {
     try {
         $('#btn-submit').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Memproses...');
-        
+
         const response = await fetch(`${API_BASE}/book`, {
             method: 'POST',
             headers: {
@@ -282,13 +282,35 @@ async function submitBooking() {
                 consultation_category: bookingData.consultationCategory
             })
         });
-        
+
         const data = await response.json();
-        
+
         if (!response.ok) {
+            // Handle 409 Conflict (slot already booked by another patient)
+            if (response.status === 409) {
+                showAlert(`
+                    <strong><i class="fa fa-exclamation-triangle"></i> Slot Sudah Terisi</strong><br>
+                    ${data.message}<br><br>
+                    <small>Memuat ulang slot yang tersedia...</small>
+                `, 'warning');
+
+                // Reset slot selection
+                bookingData.session = null;
+                bookingData.sessionLabel = null;
+                bookingData.slot = null;
+                bookingData.slotTime = null;
+
+                // Go back to step 2 (slot selection) and refresh slots
+                currentStep = 2;
+                updateUI();
+                await loadSlots();
+
+                $('#btn-submit').prop('disabled', false).html('<i class="fa fa-check"></i> Konfirmasi Booking');
+                return;
+            }
             throw new Error(data.message || 'Gagal membuat janji temu');
         }
-        
+
         // Success
         showAlert(`
             <strong>Janji Temu Berhasil Dibuat!</strong><br>
@@ -301,11 +323,11 @@ async function submitBooking() {
             </div><br>
             Anda akan dialihkan ke dashboard...
         `, 'success');
-        
+
         setTimeout(() => {
             window.location.href = '/patient-dashboard.html';
         }, 3000);
-        
+
     } catch (error) {
         console.error('Error booking appointment:', error);
         showAlert(error.message, 'danger');

@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const { verifyToken, requirePermission, requireSuperadmin } = require('../middleware/auth');
+const { createPatientNotification } = require('./patient-notifications');
 
 /**
  * GET /api/booking-settings
@@ -368,6 +369,20 @@ router.post('/force-cancel/:id', verifyToken, requireSuperadmin, async (req, res
                     console.error('Failed to send email notification:', emailError);
                 }
             }
+        }
+
+        // Create in-app notification for patient
+        try {
+            await createPatientNotification({
+                patient_id: booking.patient_id,
+                type: 'appointment',
+                title: 'Janji Temu Dibatalkan',
+                message: `Janji temu Anda pada ${formattedDate} pukul ${slotTime} telah dibatalkan oleh klinik. Alasan: ${reason}`,
+                icon: 'fa fa-times-circle',
+                icon_color: 'text-danger'
+            });
+        } catch (notifError) {
+            console.error('Failed to create patient notification:', notifError);
         }
 
         res.json({
