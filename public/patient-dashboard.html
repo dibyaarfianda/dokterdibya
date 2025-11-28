@@ -1180,13 +1180,25 @@
                 </div>
 
                 <!-- Galeri USG dari Dokter -->
-                <div class="dashboard-card" style="margin-bottom: 20px;">
+                <div class="dashboard-card" id="usg-section" style="margin-bottom: 20px;">
                     <h3><i class="fa fa-picture-o"></i> Foto USG</h3>
                     <p class="text-muted" style="font-size: 12px; margin-bottom: 10px;">Foto USG yang dikirim oleh dokter Anda</p>
                     <div id="ultrasound-gallery-mini">
                         <p class="empty-state">
                             <i class="fa fa-image"></i>
                             Belum ada foto USG dari dokter
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Hasil Lab dari Dokter -->
+                <div class="dashboard-card" id="lab-section" style="margin-bottom: 20px;">
+                    <h3><i class="fa fa-flask"></i> Hasil Lab</h3>
+                    <p class="text-muted" style="font-size: 12px; margin-bottom: 10px;">Hasil laboratorium yang dikirim oleh dokter Anda</p>
+                    <div id="lab-results-container">
+                        <p class="empty-state">
+                            <i class="fa fa-flask"></i>
+                            Belum ada hasil lab dari dokter
                         </p>
                     </div>
                 </div>
@@ -1261,11 +1273,11 @@
                             <i class="fa fa-calendar"></i>
                             <div>Jadwal &<br>Janji Konsultasi</div>
                         </a>
-                        <a href="#" class="quick-action-btn" onclick="alert('Jadwal USG segera hadir!'); return false;">
+                        <a href="#usg-section" class="quick-action-btn" onclick="document.getElementById('usg-section').scrollIntoView({behavior: 'smooth', block: 'start'}); return false;">
                             <i class="fa fa-heartbeat"></i>
                             <div>USG &amp;<br>Imaging</div>
                         </a>
-                        <a href="#" class="quick-action-btn" onclick="alert('Layanan Lab segera hadir!'); return false;">
+                        <a href="#lab-section" class="quick-action-btn" onclick="document.getElementById('lab-section').scrollIntoView({behavior: 'smooth', block: 'start'}); return false;">
                             <i class="fa fa-flask"></i>
                             <div>Lab &amp;<br>Hasil Tes</div>
                         </a>
@@ -1555,6 +1567,8 @@
             loadUserProfile();
             // Load ultrasound images
             loadUltrasoundImages();
+            // Load lab results
+            loadLabResults();
         }
 
         async function loadUserProfile() {
@@ -1858,10 +1872,10 @@
                     `;
                 } else {
                     historyContainer.innerHTML = completed.slice(0, 5).map(apt => `
-                        <div class="history-item" style="padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;">
+                        <div class="history-item" style="padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; justify-content: space-between; align-items: center;">
                             <div>
-                                <div style="font-weight: 600; color: #333;">${apt.dateFormatted || '-'}</div>
-                                <div style="font-size: 12px; color: #666;">${apt.sessionLabel || '-'} - ${apt.time || '-'} WIB</div>
+                                <div style="font-weight: 600; color: #fff;">${apt.dateFormatted || '-'}</div>
+                                <div style="font-size: 12px; color: #aaa;">${apt.sessionLabel || '-'} - ${apt.time || '-'} WIB</div>
                             </div>
                             <span style="background: #28a745; color: #fff; padding: 4px 10px; border-radius: 12px; font-size: 11px;">
                                 <i class="fa fa-check"></i> Selesai
@@ -2758,28 +2772,137 @@
         // Load ultrasound images from patient documents API (sent by staff)
         async function loadUltrasoundImages() {
             try {
-                const token = localStorage.getItem('patient_token');
+                const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
                 if (!token) return;
 
-                const response = await fetch('/api/patient-documents/my-documents?type=usg_photo', {
+                // Fetch all USG types: usg_photo, usg_2d, usg_4d
+                const [responsePhoto, response2d, response4d] = await Promise.all([
+                    fetch('/api/patient-documents/my-documents?type=usg_photo', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }),
+                    fetch('/api/patient-documents/my-documents?type=usg_2d', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }),
+                    fetch('/api/patient-documents/my-documents?type=usg_4d', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    })
+                ]);
+
+                let allDocs = [];
+
+                if (responsePhoto.ok) {
+                    const resultPhoto = await responsePhoto.json();
+                    if (resultPhoto.success && resultPhoto.documents) {
+                        allDocs = allDocs.concat(resultPhoto.documents);
+                    }
+                }
+
+                if (response2d.ok) {
+                    const result2d = await response2d.json();
+                    if (result2d.success && result2d.documents) {
+                        allDocs = allDocs.concat(result2d.documents);
+                    }
+                }
+
+                if (response4d.ok) {
+                    const result4d = await response4d.json();
+                    if (result4d.success && result4d.documents) {
+                        allDocs = allDocs.concat(result4d.documents);
+                    }
+                }
+
+                // Sort by date descending
+                allDocs.sort((a, b) => new Date(b.published_at || b.created_at) - new Date(a.published_at || a.created_at));
+
+                ultrasoundImages = allDocs.map(doc => ({
+                    id: doc.id,
+                    url: doc.file_url,
+                    date: doc.published_at || doc.created_at,
+                    notes: doc.description || doc.title,
+                    title: doc.title,
+                    type: doc.document_type
+                }));
+                renderUltrasoundGallery();
+            } catch (error) {
+                console.error('Failed to load USG images:', error);
+            }
+        }
+
+        // Load lab results from patient documents API (sent by staff)
+        let labResults = [];
+        async function loadLabResults() {
+            try {
+                const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+                if (!token) return;
+
+                const response = await fetch('/api/patient-documents/my-documents?type=lab_result', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
                 if (response.ok) {
                     const result = await response.json();
                     if (result.success && result.documents) {
-                        ultrasoundImages = result.documents.map(doc => ({
+                        labResults = result.documents.map(doc => ({
                             id: doc.id,
                             url: doc.file_url,
                             date: doc.published_at || doc.created_at,
-                            notes: doc.description || doc.title,
-                            title: doc.title
+                            title: doc.title,
+                            description: doc.description
                         }));
-                        renderUltrasoundGallery();
+                        renderLabResults();
                     }
                 }
             } catch (error) {
-                console.error('Failed to load USG images:', error);
+                console.error('Failed to load lab results:', error);
+            }
+        }
+
+        function renderLabResults() {
+            const container = document.getElementById('lab-results-container');
+            if (!container) return;
+
+            if (labResults.length === 0) {
+                container.innerHTML = `
+                    <p class="empty-state">
+                        <i class="fa fa-flask"></i>
+                        Belum ada hasil lab dari dokter
+                    </p>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="lab-results-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+                    ${labResults.map(lab => `
+                        <div class="lab-result-item" style="background: #2a2a2a; border-radius: 8px; overflow: hidden; cursor: pointer; transition: transform 0.2s;"
+                             onclick="openLabResult('${lab.url}')"
+                             onmouseover="this.style.transform='scale(1.02)'"
+                             onmouseout="this.style.transform='scale(1)'">
+                            <div style="padding: 15px;">
+                                <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                                    <i class="fa fa-file-text-o" style="font-size: 24px; color: #28a7e9; margin-right: 10px;"></i>
+                                    <div>
+                                        <div style="font-weight: 600; color: #fff; font-size: 14px;">${lab.title || 'Hasil Lab'}</div>
+                                        <div style="font-size: 11px; color: #aaa;">${formatLabDate(lab.date)}</div>
+                                    </div>
+                                </div>
+                                ${lab.description ? `<p style="font-size: 12px; color: #999; margin: 0;">${lab.description}</p>` : ''}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function formatLabDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+
+        function openLabResult(url) {
+            if (url) {
+                window.open(url, '_blank');
             }
         }
 
@@ -2971,7 +3094,16 @@
                     return;
                 }
 
-                container.innerHTML = renderDocumentsGrid(data.documents);
+                // Exclude USG and Lab types (they have their own dedicated sections)
+                const excludedTypes = ['usg_photo', 'usg_2d', 'usg_4d', 'lab_result'];
+                const filteredDocs = data.documents.filter(doc => !excludedTypes.includes(doc.document_type));
+
+                if (filteredDocs.length === 0) {
+                    container.innerHTML = renderDocumentsEmpty('Belum ada dokumen medis yang dikirimkan oleh dokter.');
+                    return;
+                }
+
+                container.innerHTML = renderDocumentsGrid(filteredDocs);
 
             } catch (error) {
                 console.error('Error loading documents:', error);
