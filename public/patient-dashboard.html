@@ -1212,8 +1212,8 @@
                 </div>
             </div>
 
-            <!-- Right Column: Journey Book with Image (Larger) - HIDDEN -->
-            <div class="col-md-7" style="display: none;">
+            <!-- Right Column: Journey Book with Image (Larger) -->
+            <div class="col-md-7">
                 <div class="dashboard-card" style="cursor: pointer; position: relative; overflow: hidden; min-height: 400px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); border: 1px solid rgba(212, 175, 55, 0.3);" onclick="window.location.href='/perjalanan-ibu.html'">
                     <!-- Background Pattern -->
                     <div style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; opacity: 0.08; background-image: url('/images/dokter-dibya-book/1.png'); background-size: cover; background-position: center;"></div>
@@ -1703,6 +1703,9 @@
                 // Load booking status and appointment alerts
                 loadBookingStatus();
 
+                // Setup real-time booking updates
+                setupRealtimeBookingUpdates();
+
                 loadVisitInvoices();
 
             } catch (error) {
@@ -1745,6 +1748,82 @@
                     </div>
                 `;
             }
+        }
+
+        // Real-time booking updates via Socket.IO
+        function setupRealtimeBookingUpdates() {
+            // Wait for socket from announcements-dashboard.js
+            function waitForSocket(callback, retries = 0) {
+                if (window.socket || (typeof socket !== 'undefined' && socket)) {
+                    callback(window.socket || socket);
+                } else if (retries < 20) {
+                    setTimeout(() => waitForSocket(callback, retries + 1), 250);
+                } else {
+                    console.warn('[PatientDashboard] Socket not available for real-time booking updates');
+                }
+            }
+
+            waitForSocket((sock) => {
+                console.log('[PatientDashboard] Setting up real-time updates');
+
+                // Listen for booking status updates
+                sock.on('booking:update', (data) => {
+                    console.log('[PatientDashboard] Booking updated:', data);
+                    // Reload booking status to reflect changes
+                    loadBookingStatus();
+                    // Show notification
+                    showBookingNotification(`Status booking Anda telah diupdate: ${data.booking?.status || 'diperbarui'}`, 'info');
+                });
+
+                // Listen for booking cancellations
+                sock.on('booking:cancel', (data) => {
+                    console.log('[PatientDashboard] Booking cancelled:', data);
+                    loadBookingStatus();
+                    showBookingNotification('Booking Anda telah dibatalkan', 'warning');
+                });
+
+                // Listen for new notifications
+                sock.on('notification:new', (data) => {
+                    console.log('[PatientDashboard] New notification:', data);
+                    // Update notification badge
+                    updateNotificationBadge();
+                    // Show toast notification
+                    showBookingNotification(data.notification?.title || 'Notifikasi baru', 'info');
+                });
+
+                console.log('[PatientDashboard] Real-time updates enabled');
+            });
+        }
+
+        function showBookingNotification(message, type) {
+            const bgColor = type === 'warning' ? '#f39c12' : type === 'error' ? '#e74c3c' : '#28a7e9';
+            const notification = document.createElement('div');
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${bgColor};
+                color: white;
+                padding: 15px 20px;
+                border-radius: 8px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+                z-index: 9999;
+                max-width: 350px;
+                animation: slideInRight 0.3s ease-out;
+            `;
+            notification.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <i class="fa fa-bell"></i>
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: white; font-size: 18px; cursor: pointer; margin-left: auto;">&times;</button>
+                </div>
+            `;
+            document.body.appendChild(notification);
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 5000);
         }
 
         function renderBookingStatus(appointments) {

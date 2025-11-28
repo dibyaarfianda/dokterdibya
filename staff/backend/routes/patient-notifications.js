@@ -237,6 +237,22 @@ async function createPatientNotification({
             VALUES (?, ?, ?, ?, ?, ?, ?)
         `, [patient_id, type, title, message, link, icon, icon_color]);
 
+        // Broadcast notification via Socket.IO for real-time updates
+        try {
+            const realtimeSync = require('../realtime-sync');
+            realtimeSync.broadcastPatientNotification({
+                id: result.insertId,
+                patient_id,
+                type,
+                title,
+                message,
+                icon,
+                icon_color
+            });
+        } catch (broadcastError) {
+            console.warn('Failed to broadcast notification:', broadcastError.message);
+        }
+
         return { success: true, id: result.insertId };
     } catch (error) {
         console.error('Error creating patient notification:', error);
