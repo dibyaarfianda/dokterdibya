@@ -1080,72 +1080,114 @@
             }
             
             .nav-bar {
-                text-align: center;
+                padding: 8px 0;
             }
 
             .nav-bar .container {
-                flex-direction: column;
+                flex-direction: row;
                 gap: 10px;
+                padding: 0 10px;
             }
 
             .nav-links {
                 margin-left: 0;
-                width: 100%;
+                flex: 1;
             }
 
             .welcome-text {
-                text-align: center;
+                text-align: left;
             }
 
             .welcome-title {
-                font-size: 16px;
+                font-size: 14px;
             }
 
             .welcome-subtitle {
-                font-size: 12px;
+                font-size: 10px;
+                margin-top: 0;
             }
 
             .nav-bar a {
-                padding: 8px 12px;
-                font-size: 14px;
+                padding: 6px 8px;
+                font-size: 13px;
             }
 
             .user-info-nav {
                 display: none;
             }
 
+            .notification-bell {
+                padding: 6px 10px;
+                margin-right: 5px;
+            }
+
+            .notification-bell i {
+                font-size: 18px;
+            }
+
             .user-avatar-nav {
                 margin-right: 0;
+                padding-left: 0 !important;
             }
 
             .avatar-circle {
-                width: 36px;
-                height: 36px;
-                font-size: 14px;
+                width: 32px;
+                height: 32px;
+                font-size: 12px;
             }
         }
         
         @media (max-width: 480px) {
-            .dashboard-container {
-                padding: 20px 10px;
+            .nav-bar {
+                padding: 6px 0;
             }
-            
+
+            .nav-bar .container {
+                padding: 0 8px;
+            }
+
+            .welcome-title {
+                font-size: 13px;
+            }
+
+            .welcome-subtitle {
+                font-size: 9px;
+            }
+
+            .notification-bell {
+                padding: 4px 8px;
+            }
+
+            .notification-bell i {
+                font-size: 16px;
+            }
+
+            .avatar-circle {
+                width: 28px;
+                height: 28px;
+                font-size: 11px;
+            }
+
+            .dashboard-container {
+                padding: 15px 10px;
+            }
+
             .quick-actions {
                 grid-template-columns: 1fr;
             }
-            
+
             .dashboard-card h3 {
                 font-size: 18px;
             }
-            
+
             .welcome-message p {
                 font-size: 14px !important;
             }
-            
+
             .welcome-message strong[style*="font-size: 20px"] {
                 font-size: 17px !important;
             }
-            
+
             .dashboard-card p {
                 font-size: 14px;
             }
@@ -1180,10 +1222,7 @@
                 <i class="fa fa-bell"></i>
                 <span class="notification-badge" id="notification-badge" style="display: none;">0</span>
             </div>
-      <div class="user-avatar-nav" onclick="toggleDropdown(event)" style="
-    padding-left: `00;
-    padding-left: 300px;
-">
+      <div class="user-avatar-nav" onclick="toggleDropdown(event)">
                 <div class="avatar-circle" id="user-avatar">
                     <img id="user-avatar-img" src="" alt="" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: none;">
                     <span id="user-avatar-initials">NA</span>
@@ -1352,7 +1391,7 @@
 
                             <!-- Preview Image -->
                             <div style="margin: 25px 0;">
-                                <img src="/images/dokter-dibya-book/1.png" alt="Perjalanan menjadi Ibu" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4); border: 2px solid rgba(212, 175, 55, 0.3);">
+                                <img src="/images/dokter-dibya-book/thumb-book.jpeg" alt="Perjalanan menjadi Ibu" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4); border: 2px solid rgba(212, 175, 55, 0.3);">
                             </div>
 
                             <div style="margin-top: 25px; padding: 15px; background: rgba(212, 175, 55, 0.1); border-radius: 8px; border-left: 4px solid #d4af37;">
@@ -1377,7 +1416,7 @@
                             <i class="fa fa-file-text"></i>
                             <div>Formulir<br>Rekam Medis Awal</div>
                         </a>
-                        <a href="/practice-locations.html" class="quick-action-btn">
+                        <a href="/practice-locations.html" class="quick-action-btn" id="quick-appointment">
                             <i class="fa fa-calendar"></i>
                             <div>Jadwal &<br>Janji Konsultasi</div>
                         </a>
@@ -1433,6 +1472,9 @@
                                     <div id="photo-upload-bar" style="height: 4px; background: #28a7e9; width: 0%; transition: width 0.3s;"></div>
                                 </div>
                                 <small style="color: #28a7e9;">Mengupload foto...</small>
+                            </div>
+                            <div id="photo-upload-error" style="display: none; margin-top: 10px; padding: 10px 15px; background: rgba(220,53,69,0.2); border: 1px solid #dc3545; border-radius: 6px; color: #ff6b6b; font-size: 13px;">
+                                <i class="fa fa-exclamation-circle"></i> <span id="photo-upload-error-text"></span>
                             </div>
                         </div>
 
@@ -1579,10 +1621,6 @@
                     </ul>
                 </div>
                 <div class="modal-footer" style="border-top: 1px solid #404040; display: flex; gap: 10px; justify-content: center;">
-                    <button type="button" class="btn btn-default" onclick="openProfileModal()"
-                            style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
-                        <i class="fa fa-edit"></i> Edit Profil
-                    </button>
                     <button type="button" class="btn btn-primary" onclick="openPasswordModal()" id="password-btn-modal"
                             style="background: #28a7e9; border: none;">
                         <i class="fa fa-lock"></i> <span id="password-btn-text-modal">Set Password</span>
@@ -2004,6 +2042,11 @@
                         Belum ada janji temu yang dijadwalkan
                     </p>
                 `;
+                // Remove glow when no upcoming appointments
+                const appointmentSection = document.getElementById('appointments-section');
+                const quickAppointmentBtn = document.getElementById('quick-appointment');
+                if (appointmentSection) appointmentSection.classList.remove('glow-new');
+                if (quickAppointmentBtn) quickAppointmentBtn.classList.remove('glow-new');
                 return;
             }
 
@@ -2051,6 +2094,27 @@
                 const cancelBtn = container.querySelector('.cancel-appointment-btn');
                 if (cancelBtn) {
                     cancelBtn.addEventListener('click', () => openCancelModal(nextAppointment));
+                }
+            }
+
+            // Add glow effect for confirmed appointments
+            const appointmentSection = document.getElementById('appointments-section');
+            const quickAppointmentBtn = document.getElementById('quick-appointment');
+            const isConfirmed = (nextAppointment.status || '').toLowerCase() === 'confirmed';
+
+            if (appointmentSection) {
+                if (isConfirmed) {
+                    appointmentSection.classList.add('glow-new');
+                } else {
+                    appointmentSection.classList.remove('glow-new');
+                }
+            }
+
+            if (quickAppointmentBtn) {
+                if (isConfirmed) {
+                    quickAppointmentBtn.classList.add('glow-new');
+                } else {
+                    quickAppointmentBtn.classList.remove('glow-new');
                 }
             }
         }
@@ -2580,18 +2644,21 @@
                     const file = e.target.files[0];
                     if (!file) return;
 
+                    // Hide any previous photo error
+                    document.getElementById('photo-upload-error').style.display = 'none';
+
                     // Validate file size (2MB max)
                     if (file.size > 2 * 1024 * 1024) {
-                        document.getElementById('profile-error').textContent = 'Ukuran file maksimal 2MB';
-                        document.getElementById('profile-error').style.display = 'block';
+                        document.getElementById('photo-upload-error-text').textContent = 'Ukuran file melebihi batas maksimal 2 MB';
+                        document.getElementById('photo-upload-error').style.display = 'block';
                         e.target.value = '';
                         return;
                     }
 
                     // Validate file type
                     if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-                        document.getElementById('profile-error').textContent = 'Format file harus JPEG, PNG, atau WebP';
-                        document.getElementById('profile-error').style.display = 'block';
+                        document.getElementById('photo-upload-error-text').textContent = 'Format file harus JPEG, PNG, atau WebP';
+                        document.getElementById('photo-upload-error').style.display = 'block';
                         e.target.value = '';
                         return;
                     }
@@ -2604,7 +2671,7 @@
                     reader.readAsDataURL(file);
 
                     // Upload to server
-                    document.getElementById('profile-error').style.display = 'none';
+                    document.getElementById('photo-upload-error').style.display = 'none';
                     document.getElementById('photo-upload-progress').style.display = 'block';
                     document.getElementById('photo-upload-bar').style.width = '30%';
 
@@ -2666,8 +2733,8 @@
                         console.error('Photo upload error:', error);
                         document.getElementById('photo-upload-progress').style.display = 'none';
                         document.getElementById('photo-upload-bar').style.width = '0%';
-                        document.getElementById('profile-error').textContent = error.message || 'Gagal mengupload foto';
-                        document.getElementById('profile-error').style.display = 'block';
+                        document.getElementById('photo-upload-error-text').textContent = error.message || 'Gagal mengupload foto';
+                        document.getElementById('photo-upload-error').style.display = 'block';
                         e.target.value = '';
                     }
                 });

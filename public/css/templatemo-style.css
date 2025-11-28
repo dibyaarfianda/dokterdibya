@@ -577,6 +577,10 @@ header .social-icon li a
 			min-height: 300px;
 			padding-top: 80px;
 			padding-bottom: 60px;
+			background: linear-gradient(135deg, rgba(26, 42, 58, 0.7) 0%, rgba(22, 33, 62, 0.65) 50%, rgba(15, 52, 96, 0.6) 100%),
+			            url('../images/home-bg.jpg') no-repeat right center;
+			background-size: cover, cover;
+			background-attachment: scroll;
 		}
 	#home h1
 		{
@@ -642,6 +646,10 @@ header .social-icon li a
 			min-height: 200px;
 			padding-top: 60px;
 			padding-bottom: 40px;
+			background: linear-gradient(135deg, rgba(26, 42, 58, 0.7) 0%, rgba(22, 33, 62, 0.65) 50%, rgba(15, 52, 96, 0.6) 100%),
+			            url('../images/home-bg.jpg') no-repeat right center;
+			background-size: cover, cover;
+			background-attachment: scroll;
 		}
 	#home h1
 		{
