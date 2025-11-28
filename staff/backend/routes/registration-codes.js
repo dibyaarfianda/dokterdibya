@@ -156,13 +156,13 @@ router.post('/send-whatsapp', verifyToken, async (req, res) => {
 
         // Build message
         const clinicName = process.env.CLINIC_NAME || 'Klinik dr. Dibya';
-        const portalUrl = process.env.PATIENT_PORTAL_URL || 'https://portal.dokterdibya.com';
+        const portalUrl = process.env.PATIENT_PORTAL_URL || 'https://dokterdibya.com';
 
         const greeting = patient_name ? `Halo ${patient_name},\n\n` : 'Halo,\n\n';
         const message = `${greeting}Anda telah terdaftar di ${clinicName}.\n\n` +
             `Berikut adalah kode registrasi portal pasien Anda:\n\n` +
             `*${code}*\n\n` +
-            `Gunakan kode ini untuk mendaftar di portal pasien kami:\n${portalUrl}/register\n\n` +
+            `Gunakan kode ini untuk mendaftar di portal pasien kami:\n${portalUrl}/register.html\n\n` +
             `Kode ini berlaku selama 7 hari.\n\n` +
             `Terima kasih telah mempercayakan kesehatan Anda kepada kami.\n\n` +
             `Salam,\n${clinicName}`;

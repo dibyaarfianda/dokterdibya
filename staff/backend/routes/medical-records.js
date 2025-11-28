@@ -69,9 +69,9 @@ async function ensureMedicalRecordsTable() {
         try {
             await db.query(`
                 ALTER TABLE medical_records
-                MODIFY COLUMN record_type ENUM('identitas', 'anamnesa', 'physical_exam', 'pemeriksaan_obstetri', 'usg', 'lab', 'diagnosis', 'planning', 'resume_medis', 'complete') NOT NULL
+                MODIFY COLUMN record_type ENUM('identitas', 'anamnesa', 'physical_exam', 'pemeriksaan_obstetri', 'pemeriksaan_ginekologi', 'usg', 'lab', 'penunjang', 'diagnosis', 'planning', 'resume_medis', 'complete') NOT NULL
             `);
-            logger.info('Updated record_type ENUM to include pemeriksaan_obstetri and resume_medis');
+            logger.info('Updated record_type ENUM to include pemeriksaan_ginekologi and penunjang');
         } catch (enumError) {
             // Ignore if already updated
             if (!enumError.message.includes('Duplicate')) {

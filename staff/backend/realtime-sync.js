@@ -68,8 +68,90 @@ function broadcastToRoom(room, event) {
     }
 }
 
+/**
+ * Broadcast new booking notification
+ */
+function broadcastNewBooking(booking) {
+    if (!io) {
+        console.warn('[RealTimeSync] Socket.IO not initialized');
+        return false;
+    }
+
+    const event = {
+        type: 'booking:new',
+        booking: {
+            id: booking.id,
+            patient_name: booking.patient_name,
+            appointment_date: booking.appointment_date,
+            session: booking.session,
+            session_label: booking.session_label,
+            status: booking.status || 'scheduled',
+            created_at: booking.created_at || new Date().toISOString()
+        },
+        timestamp: new Date().toISOString()
+    };
+
+    console.log('[RealTimeSync] Broadcasting new booking:', event.booking.patient_name);
+    io.emit('booking:new', event);
+    return true;
+}
+
+/**
+ * Broadcast booking status update
+ */
+function broadcastBookingUpdate(booking) {
+    if (!io) {
+        console.warn('[RealTimeSync] Socket.IO not initialized');
+        return false;
+    }
+
+    const event = {
+        type: 'booking:update',
+        booking: {
+            id: booking.id,
+            patient_name: booking.patient_name,
+            appointment_date: booking.appointment_date,
+            session: booking.session,
+            status: booking.status,
+            updated_at: new Date().toISOString()
+        },
+        timestamp: new Date().toISOString()
+    };
+
+    console.log('[RealTimeSync] Broadcasting booking update:', booking.id, booking.status);
+    io.emit('booking:update', event);
+    return true;
+}
+
+/**
+ * Broadcast booking cancellation
+ */
+function broadcastBookingCancel(booking) {
+    if (!io) {
+        console.warn('[RealTimeSync] Socket.IO not initialized');
+        return false;
+    }
+
+    const event = {
+        type: 'booking:cancel',
+        booking: {
+            id: booking.id,
+            patient_name: booking.patient_name,
+            appointment_date: booking.appointment_date
+        },
+        timestamp: new Date().toISOString()
+    };
+
+    console.log('[RealTimeSync] Broadcasting booking cancellation:', booking.id);
+    io.emit('booking:cancel', event);
+    return true;
+}
+
 module.exports = {
     init,
     broadcast,
-    broadcastToRoom
+    broadcastToRoom,
+    broadcastNewBooking,
+    broadcastBookingUpdate,
+    broadcastBookingCancel
 };
