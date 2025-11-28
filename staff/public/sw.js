@@ -1,13 +1,14 @@
 /**
  * Service Worker for Dokter Dibya Staff PWA
  * Provides offline support and caching
+ * Updated: Real-time friendly for service hours
  */
 
-const CACHE_NAME = 'dokterdibya-staff-v1';
-const STATIC_CACHE = 'static-v1';
-const DYNAMIC_CACHE = 'dynamic-v1';
+const CACHE_NAME = 'dokterdibya-staff-v2';
+const STATIC_CACHE = 'static-v2';
+const DYNAMIC_CACHE = 'dynamic-v2';
 
-// Static assets to cache on install
+// Static assets to cache on install (only UI assets, not data)
 const STATIC_ASSETS = [
   '/staff/public/index-adminlte.html',
   '/staff/public/styles/mobile-responsive.css',
@@ -26,12 +27,23 @@ const STATIC_ASSETS = [
   'https://cdn.jsdelivr.net/npm/sweetalert2@11'
 ];
 
-// API routes to cache with network-first strategy
-const API_ROUTES = [
-  '/api/patients',
-  '/api/appointments',
+// Real-time API routes - NEVER cache these (always fresh)
+const REALTIME_ROUTES = [
+  '/api/sunday-appointments',
+  '/api/sunday-clinic',
+  '/api/queue',
+  '/api/billing',
   '/api/medical-records',
-  '/api/announcements'
+  '/api/booking',
+  '/socket.io'
+];
+
+// API routes that can use network-first with cache fallback (non-critical)
+const CACHEABLE_API_ROUTES = [
+  '/api/patients',
+  '/api/announcements',
+  '/api/settings',
+  '/api/users'
 ];
 
 // Install event - cache static assets
@@ -73,7 +85,7 @@ self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
 
-  // Skip non-GET requests
+  // Skip non-GET requests (POST, PUT, DELETE should always go to network)
   if (request.method !== 'GET') {
     return;
   }
@@ -83,9 +95,27 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // API requests - network first, then cache
-  if (url.pathname.startsWith('/api/')) {
+  // IMPORTANT: Completely bypass SW for Socket.IO (real-time connections)
+  if (url.pathname.includes('/socket.io')) {
+    return;
+  }
+
+  // IMPORTANT: Bypass SW for real-time API routes (always fresh data)
+  const isRealtimeRoute = REALTIME_ROUTES.some(route => url.pathname.startsWith(route));
+  if (isRealtimeRoute) {
+    // Don't intercept - let browser handle directly for fresh data
+    return;
+  }
+
+  // Cacheable API routes - network first with cache fallback
+  const isCacheableAPI = CACHEABLE_API_ROUTES.some(route => url.pathname.startsWith(route));
+  if (isCacheableAPI) {
     event.respondWith(networkFirst(request));
+    return;
+  }
+
+  // Other API requests - network only (no caching)
+  if (url.pathname.startsWith('/api/')) {
     return;
   }
 
@@ -147,10 +177,33 @@ self.addEventListener('message', (event) => {
   }
 
   if (event.data && event.data.type === 'CLEAR_CACHE') {
+    console.log('[SW] Clearing all caches...');
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => caches.delete(cacheName))
       );
+    }).then(() => {
+      console.log('[SW] All caches cleared');
+      // Notify client that cache is cleared
+      event.ports[0]?.postMessage({ success: true, message: 'Cache cleared' });
+    });
+  }
+
+  if (event.data && event.data.type === 'CLEAR_API_CACHE') {
+    console.log('[SW] Clearing API cache...');
+    caches.delete(DYNAMIC_CACHE).then(() => {
+      console.log('[SW] API cache cleared');
+      event.ports[0]?.postMessage({ success: true, message: 'API cache cleared' });
+    });
+  }
+
+  // Get cache status
+  if (event.data && event.data.type === 'GET_CACHE_STATUS') {
+    caches.keys().then((cacheNames) => {
+      event.ports[0]?.postMessage({
+        caches: cacheNames,
+        version: CACHE_NAME
+      });
     });
   }
 });

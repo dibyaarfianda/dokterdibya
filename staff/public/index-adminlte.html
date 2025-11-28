@@ -6189,6 +6189,85 @@ if ('serviceWorker' in navigator) {
     });
 }
 
+// PWA Cache Control Functions - Use these for smooth real-time operation
+window.PWACache = {
+    // Clear all caches (use when having stale data issues)
+    clearAll: async function() {
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            return new Promise((resolve) => {
+                const messageChannel = new MessageChannel();
+                messageChannel.port1.onmessage = (event) => {
+                    console.log('[PWA] Cache cleared:', event.data);
+                    resolve(event.data);
+                };
+                navigator.serviceWorker.controller.postMessage(
+                    { type: 'CLEAR_CACHE' },
+                    [messageChannel.port2]
+                );
+            });
+        }
+        // Fallback: clear via Cache API directly
+        if ('caches' in window) {
+            const cacheNames = await caches.keys();
+            await Promise.all(cacheNames.map(name => caches.delete(name)));
+            console.log('[PWA] Caches cleared directly');
+            return { success: true };
+        }
+    },
+
+    // Clear only API cache (keeps static assets cached)
+    clearAPICache: async function() {
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            return new Promise((resolve) => {
+                const messageChannel = new MessageChannel();
+                messageChannel.port1.onmessage = (event) => {
+                    console.log('[PWA] API cache cleared:', event.data);
+                    resolve(event.data);
+                };
+                navigator.serviceWorker.controller.postMessage(
+                    { type: 'CLEAR_API_CACHE' },
+                    [messageChannel.port2]
+                );
+            });
+        }
+    },
+
+    // Force reload page with cache bypass
+    forceReload: function() {
+        window.location.reload(true);
+    },
+
+    // Get cache status
+    getStatus: async function() {
+        if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
+            return new Promise((resolve) => {
+                const messageChannel = new MessageChannel();
+                messageChannel.port1.onmessage = (event) => resolve(event.data);
+                navigator.serviceWorker.controller.postMessage(
+                    { type: 'GET_CACHE_STATUS' },
+                    [messageChannel.port2]
+                );
+            });
+        }
+        return { caches: [], version: 'unknown' };
+    }
+};
+
+// Auto-clear API cache on page load during service hours (Sunday)
+(function() {
+    const now = new Date();
+    const day = now.getDay(); // 0 = Sunday
+    const hour = now.getHours();
+
+    // If it's Sunday between 8 AM and 6 PM, clear API cache for fresh data
+    if (day === 0 && hour >= 8 && hour <= 18) {
+        console.log('[PWA] Service hours detected - ensuring fresh data');
+        if (window.PWACache) {
+            window.PWACache.clearAPICache();
+        }
+    }
+})();
+
 // PWA Install Prompt
 let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {

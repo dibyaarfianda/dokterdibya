@@ -671,7 +671,7 @@ router.post('/upload-photo', verifyToken, photoUpload.single('photo'), async (re
         if (error.message.includes('File too large')) {
             return res.status(400).json({
                 success: false,
-                message: 'Ukuran file maksimal 2MB'
+                message: 'Ukuran file melebihi batas maksimal 2 MB'
             });
         }
 
