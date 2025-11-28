@@ -2,6 +2,19 @@ import { auth, onAuthStateChanged, signOut } from './vps-auth-v2.js';
 
 function $(id) { return document.getElementById(id); }
 
+// Global logout function for mobile menu
+window.handleLogout = async function() {
+    try {
+        await signOut();
+    } catch(e) {
+        console.error('Logout error:', e);
+        // Force redirect to login even if error
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('currentUser');
+        window.location.href = '/staff/public/login.html';
+    }
+};
+
 // Role ID constants (match backend constants/roles.js)
 const ROLE_IDS = {
     DOKTER: 1,

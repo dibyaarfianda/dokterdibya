@@ -937,45 +937,45 @@ router.patch('/:id/status', verifyToken, async (req, res) => {
         
         // Validate status
         if (!status || !['active', 'inactive'].includes(status)) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Invalid status. Must be "active" or "inactive"' 
+            return res.status(400).json({
+                success: false,
+                message: 'Status tidak valid. Harus "active" atau "inactive"'
             });
         }
-        
+
         // Check if user is admin/superadmin
         if (!req.user.is_superadmin && !['admin', 'dokter'].includes(req.user.role)) {
-            return res.status(403).json({ 
-                success: false, 
-                message: 'Unauthorized. Admin access required.' 
+            return res.status(403).json({
+                success: false,
+                message: 'Akses ditolak. Hanya admin yang dapat melakukan ini.'
             });
         }
-        
+
         // Update patient status
         const [result] = await db.query(
             'UPDATE patients SET status = ?, updated_at = NOW() WHERE id = ?',
             [status, patientId]
         );
-        
+
         if (result.affectedRows === 0) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'Patient not found' 
+            return res.status(404).json({
+                success: false,
+                message: 'Pasien tidak ditemukan'
             });
         }
-        
-        res.json({ 
-            success: true, 
-            message: `Patient status updated to ${status}`,
+
+        res.json({
+            success: true,
+            message: `Status pasien berhasil diubah menjadi ${status}`,
             data: { id: patientId, status }
         });
-        
+
     } catch (error) {
         console.error('Error updating patient status:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to update patient status', 
-            error: error.message 
+        res.status(500).json({
+            success: false,
+            message: 'Gagal mengubah status pasien',
+            error: error.message
         });
     }
 });
