@@ -14,6 +14,17 @@
     <link rel="icon" type="image/png" sizes="192x192" href="/staff/public/android-chrome-192x192.png">
     <link rel="icon" type="image/png" sizes="512x512" href="/staff/public/android-chrome-512x512.png">
 
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="/staff/public/manifest.json">
+    <meta name="theme-color" content="#0d6efd">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Staff Panel">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="application-name" content="Dokter Dibya Staff">
+    <meta name="msapplication-TileColor" content="#0d6efd">
+    <meta name="msapplication-TileImage" content="/staff/public/icons/icon-144x144.png">
+
     <!-- Error Handler (load first) -->
     <script src="scripts/error-handler.js"></script>
 
@@ -3386,6 +3397,59 @@
                                     <h3 class="card-title"><i class="fas fa-users mr-2"></i>Kelola Pasien</h3>
                                 </div>
                                 <div class="card-body">
+                                    <!-- Registration Codes Section -->
+                                    <div class="row mb-4">
+                                        <div class="col-12">
+                                            <div class="card card-warning">
+                                                <div class="card-header">
+                                                    <h3 class="card-title">
+                                                        <i class="fas fa-key mr-2"></i>Kode Registrasi Pasien
+                                                    </h3>
+                                                    <div class="card-tools">
+                                                        <span class="badge badge-warning mr-2" id="active-codes-count">0 aktif</span>
+                                                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                                            <i class="fas fa-minus"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div class="card-body">
+                                                    <div class="row mb-3">
+                                                        <div class="col-md-6">
+                                                            <p class="text-muted mb-2">
+                                                                <i class="fas fa-info-circle"></i>
+                                                                Generate kode untuk pasien yang akan mendaftar di portal.
+                                                                Kode dikirim via WhatsApp.
+                                                            </p>
+                                                        </div>
+                                                        <div class="col-md-6 text-right">
+                                                            <button class="btn btn-warning" onclick="openGenerateCodeModal()">
+                                                                <i class="fas fa-plus-circle"></i> Generate Kode Baru
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <div class="table-responsive">
+                                                        <table id="registration-codes-table" class="table table-sm table-bordered">
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Kode</th>
+                                                                    <th>Nama Pasien</th>
+                                                                    <th>No. HP</th>
+                                                                    <th>Status</th>
+                                                                    <th>Dibuat</th>
+                                                                    <th>Kadaluarsa</th>
+                                                                    <th>Aksi</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody id="registration-codes-tbody">
+                                                                <tr><td colspan="7" class="text-center">Memuat...</td></tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <div class="table-responsive">
                                         <table id="manage-patients-table" class="table table-bordered table-striped">
                                             <thead>
@@ -3848,32 +3912,93 @@
 </div>
 
 
-<!-- Mobile quick action bar -->
+<!-- Mobile Menu Functions - MUST be before the buttons -->
+<script>
+function openMobileMenu() {
+    var m = document.getElementById('mobile-more-menu');
+    if(m) { m.style.display='block'; m.classList.remove('mobile-menu-hidden'); m.classList.add('mobile-menu-visible'); document.body.style.overflow='hidden'; }
+    if(window.currentUser && window.currentUser.is_superadmin) { document.querySelectorAll('.superadmin-menu-item').forEach(function(e){e.classList.remove('d-none');}); }
+}
+function closeMobileMenu() {
+    var m = document.getElementById('mobile-more-menu');
+    if(m) { m.style.display='none'; m.classList.remove('mobile-menu-visible'); m.classList.add('mobile-menu-hidden'); document.body.style.overflow=''; }
+}
+function mobileNavClick(btn, action) {
+    document.querySelectorAll('#mobile-action-bar button:not(.mobile-profile-btn)').forEach(function(b){b.classList.remove('active');});
+    if(btn && action !== 'profile' && action !== 'more') btn.classList.add('active');
+}
+</script>
+
+<!-- Mobile quick action bar - matches sidebar menu -->
 <div id="mobile-action-bar" class="d-md-none d-lg-none">
-    <button type="button" data-action="dashboard" class="active">
-        <span class="icon-wrapper"><i class="fas fa-home"></i></span>
-        <span>Dashboard</span>
+    <button type="button" class="mobile-profile-btn" onclick="if(typeof showProfileSettings==='function')showProfileSettings();">
+        <span class="icon-wrapper profile-avatar">
+            <img id="mobile-user-avatar" src="" alt="" style="display: none; width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+            <i id="mobile-user-icon" class="fas fa-user"></i>
+        </span>
+        <span id="mobile-user-name">Profil</span>
     </button>
-    <button type="button" data-action="patients">
+    <button type="button" class="active" onclick="mobileNavClick(this,'dashboard'); if(typeof showDashboardPage==='function')showDashboardPage();">
+        <span class="icon-wrapper"><i class="fas fa-tachometer-alt"></i></span>
+        <span>Home</span>
+    </button>
+    <button type="button" onclick="mobileNavClick(this,'klinik'); if(typeof showKlinikPrivatePage==='function')showKlinikPrivatePage();">
+        <span class="icon-wrapper"><i class="fas fa-clinic-medical"></i></span>
+        <span>Klinik</span>
+    </button>
+    <button type="button" onclick="mobileNavClick(this,'pasien'); if(typeof showManagePatientsPage==='function')showManagePatientsPage();">
         <span class="icon-wrapper"><i class="fas fa-users"></i></span>
         <span>Pasien</span>
     </button>
-    <button type="button" data-action="tindakan">
-        <span class="icon-wrapper"><i class="fas fa-stethoscope"></i></span>
-        <span>Tindakan</span>
-    </button>
-    <button type="button" data-action="obat">
-        <span class="icon-wrapper"><i class="fas fa-pills"></i></span>
-        <span>Obat</span>
-    </button>
-    <button type="button" data-action="cashier">
-        <span class="icon-wrapper"><i class="fas fa-receipt"></i></span>
-        <span>Tagihan</span>
-    </button>
-    <button type="button" data-action="appointments">
+    <button type="button" onclick="mobileNavClick(this,'appointment'); if(typeof showKelolaAppointmentPage==='function')showKelolaAppointmentPage();">
         <span class="icon-wrapper"><i class="fas fa-calendar-check"></i></span>
         <span>Janji</span>
     </button>
+    <button type="button" onclick="openMobileMenu();">
+        <span class="icon-wrapper"><i class="fas fa-bars"></i></span>
+        <span>Menu</span>
+    </button>
+</div>
+
+<!-- Mobile More Menu Overlay -->
+<div id="mobile-more-menu" style="display:none;">
+    <div class="mobile-menu-overlay" onclick="closeMobileMenu();"></div>
+    <div class="mobile-menu-content">
+        <div class="mobile-menu-header">
+            <span>Menu Lainnya</span>
+            <button onclick="closeMobileMenu();"><i class="fas fa-times"></i></button>
+        </div>
+        <div class="mobile-menu-items">
+            <a href="#" onclick="closeMobileMenu(); if(typeof showKelolaPengumumanPage==='function')showKelolaPengumumanPage(); return false;">
+                <i class="fas fa-bullhorn"></i> Pengumuman
+            </a>
+            <a href="#" onclick="closeMobileMenu(); if(typeof showKelolaJadwalPage==='function')showKelolaJadwalPage(); return false;">
+                <i class="fas fa-calendar-alt"></i> Jadwal
+            </a>
+            <a href="#" onclick="closeMobileMenu(); if(typeof showKelolaTindakanPage==='function')showKelolaTindakanPage(); return false;">
+                <i class="fas fa-stethoscope"></i> Tindakan
+            </a>
+            <a href="#" onclick="closeMobileMenu(); if(typeof showKelolaObatManagementPage==='function')showKelolaObatManagementPage(); return false;">
+                <i class="fas fa-pills"></i> Obat
+            </a>
+            <a href="#" onclick="closeMobileMenu(); if(typeof showKelolaRolesPage==='function')showKelolaRolesPage(); return false;">
+                <i class="fas fa-user-shield"></i> Roles
+            </a>
+            <a href="#" class="superadmin-menu-item d-none" onclick="closeMobileMenu(); if(typeof showFinanceAnalysisPage==='function')showFinanceAnalysisPage(); return false;">
+                <i class="fas fa-chart-line"></i> Finance
+            </a>
+            <a href="#" class="superadmin-menu-item d-none" onclick="closeMobileMenu(); if(typeof showBookingSettingsPage==='function')showBookingSettingsPage(); return false;">
+                <i class="fas fa-calendar-day"></i> Pengaturan Sesi
+            </a>
+            <div class="mobile-menu-divider"></div>
+            <a href="#" id="pwa-install-btn" style="display:none;" onclick="closeMobileMenu(); installPWA(); return false;">
+                <i class="fas fa-download"></i> Install Aplikasi
+            </a>
+            <a href="#" class="text-danger" onclick="closeMobileMenu(); if(typeof handleLogout==='function')handleLogout(); return false;">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </a>
+        </div>
+    </div>
 </div>
 
 <!-- Chat sounds (always play) -->
@@ -3898,20 +4023,11 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <!-- Core app modules -->
-<!-- Mobile Menu Handler -->
 <script>
     // Dynamic cache busting - force reload on every page load
     const cacheBuster = Date.now();
-    
-    // Load mobile menu with cache buster
-    const script = document.createElement('script');
-    script.src = `scripts/mobile-menu.js?v=${cacheBuster}`;
-    document.head.appendChild(script);
-
-    // Load mobile action bar helper
-    const actionScript = document.createElement('script');
-    actionScript.src = `scripts/mobile-action-bar.js?v=${cacheBuster}`;
-    document.head.appendChild(actionScript);
+    // Note: mobile-menu.js and mobile-action-bar.js are no longer loaded
+    // Mobile navigation is now handled by inline functions in the HTML above
 </script>
 
 <!-- Global Debug Function for Appointments - Available Immediately -->
@@ -4251,17 +4367,17 @@
     window.showManagePatientsPage = function() {
         // Hide all pages
         document.querySelectorAll('[id$="-page"]').forEach(page => page.classList.add('d-none'));
-        
+
         // Show manage patients page
         document.getElementById('manage-patients-page').classList.remove('d-none');
-        
+
         // Update active nav
         document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
         const kelolaPasienNav = document.querySelector('#nav-kelola-pasien .nav-link');
         if (kelolaPasienNav) {
             kelolaPasienNav.classList.add('active');
         }
-        
+
         const titleEl = document.getElementById('page-title');
         if (titleEl) {
             titleEl.textContent = 'Kelola Pasien';
@@ -4269,6 +4385,9 @@
         document.dispatchEvent(new CustomEvent('page:changed', {
             detail: { page: 'kelola-pasien' }
         }));
+
+        // Load registration codes
+        loadRegistrationCodes();
         
         // Show floating panel (only for superadmin)
         const userRole = localStorage.getItem('vps_user_role');
@@ -5755,6 +5874,354 @@ window.showProfileCompletionModal = function() {
 
     $('#profile-completion-modal').modal('show');
 };
+
+// ============================================
+// Registration Codes Functions
+// ============================================
+
+let currentGeneratedCode = null;
+let currentGeneratedPhone = null;
+let currentPatientName = null;
+
+async function loadRegistrationCodes() {
+    try {
+        const token = localStorage.getItem('vps_auth_token');
+        const response = await fetch('/api/registration-codes?limit=50', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('Failed to load codes');
+
+        const data = await response.json();
+        const tbody = document.getElementById('registration-codes-tbody');
+
+        if (!data.data || data.data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Belum ada kode registrasi</td></tr>';
+            document.getElementById('active-codes-count').textContent = '0 aktif';
+            return;
+        }
+
+        const activeCodes = data.data.filter(c => c.status === 'active' && new Date(c.expires_at) > new Date());
+        document.getElementById('active-codes-count').textContent = `${activeCodes.length} aktif`;
+
+        tbody.innerHTML = data.data.map(code => {
+            const createdDate = new Date(code.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+            const expiresDate = new Date(code.expires_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+            const isExpired = new Date(code.expires_at) < new Date();
+
+            let statusBadge = '';
+            if (code.status === 'used') {
+                statusBadge = '<span class="badge badge-success">Terpakai</span>';
+            } else if (isExpired) {
+                statusBadge = '<span class="badge badge-secondary">Kadaluarsa</span>';
+            } else {
+                statusBadge = '<span class="badge badge-warning">Aktif</span>';
+            }
+
+            return `
+                <tr>
+                    <td><code class="font-weight-bold">${code.code}</code></td>
+                    <td>${code.patient_name || '-'}</td>
+                    <td>${code.phone || '-'}</td>
+                    <td>${statusBadge}</td>
+                    <td>${createdDate}</td>
+                    <td>${expiresDate}</td>
+                    <td>
+                        ${code.status === 'active' && !isExpired ? `
+                            <button class="btn btn-xs btn-success" onclick="resendCodeWhatsApp('${code.code}', '${code.phone}', '${code.patient_name || ''}')" title="Kirim ulang via WhatsApp">
+                                <i class="fab fa-whatsapp"></i>
+                            </button>
+                            <button class="btn btn-xs btn-danger" onclick="deleteCode(${code.id})" title="Hapus">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        ` : ''}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Load registration codes error:', error);
+        const tbody = document.getElementById('registration-codes-tbody');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Gagal memuat data</td></tr>';
+        }
+    }
+}
+
+function openGenerateCodeModal() {
+    document.getElementById('gen-patient-name').value = '';
+    document.getElementById('gen-phone').value = '';
+    document.getElementById('generated-code-result').style.display = 'none';
+    document.getElementById('btn-generate-code').style.display = 'inline-block';
+    currentGeneratedCode = null;
+    currentGeneratedPhone = null;
+    currentPatientName = null;
+    $('#generateCodeModal').modal('show');
+}
+
+async function generateRegistrationCode() {
+    const patientName = document.getElementById('gen-patient-name').value.trim();
+    const phone = document.getElementById('gen-phone').value.trim();
+
+    if (!phone) {
+        alert('Nomor HP harus diisi');
+        return;
+    }
+
+    const btn = document.getElementById('btn-generate-code');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+
+    try {
+        const token = localStorage.getItem('vps_auth_token');
+        const response = await fetch('/api/registration-codes/generate', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                patient_name: patientName || null,
+                phone: phone
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.message || 'Gagal generate kode');
+        }
+
+        currentGeneratedCode = data.code;
+        currentGeneratedPhone = data.phone;
+        currentPatientName = patientName;
+
+        document.getElementById('generated-code-display').textContent = data.code;
+        document.getElementById('generated-code-result').style.display = 'block';
+        btn.style.display = 'none';
+
+        loadRegistrationCodes();
+
+    } catch (error) {
+        alert('Error: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-key"></i> Generate Kode';
+    }
+}
+
+async function sendCodeWhatsApp() {
+    if (!currentGeneratedCode || !currentGeneratedPhone) {
+        alert('Kode belum di-generate');
+        return;
+    }
+
+    const btn = document.getElementById('btn-send-whatsapp');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengirim...';
+
+    try {
+        const token = localStorage.getItem('vps_auth_token');
+        const response = await fetch('/api/registration-codes/send-whatsapp', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                code: currentGeneratedCode,
+                phone: currentGeneratedPhone,
+                patient_name: currentPatientName
+            })
+        });
+
+        const data = await response.json();
+
+        if (data.method === 'fonnte') {
+            alert('Kode berhasil dikirim via WhatsApp!');
+            $('#generateCodeModal').modal('hide');
+        } else if (data.waLink) {
+            window.open(data.waLink, '_blank');
+            alert('Link WhatsApp terbuka di tab baru. Klik kirim untuk mengirim pesan.');
+            $('#generateCodeModal').modal('hide');
+        } else {
+            throw new Error(data.message || 'Gagal mengirim');
+        }
+
+    } catch (error) {
+        alert('Error: ' + error.message);
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fab fa-whatsapp"></i> Kirim via WhatsApp';
+    }
+}
+
+async function resendCodeWhatsApp(code, phone, patientName) {
+    try {
+        const token = localStorage.getItem('vps_auth_token');
+        const response = await fetch('/api/registration-codes/send-whatsapp', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ code, phone, patient_name: patientName })
+        });
+
+        const data = await response.json();
+
+        if (data.method === 'fonnte') {
+            alert('Kode berhasil dikirim ulang via WhatsApp!');
+        } else if (data.waLink) {
+            window.open(data.waLink, '_blank');
+            alert('Link WhatsApp terbuka di tab baru.');
+        }
+
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+
+async function deleteCode(codeId) {
+    if (!confirm('Hapus kode registrasi ini?')) return;
+
+    try {
+        const token = localStorage.getItem('vps_auth_token');
+        const response = await fetch(`/api/registration-codes/${codeId}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('Gagal menghapus');
+
+        loadRegistrationCodes();
+
+    } catch (error) {
+        alert('Error: ' + error.message);
+    }
+}
+</script>
+
+<!-- Generate Registration Code Modal -->
+<div class="modal fade" id="generateCodeModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title"><i class="fas fa-key"></i> Generate Kode Registrasi</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nama Pasien (opsional)</label>
+                    <input type="text" class="form-control" id="gen-patient-name" placeholder="Masukkan nama pasien">
+                </div>
+                <div class="form-group">
+                    <label>No. HP (WhatsApp) <span class="text-danger">*</span></label>
+                    <input type="text" class="form-control" id="gen-phone" placeholder="08xxxxxxxxxx" required>
+                    <small class="text-muted">Nomor WhatsApp pasien untuk menerima kode</small>
+                </div>
+                <div id="generated-code-result" style="display: none;">
+                    <hr>
+                    <div class="text-center">
+                        <p class="mb-2">Kode Registrasi:</p>
+                        <h2 class="text-warning font-weight-bold" id="generated-code-display"></h2>
+                        <p class="text-muted">Berlaku 7 hari</p>
+                        <button class="btn btn-success btn-lg" id="btn-send-whatsapp" onclick="sendCodeWhatsApp()">
+                            <i class="fab fa-whatsapp"></i> Kirim via WhatsApp
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-warning" id="btn-generate-code" onclick="generateRegistrationCode()">
+                    <i class="fas fa-key"></i> Generate Kode
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- PWA Service Worker Registration -->
+<script>
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/staff/public/sw.js')
+            .then((registration) => {
+                console.log('[PWA] Service Worker registered:', registration.scope);
+
+                // Check for updates
+                registration.addEventListener('updatefound', () => {
+                    const newWorker = registration.installing;
+                    console.log('[PWA] Service Worker update found');
+
+                    newWorker.addEventListener('statechange', () => {
+                        if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                            // New content available
+                            if (typeof Swal !== 'undefined') {
+                                Swal.fire({
+                                    title: 'Update Tersedia',
+                                    text: 'Versi baru aplikasi tersedia. Refresh untuk update?',
+                                    icon: 'info',
+                                    showCancelButton: true,
+                                    confirmButtonText: 'Update',
+                                    cancelButtonText: 'Nanti'
+                                }).then((result) => {
+                                    if (result.isConfirmed) {
+                                        newWorker.postMessage({ type: 'SKIP_WAITING' });
+                                        window.location.reload();
+                                    }
+                                });
+                            }
+                        }
+                    });
+                });
+            })
+            .catch((error) => {
+                console.log('[PWA] Service Worker registration failed:', error);
+            });
+    });
+
+    // Handle controller change
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        console.log('[PWA] Controller changed');
+    });
+}
+
+// PWA Install Prompt
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt', (e) => {
+    console.log('[PWA] Install prompt available');
+    e.preventDefault();
+    deferredPrompt = e;
+
+    // Show install button if not already installed
+    const installBtn = document.getElementById('pwa-install-btn');
+    if (installBtn) {
+        installBtn.style.display = 'block';
+    }
+});
+
+window.addEventListener('appinstalled', () => {
+    console.log('[PWA] App installed');
+    deferredPrompt = null;
+    const installBtn = document.getElementById('pwa-install-btn');
+    if (installBtn) {
+        installBtn.style.display = 'none';
+    }
+});
+
+// Install PWA function
+function installPWA() {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+            console.log('[PWA] User choice:', choiceResult.outcome);
+            deferredPrompt = null;
+        });
+    }
+}
 </script>
 
 </body>
