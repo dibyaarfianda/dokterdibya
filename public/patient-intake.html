@@ -648,7 +648,7 @@
     <script>
         // Auto-fill patient data from profile
         async function loadPatientProfile() {
-            const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+            const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
 
             if (!token) {
                 console.log('No patient token found');
@@ -729,7 +729,7 @@
 
         // Load existing intake from server if logged in
         async function loadExistingIntake() {
-            const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+            const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
             if (!token) {
                 console.log('[Intake] No token, skipping server load');
                 return null;
@@ -1123,7 +1123,7 @@
             console.log('Metadata:', data.metadata);
 
             // Get patient token if available
-            const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+            const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
 
             // Determine if creating or updating
             const isUpdate = !!existingIntakeId;
@@ -1152,7 +1152,9 @@
                     // Clear draft after successful submission
                     localStorage.removeItem('patient_intake_draft_v3');
 
-                    showToast('Data berhasil dikirim!');
+                    // Show appropriate message based on create or update
+                    const successMsg = isUpdate ? 'Data berhasil diperbarui!' : 'Data berhasil dikirim!';
+                    showToast(successMsg);
                     setTimeout(() => {
                         window.location.href = '/patient-dashboard.html';
                     }, 2000);

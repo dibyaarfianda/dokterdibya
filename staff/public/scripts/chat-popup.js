@@ -353,6 +353,16 @@
   let lastSender = null; // Track last message sender for avatar grouping
   const userPhotoCache = new Map();
   const userRoleCache = new Map(); // Cache role_id for badge colors
+
+  // Track last read message timestamp in localStorage
+  const LAST_READ_KEY = `chat_last_read_${user.id}`;
+  let lastReadTimestamp = localStorage.getItem(LAST_READ_KEY) || '1970-01-01T00:00:00.000Z';
+
+  // Save last read timestamp when chat is opened or messages are viewed
+  function markMessagesAsRead() {
+    lastReadTimestamp = new Date().toISOString();
+    localStorage.setItem(LAST_READ_KEY, lastReadTimestamp);
+  }
   
         // Show clear button only for superadmin
         function checkClearButtonVisibility() {
@@ -438,6 +448,12 @@
         chatInput.focus();
         chatBadge.style.display = 'none';
         chatBadge.textContent = '0';
+        // Mark all messages as read
+        markMessagesAsRead();
+        // Scroll to bottom to show recent messages
+        setTimeout(() => {
+          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }, 50);
         // Check clear button visibility when chat opens
         checkClearButtonVisibility();
       }
@@ -587,11 +603,16 @@
       messagesContainer.insertAdjacentHTML('beforeend', messageHTML);
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-      // Badge if closed + received
+      // Badge if closed + received + unread (newer than lastReadTimestamp)
       if (!isChatOpen && type === 'received') {
-        const currentCount = parseInt(chatBadge.textContent) || 0;
-        chatBadge.textContent = currentCount + 1;
-        chatBadge.style.display = 'block';
+        const msgTime = timestamp ? new Date(timestamp).toISOString() : new Date().toISOString();
+        const isUnread = msgTime > lastReadTimestamp;
+
+        if (isUnread) {
+          const currentCount = parseInt(chatBadge.textContent) || 0;
+          chatBadge.textContent = currentCount + 1;
+          chatBadge.style.display = 'block';
+        }
       }
 
       if (!isHistoryLoading && type === 'received' && incomingAudio && typeof incomingAudio.play === 'function') {
