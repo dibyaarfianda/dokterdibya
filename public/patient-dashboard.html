@@ -385,6 +385,109 @@
             line-height: 1.4;
         }
 
+        .quick-action-thumbnail .quick-thumb-container {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 10px auto;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(40, 167, 233, 0.1);
+        }
+
+        .quick-action-thumbnail .quick-thumb-container i {
+            font-size: 28px;
+            margin: 0;
+        }
+
+        .quick-action-thumbnail .quick-thumb-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .quick-action-thumbnail:hover .quick-thumb-container {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Glowing effect for new/unviewed items */
+        .glow-new {
+            animation: glowPulse 2s ease-in-out infinite;
+            box-shadow: 0 0 15px rgba(40, 233, 127, 0.6);
+            border: 2px solid #28e97f !important;
+        }
+
+        /* Green background for dashboard cards with new items */
+        .dashboard-card.glow-new {
+            background: linear-gradient(135deg, rgba(40, 233, 127, 0.15) 0%, rgba(40, 233, 127, 0.05) 100%) !important;
+        }
+
+        /* Green background for quick action buttons with new items */
+        .quick-action-btn.glow-new {
+            background: linear-gradient(135deg, rgba(40, 233, 127, 0.3) 0%, rgba(40, 233, 127, 0.1) 100%) !important;
+            border-color: #28e97f !important;
+            color: #28e97f !important;
+        }
+
+        @keyframes glowPulse {
+            0%, 100% { box-shadow: 0 0 10px rgba(40, 233, 127, 0.4); }
+            50% { box-shadow: 0 0 25px rgba(40, 233, 127, 0.8); }
+        }
+
+        /* Lab result item with thumbnail */
+        .lab-result-item {
+            background: #2a2a2a;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .lab-result-item:hover {
+            transform: scale(1.02);
+        }
+
+        .lab-result-item .lab-thumb {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            background: #1a1a1a;
+        }
+
+        .lab-result-item .lab-info {
+            padding: 12px;
+        }
+
+        .lab-result-item .lab-title {
+            font-weight: 600;
+            color: #fff;
+            font-size: 13px;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .lab-result-item .lab-date {
+            font-size: 11px;
+            color: #aaa;
+        }
+
+        .lab-result-item .new-badge {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #28e97f;
+            color: #000;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
         /* Ultrasound Gallery */
         #ultrasound-gallery {
             display: grid;
@@ -545,6 +648,11 @@
         .document-card .doc-btn.download-btn:hover {
             background: #22c55e;
             color: #ffffff;
+        }
+
+        .document-card.glow-new {
+            background: linear-gradient(135deg, rgba(40, 233, 127, 0.2) 0%, rgba(40, 233, 127, 0.05) 100%);
+            border-color: #28e97f;
         }
 
         .documents-empty {
@@ -1204,7 +1312,7 @@
                 </div>
 
                 <!-- Dokumen Medis Saya -->
-                <div class="dashboard-card" style="margin-bottom: 20px;">
+                <div class="dashboard-card" id="documents-section" style="margin-bottom: 20px;">
                     <h3><i class="fa fa-folder-open"></i> Dokumen Medis Saya</h3>
                     <div id="my-documents-container">
                         <div class="documents-loading" style="text-align: center; padding: 20px;">
@@ -1273,12 +1381,16 @@
                             <i class="fa fa-calendar"></i>
                             <div>Jadwal &<br>Janji Konsultasi</div>
                         </a>
-                        <a href="#usg-section" class="quick-action-btn" onclick="document.getElementById('usg-section').scrollIntoView({behavior: 'smooth', block: 'start'}); return false;">
-                            <i class="fa fa-heartbeat"></i>
+                        <a href="#usg-section" class="quick-action-btn quick-action-thumbnail" id="quick-usg" onclick="document.getElementById('usg-section').scrollIntoView({behavior: 'smooth', block: 'start'}); return false;">
+                            <div class="quick-thumb-container" id="quick-usg-thumb">
+                                <i class="fa fa-heartbeat"></i>
+                            </div>
                             <div>USG &amp;<br>Imaging</div>
                         </a>
-                        <a href="#lab-section" class="quick-action-btn" onclick="document.getElementById('lab-section').scrollIntoView({behavior: 'smooth', block: 'start'}); return false;">
-                            <i class="fa fa-flask"></i>
+                        <a href="#lab-section" class="quick-action-btn quick-action-thumbnail" id="quick-lab" onclick="document.getElementById('lab-section').scrollIntoView({behavior: 'smooth', block: 'start'}); return false;">
+                            <div class="quick-thumb-container" id="quick-lab-thumb">
+                                <i class="fa fa-flask"></i>
+                            </div>
                             <div>Lab &amp;<br>Hasil Tes</div>
                         </a>
                     </div>
@@ -2703,9 +2815,11 @@
                 });
 
                 const safeNotes = (img.notes || img.title || '').replace(/'/g, "\\'");
+                const glowClass = img.isNew ? 'glow-new' : '';
 
                 return `
-                    <div class="ultrasound-item" onclick="viewUltrasoundImage('${img.url}', '${formattedDate}', '${safeNotes}')" style="cursor: pointer;">
+                    <div class="ultrasound-item ${glowClass}" onclick="viewUsgAndMarkViewed(${img.id}, '${img.url}', '${formattedDate}', '${safeNotes}', this)" style="cursor: pointer; position: relative;">
+                        ${img.isNew ? '<span class="new-badge" style="position: absolute; top: 8px; right: 8px; background: #28e97f; color: #000; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; z-index: 2;">BARU</span>' : ''}
                         <img src="${img.url}" alt="USG ${formattedDate}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27200%27 height=%27200%27%3E%3Crect width=%27200%27 height=%27200%27 fill=%27%23404040%27/%3E%3Ctext x=%2750%25%27 y=%2750%25%27 font-size=%2720%27 fill=%27%2328a7e9%27 text-anchor=%27middle%27 dy=%27.3em%27%3EGambar Error%3C/text%3E%3C/svg%3E'">
                         <div class="overlay">
                             ${formattedDate}
@@ -2717,6 +2831,14 @@
 
             if (gallery) gallery.innerHTML = galleryHTML;
             if (galleryMini) galleryMini.innerHTML = galleryHTML;
+
+            // Update quick action thumbnail with first USG image
+            updateQuickActionThumbnail('quick-usg-thumb', ultrasoundImages[0]?.url, 'fa-heartbeat');
+
+            // Update section and quick action glow if has new items
+            const hasNewUsg = ultrasoundImages.some(img => img.isNew);
+            updateSectionGlow('usg-section', hasNewUsg);
+            updateQuickActionGlow('quick-usg', hasNewUsg);
         }
 
         function deleteUltrasound(event, id) {
@@ -2729,24 +2851,21 @@
         }
 
         function viewUltrasoundImage(url, date, notes) {
-            // Create a simple image viewer modal
-            const modalContent = `
-                <div style="text-align: center;">
-                    <img src="${url}" style="max-width: 100%; max-height: 70vh; border-radius: 8px;">
-                    <h4 style="color: #28a7e9; margin-top: 20px;">${date}</h4>
-                    ${notes ? `<p style="color: #cccccc; margin-top: 10px;">${notes}</p>` : ''}
-                </div>
-            `;
-
-            // Show in a simple alert for now (can be improved with a custom modal)
             const modal = document.createElement('div');
-            modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;';
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;';
             modal.innerHTML = `
-                <div style="max-width: 800px; width: 100%;">
-                    ${modalContent}
-                    <button onclick="this.parentElement.parentElement.remove()" style="margin-top: 20px; padding: 10px 30px; background: #28a7e9; color: #ffffff; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">
-                        Tutup
-                    </button>
+                <div style="max-width: 900px; width: 100%; max-height: 90vh; overflow: auto; text-align: center;">
+                    <h4 style="color: #28a7e9; margin-bottom: 15px;">USG - ${date}</h4>
+                    ${notes ? `<p style="color: #aaa; margin-bottom: 15px; font-size: 14px;">${notes}</p>` : ''}
+                    <img src="${url}" alt="USG ${date}" style="max-width: 100%; max-height: 60vh; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);">
+                    <div style="margin-top: 20px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                        <a href="${url}" download="USG-${date}" style="padding: 10px 25px; background: #28e97f; color: #000; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+                            <i class="fa fa-download"></i> Download
+                        </a>
+                        <button onclick="this.parentElement.parentElement.parentElement.remove()" style="padding: 10px 30px; background: #555; color: #ffffff; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">
+                            Tutup
+                        </button>
+                    </div>
                 </div>
             `;
             modal.onclick = (e) => {
@@ -2820,7 +2939,8 @@
                     date: doc.published_at || doc.created_at,
                     notes: doc.description || doc.title,
                     title: doc.title,
-                    type: doc.document_type
+                    type: doc.document_type,
+                    isNew: !doc.first_viewed_at
                 }));
                 renderUltrasoundGallery();
             } catch (error) {
@@ -2847,7 +2967,9 @@
                             url: doc.file_url,
                             date: doc.published_at || doc.created_at,
                             title: doc.title,
-                            description: doc.description
+                            description: doc.description,
+                            isNew: !doc.first_viewed_at,
+                            fileType: doc.file_type
                         }));
                         renderLabResults();
                     }
@@ -2871,27 +2993,41 @@
                 return;
             }
 
+            const isImage = (fileType) => fileType && fileType.startsWith('image/');
+
             container.innerHTML = `
-                <div class="lab-results-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px;">
+                <div class="lab-results-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px;">
                     ${labResults.map(lab => `
-                        <div class="lab-result-item" style="background: #2a2a2a; border-radius: 8px; overflow: hidden; cursor: pointer; transition: transform 0.2s;"
-                             onclick="openLabResult('${lab.url}')"
-                             onmouseover="this.style.transform='scale(1.02)'"
-                             onmouseout="this.style.transform='scale(1)'">
-                            <div style="padding: 15px;">
-                                <div style="display: flex; align-items: center; margin-bottom: 10px;">
-                                    <i class="fa fa-file-text-o" style="font-size: 24px; color: #28a7e9; margin-right: 10px;"></i>
-                                    <div>
-                                        <div style="font-weight: 600; color: #fff; font-size: 14px;">${lab.title || 'Hasil Lab'}</div>
-                                        <div style="font-size: 11px; color: #aaa;">${formatLabDate(lab.date)}</div>
-                                    </div>
+                        <div class="lab-result-item ${lab.isNew ? 'glow-new' : ''}"
+                             style="position: relative;"
+                             onclick="openLabResultAndMarkViewed(${lab.id}, '${lab.url}', this)">
+                            ${isImage(lab.fileType) ? `
+                                <img src="${lab.url}" alt="${lab.title}" class="lab-thumb" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                <div class="lab-thumb" style="display: none; align-items: center; justify-content: center;">
+                                    <i class="fa fa-file-text-o" style="font-size: 40px; color: #28a7e9;"></i>
                                 </div>
-                                ${lab.description ? `<p style="font-size: 12px; color: #999; margin: 0;">${lab.description}</p>` : ''}
+                            ` : `
+                                <div class="lab-thumb" style="display: flex; align-items: center; justify-content: center;">
+                                    <i class="fa fa-file-pdf-o" style="font-size: 40px; color: #e74c3c;"></i>
+                                </div>
+                            `}
+                            ${lab.isNew ? '<span class="new-badge">BARU</span>' : ''}
+                            <div class="lab-info">
+                                <div class="lab-title">${lab.title || 'Hasil Lab'}</div>
+                                <div class="lab-date">${formatLabDate(lab.date)}</div>
                             </div>
                         </div>
                     `).join('')}
                 </div>
             `;
+
+            // Update quick action thumbnail with first lab result
+            updateQuickActionThumbnail('quick-lab-thumb', labResults[0]?.url, 'fa-flask');
+
+            // Update section and quick action glow if has new items
+            const hasNewLab = labResults.some(l => l.isNew);
+            updateSectionGlow('lab-section', hasNewLab);
+            updateQuickActionGlow('quick-lab', hasNewLab);
         }
 
         function formatLabDate(dateString) {
@@ -2903,6 +3039,145 @@
         function openLabResult(url) {
             if (url) {
                 window.open(url, '_blank');
+            }
+        }
+
+        // Open lab result and mark as viewed
+        async function openLabResultAndMarkViewed(docId, url, element) {
+            // Remove glow effect immediately
+            if (element) {
+                element.classList.remove('glow-new');
+                const badge = element.querySelector('.new-badge');
+                if (badge) badge.remove();
+            }
+
+            // Update local data
+            const lab = labResults.find(l => l.id === docId);
+            if (lab) lab.isNew = false;
+
+            // Update section and quick action glow
+            const hasNewLab = labResults.some(l => l.isNew);
+            updateSectionGlow('lab-section', hasNewLab);
+            updateQuickActionGlow('quick-lab', hasNewLab);
+
+            // Show in modal
+            if (url) {
+                showDocumentModal(url, labResults.find(l => l.id === docId)?.title || 'Hasil Lab');
+            }
+
+            // Mark as viewed in backend
+            try {
+                const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+                if (token) {
+                    await fetch(`/api/patient-documents/${docId}/view`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to mark document as viewed:', error);
+            }
+        }
+
+        // Show document in modal
+        function showDocumentModal(url, title) {
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;';
+            modal.innerHTML = `
+                <div style="max-width: 900px; width: 100%; max-height: 90vh; overflow: auto; text-align: center;">
+                    <h4 style="color: #28a7e9; margin-bottom: 20px;">${title}</h4>
+                    <img src="${url}" alt="${title}" style="max-width: 100%; max-height: 65vh; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.5);" onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                    <div style="display: none; padding: 40px; background: #2a2a2a; border-radius: 8px;">
+                        <i class="fa fa-file-pdf-o" style="font-size: 60px; color: #e74c3c;"></i>
+                        <p style="color: #fff; margin-top: 15px;">File tidak dapat ditampilkan</p>
+                        <a href="${url}" target="_blank" style="display: inline-block; margin-top: 15px; padding: 10px 25px; background: #28a7e9; color: #fff; text-decoration: none; border-radius: 8px;">
+                            <i class="fa fa-external-link"></i> Buka di Tab Baru
+                        </a>
+                    </div>
+                    <div style="margin-top: 20px; display: flex; gap: 15px; justify-content: center; flex-wrap: wrap;">
+                        <a href="${url}" download="${title}" style="padding: 10px 25px; background: #28e97f; color: #000; text-decoration: none; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; gap: 8px;">
+                            <i class="fa fa-download"></i> Download
+                        </a>
+                        <button onclick="this.parentElement.parentElement.parentElement.remove()" style="padding: 10px 30px; background: #555; color: #ffffff; border: none; border-radius: 8px; cursor: pointer; font-size: 14px;">
+                            Tutup
+                        </button>
+                    </div>
+                </div>
+            `;
+            modal.onclick = (e) => {
+                if (e.target === modal) modal.remove();
+            };
+            document.body.appendChild(modal);
+        }
+
+        // Update section glow effect
+        function updateSectionGlow(sectionId, hasNew) {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                if (hasNew) {
+                    section.classList.add('glow-new');
+                } else {
+                    section.classList.remove('glow-new');
+                }
+            }
+        }
+
+        // Update quick action button glow
+        function updateQuickActionGlow(buttonId, hasNew) {
+            const button = document.getElementById(buttonId);
+            if (button) {
+                if (hasNew) {
+                    button.classList.add('glow-new');
+                } else {
+                    button.classList.remove('glow-new');
+                }
+            }
+        }
+
+        // View USG image and mark as viewed
+        async function viewUsgAndMarkViewed(docId, url, date, notes, element) {
+            // Remove glow effect immediately
+            if (element) {
+                element.classList.remove('glow-new');
+                const badge = element.querySelector('.new-badge');
+                if (badge) badge.remove();
+            }
+
+            // Update local data
+            const img = ultrasoundImages.find(i => i.id === docId);
+            if (img) img.isNew = false;
+
+            // Update section and quick action glow
+            const hasNewUsg = ultrasoundImages.some(i => i.isNew);
+            updateSectionGlow('usg-section', hasNewUsg);
+            updateQuickActionGlow('quick-usg', hasNewUsg);
+
+            // Show the image viewer
+            viewUltrasoundImage(url, date, notes);
+
+            // Mark as viewed in backend
+            try {
+                const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+                if (token) {
+                    await fetch(`/api/patient-documents/${docId}/view`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to mark document as viewed:', error);
+            }
+        }
+
+        // Update quick action thumbnail
+        function updateQuickActionThumbnail(containerId, imageUrl, fallbackIcon) {
+            const container = document.getElementById(containerId);
+            if (!container) return;
+
+            if (imageUrl) {
+                container.innerHTML = `<img src="${imageUrl}" alt="Thumbnail" onerror="this.parentElement.innerHTML='<i class=\\'fa ${fallbackIcon}\\'></i>'">`;
+            } else {
+                container.innerHTML = `<i class="fa ${fallbackIcon}"></i>`;
             }
         }
 
@@ -3100,10 +3375,15 @@
 
                 if (filteredDocs.length === 0) {
                     container.innerHTML = renderDocumentsEmpty('Belum ada dokumen medis yang dikirimkan oleh dokter.');
+                    updateSectionGlow('documents-section', false);
                     return;
                 }
 
-                container.innerHTML = renderDocumentsGrid(filteredDocs);
+                // Check for new/unviewed documents
+                const hasNewDocs = filteredDocs.some(doc => !doc.first_viewed_at);
+                updateSectionGlow('documents-section', hasNewDocs);
+
+                container.innerHTML = renderDocumentsGrid(filteredDocs, hasNewDocs);
 
             } catch (error) {
                 console.error('Error loading documents:', error);
@@ -3139,10 +3419,11 @@
             const iconName = getDocumentIcon(doc.document_type);
             const formattedDate = formatDocumentDate(doc.published_at);
             const isNew = isDocumentNew(doc);
-            const newBadge = isNew ? '<span class="document-badge new">Baru</span>' : '';
+            const glowClass = isNew ? 'glow-new' : '';
+            const newBadge = isNew ? '<span class="document-badge new" style="background: #28e97f; color: #000; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; margin-left: 8px;">BARU</span>' : '';
 
             return `
-                <div class="document-card" data-doc-id="${doc.id}">
+                <div class="document-card ${glowClass}" data-doc-id="${doc.id}">
                     <div class="doc-icon ${iconClass}">
                         <i class="fa ${iconName}"></i>
                     </div>
@@ -3151,7 +3432,7 @@
                         <i class="fa fa-calendar-o"></i> ${formattedDate}
                     </div>
                     <div class="doc-actions">
-                        <button class="doc-btn view-btn" onclick="viewDocument(${doc.id}, '${escapeHtml(doc.file_url || '')}', '${escapeHtml(doc.document_type)}')">
+                        <button class="doc-btn view-btn" onclick="viewDocumentAndMarkViewed(${doc.id}, '${escapeHtml(doc.file_url || '')}', '${escapeHtml(doc.document_type)}', '${escapeHtml(doc.title)}', this)">
                             <i class="fa fa-eye"></i> Lihat
                         </button>
                         ${doc.file_url ? `
@@ -3291,6 +3572,43 @@
                 window.open(fileUrl, '_blank');
             } else if (docType === 'resume_medis') {
                 // For resume medis without file, fetch and show content in modal
+                openResumeModal(docId);
+            }
+        }
+
+        /**
+         * View document and mark as viewed (with glow removal)
+         */
+        async function viewDocumentAndMarkViewed(docId, fileUrl, docType, title, buttonEl) {
+            // Find the card and remove glow effect
+            const card = buttonEl ? buttonEl.closest('.document-card') : document.querySelector(`[data-doc-id="${docId}"]`);
+            if (card) {
+                card.classList.remove('glow-new');
+                const badge = card.querySelector('.document-badge');
+                if (badge) badge.remove();
+            }
+
+            // Mark as viewed in backend
+            try {
+                const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+                if (token) {
+                    await fetch(`/api/patient-documents/${docId}/view`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                }
+            } catch (error) {
+                console.error('Failed to mark document as viewed:', error);
+            }
+
+            // Check if there are still new documents
+            const remainingNew = document.querySelectorAll('#my-documents-container .document-card.glow-new').length;
+            updateSectionGlow('documents-section', remainingNew > 0);
+
+            // Open document in modal or new tab
+            if (fileUrl) {
+                showDocumentModal(fileUrl, title || 'Dokumen');
+            } else if (docType === 'resume_medis') {
                 openResumeModal(docId);
             }
         }
