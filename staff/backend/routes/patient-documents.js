@@ -588,6 +588,36 @@ router.get('/my-documents', verifyPatientToken, async (req, res) => {
 });
 
 /**
+ * POST /api/patient-documents/:id/view
+ * Track document view by patient
+ */
+router.post('/:id/view', verifyPatientToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const patientId = req.patient?.patientId || req.patient?.id;
+
+        if (!patientId) {
+            return res.status(401).json({ success: false, message: 'Patient not authenticated' });
+        }
+
+        // Update view tracking
+        await db.query(`
+            UPDATE patient_documents
+            SET first_viewed_at = COALESCE(first_viewed_at, NOW()),
+                view_count = view_count + 1,
+                last_viewed_at = NOW()
+            WHERE id = ? AND patient_id = ? AND status = 'published'
+        `, [id, patientId]);
+
+        res.json({ success: true, message: 'View tracked' });
+
+    } catch (error) {
+        logger.error('Track document view error', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+/**
  * GET /api/patient-documents/:id/content
  * Get document content (for resume_medis without file)
  */
