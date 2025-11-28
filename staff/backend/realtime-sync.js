@@ -147,11 +147,41 @@ function broadcastBookingCancel(booking) {
     return true;
 }
 
+/**
+ * Broadcast new patient notification
+ */
+function broadcastPatientNotification(notification) {
+    if (!io) {
+        console.warn('[RealTimeSync] Socket.IO not initialized');
+        return false;
+    }
+
+    const event = {
+        type: 'notification:new',
+        notification: {
+            id: notification.id,
+            patient_id: notification.patient_id,
+            type: notification.type,
+            title: notification.title,
+            message: notification.message,
+            icon: notification.icon,
+            icon_color: notification.icon_color,
+            created_at: notification.created_at || new Date().toISOString()
+        },
+        timestamp: new Date().toISOString()
+    };
+
+    console.log('[RealTimeSync] Broadcasting patient notification:', notification.patient_id, notification.title);
+    io.emit('notification:new', event);
+    return true;
+}
+
 module.exports = {
     init,
     broadcast,
     broadcastToRoom,
     broadcastNewBooking,
     broadcastBookingUpdate,
-    broadcastBookingCancel
+    broadcastBookingCancel,
+    broadcastPatientNotification
 };
