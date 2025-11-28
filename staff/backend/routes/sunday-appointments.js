@@ -4,6 +4,7 @@ const db = require('../db');
 const { createSundayClinicRecord } = require('../services/sundayClinicService');
 const { getGMT7Date, getGMT7Timestamp } = require('../utils/idGenerator');
 const { createPatientNotification } = require('./patient-notifications');
+const realtimeSync = require('../realtime-sync');
 
 // Middleware to verify JWT token
 const verifyToken = (req, res, next) => {
@@ -359,16 +360,27 @@ router.post('/book', verifyToken, async (req, res) => {
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
             [patient.id, patient.full_name, patient.phone, appointment_date, session, slot_number, chief_complaint, category]
         );
-        
+
+        // Broadcast new booking to all connected staff
+        realtimeSync.broadcastNewBooking({
+            id: result.insertId,
+            patient_name: patient.full_name,
+            appointment_date: appointment_date,
+            session: session,
+            session_label: getSessionLabel(session),
+            slot_number: slot_number,
+            status: 'pending'
+        });
+
         res.status(201).json({
             message: 'Janji temu berhasil dibuat',
             appointmentId: result.insertId,
             details: {
-                date: appointmentDate.toLocaleDateString('id-ID', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
+                date: appointmentDate.toLocaleDateString('id-ID', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
                 }),
                 session: getSessionLabel(session),
                 time: getSlotTime(session, slot_number),
@@ -504,7 +516,14 @@ router.put('/:id/cancel', verifyToken, async (req, res) => {
              WHERE id = ?`,
             [cancellationReason, id]
         );
-        
+
+        // Broadcast cancellation to staff
+        realtimeSync.broadcastBookingCancel({
+            id: id,
+            patient_name: appointment.patient_name,
+            appointment_date: appointment.appointment_date
+        });
+
         res.json({ message: 'Janji temu berhasil dibatalkan', reason: cancellationReason });
         
     } catch (error) {
@@ -844,6 +863,15 @@ router.put('/:id/status', verifyToken, async (req, res) => {
         } catch (notifError) {
             console.error('Failed to create patient notification:', notifError);
         }
+
+        // Broadcast status update to all staff
+        realtimeSync.broadcastBookingUpdate({
+            id: id,
+            patient_name: appointment.patient_name,
+            appointment_date: appointment.appointment_date,
+            session: appointment.session,
+            status: status
+        });
 
         res.json({ message: 'Status berhasil diupdate' });
 

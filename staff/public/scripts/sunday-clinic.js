@@ -426,13 +426,17 @@ const SECTION_NAME_MAP = {
     'identity': 'identity',
     'anamnesa': 'anamnesa',
     'physical-exam': 'physical-exam',
+    'pemeriksaan': 'physical-exam',
     'pemeriksaan-fisik': 'physical-exam',
     'pemeriksaan-obstetri': 'pemeriksaan-obstetri',
+    'pemeriksaan-ginekologi': 'pemeriksaan-ginekologi',
     'usg': 'usg',
     'penunjang': 'penunjang',
     'laboratorium': 'penunjang',
     'diagnosis': 'diagnosis',
     'plan': 'plan',
+    'planning': 'plan',
+    'resume-medis': 'resume-medis',
     'billing': 'billing',
     'tagihan': 'billing'
 };
@@ -512,12 +516,16 @@ window.handleSectionChange = async function(section) {
         return;
     }
 
-    appState.currentSection = section;
-    updateRoute(appState.currentMrId, section);
-    updateSectionNavigation(section);
+    // Map section name to internal component name
+    const mappedSection = SECTION_NAME_MAP[section.toLowerCase()] || section;
+    console.log('[SundayClinic] Mapped section:', section, '->', mappedSection);
+
+    appState.currentSection = mappedSection;
+    updateRoute(appState.currentMrId, mappedSection);
+    updateSectionNavigation(section); // Keep original for sidebar active state
 
     // Navigate to section (show only that section)
-    await SundayClinicApp.navigateToSection(section);
+    await SundayClinicApp.navigateToSection(mappedSection);
 };
 
 function updateSectionNavigation(activeSection) {

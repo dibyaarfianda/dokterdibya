@@ -1173,39 +1173,39 @@ router.post('/update-birthdate', async (req, res) => {
 router.post('/forgot-password', async (req, res) => {
     try {
         const { email } = req.body;
-        
+
         if (!email) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                message: 'Email harus diisi' 
+                message: 'Email harus diisi'
             });
         }
-        
+
         // Check if email exists
         const [patients] = await db.query(
             'SELECT id, full_name, email FROM patients WHERE email = ?',
             [email]
         );
-        
+
         if (patients.length === 0) {
-            return res.status(404).json({ 
+            return res.status(404).json({
                 success: false,
-                message: 'Email tidak terdaftar dalam sistem kami' 
+                message: 'Email tidak terdaftar dalam sistem kami'
             });
         }
-        
+
         const patient = patients[0];
-        
+
         // Generate reset token (6 digit code)
         const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
         const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-        
+
         // Save reset token to database
         await db.query(
             'UPDATE patients SET reset_token = ?, reset_token_expires = ? WHERE id = ?',
             [resetToken, tokenExpires, patient.id]
         );
-        
+
         // Send reset password email
         try {
             const emailResult = await getNotificationService().sendPasswordResetEmail(email, resetToken, {
@@ -1219,24 +1219,175 @@ router.post('/forgot-password', async (req, res) => {
                 console.log(`Password reset email sent to ${email} with token: ${resetToken}`);
             }
 
-            res.json({ 
+            res.json({
                 success: true,
                 message: 'Link reset password telah dikirim ke email Anda. Silakan cek inbox atau folder spam.'
             });
-            
+
         } catch (emailError) {
             console.error('Failed to send reset password email:', emailError);
-            res.status(500).json({ 
+            res.status(500).json({
                 success: false,
-                message: 'Gagal mengirim email reset password. Silakan coba lagi.' 
+                message: 'Gagal mengirim email reset password. Silakan coba lagi.'
             });
         }
-        
+
     } catch (error) {
         console.error('Forgot password error:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
-            message: 'Terjadi kesalahan. Silakan coba lagi.' 
+            message: 'Terjadi kesalahan. Silakan coba lagi.'
+        });
+    }
+});
+
+// POST /api/patients/verify-reset-token - Verify reset token before showing password form
+router.post('/verify-reset-token', async (req, res) => {
+    try {
+        const { email, token } = req.body;
+
+        if (!email || !token) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email dan kode verifikasi harus diisi'
+            });
+        }
+
+        // Find patient with valid reset token
+        const [patients] = await db.query(
+            `SELECT id, full_name, email, reset_token, reset_token_expires
+             FROM patients
+             WHERE email = ?`,
+            [email]
+        );
+
+        if (patients.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Email tidak ditemukan'
+            });
+        }
+
+        const patient = patients[0];
+
+        // Check token
+        if (patient.reset_token !== token) {
+            return res.status(400).json({
+                success: false,
+                message: 'Kode verifikasi tidak valid'
+            });
+        }
+
+        // Check expiry
+        const now = new Date();
+        const expires = new Date(patient.reset_token_expires);
+        if (now > expires) {
+            return res.status(400).json({
+                success: false,
+                message: 'Kode verifikasi sudah kadaluarsa. Silakan minta kode baru.'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Kode valid. Silakan masukkan password baru.',
+            patientName: patient.full_name
+        });
+
+    } catch (error) {
+        console.error('Verify reset token error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan. Silakan coba lagi.'
+        });
+    }
+});
+
+// POST /api/patients/reset-password - Reset password with token
+router.post('/reset-password', async (req, res) => {
+    try {
+        const { email, token, password, confirm_password } = req.body;
+
+        // Validation
+        if (!email || !token || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email, kode verifikasi, dan password baru harus diisi'
+            });
+        }
+
+        if (password.length < 6) {
+            return res.status(400).json({
+                success: false,
+                message: 'Password minimal 6 karakter'
+            });
+        }
+
+        if (confirm_password && password !== confirm_password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Password dan konfirmasi password tidak cocok'
+            });
+        }
+
+        // Find patient with valid reset token
+        const [patients] = await db.query(
+            `SELECT id, full_name, email, reset_token, reset_token_expires
+             FROM patients
+             WHERE email = ?`,
+            [email]
+        );
+
+        if (patients.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Email tidak ditemukan'
+            });
+        }
+
+        const patient = patients[0];
+
+        // Check token
+        if (patient.reset_token !== token) {
+            return res.status(400).json({
+                success: false,
+                message: 'Kode verifikasi tidak valid'
+            });
+        }
+
+        // Check expiry
+        const now = new Date();
+        const expires = new Date(patient.reset_token_expires);
+        if (now > expires) {
+            return res.status(400).json({
+                success: false,
+                message: 'Kode verifikasi sudah kadaluarsa. Silakan minta kode baru.'
+            });
+        }
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Update password and clear reset token
+        await db.query(
+            `UPDATE patients
+             SET password = ?, reset_token = NULL, reset_token_expires = NULL, updated_at = NOW()
+             WHERE id = ?`,
+            [hashedPassword, patient.id]
+        );
+
+        console.log(`Password reset successful for patient: ${patient.email} (ID: ${patient.id})`);
+
+        res.json({
+            success: true,
+            message: 'Password berhasil diubah! Silakan login dengan password baru Anda.'
+        });
+
+    } catch (error) {
+        console.error('Reset password error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan. Silakan coba lagi.'
         });
     }
 });

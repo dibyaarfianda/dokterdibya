@@ -134,10 +134,92 @@ async function deletePatientWithRelations(patientId) {
         );
 
         await deleteOptionalChild(connection,
+            'DELETE FROM sunday_appointments_archive WHERE patient_id = ?',
+            [patientId],
+            deletedData,
+            'sunday_appointments_archive'
+        );
+
+        await deleteOptionalChild(connection,
+            'DELETE FROM usg_records WHERE patient_id = ?',
+            [patientId],
+            deletedData,
+            'usg_records'
+        );
+
+        await deleteOptionalChild(connection,
+            'DELETE FROM ai_detection_logs WHERE patient_id = ?',
+            [patientId],
+            deletedData,
+            'ai_detection_logs'
+        );
+
+        await deleteOptionalChild(connection,
+            'DELETE FROM ai_summary_logs WHERE patient_id = ?',
+            [patientId],
+            deletedData,
+            'ai_summary_logs'
+        );
+
+        // Clear registration code reference (don't delete the code, just clear patient reference)
+        await deleteOptionalChild(connection,
+            'UPDATE registration_codes SET used_by_patient_id = NULL WHERE used_by_patient_id = ?',
+            [patientId],
+            deletedData,
+            'registration_codes_cleared'
+        );
+
+        await deleteOptionalChild(connection,
             'DELETE FROM patient_password_reset_tokens WHERE patient_id = ?',
             [patientId],
             deletedData,
             'patient_password_reset_tokens'
+        );
+
+        // Delete patient documents and related logs
+        await deleteOptionalChild(connection,
+            'DELETE FROM patient_document_access_logs WHERE document_id IN (SELECT id FROM patient_documents WHERE patient_id = ?)',
+            [patientId],
+            deletedData,
+            'patient_document_access_logs'
+        );
+
+        await deleteOptionalChild(connection,
+            'DELETE FROM patient_document_shares WHERE document_id IN (SELECT id FROM patient_documents WHERE patient_id = ?)',
+            [patientId],
+            deletedData,
+            'patient_document_shares'
+        );
+
+        await deleteOptionalChild(connection,
+            'DELETE FROM patient_documents WHERE patient_id = ?',
+            [patientId],
+            deletedData,
+            'patient_documents'
+        );
+
+        // Delete patient MR history
+        await deleteOptionalChild(connection,
+            'DELETE FROM patient_mr_history WHERE patient_id = ?',
+            [patientId],
+            deletedData,
+            'patient_mr_history'
+        );
+
+        // Delete patient notifications
+        await deleteOptionalChild(connection,
+            'DELETE FROM patient_notifications WHERE patient_id = ?',
+            [patientId],
+            deletedData,
+            'patient_notifications'
+        );
+
+        // Delete email verifications
+        await deleteOptionalChild(connection,
+            'DELETE FROM email_verifications WHERE email = (SELECT email FROM patients WHERE id = ?)',
+            [patientId],
+            deletedData,
+            'email_verifications'
         );
 
         // Delete from patients table (medical records)

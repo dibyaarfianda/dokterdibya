@@ -391,32 +391,44 @@ router.post('/api/auth/mark-profile-completed', verifyToken, asyncHandler(async 
 // POST /api/auth/change-password - Change user password
 router.post('/api/auth/change-password', verifyToken, validatePasswordChange, asyncHandler(async (req, res) => {
     const userId = req.user?.id;
-    
+    logger.info(`[PASSWORD CHANGE] Attempt for user ID: ${userId}`);
+
     if (!userId) {
-        throw new AppError('Invalid token payload', HTTP_STATUS.BAD_REQUEST);
+        logger.error('[PASSWORD CHANGE] No user ID in token');
+        throw new AppError('Token tidak valid', HTTP_STATUS.BAD_REQUEST);
     }
 
     const { currentPassword, newPassword } = req.body;
+    logger.info(`[PASSWORD CHANGE] Has currentPassword: ${!!currentPassword}, Has newPassword: ${!!newPassword}`);
 
     // Verify current password
     const [rows] = await db.query('SELECT password_hash FROM users WHERE new_id = ?', [userId]);
+    logger.info(`[PASSWORD CHANGE] Found ${rows.length} user(s) with new_id: ${userId}`);
 
     if (rows.length === 0) {
+        logger.error(`[PASSWORD CHANGE] User not found with new_id: ${userId}`);
         throw new AppError(ERROR_MESSAGES.NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
     const isPasswordValid = await bcrypt.compare(currentPassword, rows[0].password_hash);
+    logger.info(`[PASSWORD CHANGE] Current password valid: ${isPasswordValid}`);
 
     if (!isPasswordValid) {
-        throw new AppError('Invalid current password', HTTP_STATUS.UNAUTHORIZED);
+        logger.warn(`[PASSWORD CHANGE] Invalid current password for user: ${userId}`);
+        throw new AppError('Password saat ini salah', HTTP_STATUS.UNAUTHORIZED);
     }
 
     // Hash and update new password
     const newPasswordHash = await bcrypt.hash(newPassword, 10);
-    await db.query('UPDATE users SET password_hash = ? WHERE new_id = ?', [newPasswordHash, userId]);
+    const [updateResult] = await db.query('UPDATE users SET password_hash = ? WHERE new_id = ?', [newPasswordHash, userId]);
+    logger.info(`[PASSWORD CHANGE] Update result - affected rows: ${updateResult.affectedRows}`);
 
-    logger.info(`Password changed for user ID: ${userId}`);
+    if (updateResult.affectedRows === 0) {
+        logger.error(`[PASSWORD CHANGE] No rows updated for user: ${userId}`);
+        throw new AppError('Gagal mengubah password', HTTP_STATUS.INTERNAL_SERVER_ERROR);
+    }
 
+    logger.info(`[PASSWORD CHANGE] Password changed successfully for user ID: ${userId}`);
     sendSuccess(res, null, SUCCESS_MESSAGES.PASSWORD_CHANGED);
 }));
 
@@ -759,7 +771,7 @@ router.post('/api/auth/reset-password', asyncHandler(async (req, res) => {
     // 3. Hash the new password
     const newPasswordHash = await bcrypt.hash(newPassword, 10);
 
-    // 4. Update the patient's password
+    // 4. Update the patient's password in patients table
     try {
         await db.query(
             'UPDATE patients SET password = ? WHERE id = ?',
@@ -767,6 +779,22 @@ router.post('/api/auth/reset-password', asyncHandler(async (req, res) => {
         );
     } catch (dbError) {
         handleDatabaseError(dbError);
+    }
+
+    // 4b. Also update users table if patient has a linked user account
+    try {
+        // Get patient email to find linked user
+        const [patientData] = await db.query('SELECT email FROM patients WHERE id = ?', [patientId]);
+        if (patientData.length > 0 && patientData[0].email) {
+            await db.query(
+                'UPDATE users SET password_hash = ? WHERE email = ? AND user_type = ?',
+                [newPasswordHash, patientData[0].email, 'patient']
+            );
+            logger.info(`Password also updated in users table for email: ${patientData[0].email}`);
+        }
+    } catch (dbError) {
+        // Log but don't fail - patients table was updated successfully
+        logger.warn(`Failed to update users table password: ${dbError.message}`);
     }
 
     // 5. Mark the token as used

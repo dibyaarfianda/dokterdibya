@@ -83,11 +83,16 @@ ${this.clinicName}`;
      */
     async sendViaFonnte(phone, message) {
         if (!this.fonnte.enabled) {
+            logger.warn('Fonnte not configured - FONNTE_TOKEN not set');
             return { success: false, method: 'fonnte', error: 'Fonnte not configured' };
         }
 
         try {
             const formattedPhone = this.formatPhoneNumber(phone);
+            logger.info('Sending WhatsApp via Fonnte', {
+                phone: formattedPhone,
+                tokenPrefix: this.fonnte.token?.substring(0, 5) + '...'
+            });
 
             const response = await fetch(this.fonnte.apiUrl, {
                 method: 'POST',
@@ -103,11 +108,13 @@ ${this.clinicName}`;
             });
 
             const result = await response.json();
+            logger.info('Fonnte API response', { status: result.status, reason: result.reason });
 
             if (result.status) {
-                logger.info('WhatsApp sent via Fonnte', { phone: formattedPhone });
+                logger.info('WhatsApp sent via Fonnte successfully', { phone: formattedPhone, messageId: result.id });
                 return { success: true, method: 'fonnte', messageId: result.id };
             } else {
+                logger.warn('Fonnte API returned error', { reason: result.reason });
                 throw new Error(result.reason || 'Fonnte API error');
             }
         } catch (error) {

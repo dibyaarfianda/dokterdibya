@@ -1538,7 +1538,7 @@
     <script src="js/announcements-dashboard.js?v=20251120"></script>
     <script>
         // Check authentication
-        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
         const user = JSON.parse(localStorage.getItem('patient_user') || '{}');
 
         console.log('[DASHBOARD] Auth check - token:', token ? 'EXISTS' : 'MISSING');
@@ -2864,7 +2864,7 @@
             const container = document.getElementById('my-documents-container');
             if (!container) return;
 
-            const token = localStorage.getItem('vps_auth_token');
+            const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
             if (!token) {
                 container.innerHTML = renderDocumentsEmpty('Silakan login untuk melihat dokumen Anda');
                 return;
