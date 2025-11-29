@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Berlangganan Gallery Kenangan - Klinik Dr. Dibya</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #fbcfe8 100%);
+            min-height: 100vh;
+            color: #374151;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .floating-shape {
+            position: absolute;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(236, 72, 153, 0.15), rgba(219, 39, 119, 0.1));
+            filter: blur(1px);
+            animation: floatShape 20s ease-in-out infinite;
+        }
+
+        .floating-shape:nth-child(1) {
+            width: 80px;
+            height: 80px;
+            top: 10%;
+            left: 10%;
+            animation-delay: 0s;
+            animation-duration: 25s;
+        }
+
+        .floating-shape:nth-child(2) {
+            width: 120px;
+            height: 120px;
+            top: 60%;
+            left: 80%;
+            animation-delay: -5s;
+            animation-duration: 30s;
+        }
+
+        .floating-shape:nth-child(3) {
+            width: 60px;
+            height: 60px;
+            top: 30%;
+            left: 70%;
+            animation-delay: -10s;
+            animation-duration: 22s;
+        }
+
+        .floating-shape:nth-child(4) {
+            width: 100px;
+            height: 100px;
+            top: 80%;
+            left: 20%;
+            animation-delay: -7s;
+            animation-duration: 28s;
+        }
+
+        .floating-shape:nth-child(5) {
+            width: 50px;
+            height: 50px;
+            top: 45%;
+            left: 5%;
+            animation-delay: -3s;
+            animation-duration: 20s;
+        }
+
+        .floating-shape:nth-child(6) {
+            width: 70px;
+            height: 70px;
+            top: 15%;
+            left: 85%;
+            animation-delay: -12s;
+            animation-duration: 26s;
+        }
+
+        .floating-heart {
+            position: absolute;
+            font-size: 20px;
+            opacity: 0.2;
+            animation: floatHeart 15s ease-in-out infinite;
+        }
+
+        .floating-heart:nth-child(7) { top: 20%; left: 30%; animation-delay: 0s; }
+        .floating-heart:nth-child(8) { top: 70%; left: 60%; animation-delay: -3s; }
+        .floating-heart:nth-child(9) { top: 40%; left: 90%; animation-delay: -6s; }
+        .floating-heart:nth-child(10) { top: 85%; left: 40%; animation-delay: -9s; }
+
+        @keyframes floatShape {
+            0%, 100% {
+                transform: translate(0, 0) rotate(0deg) scale(1);
+            }
+            25% {
+                transform: translate(30px, -50px) rotate(90deg) scale(1.1);
+            }
+            50% {
+                transform: translate(-20px, -100px) rotate(180deg) scale(0.9);
+            }
+            75% {
+                transform: translate(50px, -50px) rotate(270deg) scale(1.05);
+            }
+        }
+
+        @keyframes floatHeart {
+            0%, 100% {
+                transform: translateY(0) rotate(-10deg);
+                opacity: 0.2;
+            }
+            50% {
+                transform: translateY(-30px) rotate(10deg);
+                opacity: 0.35;
+            }
+        }
+
+        /* Header */
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 16px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid rgba(236, 72, 153, 0.1);
+        }
+
+        .header-content {
+            max-width: 600px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .back-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #ec4899, #db2777);
+            border: none;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .back-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .header h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.3rem;
+            color: #be185d;
+            font-weight: 600;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 24px 20px 40px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .hero-icon {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #ec4899, #db2777);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            box-shadow: 0 10px 40px rgba(236, 72, 153, 0.3);
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+
+        .hero-icon svg {
+            width: 50px;
+            height: 50px;
+            color: white;
+        }
+
+        .hero h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            color: #be185d;
+            margin-bottom: 12px;
+        }
+
+        .hero p {
+            color: #6b7280;
+            font-size: 1rem;
+            line-height: 1.6;
+        }
+
+        /* Subscription Card */
+        .subscription-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 28px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            margin-bottom: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .plan-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, #fdf2f8, #fce7f3);
+            color: #be185d;
+            padding: 8px 16px;
+            border-radius: 100px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .plan-badge svg {
+            width: 16px;
+            height: 16px;
+        }
+
+        .plan-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            color: #1f2937;
+            margin-bottom: 8px;
+        }
+
+        .plan-price {
+            display: flex;
+            align-items: baseline;
+            gap: 4px;
+            margin-bottom: 24px;
+        }
+
+        .price-currency {
+            font-size: 1.2rem;
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .price-amount {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ec4899, #db2777);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .price-period {
+            font-size: 1rem;
+            color: #9ca3af;
+        }
+
+        .features-list {
+            list-style: none;
+            margin-bottom: 28px;
+        }
+
+        .features-list li {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid #f3f4f6;
+        }
+
+        .features-list li:last-child {
+            border-bottom: none;
+        }
+
+        .feature-icon {
+            width: 24px;
+            height: 24px;
+            background: linear-gradient(135deg, #d946ef, #c026d3);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .feature-icon svg {
+            width: 14px;
+            height: 14px;
+            color: white;
+        }
+
+        .feature-text {
+            font-size: 0.95rem;
+            color: #4b5563;
+            line-height: 1.5;
+        }
+
+        /* Subscribe Button */
+        .subscribe-btn {
+            width: 100%;
+            padding: 18px 24px;
+            background: linear-gradient(135deg, #ec4899, #db2777);
+            color: white;
+            border: none;
+            border-radius: 16px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s;
+            box-shadow: 0 8px 24px rgba(236, 72, 153, 0.3);
+        }
+
+        .subscribe-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(236, 72, 153, 0.4);
+        }
+
+        .subscribe-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .subscribe-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        /* Payment Methods */
+        .payment-methods {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #f3f4f6;
+        }
+
+        .payment-methods span {
+            font-size: 0.85rem;
+            color: #9ca3af;
+        }
+
+        .payment-icons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .payment-icon {
+            height: 28px;
+            opacity: 0.8;
+        }
+
+        /* Already Subscribed */
+        .already-subscribed {
+            background: linear-gradient(135deg, #d1fae5, #a7f3d0);
+            border-radius: 20px;
+            padding: 24px;
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .already-subscribed h3 {
+            color: #065f46;
+            font-size: 1.2rem;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .already-subscribed p {
+            color: #047857;
+            font-size: 0.95rem;
+        }
+
+        .already-subscribed .valid-until {
+            background: rgba(255,255,255,0.6);
+            padding: 8px 16px;
+            border-radius: 100px;
+            display: inline-block;
+            margin-top: 12px;
+            font-weight: 500;
+        }
+
+        .gallery-link-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #059669;
+            color: white;
+            text-decoration: none;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-weight: 600;
+            margin-top: 16px;
+            transition: background 0.3s;
+        }
+
+        .gallery-link-btn:hover {
+            background: #047857;
+        }
+
+        /* Not Logged In State */
+        .login-prompt {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 32px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .login-prompt h3 {
+            color: #1f2937;
+            margin-bottom: 12px;
+        }
+
+        .login-prompt p {
+            color: #6b7280;
+            margin-bottom: 20px;
+        }
+
+        .login-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #ec4899, #db2777);
+            color: white;
+            text-decoration: none;
+            padding: 14px 28px;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+        .login-btn:hover {
+            transform: scale(1.02);
+        }
+
+        /* Loading State */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #fce7f3;
+            border-top-color: #ec4899;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Footer Info */
+        .footer-info {
+            text-align: center;
+            padding: 20px;
+            color: #9ca3af;
+            font-size: 0.85rem;
+        }
+
+        .footer-info a {
+            color: #ec4899;
+            text-decoration: none;
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1f2937;
+            color: white;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 0.95rem;
+            z-index: 1000;
+            transition: transform 0.3s;
+            max-width: 90%;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast.error {
+            background: #dc2626;
+        }
+
+        .toast.success {
+            background: #059669;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .hero h2 {
+                font-size: 1.5rem;
+            }
+
+            .price-amount {
+                font-size: 2rem;
+            }
+
+            .subscription-card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-animation">
+        <div class="floating-shape"></div>
+        <div class="floating-shape"></div>
+        <div class="floating-shape"></div>
+        <div class="floating-shape"></div>
+        <div class="floating-shape"></div>
+        <div class="floating-shape"></div>
+        <div class="floating-heart">💕</div>
+        <div class="floating-heart">💗</div>
+        <div class="floating-heart">💖</div>
+        <div class="floating-heart">💝</div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <button class="back-btn" onclick="window.location.href='patient-dashboard.html'">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <h1>Gallery Kenangan Premium</h1>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container">
+        <!-- Loading State -->
+        <div id="loading-state" class="loading">
+            <div class="spinner"></div>
+            <p>Memuat...</p>
+        </div>
+
+        <!-- Login Prompt (hidden by default) -->
+        <div id="login-prompt" class="login-prompt" style="display: none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2" width="48" height="48" style="margin-bottom: 16px;">
+                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                <circle cx="12" cy="7" r="4"/>
+            </svg>
+            <h3>Masuk untuk Berlangganan</h3>
+            <p>Silakan masuk ke akun pasien Anda untuk berlangganan Gallery Kenangan Premium</p>
+            <a href="patient-dashboard.html" class="login-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                    <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3"/>
+                </svg>
+                Masuk Sekarang
+            </a>
+        </div>
+
+        <!-- Already Subscribed (hidden by default) -->
+        <div id="subscribed-state" class="already-subscribed" style="display: none;">
+            <h3>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="24" height="24">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                    <polyline points="22 4 12 14.01 9 11.01"/>
+                </svg>
+                Anda Sudah Berlangganan!
+            </h3>
+            <p>Gallery Kenangan Premium aktif untuk akun Anda</p>
+            <div class="valid-until" id="valid-until"></div>
+            <br>
+            <a href="gallery-kenangan.html" class="gallery-link-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                </svg>
+                Buka Gallery Kenangan
+            </a>
+        </div>
+
+        <!-- Subscription Content (hidden by default) -->
+        <div id="subscription-content" style="display: none;">
+            <!-- Hero Section -->
+            <section class="hero">
+                <div class="hero-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    </svg>
+                </div>
+                <h2>Gallery Kenangan Anda</h2>
+                <p>Abadikan momen kehamilan dengan tampilan eksklusif untuk foto USG 4D si kecil</p>
+            </section>
+
+            <!-- Subscription Card -->
+            <div class="subscription-card">
+                <div class="plan-badge">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                    </svg>
+                    Paket Bulanan
+                </div>
+
+                <h3 class="plan-name">Gallery Kenangan Premium</h3>
+
+                <div class="plan-price">
+                    <span class="price-currency">Rp</span>
+                    <span class="price-amount">10.000</span>
+                    <span class="price-period">/ bulan</span>
+                </div>
+
+                <ul class="features-list">
+                    <li>
+                        <div class="feature-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                        </div>
+                        <span class="feature-text">Gallery 4D USG dengan 3 tema cantik: Rose, Sage, Sky</span>
+                    </li>
+                    <li>
+                        <div class="feature-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                        </div>
+                        <span class="feature-text">Background musik yang menenangkan</span>
+                    </li>
+                    <li>
+                        <div class="feature-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                        </div>
+                        <span class="feature-text">Lightbox dengan zoom detail untuk melihat wajah si kecil</span>
+                    </li>
+                    <li>
+                        <div class="feature-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                        </div>
+                        <span class="feature-text">Download & bagikan momen spesial ke keluarga</span>
+                    </li>
+                    <li>
+                        <div class="feature-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                <polyline points="20 6 9 17 4 12"/>
+                            </svg>
+                        </div>
+                        <span class="feature-text">Animasi romantis dan tampilan elegan</span>
+                    </li>
+                </ul>
+
+                <button id="subscribe-btn" class="subscribe-btn" onclick="createSubscription()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                        <line x1="1" y1="10" x2="23" y2="10"/>
+                    </svg>
+                    Bayar Sekarang
+                </button>
+
+                <div class="payment-methods">
+                    <span>Pembayaran via:</span>
+                    <div class="payment-icons">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/8/86/Gopay_logo.svg" alt="GoPay" class="payment-icon">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/e/eb/Logo_ovo_purple.svg" alt="OVO" class="payment-icon">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/7/72/Logo_dana_blue.svg" alt="DANA" class="payment-icon">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer-info">
+        <p>Dengan berlangganan, Anda menyetujui <a href="#">Syarat & Ketentuan</a> kami</p>
+        <p style="margin-top: 8px;">dokterDIBYA - Gallery Kenangan Anda</p>
+    </footer>
+
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
+
+    <!-- Midtrans Snap JS -->
+    <script src="https://app.sandbox.midtrans.com/snap/snap.js" data-client-key="Mid-client-n7v74jbma4wlkTH2"></script>
+
+    <script>
+        // State
+        let patientData = null;
+        let subscriptionData = null;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            await checkAuthAndSubscription();
+        });
+
+        // Get auth token (same keys as patient-dashboard.html)
+        function getAuthToken() {
+            return localStorage.getItem('vps_auth_token') ||
+                   sessionStorage.getItem('vps_auth_token') ||
+                   localStorage.getItem('patient_token');
+        }
+
+        // Check authentication and subscription status
+        async function checkAuthAndSubscription() {
+            const token = getAuthToken();
+            const user = JSON.parse(localStorage.getItem('patient_user') || '{}');
+
+            if (!token || !user.id) {
+                showState('login');
+                return;
+            }
+
+            try {
+                // Check patient auth (use same endpoint as patient dashboard)
+                const authResponse = await fetch('/api/patients/profile', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!authResponse.ok) {
+                    showState('login');
+                    return;
+                }
+
+                const authData = await authResponse.json();
+
+                if (!authData.success && !authData.user) {
+                    showState('login');
+                    return;
+                }
+
+                patientData = authData.user || user;
+
+                // Check subscription status
+                const subResponse = await fetch('/api/subscriptions/status', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const subData = await subResponse.json();
+
+                if (subData.success && subData.hasSubscription) {
+                    subscriptionData = subData.subscription;
+                    showState('subscribed');
+
+                    // Show valid until date
+                    if (subscriptionData.end_date) {
+                        const endDate = new Date(subscriptionData.end_date);
+                        document.getElementById('valid-until').textContent =
+                            `Berlaku sampai: ${endDate.toLocaleDateString('id-ID', {
+                                day: 'numeric',
+                                month: 'long',
+                                year: 'numeric'
+                            })}`;
+                    }
+                } else {
+                    showState('subscribe');
+                }
+
+            } catch (error) {
+                console.error('Error:', error);
+                showState('subscribe');
+            }
+        }
+
+        // Show appropriate state
+        function showState(state) {
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('login-prompt').style.display = 'none';
+            document.getElementById('subscribed-state').style.display = 'none';
+            document.getElementById('subscription-content').style.display = 'none';
+
+            switch(state) {
+                case 'login':
+                    document.getElementById('login-prompt').style.display = 'block';
+                    break;
+                case 'subscribed':
+                    document.getElementById('subscribed-state').style.display = 'block';
+                    break;
+                case 'subscribe':
+                    document.getElementById('subscription-content').style.display = 'block';
+                    break;
+            }
+        }
+
+        // Create subscription
+        async function createSubscription() {
+            const token = getAuthToken();
+            if (!token) {
+                showToast('Silakan login terlebih dahulu', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('subscribe-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner" style="width:24px;height:24px;border-width:3px;margin:0;"></div> Memproses...';
+
+            try {
+                const response = await fetch('/api/subscriptions/create', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        feature: 'gallery_kenangan',
+                        plan_type: 'monthly'
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Gagal membuat transaksi');
+                }
+
+                // Open Midtrans Snap
+                window.snap.pay(data.snapToken, {
+                    onSuccess: function(result) {
+                        console.log('Payment success:', result);
+                        showToast('Pembayaran berhasil! Mengaktifkan langganan...', 'success');
+                        setTimeout(() => {
+                            window.location.href = 'subscription-success.html?order_id=' + data.orderId;
+                        }, 1500);
+                    },
+                    onPending: function(result) {
+                        console.log('Payment pending:', result);
+                        showToast('Menunggu pembayaran...', 'info');
+                        // Redirect to check payment status
+                        setTimeout(() => {
+                            window.location.href = 'subscription-success.html?order_id=' + data.orderId + '&status=pending';
+                        }, 2000);
+                    },
+                    onError: function(result) {
+                        console.error('Payment error:', result);
+                        showToast('Pembayaran gagal. Silakan coba lagi.', 'error');
+                        resetButton();
+                    },
+                    onClose: function() {
+                        console.log('Payment popup closed');
+                        resetButton();
+                    }
+                });
+
+            } catch (error) {
+                console.error('Error creating subscription:', error);
+                showToast(error.message || 'Terjadi kesalahan', 'error');
+                resetButton();
+            }
+        }
+
+        // Reset button state
+        function resetButton() {
+            const btn = document.getElementById('subscribe-btn');
+            btn.disabled = false;
+            btn.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                    <line x1="1" y1="10" x2="23" y2="10"/>
+                </svg>
+                Bayar Sekarang
+            `;
+        }
+
+        // Show toast notification
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.className = 'toast ' + type;
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

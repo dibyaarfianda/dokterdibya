@@ -1,0 +1,1561 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gallery Kenangan Anda - Dokter Dibya</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Quicksand:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            /* Pink Theme (Default) */
+            --primary: #e8b4b8;
+            --primary-dark: #d4a5a5;
+            --primary-light: #fdf2f4;
+            --accent: #d4af37;
+            --accent-light: #f5e6c8;
+            --bg-gradient: linear-gradient(135deg, #fdf2f4 0%, #f9e8ea 50%, #fce4ec 100%);
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --text-primary: #5d4e5c;
+            --text-secondary: #8b7d8a;
+            --shadow-color: rgba(232, 180, 184, 0.3);
+            --overlay-bg: rgba(253, 242, 244, 0.95);
+        }
+
+        [data-theme="green"] {
+            --primary: #a8c5a0;
+            --primary-dark: #8fb087;
+            --primary-light: #f0f7ef;
+            --accent: #c9b896;
+            --accent-light: #f5f1e8;
+            --bg-gradient: linear-gradient(135deg, #f0f7ef 0%, #e8f5e6 50%, #e0f2df 100%);
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --text-primary: #4a5d47;
+            --text-secondary: #7a8d77;
+            --shadow-color: rgba(168, 197, 160, 0.3);
+            --overlay-bg: rgba(240, 247, 239, 0.95);
+        }
+
+        [data-theme="blue"] {
+            --primary: #a8c5d4;
+            --primary-dark: #8bb0c4;
+            --primary-light: #f0f6fa;
+            --accent: #c4b8d4;
+            --accent-light: #f0ebf5;
+            --bg-gradient: linear-gradient(135deg, #f0f6fa 0%, #e8f1f8 50%, #e6f0f7 100%);
+            --card-bg: rgba(255, 255, 255, 0.85);
+            --text-primary: #4a5a64;
+            --text-secondary: #7a8a94;
+            --shadow-color: rgba(168, 197, 212, 0.3);
+            --overlay-bg: rgba(240, 246, 250, 0.95);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Quicksand', sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            color: var(--text-primary);
+            transition: all 0.5s ease;
+            overflow-x: hidden;
+        }
+
+        /* Floating particles background */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: var(--primary);
+            border-radius: 50%;
+            opacity: 0.3;
+            animation: float-particle 15s infinite ease-in-out;
+        }
+
+        @keyframes float-particle {
+            0%, 100% { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10% { opacity: 0.3; }
+            90% { opacity: 0.3; }
+            100% { transform: translateY(-100px) rotate(720deg); opacity: 0; }
+        }
+
+        /* Header */
+        .header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 15px 20px;
+            background: var(--overlay-bg);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.5);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .back-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .back-btn:hover {
+            color: var(--primary-dark);
+            transform: translateX(-3px);
+        }
+
+        .header-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--text-primary);
+            letter-spacing: 1px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .header-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border: none;
+            background: var(--card-bg);
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            box-shadow: 0 2px 10px var(--shadow-color);
+        }
+
+        .header-btn:hover {
+            background: var(--primary);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .header-btn.active {
+            background: var(--primary);
+            color: white;
+        }
+
+        /* Theme Selector */
+        .theme-selector {
+            position: fixed;
+            top: 70px;
+            right: 20px;
+            z-index: 99;
+            background: var(--card-bg);
+            border-radius: 25px;
+            padding: 8px;
+            display: flex;
+            gap: 8px;
+            box-shadow: 0 4px 20px var(--shadow-color);
+            opacity: 0;
+            transform: translateY(-10px);
+            pointer-events: none;
+            transition: all 0.3s ease;
+        }
+
+        .theme-selector.show {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: all;
+        }
+
+        .theme-dot {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .theme-dot:hover {
+            transform: scale(1.15);
+        }
+
+        .theme-dot.active {
+            border-color: var(--text-primary);
+        }
+
+        .theme-dot.pink { background: linear-gradient(135deg, #e8b4b8, #f5d0d3); }
+        .theme-dot.green { background: linear-gradient(135deg, #a8c5a0, #c5ddc0); }
+        .theme-dot.blue { background: linear-gradient(135deg, #a8c5d4, #c5dde8); }
+
+        /* Main Content */
+        .main-content {
+            padding: 90px 15px 100px;
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 30px 20px 40px;
+            animation: fadeInUp 0.8s ease;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .hero-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 32px;
+            font-weight: 400;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+
+        .hero-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        .hero-divider {
+            width: 60px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            margin: 20px auto;
+        }
+
+        .patient-name {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 20px;
+            font-style: italic;
+            color: var(--primary-dark);
+        }
+
+        /* Gallery Grid - Masonry */
+        .gallery-grid {
+            column-count: 1;
+            column-gap: 15px;
+        }
+
+        @media (min-width: 480px) {
+            .gallery-grid {
+                column-count: 2;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .gallery-grid {
+                column-count: 2;
+                column-gap: 20px;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .gallery-grid {
+                column-count: 3;
+                column-gap: 25px;
+            }
+        }
+
+        /* Gallery Card */
+        .gallery-card {
+            break-inside: avoid;
+            margin-bottom: 15px;
+            background: var(--card-bg);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px var(--shadow-color);
+            transition: all 0.4s ease;
+            animation: fadeInCard 0.6s ease backwards;
+            cursor: pointer;
+        }
+
+        .gallery-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 12px 40px var(--shadow-color);
+        }
+
+        @keyframes fadeInCard {
+            from { opacity: 0; transform: translateY(20px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .gallery-card:nth-child(1) { animation-delay: 0.1s; }
+        .gallery-card:nth-child(2) { animation-delay: 0.2s; }
+        .gallery-card:nth-child(3) { animation-delay: 0.3s; }
+        .gallery-card:nth-child(4) { animation-delay: 0.4s; }
+        .gallery-card:nth-child(5) { animation-delay: 0.5s; }
+        .gallery-card:nth-child(6) { animation-delay: 0.6s; }
+
+        .card-image-wrapper {
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-image {
+            width: 100%;
+            display: block;
+            transition: transform 0.5s ease;
+        }
+
+        .gallery-card:hover .card-image {
+            transform: scale(1.05);
+        }
+
+        .card-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.4) 100%);
+            opacity: 0;
+            transition: opacity 0.3s;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            padding: 15px;
+        }
+
+        .gallery-card:hover .card-overlay {
+            opacity: 1;
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .card-action-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.9);
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .card-action-btn:hover {
+            background: var(--primary);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .card-info {
+            padding: 15px;
+        }
+
+        .card-caption {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: 5px;
+        }
+
+        .card-date {
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .card-gestational-age {
+            display: inline-block;
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            margin-top: 8px;
+        }
+
+        /* Loading State */
+        .gallery-loading {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid var(--primary-light);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Empty State */
+        .gallery-empty {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .empty-icon {
+            font-size: 64px;
+            color: var(--primary);
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 24px;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+
+        .empty-text {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        /* Lightbox */
+        .lightbox {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .lightbox.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .lightbox-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            color: white;
+        }
+
+        .lightbox-close {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .lightbox-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .lightbox-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 18px;
+            font-weight: 400;
+        }
+
+        .lightbox-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .lightbox-content {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow: hidden;
+        }
+
+        .lightbox-image-container {
+            position: relative;
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        .lightbox-image {
+            max-width: 100%;
+            max-height: 70vh;
+            object-fit: contain;
+            border-radius: 8px;
+            transition: transform 0.3s ease;
+        }
+
+        .lightbox-image.zoomed {
+            transform: scale(2);
+            cursor: zoom-out;
+        }
+
+        .lightbox-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .lightbox-nav:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .lightbox-nav.prev { left: 20px; }
+        .lightbox-nav.next { right: 20px; }
+
+        .lightbox-footer {
+            padding: 20px;
+            text-align: center;
+            color: white;
+        }
+
+        .lightbox-caption {
+            font-size: 16px;
+            margin-bottom: 5px;
+        }
+
+        .lightbox-date {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .lightbox-gestational {
+            display: inline-block;
+            background: var(--primary);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+
+        /* Music Player */
+        .music-player {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            z-index: 99;
+            background: var(--card-bg);
+            border-radius: 30px;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 4px 20px var(--shadow-color);
+            transition: all 0.3s;
+        }
+
+        .music-player.minimized {
+            padding: 10px;
+            border-radius: 50%;
+        }
+
+        .music-player.minimized .music-info,
+        .music-player.minimized .music-progress {
+            display: none;
+        }
+
+        .music-toggle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: none;
+            background: var(--primary);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+        }
+
+        .music-toggle:hover {
+            transform: scale(1.1);
+        }
+
+        .music-toggle.playing {
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 0 0 0 var(--shadow-color); }
+            50% { box-shadow: 0 0 0 10px transparent; }
+        }
+
+        .music-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .music-title {
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-primary);
+        }
+
+        .music-artist {
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+
+        /* Share Modal */
+        .share-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1001;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s;
+        }
+
+        .share-modal.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .share-content {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 320px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .share-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 22px;
+            color: var(--text-primary);
+            margin-bottom: 20px;
+        }
+
+        .share-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .share-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+            transition: all 0.3s;
+        }
+
+        .share-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .share-btn.whatsapp { background: #25D366; }
+        .share-btn.copy { background: var(--primary); }
+        .share-btn.download { background: var(--accent); }
+
+        .share-close {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: var(--text-primary);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 14px;
+            z-index: 1002;
+            opacity: 0;
+            transition: all 0.3s;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Access Gate / Subscription Wall */
+        .access-gate {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-gradient);
+            z-index: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .access-gate.hidden {
+            display: none;
+        }
+
+        .gate-content {
+            background: var(--card-bg);
+            border-radius: 24px;
+            padding: 40px 30px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 20px 60px var(--shadow-color);
+            animation: gateAppear 0.6s ease;
+        }
+
+        @keyframes gateAppear {
+            from { opacity: 0; transform: scale(0.9) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .gate-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 25px;
+            font-size: 32px;
+            color: white;
+            box-shadow: 0 10px 30px var(--shadow-color);
+        }
+
+        .gate-title {
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 28px;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+        }
+
+        .gate-subtitle {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+
+        .gate-features {
+            text-align: left;
+            margin-bottom: 25px;
+            padding: 0 10px;
+        }
+
+        .gate-feature {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 0;
+            font-size: 14px;
+            color: var(--text-primary);
+            border-bottom: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .gate-feature:last-child {
+            border-bottom: none;
+        }
+
+        .gate-feature i {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+        }
+
+        .gate-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            color: var(--text-primary);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+        }
+
+        .gate-cta {
+            display: block;
+            width: 100%;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            margin-bottom: 15px;
+        }
+
+        .gate-cta:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px var(--shadow-color);
+        }
+
+        .gate-login {
+            color: var(--text-secondary);
+            font-size: 13px;
+        }
+
+        .gate-login a {
+            color: var(--primary-dark);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .gate-login a:hover {
+            text-decoration: underline;
+        }
+
+        .gate-back {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-primary);
+            text-decoration: none;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .subscriber-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: linear-gradient(135deg, var(--accent), #e8c86b);
+            color: #5d4e3c;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .subscriber-badge i {
+            font-size: 10px;
+        }
+
+        /* Responsive */
+        @media (max-width: 480px) {
+            .hero-title { font-size: 26px; }
+            .header-title { font-size: 14px; }
+            .music-player { bottom: 15px; left: 15px; }
+            .lightbox-nav { display: none; }
+        }
+    </style>
+</head>
+<body data-theme="pink">
+    <!-- Access Gate (Subscriber Wall) -->
+    <div class="access-gate" id="accessGate">
+        <a href="/patient-dashboard.html" class="gate-back">
+            <i class="fas fa-arrow-left"></i> Kembali
+        </a>
+        <div class="gate-content">
+            <div class="gate-icon">
+                <i class="fas fa-crown"></i>
+            </div>
+            <span class="gate-badge">FITUR EKSKLUSIF</span>
+            <h2 class="gate-title">Gallery Kenangan</h2>
+            <p class="gate-subtitle">
+                Nikmati pengalaman istimewa melihat momen kehamilan Anda dalam gallery eksklusif dengan tema romantis yang dapat dipersonalisasi
+            </p>
+            <div class="gate-features">
+                <div class="gate-feature">
+                    <i class="fas fa-check"></i>
+                    <span>Gallery 4D USG dengan tema cantik</span>
+                </div>
+                <div class="gate-feature">
+                    <i class="fas fa-check"></i>
+                    <span>3 pilihan tema: Rose, Sage, Sky</span>
+                </div>
+                <div class="gate-feature">
+                    <i class="fas fa-check"></i>
+                    <span>Background musik yang menenangkan</span>
+                </div>
+                <div class="gate-feature">
+                    <i class="fas fa-check"></i>
+                    <span>Download & bagikan momen spesial</span>
+                </div>
+                <div class="gate-feature">
+                    <i class="fas fa-check"></i>
+                    <span>Lightbox dengan zoom detail</span>
+                </div>
+            </div>
+            <a href="/subscription.html" class="gate-cta">
+                <i class="fas fa-crown"></i> Berlangganan Sekarang - Rp 10.000/bulan
+            </a>
+            <p class="gate-login">
+                Sudah berlangganan? <a href="/patient-dashboard.html">Login di sini</a>
+            </p>
+        </div>
+    </div>
+
+    <!-- Floating Particles -->
+    <div class="particles" id="particles"></div>
+
+    <!-- Header -->
+    <header class="header" style="display: none;" id="mainHeader">
+        <a href="/patient-dashboard.html" class="back-btn">
+            <i class="fas fa-arrow-left"></i>
+            <span>Kembali</span>
+        </a>
+        <h1 class="header-title">Gallery Kenangan</h1>
+        <div class="header-actions">
+            <button class="header-btn" id="themeToggle" title="Ganti Tema">
+                <i class="fas fa-palette"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- Theme Selector -->
+    <div class="theme-selector" id="themeSelector">
+        <div class="theme-dot pink active" data-theme="pink" title="Rose"></div>
+        <div class="theme-dot green" data-theme="green" title="Sage"></div>
+        <div class="theme-dot blue" data-theme="blue" title="Sky"></div>
+    </div>
+
+    <!-- Main Content -->
+    <main class="main-content" style="display: none;" id="mainContent">
+        <!-- Hero Section -->
+        <section class="hero">
+            <h2 class="hero-title">Gallery Kenangan Anda</h2>
+            <p class="hero-subtitle">Momen indah perjalanan kehamilan</p>
+            <div class="hero-divider"></div>
+            <p class="patient-name" id="patientName">Loading...<span class="subscriber-badge" id="subscriberBadge" style="display: none;"><i class="fas fa-crown"></i> Premium</span></p>
+        </section>
+
+        <!-- Gallery Grid -->
+        <div class="gallery-grid" id="galleryGrid">
+            <div class="gallery-loading">
+                <div class="loading-spinner"></div>
+                <p style="color: var(--text-secondary);">Memuat kenangan indah Anda...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Music Player -->
+    <div class="music-player" id="musicPlayer" style="display: none;">
+        <button class="music-toggle" id="musicToggle" title="Play/Pause Music">
+            <i class="fas fa-play" id="musicIcon"></i>
+        </button>
+        <div class="music-info">
+            <span class="music-title">Lullaby</span>
+            <span class="music-artist">Relaxing Piano</span>
+        </div>
+    </div>
+
+    <!-- Lightbox -->
+    <div class="lightbox" id="lightbox">
+        <div class="lightbox-header">
+            <button class="lightbox-close" onclick="closeLightbox()">
+                <i class="fas fa-times"></i>
+            </button>
+            <span class="lightbox-title" id="lightboxTitle">USG 4D</span>
+            <div class="lightbox-actions">
+                <button class="lightbox-close" onclick="downloadCurrentImage()" title="Download">
+                    <i class="fas fa-download"></i>
+                </button>
+                <button class="lightbox-close" onclick="shareCurrentImage()" title="Share">
+                    <i class="fas fa-share-alt"></i>
+                </button>
+            </div>
+        </div>
+        <div class="lightbox-content">
+            <button class="lightbox-nav prev" onclick="navigateLightbox(-1)">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+            <div class="lightbox-image-container">
+                <img src="" alt="" class="lightbox-image" id="lightboxImage" onclick="toggleZoom()">
+            </div>
+            <button class="lightbox-nav next" onclick="navigateLightbox(1)">
+                <i class="fas fa-chevron-right"></i>
+            </button>
+        </div>
+        <div class="lightbox-footer">
+            <p class="lightbox-caption" id="lightboxCaption"></p>
+            <p class="lightbox-date" id="lightboxDate"></p>
+            <span class="lightbox-gestational" id="lightboxGestational"></span>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div class="share-modal" id="shareModal">
+        <div class="share-content">
+            <h3 class="share-title">Bagikan Kenangan</h3>
+            <div class="share-buttons">
+                <button class="share-btn whatsapp" onclick="shareViaWhatsApp()" title="WhatsApp">
+                    <i class="fab fa-whatsapp"></i>
+                </button>
+                <button class="share-btn copy" onclick="copyImageLink()" title="Copy Link">
+                    <i class="fas fa-link"></i>
+                </button>
+                <button class="share-btn download" onclick="downloadCurrentImage()" title="Download">
+                    <i class="fas fa-download"></i>
+                </button>
+            </div>
+            <button class="share-close" onclick="closeShareModal()">Tutup</button>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Background Music -->
+    <audio id="bgMusic" loop>
+        <source src="/sounds/lullaby.mp3" type="audio/mpeg">
+    </audio>
+
+    <script>
+        // =====================================================
+        // GALLERY DATA & STATE
+        // =====================================================
+        let galleryImages = [];
+        let currentImageIndex = 0;
+        let isPlaying = false;
+        let currentShareUrl = '';
+
+        // =====================================================
+        // INITIALIZATION
+        // =====================================================
+        document.addEventListener('DOMContentLoaded', function() {
+            initParticles();
+            initTheme();
+            checkSubscriberAccess();
+        });
+
+        // =====================================================
+        // SUBSCRIBER ACCESS CHECK
+        // =====================================================
+        async function checkSubscriberAccess() {
+            const token = getAuthToken();
+
+            if (!token) {
+                // Not logged in - show access gate
+                showAccessGate();
+                return;
+            }
+
+            try {
+                // First check if patient is authenticated
+                const authResponse = await fetch('/api/patients-auth/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!authResponse.ok) {
+                    showAccessGate();
+                    return;
+                }
+
+                const authData = await authResponse.json();
+
+                if (!authData.success || !authData.patient) {
+                    showAccessGate();
+                    return;
+                }
+
+                // FREE ACCESS: Grant access to all authenticated patients
+                // Subscription check temporarily disabled
+                grantAccess();
+                loadPatientInfo();
+                loadGalleryImages();
+                initMusicPlayer();
+
+            } catch (error) {
+                console.error('Error checking access:', error);
+                showAccessGate();
+            }
+        }
+
+        function showAccessGate() {
+            document.getElementById('accessGate').classList.remove('hidden');
+            document.getElementById('mainHeader').style.display = 'none';
+            document.getElementById('mainContent').style.display = 'none';
+            document.getElementById('musicPlayer').style.display = 'none';
+        }
+
+        function grantAccess() {
+            document.getElementById('accessGate').classList.add('hidden');
+            document.getElementById('mainHeader').style.display = 'flex';
+            document.getElementById('mainContent').style.display = 'block';
+            document.getElementById('musicPlayer').style.display = 'flex';
+            document.getElementById('subscriberBadge').style.display = 'inline-flex';
+        }
+
+        // =====================================================
+        // PARTICLES ANIMATION
+        // =====================================================
+        function initParticles() {
+            const container = document.getElementById('particles');
+            const particleCount = 20;
+
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.width = (Math.random() * 8 + 4) + 'px';
+                particle.style.height = particle.style.width;
+                particle.style.animationDelay = Math.random() * 15 + 's';
+                particle.style.animationDuration = (Math.random() * 10 + 10) + 's';
+                container.appendChild(particle);
+            }
+        }
+
+        // =====================================================
+        // THEME MANAGEMENT
+        // =====================================================
+        function initTheme() {
+            const saved = localStorage.getItem('gallery_theme') || 'pink';
+            setTheme(saved);
+
+            document.getElementById('themeToggle').addEventListener('click', function() {
+                document.getElementById('themeSelector').classList.toggle('show');
+            });
+
+            document.querySelectorAll('.theme-dot').forEach(dot => {
+                dot.addEventListener('click', function() {
+                    setTheme(this.dataset.theme);
+                    document.getElementById('themeSelector').classList.remove('show');
+                });
+            });
+
+            // Close theme selector when clicking outside
+            document.addEventListener('click', function(e) {
+                if (!e.target.closest('.theme-selector') && !e.target.closest('#themeToggle')) {
+                    document.getElementById('themeSelector').classList.remove('show');
+                }
+            });
+        }
+
+        function setTheme(theme) {
+            document.body.dataset.theme = theme;
+            localStorage.setItem('gallery_theme', theme);
+
+            document.querySelectorAll('.theme-dot').forEach(dot => {
+                dot.classList.toggle('active', dot.dataset.theme === theme);
+            });
+        }
+
+        // =====================================================
+        // PATIENT INFO
+        // =====================================================
+        async function loadPatientInfo() {
+            const token = getAuthToken();
+            if (!token) {
+                document.getElementById('patientName').textContent = 'Selamat Datang';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/patients-auth/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                if (data.success && data.patient) {
+                    document.getElementById('patientName').textContent = data.patient.nama || 'Ibu Tersayang';
+                }
+            } catch (error) {
+                console.error('Error loading patient info:', error);
+                document.getElementById('patientName').textContent = 'Ibu Tersayang';
+            }
+        }
+
+        // =====================================================
+        // GALLERY IMAGES
+        // =====================================================
+        async function loadGalleryImages() {
+            const token = getAuthToken();
+            const grid = document.getElementById('galleryGrid');
+
+            if (!token) {
+                grid.innerHTML = renderEmptyState('Silakan login untuk melihat gallery Anda');
+                return;
+            }
+
+            try {
+                // Fetch 4D USG images
+                const response = await fetch('/api/patient-documents/my-documents?type=usg_4d', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error('Failed to load');
+
+                const data = await response.json();
+
+                if (!data.success || !data.documents || data.documents.length === 0) {
+                    // Try fetching all USG types
+                    const allUSGResponse = await fetch('/api/patient-documents/my-documents', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    const allUSGData = await allUSGResponse.json();
+
+                    if (allUSGData.success && allUSGData.documents) {
+                        galleryImages = allUSGData.documents.filter(doc =>
+                            ['usg_4d', 'usg_2d', 'usg_photo'].includes(doc.document_type)
+                        );
+                    }
+
+                    if (galleryImages.length === 0) {
+                        grid.innerHTML = renderEmptyState('Belum ada foto USG yang tersedia');
+                        return;
+                    }
+                } else {
+                    galleryImages = data.documents;
+                }
+
+                grid.innerHTML = galleryImages.map((img, index) => renderGalleryCard(img, index)).join('');
+
+            } catch (error) {
+                console.error('Error loading gallery:', error);
+                grid.innerHTML = renderEmptyState('Gagal memuat gallery');
+            }
+        }
+
+        function renderGalleryCard(image, index) {
+            const date = formatDate(image.published_at || image.created_at);
+            const gestationalAge = extractGestationalAge(image.title || image.description);
+
+            return `
+                <div class="gallery-card" onclick="openLightbox(${index})" style="animation-delay: ${index * 0.1}s">
+                    <div class="card-image-wrapper">
+                        <img src="${image.file_url}" alt="${image.title || 'USG 4D'}" class="card-image" loading="lazy">
+                        <div class="card-overlay">
+                            <div class="card-actions">
+                                <button class="card-action-btn" onclick="event.stopPropagation(); downloadImage(${index})" title="Download">
+                                    <i class="fas fa-download"></i>
+                                </button>
+                                <button class="card-action-btn" onclick="event.stopPropagation(); shareImage(${index})" title="Share">
+                                    <i class="fas fa-share-alt"></i>
+                                </button>
+                                <button class="card-action-btn" onclick="openLightbox(${index})" title="Lihat">
+                                    <i class="fas fa-expand"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-info">
+                        <p class="card-caption">${escapeHtml(image.title || 'USG 4D')}</p>
+                        <p class="card-date">
+                            <i class="far fa-calendar"></i> ${date}
+                        </p>
+                        ${gestationalAge ? `<span class="card-gestational"><i class="fas fa-baby"></i> ${gestationalAge}</span>` : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderEmptyState(message) {
+            return `
+                <div class="gallery-empty">
+                    <i class="fas fa-images empty-icon"></i>
+                    <h3 class="empty-title">Belum Ada Kenangan</h3>
+                    <p class="empty-text">${message}</p>
+                </div>
+            `;
+        }
+
+        // =====================================================
+        // LIGHTBOX
+        // =====================================================
+        function openLightbox(index) {
+            currentImageIndex = index;
+            updateLightbox();
+            document.getElementById('lightbox').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightbox').classList.remove('active');
+            document.body.style.overflow = '';
+            document.getElementById('lightboxImage').classList.remove('zoomed');
+        }
+
+        function updateLightbox() {
+            const image = galleryImages[currentImageIndex];
+            if (!image) return;
+
+            document.getElementById('lightboxImage').src = image.file_url;
+            document.getElementById('lightboxTitle').textContent = image.title || 'USG 4D';
+            document.getElementById('lightboxCaption').textContent = image.title || 'Momen Spesial';
+            document.getElementById('lightboxDate').textContent = formatDate(image.published_at || image.created_at);
+
+            const gestationalAge = extractGestationalAge(image.title || image.description);
+            const gestationalEl = document.getElementById('lightboxGestational');
+            if (gestationalAge) {
+                gestationalEl.textContent = gestationalAge;
+                gestationalEl.style.display = 'inline-block';
+            } else {
+                gestationalEl.style.display = 'none';
+            }
+        }
+
+        function navigateLightbox(direction) {
+            currentImageIndex += direction;
+            if (currentImageIndex < 0) currentImageIndex = galleryImages.length - 1;
+            if (currentImageIndex >= galleryImages.length) currentImageIndex = 0;
+            updateLightbox();
+        }
+
+        function toggleZoom() {
+            document.getElementById('lightboxImage').classList.toggle('zoomed');
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (!document.getElementById('lightbox').classList.contains('active')) return;
+
+            if (e.key === 'Escape') closeLightbox();
+            if (e.key === 'ArrowLeft') navigateLightbox(-1);
+            if (e.key === 'ArrowRight') navigateLightbox(1);
+        });
+
+        // =====================================================
+        // MUSIC PLAYER
+        // =====================================================
+        function initMusicPlayer() {
+            const audio = document.getElementById('bgMusic');
+            const toggle = document.getElementById('musicToggle');
+            const icon = document.getElementById('musicIcon');
+
+            toggle.addEventListener('click', function() {
+                if (isPlaying) {
+                    audio.pause();
+                    icon.className = 'fas fa-play';
+                    toggle.classList.remove('playing');
+                } else {
+                    audio.play().catch(e => {
+                        console.log('Audio autoplay blocked');
+                        showToast('Klik lagi untuk memutar musik');
+                    });
+                    icon.className = 'fas fa-pause';
+                    toggle.classList.add('playing');
+                }
+                isPlaying = !isPlaying;
+            });
+        }
+
+        // =====================================================
+        // SHARE & DOWNLOAD
+        // =====================================================
+        function downloadImage(index) {
+            const image = galleryImages[index];
+            if (!image || !image.file_url) return;
+
+            const link = document.createElement('a');
+            link.href = image.file_url;
+            link.download = image.file_name || `usg-4d-${index + 1}.jpg`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast('Mengunduh gambar...');
+        }
+
+        function downloadCurrentImage() {
+            downloadImage(currentImageIndex);
+        }
+
+        function shareImage(index) {
+            currentImageIndex = index;
+            currentShareUrl = galleryImages[index]?.file_url || '';
+            document.getElementById('shareModal').classList.add('active');
+        }
+
+        function shareCurrentImage() {
+            currentShareUrl = galleryImages[currentImageIndex]?.file_url || '';
+            document.getElementById('shareModal').classList.add('active');
+        }
+
+        function closeShareModal() {
+            document.getElementById('shareModal').classList.remove('active');
+        }
+
+        function shareViaWhatsApp() {
+            const image = galleryImages[currentImageIndex];
+            const text = `Lihat momen spesial kehamilan saya! ${image?.title || 'USG 4D'}`;
+            const url = `https://wa.me/?text=${encodeURIComponent(text + '\n' + window.location.origin + currentShareUrl)}`;
+            window.open(url, '_blank');
+            closeShareModal();
+        }
+
+        function copyImageLink() {
+            const fullUrl = window.location.origin + currentShareUrl;
+            navigator.clipboard.writeText(fullUrl).then(() => {
+                showToast('Link berhasil disalin!');
+                closeShareModal();
+            }).catch(() => {
+                showToast('Gagal menyalin link');
+            });
+        }
+
+        // =====================================================
+        // UTILITIES
+        // =====================================================
+        function getAuthToken() {
+            return localStorage.getItem('vps_auth_token') ||
+                   sessionStorage.getItem('vps_auth_token') ||
+                   localStorage.getItem('patient_token');
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '-';
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('id-ID', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+        }
+
+        function extractGestationalAge(text) {
+            if (!text) return null;
+            // Try to find patterns like "12 minggu", "12w", "12 weeks", "Trimester 2"
+            const patterns = [
+                /(\d+)\s*minggu/i,
+                /(\d+)\s*w(?:eeks?)?/i,
+                /trimester\s*(\d)/i,
+                /(\d+)\s*bulan/i
+            ];
+
+            for (const pattern of patterns) {
+                const match = text.match(pattern);
+                if (match) {
+                    if (pattern.source.includes('trimester')) {
+                        return `Trimester ${match[1]}`;
+                    }
+                    if (pattern.source.includes('bulan')) {
+                        return `${match[1]} Bulan`;
+                    }
+                    return `${match[1]} Minggu`;
+                }
+            }
+            return null;
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // Touch gestures for lightbox (swipe)
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        document.getElementById('lightbox').addEventListener('touchstart', e => {
+            touchStartX = e.changedTouches[0].screenX;
+        }, false);
+
+        document.getElementById('lightbox').addEventListener('touchend', e => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        }, false);
+
+        function handleSwipe() {
+            const diff = touchStartX - touchEndX;
+            if (Math.abs(diff) > 50) {
+                if (diff > 0) {
+                    navigateLightbox(1); // Swipe left - next
+                } else {
+                    navigateLightbox(-1); // Swipe right - prev
+                }
+            }
+        }
+    </script>
+</body>
+</html>

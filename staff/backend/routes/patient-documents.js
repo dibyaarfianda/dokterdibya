@@ -1050,4 +1050,222 @@ router.post('/generate-resume-pdf', verifyToken, async (req, res) => {
     }
 });
 
+// =====================================================
+// PATIENT UPLOAD ROUTES (Protected with verifyPatientToken)
+// Allow patients to upload their own historical documents
+// =====================================================
+
+/**
+ * POST /api/patient-documents/patient-upload
+ * Allow patient to upload their own historical USG/Lab documents
+ * Files are stored in R2 with proxy URL
+ */
+router.post('/patient-upload', verifyPatientToken, upload.single('file'), async (req, res) => {
+    try {
+        const patientId = req.patient?.patientId || req.patient?.id;
+        const { documentType, title, description, originalDate } = req.body;
+        const file = req.file;
+
+        if (!patientId) {
+            return res.status(401).json({ success: false, message: 'Patient not authenticated' });
+        }
+
+        if (!file) {
+            return res.status(400).json({ success: false, message: 'No file uploaded' });
+        }
+
+        // Validate document type - only allow patient upload types
+        const allowedTypes = ['patient_usg', 'patient_lab', 'patient_other'];
+        if (!documentType || !allowedTypes.includes(documentType)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid document type. Allowed: patient_usg, patient_lab, patient_other'
+            });
+        }
+
+        // Validate file size (10MB max for patient uploads)
+        if (file.size > 10 * 1024 * 1024) {
+            return res.status(400).json({
+                success: false,
+                message: 'Ukuran file melebihi batas maksimal 10 MB'
+            });
+        }
+
+        let filePath, fileUrl;
+
+        // Upload to R2 (preferred) or local storage
+        if (r2Storage.isR2Configured()) {
+            const result = await r2Storage.uploadFile(
+                file.buffer,
+                file.originalname,
+                file.mimetype,
+                `patient-uploads/${patientId}`
+            );
+            filePath = result.key;
+            // Use proxy URL to avoid regional network issues
+            fileUrl = `/api/patient-documents/file/${result.key}`;
+        } else {
+            // Fallback to local storage
+            const uploadDir = path.join(__dirname, '../../uploads/patient-uploads');
+            await fs.mkdir(uploadDir, { recursive: true });
+
+            const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+            const ext = path.extname(file.originalname);
+            const fileName = `${patientId}-${uniqueSuffix}${ext}`;
+            const localPath = path.join(uploadDir, fileName);
+
+            await fs.writeFile(localPath, file.buffer);
+            filePath = fileName;
+            fileUrl = `/uploads/patient-uploads/${fileName}`;
+        }
+
+        // Generate title if not provided
+        const docTitle = title || generateDefaultTitle(documentType, file.originalname);
+
+        // Insert into database with source='patient'
+        const [insertResult] = await db.query(`
+            INSERT INTO patient_documents (
+                patient_id, document_type, title, description,
+                file_path, file_url, file_name, file_type, file_size,
+                source, original_date, uploaded_by_patient,
+                status, published_at, created_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'patient', ?, 1, 'published', NOW(), NOW())
+        `, [
+            patientId,
+            documentType,
+            docTitle,
+            description || null,
+            filePath,
+            fileUrl,
+            file.originalname,
+            file.mimetype,
+            file.size,
+            originalDate || null
+        ]);
+
+        logger.info('Patient self-upload document', {
+            documentId: insertResult.insertId,
+            patientId,
+            documentType,
+            fileName: file.originalname,
+            originalDate
+        });
+
+        res.json({
+            success: true,
+            document: {
+                id: insertResult.insertId,
+                patientId,
+                documentType,
+                title: docTitle,
+                fileUrl,
+                fileName: file.originalname,
+                fileType: file.mimetype,
+                fileSize: file.size,
+                source: 'patient',
+                originalDate,
+                status: 'published'
+            }
+        });
+
+    } catch (error) {
+        logger.error('Patient self-upload error', error);
+        res.status(500).json({ success: false, message: 'Upload gagal: ' + error.message });
+    }
+});
+
+/**
+ * GET /api/patient-documents/my-uploads
+ * Get patient's own uploaded documents
+ */
+router.get('/my-uploads', verifyPatientToken, async (req, res) => {
+    try {
+        const patientId = req.patient?.patientId || req.patient?.id;
+
+        if (!patientId) {
+            return res.status(401).json({ success: false, message: 'Patient not authenticated' });
+        }
+
+        const [documents] = await db.query(`
+            SELECT
+                id, document_type, title, description,
+                file_url, file_name, file_type, file_size,
+                source, original_date, status,
+                first_viewed_at, view_count,
+                created_at
+            FROM patient_documents
+            WHERE patient_id = ?
+              AND source = 'patient'
+              AND status != 'deleted'
+            ORDER BY COALESCE(original_date, created_at) DESC
+        `, [patientId]);
+
+        res.json({
+            success: true,
+            documents
+        });
+
+    } catch (error) {
+        logger.error('Get patient uploads error', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+/**
+ * DELETE /api/patient-documents/my-uploads/:id
+ * Delete patient's own uploaded document
+ */
+router.delete('/my-uploads/:id', verifyPatientToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const patientId = req.patient?.patientId || req.patient?.id;
+
+        if (!patientId) {
+            return res.status(401).json({ success: false, message: 'Patient not authenticated' });
+        }
+
+        // Verify ownership and source
+        const [docs] = await db.query(`
+            SELECT id, file_path, source FROM patient_documents
+            WHERE id = ? AND patient_id = ? AND source = 'patient'
+        `, [id, patientId]);
+
+        if (docs.length === 0) {
+            return res.status(404).json({ success: false, message: 'Document not found' });
+        }
+
+        // Soft delete
+        await db.query(`
+            UPDATE patient_documents SET status = 'deleted' WHERE id = ?
+        `, [id]);
+
+        // Optionally delete from R2 (uncomment if you want hard delete)
+        // if (r2Storage.isR2Configured() && docs[0].file_path) {
+        //     await r2Storage.deleteFile(docs[0].file_path);
+        // }
+
+        logger.info('Patient deleted own upload', { documentId: id, patientId });
+
+        res.json({ success: true, message: 'Dokumen berhasil dihapus' });
+
+    } catch (error) {
+        logger.error('Delete patient upload error', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+/**
+ * Helper function to generate default title for patient uploads
+ */
+function generateDefaultTitle(documentType, filename) {
+    const typeNames = {
+        'patient_usg': 'Foto USG',
+        'patient_lab': 'Hasil Lab',
+        'patient_other': 'Dokumen'
+    };
+    const baseName = typeNames[documentType] || 'Dokumen';
+    const date = new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+    return `${baseName} - ${date}`;
+}
+
 module.exports = router;
