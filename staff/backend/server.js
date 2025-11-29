@@ -245,6 +245,10 @@ app.use('/api/patient-notifications', patientNotificationsRoutes);
 const registrationCodesRoutes = require('./routes/registration-codes');
 app.use('/api/registration-codes', registrationCodesRoutes);
 
+// Subscriptions routes (Midtrans payment for premium features)
+const subscriptionsRoutes = require('./routes/subscriptions');
+app.use('/api/subscriptions', subscriptionsRoutes);
+
 // API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
     customSiteTitle: 'Dibya Klinik API Documentation',
