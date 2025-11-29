@@ -248,7 +248,7 @@ router.get('/public/obat/low-stock', async (req, res) => {
         const [rows] = await db.query(
             'SELECT * FROM obat WHERE stock <= min_stock AND is_active = 1 ORDER BY stock ASC'
         );
-        
+
         res.json({
             success: true,
             data: rows,
@@ -259,6 +259,36 @@ router.get('/public/obat/low-stock', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to fetch low stock items',
+            error: error.message
+        });
+    }
+});
+
+// ==================== DOWNLOAD PRICE LIST PDF ====================
+const pdfGenerator = require('../utils/pdf-generator');
+
+router.get('/api/obat/download/price-list', verifyToken, async (req, res) => {
+    try {
+        // Fetch all active obat
+        const [rows] = await db.query(
+            'SELECT * FROM obat WHERE is_active = 1 ORDER BY category, name'
+        );
+
+        // Generate PDF
+        const pdfBuffer = await pdfGenerator.generateObatPriceList(rows);
+
+        // Send PDF
+        const filename = `Daftar_Harga_Obat_${new Date().toISOString().split('T')[0]}.pdf`;
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.setHeader('Content-Length', pdfBuffer.length);
+        res.send(pdfBuffer);
+
+    } catch (error) {
+        console.error('Error generating obat price list PDF:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to generate PDF',
             error: error.message
         });
     }

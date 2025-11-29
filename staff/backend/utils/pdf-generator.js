@@ -323,6 +323,259 @@ class PDFGenerator {
     }
 
     /**
+     * Generate Tindakan Price List PDF (A4 Format)
+     */
+    async generateTindakanPriceList(tindakanData) {
+        return new Promise((resolve, reject) => {
+            try {
+                const doc = new PDFDocument({
+                    size: 'A4',
+                    margin: 40,
+                    info: {
+                        Title: 'Daftar Harga Tindakan',
+                        Author: 'Dr. Dibya Private Clinic',
+                        Subject: 'Price List - Tindakan',
+                        Creator: 'Sunday Clinic System'
+                    }
+                });
+
+                const chunks = [];
+                doc.on('data', chunk => chunks.push(chunk));
+                doc.on('end', () => resolve(Buffer.concat(chunks)));
+
+                const pageWidth = doc.page.width;
+                const leftMargin = 40;
+                const rightMargin = 40;
+                const contentWidth = pageWidth - leftMargin - rightMargin;
+                let y = 40;
+
+                // Header
+                doc.fontSize(18)
+                   .font('Helvetica-Bold')
+                   .text('DAFTAR HARGA TINDAKAN', leftMargin, y, { width: contentWidth, align: 'center' });
+
+                y += 25;
+                doc.fontSize(12)
+                   .font('Helvetica')
+                   .text('Klinik Privat Dr. Dibya', leftMargin, y, { width: contentWidth, align: 'center' });
+
+                y += 16;
+                doc.fontSize(9)
+                   .text('RSIA Melinda - Jl. Balowerti 2 No. 59, Kediri', leftMargin, y, { width: contentWidth, align: 'center' });
+
+                y += 12;
+                doc.text(`Berlaku: ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`, leftMargin, y, { width: contentWidth, align: 'center' });
+
+                y += 25;
+                doc.moveTo(leftMargin, y).lineTo(pageWidth - rightMargin, y).lineWidth(1).stroke();
+
+                // Group by category
+                const categories = {};
+                tindakanData.forEach(item => {
+                    const cat = item.category || 'LAINNYA';
+                    if (!categories[cat]) categories[cat] = [];
+                    categories[cat].push(item);
+                });
+
+                const categoryOrder = ['ADMINISTRATIF', 'LAYANAN', 'TINDAKAN MEDIS', 'KONTRASEPSI', 'VAKSINASI', 'LABORATORIUM', 'LAINNYA'];
+
+                categoryOrder.forEach(category => {
+                    if (!categories[category] || categories[category].length === 0) return;
+
+                    // Check if need new page
+                    if (y > doc.page.height - 100) {
+                        doc.addPage();
+                        y = 40;
+                    }
+
+                    y += 20;
+                    doc.fontSize(11)
+                       .font('Helvetica-Bold')
+                       .fillColor('#1a56db')
+                       .text(category, leftMargin, y);
+
+                    doc.fillColor('#000000');
+
+                    y += 18;
+
+                    // Table header
+                    doc.fontSize(9)
+                       .font('Helvetica-Bold');
+                    doc.text('No', leftMargin, y, { width: 25 });
+                    doc.text('Kode', leftMargin + 25, y, { width: 60 });
+                    doc.text('Nama Tindakan', leftMargin + 85, y, { width: 280 });
+                    doc.text('Harga', leftMargin + 365, y, { width: 100, align: 'right' });
+
+                    y += 12;
+                    doc.moveTo(leftMargin, y).lineTo(pageWidth - rightMargin, y).lineWidth(0.5).stroke();
+
+                    y += 8;
+                    doc.font('Helvetica').fontSize(9);
+
+                    categories[category].forEach((item, idx) => {
+                        // Check if need new page
+                        if (y > doc.page.height - 50) {
+                            doc.addPage();
+                            y = 40;
+                        }
+
+                        doc.text((idx + 1).toString(), leftMargin, y, { width: 25 });
+                        doc.text(item.code || '-', leftMargin + 25, y, { width: 60 });
+                        doc.text(item.name || '-', leftMargin + 85, y, { width: 280 });
+                        doc.text(this.formatRupiah(item.price), leftMargin + 365, y, { width: 100, align: 'right' });
+                        y += 14;
+                    });
+                });
+
+                // Footer
+                y = doc.page.height - 60;
+                doc.fontSize(8)
+                   .font('Helvetica')
+                   .fillColor('#666666')
+                   .text('* Harga dapat berubah sewaktu-waktu tanpa pemberitahuan terlebih dahulu', leftMargin, y, { width: contentWidth, align: 'center' });
+                y += 12;
+                doc.text('* Untuk informasi lebih lanjut hubungi: 0354-XXXXXXX', leftMargin, y, { width: contentWidth, align: 'center' });
+
+                doc.end();
+
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
+    /**
+     * Generate Obat Price List PDF (A4 Format)
+     */
+    async generateObatPriceList(obatData) {
+        return new Promise((resolve, reject) => {
+            try {
+                const doc = new PDFDocument({
+                    size: 'A4',
+                    margin: 40,
+                    info: {
+                        Title: 'Daftar Harga Obat',
+                        Author: 'Dr. Dibya Private Clinic',
+                        Subject: 'Price List - Obat',
+                        Creator: 'Sunday Clinic System'
+                    }
+                });
+
+                const chunks = [];
+                doc.on('data', chunk => chunks.push(chunk));
+                doc.on('end', () => resolve(Buffer.concat(chunks)));
+
+                const pageWidth = doc.page.width;
+                const leftMargin = 40;
+                const rightMargin = 40;
+                const contentWidth = pageWidth - leftMargin - rightMargin;
+                let y = 40;
+
+                // Header
+                doc.fontSize(18)
+                   .font('Helvetica-Bold')
+                   .text('DAFTAR HARGA OBAT & ALKES', leftMargin, y, { width: contentWidth, align: 'center' });
+
+                y += 25;
+                doc.fontSize(12)
+                   .font('Helvetica')
+                   .text('Klinik Privat Dr. Dibya', leftMargin, y, { width: contentWidth, align: 'center' });
+
+                y += 16;
+                doc.fontSize(9)
+                   .text('RSIA Melinda - Jl. Balowerti 2 No. 59, Kediri', leftMargin, y, { width: contentWidth, align: 'center' });
+
+                y += 12;
+                doc.text(`Berlaku: ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`, leftMargin, y, { width: contentWidth, align: 'center' });
+
+                y += 25;
+                doc.moveTo(leftMargin, y).lineTo(pageWidth - rightMargin, y).lineWidth(1).stroke();
+
+                // Group by category
+                const categories = {};
+                obatData.forEach(item => {
+                    const cat = item.category || 'LAINNYA';
+                    if (!categories[cat]) categories[cat] = [];
+                    categories[cat].push(item);
+                });
+
+                const categoryOrder = ['OBAT-OBATAN', 'AMPUL & VIAL', 'ALKES', 'LAINNYA'];
+
+                // Also include any categories not in the order
+                Object.keys(categories).forEach(cat => {
+                    if (!categoryOrder.includes(cat)) {
+                        categoryOrder.push(cat);
+                    }
+                });
+
+                categoryOrder.forEach(category => {
+                    if (!categories[category] || categories[category].length === 0) return;
+
+                    // Check if need new page
+                    if (y > doc.page.height - 100) {
+                        doc.addPage();
+                        y = 40;
+                    }
+
+                    y += 20;
+                    doc.fontSize(11)
+                       .font('Helvetica-Bold')
+                       .fillColor('#059669')
+                       .text(category, leftMargin, y);
+
+                    doc.fillColor('#000000');
+
+                    y += 18;
+
+                    // Table header
+                    doc.fontSize(9)
+                       .font('Helvetica-Bold');
+                    doc.text('No', leftMargin, y, { width: 25 });
+                    doc.text('Kode', leftMargin + 25, y, { width: 60 });
+                    doc.text('Nama Obat', leftMargin + 85, y, { width: 220 });
+                    doc.text('Satuan', leftMargin + 305, y, { width: 60 });
+                    doc.text('Harga', leftMargin + 365, y, { width: 100, align: 'right' });
+
+                    y += 12;
+                    doc.moveTo(leftMargin, y).lineTo(pageWidth - rightMargin, y).lineWidth(0.5).stroke();
+
+                    y += 8;
+                    doc.font('Helvetica').fontSize(9);
+
+                    categories[category].forEach((item, idx) => {
+                        // Check if need new page
+                        if (y > doc.page.height - 50) {
+                            doc.addPage();
+                            y = 40;
+                        }
+
+                        doc.text((idx + 1).toString(), leftMargin, y, { width: 25 });
+                        doc.text(item.code || '-', leftMargin + 25, y, { width: 60 });
+                        doc.text(item.name || '-', leftMargin + 85, y, { width: 220 });
+                        doc.text(item.unit || '-', leftMargin + 305, y, { width: 60 });
+                        doc.text(this.formatRupiah(item.price), leftMargin + 365, y, { width: 100, align: 'right' });
+                        y += 14;
+                    });
+                });
+
+                // Footer
+                y = doc.page.height - 60;
+                doc.fontSize(8)
+                   .font('Helvetica')
+                   .fillColor('#666666')
+                   .text('* Harga dapat berubah sewaktu-waktu tanpa pemberitahuan terlebih dahulu', leftMargin, y, { width: contentWidth, align: 'center' });
+                y += 12;
+                doc.text('* Untuk informasi lebih lanjut hubungi: 0354-XXXXXXX', leftMargin, y, { width: contentWidth, align: 'center' });
+
+                doc.end();
+
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
+    /**
      * Format number to Rupiah with 'Rp' prefix
      */
     formatRupiah(amount) {
