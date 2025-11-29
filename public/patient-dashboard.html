@@ -687,6 +687,149 @@
             color: #28a7e9;
         }
 
+        /* Patient Upload Section - Different styling from clinic documents */
+        .patient-uploads-section {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.1) 0%, rgba(139, 92, 246, 0.05) 100%);
+            border-color: rgba(168, 85, 247, 0.3);
+        }
+
+        .patient-uploads-section h3 {
+            color: #a855f7;
+        }
+
+        .patient-upload-card {
+            background: rgba(168, 85, 247, 0.1);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-radius: 12px;
+            padding: 15px;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .patient-upload-card:hover {
+            border-color: #a855f7;
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(168, 85, 247, 0.2);
+        }
+
+        .patient-upload-card .doc-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            margin-bottom: 12px;
+        }
+
+        .patient-upload-card .doc-icon.patient-usg { background: rgba(236, 72, 153, 0.2); color: #ec4899; }
+        .patient-upload-card .doc-icon.patient-lab { background: rgba(34, 197, 94, 0.2); color: #22c55e; }
+        .patient-upload-card .doc-icon.patient-other { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
+
+        .patient-upload-card .doc-title {
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 5px;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        .patient-upload-card .doc-date {
+            font-size: 12px;
+            color: #888888;
+            margin-bottom: 8px;
+        }
+
+        .patient-upload-card .original-date {
+            font-size: 11px;
+            color: #a855f7;
+            margin-bottom: 12px;
+        }
+
+        .patient-upload-card .doc-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .patient-upload-card .doc-btn {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+        }
+
+        .patient-upload-card .doc-btn.view-btn {
+            background: rgba(168, 85, 247, 0.2);
+            color: #a855f7;
+            border: 1px solid rgba(168, 85, 247, 0.3);
+        }
+
+        .patient-upload-card .doc-btn.view-btn:hover {
+            background: #a855f7;
+            color: #ffffff;
+        }
+
+        .patient-upload-card .doc-btn.delete-btn {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .patient-upload-card .doc-btn.delete-btn:hover {
+            background: #ef4444;
+            color: #ffffff;
+        }
+
+        .patient-upload-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(168, 85, 247, 0.3);
+            color: #a855f7;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 9px;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .upload-btn-container {
+            margin-bottom: 15px;
+        }
+
+        .upload-trigger-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 20px;
+            background: linear-gradient(135deg, #a855f7 0%, #8b5cf6 100%);
+            color: #ffffff;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .upload-trigger-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(168, 85, 247, 0.4);
+        }
+
+        .upload-trigger-btn i {
+            font-size: 16px;
+        }
+
         /* Profile Info */
         .profile-info {
             list-style: none;
@@ -1360,6 +1503,24 @@
                     </div>
                 </div>
 
+                <!-- Riwayat Medis Sebelumnya (Patient Uploads) -->
+                <div class="dashboard-card patient-uploads-section" id="patient-uploads-section" style="margin-bottom: 20px;">
+                    <h3><i class="fa fa-history"></i> Riwayat Medis Sebelumnya</h3>
+                    <p class="text-muted" style="font-size: 12px; margin-bottom: 15px;">Upload hasil USG, lab, atau dokumen medis Anda sebelum menggunakan aplikasi ini</p>
+
+                    <div class="upload-btn-container">
+                        <button type="button" class="upload-trigger-btn" onclick="openPatientUploadModal()">
+                            <i class="fa fa-cloud-upload"></i> Upload Dokumen
+                        </button>
+                    </div>
+
+                    <div id="patient-uploads-container">
+                        <div class="documents-loading" style="text-align: center; padding: 20px;">
+                            <i class="fa fa-spinner fa-spin"></i> Memuat riwayat...
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Rekam Medis -->
                 <div class="dashboard-card" style="min-height: 400px; display: flex; flex-direction: column;">
                     <h3 style="font-size: 19.2px;"><i class="fa fa-file-text"></i> IDENTITAS PRIBADI</h3>
@@ -1405,6 +1566,54 @@
                 </div>
             </div>
         </div>
+
+        <!-- Gallery Kenangan - Premium Feature (HIDDEN) -->
+        <div class="row" style="display: none;">
+            <div class="col-md-12">
+                <div class="dashboard-card gallery-kenangan-card" style="cursor: pointer; position: relative; overflow: hidden; background: linear-gradient(135deg, #fdf2f4 0%, #f9e8ea 50%, #fce4ec 100%); border: 1px solid rgba(232, 180, 184, 0.4);" onclick="window.location.href='/gallery-kenangan.html'">
+                    <!-- Floating hearts decoration -->
+                    <div style="position: absolute; top: 10px; right: 20px; font-size: 20px; opacity: 0.3; animation: floatHeart 3s ease-in-out infinite;">💕</div>
+                    <div style="position: absolute; bottom: 15px; left: 30px; font-size: 16px; opacity: 0.2; animation: floatHeart 4s ease-in-out infinite 1s;">💗</div>
+
+                    <div style="display: flex; align-items: center; gap: 20px; flex-wrap: wrap;">
+                        <!-- Icon -->
+                        <div style="width: 70px; height: 70px; border-radius: 50%; background: linear-gradient(135deg, #e8b4b8, #d4a5a5); display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 25px rgba(232, 180, 184, 0.4);">
+                            <i class="fa fa-image" style="font-size: 28px; color: white;"></i>
+                        </div>
+
+                        <!-- Content -->
+                        <div style="flex: 1; min-width: 200px;">
+                            <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 5px;">
+                                <h3 style="margin: 0; font-size: 20px; color: #5d4e5c; font-family: 'Palatino Linotype', serif;">Gallery Kenangan Anda</h3>
+                                <span style="background: linear-gradient(135deg, #d4af37, #f5e6c8); color: #5d4e3c; padding: 3px 10px; border-radius: 12px; font-size: 10px; font-weight: 600;">
+                                    <i class="fa fa-crown" style="margin-right: 4px;"></i>PREMIUM
+                                </span>
+                            </div>
+                            <p style="margin: 0; font-size: 13px; color: #8b7d8a; line-height: 1.5;">
+                                Lihat momen indah USG 4D Anda dalam gallery eksklusif dengan tema romantis
+                            </p>
+                        </div>
+
+                        <!-- Arrow -->
+                        <div style="color: #d4a5a5; font-size: 24px;">
+                            <i class="fa fa-chevron-right"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <style>
+            @keyframes floatHeart {
+                0%, 100% { transform: translateY(0) rotate(0deg); }
+                50% { transform: translateY(-10px) rotate(5deg); }
+            }
+            .gallery-kenangan-card:hover {
+                transform: translateY(-5px) !important;
+                box-shadow: 0 15px 40px rgba(232, 180, 184, 0.4) !important;
+                border-color: #e8b4b8 !important;
+            }
+        </style>
 
         <div class="row">
             <!-- Quick Actions -->
@@ -3768,7 +3977,336 @@
         // Load documents on page load
         document.addEventListener('DOMContentLoaded', function() {
             loadMyDocuments();
+            loadPatientUploads();
         });
+
+        // =====================================================
+        // PATIENT UPLOADS SECTION
+        // =====================================================
+
+        let selectedUploadFile = null;
+
+        /**
+         * Open patient upload modal
+         */
+        function openPatientUploadModal() {
+            // Reset form
+            document.getElementById('patient-upload-form').reset();
+            clearUploadFile();
+            document.getElementById('upload-error').style.display = 'none';
+            document.getElementById('upload-progress').style.display = 'none';
+            $('#patientUploadModal').modal('show');
+        }
+
+        /**
+         * Handle file selection
+         */
+        document.addEventListener('DOMContentLoaded', function() {
+            const fileInput = document.getElementById('upload-doc-file');
+            const dropzone = document.getElementById('upload-dropzone');
+
+            if (fileInput) {
+                fileInput.addEventListener('change', function(e) {
+                    if (e.target.files && e.target.files[0]) {
+                        handleFileSelect(e.target.files[0]);
+                    }
+                });
+            }
+
+            if (dropzone) {
+                dropzone.addEventListener('dragover', function(e) {
+                    e.preventDefault();
+                    dropzone.style.borderColor = '#a855f7';
+                    dropzone.style.background = 'rgba(168,85,247,0.1)';
+                });
+
+                dropzone.addEventListener('dragleave', function(e) {
+                    e.preventDefault();
+                    dropzone.style.borderColor = 'rgba(168,85,247,0.4)';
+                    dropzone.style.background = 'transparent';
+                });
+
+                dropzone.addEventListener('drop', function(e) {
+                    e.preventDefault();
+                    dropzone.style.borderColor = 'rgba(168,85,247,0.4)';
+                    dropzone.style.background = 'transparent';
+                    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                        handleFileSelect(e.dataTransfer.files[0]);
+                    }
+                });
+            }
+        });
+
+        function handleFileSelect(file) {
+            const maxSize = 10 * 1024 * 1024; // 10MB
+            const allowedTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+
+            if (!allowedTypes.includes(file.type)) {
+                showUploadError('Format file tidak didukung. Gunakan JPEG, PNG, atau PDF.');
+                return;
+            }
+
+            if (file.size > maxSize) {
+                showUploadError('Ukuran file melebihi batas maksimal 10 MB');
+                return;
+            }
+
+            selectedUploadFile = file;
+            document.getElementById('upload-file-name').textContent = file.name;
+            document.getElementById('upload-file-preview').style.display = 'block';
+            document.getElementById('upload-dropzone').style.display = 'none';
+            document.getElementById('upload-error').style.display = 'none';
+        }
+
+        function clearUploadFile() {
+            selectedUploadFile = null;
+            document.getElementById('upload-doc-file').value = '';
+            document.getElementById('upload-file-preview').style.display = 'none';
+            document.getElementById('upload-dropzone').style.display = 'block';
+        }
+
+        function showUploadError(message) {
+            const errorEl = document.getElementById('upload-error');
+            document.getElementById('upload-error-text').textContent = message;
+            errorEl.style.display = 'block';
+        }
+
+        /**
+         * Submit patient upload
+         */
+        async function submitPatientUpload() {
+            const docType = document.getElementById('upload-doc-type').value;
+            const title = document.getElementById('upload-doc-title').value.trim();
+            const originalDate = document.getElementById('upload-doc-date').value;
+
+            // Validation
+            if (!docType) {
+                showUploadError('Pilih jenis dokumen');
+                return;
+            }
+            if (!title) {
+                showUploadError('Masukkan judul dokumen');
+                return;
+            }
+            if (!selectedUploadFile) {
+                showUploadError('Pilih file untuk diupload');
+                return;
+            }
+
+            const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+            if (!token) {
+                showUploadError('Sesi telah berakhir. Silakan login kembali.');
+                return;
+            }
+
+            // Show progress
+            document.getElementById('upload-error').style.display = 'none';
+            document.getElementById('upload-progress').style.display = 'block';
+            document.getElementById('upload-submit-btn').disabled = true;
+
+            try {
+                const formData = new FormData();
+                formData.append('file', selectedUploadFile);
+                formData.append('documentType', docType);
+                formData.append('title', title);
+                if (originalDate) {
+                    formData.append('originalDate', originalDate);
+                }
+
+                // Simulate progress
+                let progress = 0;
+                const progressInterval = setInterval(() => {
+                    progress += 10;
+                    if (progress <= 90) {
+                        document.getElementById('upload-progress-bar').style.width = progress + '%';
+                    }
+                }, 200);
+
+                const response = await fetch('/api/patient-documents/patient-upload', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                clearInterval(progressInterval);
+                document.getElementById('upload-progress-bar').style.width = '100%';
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || 'Upload gagal');
+                }
+
+                // Success
+                $('#patientUploadModal').modal('hide');
+                showToast('Dokumen berhasil diupload!', 'success');
+                loadPatientUploads();
+
+            } catch (error) {
+                console.error('Upload error:', error);
+                showUploadError(error.message || 'Terjadi kesalahan saat upload');
+            } finally {
+                document.getElementById('upload-progress').style.display = 'none';
+                document.getElementById('upload-progress-bar').style.width = '0%';
+                document.getElementById('upload-submit-btn').disabled = false;
+            }
+        }
+
+        /**
+         * Load patient uploads
+         */
+        async function loadPatientUploads() {
+            const container = document.getElementById('patient-uploads-container');
+            if (!container) return;
+
+            const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+            if (!token) {
+                container.innerHTML = '<p class="text-muted" style="text-align: center; padding: 20px;">Silakan login untuk melihat riwayat</p>';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/patient-documents/my-uploads', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    if (response.status === 401) {
+                        container.innerHTML = '<p class="text-muted" style="text-align: center; padding: 20px;">Sesi telah berakhir</p>';
+                        return;
+                    }
+                    throw new Error('Failed to fetch uploads');
+                }
+
+                const data = await response.json();
+
+                if (!data.success || !data.documents || data.documents.length === 0) {
+                    container.innerHTML = `
+                        <div class="documents-empty">
+                            <i class="fa fa-cloud-upload" style="color: #a855f7;"></i>
+                            <p>Belum ada dokumen yang diupload</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = renderPatientUploadsGrid(data.documents);
+
+            } catch (error) {
+                console.error('Error loading patient uploads:', error);
+                container.innerHTML = '<p class="text-muted" style="text-align: center; padding: 20px;">Gagal memuat riwayat</p>';
+            }
+        }
+
+        /**
+         * Render patient uploads grid
+         */
+        function renderPatientUploadsGrid(documents) {
+            const cards = documents.map(doc => renderPatientUploadCard(doc)).join('');
+            return `<div class="documents-grid">${cards}</div>`;
+        }
+
+        /**
+         * Render a patient upload card
+         */
+        function renderPatientUploadCard(doc) {
+            const iconClass = getPatientUploadIconClass(doc.document_type);
+            const iconName = getPatientUploadIcon(doc.document_type);
+            const formattedDate = formatDocumentDate(doc.created_at);
+            const originalDateText = doc.original_date ? `<div class="original-date"><i class="fa fa-calendar-check-o"></i> Dokumen asli: ${formatDocumentDate(doc.original_date)}</div>` : '';
+
+            return `
+                <div class="patient-upload-card" data-upload-id="${doc.id}">
+                    <span class="patient-upload-badge">Riwayat</span>
+                    <div class="doc-icon ${iconClass}">
+                        <i class="fa ${iconName}"></i>
+                    </div>
+                    <div class="doc-title">${escapeHtml(doc.title)}</div>
+                    <div class="doc-date">
+                        <i class="fa fa-clock-o"></i> Diupload: ${formattedDate}
+                    </div>
+                    ${originalDateText}
+                    <div class="doc-actions">
+                        <button class="doc-btn view-btn" onclick="viewPatientUpload('${escapeHtml(doc.file_url || '')}', '${escapeHtml(doc.title)}')">
+                            <i class="fa fa-eye"></i> Lihat
+                        </button>
+                        <button class="doc-btn delete-btn" onclick="deletePatientUpload(${doc.id})">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getPatientUploadIconClass(type) {
+            const typeMap = {
+                'patient_usg': 'patient-usg',
+                'patient_lab': 'patient-lab',
+                'patient_other': 'patient-other'
+            };
+            return typeMap[type] || 'patient-other';
+        }
+
+        function getPatientUploadIcon(type) {
+            const iconMap = {
+                'patient_usg': 'fa-heartbeat',
+                'patient_lab': 'fa-flask',
+                'patient_other': 'fa-file-o'
+            };
+            return iconMap[type] || 'fa-file-o';
+        }
+
+        /**
+         * View patient upload
+         */
+        function viewPatientUpload(fileUrl, title) {
+            if (!fileUrl) {
+                showToast('File tidak tersedia', 'error');
+                return;
+            }
+            window.open(fileUrl, '_blank');
+        }
+
+        /**
+         * Delete patient upload
+         */
+        async function deletePatientUpload(docId) {
+            if (!confirm('Apakah Anda yakin ingin menghapus dokumen ini?')) {
+                return;
+            }
+
+            const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+            if (!token) {
+                showToast('Sesi telah berakhir', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/patient-documents/my-uploads/${docId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || 'Gagal menghapus');
+                }
+
+                showToast('Dokumen berhasil dihapus', 'success');
+                loadPatientUploads();
+
+            } catch (error) {
+                console.error('Delete error:', error);
+                showToast(error.message || 'Gagal menghapus dokumen', 'error');
+            }
+        }
     </script>
 
     <!-- Bubble Animation Script -->
@@ -3861,6 +4399,89 @@
                     </button>
                     <button type="button" class="btn btn-default" data-dismiss="modal"
                             style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient Upload Modal -->
+    <div class="modal fade" id="patientUploadModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); color: #ffffff; border: 1px solid rgba(168,85,247,0.3);">
+                <div class="modal-header" style="border-bottom: 1px solid rgba(168,85,247,0.3);">
+                    <button type="button" class="close" data-dismiss="modal" style="color: #ffffff; opacity: 0.8;">&times;</button>
+                    <h4 class="modal-title" style="color: #a855f7;"><i class="fa fa-cloud-upload"></i> Upload Riwayat Medis</h4>
+                </div>
+                <div class="modal-body">
+                    <form id="patient-upload-form">
+                        <div class="form-group">
+                            <label style="color: #a855f7;">Jenis Dokumen *</label>
+                            <select id="upload-doc-type" class="form-control" required
+                                    style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
+                                <option value="">Pilih jenis dokumen...</option>
+                                <option value="patient_usg">Hasil USG</option>
+                                <option value="patient_lab">Hasil Laboratorium</option>
+                                <option value="patient_other">Dokumen Lainnya</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label style="color: #a855f7;">Judul Dokumen *</label>
+                            <input type="text" id="upload-doc-title" class="form-control" required
+                                   placeholder="Contoh: USG Trimester 1"
+                                   style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
+                        </div>
+
+                        <div class="form-group">
+                            <label style="color: #a855f7;">Tanggal Dokumen Asli</label>
+                            <input type="date" id="upload-doc-date" class="form-control"
+                                   style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
+                            <small style="color: #888;">Tanggal ketika dokumen asli dibuat (opsional)</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label style="color: #a855f7;">File Dokumen *</label>
+                            <div id="upload-dropzone" style="
+                                border: 2px dashed rgba(168,85,247,0.4);
+                                border-radius: 10px;
+                                padding: 30px;
+                                text-align: center;
+                                cursor: pointer;
+                                transition: all 0.3s ease;
+                            " onclick="document.getElementById('upload-doc-file').click()">
+                                <i class="fa fa-cloud-upload fa-3x" style="color: #a855f7; margin-bottom: 10px;"></i>
+                                <p style="margin: 0; color: #888;">Klik atau seret file ke sini</p>
+                                <small style="color: #666;">Maks. 10MB - Format: JPEG, PNG, PDF</small>
+                            </div>
+                            <input type="file" id="upload-doc-file" accept="image/jpeg,image/png,application/pdf" style="display: none;">
+                            <div id="upload-file-preview" style="display: none; margin-top: 10px; padding: 10px; background: rgba(168,85,247,0.1); border-radius: 8px;">
+                                <i class="fa fa-file" style="color: #a855f7;"></i>
+                                <span id="upload-file-name" style="margin-left: 8px;"></span>
+                                <button type="button" onclick="clearUploadFile()" style="float: right; background: none; border: none; color: #ef4444; cursor: pointer;">
+                                    <i class="fa fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                        <div id="upload-error" style="display: none; margin-bottom: 15px; padding: 10px 15px; background: rgba(239,68,68,0.2); border: 1px solid #ef4444; border-radius: 6px; color: #ff6b6b; font-size: 13px;">
+                            <i class="fa fa-exclamation-circle"></i> <span id="upload-error-text"></span>
+                        </div>
+
+                        <div id="upload-progress" style="display: none; margin-bottom: 15px;">
+                            <div style="background: rgba(255,255,255,0.1); border-radius: 4px; overflow: hidden;">
+                                <div id="upload-progress-bar" style="height: 6px; background: linear-gradient(90deg, #a855f7, #8b5cf6); width: 0%; transition: width 0.3s;"></div>
+                            </div>
+                            <small style="color: #a855f7; margin-top: 5px; display: block;">Mengupload...</small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid rgba(168,85,247,0.3);">
+                    <button type="button" class="btn btn-default" data-dismiss="modal"
+                            style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">Batal</button>
+                    <button type="button" id="upload-submit-btn" onclick="submitPatientUpload()"
+                            style="background: linear-gradient(135deg, #a855f7 0%, #8b5cf6 100%); border: none; color: #ffffff; padding: 8px 20px; border-radius: 5px;">
+                        <i class="fa fa-upload"></i> Upload
+                    </button>
                 </div>
             </div>
         </div>
