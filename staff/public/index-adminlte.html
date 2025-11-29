@@ -3352,10 +3352,13 @@
                                             </select>
                                         </div>
                                         <div class="col-md-2">
-                                            <div class="text-right">
-                                                <span class="badge badge-info badge-lg p-2">
+                                            <div class="d-flex justify-content-end align-items-center">
+                                                <span class="badge badge-info badge-lg p-2 mr-2">
                                                     <i class="fas fa-list mr-1"></i>Total: <span id="tindakan-total-count">0</span>
                                                 </span>
+                                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="downloadTindakanPriceList()" title="Download PDF Daftar Harga">
+                                                    <i class="fas fa-file-pdf"></i>
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -3544,10 +3547,15 @@
                                                 <option value="Alkes">Alkes</option>
                                             </select>
                                         </div>
-                                        <div class="col-md-2 text-right">
-                                            <span class="badge badge-success badge-lg p-2">
-                                                Total: <span id="kelola-obat-total-count">0</span>
-                                            </span>
+                                        <div class="col-md-2">
+                                            <div class="d-flex justify-content-end align-items-center">
+                                                <span class="badge badge-success badge-lg p-2 mr-2">
+                                                    Total: <span id="kelola-obat-total-count">0</span>
+                                                </span>
+                                                <button type="button" class="btn btn-outline-danger btn-sm" onclick="downloadObatPriceList()" title="Download PDF Daftar Harga">
+                                                    <i class="fas fa-file-pdf"></i>
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -3625,7 +3633,7 @@
     </div>
 
     <footer class="main-footer">
-        <strong>&copy; 2025 Dr. Dibya Private Clinic.</strong> All rights reserved.
+        <strong>&copy; 2025 dokterDIBYA.</strong> All rights reserved.
         <div class="float-right d-none d-sm-inline-block"><b>Version</b> 1.0</div>
     </footer>
 </div>
@@ -4373,7 +4381,7 @@ function mobileNavClick(btn, action) {
 
         // Update active nav
         document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-        const kelolaPasienNav = document.querySelector('#nav-kelola-pasien .nav-link');
+        const kelolaPasienNav = document.querySelector('#management-nav-kelola-pasien .nav-link');
         if (kelolaPasienNav) {
             kelolaPasienNav.classList.add('active');
         }
@@ -4945,7 +4953,7 @@ Apakah Anda yakin ingin melanjutkan?`;
         
         // Update active nav
         document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-        document.querySelector('#nav-kelola-obat .nav-link').classList.add('active');
+        document.querySelector('#management-nav-kelola-obat .nav-link').classList.add('active');
         
         // Hide floating panel
         const floatingPanel = document.getElementById('floating-kelola-pasien');
@@ -4964,12 +4972,106 @@ Apakah Anda yakin ingin melanjutkan?`;
         
         // Update active nav
         document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-        document.querySelector('#nav-pengaturan .nav-link').classList.add('active');
+        document.querySelector('#management-nav-kelola-tindakan .nav-link')?.classList.add('active');
         
         // Hide floating panel
         const floatingPanel = document.getElementById('floating-kelola-pasien');
         if (floatingPanel) {
             floatingPanel.classList.add('d-none');
+        }
+    };
+
+    // Download Tindakan Price List PDF
+    window.downloadTindakanPriceList = async function() {
+        try {
+            const token = await getIdToken();
+            if (!token) {
+                alert('Anda tidak terautentikasi. Silakan login kembali.');
+                return;
+            }
+
+            const apiBase = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+                ? 'http://localhost:3001'
+                : window.location.origin.replace(/\/$/, '');
+
+            // Show loading
+            const btn = event.target.closest('button');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+
+            const response = await fetch(`${apiBase}/api/tindakan/download/price-list`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error('Failed to generate PDF');
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Daftar_Harga_Tindakan_${new Date().toISOString().split('T')[0]}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+        } catch (error) {
+            console.error('Error downloading PDF:', error);
+            alert('Gagal mengunduh PDF: ' + error.message);
+            if (btn) {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
+        }
+    };
+
+    // Download Obat Price List PDF
+    window.downloadObatPriceList = async function() {
+        try {
+            const token = await getIdToken();
+            if (!token) {
+                alert('Anda tidak terautentikasi. Silakan login kembali.');
+                return;
+            }
+
+            const apiBase = ['localhost', '127.0.0.1'].includes(window.location.hostname)
+                ? 'http://localhost:3001'
+                : window.location.origin.replace(/\/$/, '');
+
+            // Show loading
+            const btn = event.target.closest('button');
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+
+            const response = await fetch(`${apiBase}/api/obat/download/price-list`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error('Failed to generate PDF');
+
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Daftar_Harga_Obat_${new Date().toISOString().split('T')[0]}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            a.remove();
+
+            btn.innerHTML = originalHtml;
+            btn.disabled = false;
+        } catch (error) {
+            console.error('Error downloading PDF:', error);
+            alert('Gagal mengunduh PDF: ' + error.message);
+            if (btn) {
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            }
         }
     };
  </script>

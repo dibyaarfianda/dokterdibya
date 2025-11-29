@@ -317,5 +317,43 @@ router.get('/api/tindakan/meta/categories', async (req, res) => {
     }
 });
 
+// ==================== DOWNLOAD PRICE LIST PDF ====================
+const pdfGenerator = require('../utils/pdf-generator');
+
+router.get('/api/tindakan/download/price-list', verifyToken, async (req, res) => {
+    try {
+        // Fetch all active tindakan
+        const [rows] = await db.query(
+            `SELECT * FROM tindakan WHERE is_active = 1
+             ORDER BY CASE category
+                WHEN 'ADMINISTRATIF' THEN 1
+                WHEN 'LAYANAN' THEN 2
+                WHEN 'TINDAKAN MEDIS' THEN 3
+                WHEN 'KONTRASEPSI' THEN 4
+                WHEN 'VAKSINASI' THEN 5
+                WHEN 'LABORATORIUM' THEN 6
+             END, name`
+        );
+
+        // Generate PDF
+        const pdfBuffer = await pdfGenerator.generateTindakanPriceList(rows);
+
+        // Send PDF
+        const filename = `Daftar_Harga_Tindakan_${new Date().toISOString().split('T')[0]}.pdf`;
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.setHeader('Content-Length', pdfBuffer.length);
+        res.send(pdfBuffer);
+
+    } catch (error) {
+        console.error('Error generating tindakan price list PDF:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to generate PDF',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;
 
