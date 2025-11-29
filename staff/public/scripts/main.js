@@ -349,7 +349,7 @@ function showKelolaObatPage() {
     console.log('🔧 showKelolaObatPage called');
     hideAllPages();
     pages.kelolaObat?.classList.remove('d-none');
-    setTitleAndActive('Kelola Obat', 'nav-kelola-obat', 'kelolaObat');
+    setTitleAndActive('Kelola Obat', 'management-nav-kelola-obat', 'kelolaObat');
     
     // Load kelola-obat module
     importWithVersion('./kelola-obat.js').then(module => {
@@ -389,13 +389,13 @@ function showKelolaPasienPage() {
 
     hideAllPages();
     pages.kelolaPasienLegacy?.classList.remove('d-none');
-    setTitleAndActive('Kelola Pasien', 'nav-kelola-pasien', 'kelola-pasien');
+    setTitleAndActive('Kelola Pasien', 'management-nav-kelola-pasien', 'kelola-pasien');
     loadExternalPage('kelola-pasien-page', 'kelola-pasien.html', { forceReload: true });
 }
 function showKelolaAppointmentPage() { 
     hideAllPages(); 
     pages.kelolaAppointment?.classList.remove('d-none'); 
-    setTitleAndActive('Kelola Appointment', 'nav-kelola-appointment', 'kelola-appointment');
+    setTitleAndActive('Kelola Appointment', 'management-nav-kelola-appointment', 'kelola-appointment');
     
     importWithVersion('./kelola-appointment.js').then(module => {
         if (typeof window.initKelolaAppointment === 'function') {
@@ -410,7 +410,7 @@ function showKelolaAppointmentPage() {
 function showKelolaJadwalPage() {
     hideAllPages();
     pages.kelolaJadwal?.classList.remove('d-none');
-    setTitleAndActive('Kelola Jadwal', 'nav-kelola-jadwal', 'kelola-jadwal');
+    setTitleAndActive('Kelola Jadwal', 'management-nav-kelola-jadwal', 'kelola-jadwal');
     
     // Dynamically import and initialize the Kelola Jadwal module
     importWithVersion('./kelola-jadwal.js').then(module => {
@@ -425,7 +425,7 @@ function showKelolaJadwalPage() {
 }
 function showKelolaTindakanPage() {
     showPengaturanPage();
-    setTitleAndActive('Kelola Tindakan', 'nav-kelola-tindakan', 'kelola-tindakan');
+    setTitleAndActive('Kelola Tindakan', 'management-nav-kelola-tindakan', 'kelola-tindakan');
 }
 function showKelolaObatManagementPage() {
     showKelolaObatPage();
@@ -466,7 +466,7 @@ function showKelolaRolesPage() {
 function showFinanceAnalysisPage() {
     hideAllPages();
     pages.financeAnalysis?.classList.remove('d-none');
-    setTitleAndActive('Finance Analysis', 'nav-finance-analysis', 'finance-analysis');
+    setTitleAndActive('Finance Analysis', 'finance-analysis-nav', 'finance-analysis');
     // Call embedded initialization function after page is visible
     setTimeout(() => {
         if (typeof window.initFinanceAnalysisPage === 'function') {
