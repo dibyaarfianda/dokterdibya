@@ -1542,3 +1542,122 @@ window.saveDiagnosis = () => app.saveDiagnosis();
 window.generateResumeMedis = () => app.generateResumeMedis();
 window.saveResumeMedis = () => app.saveResumeMedis();
 window.resetResumeMedis = () => app.resetResumeMedis();
+
+// PDF Download function
+window.downloadResumePDF = async () => {
+    const state = stateManager.getState();
+    const mrId = state.currentMrId || state.recordData?.mrId || state.recordData?.mr_id;
+
+    if (!mrId) {
+        alert('MR ID tidak ditemukan');
+        return;
+    }
+
+    const btn = document.getElementById('btn-download-pdf');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+    }
+
+    try {
+        const token = window.getToken();
+        const response = await fetch('/api/sunday-clinic/resume-medis/pdf', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ mrId })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            // Download the PDF
+            window.open(result.data.downloadUrl, '_blank');
+        } else {
+            alert(result.message || 'Gagal generate PDF');
+        }
+    } catch (error) {
+        console.error('Download PDF error:', error);
+        alert('Gagal generate PDF: ' + error.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-file-pdf"></i> PDF';
+        }
+    }
+};
+
+// Open WhatsApp Modal
+window.openWhatsAppModal = () => {
+    const modal = document.getElementById('whatsappResumeModal');
+    if (modal) {
+        // Pre-fill phone from patient data if available
+        const state = stateManager.getState();
+        const phone = state.patientData?.phone || state.recordData?.phone || '';
+        const phoneInput = document.getElementById('whatsapp-resume-phone');
+        if (phoneInput && phone) {
+            phoneInput.value = phone;
+        }
+        $(modal).modal('show');
+    }
+};
+
+// Send Resume via WhatsApp
+window.sendResumeWhatsApp = async () => {
+    const state = stateManager.getState();
+    const mrId = state.currentMrId || state.recordData?.mrId || state.recordData?.mr_id;
+    const phone = document.getElementById('whatsapp-resume-phone')?.value?.trim();
+
+    if (!mrId) {
+        alert('MR ID tidak ditemukan');
+        return;
+    }
+
+    if (!phone) {
+        alert('Masukkan nomor WhatsApp tujuan');
+        return;
+    }
+
+    const btn = document.getElementById('btn-confirm-whatsapp');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengirim...';
+    }
+
+    try {
+        const token = window.getToken();
+        const response = await fetch('/api/sunday-clinic/resume-medis/send-whatsapp', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ mrId, phone })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            if (result.data.method === 'manual') {
+                // Open wa.me link in new tab
+                window.open(result.data.waLink, '_blank');
+                alert('Link WhatsApp dibuka. Silakan kirim pesan.');
+            } else {
+                alert('Resume medis berhasil dikirim via WhatsApp!');
+            }
+            $('#whatsappResumeModal').modal('hide');
+        } else {
+            alert(result.message || 'Gagal mengirim WhatsApp');
+        }
+    } catch (error) {
+        console.error('Send WhatsApp error:', error);
+        alert('Gagal mengirim: ' + error.message);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fab fa-whatsapp mr-1"></i> Kirim';
+        }
+    }
+};
