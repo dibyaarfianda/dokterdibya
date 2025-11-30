@@ -2170,6 +2170,215 @@ router.post('/generate-anamnesa/:mrId', verifyToken, async (req, res, next) => {
     }
 });
 
+// ==================== RESUME MEDIS PDF & WHATSAPP ====================
+
+/**
+ * Generate Resume Medis PDF
+ * POST /api/sunday-clinic/resume-medis/pdf
+ */
+router.post('/resume-medis/pdf', verifyToken, async (req, res, next) => {
+    try {
+        const { mrId } = req.body;
+
+        if (!mrId) {
+            return res.status(400).json({ success: false, message: 'MR ID is required' });
+        }
+
+        // Get record data
+        const [records] = await db.query(
+            `SELECT sc.*, p.full_name, p.age, p.phone
+             FROM sunday_clinic_records sc
+             LEFT JOIN patients p ON sc.patient_id = p.id
+             WHERE sc.mr_id = ?`,
+            [mrId]
+        );
+
+        if (!records.length) {
+            return res.status(404).json({ success: false, message: 'Record not found' });
+        }
+
+        const record = records[0];
+
+        // Get resume medis from medical_records
+        const [resumeRecords] = await db.query(
+            `SELECT record_data FROM medical_records
+             WHERE mr_id = ? AND record_type = 'resume_medis'
+             ORDER BY created_at DESC LIMIT 1`,
+            [mrId]
+        );
+
+        if (!resumeRecords.length) {
+            return res.status(404).json({ success: false, message: 'Resume medis tidak ditemukan. Silakan generate resume terlebih dahulu.' });
+        }
+
+        let resumeData = resumeRecords[0].record_data;
+        if (typeof resumeData === 'string') {
+            resumeData = JSON.parse(resumeData);
+        }
+
+        // Generate PDF
+        const pdfGenerator = require('../utils/pdf-generator');
+        const patientData = {
+            fullName: record.full_name,
+            age: record.age,
+            phone: record.phone
+        };
+        const recordData = { mrId };
+
+        const result = await pdfGenerator.generateResumeMedis(resumeData, patientData, recordData);
+
+        res.json({
+            success: true,
+            message: 'PDF generated successfully',
+            data: {
+                filename: result.filename,
+                downloadUrl: `/api/sunday-clinic/resume-medis/download/${result.filename}`
+            }
+        });
+
+    } catch (error) {
+        logger.error('Generate resume PDF error:', error);
+        next(error);
+    }
+});
+
+/**
+ * Download Resume Medis PDF
+ * GET /api/sunday-clinic/resume-medis/download/:filename
+ */
+router.get('/resume-medis/download/:filename', verifyToken, async (req, res, next) => {
+    try {
+        const { filename } = req.params;
+        const path = require('path');
+        const fs = require('fs');
+        const filepath = path.join(__dirname, '../../..', 'database/invoices', filename);
+
+        if (!fs.existsSync(filepath)) {
+            return res.status(404).json({ success: false, message: 'File not found' });
+        }
+
+        res.download(filepath, filename);
+
+    } catch (error) {
+        logger.error('Download resume PDF error:', error);
+        next(error);
+    }
+});
+
+/**
+ * Send Resume Medis via WhatsApp
+ * POST /api/sunday-clinic/resume-medis/send-whatsapp
+ */
+router.post('/resume-medis/send-whatsapp', verifyToken, async (req, res, next) => {
+    try {
+        const { mrId, phone } = req.body;
+
+        if (!mrId) {
+            return res.status(400).json({ success: false, message: 'MR ID is required' });
+        }
+
+        if (!phone) {
+            return res.status(400).json({ success: false, message: 'Phone number is required' });
+        }
+
+        // Get record data
+        const [records] = await db.query(
+            `SELECT sc.*, p.full_name, p.age, p.phone as patient_phone
+             FROM sunday_clinic_records sc
+             LEFT JOIN patients p ON sc.patient_id = p.id
+             WHERE sc.mr_id = ?`,
+            [mrId]
+        );
+
+        if (!records.length) {
+            return res.status(404).json({ success: false, message: 'Record not found' });
+        }
+
+        const record = records[0];
+
+        // Get resume medis from medical_records
+        const [resumeRecords] = await db.query(
+            `SELECT record_data FROM medical_records
+             WHERE mr_id = ? AND record_type = 'resume_medis'
+             ORDER BY created_at DESC LIMIT 1`,
+            [mrId]
+        );
+
+        if (!resumeRecords.length) {
+            return res.status(404).json({ success: false, message: 'Resume medis tidak ditemukan. Silakan generate resume terlebih dahulu.' });
+        }
+
+        let resumeData = resumeRecords[0].record_data;
+        if (typeof resumeData === 'string') {
+            resumeData = JSON.parse(resumeData);
+        }
+
+        // Generate PDF
+        const pdfGenerator = require('../utils/pdf-generator');
+        const patientData = {
+            fullName: record.full_name,
+            age: record.age,
+            phone: record.patient_phone
+        };
+        const recordData = { mrId };
+
+        const pdfResult = await pdfGenerator.generateResumeMedis(resumeData, patientData, recordData);
+
+        // Create download URL
+        const baseUrl = process.env.FRONTEND_URL || 'https://dokterdibya.com';
+        const pdfUrl = `${baseUrl}/api/sunday-clinic/resume-medis/download/${pdfResult.filename}`;
+
+        // Generate WhatsApp message
+        const whatsappService = require('../services/whatsappService');
+        const message = `Halo ${record.full_name || 'Pasien'},
+
+Berikut adalah Resume Medis Anda dari Klinik Privat Dr. Dibya:
+
+No. MR: ${mrId}
+Tanggal: ${new Date().toLocaleDateString('id-ID')}
+
+Resume medis Anda dapat diunduh melalui link berikut (berlaku 24 jam):
+${pdfUrl}
+
+Terima kasih telah mempercayakan kesehatan Anda kepada kami.
+
+Salam,
+Klinik Privat Dr. Dibya
+RSIA Melinda, Kediri`;
+
+        // Send via WhatsApp
+        const result = await whatsappService.sendViaFonnte(phone, message);
+
+        if (result.success) {
+            res.json({
+                success: true,
+                message: 'Resume medis berhasil dikirim via WhatsApp',
+                data: {
+                    method: result.method,
+                    phone: phone,
+                    pdfUrl: pdfUrl
+                }
+            });
+        } else {
+            // Fallback to wa.me link
+            const waLink = whatsappService.generateWaLink(phone, message);
+            res.json({
+                success: true,
+                message: 'Klik link untuk mengirim via WhatsApp',
+                data: {
+                    method: 'manual',
+                    waLink: waLink,
+                    pdfUrl: pdfUrl
+                }
+            });
+        }
+
+    } catch (error) {
+        logger.error('Send resume WhatsApp error:', error);
+        next(error);
+    }
+});
+
 // Socket.io handler for real-time billing notifications
 function setupSocketHandlers(io) {
     logger.info('Setting up Socket.io handlers for Sunday Clinic billing');
