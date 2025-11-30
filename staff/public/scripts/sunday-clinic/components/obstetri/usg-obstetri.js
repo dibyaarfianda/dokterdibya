@@ -34,6 +34,45 @@ export default {
             };
         }
 
+        // Define calculateFromEDD function globally
+        // Calculates LMP (HPHT) = HPL - 280 days and Gestational Age from LMP to today
+        if (!window.calculateFromEDD) {
+            window.calculateFromEDD = function(prefix) {
+                const eddInput = document.getElementById(`${prefix}-edd-input`);
+                const lmpInput = document.getElementById(`${prefix}-lmp-calculated`);
+                const gaInput = document.getElementById(`${prefix}-ga-calculated`);
+
+                if (!eddInput || !eddInput.value) {
+                    if (lmpInput) lmpInput.value = '';
+                    if (gaInput) gaInput.value = '';
+                    return;
+                }
+
+                // Calculate LMP = EDD - 280 days
+                const edd = new Date(eddInput.value);
+                const lmp = new Date(edd);
+                lmp.setDate(lmp.getDate() - 280);
+
+                // Format LMP for date input (YYYY-MM-DD)
+                const lmpFormatted = lmp.toISOString().split('T')[0];
+                if (lmpInput) lmpInput.value = lmpFormatted;
+
+                // Calculate gestational age from LMP to today
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+                const diffMs = today - lmp;
+                const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+                if (diffDays >= 0) {
+                    const weeks = Math.floor(diffDays / 7);
+                    const days = diffDays % 7;
+                    if (gaInput) gaInput.value = `${weeks} minggu ${days} hari`;
+                } else {
+                    if (gaInput) gaInput.value = 'Tanggal tidak valid';
+                }
+            };
+        }
+
         return `
             <div class="sc-section">
                 <div class="sc-section-header">
@@ -147,11 +186,15 @@ export default {
                     <label class="font-weight-bold">Tanggal</label>
                     <input type="date" class="form-control usg-field" name="t1_date" value="${escapeHtml(t1.date || '')}">
                 </div>
-                <div class="form-group col-md-4">
+                <div class="form-group col-md-8">
                     <label class="font-weight-bold">Jumlah Embrio</label>
                     <div class="d-flex gap-3">
                         <div class="custom-control custom-radio mr-4">
-                            <input type="radio" class="custom-control-input usg-field" name="t1_embryo_count" id="t1-single" value="single" ${(t1.embryo_count || 'single') === 'single' ? 'checked' : ''}>
+                            <input type="radio" class="custom-control-input usg-field" name="t1_embryo_count" id="t1-not-visible" value="not_visible" ${t1.embryo_count === 'not_visible' ? 'checked' : ''}>
+                            <label class="custom-control-label" for="t1-not-visible">Belum Tampak</label>
+                        </div>
+                        <div class="custom-control custom-radio mr-4">
+                            <input type="radio" class="custom-control-input usg-field" name="t1_embryo_count" id="t1-single" value="single" ${(t1.embryo_count || 'single') === 'single' && t1.embryo_count !== 'not_visible' ? 'checked' : ''}>
                             <label class="custom-control-label" for="t1-single">Tunggal</label>
                         </div>
                         <div class="custom-control custom-radio mr-4">
@@ -163,6 +206,13 @@ export default {
             </div>
 
             <div class="form-row">
+                <div class="form-group col-md-3">
+                    <label>Kantung Kehamilan (GS)</label>
+                    <div class="input-group">
+                        <input type="number" step="0.1" class="form-control usg-field" name="t1_gs" value="${escapeHtml(t1.gs || '')}" placeholder="0.0">
+                        <div class="input-group-append"><span class="input-group-text">minggu</span></div>
+                    </div>
+                </div>
                 <div class="form-group col-md-3">
                     <label>Crown Rump Length (CRL)</label>
                     <div class="input-group">
@@ -202,7 +252,18 @@ export default {
                 </div>
                 <div class="form-group col-md-4">
                     <label>Hari Perkiraan Lahir (HPL/EDD)</label>
-                    <input type="date" class="form-control usg-field" name="t1_edd" value="${escapeHtml(t1.edd || '')}">
+                    <input type="date" class="form-control usg-field" name="t1_edd" id="t1-edd-input" value="${escapeHtml(t1.edd || '')}" onchange="window.calculateFromEDD && window.calculateFromEDD('t1')">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label>HPHT/LMP <small class="text-muted">(dari HPL)</small></label>
+                    <input type="date" class="form-control usg-field" name="t1_lmp" id="t1-lmp-calculated" value="${escapeHtml(t1.lmp || '')}" readonly style="background-color: #f8f9fa;">
+                </div>
+                <div class="form-group col-md-4">
+                    <label>Usia Kehamilan <small class="text-muted">(dari HPL)</small></label>
+                    <input type="text" class="form-control" id="t1-ga-calculated" value="${escapeHtml(t1.ga_from_edd || '')}" readonly style="background-color: #f8f9fa;" placeholder="Otomatis dari HPL">
                 </div>
                 <div class="form-group col-md-4">
                     <label>Nuchal Translucency (NT)</label>
@@ -378,7 +439,18 @@ export default {
                 </div>
                 <div class="form-group col-md-4">
                     <label>Hari Perkiraan Lahir (HPL)</label>
-                    <input type="date" class="form-control usg-field" name="t2_edd" value="${escapeHtml(t2.edd || '')}">
+                    <input type="date" class="form-control usg-field" name="t2_edd" id="t2-edd-input" value="${escapeHtml(t2.edd || '')}" onchange="window.calculateFromEDD && window.calculateFromEDD('t2')">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label>HPHT/LMP <small class="text-muted">(dari HPL)</small></label>
+                    <input type="date" class="form-control usg-field" name="t2_lmp" id="t2-lmp-calculated" value="${escapeHtml(t2.lmp || '')}" readonly style="background-color: #f8f9fa;">
+                </div>
+                <div class="form-group col-md-4">
+                    <label>Usia Kehamilan <small class="text-muted">(dari HPL)</small></label>
+                    <input type="text" class="form-control" id="t2-ga-calculated" value="${escapeHtml(t2.ga_from_edd || '')}" readonly style="background-color: #f8f9fa;" placeholder="Otomatis dari HPL">
                 </div>
             </div>
 
@@ -695,8 +767,19 @@ export default {
                     </div>
                 </div>
                 <div class="form-group col-md-4">
-                    <label>HPL</label>
-                    <input type="date" class="form-control usg-field" name="t3_edd" value="${escapeHtml(t3.edd || '')}">
+                    <label>Hari Perkiraan Lahir (HPL)</label>
+                    <input type="date" class="form-control usg-field" name="t3_edd" id="t3-edd-input" value="${escapeHtml(t3.edd || '')}" onchange="window.calculateFromEDD && window.calculateFromEDD('t3')">
+                </div>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group col-md-4">
+                    <label>HPHT/LMP <small class="text-muted">(dari HPL)</small></label>
+                    <input type="date" class="form-control usg-field" name="t3_lmp" id="t3-lmp-calculated" value="${escapeHtml(t3.lmp || '')}" readonly style="background-color: #f8f9fa;">
+                </div>
+                <div class="form-group col-md-4">
+                    <label>Usia Kehamilan <small class="text-muted">(dari HPL)</small></label>
+                    <input type="text" class="form-control" id="t3-ga-calculated" value="${escapeHtml(t3.ga_from_edd || '')}" readonly style="background-color: #f8f9fa;" placeholder="Otomatis dari HPL">
                 </div>
             </div>
 
@@ -816,11 +899,14 @@ export default {
         return {
             date: document.querySelector('[name="t1_date"]')?.value,
             embryo_count: document.querySelector('input[name="t1_embryo_count"]:checked')?.value,
+            gs: document.querySelector('[name="t1_gs"]')?.value,
             crl: document.querySelector('[name="t1_crl"]')?.value,
             ga_weeks: document.querySelector('[name="t1_ga_weeks"]')?.value,
             heart_rate: document.querySelector('[name="t1_heart_rate"]')?.value,
             implantation: document.querySelector('input[name="t1_implantation"]:checked')?.value,
             edd: document.querySelector('[name="t1_edd"]')?.value,
+            lmp: document.querySelector('[name="t1_lmp"]')?.value,
+            ga_from_edd: document.getElementById('t1-ga-calculated')?.value,
             nt: document.querySelector('[name="t1_nt"]')?.value,
             notes: document.querySelector('[name="t1_notes"]')?.value
         };
@@ -842,6 +928,8 @@ export default {
             afi: document.querySelector('[name="t2_afi"]')?.value,
             efw: document.querySelector('[name="t2_efw"]')?.value,
             edd: document.querySelector('[name="t2_edd"]')?.value,
+            lmp: document.querySelector('[name="t2_lmp"]')?.value,
+            ga_from_edd: document.getElementById('t2-ga-calculated')?.value,
             notes: document.querySelector('[name="t2_notes"]')?.value
         };
     },
@@ -890,6 +978,8 @@ export default {
             afi: document.querySelector('[name="t3_afi"]')?.value,
             efw: document.querySelector('[name="t3_efw"]')?.value,
             edd: document.querySelector('[name="t3_edd"]')?.value,
+            lmp: document.querySelector('[name="t3_lmp"]')?.value,
+            ga_from_edd: document.getElementById('t3-ga-calculated')?.value,
             membrane_sweep: document.querySelector('input[name="t3_membrane_sweep"]:checked')?.value,
             contraception: contraception
         };

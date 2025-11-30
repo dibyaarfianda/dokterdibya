@@ -116,11 +116,21 @@ export function formatDateDMY(value) {
     if (!value) {
         return value;
     }
-    // Handle YYYY-MM-DD format
+    // Handle YYYY-MM-DD format - convert to European DD/MM/YYYY
     const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
     if (match) {
         const [, year, month, day] = match;
-        return `${day}-${month}-${year}`;
+        return `${day}/${month}/${year}`;
+    }
+    // Handle ISO timestamp format
+    if (value.includes('T')) {
+        const date = new Date(value);
+        if (!isNaN(date.getTime())) {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
     }
     return value;
 }
@@ -164,13 +174,13 @@ function formatDateTime(timestamp) {
     if (!timestamp) return '';
     try {
         const date = new Date(timestamp);
-        return date.toLocaleString('id-ID', {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit'
-        });
+        // European format: DD/MM/YYYY HH:mm
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        const hours = String(date.getHours()).padStart(2, '0');
+        const minutes = String(date.getMinutes()).padStart(2, '0');
+        return `${day}/${month}/${year} ${hours}:${minutes}`;
     } catch {
         return '';
     }
