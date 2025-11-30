@@ -43,8 +43,8 @@ export default {
                                 <button type="button" class="btn btn-danger ml-2" id="btn-download-pdf" onclick="window.downloadResumePDF()">
                                     <i class="fas fa-file-pdf"></i> PDF
                                 </button>
-                                <button type="button" class="btn btn-success ml-2" id="btn-send-whatsapp" onclick="window.openWhatsAppModal()">
-                                    <i class="fab fa-whatsapp"></i> WhatsApp
+                                <button type="button" class="btn btn-info ml-2" id="btn-send-to-patient" onclick="window.openSendToPatientModal()">
+                                    <i class="fas fa-share-alt"></i> Kirim ke Pasien
                                 </button>
                                 <button type="button" class="btn btn-outline-warning ml-2" id="btn-reset-resume" onclick="window.resetResumeMedis()">
                                     <i class="fas fa-redo"></i> Reset
@@ -53,35 +53,6 @@ export default {
                         </div>
                     </div>
 
-                    <!-- WhatsApp Modal -->
-                    <div class="modal fade" id="whatsappResumeModal" tabindex="-1" role="dialog">
-                        <div class="modal-dialog" role="document">
-                            <div class="modal-content">
-                                <div class="modal-header bg-success text-white">
-                                    <h5 class="modal-title"><i class="fab fa-whatsapp mr-2"></i>Kirim Resume via WhatsApp</h5>
-                                    <button type="button" class="close text-white" data-dismiss="modal">
-                                        <span>&times;</span>
-                                    </button>
-                                </div>
-                                <div class="modal-body">
-                                    <div class="form-group">
-                                        <label for="whatsapp-phone">Nomor WhatsApp Tujuan</label>
-                                        <input type="tel" class="form-control" id="whatsapp-resume-phone"
-                                               placeholder="Contoh: 081234567890">
-                                        <small class="form-text text-muted">
-                                            Masukkan nomor HP (08xxx atau 62xxx)
-                                        </small>
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                                    <button type="button" class="btn btn-success" id="btn-confirm-whatsapp" onclick="window.sendResumeWhatsApp()">
-                                        <i class="fab fa-whatsapp mr-1"></i> Kirim
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
             </div>
         `;
