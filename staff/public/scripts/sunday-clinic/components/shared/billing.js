@@ -766,9 +766,12 @@ export default {
         }).join('');
 
         // Status badge
-        const statusBadge = status === 'confirmed'
-            ? '<span class="badge badge-success">Dikonfirmasi</span>'
-            : '<span class="badge badge-warning">Draft</span>';
+        let statusBadge = '<span class="badge badge-warning">Draft</span>';
+        if (status === 'confirmed') {
+            statusBadge = '<span class="badge badge-success">Dikonfirmasi</span>';
+        } else if (status === 'paid') {
+            statusBadge = '<span class="badge badge-primary">Lunas</span>';
+        }
 
         // Check user role - only dokter can confirm billing
         const userRole = window.currentStaffIdentity?.role || '';
@@ -806,10 +809,16 @@ export default {
                         <i class="fas fa-receipt mr-2"></i>Cetak Invoice
                     </button>`;
             }
-        } else {
-            // CONFIRMED: All print buttons active for everyone
+        } else if (status === 'confirmed') {
+            // CONFIRMED: Show print buttons + Mark as Paid button
+            const markPaidBtn = `
+                <button type="button" class="btn btn-primary mr-2" id="btn-mark-paid">
+                    <i class="fas fa-money-bill-wave mr-2"></i>Tandai Lunas
+                </button>`;
+
             if (isDokter) {
                 actionsHtml = `
+                    ${markPaidBtn}
                     <button type="button" class="btn btn-success mr-2" id="btn-print-etiket">
                         <i class="fas fa-tag mr-2"></i>Cetak Etiket
                     </button>
@@ -818,11 +827,40 @@ export default {
                     </button>
                     ${billing.printed_at ? '<small class="text-muted ml-2">Telah dicetak</small>' : ''}`;
             } else {
-                // Non-dokter: Print + Ajukan Perubahan all active
+                // Non-dokter: Print + Ajukan Perubahan + Mark as Paid
                 actionsHtml = `
+                    ${markPaidBtn}
                     <button type="button" class="btn btn-warning mr-2" id="btn-request-revision">
                         <i class="fas fa-edit mr-2"></i>Ajukan Perubahan
                     </button>
+                    <button type="button" class="btn btn-success mr-2" id="btn-print-etiket">
+                        <i class="fas fa-tag mr-2"></i>Cetak Etiket
+                    </button>
+                    <button type="button" class="btn btn-success" id="btn-print-invoice">
+                        <i class="fas fa-receipt mr-2"></i>Cetak Invoice
+                    </button>
+                    ${billing.printed_at ? '<small class="text-muted ml-2">Telah dicetak</small>' : ''}`;
+            }
+        } else if (status === 'paid') {
+            // PAID: Show print buttons + paid indicator (no more mark as paid)
+            const paidBadge = `
+                <span class="badge badge-lg badge-primary mr-3" style="font-size: 1rem; padding: 0.5rem 1rem;">
+                    <i class="fas fa-check-circle mr-1"></i>Sudah Lunas
+                </span>`;
+
+            if (isDokter) {
+                actionsHtml = `
+                    ${paidBadge}
+                    <button type="button" class="btn btn-success mr-2" id="btn-print-etiket">
+                        <i class="fas fa-tag mr-2"></i>Cetak Etiket
+                    </button>
+                    <button type="button" class="btn btn-success" id="btn-print-invoice">
+                        <i class="fas fa-receipt mr-2"></i>Cetak Invoice
+                    </button>
+                    ${billing.printed_at ? '<small class="text-muted ml-2">Telah dicetak</small>' : ''}`;
+            } else {
+                actionsHtml = `
+                    ${paidBadge}
                     <button type="button" class="btn btn-success mr-2" id="btn-print-etiket">
                         <i class="fas fa-tag mr-2"></i>Cetak Etiket
                     </button>
@@ -1201,7 +1239,7 @@ export default {
                                 const token = window.getToken?.();
                                 const mrId = window.routeMrSlug;
                                 const userName = window.currentStaffIdentity?.name || 'Staff';
-                                
+
                                 const response = await fetch(`/api/sunday-clinic/billing/${mrId}/request-revision`, {
                                     method: 'POST',
                                     headers: {
@@ -1228,6 +1266,66 @@ export default {
                                 console.error('Error requesting revision:', error);
                                 if (window.showError) {
                                     window.showError(error.message);
+                                }
+                            }
+                        });
+                    }
+
+                    // 5. Mark as Paid button - deducts stock from inventory
+                    const markPaidBtn = document.getElementById('btn-mark-paid');
+                    if (markPaidBtn) {
+                        markPaidBtn.addEventListener('click', async function() {
+                            if (!confirm('Tandai tagihan ini sebagai LUNAS?\n\nStok obat akan otomatis dikurangi dari inventory.')) {
+                                return;
+                            }
+
+                            try {
+                                const token = window.getToken?.();
+                                if (!token) return;
+
+                                const mrId = window.routeMrSlug;
+                                if (!mrId) {
+                                    alert('MR ID tidak ditemukan');
+                                    return;
+                                }
+
+                                // Disable button during request
+                                this.disabled = true;
+                                this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Memproses...';
+
+                                const response = await fetch(`/api/sunday-clinic/billing/${mrId}/mark-paid`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Authorization': `Bearer ${token}`,
+                                        'Content-Type': 'application/json'
+                                    }
+                                });
+
+                                if (!response.ok) {
+                                    const error = await response.json();
+                                    throw new Error(error.message || 'Gagal menandai pembayaran');
+                                }
+
+                                const result = await response.json();
+
+                                if (window.showSuccess) {
+                                    window.showSuccess('Pembayaran berhasil dicatat! Stok obat telah dikurangi.');
+                                }
+
+                                // Reload billing section to show updated status
+                                if (window.handleSectionChange) {
+                                    window.handleSectionChange('billing', { pushHistory: false });
+                                }
+                            } catch (error) {
+                                console.error('Error marking payment:', error);
+                                // Re-enable button on error
+                                this.disabled = false;
+                                this.innerHTML = '<i class="fas fa-money-bill-wave mr-2"></i>Tandai Lunas';
+
+                                if (window.showError) {
+                                    window.showError(error.message || 'Gagal menandai pembayaran');
+                                } else {
+                                    alert(error.message || 'Gagal menandai pembayaran');
                                 }
                             }
                         });

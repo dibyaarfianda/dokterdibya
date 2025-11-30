@@ -14,6 +14,7 @@ const API_BASE = `${ORIGIN_BASE}/api`; // Protected endpoint for write operation
 const PUBLIC_API = `${ORIGIN_BASE}/public`; // Public endpoint for read operations
 
 let allObat = [];
+let allSuppliers = [];
 let isEditMode = false;
 let editingObatId = null;
 let initialized = false;
@@ -152,40 +153,65 @@ function bindSearchFilter() {
     }
 }
 
+// Load suppliers for dropdown
+async function loadSuppliers() {
+    try {
+        const token = await getIdToken();
+        if (!token) return;
+
+        const response = await fetch(`${API_BASE}/suppliers?active=true`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            const result = await response.json();
+            if (result.success) {
+                allSuppliers = result.data;
+                console.log('✅ Loaded', allSuppliers.length, 'suppliers');
+            }
+        }
+    } catch (error) {
+        console.error('Error loading suppliers:', error);
+    }
+}
+
 // Load all obat from VPS
 async function loadObat() {
     try {
         console.log('🔍 loadObat() called');
         const token = await getIdToken();
         console.log('🔑 Token status:', token ? 'Available (length: ' + token.length + ')' : 'NOT FOUND');
-        
+
         if (!token) {
             console.error('❌ No token - user not authenticated');
             showError('Tidak terautentikasi. Silakan login kembali.');
             return;
         }
-        
+
+        // Load suppliers first
+        await loadSuppliers();
+
         // Use authenticated endpoint - only get active obat
         const url = `${API_BASE}/obat?active=true&_t=${Date.now()}`;
         console.log('📡 Fetching from:', url);
-        
+
         const response = await fetch(url, {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
         });
-        
+
         console.log('📥 Response status:', response.status, response.statusText);
-        
+
         if (!response.ok) {
             if (response.status === 403) {
                 throw new Error('Anda tidak memiliki izin untuk melihat data obat');
             }
             throw new Error(`HTTP error! status: ${response.status}`);
         }
-        
+
         const result = await response.json();
-        
+
         if (result.success) {
             allObat = result.data;
             console.log('✅ Loaded', allObat.length, 'obat items from VPS');
@@ -197,13 +223,13 @@ async function loadObat() {
     } catch (error) {
         console.error('Error loading obat:', error);
         showError('Gagal memuat data obat dari server: ' + error.message);
-        
+
         // Show empty state
         const tbody = document.getElementById('kelola-obat-list-body');
         if (tbody) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="7" class="text-center text-danger py-4">
+                    <td colspan="8" class="text-center text-danger py-4">
                         <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
                         <p class="mb-0"><strong>Error: ${error.message}</strong></p>
                         <small>Silakan refresh halaman atau login kembali</small>
@@ -245,7 +271,7 @@ function renderObatTable(obat) {
     if (obat.length === 0) {
         tbody.innerHTML = `
             <tr>
-                <td colspan="6" class="text-center text-muted py-4">
+                <td colspan="7" class="text-center text-muted py-4">
                     <i class="fas fa-inbox fa-2x mb-2"></i>
                     <p class="mb-0">Tidak ada data obat</p>
                 </td>
@@ -255,16 +281,21 @@ function renderObatTable(obat) {
     }
 
     tbody.innerHTML = obat.map((item, index) => {
-        const stockBadge = item.stock <= item.min_stock 
+        const stockBadge = item.stock <= item.min_stock
             ? `<span class="badge badge-danger">${item.stock}</span>`
             : `<span class="badge badge-success">${item.stock}</span>`;
-        
-        const categoryBadge = item.category === 'Obat-obatan' 
-            ? 'badge-primary' 
-            : item.category === 'Ampul & Vial' 
-            ? 'badge-info' 
+
+        const categoryBadge = item.category === 'Obat-obatan'
+            ? 'badge-primary'
+            : item.category === 'Ampul & Vial'
+            ? 'badge-info'
             : 'badge-secondary';
-        
+
+        // Supplier badge
+        const supplierBadge = item.supplier_name
+            ? `<span class="badge badge-outline-info" title="${item.supplier_code || ''}">${item.supplier_name}</span>`
+            : `<span class="badge badge-light text-muted">-</span>`;
+
         return `
             <tr>
                 <td>${index + 1}</td>
@@ -272,20 +303,24 @@ function renderObatTable(obat) {
                 <td>
                     <span class="badge ${categoryBadge}">${item.category || '-'}</span>
                 </td>
+                <td>${supplierBadge}</td>
                 <td>Rp ${(parseFloat(item.price) || 0).toLocaleString('id-ID')}</td>
                 <td class="text-center">${stockBadge}</td>
                 <td class="text-center">
-                    <button class="btn btn-sm btn-warning mr-1" onclick="window.editObat('${item.id}')">
+                    <button class="btn btn-xs btn-success mr-1" onclick="window.openPurchaseModal('${item.id}', '${(item.name || '').replace(/'/g, "\\'")}')" title="Tambah Stok">
+                        <i class="fas fa-plus"></i>
+                    </button>
+                    <button class="btn btn-xs btn-warning mr-1" onclick="window.editObat('${item.id}')" title="Edit">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-sm btn-danger" onclick="window.deleteObat('${item.id}')">
+                    <button class="btn btn-xs btn-danger" onclick="window.deleteObat('${item.id}')" title="Hapus">
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
             </tr>
         `;
     }).join('');
-    
+
     const countEl = document.getElementById('kelola-obat-total-count');
     if (countEl) countEl.textContent = obat.length;
 }
@@ -377,4 +412,5 @@ function resetForm() {
 // Expose functions to window
 window.editObat = editObat;
 window.deleteObat = deleteObat;
+window.loadKelolaObatList = loadObat;
 

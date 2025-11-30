@@ -1441,9 +1441,9 @@
         </div>
 
         <!-- Two Column Layout: Appointments & Journey Book -->
-        <div class="row" style="margin-bottom: 30px;">
+        <div class="row" style="margin-bottom: 30px; display: flex; flex-wrap: wrap;">
             <!-- Left Column: Upcoming Appointments (Smaller) -->
-            <div class="col-md-5">
+            <div class="col-md-5" style="display: flex; flex-direction: column;">
                 <!-- Janji Temu dr. Dibya -->
                 <div class="dashboard-card" id="appointments-section" style="margin-bottom: 20px;">
                     <h3><i class="fa fa-calendar-check-o"></i> Janji Temu dr. Dibya</h3>
@@ -1522,9 +1522,9 @@
                 </div>
 
                 <!-- Rekam Medis -->
-                <div class="dashboard-card" style="min-height: 400px; display: flex; flex-direction: column;">
+                <div class="dashboard-card">
                     <h3 style="font-size: 19.2px;"><i class="fa fa-file-text"></i> IDENTITAS PRIBADI</h3>
-                    <div style="padding: 15px 0; flex-grow: 1; display: flex; align-items: center; justify-content: center;">
+                    <div style="padding: 15px 0; display: flex; align-items: center; justify-content: center;">
                         <a href="/patient-intake.html" class="action-btn" style="display: block; text-align: center;">
                             <i class="fa fa-edit"></i> Lihat & Edit Identitas Pribadi
                         </a>
@@ -1533,32 +1533,32 @@
             </div>
 
             <!-- Right Column: Journey Book with Image (Larger) -->
-            <div class="col-md-7">
-                <div class="dashboard-card" style="cursor: pointer; position: relative; overflow: hidden; min-height: 400px; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); border: 1px solid rgba(212, 175, 55, 0.3);" onclick="window.location.href='/perjalanan-ibu.html'">
+            <div class="col-md-7" style="display: flex;">
+                <div class="dashboard-card" style="cursor: pointer; position: relative; overflow: hidden; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); border: 1px solid rgba(212, 175, 55, 0.3); flex: 1;" onclick="window.location.href='/perjalanan-ibu.html'">
                     <!-- Background Pattern -->
                     <div style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; opacity: 0.08; background-image: url('/images/dokter-dibya-book/1.png'); background-size: cover; background-position: center;"></div>
 
                     <!-- Decorative Gold Corner Accents -->
-                    <div style="position: absolute; top: 0; left: 0; width: 60px; height: 60px; border-top: 2px solid #d4af37; border-left: 2px solid #d4af37;"></div>
-                    <div style="position: absolute; top: 0; right: 0; width: 60px; height: 60px; border-top: 2px solid #d4af37; border-right: 2px solid #d4af37;"></div>
-                    <div style="position: absolute; bottom: 0; left: 0; width: 60px; height: 60px; border-bottom: 2px solid #d4af37; border-left: 2px solid #d4af37;"></div>
-                    <div style="position: absolute; bottom: 0; right: 0; width: 60px; height: 60px; border-bottom: 2px solid #d4af37; border-right: 2px solid #d4af37;"></div>
+                    <div style="position: absolute; top: 0; left: 0; width: 40px; height: 40px; border-top: 2px solid #d4af37; border-left: 2px solid #d4af37;"></div>
+                    <div style="position: absolute; top: 0; right: 0; width: 40px; height: 40px; border-top: 2px solid #d4af37; border-right: 2px solid #d4af37;"></div>
+                    <div style="position: absolute; bottom: 0; left: 0; width: 40px; height: 40px; border-bottom: 2px solid #d4af37; border-left: 2px solid #d4af37;"></div>
+                    <div style="position: absolute; bottom: 0; right: 0; width: 40px; height: 40px; border-bottom: 2px solid #d4af37; border-right: 2px solid #d4af37;"></div>
 
                     <!-- Content Overlay -->
-                    <div style="position: relative; z-index: 1; padding: 40px; text-align: center;">
-                        <div style="background: rgba(26, 26, 46, 0.9); backdrop-filter: blur(10px); border-radius: 12px; padding: 30px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); border: 1px solid rgba(212, 175, 55, 0.2);">
-                            <h2 style="color: #f5f5f5; font-size: 32px; font-weight: 400; margin-bottom: 10px; font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif; letter-spacing: 3px; text-shadow: 0 2px 4px rgba(0,0,0,0.3); font-style: italic;">Perjalanan menjadi Ibu</h2>
-                            <p style="font-size: 14px; font-style: italic; margin-bottom: 25px; font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;">by <span style="color: #ffffff; font-weight: 600;">dokter</span><span style="color: var(--primary); font-weight: 600;">DIBYA</span></p>
+                    <div style="position: relative; z-index: 1; padding: 20px; text-align: center; height: 100%; display: flex; align-items: center; justify-content: center;">
+                        <div style="background: rgba(26, 26, 46, 0.9); backdrop-filter: blur(10px); border-radius: 12px; padding: 20px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); border: 1px solid rgba(212, 175, 55, 0.2); width: 100%;">
+                            <h2 style="color: #f5f5f5; font-size: 24px; font-weight: 400; margin-bottom: 8px; font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif; letter-spacing: 2px; text-shadow: 0 2px 4px rgba(0,0,0,0.3); font-style: italic;">Perjalanan menjadi Ibu</h2>
+                            <p style="font-size: 12px; font-style: italic; margin-bottom: 15px; font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;">by <span style="color: #ffffff; font-weight: 600;">dokter</span><span style="color: var(--primary); font-weight: 600;">DIBYA</span></p>
 
                             <!-- Preview Image -->
-                            <div style="margin: 25px 0;">
-                                <img src="/images/dokter-dibya-book/thumb-book.jpeg" alt="Perjalanan menjadi Ibu" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4); border: 2px solid rgba(212, 175, 55, 0.3);">
+                            <div style="margin: 15px 0;">
+                                <img src="/images/dokter-dibya-book/thumb-book.jpeg" alt="Perjalanan menjadi Ibu" style="max-width: 100%; max-height: 200px; object-fit: contain; border-radius: 8px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4); border: 2px solid rgba(212, 175, 55, 0.3);">
                             </div>
 
-                            <div style="margin-top: 25px; padding: 15px; background: rgba(212, 175, 55, 0.1); border-radius: 8px; border-left: 4px solid #d4af37;">
-                                <p style="color: #e0e0e0; font-size: 15px; line-height: 1.6; margin: 0; font-family: 'Georgia', serif;">
+                            <div style="margin-top: 15px; padding: 12px; background: rgba(212, 175, 55, 0.1); border-radius: 8px; border-left: 4px solid #d4af37;">
+                                <p style="color: #e0e0e0; font-size: 13px; line-height: 1.5; margin: 0; font-family: 'Georgia', serif;">
                                     <i class="fa fa-hand-pointer-o" style="color: #d4af37; margin-right: 8px;"></i>
-                                    <strong style="color: #d4af37;">Klik untuk membuka</strong> buku interaktif berisi momen indah perjalanan kehamilan Anda
+                                    <strong style="color: #d4af37;">Klik untuk membuka</strong> buku interaktif perjalanan kehamilan Anda
                                 </p>
                             </div>
                         </div>

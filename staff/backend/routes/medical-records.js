@@ -253,14 +253,40 @@ router.post('/api/medical-records', verifyToken, async (req, res) => {
     }
 });
 
+// Helper: Check if user can access patient records
+function canAccessPatientRecords(user, patientId) {
+    // Superadmin/dokter can access all records
+    if (user.is_superadmin || user.role === 'dokter' || user.role_id === 1) {
+        return true;
+    }
+    // Patient can only access their own records
+    if (user.user_type === 'patient' && (user.id === patientId || user.patientId === patientId)) {
+        return true;
+    }
+    // Staff with medical permissions (nurse, bidan) can access for clinical purposes
+    if (['perawat', 'bidan'].includes(user.role) || [3, 4].includes(user.role_id)) {
+        return true;
+    }
+    return false;
+}
+
 // Get medical records for a patient
 router.get('/api/medical-records/:patientId', verifyToken, async (req, res) => {
     try {
         const { patientId } = req.params;
-        
+
+        // Access control check
+        if (!canAccessPatientRecords(req.user, patientId)) {
+            logger.warn(`Unauthorized medical records access attempt: User ${req.user.id} tried to access patient ${patientId}`);
+            return res.status(403).json({
+                success: false,
+                message: 'Access denied: You do not have permission to view this patient\'s records'
+            });
+        }
+
         const [records] = await db.query(
-            `SELECT * FROM medical_records 
-             WHERE patient_id = ? 
+            `SELECT * FROM medical_records
+             WHERE patient_id = ?
              ORDER BY created_at DESC`,
             [patientId]
         );
@@ -290,11 +316,20 @@ router.get('/api/medical-records/:patientId', verifyToken, async (req, res) => {
 router.get('/api/medical-records/:patientId/latest', verifyToken, async (req, res) => {
     try {
         const { patientId } = req.params;
-        
+
+        // Access control check
+        if (!canAccessPatientRecords(req.user, patientId)) {
+            logger.warn(`Unauthorized latest record access attempt: User ${req.user.id} tried to access patient ${patientId}`);
+            return res.status(403).json({
+                success: false,
+                message: 'Access denied: You do not have permission to view this patient\'s records'
+            });
+        }
+
         const [records] = await db.query(
-            `SELECT * FROM medical_records 
+            `SELECT * FROM medical_records
              WHERE patient_id = ? AND record_type = 'complete'
-             ORDER BY created_at DESC 
+             ORDER BY created_at DESC
              LIMIT 1`,
             [patientId]
         );

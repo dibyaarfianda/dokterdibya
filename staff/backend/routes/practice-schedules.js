@@ -2,13 +2,15 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
+// JWT Secret - Required
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET;
+
 // Optional middleware for auth (public can view, staff can edit)
 const optionalAuth = (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
-    if (token) {
+    if (token && JWT_SECRET) {
         try {
-            const jwt = require('jsonwebtoken');
-            const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
             const decoded = jwt.verify(token, JWT_SECRET);
             req.user = decoded;
         } catch (error) {
@@ -20,15 +22,17 @@ const optionalAuth = (req, res, next) => {
 
 // Middleware to verify JWT token for staff only
 const verifyStaffToken = (req, res, next) => {
+    if (!JWT_SECRET) {
+        return res.status(500).json({ message: 'Server configuration error' });
+    }
+
     const token = req.headers.authorization?.split(' ')[1];
-    
+
     if (!token) {
         return res.status(401).json({ message: 'Token tidak ditemukan' });
     }
-    
+
     try {
-        const jwt = require('jsonwebtoken');
-        const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
         const decoded = jwt.verify(token, JWT_SECRET);
         req.user = decoded;
         next();
