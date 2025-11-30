@@ -910,6 +910,20 @@
                         </a>
                     </li>
 
+                    <li class="nav-item" id="management-nav-kelola-supplier">
+                        <a href="#" class="nav-link" onclick="showKelolaSupplierPage(); return false;">
+                            <i class="nav-icon fas fa-truck"></i>
+                            <p>Supplier</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-item" id="management-nav-activity-log">
+                        <a href="#" class="nav-link" onclick="showActivityLogPage(); return false;">
+                            <i class="nav-icon fas fa-history"></i>
+                            <p>Log Aktivitas Obat</p>
+                        </a>
+                    </li>
+
                     <li class="nav-item" id="management-nav-kelola-roles">
                         <a href="#" class="nav-link" onclick="showKelolaRolesPage(); return false;">
                             <i class="nav-icon fas fa-user-shield"></i>
@@ -3050,9 +3064,107 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Obat Profit Analysis Section -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="card card-dark">
+                                    <div class="card-header">
+                                        <h3 class="card-title"><i class="fas fa-chart-pie mr-2"></i>Analisis Profit Obat (Bulan Ini)</h3>
+                                        <div class="card-tools">
+                                            <button class="btn btn-tool" onclick="loadObatProfitAnalysis()">
+                                                <i class="fas fa-sync"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <!-- Profit KPI Cards -->
+                                        <div class="row mb-4">
+                                            <div class="col-md-3 col-6">
+                                                <div class="info-box bg-gradient-info">
+                                                    <span class="info-box-icon"><i class="fas fa-coins"></i></span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text">Revenue Obat</span>
+                                                        <span class="info-box-number" id="profit-revenue">Rp 0</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3 col-6">
+                                                <div class="info-box bg-gradient-danger">
+                                                    <span class="info-box-icon"><i class="fas fa-shopping-cart"></i></span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text">Modal/Cost</span>
+                                                        <span class="info-box-number" id="profit-cost">Rp 0</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3 col-6">
+                                                <div class="info-box bg-gradient-success">
+                                                    <span class="info-box-icon"><i class="fas fa-money-bill-wave"></i></span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text">Gross Profit</span>
+                                                        <span class="info-box-number" id="profit-gross">Rp 0</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3 col-6">
+                                                <div class="info-box bg-gradient-warning">
+                                                    <span class="info-box-icon"><i class="fas fa-percentage"></i></span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text">Margin</span>
+                                                        <span class="info-box-number" id="profit-margin">0%</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Alerts Row -->
+                                        <div class="row mb-3">
+                                            <div class="col-md-6">
+                                                <div class="alert alert-warning mb-0" id="expiring-alert" style="display:none;">
+                                                    <i class="fas fa-exclamation-triangle mr-2"></i>
+                                                    <strong id="expiring-count">0</strong> item akan kadaluarsa dalam 60 hari
+                                                    <button class="btn btn-xs btn-outline-warning float-right" onclick="showExpiringItems()">Lihat</button>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="alert alert-danger mb-0" id="lowstock-alert" style="display:none;">
+                                                    <i class="fas fa-boxes mr-2"></i>
+                                                    <strong id="lowstock-count">0</strong> item stok menipis
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Profit by Item Table -->
+                                        <div class="table-responsive" style="max-height: 350px; overflow-y: auto;">
+                                            <table class="table table-sm table-striped table-hover">
+                                                <thead class="bg-light sticky-top">
+                                                    <tr>
+                                                        <th>Nama Obat</th>
+                                                        <th class="text-right">Qty Terjual</th>
+                                                        <th class="text-right">Revenue</th>
+                                                        <th class="text-right">Cost</th>
+                                                        <th class="text-right">Profit</th>
+                                                        <th class="text-right">Margin</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="profit-items-body">
+                                                    <tr>
+                                                        <td colspan="6" class="text-center text-muted py-4">
+                                                            <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                                                            <p class="mb-0">Memuat data...</p>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
-                
+
                 <!-- APPOINTMENTS PAGE -->
                 <div id="appointments-page" class="d-none">
                     <div class="row">
@@ -3448,6 +3560,20 @@
                                                             </tbody>
                                                         </table>
                                                     </div>
+                                                    <!-- Pagination Controls -->
+                                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                                        <div class="text-muted" id="reg-codes-pagination-info">
+                                                            Menampilkan 0 dari 0
+                                                        </div>
+                                                        <div class="btn-group">
+                                                            <button type="button" class="btn btn-sm btn-outline-secondary" id="reg-codes-prev-btn" onclick="loadRegistrationCodes(regCodesCurrentPage - 1)" disabled>
+                                                                <i class="fas fa-chevron-left"></i> Sebelumnya
+                                                            </button>
+                                                            <button type="button" class="btn btn-sm btn-outline-secondary" id="reg-codes-next-btn" onclick="loadRegistrationCodes(regCodesCurrentPage + 1)" disabled>
+                                                                Selanjutnya <i class="fas fa-chevron-right"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -3567,20 +3693,237 @@
                                                     <th width="40">#</th>
                                                     <th>Nama Obat/Item</th>
                                                     <th width="120">Kategori</th>
-                                                    <th width="100">Harga</th>
+                                                    <th width="120">Supplier</th>
+                                                    <th width="100">Harga Jual</th>
                                                     <th width="80">Stok</th>
                                                     <th width="150" class="text-center">Aksi</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="kelola-obat-list-body">
                                                 <tr>
-                                                    <td colspan="6" class="text-center text-muted py-4">
+                                                    <td colspan="7" class="text-center text-muted py-4">
                                                         <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
                                                         <p class="mb-0">Memuat data...</p>
                                                     </td>
                                                 </tr>
                                             </tbody>
                                         </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Kelola Supplier Page -->
+                <div id="kelola-supplier-page" class="d-none">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card card-info">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-truck mr-2"></i>Kelola Supplier</h3>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Form Tambah/Edit Supplier -->
+                                    <form id="kelola-supplier-form" class="mb-4">
+                                        <input type="hidden" id="kelola-supplier-id">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label>Nama Supplier</label>
+                                                    <input type="text" id="kelola-supplier-name" class="form-control" placeholder="Nama supplier" required>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label>Telepon</label>
+                                                    <input type="text" id="kelola-supplier-phone" class="form-control" placeholder="08xxx">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label>Alamat</label>
+                                                    <input type="text" id="kelola-supplier-address" class="form-control" placeholder="Alamat lengkap">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label>&nbsp;</label>
+                                                    <div class="btn-group btn-block">
+                                                        <button type="submit" class="btn btn-info">
+                                                            <i class="fas fa-plus mr-1"></i>Tambah
+                                                        </button>
+                                                        <button type="button" class="btn btn-secondary" onclick="resetSupplierForm()">
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </form>
+
+                                    <!-- Table List Supplier -->
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered table-striped table-hover table-sm">
+                                            <thead class="bg-light">
+                                                <tr>
+                                                    <th width="80">Kode</th>
+                                                    <th>Nama Supplier</th>
+                                                    <th width="120">Telepon</th>
+                                                    <th>Alamat</th>
+                                                    <th width="120" class="text-center">Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="kelola-supplier-list-body">
+                                                <tr>
+                                                    <td colspan="5" class="text-center text-muted py-4">
+                                                        <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                                                        <p class="mb-0">Memuat data...</p>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Activity Log Page -->
+                <div id="activity-log-page" class="d-none">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card card-info">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-history mr-2"></i>Log Aktivitas Obat</h3>
+                                    <div class="card-tools">
+                                        <span class="badge badge-light" id="activity-log-count">0 records</span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Filters -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-2">
+                                            <div class="form-group mb-0">
+                                                <label class="small text-muted">Dari Tanggal</label>
+                                                <input type="date" id="activity-log-start-date" class="form-control form-control-sm">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="form-group mb-0">
+                                                <label class="small text-muted">Sampai Tanggal</label>
+                                                <input type="date" id="activity-log-end-date" class="form-control form-control-sm">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="form-group mb-0">
+                                                <label class="small text-muted">Tipe</label>
+                                                <select id="activity-log-type" class="form-control form-control-sm">
+                                                    <option value="">Semua</option>
+                                                    <option value="purchase">Masuk (Purchase)</option>
+                                                    <option value="sale">Keluar (Sale)</option>
+                                                    <option value="adjustment">Penyesuaian</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="form-group mb-0">
+                                                <label class="small text-muted">User</label>
+                                                <select id="activity-log-user" class="form-control form-control-sm">
+                                                    <option value="">Semua User</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="form-group mb-0">
+                                                <label class="small text-muted">Cari Obat</label>
+                                                <input type="text" id="activity-log-search" class="form-control form-control-sm" placeholder="Nama obat...">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="form-group mb-0">
+                                                <label class="small text-muted">&nbsp;</label>
+                                                <button type="button" class="btn btn-info btn-sm btn-block" onclick="loadActivityLog()">
+                                                    <i class="fas fa-search mr-1"></i>Filter
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Summary Cards -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-3">
+                                            <div class="small-box bg-success">
+                                                <div class="inner">
+                                                    <h4 id="activity-total-in">0</h4>
+                                                    <p>Total Masuk</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-arrow-down"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="small-box bg-danger">
+                                                <div class="inner">
+                                                    <h4 id="activity-total-out">0</h4>
+                                                    <p>Total Keluar</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-arrow-up"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="small-box bg-warning">
+                                                <div class="inner">
+                                                    <h4 id="activity-total-adjust">0</h4>
+                                                    <p>Penyesuaian</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-balance-scale"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="small-box bg-info">
+                                                <div class="inner">
+                                                    <h4 id="activity-total-value">Rp 0</h4>
+                                                    <p>Total Nilai</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-money-bill"></i></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Table -->
+                                    <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
+                                        <table class="table table-bordered table-striped table-hover table-sm">
+                                            <thead class="bg-light sticky-top">
+                                                <tr>
+                                                    <th width="140">Waktu</th>
+                                                    <th>Obat</th>
+                                                    <th width="100" class="text-center">Tipe</th>
+                                                    <th width="80" class="text-center">Qty</th>
+                                                    <th width="100" class="text-right">Harga</th>
+                                                    <th width="100" class="text-right">Total</th>
+                                                    <th>Batch</th>
+                                                    <th>Oleh</th>
+                                                    <th>Catatan</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="activity-log-body">
+                                                <tr>
+                                                    <td colspan="9" class="text-center text-muted py-4">
+                                                        <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                                                        <p class="mb-0">Memuat data...</p>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <!-- Pagination -->
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <div class="text-muted small" id="activity-log-pagination-info">Showing 0 of 0</div>
+                                        <nav>
+                                            <ul class="pagination pagination-sm mb-0" id="activity-log-pagination"></ul>
+                                        </nav>
                                     </div>
                                 </div>
                             </div>
@@ -4962,18 +5305,510 @@ Apakah Anda yakin ingin melanjutkan?`;
         }
     };
     
+    // Kelola Supplier Page Function
+    window.showKelolaSupplierPage = function() {
+        // Hide all pages
+        document.querySelectorAll('[id$="-page"]').forEach(page => page.classList.add('d-none'));
+
+        // Show kelola supplier page
+        document.getElementById('kelola-supplier-page').classList.remove('d-none');
+
+        // Update active nav
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        document.querySelector('#management-nav-kelola-supplier .nav-link')?.classList.add('active');
+
+        // Hide floating panel
+        const floatingPanel = document.getElementById('floating-kelola-pasien');
+        if (floatingPanel) {
+            floatingPanel.classList.add('d-none');
+        }
+
+        // Load suppliers
+        loadSuppliers();
+    };
+
+    // Activity Log Page Function
+    window.showActivityLogPage = function() {
+        // Hide all pages
+        document.querySelectorAll('[id$="-page"]').forEach(page => page.classList.add('d-none'));
+
+        // Show activity log page
+        document.getElementById('activity-log-page').classList.remove('d-none');
+
+        // Update active nav
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        document.querySelector('#management-nav-activity-log .nav-link')?.classList.add('active');
+
+        // Hide floating panel
+        const floatingPanel = document.getElementById('floating-kelola-pasien');
+        if (floatingPanel) {
+            floatingPanel.classList.add('d-none');
+        }
+
+        // Set default date range (last 7 days) - use local timezone
+        const today = new Date();
+        const weekAgo = new Date(today);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+
+        // Format as YYYY-MM-DD in local timezone (not UTC)
+        const formatLocalDate = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        document.getElementById('activity-log-start-date').value = formatLocalDate(weekAgo);
+        document.getElementById('activity-log-end-date').value = formatLocalDate(today);
+
+        // Load activity log
+        loadActivityLog();
+    };
+
+    // ============================================
+    // Activity Log Functions
+    // ============================================
+    let activityLogPage = 0;
+    const activityLogLimit = 50;
+
+    window.loadActivityLog = async function(page = 0) {
+        activityLogPage = page;
+        const tbody = document.getElementById('activity-log-body');
+
+        try {
+            const token = localStorage.getItem('vps_auth_token');
+            const startDate = document.getElementById('activity-log-start-date').value;
+            const endDate = document.getElementById('activity-log-end-date').value;
+            const movementType = document.getElementById('activity-log-type').value;
+            const createdBy = document.getElementById('activity-log-user').value;
+            const search = document.getElementById('activity-log-search').value;
+
+            let url = `/api/inventory/activity-log?limit=${activityLogLimit}&offset=${page * activityLogLimit}`;
+            if (startDate) url += `&start_date=${startDate}`;
+            if (endDate) url += `&end_date=${endDate}`;
+            if (movementType) url += `&movement_type=${movementType}`;
+            if (createdBy) url += `&created_by=${encodeURIComponent(createdBy)}`;
+
+            const response = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error('Failed to load activity log');
+
+            const result = await response.json();
+            const data = result.data || [];
+            const pagination = result.pagination || {};
+            const filters = result.filters || {};
+
+            // Populate user filter dropdown
+            const userSelect = document.getElementById('activity-log-user');
+            const currentUser = userSelect.value;
+            userSelect.innerHTML = '<option value="">Semua User</option>';
+            (filters.users || []).forEach(u => {
+                userSelect.innerHTML += `<option value="${u}" ${u === currentUser ? 'selected' : ''}>${u}</option>`;
+            });
+
+            // Filter by search if provided
+            let filteredData = data;
+            if (search) {
+                const searchLower = search.toLowerCase();
+                filteredData = data.filter(d => d.obat_name?.toLowerCase().includes(searchLower));
+            }
+
+            // Calculate summaries
+            let totalIn = 0, totalOut = 0, totalAdjust = 0, totalValue = 0;
+            filteredData.forEach(d => {
+                const qty = Math.abs(d.quantity);
+                const value = qty * parseFloat(d.cost_price || 0);
+                if (d.movement_type === 'purchase') {
+                    totalIn += qty;
+                    totalValue += value;
+                } else if (d.movement_type === 'sale') {
+                    totalOut += qty;
+                } else if (d.movement_type === 'adjustment') {
+                    totalAdjust += Math.abs(d.quantity);
+                }
+            });
+
+            document.getElementById('activity-total-in').textContent = totalIn.toLocaleString('id-ID');
+            document.getElementById('activity-total-out').textContent = totalOut.toLocaleString('id-ID');
+            document.getElementById('activity-total-adjust').textContent = totalAdjust.toLocaleString('id-ID');
+            document.getElementById('activity-total-value').textContent = 'Rp ' + totalValue.toLocaleString('id-ID');
+            document.getElementById('activity-log-count').textContent = pagination.total + ' records';
+
+            if (filteredData.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4"><i class="fas fa-inbox fa-2x mb-2"></i><p class="mb-0">Tidak ada data aktivitas</p></td></tr>';
+                document.getElementById('activity-log-pagination-info').textContent = 'No data';
+                document.getElementById('activity-log-pagination').innerHTML = '';
+                return;
+            }
+
+            tbody.innerHTML = filteredData.map(d => {
+                const date = new Date(d.created_at);
+                const dateStr = date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+                const timeStr = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+                let typeBadge = '';
+                let qtyClass = '';
+                if (d.movement_type === 'purchase') {
+                    typeBadge = '<span class="badge badge-success">MASUK</span>';
+                    qtyClass = 'text-success';
+                } else if (d.movement_type === 'sale') {
+                    typeBadge = '<span class="badge badge-danger">KELUAR</span>';
+                    qtyClass = 'text-danger';
+                } else if (d.movement_type === 'adjustment') {
+                    typeBadge = '<span class="badge badge-warning">ADJUST</span>';
+                    qtyClass = d.quantity > 0 ? 'text-success' : 'text-danger';
+                }
+
+                const qty = d.quantity > 0 ? '+' + d.quantity : d.quantity;
+                const price = parseFloat(d.cost_price || 0);
+                const total = Math.abs(d.quantity) * price;
+
+                return `<tr>
+                    <td><small>${dateStr}<br><span class="text-muted">${timeStr}</span></small></td>
+                    <td><strong>${d.obat_name}</strong><br><small class="text-muted">${d.obat_code}</small></td>
+                    <td class="text-center">${typeBadge}</td>
+                    <td class="text-center ${qtyClass}"><strong>${qty}</strong></td>
+                    <td class="text-right">Rp ${price.toLocaleString('id-ID')}</td>
+                    <td class="text-right">Rp ${total.toLocaleString('id-ID')}</td>
+                    <td><code>${d.batch_number || '-'}</code></td>
+                    <td>${d.created_by || '-'}</td>
+                    <td><small>${d.notes || '-'}</small></td>
+                </tr>`;
+            }).join('');
+
+            // Pagination info
+            const start = page * activityLogLimit + 1;
+            const end = Math.min((page + 1) * activityLogLimit, pagination.total);
+            document.getElementById('activity-log-pagination-info').textContent = `Showing ${start}-${end} of ${pagination.total}`;
+
+            // Pagination buttons
+            const paginationEl = document.getElementById('activity-log-pagination');
+            let paginationHtml = '';
+            if (page > 0) {
+                paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="loadActivityLog(${page - 1}); return false;">Prev</a></li>`;
+            }
+            for (let i = 0; i < pagination.pages && i < 5; i++) {
+                const startPage = Math.max(0, page - 2);
+                const pageNum = startPage + i;
+                if (pageNum >= pagination.pages) break;
+                paginationHtml += `<li class="page-item ${pageNum === page ? 'active' : ''}"><a class="page-link" href="#" onclick="loadActivityLog(${pageNum}); return false;">${pageNum + 1}</a></li>`;
+            }
+            if (page < pagination.pages - 1) {
+                paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="loadActivityLog(${page + 1}); return false;">Next</a></li>`;
+            }
+            paginationEl.innerHTML = paginationHtml;
+
+        } catch (error) {
+            console.error('Load activity log error:', error);
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center text-danger py-4"><i class="fas fa-exclamation-triangle fa-2x mb-2"></i><p class="mb-0">Gagal memuat data</p></td></tr>';
+        }
+    };
+
+    // ============================================
+    // Supplier Management Functions
+    // ============================================
+    let suppliersCache = [];
+
+    async function loadSuppliers() {
+        const tbody = document.getElementById('kelola-supplier-list-body');
+        try {
+            const token = localStorage.getItem('vps_auth_token');
+            const response = await fetch('/api/suppliers?active=true', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error('Failed to load suppliers');
+
+            const data = await response.json();
+            suppliersCache = data.data || [];
+
+            if (suppliersCache.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Belum ada supplier</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = suppliersCache.map((s, i) => `
+                <tr>
+                    <td><code>${s.code}</code></td>
+                    <td>${s.name}</td>
+                    <td>${s.phone || '-'}</td>
+                    <td>${s.address || '-'}</td>
+                    <td class="text-center">
+                        <button class="btn btn-xs btn-warning" onclick="editSupplier(${s.id})" title="Edit">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-xs btn-danger" onclick="deleteSupplier(${s.id})" title="Hapus">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (error) {
+            console.error('Load suppliers error:', error);
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Gagal memuat data</td></tr>';
+        }
+    }
+
+    window.resetSupplierForm = function() {
+        document.getElementById('kelola-supplier-id').value = '';
+        document.getElementById('kelola-supplier-name').value = '';
+        document.getElementById('kelola-supplier-phone').value = '';
+        document.getElementById('kelola-supplier-address').value = '';
+        document.querySelector('#kelola-supplier-form button[type="submit"]').innerHTML = '<i class="fas fa-plus mr-1"></i>Tambah';
+    };
+
+    window.editSupplier = function(id) {
+        const supplier = suppliersCache.find(s => s.id === id);
+        if (!supplier) return;
+
+        document.getElementById('kelola-supplier-id').value = supplier.id;
+        document.getElementById('kelola-supplier-name').value = supplier.name;
+        document.getElementById('kelola-supplier-phone').value = supplier.phone || '';
+        document.getElementById('kelola-supplier-address').value = supplier.address || '';
+        document.querySelector('#kelola-supplier-form button[type="submit"]').innerHTML = '<i class="fas fa-save mr-1"></i>Update';
+    };
+
+    window.deleteSupplier = async function(id) {
+        if (!confirm('Hapus supplier ini?')) return;
+
+        try {
+            const token = localStorage.getItem('vps_auth_token');
+            const response = await fetch(`/api/suppliers/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error('Gagal menghapus');
+
+            showSuccess('Supplier berhasil dihapus');
+            loadSuppliers();
+        } catch (error) {
+            showError('Error: ' + error.message);
+        }
+    };
+
+    // Supplier form submit handler
+    document.addEventListener('DOMContentLoaded', function() {
+        const supplierForm = document.getElementById('kelola-supplier-form');
+        if (supplierForm) {
+            supplierForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const id = document.getElementById('kelola-supplier-id').value;
+                const name = document.getElementById('kelola-supplier-name').value.trim();
+                const phone = document.getElementById('kelola-supplier-phone').value.trim();
+                const address = document.getElementById('kelola-supplier-address').value.trim();
+
+                if (!name) {
+                    showWarning('Nama supplier harus diisi');
+                    return;
+                }
+
+                try {
+                    const token = localStorage.getItem('vps_auth_token');
+                    const method = id ? 'PUT' : 'POST';
+                    const url = id ? `/api/suppliers/${id}` : '/api/suppliers';
+
+                    const response = await fetch(url, {
+                        method,
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({ name, phone, address })
+                    });
+
+                    if (!response.ok) throw new Error('Gagal menyimpan');
+
+                    showSuccess(id ? 'Supplier berhasil diupdate' : 'Supplier berhasil ditambahkan');
+                    resetSupplierForm();
+                    loadSuppliers();
+                } catch (error) {
+                    showError('Error: ' + error.message);
+                }
+            });
+        }
+    });
+
+    // ============================================
+    // Purchase Stock (Tambah Stok) Functions
+    // ============================================
+
+    window.openPurchaseModal = async function(obatId, obatName) {
+        // Set obat info
+        document.getElementById('purchase-obat-id').value = obatId;
+        document.getElementById('purchase-obat-name').value = obatName;
+
+        // Set default date to today
+        document.getElementById('purchase-date').value = new Date().toISOString().split('T')[0];
+
+        // Clear other fields
+        document.getElementById('purchase-supplier').value = '';
+        document.getElementById('purchase-quantity').value = '';
+        document.getElementById('purchase-cost-price').value = '';
+        document.getElementById('purchase-total-cost').value = '';
+        document.getElementById('purchase-expiry-date').value = '';
+        document.getElementById('purchase-batch-number').value = '';
+        document.getElementById('purchase-invoice').value = '';
+        document.getElementById('purchase-notes').value = '';
+
+        // Load suppliers for dropdown and existing batches
+        try {
+            const token = localStorage.getItem('vps_auth_token');
+
+            // Load suppliers
+            const suppliersRes = await fetch('/api/suppliers?active=true', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const suppliersData = await suppliersRes.json();
+
+            const select = document.getElementById('purchase-supplier');
+            select.innerHTML = '<option value="">-- Pilih Supplier --</option>';
+            (suppliersData.data || []).forEach(s => {
+                select.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+            });
+
+            // Load existing batches for this obat
+            const batchesContainer = document.getElementById('existing-batches-container');
+            batchesContainer.innerHTML = '<p class="text-muted small mb-0">Memuat batch...</p>';
+
+            const batchesRes = await fetch(`/api/inventory/batches/${obatId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const batchesData = await batchesRes.json();
+            const batches = batchesData.data || [];
+
+            if (batches.length === 0) {
+                batchesContainer.innerHTML = '<p class="text-muted small mb-0"><i class="fas fa-info-circle mr-1"></i>Belum ada batch tercatat untuk obat ini</p>';
+            } else {
+                let html = '<table class="table table-sm table-bordered mb-0" style="font-size: 12px;"><thead class="bg-light"><tr><th>Batch</th><th>Supplier</th><th class="text-center">Sisa</th><th>Harga Beli</th><th>Kadaluarsa</th></tr></thead><tbody>';
+                batches.forEach(b => {
+                    const expDate = b.expiry_date ? new Date(b.expiry_date).toLocaleDateString('id-ID') : '-';
+                    const daysLeft = b.expiry_date ? Math.ceil((new Date(b.expiry_date) - new Date()) / (1000 * 60 * 60 * 24)) : null;
+                    let expBadge = '';
+                    if (daysLeft !== null) {
+                        if (daysLeft <= 0) expBadge = '<span class="badge badge-danger ml-1">Expired</span>';
+                        else if (daysLeft <= 30) expBadge = '<span class="badge badge-warning ml-1">' + daysLeft + ' hari</span>';
+                        else if (daysLeft <= 60) expBadge = '<span class="badge badge-info ml-1">' + daysLeft + ' hari</span>';
+                    }
+                    html += `<tr>
+                        <td><code>${b.batch_number || '-'}</code></td>
+                        <td>${b.supplier_name || '-'}</td>
+                        <td class="text-center"><strong>${b.quantity_remaining}</strong></td>
+                        <td>Rp ${parseFloat(b.cost_price).toLocaleString('id-ID')}</td>
+                        <td>${expDate}${expBadge}</td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+                batchesContainer.innerHTML = html;
+            }
+        } catch (error) {
+            console.error('Load data error:', error);
+            document.getElementById('existing-batches-container').innerHTML = '<p class="text-danger small mb-0">Gagal memuat data</p>';
+        }
+
+        $('#purchaseStockModal').modal('show');
+    };
+
+    // Calculate total on input change
+    document.addEventListener('DOMContentLoaded', function() {
+        const qtyInput = document.getElementById('purchase-quantity');
+        const costInput = document.getElementById('purchase-cost-price');
+        const totalInput = document.getElementById('purchase-total-cost');
+
+        function updateTotal() {
+            const qty = parseInt(qtyInput?.value) || 0;
+            const cost = parseFloat(costInput?.value) || 0;
+            if (totalInput) {
+                totalInput.value = 'Rp ' + (qty * cost).toLocaleString('id-ID');
+            }
+        }
+
+        qtyInput?.addEventListener('input', updateTotal);
+        costInput?.addEventListener('input', updateTotal);
+    });
+
+    window.submitPurchaseStock = async function() {
+        const obatId = document.getElementById('purchase-obat-id').value;
+        const supplierId = document.getElementById('purchase-supplier').value;
+        const quantity = document.getElementById('purchase-quantity').value;
+        const costPrice = document.getElementById('purchase-cost-price').value;
+        const purchaseDate = document.getElementById('purchase-date').value;
+        const expiryDate = document.getElementById('purchase-expiry-date').value;
+        const batchNumber = document.getElementById('purchase-batch-number').value;
+        const invoiceNumber = document.getElementById('purchase-invoice').value;
+        const notes = document.getElementById('purchase-notes').value;
+
+        // Validation
+        if (!quantity || quantity <= 0) {
+            showWarning('Jumlah harus diisi');
+            return;
+        }
+        if (!costPrice || costPrice <= 0) {
+            showWarning('Harga beli harus diisi');
+            return;
+        }
+        if (!purchaseDate) {
+            showWarning('Tanggal pembelian harus diisi');
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('vps_auth_token');
+            const response = await fetch('/api/inventory/purchase', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    obat_id: obatId,
+                    supplier_id: supplierId || null,
+                    quantity: parseInt(quantity),
+                    cost_price: parseFloat(costPrice),
+                    purchase_date: purchaseDate,
+                    expiry_date: expiryDate || null,
+                    batch_number: batchNumber || null,
+                    invoice_number: invoiceNumber || null,
+                    notes: notes || null
+                })
+            });
+
+            if (!response.ok) {
+                const err = await response.json();
+                throw new Error(err.message || 'Gagal menyimpan');
+            }
+
+            showSuccess('Stok berhasil ditambahkan');
+            $('#purchaseStockModal').modal('hide');
+
+            // Reload obat list
+            if (typeof window.loadKelolaObatList === 'function') {
+                window.loadKelolaObatList();
+            } else {
+                // Fallback: reload kelola-obat module if available
+                const { initKelolaObat } = await import('./scripts/kelola-obat.js');
+                if (initKelolaObat) initKelolaObat();
+            }
+        } catch (error) {
+            showError('Error: ' + error.message);
+        }
+    };
+
     // Kelola Tindakan (Pengaturan) Page Function
     window.showPengaturanPage = function() {
         // Hide all pages
         document.querySelectorAll('[id$="-page"]').forEach(page => page.classList.add('d-none'));
-        
+
         // Show pengaturan page
         document.getElementById('pengaturan-page').classList.remove('d-none');
-        
+
         // Update active nav
         document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
         document.querySelector('#management-nav-kelola-tindakan .nav-link')?.classList.add('active');
-        
+
         // Hide floating panel
         const floatingPanel = document.getElementById('floating-kelola-pasien');
         if (floatingPanel) {
@@ -5681,31 +6516,171 @@ Apakah Anda yakin ingin melanjutkan?`;
 
     async function initFinanceAnalysisPage() {
         console.log('🔧 initFinanceAnalysisPage called');
-        
+
         const page = document.getElementById('finance-analysis-page');
         if (!page) {
             console.error('❌ finance-analysis-page element not found');
             return;
         }
-        
+
         console.log('✅ Page found, checking visibility...');
-        
+
         const token = await getIdToken();
         if (!token) {
             console.error('❌ No auth token');
             return;
         }
-        
+
         console.log('✅ Token obtained, loading data...');
-        
+
         try {
             await loadKPIStats();
             await loadAnalytics();
+            await loadObatProfitAnalysis();
             console.log('✅ Finance Analysis data loaded successfully');
         } catch (error) {
             console.error('❌ Error in initFinanceAnalysisPage:', error);
         }
     }
+
+    // Load Obat Profit Analysis
+    async function loadObatProfitAnalysis() {
+        try {
+            const token = localStorage.getItem('vps_auth_token');
+            if (!token) return;
+
+            // Get first day of current month
+            const now = new Date();
+            const startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+            const endDate = now.toISOString().split('T')[0];
+
+            // Fetch profit data
+            const [profitRes, summaryRes] = await Promise.all([
+                fetch(`/api/inventory/profit?start_date=${startDate}&end_date=${endDate}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                }),
+                fetch(`/api/inventory/summary?start_date=${startDate}&end_date=${endDate}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+            ]);
+
+            if (profitRes.ok) {
+                const profitData = await profitRes.json();
+
+                // Update KPI cards
+                const totals = profitData.totals || {};
+                document.getElementById('profit-revenue').textContent = 'Rp ' + (totals.totalRevenue || 0).toLocaleString('id-ID');
+                document.getElementById('profit-cost').textContent = 'Rp ' + (totals.totalCost || 0).toLocaleString('id-ID');
+                document.getElementById('profit-gross').textContent = 'Rp ' + (totals.totalProfit || 0).toLocaleString('id-ID');
+                document.getElementById('profit-margin').textContent = (totals.profitMargin || 0) + '%';
+
+                // Update items table
+                const tbody = document.getElementById('profit-items-body');
+                const items = profitData.items || [];
+
+                if (items.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Belum ada data penjualan obat bulan ini</td></tr>';
+                } else {
+                    tbody.innerHTML = items.map(item => {
+                        const revenue = parseFloat(item.revenue) || 0;
+                        const cost = parseFloat(item.cost) || 0;
+                        const profit = parseFloat(item.profit) || 0;
+                        const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(1) : 0;
+                        const marginClass = margin >= 30 ? 'text-success' : margin >= 15 ? 'text-warning' : 'text-danger';
+
+                        return `
+                            <tr>
+                                <td>${item.name || '-'}</td>
+                                <td class="text-right">${item.qty_sold || 0}</td>
+                                <td class="text-right">Rp ${revenue.toLocaleString('id-ID')}</td>
+                                <td class="text-right">Rp ${cost.toLocaleString('id-ID')}</td>
+                                <td class="text-right font-weight-bold ${profit >= 0 ? 'text-success' : 'text-danger'}">
+                                    Rp ${profit.toLocaleString('id-ID')}
+                                </td>
+                                <td class="text-right ${marginClass}">${margin}%</td>
+                            </tr>
+                        `;
+                    }).join('');
+                }
+            }
+
+            if (summaryRes.ok) {
+                const summary = await summaryRes.json();
+
+                // Show expiring items alert
+                if (summary.expiringItemsCount > 0) {
+                    document.getElementById('expiring-alert').style.display = 'block';
+                    document.getElementById('expiring-count').textContent = summary.expiringItemsCount;
+                } else {
+                    document.getElementById('expiring-alert').style.display = 'none';
+                }
+
+                // Show low stock alert
+                if (summary.lowStockCount > 0) {
+                    document.getElementById('lowstock-alert').style.display = 'block';
+                    document.getElementById('lowstock-count').textContent = summary.lowStockCount;
+                } else {
+                    document.getElementById('lowstock-alert').style.display = 'none';
+                }
+            }
+        } catch (error) {
+            console.error('Load obat profit analysis error:', error);
+        }
+    }
+
+    window.loadObatProfitAnalysis = loadObatProfitAnalysis;
+
+    // Show expiring items modal (optional)
+    window.showExpiringItems = async function() {
+        try {
+            const token = localStorage.getItem('vps_auth_token');
+            const response = await fetch('/api/inventory/expiring?days=60', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) return;
+
+            const data = await response.json();
+            const items = data.data || [];
+
+            let html = '<div class="table-responsive"><table class="table table-sm"><thead><tr><th>Obat</th><th>Batch</th><th>Sisa</th><th>Kadaluarsa</th></tr></thead><tbody>';
+            items.forEach(item => {
+                const expDate = new Date(item.expiry_date).toLocaleDateString('id-ID');
+                const daysLeft = item.days_until_expiry;
+                const badge = daysLeft <= 0 ? 'badge-danger' : daysLeft <= 30 ? 'badge-warning' : 'badge-secondary';
+                html += `<tr>
+                    <td>${item.obat_name}</td>
+                    <td><code>${item.batch_number || '-'}</code></td>
+                    <td>${item.quantity_remaining}</td>
+                    <td><span class="badge ${badge}">${expDate}</span> <small>(${daysLeft} hari)</small></td>
+                </tr>`;
+            });
+            html += '</tbody></table></div>';
+
+            // Show in simple alert or modal
+            const alertDiv = document.createElement('div');
+            alertDiv.innerHTML = `
+                <div class="modal fade" id="expiringModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header bg-warning">
+                                <h5 class="modal-title"><i class="fas fa-exclamation-triangle mr-2"></i>Item Kadaluarsa</h5>
+                                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                            </div>
+                            <div class="modal-body">${html}</div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(alertDiv);
+            $('#expiringModal').modal('show');
+            $('#expiringModal').on('hidden.bs.modal', function() {
+                alertDiv.remove();
+            });
+        } catch (error) {
+            console.error('Show expiring items error:', error);
+        }
+    };
 
     // Export to window for manual calling
     window.initFinanceAnalysisPage = initFinanceAnalysisPage;
@@ -5984,11 +6959,14 @@ window.showProfileCompletionModal = function() {
 let currentGeneratedCode = null;
 let currentGeneratedPhone = null;
 let currentPatientName = null;
+let regCodesCurrentPage = 1;
+let regCodesTotalPages = 1;
 
-async function loadRegistrationCodes() {
+async function loadRegistrationCodes(page = 1) {
     try {
+        regCodesCurrentPage = page;
         const token = localStorage.getItem('vps_auth_token');
-        const response = await fetch('/api/registration-codes?limit=50', {
+        const response = await fetch(`/api/registration-codes?limit=10&page=${page}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -5996,6 +6974,19 @@ async function loadRegistrationCodes() {
 
         const data = await response.json();
         const tbody = document.getElementById('registration-codes-tbody');
+
+        // Update pagination info
+        const pagination = data.pagination || { total: 0, page: 1, totalPages: 1 };
+        regCodesTotalPages = pagination.totalPages;
+        const start = data.data && data.data.length > 0 ? ((page - 1) * 10) + 1 : 0;
+        const end = start > 0 ? start + data.data.length - 1 : 0;
+
+        document.getElementById('reg-codes-pagination-info').textContent =
+            `Menampilkan ${start}-${end} dari ${pagination.total}`;
+
+        // Update button states
+        document.getElementById('reg-codes-prev-btn').disabled = page <= 1;
+        document.getElementById('reg-codes-next-btn').disabled = page >= regCodesTotalPages;
 
         if (!data.data || data.data.length === 0) {
             tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Belum ada kode registrasi</td></tr>';
@@ -6197,7 +7188,7 @@ async function deleteCode(codeId) {
 
         if (!response.ok) throw new Error('Gagal menghapus');
 
-        loadRegistrationCodes();
+        loadRegistrationCodes(regCodesCurrentPage);
 
     } catch (error) {
         alert('Error: ' + error.message);
@@ -6239,6 +7230,109 @@ async function deleteCode(codeId) {
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
                 <button type="button" class="btn btn-warning" id="btn-generate-code" onclick="generateRegistrationCode()">
                     <i class="fas fa-key"></i> Generate Kode
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Purchase Stock Modal (Tambah Stok) -->
+<div class="modal fade" id="purchaseStockModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-plus-circle mr-2"></i>Tambah Stok Obat</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="purchase-stock-form">
+                    <input type="hidden" id="purchase-obat-id">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Obat</label>
+                                <input type="text" id="purchase-obat-name" class="form-control" readonly>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Supplier</label>
+                                <select id="purchase-supplier" class="form-control">
+                                    <option value="">-- Pilih Supplier --</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Jumlah <span class="text-danger">*</span></label>
+                                <input type="number" id="purchase-quantity" class="form-control" min="1" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Harga Beli/Unit <span class="text-danger">*</span></label>
+                                <input type="number" id="purchase-cost-price" class="form-control" min="0" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Total Harga Beli</label>
+                                <input type="text" id="purchase-total-cost" class="form-control" readonly>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Tanggal Pembelian <span class="text-danger">*</span></label>
+                                <input type="date" id="purchase-date" class="form-control" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Tanggal Kadaluarsa</label>
+                                <input type="date" id="purchase-expiry-date" class="form-control">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>No. Batch</label>
+                                <input type="text" id="purchase-batch-number" class="form-control" placeholder="Opsional">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>No. Invoice</label>
+                                <input type="text" id="purchase-invoice" class="form-control" placeholder="Opsional">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="form-group">
+                                <label>Catatan</label>
+                                <input type="text" id="purchase-notes" class="form-control" placeholder="Opsional">
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Existing Batches Section -->
+                <div class="mt-3 pt-3 border-top">
+                    <h6 class="text-muted mb-2">
+                        <i class="fas fa-boxes mr-1"></i>Batch yang Ada (Stok Tersisa)
+                    </h6>
+                    <div id="existing-batches-container" style="max-height: 150px; overflow-y: auto;">
+                        <p class="text-muted small mb-0">Memuat...</p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-success" onclick="submitPurchaseStock()">
+                    <i class="fas fa-save mr-1"></i>Simpan
                 </button>
             </div>
         </div>

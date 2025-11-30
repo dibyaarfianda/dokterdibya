@@ -241,7 +241,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     window.currentStaffIdentity.role = identity.role;
                     
                     // Update staff name display
-                    const staffNameDisplay = document.getElementById('user-name');
+                    const staffNameDisplay = document.getElementById('staff-name-display');
                     if (staffNameDisplay) {
                         staffNameDisplay.textContent = identity.name || 'Staff';
                     }
@@ -348,7 +348,7 @@ function initializeDOMReferences() {
     DOM.directorySearch = document.getElementById('sc-directory-search');
     DOM.openDirectoryBtn = document.getElementById('sc-open-directory');
     DOM.closeDirectoryBtn = document.getElementById('sc-directory-close');
-    DOM.staffNameDisplay = document.getElementById('user-name');
+    DOM.staffNameDisplay = document.getElementById('staff-name-display');
 
     // Verify critical DOM elements
     if (!DOM.root || !DOM.content) {
@@ -577,6 +577,7 @@ function openDirectory() {
     if (DOM.directoryOverlay) {
         DOM.directoryOverlay.removeAttribute('hidden');
         DOM.directoryOverlay.setAttribute('aria-hidden', 'false');
+        DOM.directoryOverlay.classList.add('is-visible');
         renderDirectoryPatients();
 
         // Focus search input
@@ -588,6 +589,7 @@ function openDirectory() {
 
 function closeDirectory() {
     if (DOM.directoryOverlay) {
+        DOM.directoryOverlay.classList.remove('is-visible');
         DOM.directoryOverlay.setAttribute('hidden', '');
         DOM.directoryOverlay.setAttribute('aria-hidden', 'true');
 

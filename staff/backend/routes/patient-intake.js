@@ -18,6 +18,23 @@ const ENCRYPTION_KEY_ID = process.env.INTAKE_ENCRYPTION_KEY_ID || 'default';
 let encryptionWarningLogged = false;
 const VALID_INTAKE_CATEGORIES = new Set(['obstetri', 'gyn_repro', 'gyn_special', 'admin_followup']);
 
+// Helper: Check if user can access patient intake data
+function canAccessPatientIntake(user, patientId) {
+    // Superadmin/dokter can access all records
+    if (user.is_superadmin || user.role === 'dokter' || user.role_id === 1) {
+        return true;
+    }
+    // Patient can only access their own records
+    if (user.user_type === 'patient' && (user.id === patientId || user.patientId === patientId)) {
+        return true;
+    }
+    // Staff with medical permissions (nurse, bidan) can access for clinical purposes
+    if (['perawat', 'bidan'].includes(user.role) || [3, 4].includes(user.role_id)) {
+        return true;
+    }
+    return false;
+}
+
 function trimToNull(value) {
     if (value === null || value === undefined) {
         return null;
@@ -955,6 +972,15 @@ router.get('/api/patient-intake/by-patient/:patientId', verifyToken, async (req,
         return res.status(400).json({ success: false, message: 'Patient ID tidak valid.' });
     }
 
+    // Access control check
+    if (!canAccessPatientIntake(req.user, patientId)) {
+        logger.warn(`Unauthorized patient intake access attempt: User ${req.user.id} tried to access patient ${patientId}`);
+        return res.status(403).json({
+            success: false,
+            message: 'Access denied: You do not have permission to view this patient\'s intake data'
+        });
+    }
+
     try {
         // Get all intake submissions for this patient
         let query = `
@@ -1034,6 +1060,15 @@ router.get('/api/patient-intake/patient/:patientId/latest', verifyToken, async (
 
     if (!patientId || typeof patientId !== 'string') {
         return res.status(400).json({ success: false, message: 'Patient ID tidak valid.' });
+    }
+
+    // Access control check
+    if (!canAccessPatientIntake(req.user, patientId)) {
+        logger.warn(`Unauthorized patient intake latest access attempt: User ${req.user.id} tried to access patient ${patientId}`);
+        return res.status(403).json({
+            success: false,
+            message: 'Access denied: You do not have permission to view this patient\'s intake data'
+        });
     }
 
     try {

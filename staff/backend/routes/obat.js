@@ -24,26 +24,31 @@ router.get('/api/obat', verifyToken, requirePermission('medications.view'), asyn
             return res.json(cached);
         }
         
-        let query = 'SELECT * FROM obat WHERE 1=1';
+        let query = `
+            SELECT o.*, s.id as supplier_id, s.code as supplier_code, s.name as supplier_name
+            FROM obat o
+            LEFT JOIN suppliers s ON o.default_supplier_id = s.id
+            WHERE 1=1
+        `;
         const params = [];
-        
+
         if (category) {
-            query += ' AND category = ?';
+            query += ' AND o.category = ?';
             params.push(category);
         }
-        
+
         // Default to showing only active items unless explicitly requested
         if (active === 'false') {
-            query += ' AND is_active = 0';
+            query += ' AND o.is_active = 0';
         } else if (active === 'all') {
             // Show all items (active and inactive)
         } else {
             // Default: show only active items
-            query += ' AND is_active = 1';
+            query += ' AND o.is_active = 1';
         }
-        
-        query += ' ORDER BY category, name';
-        
+
+        query += ' ORDER BY o.category, o.name';
+
         const [rows] = await db.query(query, params);
         
         const response = {
@@ -129,27 +134,27 @@ router.post('/api/obat', verifyToken, requirePermission('settings.medications_ma
 // UPDATE OBAT
 router.put('/api/obat/:id', verifyToken, requirePermission('settings.medications_manage'), validateObatUpdate, async (req, res) => {
     try {
-        const { name, category, price, stock, unit, min_stock, is_active } = req.body;
-        
+        const { name, category, price, stock, unit, min_stock, is_active, default_supplier_id } = req.body;
+
         const [result] = await db.query(
-            'UPDATE obat SET name = ?, category = ?, price = ?, stock = ?, unit = ?, min_stock = ?, is_active = ? WHERE id = ?',
-            [name, category, price, stock, unit, min_stock, is_active, req.params.id]
+            `UPDATE obat SET name = ?, category = ?, price = ?, stock = ?, unit = ?, min_stock = ?, is_active = ?, default_supplier_id = ? WHERE id = ?`,
+            [name, category, price, stock, unit, min_stock, is_active, default_supplier_id || null, req.params.id]
         );
-        
+
         if (result.affectedRows === 0) {
             return res.status(404).json({ success: false, message: 'Obat not found' });
         }
-        
+
         // Invalidate obat cache
         cache.delPattern('obat:');
-        
+
         res.json({ success: true, message: 'Obat updated successfully' });
     } catch (error) {
         console.error('Error updating obat:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to update obat', 
-            error: error.message 
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update obat',
+            error: error.message
         });
     }
 });

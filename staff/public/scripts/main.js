@@ -77,6 +77,8 @@ function initPages() {
     pages.financeAnalysis = grab('finance-analysis-page');
     pages.kelolaRoles = grab('kelola-roles-page');
     pages.bookingSettings = grab('booking-settings-page');
+    pages.activityLog = grab('activity-log-page');
+    pages.kelolaSupplier = grab('kelola-supplier-page');
 }
 function loadExternalPage(containerId, htmlFile, options = {}) {
     const { forceReload = false } = options;

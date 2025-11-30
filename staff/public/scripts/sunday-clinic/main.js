@@ -510,16 +510,19 @@ class SundayClinicApp {
             this.showLoading('Menyimpan Pemeriksaan Obstetri...');
 
             const data = {
-                findings: document.getElementById('pemeriksaan-obstetri-findings')?.value || ''
+                findings: document.getElementById('pemeriksaan-obstetri-findings')?.value || '',
+                saved_at: new Date().toISOString()
             };
 
             const state = stateManager.getState();
-            const patientId = state.derived?.patientId ||
-                             state.recordData?.patientId ||
-                             state.patientData?.id;
+            const mrId = state.currentMrId ||
+                        state.recordData?.mrId ||
+                        state.recordData?.mr_id ||
+                        state.recordData?.record?.mrId ||
+                        state.recordData?.record?.mr_id;
 
-            if (!patientId) {
-                throw new Error('Patient ID tidak ditemukan');
+            if (!mrId) {
+                throw new Error('MR ID tidak ditemukan');
             }
 
             const token = window.getToken();
@@ -527,28 +530,14 @@ class SundayClinicApp {
                 throw new Error('Authentication token tidak tersedia');
             }
 
-            const recordPayload = {
-                patientId: patientId,
-                type: 'pemeriksaan_obstetri',
-                data: data,
-                timestamp: new Date().toISOString()
-            };
-
-            // Add doctor info if available
-            if (window.currentStaffIdentity?.name) {
-                recordPayload.doctorName = window.currentStaffIdentity.name;
-            }
-            if (window.currentStaffIdentity?.id) {
-                recordPayload.doctorId = window.currentStaffIdentity.id;
-            }
-
-            const response = await fetch('/api/medical-records', {
+            // Send to API using sunday-clinic endpoint with mrId
+            const response = await fetch(`/api/sunday-clinic/records/${mrId}/pemeriksaan_obstetri`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(recordPayload)
+                body: JSON.stringify(data)
             });
 
             if (!response.ok) {
@@ -559,9 +548,12 @@ class SundayClinicApp {
             const result = await response.json();
             console.log('[SundayClinic] Pemeriksaan Obstetri saved successfully:', result);
 
+            // Update state
+            stateManager.updateSectionData('pemeriksaan_obstetri', data);
+
             this.showSuccess('Pemeriksaan Obstetri berhasil disimpan!');
 
-            // Reload the record to show updated data with timestamp
+            // Reload the record to show updated metadata
             await this.fetchRecord(this.currentMrId);
 
         } catch (error) {
@@ -574,31 +566,28 @@ class SundayClinicApp {
     }
 
     /**
-     * Save USG for obstetri category (old format)
+     * Save USG for obstetri category
      */
-    /* async saveUSGExam() {
-        try {
-            const saveBtn = document.getElementById('save-usg');
-            if (saveBtn) {
-                saveBtn.disabled = true;
-                saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Menyimpan...';
-            }
+    async saveUSGExam() {
+        // Prevent double submission
+        if (this._savingUSG) {
+            console.warn('[SundayClinic] USG save already in progress, ignoring duplicate call');
+            return;
+        }
+        this._savingUSG = true;
 
+        const saveBtn = document.getElementById('btn-save-usg');
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Menyimpan...';
+        }
+
+        try {
             this.showLoading('Menyimpan USG...');
 
             // Detect active trimester
             const activeTrimesterInput = document.querySelector('.trimester-selector .btn.active input');
             const trimester = activeTrimesterInput ? activeTrimesterInput.value : 'first';
-
-            console.log('[SundayClinic] Saving USG for trimester:', trimester);
-
-            // Import helper functions
-            const { getMedicalRecordContext } = await import('./utils/helpers.js');
-
-            // Check if existing record exists
-            const state = stateManager.getState();
-            const context = getMedicalRecordContext(state, 'usg');
-            const existingRecordId = context?.record?.recordId || context?.record?.id || null;
 
             // Collect data from USG component
             const usgComponent = this.components['usg'];
@@ -611,15 +600,19 @@ class SundayClinicApp {
                 trimester_1: usgComponent.collectTrimester1Data(),
                 trimester_2: usgComponent.collectTrimester2Data(),
                 screening: usgComponent.collectScreeningData(),
-                trimester_3: usgComponent.collectTrimester3Data()
+                trimester_3: usgComponent.collectTrimester3Data(),
+                saved_at: new Date().toISOString()
             };
 
-            const patientId = state.derived?.patientId ||
-                             state.recordData?.patientId ||
-                             state.patientData?.id;
+            const state = stateManager.getState();
+            const mrId = state.currentMrId ||
+                        state.recordData?.mrId ||
+                        state.recordData?.mr_id ||
+                        state.recordData?.record?.mrId ||
+                        state.recordData?.record?.mr_id;
 
-            if (!patientId) {
-                throw new Error('Patient ID tidak ditemukan');
+            if (!mrId) {
+                throw new Error('MR ID tidak ditemukan');
             }
 
             const token = window.getToken();
@@ -627,49 +620,15 @@ class SundayClinicApp {
                 throw new Error('Authentication token tidak tersedia');
             }
 
-            let response;
-            let successMessage;
-
-            if (existingRecordId) {
-                // UPDATE existing record
-                console.log('[SundayClinic] Updating existing USG record:', existingRecordId);
-
-                response = await fetch(`/api/medical-records/${existingRecordId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        type: 'usg',
-                        data: data
-                    })
-                });
-
-                successMessage = 'Data USG berhasil diperbarui!';
-            } else {
-                // CREATE new record
-                console.log('[SundayClinic] Creating new USG record');
-
-                const recordPayload = {
-                    patientId: patientId,
-                    type: 'usg',
-                    data: data,
-                    timestamp: new Date().toISOString()
-                    // NO doctorName/doctorId for USG!
-                };
-
-                response = await fetch('/api/medical-records', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify(recordPayload)
-                });
-
-                successMessage = 'Data USG berhasil disimpan!';
-            }
+            // Send to API using sunday-clinic endpoint with mrId
+            const response = await fetch(`/api/sunday-clinic/records/${mrId}/usg`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
+            });
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ message: 'Unknown error' }));
@@ -679,25 +638,28 @@ class SundayClinicApp {
             const result = await response.json();
             console.log('[SundayClinic] USG saved successfully:', result);
 
-            // Reload the record to show updated data
-            await this.reload();
+            // Update state
+            stateManager.updateSectionData('usg', data);
 
-            this.showSuccess(successMessage);
+            this.showSuccess('Data USG berhasil disimpan!');
+
+            // Reload the record to show updated metadata
+            await this.fetchRecord(this.currentMrId);
 
         } catch (error) {
             console.error('[SundayClinic] Save USG failed:', error);
             this.showError(error.message);
         } finally {
             this.hideLoading();
+            this._savingUSG = false;
 
             // Re-enable button
-            const saveBtn = document.getElementById('save-usg');
             if (saveBtn) {
                 saveBtn.disabled = false;
                 saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Simpan USG';
             }
         }
-    } */
+    }
 
     /**
      * Save Physical Exam for obstetri category (old format)
@@ -866,11 +828,16 @@ class SundayClinicApp {
                 jenis_kb_gagal: document.getElementById('anamnesa-jenis-kb-gagal')?.value || ''
             };
 
-            // Get patient ID from state
+            // Get MR ID and token from state
             const state = stateManager.getState();
-            const patientId = state.derived?.patientId;
-            if (!patientId) {
-                this.showError('Patient ID tidak ditemukan');
+            const mrId = state.currentMrId ||
+                        state.recordData?.mrId ||
+                        state.recordData?.mr_id ||
+                        state.recordData?.record?.mrId ||
+                        state.recordData?.record?.mr_id;
+
+            if (!mrId) {
+                this.showError('MR ID tidak ditemukan');
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-save"></i> Simpan';
                 return;
@@ -884,28 +851,17 @@ class SundayClinicApp {
                 return;
             }
 
-            // Send to API
-            const recordPayload = {
-                patientId: patientId,
-                type: 'anamnesa',
-                data: data,
-                timestamp: getGMT7Timestamp()
-            };
+            // Add saved timestamp
+            data.saved_at = new Date().toISOString();
 
-            if (window.currentStaffIdentity?.name) {
-                recordPayload.doctorName = window.currentStaffIdentity.name;
-            }
-            if (window.currentStaffIdentity?.id) {
-                recordPayload.doctorId = window.currentStaffIdentity.id;
-            }
-
-            const response = await fetch('/api/medical-records', {
+            // Send to API using sunday-clinic endpoint with mrId
+            const response = await fetch(`/api/sunday-clinic/records/${mrId}/anamnesa`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify(recordPayload)
+                body: JSON.stringify(data)
             });
 
             if (!response.ok) {
@@ -914,11 +870,15 @@ class SundayClinicApp {
             }
 
             const result = await response.json();
+            console.log('[SundayClinic] Anamnesa saved successfully:', result);
+
+            // Update state
+            stateManager.updateSectionData('anamnesa', data);
 
             // Show success message
-            this.showSuccess('Anamnesa berhasil diperbarui');
+            this.showSuccess('Anamnesa berhasil disimpan!');
 
-            // Reload the record to show updated data
+            // Reload the record to show updated metadata
             await this.fetchRecord(this.currentMrId);
 
             // Re-enable button
@@ -1541,7 +1501,7 @@ window.SundayClinicApp = app;
 window.saveAnamnesa = () => app.saveAnamnesa();
 window.savePhysicalExam = () => app.savePhysicalExam();
 window.savePemeriksaanObstetri = () => app.savePemeriksaanObstetri();
-// window.saveUSGExam = () => app.saveUSGExam();
+window.saveUSGExam = () => app.saveUSGExam();
 window.savePlanningObstetri = () => app.savePlanningObstetri();
 window.saveDiagnosis = () => app.saveDiagnosis();
 window.generateResumeMedis = () => app.generateResumeMedis();
