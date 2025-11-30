@@ -590,16 +590,52 @@ class SundayClinicApp {
             const trimester = activeTrimesterInput ? activeTrimesterInput.value : 'first';
 
             // Collect USG data directly from DOM
+            // Collect contraception for trimester 3
+            const contraception = [];
+            ['steril', 'iud', 'iud_mirena', 'implant', 'injection', 'pill', 'condom', 'vasectomy', 'none'].forEach(method => {
+                if (document.querySelector(`[name="t3_contra_${method}"]`)?.checked) {
+                    contraception.push(method);
+                }
+            });
+
+            // Collect screening checkboxes
+            const screeningCheckboxes = [
+                'hemisphere', 'lateral_vent', 'cavum', 'profile', 'nasal_bone', 'upper_lip',
+                '4chamber', 'heart_left', 'apex', 'heart_size', 'vertebra', 'skin',
+                'upper_limbs', 'lower_limbs', 'stomach', 'liver', 'kidneys', 'bladder', 'cord', 'abdominal_wall',
+                'no_anomaly', 'suspect'
+            ];
+            const screeningData = {
+                date: document.querySelector('[name="scr_date"]')?.value || '',
+                gender: document.querySelector('input[name="scr_gender"]:checked')?.value || '',
+                suspect_notes: document.querySelector('[name="scr_suspect_notes"]')?.value || ''
+            };
+            screeningCheckboxes.forEach(name => {
+                screeningData[name] = document.querySelector(`[name="scr_${name}"]`)?.checked || false;
+            });
+
+            // Get existing photos data
+            let photos = [];
+            try {
+                const photosDataEl = document.getElementById('usg-photos-data');
+                if (photosDataEl && photosDataEl.value) {
+                    photos = JSON.parse(photosDataEl.value.replace(/&quot;/g, '"') || '[]');
+                }
+            } catch (e) { photos = []; }
+
             const data = {
                 current_trimester: trimester,
                 trimester_1: {
                     date: document.querySelector('[name="t1_date"]')?.value || '',
                     embryo_count: document.querySelector('input[name="t1_embryo_count"]:checked')?.value || '',
+                    gs: document.querySelector('[name="t1_gs"]')?.value || '',
                     crl: document.querySelector('[name="t1_crl"]')?.value || '',
                     ga_weeks: document.querySelector('[name="t1_ga_weeks"]')?.value || '',
                     heart_rate: document.querySelector('[name="t1_heart_rate"]')?.value || '',
                     implantation: document.querySelector('input[name="t1_implantation"]:checked')?.value || '',
                     edd: document.querySelector('[name="t1_edd"]')?.value || '',
+                    lmp: document.querySelector('[name="t1_lmp"]')?.value || '',
+                    ga_from_edd: document.getElementById('t1-ga-calculated')?.value || '',
                     nt: document.querySelector('[name="t1_nt"]')?.value || '',
                     notes: document.querySelector('[name="t1_notes"]')?.value || ''
                 },
@@ -618,8 +654,11 @@ class SundayClinicApp {
                     afi: document.querySelector('[name="t2_afi"]')?.value || '',
                     efw: document.querySelector('[name="t2_efw"]')?.value || '',
                     edd: document.querySelector('[name="t2_edd"]')?.value || '',
+                    lmp: document.querySelector('[name="t2_lmp"]')?.value || '',
+                    ga_from_edd: document.getElementById('t2-ga-calculated')?.value || '',
                     notes: document.querySelector('[name="t2_notes"]')?.value || ''
                 },
+                screening: screeningData,
                 trimester_3: {
                     date: document.querySelector('[name="t3_date"]')?.value || '',
                     fetus_count: document.querySelector('input[name="t3_fetus_count"]:checked')?.value || '',
@@ -634,8 +673,13 @@ class SundayClinicApp {
                     placenta_previa: document.querySelector('[name="t3_placenta_previa"]')?.value || '',
                     afi: document.querySelector('[name="t3_afi"]')?.value || '',
                     efw: document.querySelector('[name="t3_efw"]')?.value || '',
-                    edd: document.querySelector('[name="t3_edd"]')?.value || ''
+                    edd: document.querySelector('[name="t3_edd"]')?.value || '',
+                    lmp: document.querySelector('[name="t3_lmp"]')?.value || '',
+                    ga_from_edd: document.getElementById('t3-ga-calculated')?.value || '',
+                    membrane_sweep: document.querySelector('input[name="t3_membrane_sweep"]:checked')?.value || '',
+                    contraception: contraception
                 },
+                photos: photos,
                 saved_at: new Date().toISOString()
             };
 

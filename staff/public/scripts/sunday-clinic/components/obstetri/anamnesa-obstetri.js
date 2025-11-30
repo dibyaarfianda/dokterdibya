@@ -356,12 +356,14 @@ export default {
     },
 
     /**
-     * Format date to Indonesian
+     * Format date to European format (DD/MM/YYYY)
      */
     formatDateIndo(date) {
         if (!date) return '';
-        const options = { day: 'numeric', month: 'long', year: 'numeric' };
-        return date.toLocaleDateString('id-ID', options);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
     },
 
     /**

@@ -351,17 +351,18 @@ function resetFilters() {
 }
 
 function showToast(message, type) {
-    const bgColor = type === 'success' ? '#28a745' : '#dc3545';
+    const bgColor = type === 'success' ? '#28a745' : (type === 'info' ? '#17a2b8' : '#dc3545');
+    const toastId = 'toast-' + Date.now();
     const toast = `
-        <div style="position: fixed; top: 20px; right: 20px; z-index: 9999; 
-                    background: ${bgColor}; color: white; padding: 15px 20px; 
+        <div id="${toastId}" class="kelola-toast" style="position: fixed; top: 20px; right: 20px; z-index: 9999;
+                    background: ${bgColor}; color: white; padding: 15px 20px;
                     border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
             ${message}
         </div>
     `;
     $('body').append(toast);
     setTimeout(() => {
-        $('body').find('> div').last().fadeOut(500, function() { $(this).remove(); });
+        $('#' + toastId).fadeOut(500, function() { $(this).remove(); });
     }, 3000);
 }
 
