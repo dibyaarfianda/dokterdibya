@@ -589,18 +589,53 @@ class SundayClinicApp {
             const activeTrimesterInput = document.querySelector('.trimester-selector .btn.active input');
             const trimester = activeTrimesterInput ? activeTrimesterInput.value : 'first';
 
-            // Collect data from USG component
-            const usgComponent = this.components['usg'];
-            if (!usgComponent) {
-                throw new Error('USG component not found');
-            }
-
+            // Collect USG data directly from DOM
             const data = {
                 current_trimester: trimester,
-                trimester_1: usgComponent.collectTrimester1Data(),
-                trimester_2: usgComponent.collectTrimester2Data(),
-                screening: usgComponent.collectScreeningData(),
-                trimester_3: usgComponent.collectTrimester3Data(),
+                trimester_1: {
+                    date: document.querySelector('[name="t1_date"]')?.value || '',
+                    embryo_count: document.querySelector('input[name="t1_embryo_count"]:checked')?.value || '',
+                    crl: document.querySelector('[name="t1_crl"]')?.value || '',
+                    ga_weeks: document.querySelector('[name="t1_ga_weeks"]')?.value || '',
+                    heart_rate: document.querySelector('[name="t1_heart_rate"]')?.value || '',
+                    implantation: document.querySelector('input[name="t1_implantation"]:checked')?.value || '',
+                    edd: document.querySelector('[name="t1_edd"]')?.value || '',
+                    nt: document.querySelector('[name="t1_nt"]')?.value || '',
+                    notes: document.querySelector('[name="t1_notes"]')?.value || ''
+                },
+                trimester_2: {
+                    date: document.querySelector('[name="t2_date"]')?.value || '',
+                    fetus_count: document.querySelector('input[name="t2_fetus_count"]:checked')?.value || '',
+                    gender: document.querySelector('input[name="t2_gender"]:checked')?.value || '',
+                    fetus_lie: document.querySelector('input[name="t2_fetus_lie"]:checked')?.value || '',
+                    presentation: document.querySelector('input[name="t2_presentation"]:checked')?.value || '',
+                    bpd: document.querySelector('[name="t2_bpd"]')?.value || '',
+                    ac: document.querySelector('[name="t2_ac"]')?.value || '',
+                    fl: document.querySelector('[name="t2_fl"]')?.value || '',
+                    heart_rate: document.querySelector('[name="t2_heart_rate"]')?.value || '',
+                    placenta: document.querySelector('input[name="t2_placenta"]:checked')?.value || '',
+                    placenta_previa: document.querySelector('[name="t2_placenta_previa"]')?.value || '',
+                    afi: document.querySelector('[name="t2_afi"]')?.value || '',
+                    efw: document.querySelector('[name="t2_efw"]')?.value || '',
+                    edd: document.querySelector('[name="t2_edd"]')?.value || '',
+                    notes: document.querySelector('[name="t2_notes"]')?.value || ''
+                },
+                trimester_3: {
+                    date: document.querySelector('[name="t3_date"]')?.value || '',
+                    fetus_count: document.querySelector('input[name="t3_fetus_count"]:checked')?.value || '',
+                    gender: document.querySelector('input[name="t3_gender"]:checked')?.value || '',
+                    fetus_lie: document.querySelector('input[name="t3_fetus_lie"]:checked')?.value || '',
+                    presentation: document.querySelector('input[name="t3_presentation"]:checked')?.value || '',
+                    bpd: document.querySelector('[name="t3_bpd"]')?.value || '',
+                    ac: document.querySelector('[name="t3_ac"]')?.value || '',
+                    fl: document.querySelector('[name="t3_fl"]')?.value || '',
+                    heart_rate: document.querySelector('[name="t3_heart_rate"]')?.value || '',
+                    placenta: document.querySelector('input[name="t3_placenta"]:checked')?.value || '',
+                    placenta_previa: document.querySelector('[name="t3_placenta_previa"]')?.value || '',
+                    afi: document.querySelector('[name="t3_afi"]')?.value || '',
+                    efw: document.querySelector('[name="t3_efw"]')?.value || '',
+                    edd: document.querySelector('[name="t3_edd"]')?.value || ''
+                },
                 saved_at: new Date().toISOString()
             };
 
