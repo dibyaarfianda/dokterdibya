@@ -1561,7 +1561,9 @@ window.downloadResumePDF = async () => {
 
     try {
         const token = window.getToken();
-        const response = await fetch('/api/sunday-clinic/resume-medis/pdf', {
+
+        // Step 1: Generate PDF
+        const genResponse = await fetch('/api/sunday-clinic/resume-medis/pdf', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -1570,14 +1572,36 @@ window.downloadResumePDF = async () => {
             body: JSON.stringify({ mrId })
         });
 
-        const result = await response.json();
+        const genResult = await genResponse.json();
 
-        if (result.success) {
-            // Download the PDF
-            window.open(result.data.downloadUrl, '_blank');
-        } else {
-            alert(result.message || 'Gagal generate PDF');
+        if (!genResult.success) {
+            alert(genResult.message || 'Gagal generate PDF');
+            return;
         }
+
+        // Step 2: Download PDF with token
+        const downloadResponse = await fetch(genResult.data.downloadUrl, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        if (!downloadResponse.ok) {
+            throw new Error('Gagal download PDF');
+        }
+
+        // Step 3: Create blob and download
+        const blob = await downloadResponse.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = genResult.data.filename || `${mrId}_resume.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        a.remove();
+
     } catch (error) {
         console.error('Download PDF error:', error);
         alert('Gagal generate PDF: ' + error.message);
