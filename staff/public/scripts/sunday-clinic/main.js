@@ -100,7 +100,7 @@ class SundayClinicApp {
             // Obstetri: Pemeriksaan Obstetri + USG Obstetri
             specific.push(
                 { section: SECTIONS.PEMERIKSAAN_OBSTETRI, path: `${basePath}/obstetri/pemeriksaan-obstetri.js` },
-                { section: SECTIONS.USG, path: `/staff/public/scripts/sunday-clinic/sections/usg.js` }
+                { section: SECTIONS.USG, path: `${basePath}/obstetri/usg-obstetri.js` }
             );
         } else if (this.currentCategory === MR_CATEGORIES.GYN_REPRO ||
                    this.currentCategory === MR_CATEGORIES.GYN_SPECIAL) {
