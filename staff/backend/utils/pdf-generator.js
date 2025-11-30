@@ -576,6 +576,133 @@ class PDFGenerator {
     }
 
     /**
+     * Generate Resume Medis PDF (A4 Format)
+     */
+    async generateResumeMedis(resumeData, patientData, recordData) {
+        return new Promise((resolve, reject) => {
+            try {
+                const doc = new PDFDocument({
+                    size: 'A4',
+                    margin: 40,
+                    info: {
+                        Title: `Resume Medis - ${patientData.fullName || patientData.full_name || 'Pasien'}`,
+                        Author: 'Dr. Dibya Private Clinic',
+                        Subject: 'Resume Medis',
+                        Creator: 'Sunday Clinic System'
+                    }
+                });
+
+                const filename = `${recordData.mrId}_resume.pdf`;
+                const filepath = path.join(this.invoicesDir, filename);
+                const stream = fs.createWriteStream(filepath);
+
+                doc.pipe(stream);
+
+                const pageWidth = doc.page.width;
+                const leftMargin = 40;
+                const rightMargin = 40;
+                const contentWidth = pageWidth - leftMargin - rightMargin;
+                let y = 40;
+
+                // Header - Clinic Name
+                doc.fontSize(16)
+                   .font('Helvetica-Bold')
+                   .text('Klinik Privat Dr. Dibya', leftMargin, y, { width: contentWidth, align: 'center' });
+
+                y += 20;
+                doc.fontSize(9)
+                   .font('Helvetica')
+                   .text('RSIA Melinda - Jl. Balowerti 2 No. 59, Kediri', leftMargin, y, { width: contentWidth, align: 'center' });
+
+                y += 12;
+                doc.text('SIP: 503/0126/SIP-SIK/419.104/2024', leftMargin, y, { width: contentWidth, align: 'center' });
+
+                // Title
+                y += 25;
+                doc.fontSize(14)
+                   .font('Helvetica-Bold')
+                   .text('RESUME MEDIS', leftMargin, y, { width: contentWidth, align: 'center' });
+
+                y += 20;
+                doc.moveTo(leftMargin, y).lineTo(pageWidth - rightMargin, y).lineWidth(1).stroke();
+
+                // Patient Info
+                y += 15;
+                doc.fontSize(10).font('Helvetica');
+                doc.text(`Nama Pasien: ${patientData.fullName || patientData.full_name || '-'}`, leftMargin, y);
+                doc.text(`Tanggal: ${new Date().toLocaleDateString('id-ID')}`, leftMargin + 300, y);
+
+                y += 14;
+                doc.text(`No. MR: ${recordData.mrId || '-'}`, leftMargin, y);
+                if (patientData.age) {
+                    doc.text(`Usia: ${patientData.age} tahun`, leftMargin + 300, y);
+                }
+
+                y += 20;
+                doc.moveTo(leftMargin, y).lineTo(pageWidth - rightMargin, y).lineWidth(0.5).stroke();
+
+                // Resume Content
+                y += 15;
+                const resumeText = resumeData.resume || resumeData || '';
+
+                if (resumeText) {
+                    doc.fontSize(10).font('Helvetica');
+
+                    // Split by lines and render
+                    const lines = resumeText.split('\n');
+                    for (const line of lines) {
+                        // Check if need new page
+                        if (y > doc.page.height - 60) {
+                            doc.addPage();
+                            y = 40;
+                        }
+
+                        // Check if it's a section header (Roman numerals or bold text)
+                        if (line.match(/^[IVX]+\.\s/) || line.match(/^[A-Z][A-Z\s]+:$/)) {
+                            doc.font('Helvetica-Bold');
+                            y += 8; // Extra space before section
+                        } else {
+                            doc.font('Helvetica');
+                        }
+
+                        const textHeight = doc.heightOfString(line, { width: contentWidth });
+                        doc.text(line, leftMargin, y, { width: contentWidth });
+                        y += textHeight + 2;
+                    }
+                } else {
+                    doc.text('Resume medis belum tersedia.', leftMargin, y);
+                }
+
+                // Footer with signature area
+                y = doc.page.height - 100;
+                doc.moveTo(leftMargin, y).lineTo(pageWidth - rightMargin, y).lineWidth(0.5).stroke();
+
+                y += 15;
+                doc.fontSize(9).font('Helvetica');
+                doc.text(`Kediri, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`, leftMargin + 350, y);
+
+                y += 12;
+                doc.text('Dokter Pemeriksa,', leftMargin + 350, y);
+
+                y += 40;
+                doc.font('Helvetica-Bold');
+                doc.text('dr. Dibya Arfianda, Sp.OG', leftMargin + 350, y);
+
+                doc.end();
+
+                stream.on('finish', () => {
+                    resolve({ filepath, filename });
+                });
+
+                stream.on('error', reject);
+
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
+    /**
      * Format number to Rupiah with 'Rp' prefix
      */
     formatRupiah(amount) {
