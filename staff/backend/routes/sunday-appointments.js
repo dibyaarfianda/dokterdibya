@@ -31,21 +31,41 @@ const verifyToken = (req, res, next) => {
 // Helper function to get next Sundays
 function getNextSundays(count = 8) {
     const sundays = [];
-    // Use GMT+7 (Jakarta/Indonesian time)
-    const today = getGMT7Date();
-    const year = today.getUTCFullYear();
-    const month = today.getUTCMonth();
-    const day = today.getUTCDate();
+    // Use GMT+7 (Jakarta/Indonesian time) - getGMT7Date returns a Date object
+    const now = getGMT7Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const day = now.getDate();
+    const currentHour = now.getHours();
 
-    // Create date at midnight GMT+7
-    let current = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
-    current.setUTCDate(current.getUTCDate() + 1); // Start from tomorrow
+    // Create date at midnight for today
+    let current = new Date(year, month, day, 0, 0, 0, 0);
+
+    // Check if today is Sunday and it's before 9 PM (21:00)
+    const isTodaySunday = current.getDay() === 0;
+    const isBeforeCutoff = currentHour < 21; // Before 9 PM
+
+    // If today is Sunday and before 9 PM, include today
+    if (isTodaySunday && isBeforeCutoff) {
+        // Create UTC date for API response
+        const todayUtc = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
+        sundays.push(todayUtc);
+    }
+
+    // Continue from tomorrow
+    current.setDate(current.getDate() + 1);
 
     while (sundays.length < count) {
-        if (current.getUTCDay() === 0) { // Sunday
-            sundays.push(new Date(current));
+        if (current.getDay() === 0) { // Sunday
+            const sundayUtc = new Date(Date.UTC(
+                current.getFullYear(),
+                current.getMonth(),
+                current.getDate(),
+                0, 0, 0, 0
+            ));
+            sundays.push(sundayUtc);
         }
-        current.setUTCDate(current.getUTCDate() + 1);
+        current.setDate(current.getDate() + 1);
     }
 
     return sundays;

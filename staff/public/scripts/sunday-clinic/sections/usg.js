@@ -63,7 +63,10 @@ export function renderUSG() {
 
         if (trimester === 'first') {
             if (savedData.date) summaryItems.push(`<strong>Tanggal:</strong> ${formatDateDMY(savedData.date)}`);
-            if (savedData.embryo_count) summaryItems.push(`<strong>Jumlah Embrio:</strong> ${savedData.embryo_count === 'single' ? 'Tunggal' : 'Multipel'}`);
+            if (savedData.embryo_count) {
+                const embryoLabel = savedData.embryo_count === 'not_visible' ? 'Belum Tampak' : (savedData.embryo_count === 'single' ? 'Tunggal' : 'Multipel');
+                summaryItems.push(`<strong>Jumlah Embrio:</strong> ${embryoLabel}`);
+            }
             if (savedData.implantation) summaryItems.push(`<strong>Lokasi Implantasi:</strong> ${savedData.implantation === 'intrauterine' ? 'Dalam rahim' : 'Luar rahim/Ektopik'}`);
             if (savedData.crl_cm || savedData.crl_weeks) {
                 const crlParts = [];
@@ -271,7 +274,11 @@ export function renderUSG() {
                         <label class="font-weight-bold">Jumlah Embrio/Janin</label>
                         <div class="d-flex gap-3">
                             <div class="custom-control custom-radio mr-4">
-                                <input type="radio" class="custom-control-input usg-field" name="first_embryo_count" id="first-single" value="single" ${(savedData.embryo_count || 'single') === 'single' ? 'checked' : ''}>
+                                <input type="radio" class="custom-control-input usg-field" name="first_embryo_count" id="first-not-visible" value="not_visible" ${savedData.embryo_count === 'not_visible' ? 'checked' : ''}>
+                                <label class="custom-control-label" for="first-not-visible">Belum Tampak</label>
+                            </div>
+                            <div class="custom-control custom-radio mr-4">
+                                <input type="radio" class="custom-control-input usg-field" name="first_embryo_count" id="first-single" value="single" ${(savedData.embryo_count || 'single') === 'single' && savedData.embryo_count !== 'not_visible' ? 'checked' : ''}>
                                 <label class="custom-control-label" for="first-single">Tunggal</label>
                             </div>
                             <div class="custom-control custom-radio mr-4">

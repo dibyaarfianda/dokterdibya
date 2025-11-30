@@ -570,19 +570,19 @@ export default {
     },
 
     /**
-     * Format date to readable format
+     * Format date to European format (DD/MM/YYYY)
      */
     formatDate(dateString) {
         if (!dateString) return 'N/A';
 
         const date = new Date(dateString);
-        const options = {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        };
+        if (isNaN(date.getTime())) return 'N/A';
 
-        return date.toLocaleDateString('id-ID', options);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+
+        return `${day}/${month}/${year}`;
     },
 
     /**

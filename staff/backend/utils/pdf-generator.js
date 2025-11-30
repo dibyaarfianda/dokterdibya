@@ -21,6 +21,17 @@ class PDFGenerator {
     }
 
     /**
+     * Format date to European format (DD/MM/YYYY)
+     */
+    formatDateEuropean(date = new Date()) {
+        const d = date instanceof Date ? date : new Date(date);
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}/${month}/${year}`;
+    }
+
+    /**
      * Generate Invoice PDF (A6 Format - matching screenshot format)
      */
     async generateInvoice(billingData, patientData, recordData) {
@@ -74,7 +85,7 @@ class PDFGenerator {
                 y += 15;
                 doc.fontSize(8).font('Helvetica');
                 doc.text(`Nama Pasien: ${patientData.fullName || patientData.full_name || '-'}`, leftMargin, y);
-                doc.text(`Tanggal: ${new Date().toLocaleDateString('id-ID')}`, leftMargin, y, { width: contentWidth, align: 'right' });
+                doc.text(`Tanggal: ${this.formatDateEuropean()}`, leftMargin, y, { width: contentWidth, align: 'right' });
 
                 // Separate items by type
                 const tindakanItems = (billingData.items || []).filter(item =>
@@ -273,7 +284,7 @@ class PDFGenerator {
                        .font('Helvetica');
                     const patientName = patientData.fullName || patientData.full_name || '-';
                     doc.text(`Pasien: ${patientName}`, currentX + 5, textY, { width: labelWidth - 55 });
-                    doc.text(new Date().toLocaleDateString('id-ID'), currentX + labelWidth - 55, textY);
+                    doc.text(this.formatDateEuropean(), currentX + labelWidth - 55, textY);
 
                     textY += 12;
 
@@ -364,7 +375,7 @@ class PDFGenerator {
                    .text('RSIA Melinda - Jl. Balowerti 2 No. 59, Kediri', leftMargin, y, { width: contentWidth, align: 'center' });
 
                 y += 12;
-                doc.text(`Berlaku: ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`, leftMargin, y, { width: contentWidth, align: 'center' });
+                doc.text(`Berlaku: ${this.formatDateEuropean()}`, leftMargin, y, { width: contentWidth, align: 'center' });
 
                 y += 25;
                 doc.moveTo(leftMargin, y).lineTo(pageWidth - rightMargin, y).lineWidth(1).stroke();
@@ -486,7 +497,7 @@ class PDFGenerator {
                    .text('RSIA Melinda - Jl. Balowerti 2 No. 59, Kediri', leftMargin, y, { width: contentWidth, align: 'center' });
 
                 y += 12;
-                doc.text(`Berlaku: ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`, leftMargin, y, { width: contentWidth, align: 'center' });
+                doc.text(`Berlaku: ${this.formatDateEuropean()}`, leftMargin, y, { width: contentWidth, align: 'center' });
 
                 y += 25;
                 doc.moveTo(leftMargin, y).lineTo(pageWidth - rightMargin, y).lineWidth(1).stroke();
@@ -576,6 +587,39 @@ class PDFGenerator {
     }
 
     /**
+     * Sanitize text for PDF (replace unsupported Unicode with ASCII)
+     */
+    sanitizeTextForPdf(text) {
+        if (!text) return '';
+        return String(text)
+            // Replace bullet points
+            .replace(/•/g, '-')
+            .replace(/●/g, '-')
+            .replace(/○/g, '-')
+            .replace(/◦/g, '-')
+            .replace(/▪/g, '-')
+            .replace(/▫/g, '-')
+            // Replace quotes
+            .replace(/[""]/g, '"')
+            .replace(/['']/g, "'")
+            // Replace dashes
+            .replace(/[–—]/g, '-')
+            // Replace ellipsis
+            .replace(/…/g, '...')
+            // Replace other special chars
+            .replace(/×/g, 'x')
+            .replace(/÷/g, '/')
+            .replace(/≤/g, '<=')
+            .replace(/≥/g, '>=')
+            .replace(/±/g, '+/-')
+            .replace(/°/g, ' derajat ')
+            // Remove any remaining non-printable characters
+            .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+            // Trim each line
+            .split('\n').map(line => line.trim()).join('\n');
+    }
+
+    /**
      * Generate Resume Medis PDF (A4 Format)
      */
     async generateResumeMedis(resumeData, patientData, recordData) {
@@ -621,7 +665,7 @@ class PDFGenerator {
                 y += 25;
                 doc.fontSize(14)
                    .font('Helvetica-Bold')
-                   .text('RESUME MEDIS', leftMargin, y, { width: contentWidth, align: 'center' });
+                   .text('RESUME MEDIS PASIEN', leftMargin, y, { width: contentWidth, align: 'center' });
 
                 y += 20;
                 doc.moveTo(leftMargin, y).lineTo(pageWidth - rightMargin, y).lineWidth(1).stroke();
@@ -629,8 +673,9 @@ class PDFGenerator {
                 // Patient Info
                 y += 15;
                 doc.fontSize(10).font('Helvetica');
-                doc.text(`Nama Pasien: ${patientData.fullName || patientData.full_name || '-'}`, leftMargin, y);
-                doc.text(`Tanggal: ${new Date().toLocaleDateString('id-ID')}`, leftMargin + 300, y);
+                const patientName = this.sanitizeTextForPdf(patientData.fullName || patientData.full_name || '-');
+                doc.text(`Nama Pasien: ${patientName}`, leftMargin, y);
+                doc.text(`Tanggal: ${this.formatDateEuropean()}`, leftMargin + 300, y);
 
                 y += 14;
                 doc.text(`No. MR: ${recordData.mrId || '-'}`, leftMargin, y);
@@ -643,7 +688,10 @@ class PDFGenerator {
 
                 // Resume Content
                 y += 15;
-                const resumeText = resumeData.resume || resumeData || '';
+                let resumeText = resumeData.resume || resumeData || '';
+
+                // Sanitize the resume text
+                resumeText = this.sanitizeTextForPdf(resumeText);
 
                 if (resumeText) {
                     doc.fontSize(10).font('Helvetica');
@@ -651,8 +699,14 @@ class PDFGenerator {
                     // Split by lines and render
                     const lines = resumeText.split('\n');
                     for (const line of lines) {
+                        // Skip empty lines but preserve some spacing
+                        if (!line.trim()) {
+                            y += 6;
+                            continue;
+                        }
+
                         // Check if need new page
-                        if (y > doc.page.height - 60) {
+                        if (y > doc.page.height - 80) {
                             doc.addPage();
                             y = 40;
                         }
@@ -673,13 +727,16 @@ class PDFGenerator {
                     doc.text('Resume medis belum tersedia.', leftMargin, y);
                 }
 
-                // Footer with signature area
+                // Footer with signature area - make sure we're on the last page
+                if (y > doc.page.height - 120) {
+                    doc.addPage();
+                }
                 y = doc.page.height - 100;
                 doc.moveTo(leftMargin, y).lineTo(pageWidth - rightMargin, y).lineWidth(0.5).stroke();
 
                 y += 15;
                 doc.fontSize(9).font('Helvetica');
-                doc.text(`Kediri, ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}`, leftMargin + 350, y);
+                doc.text(`Kediri, ${this.formatDateEuropean()}`, leftMargin + 350, y);
 
                 y += 12;
                 doc.text('Dokter Pemeriksa,', leftMargin + 350, y);
