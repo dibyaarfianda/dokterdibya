@@ -458,12 +458,46 @@ router.post('/:id/payment', verifyToken, async (req, res) => {
     
     // Update billing
     await connection.query(
-      `UPDATE billings 
+      `UPDATE billings
        SET paid_amount = ?, payment_status = ?, payment_method = ?, payment_date = NOW()
        WHERE id = ?`,
       [new_paid_amount, payment_status, payment_method, billing_id]
     );
-    
+
+    // Auto deduct stock when payment is complete (FIFO)
+    if (payment_status === 'paid' && billing.payment_status !== 'paid') {
+      try {
+        const InventoryService = require('../services/InventoryService');
+
+        // Get medication items from billing
+        const [medicationItems] = await connection.query(
+          `SELECT bi.item_code, bi.quantity, o.id as obat_id
+           FROM billing_items bi
+           LEFT JOIN obat o ON bi.item_code = o.code OR bi.item_code = o.id
+           WHERE bi.billing_id = ? AND bi.item_type = 'medication' AND o.id IS NOT NULL`,
+          [billing_id]
+        );
+
+        // Deduct stock for each medication using FIFO
+        for (const item of medicationItems) {
+          try {
+            await InventoryService.deductStockFIFO(
+              item.obat_id,
+              parseInt(item.quantity),
+              'billing',
+              billing_id,
+              req.user?.name || 'system'
+            );
+          } catch (stockError) {
+            console.warn(`Stock deduction warning for obat ${item.obat_id}:`, stockError.message);
+          }
+        }
+      } catch (inventoryError) {
+        console.error('Inventory deduction error:', inventoryError);
+        // Don't fail the payment, just log the error
+      }
+    }
+
     await connection.commit();
     
     // Fetch updated billing

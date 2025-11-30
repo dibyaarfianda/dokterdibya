@@ -30,8 +30,12 @@ const photoUpload = multer({
     }
 });
 
-// JWT Secret - Should be in environment variable in production
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+// JWT Secret - Required in environment variable
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    console.error('FATAL: JWT_SECRET must be defined in environment variables');
+    process.exit(1);
+}
 const JWT_EXPIRES_IN = '7d';
 
 // Google OAuth Client

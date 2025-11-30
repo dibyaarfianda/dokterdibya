@@ -1169,6 +1169,19 @@ router.post('/billing/:mrId/confirm', verifyToken, async (req, res, next) => {
             });
         }
 
+        // Get billing ID first
+        const [[billing]] = await db.query(
+            `SELECT id, status FROM sunday_clinic_billings WHERE mr_id = ?`,
+            [normalizedMrId]
+        );
+
+        if (!billing) {
+            return res.status(404).json({
+                success: false,
+                message: 'Billing tidak ditemukan'
+            });
+        }
+
         const [result] = await db.query(
             `UPDATE sunday_clinic_billings
              SET status = 'confirmed', confirmed_at = NOW(), confirmed_by = ?
@@ -1176,12 +1189,8 @@ router.post('/billing/:mrId/confirm', verifyToken, async (req, res, next) => {
             [req.user.name || req.user.id || 'Staff', normalizedMrId]
         );
 
-        if (result.affectedRows === 0) {
-            return res.status(404).json({
-                success: false,
-                message: 'Billing tidak ditemukan'
-            });
-        }
+        // NOTE: Stock deduction moved to payment completion endpoint
+        // Stock will be deducted when billing is marked as 'paid'
 
         // Get patient name for notification
         const [[record]] = await db.query(
@@ -1213,6 +1222,116 @@ router.post('/billing/:mrId/confirm', verifyToken, async (req, res, next) => {
         });
     } catch (error) {
         logger.error('Failed to confirm billing', { error: error.message });
+        next(error);
+    }
+});
+
+// Mark billing as paid (payment complete)
+router.post('/billing/:mrId/mark-paid', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+    const { payment_method, notes } = req.body;
+
+    try {
+        // Get current billing
+        const [[billing]] = await db.query(
+            'SELECT * FROM sunday_clinic_billings WHERE mr_id = ?',
+            [normalizedMrId]
+        );
+
+        if (!billing) {
+            return res.status(404).json({
+                success: false,
+                message: 'Billing tidak ditemukan'
+            });
+        }
+
+        if (billing.status !== 'confirmed') {
+            return res.status(400).json({
+                success: false,
+                message: 'Billing harus dikonfirmasi terlebih dahulu sebelum pembayaran'
+            });
+        }
+
+        if (billing.status === 'paid') {
+            return res.status(400).json({
+                success: false,
+                message: 'Billing sudah dibayar'
+            });
+        }
+
+        // Update status to paid
+        await db.query(
+            `UPDATE sunday_clinic_billings
+             SET status = 'paid',
+                 last_modified_by = ?,
+                 last_modified_at = NOW()
+             WHERE mr_id = ?`,
+            [req.user.name || req.user.id || 'Staff', normalizedMrId]
+        );
+
+        // Deduct stock for obat items using FIFO (only when marking as paid)
+        try {
+            const InventoryService = require('../services/InventoryService');
+
+            // Get obat items from billing (extract obatId from item_data JSON)
+            const [obatItems] = await db.query(
+                `SELECT bi.item_code, bi.item_name, bi.quantity,
+                        CAST(JSON_EXTRACT(bi.item_data, '$.obatId') AS UNSIGNED) as obat_id
+                 FROM sunday_clinic_billing_items bi
+                 WHERE bi.billing_id = ? AND bi.item_type = 'obat'
+                   AND JSON_EXTRACT(bi.item_data, '$.obatId') IS NOT NULL`,
+                [billing.id]
+            );
+
+            // Deduct stock for each obat using FIFO
+            for (const item of obatItems) {
+                try {
+                    await InventoryService.deductStockFIFO(
+                        item.obat_id,
+                        parseInt(item.quantity),
+                        'sunday_clinic_billing',
+                        billing.id,
+                        req.user?.name || 'system'
+                    );
+                    logger.info(`Stock deducted for ${item.item_name}: ${item.quantity} units`);
+                } catch (stockError) {
+                    logger.warn(`Stock deduction warning for obat ${item.obat_id} (${item.item_name}):`, stockError.message);
+                }
+            }
+        } catch (inventoryError) {
+            logger.error('Inventory deduction error:', inventoryError);
+            // Don't fail the payment, just log the error
+        }
+
+        // Get patient name for notification
+        const [[record]] = await db.query(
+            `SELECT r.mr_id, p.full_name as patient_name
+             FROM sunday_clinic_records r
+             JOIN patients p ON r.patient_id = p.id
+             WHERE r.mr_id = ?`,
+            [normalizedMrId]
+        );
+
+        const patientName = record?.patient_name || 'Pasien';
+
+        // Broadcast notification
+        if (realtimeSync && realtimeSync.broadcast) {
+            realtimeSync.broadcast({
+                type: 'billing_paid',
+                mrId: normalizedMrId,
+                patientName,
+                paidBy: req.user.name || req.user.id || 'Staff',
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Pembayaran berhasil dicatat. Stok obat telah dikurangi.',
+            patientName
+        });
+    } catch (error) {
+        logger.error('Failed to mark billing as paid', { error: error.message });
         next(error);
     }
 });

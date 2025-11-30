@@ -249,6 +249,14 @@ app.use('/api/registration-codes', registrationCodesRoutes);
 const subscriptionsRoutes = require('./routes/subscriptions');
 app.use('/api/subscriptions', subscriptionsRoutes);
 
+// Suppliers routes (for inventory management)
+const suppliersRoutes = require('./routes/suppliers');
+app.use('/api/suppliers', suppliersRoutes);
+
+// Inventory routes (stock batches, movements, FIFO)
+const inventoryRoutes = require('./routes/inventory');
+app.use('/api/inventory', inventoryRoutes);
+
 // API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
     customSiteTitle: 'Dibya Klinik API Documentation',
