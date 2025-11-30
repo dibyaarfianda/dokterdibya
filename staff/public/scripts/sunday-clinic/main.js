@@ -53,6 +53,9 @@ class SundayClinicApp {
             // Load template-specific components
             await this.loadComponents();
 
+            // Check if documents were sent for this visit
+            await this.checkSentDocumentsStatus();
+
             // Render the application with active section
             await this.render(activeSection);
 
@@ -1474,6 +1477,37 @@ class SundayClinicApp {
                 });
             }
         });
+    }
+
+    /**
+     * Check if documents were sent for this visit (persists across refresh)
+     */
+    async checkSentDocumentsStatus() {
+        if (!this.currentMrId) return;
+
+        try {
+            const token = window.getToken();
+            if (!token) return;
+
+            const response = await fetch(`/api/patient-documents/check-sent/${this.currentMrId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) return;
+
+            const result = await response.json();
+            if (result.success && result.hasSentDocuments) {
+                // Update state with sent documents info
+                const state = stateManager.getState();
+                stateManager.setState({
+                    ...state,
+                    documentsSent: result.sentStatus
+                });
+                console.log('[SundayClinic] Documents sent status loaded:', result.sentStatus);
+            }
+        } catch (error) {
+            console.warn('[SundayClinic] Could not check sent documents:', error.message);
+        }
     }
 
     /**

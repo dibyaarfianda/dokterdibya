@@ -402,6 +402,9 @@ const SendToPatient = {
 
             this.showStatus('success', successMessage);
 
+            // Update Resume Medis card to show "Sudah dikirim" status
+            this.markAsSent(result.documents);
+
             // Reset button
             sendBtn.disabled = false;
             sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Kirim ke Pasien';
@@ -418,6 +421,56 @@ const SendToPatient = {
 
             sendBtn.disabled = false;
             sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Kirim ke Pasien';
+        }
+    },
+
+    /**
+     * Mark documents as sent - update UI to show status
+     */
+    markAsSent(documents) {
+        // Check what was sent
+        const sentResume = documents.some(d => d.type === 'resume_medis');
+        const sentUSG = documents.some(d => d.type === 'usg_photo');
+        const sentLab = documents.some(d => d.type === 'lab_result' || d.type === 'lab_interpretation');
+
+        // Build status text
+        const sentItems = [];
+        if (sentResume) sentItems.push('Resume Medis');
+        if (sentUSG) sentItems.push('Foto USG');
+        if (sentLab) sentItems.push('Hasil Lab');
+
+        const statusText = sentItems.join(' dan ') + ' telah dikirim ke pasien';
+
+        // Update Resume Medis card header if resume was sent
+        const resumeCard = document.querySelector('#resume-medis-card .card-header');
+        if (resumeCard && !resumeCard.querySelector('.sent-badge')) {
+            const badgeContainer = resumeCard.querySelector('div') || resumeCard;
+            const badge = document.createElement('span');
+            badge.className = 'badge badge-success ml-2 sent-badge';
+            badge.innerHTML = '<i class="fas fa-paper-plane"></i> Sudah dikirim';
+            badgeContainer.appendChild(badge);
+        }
+
+        // Also update the resume status text
+        const resumeStatus = document.getElementById('resume-status');
+        if (resumeStatus) {
+            resumeStatus.innerHTML = `<span class="text-success"><i class="fas fa-check-circle"></i> ${statusText}</span>`;
+        }
+
+        // Store in state for persistence during session
+        try {
+            const state = stateManager.getState();
+            stateManager.setState({
+                ...state,
+                documentsSent: {
+                    resume: sentResume,
+                    usg: sentUSG,
+                    lab: sentLab,
+                    timestamp: new Date().toISOString()
+                }
+            });
+        } catch (e) {
+            console.warn('Could not update state:', e);
         }
     },
 

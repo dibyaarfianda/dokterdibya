@@ -111,6 +111,66 @@ function detectDeviceType(userAgent) {
 // =====================================================
 
 /**
+ * GET /api/patient-documents/check-sent/:mrId
+ * Check if documents have been sent for a specific MR/visit
+ */
+router.get('/check-sent/:mrId', verifyToken, async (req, res) => {
+    try {
+        const { mrId } = req.params;
+
+        if (!mrId) {
+            return res.status(400).json({ success: false, message: 'MR ID is required' });
+        }
+
+        // Check for published documents by type
+        const [docs] = await db.query(`
+            SELECT document_type, COUNT(*) as count, MAX(created_at) as last_sent
+            FROM patient_documents
+            WHERE mr_id = ? AND status = 'published'
+            GROUP BY document_type
+        `, [mrId]);
+
+        const sentStatus = {
+            resume: false,
+            usg: false,
+            lab: false,
+            timestamp: null
+        };
+
+        let latestTimestamp = null;
+
+        docs.forEach(doc => {
+            if (doc.document_type === 'resume_medis') {
+                sentStatus.resume = true;
+            } else if (doc.document_type === 'usg_photo') {
+                sentStatus.usg = true;
+            } else if (doc.document_type === 'lab_result' || doc.document_type === 'lab_interpretation') {
+                sentStatus.lab = true;
+            }
+
+            if (!latestTimestamp || new Date(doc.last_sent) > new Date(latestTimestamp)) {
+                latestTimestamp = doc.last_sent;
+            }
+        });
+
+        sentStatus.timestamp = latestTimestamp;
+
+        res.json({
+            success: true,
+            hasSentDocuments: sentStatus.resume || sentStatus.usg || sentStatus.lab,
+            sentStatus
+        });
+
+    } catch (error) {
+        logger.error('Error checking sent documents:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to check sent documents'
+        });
+    }
+});
+
+/**
  * POST /api/patient-documents/upload
  * Upload a document for a patient
  */
@@ -318,7 +378,8 @@ router.post('/publish-from-mr', verifyToken, async (req, res) => {
             // For resume_medis, we store the text content as source_data
             // For files (usg_photo, lab_result), we expect file_path/file_url
 
-            // Check for duplicate - same patient, mr_id, and document_type
+            // Check for existing document - same patient, mr_id, and document_type
+            // If exists, UPDATE (overwrite) instead of creating duplicate
             if (mrId) {
                 const [existing] = await db.query(`
                     SELECT id FROM patient_documents
@@ -326,19 +387,50 @@ router.post('/publish-from-mr', verifyToken, async (req, res) => {
                 `, [patientId, mrId, doc.type]);
 
                 if (existing.length > 0) {
-                    logger.info('Duplicate document skipped', {
+                    // Update existing document (overwrite)
+                    await db.query(`
+                        UPDATE patient_documents SET
+                            title = ?,
+                            description = ?,
+                            file_path = ?,
+                            file_url = ?,
+                            file_name = ?,
+                            file_type = ?,
+                            file_size = ?,
+                            source_data = ?,
+                            published_at = ?,
+                            published_by = ?,
+                            notification_channels = ?,
+                            updated_at = NOW()
+                        WHERE id = ?
+                    `, [
+                        doc.title,
+                        doc.description || null,
+                        doc.filePath || null,
+                        doc.fileUrl || null,
+                        doc.fileName || doc.title,
+                        doc.fileType || 'text/plain',
+                        doc.fileSize || 0,
+                        doc.sourceData ? JSON.stringify(doc.sourceData) : null,
+                        publishedAt,
+                        publishedBy,
+                        JSON.stringify(notifyChannels || {}),
+                        existing[0].id
+                    ]);
+
+                    logger.info('Existing document updated (overwritten)', {
                         patientId,
                         mrId,
                         documentType: doc.type,
-                        existingId: existing[0].id
+                        documentId: existing[0].id
                     });
-                    // Return existing document instead of creating duplicate
+
                     createdDocuments.push({
                         id: existing[0].id,
                         type: doc.type,
                         title: doc.title,
-                        status: 'already_published',
-                        message: 'Dokumen ini sudah pernah dikirim sebelumnya'
+                        status: 'updated',
+                        message: 'Dokumen diperbarui'
                     });
                     continue;
                 }
@@ -384,9 +476,9 @@ router.post('/publish-from-mr', verifyToken, async (req, res) => {
             publishedBy
         });
 
-        // Create patient notifications for newly published documents
-        const newlyPublished = createdDocuments.filter(d => d.status === 'published');
-        if (newlyPublished.length > 0) {
+        // Create patient notifications for published/updated documents
+        const documentsToNotify = createdDocuments.filter(d => d.status === 'published' || d.status === 'updated');
+        if (documentsToNotify.length > 0) {
             // Get patient name for notification
             const [patientInfo] = await db.query(
                 'SELECT full_name FROM patients WHERE id = ?',
@@ -394,26 +486,35 @@ router.post('/publish-from-mr', verifyToken, async (req, res) => {
             );
             const patientName = patientInfo[0]?.full_name || 'Pasien';
 
-            for (const doc of newlyPublished) {
-                let notifTitle = 'Dokumen Baru';
+            for (const doc of documentsToNotify) {
+                const isUpdated = doc.status === 'updated';
+                const actionText = isUpdated ? 'Diperbarui' : 'Baru';
+
+                let notifTitle = `Dokumen ${actionText}`;
                 let notifMessage = `Dokter telah mengirimkan dokumen: ${doc.title}`;
                 let notifIcon = 'fa fa-file-text';
                 let notifIconColor = 'text-info';
 
                 // Customize notification based on document type
                 if (doc.type === 'resume_medis') {
-                    notifTitle = 'Resume Medis Baru';
-                    notifMessage = `Resume medis Anda telah tersedia. Klik untuk melihat.`;
+                    notifTitle = `Resume Medis ${actionText}`;
+                    notifMessage = isUpdated
+                        ? `Resume medis Anda telah diperbarui. Klik untuk melihat.`
+                        : `Resume medis Anda telah tersedia. Klik untuk melihat.`;
                     notifIcon = 'fa fa-file-medical-alt';
                     notifIconColor = 'text-success';
                 } else if (doc.type === 'usg_photo') {
-                    notifTitle = 'Foto USG Baru';
-                    notifMessage = `Foto USG Anda telah tersedia. Klik untuk melihat.`;
+                    notifTitle = `Foto USG ${actionText}`;
+                    notifMessage = isUpdated
+                        ? `Foto USG Anda telah diperbarui. Klik untuk melihat.`
+                        : `Foto USG Anda telah tersedia. Klik untuk melihat.`;
                     notifIcon = 'fa fa-image';
                     notifIconColor = 'text-primary';
                 } else if (doc.type === 'lab_result') {
-                    notifTitle = 'Hasil Lab Baru';
-                    notifMessage = `Hasil laboratorium Anda telah tersedia. Klik untuk melihat.`;
+                    notifTitle = `Hasil Lab ${actionText}`;
+                    notifMessage = isUpdated
+                        ? `Hasil laboratorium Anda telah diperbarui. Klik untuk melihat.`
+                        : `Hasil laboratorium Anda telah tersedia. Klik untuk melihat.`;
                     notifIcon = 'fa fa-flask';
                     notifIconColor = 'text-warning';
                 }
@@ -431,7 +532,7 @@ router.post('/publish-from-mr', verifyToken, async (req, res) => {
 
             logger.info('Patient notifications created for documents', {
                 patientId,
-                documentCount: newlyPublished.length
+                documentCount: documentsToNotify.length
             });
         }
 

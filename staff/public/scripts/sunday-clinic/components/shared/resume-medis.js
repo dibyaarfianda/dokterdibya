@@ -11,26 +11,43 @@ export default {
         const { getMedicalRecordContext, renderRecordMeta } = await import('../../utils/helpers.js');
         const context = getMedicalRecordContext(state, 'resume_medis');
         const metaHtml = context ? renderRecordMeta(context, 'resume_medis') : '';
-        
+
         // Get saved resume if exists
         const savedResume = context?.data?.resume || '';
         const isGenerating = false;
 
+        // Check if documents have been sent to patient
+        const documentsSent = state.documentsSent;
+        const hasSentDocuments = documentsSent?.resume || documentsSent?.usg || documentsSent?.lab;
+
+        // Build sent status text
+        let sentStatusText = '';
+        if (hasSentDocuments) {
+            const sentItems = [];
+            if (documentsSent.resume) sentItems.push('Resume Medis');
+            if (documentsSent.usg) sentItems.push('Foto USG');
+            if (documentsSent.lab) sentItems.push('Hasil Lab');
+            sentStatusText = sentItems.join(' dan ') + ' telah dikirim ke pasien';
+        }
+
         return `
-            <div class="card mb-3">
+            <div class="card mb-3" id="resume-medis-card">
                 <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0">
                         <i class="fas fa-file-medical-alt"></i> Resume Medis
                     </h5>
-                    ${savedResume ? '<span class="badge badge-light"><i class="fas fa-check"></i> Tersimpan</span>' : ''}
+                    <div>
+                        ${savedResume ? '<span class="badge badge-light"><i class="fas fa-check"></i> Tersimpan</span>' : ''}
+                        ${hasSentDocuments ? '<span class="badge badge-success ml-2 sent-badge"><i class="fas fa-paper-plane"></i> Sudah dikirim</span>' : ''}
+                    </div>
                 </div>
                 ${metaHtml}
                 <div class="card-body">
                     ${this.renderResumeContent(savedResume, isGenerating)}
 
                     <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap">
-                        <small class="text-muted" id="resume-status">
-                            ${savedResume ? 'Resume sudah tersedia' : 'Belum ada resume'}
+                        <small class="${hasSentDocuments ? 'text-success' : 'text-muted'}" id="resume-status">
+                            ${hasSentDocuments ? `<i class="fas fa-check-circle"></i> ${sentStatusText}` : (savedResume ? 'Resume sudah tersedia' : 'Belum ada resume')}
                         </small>
                         <div class="button-group" id="resume-button-group">
                             <button type="button" class="btn btn-primary" id="btn-generate-resume" onclick="window.generateResumeMedis()">
