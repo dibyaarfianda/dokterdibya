@@ -14,6 +14,7 @@ class SundayClinicApp {
     constructor() {
         this.currentMrId = null;
         this.currentCategory = null;
+        this.currentLocation = null; // Track visit location for UI context
         this.components = {};
         this.initialized = false;
         this.billingNotifications = null;
@@ -39,16 +40,21 @@ class SundayClinicApp {
             // Load into state manager
             await stateManager.loadRecord(response.data);
 
-            // Get category
+            // Get category and location
             this.currentMrId = mrId;
             this.currentCategory = response.data.record.mr_category ||
                                   response.data.intake?.summary?.intakeCategory ||
                                   MR_CATEGORIES.OBSTETRI;
+            this.currentLocation = response.data.record.visit_location || 'klinik_private';
 
             console.log('[SundayClinic] Category detected:', this.currentCategory);
+            console.log('[SundayClinic] Location detected:', this.currentLocation);
 
             // Update sidebar based on category
             this.updateSidebarForCategory();
+
+            // Update UI based on visit location (logo, billing visibility)
+            this.updateUIForLocation();
 
             // Load template-specific components
             await this.loadComponents();
@@ -294,6 +300,167 @@ class SundayClinicApp {
                 if (icon) icon.className = 'nav-icon fas fa-venus';
                 if (label) label.textContent = 'USG Ginekologi';
             }
+        }
+    }
+
+    /**
+     * Update UI based on visit location
+     * - Updates sidebar logo/branding based on hospital/clinic
+     * - Hides billing menu for hospital visits (billing only for private clinic)
+     */
+    updateUIForLocation() {
+        console.log('[SundayClinic] Updating UI for location:', this.currentLocation);
+
+        const isPrivateClinic = this.currentLocation === 'klinik_private';
+
+        // Location branding configuration
+        const locationConfig = {
+            'klinik_private': {
+                logo: '/images/dibyablacklogo.svg',
+                name: 'Klinik Privat dr. Dibya',
+                shortName: 'Privat',
+                tooltip: 'Keluar dari Klinik Privat',
+                color: '#3c8dbc', // info blue
+                icon: 'fas fa-clinic-medical'
+            },
+            'rsia_melinda': {
+                logo: '/images/melinda-logo.png',
+                name: 'RSIA Melinda',
+                shortName: 'RSIA Melinda',
+                tooltip: 'Keluar dari RSIA Melinda',
+                color: '#e91e63', // pink
+                icon: 'fas fa-hospital'
+            },
+            'rsud_gambiran': {
+                logo: '/images/gambiran-logo.png',
+                name: 'RSUD Gambiran',
+                shortName: 'RSUD Gambiran',
+                tooltip: 'Keluar dari RSUD Gambiran',
+                color: '#17a2b8', // cyan
+                icon: 'fas fa-hospital'
+            },
+            'rs_bhayangkara': {
+                logo: '/images/bhayangkara-logo.png',
+                name: 'RS Bhayangkara',
+                shortName: 'RS Bhayangkara',
+                tooltip: 'Keluar dari RS Bhayangkara',
+                color: '#28a745', // green
+                icon: 'fas fa-hospital-alt'
+            }
+        };
+
+        const config = locationConfig[this.currentLocation] || locationConfig['klinik_private'];
+
+        // Update sidebar logo container
+        const sidebarLogo = document.getElementById('sidebar-logo');
+        const logoContainer = sidebarLogo?.parentElement;
+
+        if (logoContainer) {
+            if (isPrivateClinic) {
+                // Show original logo for private clinic
+                if (sidebarLogo) {
+                    sidebarLogo.style.display = '';
+                    sidebarLogo.src = config.logo;
+                }
+                // Remove hospital badge if exists
+                const hospitalBadge = logoContainer.querySelector('.hospital-brand-badge');
+                if (hospitalBadge) hospitalBadge.remove();
+            } else {
+                // Hide logo and show hospital brand badge
+                if (sidebarLogo) {
+                    sidebarLogo.style.display = 'none';
+                }
+                // Remove existing badge
+                const existingBadge = logoContainer.querySelector('.hospital-brand-badge');
+                if (existingBadge) existingBadge.remove();
+
+                // Add hospital brand badge
+                let badgeContent;
+                if (config.logo) {
+                    // Use logo image
+                    badgeContent = `
+                        <img src="${config.logo}" alt="${config.name}" style="max-width: 120px; max-height: 80px; object-fit: contain;">
+                    `;
+                } else {
+                    // Icon-based badge (fallback)
+                    badgeContent = `
+                        <div style="background: ${config.color}; color: white; padding: 15px; border-radius: 10px;">
+                            <i class="${config.icon}" style="font-size: 2rem;"></i>
+                            <div style="font-weight: bold; margin-top: 8px; font-size: 0.85rem;">${config.shortName}</div>
+                        </div>
+                    `;
+                }
+
+                const badgeHtml = `
+                    <div class="hospital-brand-badge text-center" style="padding: 10px; cursor: pointer;" data-tooltip="${config.tooltip}">
+                        ${badgeContent}
+                    </div>
+                `;
+                logoContainer.insertAdjacentHTML('beforeend', badgeHtml);
+
+                // Add click handler for navigation to main admin page
+                const badge = logoContainer.querySelector('.hospital-brand-badge');
+                if (badge) {
+                    badge.addEventListener('click', () => {
+                        window.location.href = '/staff/public/index-adminlte.html';
+                    });
+                }
+
+                console.log('[SundayClinic] Hospital brand badge shown for:', config.name);
+            }
+        }
+
+        // Hide/show billing menu based on location
+        // Billing is only available for private clinic
+        const billingMenuItem = document.querySelector('.sc-nav-link[data-section="tagihan"]');
+        if (billingMenuItem) {
+            const menuItem = billingMenuItem.closest('.nav-item');
+            if (menuItem) {
+                if (isPrivateClinic) {
+                    menuItem.style.display = '';
+                    console.log('[SundayClinic] Billing menu shown (private clinic)');
+                } else {
+                    menuItem.style.display = 'none';
+                    console.log('[SundayClinic] Billing menu hidden (hospital visit)');
+                }
+            }
+        }
+
+        // Add a location indicator badge in the header if not private clinic
+        this.updateLocationBadge(config, isPrivateClinic);
+    }
+
+    /**
+     * Update/add location badge in header for hospital visits
+     */
+    updateLocationBadge(config, isPrivateClinic) {
+        const existingBadge = document.getElementById('location-context-badge');
+
+        if (isPrivateClinic) {
+            // Remove badge if exists
+            if (existingBadge) {
+                existingBadge.remove();
+            }
+            return;
+        }
+
+        // Add or update location badge for hospital visits
+        const headerContainer = document.getElementById('summary-cards-container');
+        if (!headerContainer) return;
+
+        const badgeHtml = `
+            <div id="location-context-badge" class="mr-3 d-flex align-items-center">
+                <span class="badge badge-warning badge-lg" style="font-size: 0.9rem;">
+                    <i class="fas fa-hospital mr-1"></i>${config.name}
+                </span>
+                <small class="text-muted ml-2">(Billing tidak tersedia)</small>
+            </div>
+        `;
+
+        if (existingBadge) {
+            existingBadge.outerHTML = badgeHtml;
+        } else {
+            headerContainer.insertAdjacentHTML('afterbegin', badgeHtml);
         }
     }
 

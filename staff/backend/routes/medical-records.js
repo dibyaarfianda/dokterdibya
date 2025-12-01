@@ -967,9 +967,22 @@ function generateMedicalResume(identitas, records) {
             if (trimesterData.heart_rate) resume += `Denyut Jantung Janin (DJJ): ${trimesterData.heart_rate} bpm\n`;
             if (trimesterData.efw) resume += `Estimasi Berat Janin (EFW): ${trimesterData.efw} gram\n`;
             if (trimesterData.edd) resume += `Hari Perkiraan Lahir (EDD): ${formatDateEuropean(trimesterData.edd)}\n`;
-            if (trimesterData.ga_weeks) resume += `Usia Kehamilan: ${trimesterData.ga_weeks} minggu\n`;
+            // Check both ga_weeks and ga_from_edd field names
+            if (trimesterData.ga_weeks) {
+                resume += `Usia Kehamilan: ${trimesterData.ga_weeks} minggu\n`;
+            } else if (trimesterData.ga_from_edd) {
+                resume += `Usia Kehamilan: ${trimesterData.ga_from_edd}\n`;
+            }
             if (trimesterData.placenta) resume += `Lokasi Plasenta: ${trimesterData.placenta}\n`;
             if (trimesterData.afi) resume += `Amniotic Fluid Index (AFI): ${trimesterData.afi} cm\n`;
+            if (trimesterData.fetus_lie) {
+                const lieMap = { 'longitudinal': 'Longitudinal', 'transverse': 'Transversal', 'oblique': 'Oblique' };
+                resume += `Letak Janin: ${lieMap[trimesterData.fetus_lie] || trimesterData.fetus_lie}\n`;
+            }
+            if (trimesterData.presentation) {
+                const presentMap = { 'cephalic': 'Kepala', 'breech': 'Sungsang', 'transverse': 'Lintang' };
+                resume += `Presentasi: ${presentMap[trimesterData.presentation] || trimesterData.presentation}\n`;
+            }
             if (trimesterData.gender && currentTrimester !== 'screening') {
                 const genderMap = { 'male': 'Laki-laki', 'female': 'Perempuan' };
                 resume += `Jenis Kelamin: ${genderMap[trimesterData.gender] || trimesterData.gender}\n`;

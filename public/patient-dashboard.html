@@ -917,7 +917,40 @@
             margin-bottom: 15px;
             opacity: 0.3;
         }
-        
+
+        /* Visit Cards */
+        .visit-card-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .visit-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            border-radius: 10px;
+            padding: 15px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .visit-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .visit-card h4 {
+            font-size: 14px;
+            margin-bottom: 8px;
+            color: #333;
+        }
+
+        .visit-card p {
+            font-size: 13px;
+            margin-bottom: 5px;
+            color: #666;
+        }
+
         /* Navigation */
         .nav-bar {
             background: rgba(255, 255, 255, 0.1);
@@ -1444,9 +1477,9 @@
         <div class="row" style="margin-bottom: 30px; display: flex; flex-wrap: wrap;">
             <!-- Left Column: Upcoming Appointments (Smaller) -->
             <div class="col-md-5" style="display: flex; flex-direction: column;">
-                <!-- Janji Temu dr. Dibya -->
+                <!-- Klinik Privat Minggu -->
                 <div class="dashboard-card" id="appointments-section" style="margin-bottom: 20px;">
-                    <h3><i class="fa fa-calendar-check-o"></i> Janji Temu dr. Dibya</h3>
+                    <h3><i class="fa fa-calendar-check-o"></i> Klinik Privat Minggu</h3>
                     <div id="booking-status-container">
                         <p class="empty-state">
                             <i class="fa fa-calendar-o"></i>
@@ -1458,13 +1491,37 @@
                     </a>
                 </div>
 
-                <!-- Riwayat Janji Temu -->
-                <div class="dashboard-card" id="appointments-history-section" style="margin-bottom: 20px;">
+                <!-- Hospital Booking Section (shows after Sunday 21:00) -->
+                <div class="dashboard-card" id="hospital-booking-section" style="margin-bottom: 20px; display: none;">
+                    <h3><i class="fa fa-hospital-o"></i> Jadwal Praktek Rumah Sakit</h3>
+                    <p class="text-muted" style="font-size: 12px; margin-bottom: 15px;">Booking jadwal praktek dr. Dibya di rumah sakit lain</p>
+                    <div id="hospital-schedules-container">
+                        <p class="empty-state">
+                            <i class="fa fa-spinner fa-spin"></i>
+                            Memuat jadwal rumah sakit...
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Riwayat Janji Temu (Hidden - diganti dengan Riwayat Kunjungan) -->
+                <div class="dashboard-card" id="appointments-history-section" style="margin-bottom: 20px; display: none;">
                     <h3><i class="fa fa-history"></i> Riwayat Janji Temu</h3>
                     <div id="booking-history-container">
                         <p class="empty-state">
                             <i class="fa fa-calendar-o"></i>
                             Belum ada riwayat janji temu
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Riwayat Kunjungan (Medical Records) -->
+                <div class="dashboard-card" id="visits-history-section" style="margin-bottom: 20px;">
+                    <h3><i class="fa fa-stethoscope"></i> Riwayat Kunjungan</h3>
+                    <p class="text-muted" style="font-size: 12px; margin-bottom: 10px;">Kunjungan Anda di berbagai lokasi praktek</p>
+                    <div id="visits-list-container">
+                        <p class="empty-state">
+                            <i class="fa fa-spinner fa-spin"></i>
+                            Memuat riwayat kunjungan...
                         </p>
                     </div>
                 </div>
@@ -2076,6 +2133,9 @@
                 // Load booking status and appointment alerts
                 loadBookingStatus();
 
+                // Load hospital schedules (shows after Sunday 21:00)
+                loadHospitalSchedules();
+
                 // Setup real-time booking updates
                 setupRealtimeBookingUpdates();
 
@@ -2120,6 +2180,238 @@
                         <p>Gagal memuat status booking. Silakan coba lagi.</p>
                     </div>
                 `;
+            }
+        }
+
+        // Hospital Schedules Functions
+        async function loadHospitalSchedules() {
+            const section = document.getElementById('hospital-booking-section');
+            const container = document.getElementById('hospital-schedules-container');
+
+            if (!section || !container) return;
+
+            try {
+                const response = await fetch('/api/hospital-appointments/schedules', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Gagal memuat jadwal rumah sakit');
+                }
+
+                const data = await response.json();
+
+                if (!data.showHospitalBooking) {
+                    section.style.display = 'none';
+                    return;
+                }
+
+                section.style.display = 'block';
+                renderHospitalSchedules(data.schedules);
+
+            } catch (error) {
+                console.error('Error loading hospital schedules:', error);
+                section.style.display = 'none';
+            }
+        }
+
+        function renderHospitalSchedules(schedules) {
+            const container = document.getElementById('hospital-schedules-container');
+            if (!container || !schedules || schedules.length === 0) {
+                container.innerHTML = `
+                    <p class="empty-state">
+                        <i class="fa fa-calendar-o"></i>
+                        Tidak ada jadwal tersedia minggu ini
+                    </p>
+                `;
+                return;
+            }
+
+            const html = schedules.map(schedule => `
+                <div class="hospital-schedule-card" style="
+                    background: rgba(255,255,255,0.05);
+                    border-left: 4px solid ${schedule.hospitalColor || '#607d8b'};
+                    border-radius: 8px;
+                    padding: 15px;
+                    margin-bottom: 10px;
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    flex-wrap: wrap;
+                    gap: 10px;
+                ">
+                    <div style="flex: 1; min-width: 200px;">
+                        <div style="font-weight: 600; color: #fff; margin-bottom: 5px;">
+                            <i class="fa fa-${schedule.hospitalIcon || 'hospital-o'}" style="color: ${schedule.hospitalColor}; margin-right: 8px;"></i>
+                            ${schedule.hospitalName}
+                        </div>
+                        <div style="font-size: 13px; color: #aaa;">
+                            <i class="fa fa-calendar" style="margin-right: 5px;"></i>
+                            ${schedule.dayName}, ${new Date(schedule.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long' })}
+                        </div>
+                        <div style="font-size: 12px; color: #888; margin-top: 3px;">
+                            <i class="fa fa-clock-o" style="margin-right: 5px;"></i>
+                            ${schedule.startTime} - ${schedule.endTime} WIB
+                        </div>
+                    </div>
+                    <button class="btn-hospital-book" onclick="openHospitalBookingModal('${schedule.date}', '${schedule.location}', '${schedule.hospitalName}', '${schedule.formatted}')" style="
+                        background: ${schedule.hospitalColor || '#607d8b'};
+                        color: white;
+                        border: none;
+                        padding: 8px 16px;
+                        border-radius: 20px;
+                        cursor: pointer;
+                        font-size: 13px;
+                        transition: all 0.3s;
+                    ">
+                        <i class="fa fa-calendar-plus-o"></i> Booking
+                    </button>
+                </div>
+            `).join('');
+
+            container.innerHTML = html;
+        }
+
+        // Hospital Booking Modal State
+        let hospitalBookingData = {
+            date: null,
+            location: null,
+            hospitalName: null,
+            formatted: null
+        };
+
+        function openHospitalBookingModal(date, location, hospitalName, formatted) {
+            hospitalBookingData = { date, location, hospitalName, formatted };
+
+            const modalHtml = `
+                <div class="dashboard-modal active" id="hospital-booking-modal" style="z-index: 10000;">
+                    <div class="modal-content" style="max-width: 450px; background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%); border: 1px solid rgba(255,255,255,0.1);">
+                        <div class="modal-header" style="background: linear-gradient(135deg, #0066FF 0%, #00D4FF 100%); padding: 20px; border-radius: 8px 8px 0 0;">
+                            <h4 style="margin: 0; color: white;"><i class="fa fa-hospital-o"></i> Booking ${hospitalName}</h4>
+                            <button onclick="closeHospitalBookingModal()" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer; position: absolute; right: 15px; top: 15px;">&times;</button>
+                        </div>
+                        <div class="modal-body" style="padding: 25px;">
+                            <div style="margin-bottom: 20px; padding: 15px; background: rgba(0,102,255,0.1); border-radius: 8px; border-left: 4px solid #0066FF;">
+                                <div style="font-weight: 600; color: #fff; margin-bottom: 5px;">${formatted}</div>
+                                <div style="font-size: 13px; color: #aaa;">${hospitalName}</div>
+                            </div>
+
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 8px; color: #fff; font-weight: 500;">Jenis Konsultasi</label>
+                                <select id="hospital-consultation-type" style="
+                                    width: 100%;
+                                    padding: 12px;
+                                    border: 1px solid rgba(255,255,255,0.2);
+                                    border-radius: 8px;
+                                    background: rgba(255,255,255,0.05);
+                                    color: #fff;
+                                    font-size: 14px;
+                                ">
+                                    <option value="obstetri" style="background: #fff; color: #000;">Kehamilan (Obstetri)</option>
+                                    <option value="gyn_repro" style="background: #fff; color: #000;">Program Hamil (Reproduksi)</option>
+                                    <option value="gyn_special" style="background: #fff; color: #000;">Ginekologi Umum</option>
+                                </select>
+                            </div>
+
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 8px; color: #fff; font-weight: 500;">Keluhan / Tujuan Konsultasi (opsional)</label>
+                                <textarea id="hospital-complaint" placeholder="Contoh: Kontrol kehamilan rutin, USG, dll..." style="
+                                    width: 100%;
+                                    padding: 12px;
+                                    border: 1px solid rgba(255,255,255,0.2);
+                                    border-radius: 8px;
+                                    background: rgba(255,255,255,0.05);
+                                    color: #fff;
+                                    font-size: 14px;
+                                    min-height: 80px;
+                                    resize: vertical;
+                                "></textarea>
+                            </div>
+
+                            <div style="background: rgba(40, 167, 69, 0.1); padding: 12px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #28a745;">
+                                <div style="color: #28a745; font-size: 13px;">
+                                    <i class="fa fa-check-circle"></i> Booking akan langsung terkonfirmasi
+                                </div>
+                            </div>
+                        </div>
+                        <div class="modal-footer" style="padding: 15px 25px; border-top: 1px solid rgba(255,255,255,0.1); display: flex; gap: 10px; justify-content: flex-end;">
+                            <button onclick="closeHospitalBookingModal()" style="
+                                background: rgba(255,255,255,0.1);
+                                color: #fff;
+                                border: none;
+                                padding: 10px 20px;
+                                border-radius: 8px;
+                                cursor: pointer;
+                            ">Batal</button>
+                            <button onclick="submitHospitalBooking()" id="btn-submit-hospital-booking" style="
+                                background: linear-gradient(135deg, #0066FF 0%, #00D4FF 100%);
+                                color: white;
+                                border: none;
+                                padding: 10px 25px;
+                                border-radius: 8px;
+                                cursor: pointer;
+                                font-weight: 600;
+                            "><i class="fa fa-check"></i> Konfirmasi Booking</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Remove existing modal if any
+            const existingModal = document.getElementById('hospital-booking-modal');
+            if (existingModal) existingModal.remove();
+
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+
+        function closeHospitalBookingModal() {
+            const modal = document.getElementById('hospital-booking-modal');
+            if (modal) modal.remove();
+        }
+
+        async function submitHospitalBooking() {
+            const btn = document.getElementById('btn-submit-hospital-booking');
+            const consultationType = document.getElementById('hospital-consultation-type').value;
+            const complaint = document.getElementById('hospital-complaint').value;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Memproses...';
+
+            try {
+                const response = await fetch('/api/hospital-appointments/book', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        date: hospitalBookingData.date,
+                        location: hospitalBookingData.location,
+                        complaint: complaint,
+                        consultation_category: consultationType
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Gagal membuat booking');
+                }
+
+                closeHospitalBookingModal();
+
+                // Show success notification
+                showBookingNotification(`Booking berhasil! ${data.details.hospital} - ${data.details.date}`, 'success');
+
+                // Reload hospital schedules and booking status
+                loadHospitalSchedules();
+                loadBookingStatus();
+
+            } catch (error) {
+                console.error('Error booking hospital:', error);
+                showBookingNotification(error.message, 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa fa-check"></i> Konfirmasi Booking';
             }
         }
 
@@ -2606,7 +2898,8 @@
             }
 
             try {
-                const response = await fetch(`/api/visit-invoices/patient/${patientId}`, {
+                // Load visit history with location info from sunday-clinic API
+                const response = await fetch(`/api/sunday-clinic/patient-visits/${patientId}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
@@ -2619,7 +2912,7 @@
                 const { data } = await response.json();
                 renderVisitCards(data || []);
             } catch (error) {
-                console.error('Error loading visit invoices:', error);
+                console.error('Error loading visit history:', error);
                 container.innerHTML = `<div class="empty-state"><i class="fa fa-exclamation-triangle"></i><p>Gagal memuat riwayat kunjungan.</p></div>`;
             }
         }
@@ -2629,34 +2922,33 @@
             if (!container) return;
 
             if (!visits || visits.length === 0) {
-                container.innerHTML = `<div class="empty-state"><i class="fa fa-info-circle"></i><p>Belum ada kunjungan atau invoice terkait.</p></div>`;
+                container.innerHTML = `<div class="empty-state"><i class="fa fa-info-circle"></i><p>Belum ada riwayat kunjungan.</p></div>`;
                 return;
             }
 
             const cardsHtml = visits.map(visit => {
-                const visitType = escapeText(visit.visit_type || 'Kunjungan Klinik');
-                const visitNotes = escapeText(visit.notes || '');
-                const invoiceNumber = escapeText(visit.invoice_number || '-');
-                const statusLabel = visit.invoice_status ? visit.invoice_status.charAt(0).toUpperCase() + visit.invoice_status.slice(1) : 'Pending';
-                const links = [];
-                if (visit.invoice_url) {
-                    links.push(`<a href="${visit.invoice_url}" target="_blank" rel="noreferrer">Lihat Invoice</a>`);
-                }
-                if (visit.etiket_url) {
-                    links.push(`<a href="${visit.etiket_url}" target="_blank" rel="noreferrer">Cetak Etiket</a>`);
-                }
+                const category = visit.mr_category === 'ginekologi' ? 'Ginekologi' : 'Obstetri';
+                const locationName = escapeText(visit.location_short || visit.location_name || 'Klinik');
+                const locationColor = visit.location_color || '#3c8dbc';
+                const locationLogo = visit.location_logo;
 
-                const actionsHtml = links.length ? `<div class="visit-actions">${links.join(' ')}</div>` : '';
+                // Build location badge with logo
+                const locationBadge = locationLogo
+                    ? `<div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                        <img src="${locationLogo}" alt="${locationName}" style="height: 30px; width: auto; object-fit: contain;">
+                        <span style="color: ${locationColor}; font-weight: 500;">${locationName}</span>
+                       </div>`
+                    : `<div style="margin-bottom: 10px;">
+                        <span style="background: ${locationColor}; color: white; padding: 4px 10px; border-radius: 12px; font-size: 12px;">
+                            <i class="fa fa-hospital-o"></i> ${locationName}
+                        </span>
+                       </div>`;
 
                 return `
-                    <div class="visit-card">
-                        <h4>${visitType}</h4>
+                    <div class="visit-card" style="border-left: 4px solid ${locationColor};">
+                        ${locationBadge}
+                        <h4 style="margin-top: 0;">Kunjungan ${category}</h4>
                         <p><strong>Tanggal:</strong> ${formatVisitDate(visit.visit_date)}</p>
-                        <p><strong>Nomor Invoice:</strong> ${invoiceNumber}</p>
-                        <p><strong>Total:</strong> ${formatCurrency(visit.total_amount)}</p>
-                        <p><strong>Status:</strong> ${statusLabel}</p>
-                        ${visitNotes ? `<p>${visitNotes}</p>` : ''}
-                        ${actionsHtml}
                     </div>
                 `;
             }).join('');
@@ -3698,8 +3990,19 @@
             const glowClass = isNew ? 'glow-new' : '';
             const newBadge = isNew ? '<span class="document-badge new" style="background: #28e97f; color: #000; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; margin-left: 8px;">BARU</span>' : '';
 
+            // Location badge with logo
+            const locationLogo = doc.location_logo || '/images/dibyablacklogo.svg';
+            const locationName = doc.location_name || 'Klinik Privat';
+            const locationColor = doc.location_color || '#3c8dbc';
+
             return `
-                <div class="document-card ${glowClass}" data-doc-id="${doc.id}">
+                <div class="document-card ${glowClass}" data-doc-id="${doc.id}" style="border-left: 3px solid ${locationColor};">
+                    <div class="doc-location" style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px solid #eee;">
+                        <div style="background: #fff; padding: 4px 8px; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); display: flex; align-items: center;">
+                            <img src="${locationLogo}" alt="${escapeHtml(locationName)}" style="height: 18px; width: auto; object-fit: contain;">
+                        </div>
+                        <span style="font-size: 11px; color: ${locationColor}; font-weight: 500;">${escapeHtml(locationName)}</span>
+                    </div>
                     <div class="doc-icon ${iconClass}">
                         <i class="fa ${iconName}"></i>
                     </div>
