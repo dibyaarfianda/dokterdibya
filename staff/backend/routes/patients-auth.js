@@ -241,13 +241,14 @@ async function handlePatientRegister(req, res) {
         // For VARCHAR primary key, insertId is 0. Use medicalRecordId instead
         const patientId = medicalRecordId;
 
-        // Mark registration code as used (if code was required)
+        // Mark registration code as used (if code was required and NOT a public code)
         if (codeRequired && registration_code) {
             const normalizedCode = registration_code.toUpperCase().trim();
+            // Only mark non-public codes as used (public codes can be reused)
             await db.query(
                 `UPDATE registration_codes
                  SET status = 'used', used_at = NOW(), used_by_patient_id = ?
-                 WHERE code = ?`,
+                 WHERE code = ? AND is_public = 0`,
                 [patientId, normalizedCode]
             );
             console.log(`Registration code ${normalizedCode} used by patient ${patientId}`);

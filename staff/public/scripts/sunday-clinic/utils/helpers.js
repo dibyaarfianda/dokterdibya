@@ -27,17 +27,28 @@ export function getGMT7Timestamp() {
 // ============================================================================
 
 export function getMedicalRecordContext(state, primaryType, fallbackTypes = []) {
+    console.log('[getMedicalRecordContext] Called with primaryType:', primaryType);
+    console.log('[getMedicalRecordContext] state.recordData?.medicalRecords:', state.recordData?.medicalRecords);
+    console.log('[getMedicalRecordContext] state.medicalRecords:', state.medicalRecords);
+
     const bundle = state.recordData?.medicalRecords || state.medicalRecords;
+    console.log('[getMedicalRecordContext] bundle:', bundle);
+
     if (!bundle) {
+        console.log('[getMedicalRecordContext] No bundle found, returning null');
         return null;
     }
 
     const byType = bundle.byType || {};
+    console.log('[getMedicalRecordContext] byType keys:', Object.keys(byType));
+
     const candidates = [primaryType, ...fallbackTypes];
 
     for (const type of candidates) {
         const direct = byType[type];
+        console.log(`[getMedicalRecordContext] Checking type: ${type}, found:`, !!direct);
         if (direct && hasMeaningfulContent(direct.data)) {
+            console.log(`[getMedicalRecordContext] Returning direct record for type: ${type}, data:`, direct.data);
             return {
                 record: direct,
                 data: direct.data || {},
@@ -57,6 +68,7 @@ export function getMedicalRecordContext(state, primaryType, fallbackTypes = []) 
         }
     }
 
+    console.log('[getMedicalRecordContext] No matching record found, returning null');
     return null;
 }
 

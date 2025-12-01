@@ -658,28 +658,45 @@ router.get('/my-documents', verifyPatientToken, async (req, res) => {
 
         let query = `
             SELECT
-                id, document_type, title, description,
-                file_url, file_name, file_type, file_size,
-                published_at, first_viewed_at, view_count, download_count,
-                created_at
-            FROM patient_documents
-            WHERE patient_id = ? AND status = 'published'
+                pd.id, pd.document_type, pd.title, pd.description,
+                pd.file_url, pd.file_name, pd.file_type, pd.file_size,
+                pd.published_at, pd.first_viewed_at, pd.view_count, pd.download_count,
+                pd.created_at, pd.mr_id,
+                COALESCE(scr.visit_location, 'klinik_private') as visit_location
+            FROM patient_documents pd
+            LEFT JOIN sunday_clinic_records scr ON pd.mr_id = scr.mr_id
+            WHERE pd.patient_id = ? AND pd.status = 'published'
         `;
         const params = [patientId];
 
         // Filter by type if provided
         if (type) {
-            query += ' AND document_type = ?';
+            query += ' AND pd.document_type = ?';
             params.push(type);
         }
 
-        query += ' ORDER BY published_at DESC';
+        query += ' ORDER BY pd.published_at DESC';
 
         const [documents] = await db.query(query, params);
 
+        // Add location display info
+        const locationConfig = {
+            'klinik_private': { name: 'Klinik Privat', logo: '/images/dibyablacklogo.svg', color: '#3c8dbc' },
+            'rsia_melinda': { name: 'RSIA Melinda', logo: '/images/melinda-logo.png', color: '#e91e63' },
+            'rsud_gambiran': { name: 'RSUD Gambiran', logo: '/images/gambiran-logo.png', color: '#17a2b8' },
+            'rs_bhayangkara': { name: 'RS Bhayangkara', logo: '/images/bhayangkara-logo.png', color: '#28a745' }
+        };
+
+        const enrichedDocuments = documents.map(doc => ({
+            ...doc,
+            location_name: locationConfig[doc.visit_location]?.name || 'Klinik Privat',
+            location_logo: locationConfig[doc.visit_location]?.logo || '/images/dibyablacklogo.svg',
+            location_color: locationConfig[doc.visit_location]?.color || '#3c8dbc'
+        }));
+
         res.json({
             success: true,
-            documents
+            documents: enrichedDocuments
         });
 
     } catch (error) {

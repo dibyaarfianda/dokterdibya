@@ -846,21 +846,137 @@
             </div>
             <nav class="mt-2">
                 <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                    <!-- MAIN -->
+                    <li class="nav-header">MAIN</li>
                     <li class="nav-item" id="nav-dashboard">
                         <a href="#" class="nav-link" onclick="showDashboardPage(); return false;">
                             <i class="nav-icon fas fa-tachometer-alt"></i>
                             <p>Dashboard</p>
                         </a>
                     </li>
-                    <li class="nav-item" id="nav-klinik-private">
-                        <a href="#" class="nav-link" onclick="showKlinikPrivatePage(); return false;">
-                            <i class="nav-icon fas fa-clinic-medical"></i>
-                            <p>Klinik Privat</p>
+                    <li class="nav-item" id="nav-registrasi-pasien">
+                        <a href="#" class="nav-link" onclick="showRegistrasiPasienPage(); return false;">
+                            <i class="nav-icon fas fa-key"></i>
+                            <p>Registrasi Pasien</p>
                         </a>
                     </li>
 
+                    <!-- KLINIK PRIVAT (Collapsible) -->
+                    <li class="nav-item has-treeview" id="nav-section-klinik-privat">
+                        <a href="#" class="nav-link">
+                            <i class="nav-icon fas fa-clinic-medical" style="color: #3c8dbc;"></i>
+                            <p>Klinik Privat<i class="fas fa-angle-left right"></i></p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item" id="nav-klinik-private">
+                                <a href="#" class="nav-link" onclick="showKlinikPrivatePage(); return false;">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Terjadwal</p>
+                                </a>
+                            </li>
+                            <li class="nav-item" id="nav-klinik-private-pasien">
+                                <a href="#" class="nav-link" onclick="showKelolaPasienPage(); return false;">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Pasien</p>
+                                </a>
+                            </li>
+                            <li class="nav-item" id="management-nav-kelola-appointment">
+                                <a href="#" class="nav-link" onclick="showKelolaAppointmentPage(); return false;">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Janji Temu</p>
+                                </a>
+                            </li>
+                            <li class="nav-item" id="management-nav-kelola-tindakan">
+                                <a href="#" class="nav-link" onclick="showKelolaTindakanPage(); return false;">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Layanan</p>
+                                </a>
+                            </li>
+                            <li class="nav-item" id="management-nav-kelola-obat">
+                                <a href="#" class="nav-link" onclick="showKelolaObatManagementPage(); return false;">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Obat/Alkes</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <!-- RSIA MELINDA (Collapsible) -->
+                    <li class="nav-item has-treeview" id="nav-section-rsia-melinda">
+                        <a href="#" class="nav-link">
+                            <i class="nav-icon fas fa-hospital" style="color: #e91e63;"></i>
+                            <p>RSIA Melinda<i class="fas fa-angle-left right"></i></p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item" id="nav-rsia-melinda-pasien">
+                                <a href="#" class="nav-link" onclick="showHospitalPatientsPage('rsia_melinda'); return false;">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Pasien</p>
+                                </a>
+                            </li>
+                            <li class="nav-item" id="nav-rsia-melinda">
+                                <a href="#" class="nav-link" onclick="showHospitalAppointmentsPage('rsia_melinda'); return false;">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Janji Temu</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <!-- RSUD GAMBIRAN (Collapsible) -->
+                    <li class="nav-item has-treeview" id="nav-section-rsud-gambiran">
+                        <a href="#" class="nav-link">
+                            <i class="nav-icon fas fa-hospital" style="color: #17a2b8;"></i>
+                            <p>RSUD Gambiran<i class="fas fa-angle-left right"></i></p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item" id="nav-rsud-gambiran-pasien">
+                                <a href="#" class="nav-link" onclick="showHospitalPatientsPage('rsud_gambiran'); return false;">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Pasien</p>
+                                </a>
+                            </li>
+                            <li class="nav-item" id="nav-rsud-gambiran">
+                                <a href="#" class="nav-link" onclick="showHospitalAppointmentsPage('rsud_gambiran'); return false;">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Janji Temu</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <!-- RS BHAYANGKARA (Collapsible) -->
+                    <li class="nav-item has-treeview" id="nav-section-rs-bhayangkara">
+                        <a href="#" class="nav-link">
+                            <i class="nav-icon fas fa-hospital-alt" style="color: #28a745;"></i>
+                            <p>RS Bhayangkara<i class="fas fa-angle-left right"></i></p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item" id="nav-rs-bhayangkara-pasien">
+                                <a href="#" class="nav-link" onclick="showHospitalPatientsPage('rs_bhayangkara'); return false;">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Pasien</p>
+                                </a>
+                            </li>
+                            <li class="nav-item" id="nav-rs-bhayangkara">
+                                <a href="#" class="nav-link" onclick="showHospitalAppointmentsPage('rs_bhayangkara'); return false;">
+                                    <i class="far fa-circle nav-icon"></i>
+                                    <p>Janji Temu</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
+                    <!-- MANAGEMENT -->
                     <li class="nav-header" id="management-header">MANAGEMENT</li>
-                    
+
+                    <li class="nav-item dokter-only d-none" id="finance-analysis-nav">
+                        <a href="#" class="nav-link" onclick="showFinanceAnalysisPage(); return false;">
+                            <i class="nav-icon fas fa-chart-line"></i>
+                            <p>Finance Analysis</p>
+                        </a>
+                    </li>
+
                     <li class="nav-item" id="nav-kelola-pengumuman">
                         <a href="#" class="nav-link" onclick="showKelolaPengumumanPage(); return false;">
                             <i class="nav-icon fas fa-bullhorn"></i>
@@ -868,45 +984,10 @@
                         </a>
                     </li>
 
-                    <li class="nav-item superadmin-only d-none" id="finance-analysis-nav">
-                        <a href="#" class="nav-link" onclick="showFinanceAnalysisPage(); return false;">
-                            <i class="nav-icon fas fa-chart-line"></i>
-                            <p>Finance Analysis</p>
-                        </a>
-                    </li>
-
-                    <li class="nav-item" id="management-nav-kelola-pasien">
-                        <a href="#" class="nav-link" onclick="showKelolaPasienPage(); return false;">
-                            <i class="nav-icon fas fa-users"></i>
-                            <p>Pasien</p>
-                        </a>
-                    </li>
-
-                    <li class="nav-item" id="management-nav-kelola-appointment">
-                        <a href="#" class="nav-link" onclick="showKelolaAppointmentPage(); return false;">
-                            <i class="nav-icon fas fa-calendar-check"></i>
-                            <p>Appointment</p>
-                        </a>
-                    </li>
-
                     <li class="nav-item" id="management-nav-kelola-jadwal">
                         <a href="#" class="nav-link" onclick="showKelolaJadwalPage(); return false;">
                             <i class="nav-icon fas fa-calendar-alt"></i>
                             <p>Jadwal</p>
-                        </a>
-                    </li>
-
-                    <li class="nav-item" id="management-nav-kelola-tindakan">
-                        <a href="#" class="nav-link" onclick="showKelolaTindakanPage(); return false;">
-                            <i class="nav-icon fas fa-stethoscope"></i>
-                            <p>Tindakan</p>
-                        </a>
-                    </li>
-
-                    <li class="nav-item" id="management-nav-kelola-obat">
-                        <a href="#" class="nav-link" onclick="showKelolaObatManagementPage(); return false;">
-                            <i class="nav-icon fas fa-pills"></i>
-                            <p>Obat</p>
                         </a>
                     </li>
 
@@ -931,23 +1012,12 @@
                         </a>
                     </li>
 
-                    <li class="nav-item superadmin-only d-none" id="nav-booking-settings">
+                    <li class="nav-item dokter-only d-none" id="nav-booking-settings">
                         <a href="#" class="nav-link" onclick="showBookingSettingsPage(); return false;">
                             <i class="nav-icon fas fa-calendar-day"></i>
                             <p>Pengaturan Sesi</p>
                         </a>
                     </li>
-
-                    <!-- REMOVED: Email Settings -->
-
-                    <!-- HIDDEN: Log Aktivitas
-                    <li class="nav-item superadmin-only d-none" id="nav-logs">
-                        <a href="#" class="nav-link" onclick="showLogPage(); return false;">
-                            <i class="nav-icon fas fa-history"></i>
-                            <p>Log Aktivitas</p>
-                        </a>
-                    </li>
-                    -->
                 </ul>
             </nav>
             
@@ -1521,6 +1591,113 @@
                                     <button id="new-patient-btn" class="btn btn-info btn-lg d-none">
                                         <i class="fas fa-user-plus mr-2"></i>Periksa Pasien Baru
                                     </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hospital Appointments Page -->
+                <div id="hospital-appointments-page" class="d-none">
+                    <div class="row">
+                        <div class="col-12">
+                            <div id="hospital-appointments-container">
+                                <div class="alert alert-info">
+                                    <i class="fas fa-info-circle"></i> Pilih rumah sakit dari sidebar untuk melihat appointment
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hospital Patients Page -->
+                <div id="hospital-patients-page" class="d-none">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card card-primary">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-users mr-2"></i>
+                                        <span id="hospital-patients-title">Pasien Rumah Sakit</span>
+                                    </h3>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table id="hospital-patients-table" class="table table-bordered table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th>ID</th>
+                                                    <th>Nama Lengkap</th>
+                                                    <th>Email</th>
+                                                    <th>Telepon</th>
+                                                    <th>Tanggal Lahir</th>
+                                                    <th>Usia</th>
+                                                    <th>Kunjungan Terakhir</th>
+                                                    <th>Tgl Registrasi</th>
+                                                    <th>Status</th>
+                                                    <th>Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="hospital-patients-tbody">
+                                                <tr>
+                                                    <td colspan="10" class="text-center">Memuat data...</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Registrasi Pasien Page -->
+                <div id="registrasi-pasien-page" class="d-none">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card card-success">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-user-plus mr-2"></i>Pasien Terdaftar Baru
+                                    </h3>
+                                    <div class="card-tools">
+                                        <button class="btn btn-tool btn-warning btn-sm" onclick="openGenerateCodeModal()" title="Generate Kode Registrasi">
+                                            <i class="fas fa-key"></i> Kode Registrasi
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table id="new-patients-table" class="table table-sm table-bordered table-hover">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th>ID Pasien</th>
+                                                    <th>Nama Lengkap</th>
+                                                    <th>No. WhatsApp</th>
+                                                    <th>Terakhir Visit</th>
+                                                    <th>Terdaftar</th>
+                                                    <th>Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="new-patients-tbody">
+                                                <tr><td colspan="6" class="text-center">Memuat...</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <!-- Pagination Controls -->
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <div class="text-muted" id="new-patients-pagination-info">
+                                            Menampilkan 0 dari 0
+                                        </div>
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" id="new-patients-prev-btn" onclick="loadNewPatients(newPatientsCurrentPage - 1)" disabled>
+                                                <i class="fas fa-chevron-left"></i> Sebelumnya
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" id="new-patients-next-btn" onclick="loadNewPatients(newPatientsCurrentPage + 1)" disabled>
+                                                Selanjutnya <i class="fas fa-chevron-right"></i>
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -2968,53 +3145,8 @@
                 <!-- FINANCE ANALYSIS PAGE -->
                 <div id="finance-analysis-page" class="d-none">
                     <div class="container-fluid">
-                        <!-- KPI Cards -->
-                        <div class="row">
-                            <div class="col-lg-4 col-12">
-                                <div class="small-box bg-primary stats-card">
-                                    <div class="inner">
-                                        <h3 id="kpi-total-visits">...</h3>
-                                        <p>Kunjungan Hari Ini</p>
-                                    </div>
-                                    <div class="icon"><i class="fas fa-notes-medical"></i></div>
-                                </div>
-                            </div>
-                            <div class="col-lg-4 col-12">
-                                <div class="small-box bg-success stats-card">
-                                    <div class="inner">
-                                        <h3 id="kpi-revenue">...</h3>
-                                        <p>Pendapatan Hari Ini</p>
-                                    </div>
-                                    <div class="icon"><i class="fas fa-dollar-sign"></i></div>
-                                </div>
-                            </div>
-                            <div class="col-lg-4 col-12">
-                                <div class="small-box bg-info stats-card">
-                                    <div class="inner">
-                                        <h3 id="kpi-avg-bill">...</h3>
-                                        <p>Rata-rata Tagihan</p>
-                                    </div>
-                                    <div class="icon"><i class="fas fa-receipt"></i></div>
-                                </div>
-                            </div>
-                        </div>
-
                         <!-- Revenue Charts -->
                         <div class="row">
-                            <div class="col-md-6">
-                                <div class="card card-primary">
-                                    <div class="card-header">
-                                        <h3 class="card-title">Pemasukan Mingguan (7 Hari Terakhir)</h3>
-                                    </div>
-                                    <div class="card-body">
-                                        <div id="weekly-revenue-chart" class="chart-container"></div>
-                                        <div class="mt-3 text-center">
-                                            <strong>Total:</strong> <span id="weekly-total" class="text-success">-</span><br>
-                                            <small class="text-muted">Rata-rata/hari: <span id="weekly-avg">-</span></small>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                             <div class="col-md-6">
                                 <div class="card card-success">
                                     <div class="card-header">
@@ -3029,10 +3161,6 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- Top Items -->
-                        <div class="row">
                             <div class="col-md-6">
                                 <div class="card card-info">
                                     <div class="card-header">
@@ -3040,21 +3168,6 @@
                                     </div>
                                     <div class="card-body" style="max-height: 400px; overflow-y: auto;">
                                         <div id="top-drugs-table">
-                                            <div class="text-center text-muted py-5">
-                                                <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
-                                                <p>Memuat data...</p>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="card card-warning">
-                                    <div class="card-header">
-                                        <h3 class="card-title"><i class="fas fa-notes-medical mr-2"></i>Top 10 Tindakan Dilakukan</h3>
-                                    </div>
-                                    <div class="card-body" style="max-height: 400px; overflow-y: auto;">
-                                        <div id="top-services-table">
                                             <div class="text-center text-muted py-5">
                                                 <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
                                                 <p>Memuat data...</p>
@@ -3157,6 +3270,187 @@
                                                     </tr>
                                                 </tbody>
                                             </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Private Clinic (Klinik Privat) Analysis Section -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="card card-purple">
+                                    <div class="card-header">
+                                        <h3 class="card-title"><i class="fas fa-clinic-medical mr-2"></i>Analisis Keuangan Klinik Privat</h3>
+                                        <div class="card-tools">
+                                            <select id="private-clinic-month" class="form-control form-control-sm d-inline-block" style="width: auto;">
+                                            </select>
+                                            <button class="btn btn-tool" onclick="loadPrivateClinicAnalysis()">
+                                                <i class="fas fa-sync"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <!-- Net Profit KPI Cards -->
+                                        <div class="row mb-4">
+                                            <div class="col-lg-3 col-md-6 col-6">
+                                                <div class="info-box bg-gradient-purple">
+                                                    <span class="info-box-icon"><i class="fas fa-coins"></i></span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text">Pendapatan Kotor</span>
+                                                        <span class="info-box-number" id="pc-pendapatan-kotor">Rp 0</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-3 col-md-6 col-6">
+                                                <div class="info-box bg-gradient-info">
+                                                    <span class="info-box-icon"><i class="fas fa-hand-holding-usd"></i></span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text">Laba Kotor</span>
+                                                        <span class="info-box-number" id="pc-laba-kotor">Rp 0</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-3 col-md-6 col-6">
+                                                <div class="info-box bg-gradient-success">
+                                                    <span class="info-box-icon"><i class="fas fa-money-bill-wave"></i></span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text">Laba Bersih</span>
+                                                        <span class="info-box-number" id="pc-laba-bersih">Rp 0</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-3 col-md-6 col-6">
+                                                <div class="info-box bg-gradient-warning">
+                                                    <span class="info-box-icon"><i class="fas fa-percentage"></i></span>
+                                                    <div class="info-box-content">
+                                                        <span class="info-box-text">Margin Bersih</span>
+                                                        <span class="info-box-number" id="pc-margin-bersih">0%</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Summary Stats Row -->
+                                        <div class="row mb-4">
+                                            <div class="col-md-8">
+                                                <div class="card card-outline card-primary mb-0">
+                                                    <div class="card-header py-2">
+                                                        <h5 class="card-title mb-0"><i class="fas fa-chart-bar mr-2"></i>Laporan Laba Rugi</h5>
+                                                    </div>
+                                                    <div class="card-body p-0">
+                                                        <table class="table table-sm mb-0">
+                                                            <tbody id="pc-profit-loss-table">
+                                                                <tr><td colspan="2" class="text-center py-3"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="card card-outline card-success mb-0 h-100">
+                                                    <div class="card-header py-2">
+                                                        <h5 class="card-title mb-0"><i class="fas fa-tachometer-alt mr-2"></i>KPI</h5>
+                                                    </div>
+                                                    <div class="card-body">
+                                                        <div class="d-flex justify-content-between mb-2">
+                                                            <span>Kunjungan:</span>
+                                                            <strong id="pc-kunjungan">0</strong>
+                                                        </div>
+                                                        <div class="d-flex justify-content-between mb-2">
+                                                            <span>Hari Kerja:</span>
+                                                            <strong id="pc-hari-kerja">0</strong>
+                                                        </div>
+                                                        <div class="d-flex justify-content-between mb-2">
+                                                            <span>Laba/Hari:</span>
+                                                            <strong id="pc-laba-per-hari" class="text-success">Rp 0</strong>
+                                                        </div>
+                                                        <div class="d-flex justify-content-between">
+                                                            <span>Laba/Kunjungan:</span>
+                                                            <strong id="pc-laba-per-kunjungan" class="text-success">Rp 0</strong>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Breakdown Tables Row -->
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="card card-outline card-info">
+                                                    <div class="card-header py-2">
+                                                        <h5 class="card-title mb-0"><i class="fas fa-procedures mr-2"></i>Pendapatan Tindakan per Kategori</h5>
+                                                    </div>
+                                                    <div class="card-body p-0" style="max-height: 250px; overflow-y: auto;">
+                                                        <table class="table table-sm table-striped mb-0">
+                                                            <thead class="bg-light sticky-top">
+                                                                <tr>
+                                                                    <th>Kategori</th>
+                                                                    <th class="text-right">Transaksi</th>
+                                                                    <th class="text-right">Pendapatan</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody id="pc-tindakan-category-body">
+                                                                <tr><td colspan="3" class="text-center py-3"><i class="fas fa-spinner fa-spin"></i></td></tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="card card-outline card-warning">
+                                                    <div class="card-header py-2">
+                                                        <h5 class="card-title mb-0"><i class="fas fa-pills mr-2"></i>Analisis Profit Obat</h5>
+                                                    </div>
+                                                    <div class="card-body p-0" style="max-height: 250px; overflow-y: auto;">
+                                                        <table class="table table-sm table-striped mb-0">
+                                                            <thead class="bg-light sticky-top">
+                                                                <tr>
+                                                                    <th>Obat</th>
+                                                                    <th class="text-right">Qty</th>
+                                                                    <th class="text-right">Profit</th>
+                                                                    <th class="text-right">Margin</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody id="pc-obat-profit-body">
+                                                                <tr><td colspan="4" class="text-center py-3"><i class="fas fa-spinner fa-spin"></i></td></tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Top Tindakan Table -->
+                                        <div class="row mt-3">
+                                            <div class="col-12">
+                                                <div class="card card-outline card-secondary collapsed-card">
+                                                    <div class="card-header py-2">
+                                                        <h5 class="card-title mb-0"><i class="fas fa-list-ol mr-2"></i>Top 10 Tindakan</h5>
+                                                        <div class="card-tools">
+                                                            <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                                                <i class="fas fa-plus"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <div class="card-body p-0" style="display: none;">
+                                                        <table class="table table-sm table-hover mb-0">
+                                                            <thead class="bg-light">
+                                                                <tr>
+                                                                    <th>Tindakan</th>
+                                                                    <th>Kategori</th>
+                                                                    <th class="text-right">Qty</th>
+                                                                    <th class="text-right">Harga</th>
+                                                                    <th class="text-right">Pendapatan</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody id="pc-top-tindakan-body">
+                                                                <tr><td colspan="5" class="text-center py-3"><i class="fas fa-spinner fa-spin"></i></td></tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -3503,7 +3797,7 @@
                     </div>
                 </div>
 
-                <!-- Kelola Pasien Page (Superadmin Only) -->
+                <!-- Kelola Pasien Page -->
                 <div id="manage-patients-page" class="d-none">
                     <div class="row">
                         <div class="col-12">
@@ -3512,73 +3806,6 @@
                                     <h3 class="card-title"><i class="fas fa-users mr-2"></i>Kelola Pasien</h3>
                                 </div>
                                 <div class="card-body">
-                                    <!-- Registration Codes Section -->
-                                    <div class="row mb-4">
-                                        <div class="col-12">
-                                            <div class="card card-warning">
-                                                <div class="card-header">
-                                                    <h3 class="card-title">
-                                                        <i class="fas fa-key mr-2"></i>Kode Registrasi Pasien
-                                                    </h3>
-                                                    <div class="card-tools">
-                                                        <span class="badge badge-warning mr-2" id="active-codes-count">0 aktif</span>
-                                                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
-                                                            <i class="fas fa-minus"></i>
-                                                        </button>
-                                                    </div>
-                                                </div>
-                                                <div class="card-body">
-                                                    <div class="row mb-3">
-                                                        <div class="col-md-6">
-                                                            <p class="text-muted mb-2">
-                                                                <i class="fas fa-info-circle"></i>
-                                                                Generate kode untuk pasien yang akan mendaftar di portal.
-                                                                Kode dikirim via WhatsApp.
-                                                            </p>
-                                                        </div>
-                                                        <div class="col-md-6 text-right">
-                                                            <button class="btn btn-warning" onclick="openGenerateCodeModal()">
-                                                                <i class="fas fa-plus-circle"></i> Generate Kode Baru
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                    <div class="table-responsive">
-                                                        <table id="registration-codes-table" class="table table-sm table-bordered">
-                                                            <thead>
-                                                                <tr>
-                                                                    <th>Kode</th>
-                                                                    <th>Nama Pasien</th>
-                                                                    <th>No. HP</th>
-                                                                    <th>Status</th>
-                                                                    <th>Dibuat</th>
-                                                                    <th>Kadaluarsa</th>
-                                                                    <th>Aksi</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody id="registration-codes-tbody">
-                                                                <tr><td colspan="7" class="text-center">Memuat...</td></tr>
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                    <!-- Pagination Controls -->
-                                                    <div class="d-flex justify-content-between align-items-center mt-3">
-                                                        <div class="text-muted" id="reg-codes-pagination-info">
-                                                            Menampilkan 0 dari 0
-                                                        </div>
-                                                        <div class="btn-group">
-                                                            <button type="button" class="btn btn-sm btn-outline-secondary" id="reg-codes-prev-btn" onclick="loadRegistrationCodes(regCodesCurrentPage - 1)" disabled>
-                                                                <i class="fas fa-chevron-left"></i> Sebelumnya
-                                                            </button>
-                                                            <button type="button" class="btn btn-sm btn-outline-secondary" id="reg-codes-next-btn" onclick="loadRegistrationCodes(regCodesCurrentPage + 1)" disabled>
-                                                                Selanjutnya <i class="fas fa-chevron-right"></i>
-                                                            </button>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
                                     <div class="table-responsive">
                                         <table id="manage-patients-table" class="table table-bordered table-striped">
                                             <thead>
@@ -4737,9 +4964,6 @@ function mobileNavClick(btn, action) {
             detail: { page: 'kelola-pasien' }
         }));
 
-        // Load registration codes
-        loadRegistrationCodes();
-        
         // Show floating panel (only for superadmin)
         const userRole = localStorage.getItem('vps_user_role');
         if (userRole === 'superadmin') {
@@ -4752,7 +4976,102 @@ function mobileNavClick(btn, action) {
         // Load patients data
         loadWebPatients();
     };
-    
+
+    // Registrasi Pasien Page Functions
+    let newPatientsCurrentPage = 1;
+    let newPatientsTotalPages = 1;
+
+    window.showRegistrasiPasienPage = function() {
+        // Hide all pages
+        document.querySelectorAll('[id$="-page"]').forEach(page => page.classList.add('d-none'));
+
+        // Show registrasi pasien page
+        document.getElementById('registrasi-pasien-page').classList.remove('d-none');
+
+        // Update active nav
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        const regPasienNav = document.querySelector('#nav-registrasi-pasien .nav-link');
+        if (regPasienNav) {
+            regPasienNav.classList.add('active');
+        }
+
+        const titleEl = document.getElementById('page-title');
+        if (titleEl) {
+            titleEl.textContent = 'Registrasi Pasien';
+        }
+        document.dispatchEvent(new CustomEvent('page:changed', {
+            detail: { page: 'registrasi-pasien' }
+        }));
+
+        // Load new patients
+        loadNewPatients();
+    };
+
+    async function loadNewPatients(page = 1) {
+        try {
+            newPatientsCurrentPage = page;
+            const token = localStorage.getItem('vps_auth_token');
+            const response = await fetch(`/api/patients?sort=recent&limit=10&page=${page}&_=${Date.now()}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error('Failed to load patients');
+
+            const data = await response.json();
+            const tbody = document.getElementById('new-patients-tbody');
+
+            // Update pagination info
+            const pagination = data.pagination || { total: 0, page: 1, totalPages: 1 };
+            newPatientsTotalPages = pagination.totalPages;
+            const start = data.data && data.data.length > 0 ? ((page - 1) * 10) + 1 : 0;
+            const end = start > 0 ? start + data.data.length - 1 : 0;
+
+            document.getElementById('new-patients-pagination-info').textContent =
+                `Menampilkan ${start}-${end} dari ${pagination.total}`;
+
+            // Update button states
+            document.getElementById('new-patients-prev-btn').disabled = page <= 1;
+            document.getElementById('new-patients-next-btn').disabled = page >= newPatientsTotalPages;
+
+            if (!data.data || data.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Belum ada pasien terdaftar</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = data.data.map(patient => {
+                const createdDate = patient.created_at ? new Date(patient.created_at).toLocaleDateString('id-ID', {
+                    day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                }) : '-';
+                const lastVisit = patient.last_visit ? new Date(patient.last_visit).toLocaleDateString('id-ID', {
+                    day: 'numeric', month: 'short', year: 'numeric'
+                }) : '-';
+
+                return `
+                    <tr>
+                        <td><code class="font-weight-bold">${patient.id}</code></td>
+                        <td>${patient.full_name || '-'}</td>
+                        <td>${patient.whatsapp || patient.phone || '-'}</td>
+                        <td>${lastVisit}</td>
+                        <td><small>${createdDate}</small></td>
+                        <td>
+                            <button class="btn btn-xs btn-info" onclick="viewPatientDetail('${patient.id}')" title="Lihat Detail">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+        } catch (error) {
+            console.error('Load new patients error:', error);
+            const tbody = document.getElementById('new-patients-tbody');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Gagal memuat data</td></tr>';
+            }
+        }
+    }
+    window.loadNewPatients = loadNewPatients;
+
     async function loadWebPatients() {
         try {
             const token = localStorage.getItem('vps_auth_token');
@@ -4999,22 +5318,28 @@ Apakah Anda yakin ingin melanjutkan?`;
     };
     
     window.viewPatientDetail = async function(patientId) {
+        // Redirect to showPatientDetail which has "Mulai Kunjungan" feature
+        if (typeof window.showPatientDetail === 'function') {
+            return window.showPatientDetail(patientId);
+        }
+
+        // Fallback to old implementation if showPatientDetail not available
         try {
             console.log('=== viewPatientDetail called ===');
             console.log('Patient ID:', patientId);
             console.log('Auth token exists:', !!localStorage.getItem('vps_auth_token'));
-            
+
             const response = await fetch(`/api/admin/web-patients/${patientId}`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('vps_auth_token')}`
                 }
             });
-            
+
             if (!response.ok) {
                 console.error('Failed to load patient details, status:', response.status);
                 throw new Error('Failed to load patient details');
             }
-            
+
             const data = await response.json();
             console.log('Patient data received:', data);
             const patient = data.data.patient;
@@ -6537,6 +6862,9 @@ Apakah Anda yakin ingin melanjutkan?`;
             await loadKPIStats();
             await loadAnalytics();
             await loadObatProfitAnalysis();
+            // Initialize and load Private Clinic Analysis
+            initPrivateClinicMonthSelector();
+            await loadPrivateClinicAnalysis();
             console.log('✅ Finance Analysis data loaded successfully');
         } catch (error) {
             console.error('❌ Error in initFinanceAnalysisPage:', error);
@@ -6629,6 +6957,135 @@ Apakah Anda yakin ingin melanjutkan?`;
     }
 
     window.loadObatProfitAnalysis = loadObatProfitAnalysis;
+
+    // Private Clinic Analysis Functions
+    function initPrivateClinicMonthSelector() {
+        const select = document.getElementById('private-clinic-month');
+        if (!select) return;
+
+        const now = new Date();
+        select.innerHTML = '';
+
+        // Generate last 12 months
+        for (let i = 0; i < 12; i++) {
+            const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+            const value = d.toISOString().slice(0, 7);
+            const label = d.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' });
+            const option = document.createElement('option');
+            option.value = value;
+            option.textContent = label;
+            select.appendChild(option);
+        }
+
+        select.addEventListener('change', () => loadPrivateClinicAnalysis());
+    }
+
+    async function loadPrivateClinicAnalysis() {
+        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+        if (!token) return;
+
+        const monthSelect = document.getElementById('private-clinic-month');
+        const month = monthSelect ? monthSelect.value : '';
+
+        try {
+            const response = await fetch(`/api/analytics/private-clinic?month=${month}&staffCount=3`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error('Failed to load data');
+
+            const result = await response.json();
+            const data = result.data;
+
+            // Format currency helper
+            const formatRp = (num) => 'Rp ' + Math.round(num || 0).toLocaleString('id-ID');
+            const formatPercent = (num) => (num || 0).toFixed(1) + '%';
+
+            // Update KPI cards
+            document.getElementById('pc-pendapatan-kotor').textContent = formatRp(data.summary.pendapatanKotor);
+            document.getElementById('pc-laba-kotor').textContent = formatRp(data.summary.labaKotor);
+            document.getElementById('pc-laba-bersih').textContent = formatRp(data.netProfit.labaBersih);
+            document.getElementById('pc-margin-bersih').textContent = formatPercent(data.netProfit.marginLabaBersih);
+
+            // Update KPI side panel
+            document.getElementById('pc-kunjungan').textContent = data.summary.totalKunjungan;
+            document.getElementById('pc-hari-kerja').textContent = data.summary.totalHariKerja + ' hari';
+            document.getElementById('pc-laba-per-hari').textContent = formatRp(data.netProfit.labaPerHari);
+            document.getElementById('pc-laba-per-kunjungan').textContent = formatRp(data.netProfit.labaPerKunjungan);
+
+            // Update Profit Loss Table
+            const plTable = document.getElementById('pc-profit-loss-table');
+            plTable.innerHTML = `
+                <tr class="bg-light"><td colspan="2"><strong>PENDAPATAN</strong></td></tr>
+                <tr><td class="pl-4">Tindakan (Jasa Medis)</td><td class="text-right">${formatRp(data.summary.pendapatanTindakan)}</td></tr>
+                <tr><td class="pl-4">Penjualan Obat</td><td class="text-right">${formatRp(data.summary.pendapatanObat)}</td></tr>
+                <tr class="font-weight-bold"><td>Total Pendapatan Kotor</td><td class="text-right">${formatRp(data.summary.pendapatanKotor)}</td></tr>
+                <tr class="bg-light"><td colspan="2"><strong>HPP (HARGA POKOK)</strong></td></tr>
+                <tr><td class="pl-4">HPP Obat</td><td class="text-right text-danger">(${formatRp(data.summary.totalHPP)})</td></tr>
+                <tr class="font-weight-bold border-top"><td>Laba Kotor</td><td class="text-right text-info">${formatRp(data.summary.labaKotor)}</td></tr>
+                <tr class="bg-light"><td colspan="2"><strong>BIAYA OPERASIONAL</strong></td></tr>
+                <tr><td class="pl-4">Sewa, Listrik, Air</td><td class="text-right text-muted">Rp 0 <small>(ditanggung RS)</small></td></tr>
+                <tr><td class="pl-4">Gaji Staff (${data.staffCost.jumlahStaff} org × ${data.staffCost.kehadiranPerStaff} hari)</td><td class="text-right text-danger">(${formatRp(data.staffCost.totalGaji)})</td></tr>
+                <tr class="font-weight-bold bg-success text-white"><td>LABA BERSIH</td><td class="text-right">${formatRp(data.netProfit.labaBersih)}</td></tr>
+                <tr><td class="text-muted">Margin Laba Bersih</td><td class="text-right text-success font-weight-bold">${formatPercent(data.netProfit.marginLabaBersih)}</td></tr>
+            `;
+
+            // Update Tindakan by Category
+            const tindakanBody = document.getElementById('pc-tindakan-category-body');
+            if (data.breakdown.tindakanByCategory.length === 0) {
+                tindakanBody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3">Tidak ada data</td></tr>';
+            } else {
+                tindakanBody.innerHTML = data.breakdown.tindakanByCategory.map(cat => `
+                    <tr>
+                        <td><span class="badge badge-secondary">${cat.category}</span></td>
+                        <td class="text-right">${cat.jumlah_transaksi}</td>
+                        <td class="text-right font-weight-bold">${formatRp(parseFloat(cat.total_pendapatan))}</td>
+                    </tr>
+                `).join('');
+            }
+
+            // Update Obat Profit
+            const obatBody = document.getElementById('pc-obat-profit-body');
+            if (data.breakdown.obatAnalysis.length === 0) {
+                obatBody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-3">Tidak ada data</td></tr>';
+            } else {
+                obatBody.innerHTML = data.breakdown.obatAnalysis.map(obat => {
+                    const margin = parseFloat(obat.margin_persen) || 0;
+                    const marginClass = margin >= 30 ? 'text-success' : margin >= 15 ? 'text-warning' : 'text-danger';
+                    const profit = parseFloat(obat.keuntungan_kotor) || 0;
+                    return `
+                        <tr>
+                            <td>${obat.item_name}</td>
+                            <td class="text-right">${obat.total_qty}</td>
+                            <td class="text-right">${formatRp(profit)}</td>
+                            <td class="text-right ${marginClass} font-weight-bold">${margin.toFixed(1)}%</td>
+                        </tr>
+                    `;
+                }).join('');
+            }
+
+            // Update Top Tindakan
+            const topBody = document.getElementById('pc-top-tindakan-body');
+            if (data.breakdown.topTindakan.length === 0) {
+                topBody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-3">Tidak ada data</td></tr>';
+            } else {
+                topBody.innerHTML = data.breakdown.topTindakan.map(t => `
+                    <tr>
+                        <td>${t.item_name}</td>
+                        <td><span class="badge badge-info">${t.category}</span></td>
+                        <td class="text-right">${t.total_qty}</td>
+                        <td class="text-right">${formatRp(parseFloat(t.avg_harga))}</td>
+                        <td class="text-right font-weight-bold">${formatRp(parseFloat(t.total_pendapatan))}</td>
+                    </tr>
+                `).join('');
+            }
+
+        } catch (error) {
+            console.error('Load private clinic analysis error:', error);
+        }
+    }
+
+    window.loadPrivateClinicAnalysis = loadPrivateClinicAnalysis;
 
     // Show expiring items modal (optional)
     window.showExpiringItems = async function() {
@@ -6962,122 +7419,50 @@ let currentPatientName = null;
 let regCodesCurrentPage = 1;
 let regCodesTotalPages = 1;
 
+// Legacy function - redirects to main page function
 async function loadRegistrationCodes(page = 1) {
+    if (typeof loadNewPatients === 'function') {
+        loadNewPatients(page);
+    }
+}
+
+async function openGenerateCodeModal() {
+    document.getElementById('generated-code-result').style.display = 'none';
+    document.getElementById('current-public-code').style.display = 'none';
+    document.getElementById('btn-generate-code').style.display = 'inline-block';
+    $('#generateCodeModal').modal('show');
+
+    // Check for existing public code
     try {
-        regCodesCurrentPage = page;
         const token = localStorage.getItem('vps_auth_token');
-        const response = await fetch(`/api/registration-codes?limit=10&page=${page}`, {
+        const response = await fetch('/api/registration-codes/public', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
-
-        if (!response.ok) throw new Error('Failed to load codes');
-
         const data = await response.json();
-        const tbody = document.getElementById('registration-codes-tbody');
-
-        // Update pagination info
-        const pagination = data.pagination || { total: 0, page: 1, totalPages: 1 };
-        regCodesTotalPages = pagination.totalPages;
-        const start = data.data && data.data.length > 0 ? ((page - 1) * 10) + 1 : 0;
-        const end = start > 0 ? start + data.data.length - 1 : 0;
-
-        document.getElementById('reg-codes-pagination-info').textContent =
-            `Menampilkan ${start}-${end} dari ${pagination.total}`;
-
-        // Update button states
-        document.getElementById('reg-codes-prev-btn').disabled = page <= 1;
-        document.getElementById('reg-codes-next-btn').disabled = page >= regCodesTotalPages;
-
-        if (!data.data || data.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Belum ada kode registrasi</td></tr>';
-            document.getElementById('active-codes-count').textContent = '0 aktif';
-            return;
+        if (data.success && data.code) {
+            document.getElementById('current-code-display').textContent = data.code;
+            const expires = new Date(data.expires_at);
+            document.getElementById('current-code-expires').textContent = `Berlaku sampai: ${expires.toLocaleString('id-ID')}`;
+            document.getElementById('current-public-code').style.display = 'block';
         }
-
-        const activeCodes = data.data.filter(c => c.status === 'active' && new Date(c.expires_at) > new Date());
-        document.getElementById('active-codes-count').textContent = `${activeCodes.length} aktif`;
-
-        tbody.innerHTML = data.data.map(code => {
-            const createdDate = new Date(code.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-            const expiresDate = new Date(code.expires_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
-            const isExpired = new Date(code.expires_at) < new Date();
-
-            let statusBadge = '';
-            if (code.status === 'used') {
-                statusBadge = '<span class="badge badge-success">Terpakai</span>';
-            } else if (isExpired) {
-                statusBadge = '<span class="badge badge-secondary">Kadaluarsa</span>';
-            } else {
-                statusBadge = '<span class="badge badge-warning">Aktif</span>';
-            }
-
-            return `
-                <tr>
-                    <td><code class="font-weight-bold">${code.code}</code></td>
-                    <td>${code.patient_name || '-'}</td>
-                    <td>${code.phone || '-'}</td>
-                    <td>${statusBadge}</td>
-                    <td>${createdDate}</td>
-                    <td>${expiresDate}</td>
-                    <td>
-                        ${code.status === 'active' && !isExpired ? `
-                            <button class="btn btn-xs btn-success" onclick="resendCodeWhatsApp('${code.code}', '${code.phone}', '${code.patient_name || ''}')" title="Kirim ulang via WhatsApp">
-                                <i class="fab fa-whatsapp"></i>
-                            </button>
-                            <button class="btn btn-xs btn-danger" onclick="deleteCode(${code.id})" title="Hapus">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        ` : ''}
-                    </td>
-                </tr>
-            `;
-        }).join('');
-
-    } catch (error) {
-        console.error('Load registration codes error:', error);
-        const tbody = document.getElementById('registration-codes-tbody');
-        if (tbody) {
-            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Gagal memuat data</td></tr>';
-        }
+    } catch (e) {
+        console.log('No active public code');
     }
 }
 
-function openGenerateCodeModal() {
-    document.getElementById('gen-patient-name').value = '';
-    document.getElementById('gen-phone').value = '';
-    document.getElementById('generated-code-result').style.display = 'none';
-    document.getElementById('btn-generate-code').style.display = 'inline-block';
-    currentGeneratedCode = null;
-    currentGeneratedPhone = null;
-    currentPatientName = null;
-    $('#generateCodeModal').modal('show');
-}
-
-async function generateRegistrationCode() {
-    const patientName = document.getElementById('gen-patient-name').value.trim();
-    const phone = document.getElementById('gen-phone').value.trim();
-
-    if (!phone) {
-        alert('Nomor HP harus diisi');
-        return;
-    }
-
+async function generatePublicCode() {
     const btn = document.getElementById('btn-generate-code');
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
 
     try {
         const token = localStorage.getItem('vps_auth_token');
-        const response = await fetch('/api/registration-codes/generate', {
+        const response = await fetch('/api/registration-codes/generate-public', {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                patient_name: patientName || null,
-                phone: phone
-            })
+            }
         });
 
         const data = await response.json();
@@ -7086,21 +7471,20 @@ async function generateRegistrationCode() {
             throw new Error(data.message || 'Gagal generate kode');
         }
 
-        currentGeneratedCode = data.code;
-        currentGeneratedPhone = data.phone;
-        currentPatientName = patientName;
-
         document.getElementById('generated-code-display').textContent = data.code;
         document.getElementById('generated-code-result').style.display = 'block';
-        btn.style.display = 'none';
+        document.getElementById('current-public-code').style.display = 'none';
 
-        loadRegistrationCodes();
+        // Reload new patients on main page
+        if (typeof loadNewPatients === 'function') {
+            loadNewPatients(newPatientsCurrentPage || 1);
+        }
 
     } catch (error) {
         alert('Error: ' + error.message);
     } finally {
         btn.disabled = false;
-        btn.innerHTML = '<i class="fas fa-key"></i> Generate Kode';
+        btn.innerHTML = '<i class="fas fa-key"></i> Generate Kode Baru';
     }
 }
 
@@ -7188,7 +7572,10 @@ async function deleteCode(codeId) {
 
         if (!response.ok) throw new Error('Gagal menghapus');
 
-        loadRegistrationCodes(regCodesCurrentPage);
+        // Reload new patients on main page
+        if (typeof loadNewPatients === 'function') {
+            loadNewPatients(newPatientsCurrentPage || 1);
+        }
 
     } catch (error) {
         alert('Error: ' + error.message);
@@ -7201,35 +7588,31 @@ async function deleteCode(codeId) {
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header bg-warning">
-                <h5 class="modal-title"><i class="fas fa-key"></i> Generate Kode Registrasi</h5>
+                <h5 class="modal-title"><i class="fas fa-key"></i> Generate Kode Registrasi Publik</h5>
                 <button type="button" class="close" data-dismiss="modal">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="form-group">
-                    <label>Nama Pasien (opsional)</label>
-                    <input type="text" class="form-control" id="gen-patient-name" placeholder="Masukkan nama pasien">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Kode ini dapat digunakan oleh siapa saja yang ingin mendaftar. Berlaku 24 jam atau sampai kode baru di-generate.
                 </div>
-                <div class="form-group">
-                    <label>No. HP (WhatsApp) <span class="text-danger">*</span></label>
-                    <input type="text" class="form-control" id="gen-phone" placeholder="08xxxxxxxxxx" required>
-                    <small class="text-muted">Nomor WhatsApp pasien untuk menerima kode</small>
+                <div id="current-public-code" class="text-center mb-3" style="display: none;">
+                    <p class="mb-1 text-muted">Kode Aktif Saat Ini:</p>
+                    <h2 class="text-success font-weight-bold" id="current-code-display"></h2>
+                    <p class="text-muted small" id="current-code-expires"></p>
                 </div>
                 <div id="generated-code-result" style="display: none;">
                     <hr>
                     <div class="text-center">
-                        <p class="mb-2">Kode Registrasi:</p>
+                        <p class="mb-2"><i class="fas fa-check-circle text-success"></i> Kode Baru:</p>
                         <h2 class="text-warning font-weight-bold" id="generated-code-display"></h2>
-                        <p class="text-muted">Berlaku 7 hari</p>
-                        <button class="btn btn-success btn-lg" id="btn-send-whatsapp" onclick="sendCodeWhatsApp()">
-                            <i class="fab fa-whatsapp"></i> Kirim via WhatsApp
-                        </button>
+                        <p class="text-muted">Berlaku 24 jam</p>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
-                <button type="button" class="btn btn-warning" id="btn-generate-code" onclick="generateRegistrationCode()">
-                    <i class="fas fa-key"></i> Generate Kode
+                <button type="button" class="btn btn-warning" id="btn-generate-code" onclick="generatePublicCode()">
+                    <i class="fas fa-key"></i> Generate Kode Baru
                 </button>
             </div>
         </div>

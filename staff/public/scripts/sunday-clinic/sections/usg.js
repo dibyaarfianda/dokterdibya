@@ -1071,6 +1071,75 @@ export async function saveUSGExam() {
     }
 }
 
+// After render hook - setup event handlers after DOM is ready
+async function afterRenderUSG() {
+    console.log('[USG] afterRender called - setting up photo upload handler');
+
+    const photoInput = document.getElementById('usg-photo-upload');
+    if (photoInput) {
+        console.log('[USG] Photo input found, attaching event handler');
+
+        // Import the correct handler based on category
+        const state = stateManager.getState();
+        const category = state.derived?.mrCategory || 'obstetri';
+
+        let handlePhotoUpload;
+
+        try {
+            if (category === 'obstetri') {
+                const USGObstetri = (await import('../components/obstetri/usg-obstetri.js')).default;
+                handlePhotoUpload = (e) => USGObstetri.handlePhotoUpload(e);
+                USGObstetri.initPhotoRemoveHandlers();
+            } else if (category === 'gyn_repro') {
+                const module = await import('../components/gyn_repro/usg-gyn_repro.js');
+                handlePhotoUpload = module.handlePhotoUpload || module.default?.handlePhotoUpload;
+            } else {
+                const USGGinekologi = (await import('../components/shared/usg-ginekologi.js')).default;
+                handlePhotoUpload = (e) => USGGinekologi.handlePhotoUpload(e);
+                USGGinekologi.initPhotoRemoveHandlers();
+            }
+
+            if (handlePhotoUpload) {
+                photoInput.addEventListener('change', (e) => {
+                    console.log('[USG] Photo input changed, files:', e.target.files.length);
+                    handlePhotoUpload(e);
+                });
+
+                // Update label on file select
+                photoInput.addEventListener('change', function() {
+                    const label = this.nextElementSibling;
+                    if (label && this.files.length > 0) {
+                        label.textContent = this.files.length > 1
+                            ? `${this.files.length} files selected`
+                            : this.files[0].name;
+                    }
+                });
+
+                console.log('[USG] Photo upload handler attached successfully');
+            } else {
+                console.warn('[USG] handlePhotoUpload function not found for category:', category);
+            }
+        } catch (err) {
+            console.error('[USG] Error setting up photo upload handler:', err);
+        }
+    } else {
+        console.warn('[USG] Photo input element not found');
+    }
+
+    // Setup field change handlers for save button visibility
+    document.querySelectorAll('.usg-field').forEach(field => {
+        field.addEventListener('input', () => {
+            const btn = document.getElementById('btn-save-usg');
+            if (btn) btn.style.display = 'inline-block';
+        });
+        field.addEventListener('change', () => {
+            const btn = document.getElementById('btn-save-usg');
+            if (btn) btn.style.display = 'inline-block';
+        });
+    });
+}
+
 export default {
     render: renderUSG,
+    afterRender: afterRenderUSG,
 };

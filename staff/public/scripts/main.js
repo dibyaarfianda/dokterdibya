@@ -79,6 +79,9 @@ function initPages() {
     pages.bookingSettings = grab('booking-settings-page');
     pages.activityLog = grab('activity-log-page');
     pages.kelolaSupplier = grab('kelola-supplier-page');
+    pages.hospitalAppointments = grab('hospital-appointments-page');
+    pages.hospitalPatients = grab('hospital-patients-page');
+    pages.registrasiPasien = grab('registrasi-pasien-page');
 }
 function loadExternalPage(containerId, htmlFile, options = {}) {
     const { forceReload = false } = options;
@@ -194,6 +197,296 @@ function showKlinikPrivatePage() {
         console.error('Failed to load klinik-private.js:', error);
     });
 }
+
+// Hospital Appointments Page
+let currentHospitalLocation = null;
+const hospitalNames = {
+    'rsia_melinda': 'RSIA Melinda',
+    'rsud_gambiran': 'RSUD Gambiran',
+    'rs_bhayangkara': 'RS Bhayangkara'
+};
+const hospitalColors = {
+    'rsia_melinda': '#e91e63',
+    'rsud_gambiran': '#2196f3',
+    'rs_bhayangkara': '#4caf50'
+};
+function showHospitalAppointmentsPage(location) {
+    currentHospitalLocation = location;
+    hideAllPages();
+    pages.hospitalAppointments?.classList.remove('d-none');
+
+    const hospitalName = hospitalNames[location] || location;
+    const navId = `nav-${location.replace(/_/g, '-')}`;
+    setTitleAndActive(hospitalName + ' - Janji Temu', navId, 'hospital-appointments');
+
+    loadHospitalAppointments(location);
+}
+
+function showHospitalPatientsPage(location) {
+    currentHospitalLocation = location;
+    hideAllPages();
+
+    pages.hospitalPatients?.classList.remove('d-none');
+
+    const hospitalName = hospitalNames[location] || location;
+    const navId = `nav-${location.replace(/_/g, '-')}-pasien`;
+
+    // Update title
+    const titleEl = document.getElementById('hospital-patients-title');
+    if (titleEl) {
+        titleEl.textContent = `Pasien ${hospitalName}`;
+    }
+
+    setTitleAndActive(hospitalName + ' - Pasien', navId, 'hospital-patients');
+    loadHospitalPatients(location);
+}
+
+async function loadHospitalPatients(location) {
+    const tbody = document.getElementById('hospital-patients-tbody');
+    if (!tbody) return;
+
+    const hospitalName = hospitalNames[location] || location;
+
+    tbody.innerHTML = `<tr><td colspan="10" class="text-center"><i class="fas fa-spinner fa-spin"></i> Memuat data pasien ${hospitalName}...</td></tr>`;
+
+    try {
+        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('token');
+        const response = await fetch(`/api/patients?hospital=${location}&_=${Date.now()}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Cache-Control': 'no-cache'
+            }
+        });
+
+        if (!response.ok) throw new Error('Gagal memuat data');
+
+        const data = await response.json();
+
+        if (!data.data || data.data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="10" class="text-center">Belum ada pasien terdaftar untuk ${hospitalName}</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = data.data.map(patient => {
+            const birthDate = patient.birth_date ? new Date(patient.birth_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
+            const regDate = patient.created_at ? new Date(patient.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
+            const lastVisit = patient.last_visit ? new Date(patient.last_visit).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : 'Belum ada';
+            const statusBadge = patient.status === 'active' ?
+                '<span class="badge badge-success">Aktif</span>' :
+                '<span class="badge badge-secondary">Nonaktif</span>';
+
+            return `
+                <tr>
+                    <td>${patient.id}</td>
+                    <td>${patient.full_name || '-'}</td>
+                    <td>${patient.email || '-'}</td>
+                    <td>${patient.whatsapp || patient.phone || '-'}</td>
+                    <td>${birthDate}</td>
+                    <td>${patient.age || '-'}</td>
+                    <td>${lastVisit}</td>
+                    <td>${regDate}</td>
+                    <td>${statusBadge}</td>
+                    <td class="text-nowrap">
+                        <button type="button" class="btn btn-sm btn-info btn-view-hospital-patient" data-patient-id="${patient.id}" title="Detail">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        // Initialize DataTable
+        if ($.fn.DataTable.isDataTable('#hospital-patients-table')) {
+            $('#hospital-patients-table').DataTable().destroy();
+        }
+        $('#hospital-patients-table').DataTable({
+            "pageLength": 25,
+            "order": [[7, 'desc']]
+        });
+
+        // Attach event listeners to view buttons
+        document.querySelectorAll('.btn-view-hospital-patient').forEach(btn => {
+            btn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const patientId = this.getAttribute('data-patient-id');
+                if (typeof viewPatientDetail === 'function') {
+                    viewPatientDetail(patientId);
+                }
+            });
+        });
+
+    } catch (error) {
+        console.error('Error loading hospital patients:', error);
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center text-danger">Gagal memuat data pasien</td></tr>`;
+    }
+}
+
+async function loadHospitalAppointments(location) {
+    const container = document.getElementById('hospital-appointments-container');
+    if (!container) return;
+
+    const hospitalName = hospitalNames[location] || location;
+    const hospitalColor = hospitalColors[location] || '#607d8b';
+
+    container.innerHTML = `
+        <div class="text-center py-4">
+            <i class="fas fa-spinner fa-spin fa-2x"></i>
+            <p class="mt-2">Memuat data appointment ${hospitalName}...</p>
+        </div>
+    `;
+
+    try {
+        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('token');
+        const response = await fetch(`/api/appointments/hospital/${location}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('Gagal memuat data');
+
+        const data = await response.json();
+        renderHospitalAppointmentsTable(data.appointments || [], hospitalName, hospitalColor);
+
+    } catch (error) {
+        console.error('Error loading hospital appointments:', error);
+        container.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle"></i> Gagal memuat data. Silakan coba lagi.
+            </div>
+        `;
+    }
+}
+
+function renderHospitalAppointmentsTable(appointments, hospitalName, hospitalColor) {
+    const container = document.getElementById('hospital-appointments-container');
+    if (!container) return;
+
+    if (appointments.length === 0) {
+        container.innerHTML = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> Belum ada appointment untuk ${hospitalName}
+            </div>
+        `;
+        return;
+    }
+
+    const rows = appointments.map(apt => {
+        const date = new Date(apt.appointment_date);
+        const dateStr = date.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        const statusBadge = getStatusBadge(apt.status);
+
+        return `
+            <tr>
+                <td>${dateStr}</td>
+                <td>${apt.appointment_time ? apt.appointment_time.substring(0, 5) : '-'}</td>
+                <td>
+                    <strong>${apt.patient_name || '-'}</strong><br>
+                    <small class="text-muted">${apt.patient_id || '-'}</small>
+                </td>
+                <td>${apt.detected_category || apt.appointment_type || '-'}</td>
+                <td>${apt.complaint || apt.notes || '-'}</td>
+                <td>${statusBadge}</td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-success" onclick="confirmHospitalAppointment(${apt.id})" title="Konfirmasi" ${apt.status === 'confirmed' ? 'disabled' : ''}>
+                            <i class="fas fa-check"></i>
+                        </button>
+                        <button class="btn btn-outline-primary" onclick="completeHospitalAppointment(${apt.id})" title="Selesai" ${apt.status === 'completed' ? 'disabled' : ''}>
+                            <i class="fas fa-check-double"></i>
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="cancelHospitalAppointment(${apt.id})" title="Batalkan" ${apt.status === 'cancelled' ? 'disabled' : ''}>
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+
+    container.innerHTML = `
+        <div class="card">
+            <div class="card-header" style="background: ${hospitalColor}; color: white;">
+                <h3 class="card-title mb-0">
+                    <i class="fas fa-hospital mr-2"></i>
+                    Appointment ${hospitalName}
+                </h3>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped mb-0">
+                        <thead>
+                            <tr>
+                                <th>Tanggal</th>
+                                <th>Jam</th>
+                                <th>Pasien</th>
+                                <th>Jenis</th>
+                                <th>Keluhan</th>
+                                <th>Status</th>
+                                <th>Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function getStatusBadge(status) {
+    const badges = {
+        'scheduled': '<span class="badge badge-warning">Dijadwalkan</span>',
+        'confirmed': '<span class="badge badge-info">Terkonfirmasi</span>',
+        'completed': '<span class="badge badge-success">Selesai</span>',
+        'cancelled': '<span class="badge badge-danger">Dibatalkan</span>',
+        'no_show': '<span class="badge badge-secondary">Tidak Hadir</span>'
+    };
+    return badges[status] || `<span class="badge badge-secondary">${status}</span>`;
+}
+
+async function confirmHospitalAppointment(id) {
+    if (!confirm('Konfirmasi appointment ini?')) return;
+    await updateHospitalAppointmentStatus(id, 'confirmed');
+}
+
+async function completeHospitalAppointment(id) {
+    if (!confirm('Tandai appointment ini sebagai selesai?')) return;
+    await updateHospitalAppointmentStatus(id, 'completed');
+}
+
+async function cancelHospitalAppointment(id) {
+    if (!confirm('Batalkan appointment ini?')) return;
+    await updateHospitalAppointmentStatus(id, 'cancelled');
+}
+
+async function updateHospitalAppointmentStatus(id, status) {
+    try {
+        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('token');
+        const response = await fetch(`/api/appointments/${id}/status`, {
+            method: 'PATCH',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ status })
+        });
+
+        if (!response.ok) throw new Error('Gagal mengupdate status');
+
+        // Reload data
+        if (currentHospitalLocation) {
+            loadHospitalAppointments(currentHospitalLocation);
+        }
+
+        showToast('Status appointment berhasil diupdate', 'success');
+
+    } catch (error) {
+        console.error('Error updating appointment status:', error);
+        showToast('Gagal mengupdate status appointment', 'error');
+    }
+}
+
 function showTindakanPage() { 
     hideAllPages(); 
     pages.tindakan?.classList.remove('d-none'); 
@@ -1070,6 +1363,83 @@ if (document.readyState === 'loading') {
     initMain();
 }
 
+// -------------------- START PATIENT VISIT (Walk-in) --------------------
+async function startPatientVisit(patientId, patientName, location, category) {
+    try {
+        const token = localStorage.getItem('vps_auth_token');
+        if (!token) {
+            alert('Sesi login berakhir. Silakan login ulang.');
+            return;
+        }
+
+        // Show loading state on button
+        const btn = document.getElementById('btn-start-patient-visit');
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Memproses...';
+        }
+
+        // Call API to create walk-in visit
+        const response = await fetch('/api/sunday-clinic/start-walk-in', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                patient_id: patientId,
+                category: category,
+                location: location
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || 'Gagal memulai kunjungan');
+        }
+
+        if (!result.success || !result.data?.mrId) {
+            throw new Error('Data rekam medis tidak lengkap');
+        }
+
+        // Update session with patient data
+        try {
+            const { updateSessionPatient } = await import('./session-manager.js');
+            updateSessionPatient({
+                id: patientId,
+                patientId: patientId,
+                name: patientName,
+                sundayClinic: {
+                    mrId: result.data.mrId,
+                    status: result.data.status,
+                    location: location
+                }
+            });
+        } catch (sessionError) {
+            console.warn('Unable to update session:', sessionError);
+        }
+
+        // Close the modal
+        $('#patientDetailModal').modal('hide');
+
+        // Redirect to Sunday Clinic page
+        const mrSlug = String(result.data.mrId).toLowerCase();
+        window.location.href = `/sunday-clinic/${mrSlug}/identitas`;
+
+    } catch (error) {
+        console.error('Error starting patient visit:', error);
+        alert('Gagal memulai kunjungan: ' + error.message);
+
+        // Reset button state
+        const btn = document.getElementById('btn-start-patient-visit');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-play-circle mr-2"></i>Mulai Kunjungan';
+        }
+    }
+}
+
 // -------------------- PATIENT DETAIL MODAL --------------------
 async function showPatientDetail(patientId) {
     try {
@@ -1254,7 +1624,7 @@ async function showPatientDetail(patientId) {
                             <hr>
                             <h5 class="mb-3">
                                 <i class="fas fa-file-medical"></i> Formulir Rekam Medis Awal
-                              ="badge badge-${intake.highRisk ? 'danger' : 'success'} ml-2">
+                                <span class="badge badge-${intake.highRisk ? 'danger' : 'success'} ml-2">
                                     ${intake.highRisk ? 'High Risk' : 'Normal'}
                                 </span>
                             </h5>
@@ -1342,6 +1712,62 @@ async function showPatientDetail(patientId) {
                                 ${intake.updatedAt ? ` | Diperbarui: ${new Date(intake.updatedAt).toLocaleString('id-ID')}` : ''}
                             </div>
                             ` : '<div class="alert alert-info"><i class="fas fa-info-circle"></i> Belum ada formulir rekam medis awal</div>'}
+
+                            <hr>
+                            <div class="card card-primary card-outline">
+                                <div class="card-header">
+                                    <h5 class="card-title mb-0">
+                                        <i class="fas fa-clinic-medical"></i> Mulai Kunjungan
+                                    </h5>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <label class="font-weight-bold mb-2">Lokasi Kunjungan:</label>
+                                            <div class="location-options">
+                                                <label class="d-block mb-2">
+                                                    <input type="radio" name="visit_location" value="klinik_private" checked>
+                                                    <span class="ml-2"><i class="fas fa-clinic-medical text-primary mr-1"></i> Klinik Private</span>
+                                                </label>
+                                                <label class="d-block mb-2">
+                                                    <input type="radio" name="visit_location" value="rsia_melinda">
+                                                    <span class="ml-2"><i class="fas fa-hospital text-pink mr-1" style="color:#e91e63"></i> RSIA Melinda</span>
+                                                </label>
+                                                <label class="d-block mb-2">
+                                                    <input type="radio" name="visit_location" value="rsud_gambiran">
+                                                    <span class="ml-2"><i class="fas fa-hospital text-info mr-1"></i> RSUD Gambiran</span>
+                                                </label>
+                                                <label class="d-block mb-2">
+                                                    <input type="radio" name="visit_location" value="rs_bhayangkara">
+                                                    <span class="ml-2"><i class="fas fa-hospital text-success mr-1"></i> RS Bhayangkara</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="font-weight-bold mb-2">Kategori Konsultasi:</label>
+                                            <div class="category-options">
+                                                <label class="d-block mb-2">
+                                                    <input type="radio" name="visit_category" value="obstetri" checked>
+                                                    <span class="ml-2"><i class="fas fa-baby text-info mr-1"></i> <strong>Obstetri</strong> - Kehamilan</span>
+                                                </label>
+                                                <label class="d-block mb-2">
+                                                    <input type="radio" name="visit_category" value="gyn_repro">
+                                                    <span class="ml-2"><i class="fas fa-venus text-success mr-1"></i> <strong>Reproduksi</strong> - Program Hamil, KB</span>
+                                                </label>
+                                                <label class="d-block mb-2">
+                                                    <input type="radio" name="visit_category" value="gyn_special">
+                                                    <span class="ml-2"><i class="fas fa-microscope text-warning mr-1"></i> <strong>Ginekologi</strong> - Kista, Miom</span>
+                                                </label>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-3 text-center">
+                                        <button type="button" class="btn btn-primary btn-lg" id="btn-start-patient-visit" data-patient-id="${normalizedPatient.id}" data-patient-name="${normalizedPatient.fullname}">
+                                            <i class="fas fa-play-circle mr-2"></i>Mulai Kunjungan
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
@@ -1351,18 +1777,31 @@ async function showPatientDetail(patientId) {
             </div>
         `;
         
-        // Remove existing modal if any
+        // Remove existing modal if any (aggressive cleanup)
+        $('#patientDetailModal').modal('hide');
         $('#patientDetailModal').remove();
-        
+        $('.modal-backdrop').remove();
+        $('body').removeClass('modal-open');
+
         // Add and show modal
         $('body').append(modal);
         $('#patientDetailModal').modal('show');
-        
+
+        // Bind event for "Mulai Kunjungan" button
+        document.getElementById('btn-start-patient-visit')?.addEventListener('click', async function() {
+            const patientId = this.dataset.patientId;
+            const patientName = this.dataset.patientName;
+            const location = document.querySelector('input[name="visit_location"]:checked')?.value || 'klinik_private';
+            const category = document.querySelector('input[name="visit_category"]:checked')?.value || 'obstetri';
+
+            await startPatientVisit(patientId, patientName, location, category);
+        });
+
         // Clean up modal after close
         $('#patientDetailModal').on('hidden.bs.modal', function () {
             $(this).remove();
         });
-        
+
     } catch (error) {
         console.error('Error viewing patient detail:', error);
         console.error('Error stack:', error.stack);
@@ -1405,3 +1844,9 @@ window.showProfileSettings = showProfileSettings;
 window.showStokOpnamePage = showStokOpnamePage;
 window.showPengaturanPage = showPengaturanPage;
 window.showKelolaObatPage = showKelolaObatPage;
+window.showHospitalAppointmentsPage = showHospitalAppointmentsPage;
+window.showHospitalPatientsPage = showHospitalPatientsPage;
+window.startPatientVisit = startPatientVisit;
+window.confirmHospitalAppointment = confirmHospitalAppointment;
+window.completeHospitalAppointment = completeHospitalAppointment;
+window.cancelHospitalAppointment = cancelHospitalAppointment;

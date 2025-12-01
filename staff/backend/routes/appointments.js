@@ -56,6 +56,37 @@ router.get('/', verifyToken, requirePermission('appointments.view'), async (req,
     }
 });
 
+// GET appointments by hospital location
+router.get('/hospital/:location', verifyToken, async (req, res) => {
+    try {
+        const { location } = req.params;
+
+        // Get appointments for this hospital, upcoming first
+        const [rows] = await pool.query(`
+            SELECT
+                id, patient_id, patient_name, hospital_location, appointment_date,
+                appointment_time, appointment_type, location, notes, complaint,
+                detected_category, status, created_at
+            FROM appointments
+            WHERE hospital_location = ?
+            AND appointment_date >= CURDATE()
+            ORDER BY appointment_date ASC, appointment_time ASC
+        `, [location]);
+
+        res.json({
+            success: true,
+            appointments: rows
+        });
+    } catch (error) {
+        console.error('Error fetching hospital appointments:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch hospital appointments',
+            error: error.message
+        });
+    }
+});
+
 // GET single appointment by ID
 router.get('/:id', async (req, res) => {
     try {
@@ -194,6 +225,54 @@ router.post('/', verifyToken, requirePermission('appointments.create'), async (r
         res.status(500).json({
             success: false,
             message: 'Failed to create appointment',
+            error: error.message
+        });
+    }
+});
+
+// PATCH update appointment status only
+router.patch('/:id/status', verifyToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        // Validate status
+        const validStatuses = ['scheduled', 'confirmed', 'completed', 'cancelled', 'no_show'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Status tidak valid'
+            });
+        }
+
+        // Check if appointment exists
+        const [existing] = await pool.query(
+            'SELECT * FROM appointments WHERE id = ?',
+            [id]
+        );
+
+        if (existing.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Appointment tidak ditemukan'
+            });
+        }
+
+        // Update status
+        await pool.query(
+            'UPDATE appointments SET status = ?, updated_at = NOW() WHERE id = ?',
+            [status, id]
+        );
+
+        res.json({
+            success: true,
+            message: 'Status appointment berhasil diupdate'
+        });
+    } catch (error) {
+        console.error('Error updating appointment status:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal mengupdate status appointment',
             error: error.message
         });
     }

@@ -645,6 +645,53 @@ function collectOvaryData(side) {
     };
 }
 
+// After render hook - setup event handlers
+function afterRender() {
+    console.log('[USG Gyn Repro] afterRender called');
+
+    const photoInput = document.getElementById('usg-photo-upload');
+    if (photoInput) {
+        console.log('[USG Gyn Repro] Photo input found, attaching handler');
+
+        // Remove any existing handlers first
+        const newInput = photoInput.cloneNode(true);
+        photoInput.parentNode.replaceChild(newInput, photoInput);
+
+        newInput.addEventListener('change', (e) => {
+            console.log('[USG Gyn Repro] Photo selected, files:', e.target.files.length);
+            handlePhotoUpload(e);
+        });
+
+        // Update label on file select
+        newInput.addEventListener('change', function() {
+            const label = this.nextElementSibling;
+            if (label && this.files.length > 0) {
+                label.textContent = this.files.length > 1
+                    ? `${this.files.length} file dipilih`
+                    : this.files[0].name;
+            }
+        });
+    } else {
+        console.warn('[USG Gyn Repro] Photo input not found!');
+    }
+
+    // Initialize photo remove handlers
+    initPhotoRemoveHandlers();
+
+    // Setup field change handlers for save button visibility
+    document.querySelectorAll('#usg-edit-form input, #usg-edit-form select, #usg-edit-form textarea').forEach(field => {
+        field.addEventListener('input', () => {
+            const btn = document.getElementById('btn-save-usg-gyn');
+            if (btn) btn.style.display = 'inline-block';
+        });
+        field.addEventListener('change', () => {
+            const btn = document.getElementById('btn-save-usg-gyn');
+            if (btn) btn.style.display = 'inline-block';
+        });
+    });
+}
+
 export default {
-    render
+    render,
+    afterRender
 };

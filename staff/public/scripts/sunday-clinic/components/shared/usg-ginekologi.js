@@ -966,5 +966,54 @@ export default {
                 this.removePhoto(index);
             });
         });
+    },
+
+    /**
+     * After render hook - setup event handlers
+     */
+    afterRender() {
+        console.log('[USG Ginekologi] afterRender called');
+        const self = this;
+
+        const photoInput = document.getElementById('usg-photo-upload');
+        if (photoInput) {
+            console.log('[USG Ginekologi] Photo input found, attaching handler');
+
+            // Remove any existing handlers first
+            const newInput = photoInput.cloneNode(true);
+            photoInput.parentNode.replaceChild(newInput, photoInput);
+
+            newInput.addEventListener('change', (e) => {
+                console.log('[USG Ginekologi] Photo selected, files:', e.target.files.length);
+                self.handlePhotoUpload(e);
+            });
+
+            // Update label on file select
+            newInput.addEventListener('change', function() {
+                const label = this.nextElementSibling;
+                if (label && this.files.length > 0) {
+                    label.textContent = this.files.length > 1
+                        ? `${this.files.length} file dipilih`
+                        : this.files[0].name;
+                }
+            });
+        } else {
+            console.warn('[USG Ginekologi] Photo input not found!');
+        }
+
+        // Initialize photo remove handlers
+        this.initPhotoRemoveHandlers();
+
+        // Setup field change handlers for save button visibility
+        document.querySelectorAll('.usg-field').forEach(field => {
+            field.addEventListener('input', () => {
+                const btn = document.getElementById('usg-save');
+                if (btn) btn.style.display = 'inline-block';
+            });
+            field.addEventListener('change', () => {
+                const btn = document.getElementById('usg-save');
+                if (btn) btn.style.display = 'inline-block';
+            });
+        });
     }
 };

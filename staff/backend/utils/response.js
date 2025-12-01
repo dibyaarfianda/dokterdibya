@@ -58,9 +58,30 @@ const sendPaginated = (res, data, pagination, message = 'Success') => {
     });
 };
 
+/**
+ * Simple success response object (for use with res.json())
+ */
+const success = (data, message = 'Success') => ({
+    success: true,
+    message,
+    data,
+    timestamp: new Date().toISOString()
+});
+
+/**
+ * Simple error response object (for use with res.json())
+ */
+const error = (message = 'Error') => ({
+    success: false,
+    message,
+    timestamp: new Date().toISOString()
+});
+
 module.exports = {
     sendSuccess,
     sendError,
     sendCreated,
-    sendPaginated
+    sendPaginated,
+    success,
+    error
 };

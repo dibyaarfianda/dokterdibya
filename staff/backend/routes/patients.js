@@ -28,14 +28,14 @@ function applyCacheHeaders(res, { bypassCache, cacheKey, hit }) {
 // GET ALL PATIENTS (Protected - requires authentication and permission)
 router.get('/api/patients', verifyToken, requirePermission('patients.view'), async (req, res) => {
     try {
-        const { search, limit, _ } = req.query;
+        const { search, limit, hospital, sort, page, _ } = req.query;
         const clientCacheControl = (req.headers['cache-control'] || '').toLowerCase();
         const clientRequestsFresh = clientCacheControl.includes('no-cache') || clientCacheControl.includes('no-store');
         const bypassCache = typeof _ !== 'undefined' || clientRequestsFresh;
-        
+
         // Generate cache key and honor bypass flag (frontend sends _=timestamp)
-        const cacheKey = `patients:list:${search || 'all'}:${limit || 'all'}`;
-        
+        const cacheKey = `patients:list:${search || 'all'}:${limit || 'all'}:${hospital || 'all'}:${sort || 'default'}:${page || '1'}`;
+
         if (!bypassCache) {
             const cached = cache.get(cacheKey, 'short');
             if (cached) {
@@ -43,37 +43,117 @@ router.get('/api/patients', verifyToken, requirePermission('patients.view'), asy
                 return res.json(cached);
             }
         }
-        
-        let query = 'SELECT * FROM patients';
+
+        let query;
         const params = [];
-        
-        if (search) {
-            query += ' WHERE (full_name LIKE ? OR id LIKE ? OR whatsapp LIKE ?)';
-            const searchTerm = `%${search}%`;
-            params.push(searchTerm, searchTerm, searchTerm);
+
+        // If hospital filter is provided, get patients who have appointments at that hospital
+        if (hospital) {
+            query = `
+                SELECT DISTINCT p.*
+                FROM patients p
+                INNER JOIN appointments a ON p.id = a.patient_id
+                WHERE a.hospital_location = ?
+            `;
+            params.push(hospital);
+
+            if (search) {
+                query += ' AND (p.full_name LIKE ? OR p.id LIKE ? OR p.whatsapp LIKE ?)';
+                const searchTerm = `%${search}%`;
+                params.push(searchTerm, searchTerm, searchTerm);
+            }
+
+            // Apply sorting based on sort parameter
+            if (sort === 'recent') {
+                query += ' ORDER BY p.created_at DESC';
+            } else {
+                query += ' ORDER BY p.last_visit DESC, p.full_name ASC';
+            }
+        } else {
+            query = `SELECT p.*,
+                (SELECT MAX(sa.appointment_date) FROM sunday_appointments sa
+                 WHERE sa.patient_id = p.id AND sa.status IN ('completed','confirmed')) as actual_last_visit
+                FROM patients p`;
+
+            if (search) {
+                query += ' WHERE (p.full_name LIKE ? OR p.id LIKE ? OR p.whatsapp LIKE ?)';
+                const searchTerm = `%${search}%`;
+                params.push(searchTerm, searchTerm, searchTerm);
+            }
+
+            // Apply sorting based on sort parameter
+            if (sort === 'recent') {
+                query += ' ORDER BY p.created_at DESC';
+            } else {
+                query += ' ORDER BY p.last_visit DESC, p.full_name ASC';
+            }
         }
-        
-        query += ' ORDER BY last_visit DESC, full_name ASC';
-        
+
+        // Handle pagination - only apply if limit is explicitly provided
+        let total = 0;
+        let pageNum = 1;
+        let limitNum = null;
+
         if (limit) {
-            query += ' LIMIT ?';
-            params.push(parseInt(limit));
+            pageNum = parseInt(page) || 1;
+            limitNum = parseInt(limit);
+            const offset = (pageNum - 1) * limitNum;
+
+            // Count total for pagination - use simple count query
+            let countQuery = hospital
+                ? `SELECT COUNT(DISTINCT p.id) as total FROM patients p
+                   INNER JOIN appointments a ON p.id = a.patient_id
+                   WHERE a.hospital_location = ?`
+                : 'SELECT COUNT(*) as total FROM patients p';
+
+            const countParams = [];
+            if (hospital) {
+                countParams.push(hospital);
+                if (search) {
+                    countQuery += ' AND (p.full_name LIKE ? OR p.id LIKE ? OR p.whatsapp LIKE ?)';
+                    const searchTerm = `%${search}%`;
+                    countParams.push(searchTerm, searchTerm, searchTerm);
+                }
+            } else if (search) {
+                countQuery += ' WHERE (p.full_name LIKE ? OR p.id LIKE ? OR p.whatsapp LIKE ?)';
+                const searchTerm = `%${search}%`;
+                countParams.push(searchTerm, searchTerm, searchTerm);
+            }
+
+            const [countResult] = await db.query(countQuery, countParams);
+            total = countResult[0]?.total || 0;
+
+            // Apply limit and offset
+            query += ' LIMIT ? OFFSET ?';
+            params.push(limitNum, offset);
         }
-        
+
         const [rows] = await db.query(query, params);
-        
+
         // Map phone to whatsapp if whatsapp is null (for backward compatibility)
+        // Use actual_last_visit from sunday_appointments if last_visit is null
         const mappedRows = rows.map(patient => ({
             ...patient,
-            whatsapp: patient.whatsapp || patient.phone || null
+            whatsapp: patient.whatsapp || patient.phone || null,
+            last_visit: patient.last_visit || patient.actual_last_visit || null
         }));
-        
+
         const response = {
             success: true,
             data: mappedRows,
             count: mappedRows.length
         };
-        
+
+        // Only include pagination if limit was provided
+        if (limitNum) {
+            response.pagination = {
+                total,
+                page: pageNum,
+                totalPages: Math.ceil(total / limitNum),
+                limit: limitNum
+            };
+        }
+
         // Cache the result unless caller explicitly requested a fresh fetch
         if (!bypassCache) {
             cache.set(cacheKey, response, 'short');
