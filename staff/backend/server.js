@@ -156,6 +156,10 @@ app.use('/api/appointments', appointmentsRoutes);
 const sundayAppointmentsRoutes = require('./routes/sunday-appointments');
 app.use('/api/sunday-appointments', sundayAppointmentsRoutes);
 
+// Hospital appointments routes
+const hospitalAppointmentsRoutes = require('./routes/hospital-appointments');
+app.use('/api/hospital-appointments', hospitalAppointmentsRoutes);
+
 // Appointment archive routes
 app.use('/api/appointment-archive', appointmentArchiveRoutes);
 

@@ -132,6 +132,114 @@ router.post('/generate', verifyToken, async (req, res) => {
 });
 
 /**
+ * GET /api/registration-codes/public
+ * Get current active public code (Staff only)
+ */
+router.get('/public', verifyToken, async (req, res) => {
+    try {
+        const [codes] = await db.query(
+            `SELECT * FROM registration_codes
+             WHERE is_public = 1 AND status = 'active' AND expires_at > NOW()
+             ORDER BY created_at DESC LIMIT 1`
+        );
+
+        if (codes.length === 0) {
+            return res.json({
+                success: true,
+                code: null,
+                message: 'Tidak ada kode publik aktif'
+            });
+        }
+
+        res.json({
+            success: true,
+            code: codes[0].code,
+            expires_at: codes[0].expires_at,
+            created_at: codes[0].created_at
+        });
+
+    } catch (error) {
+        logger.error('Get public code error', error);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal mengambil kode publik'
+        });
+    }
+});
+
+/**
+ * POST /api/registration-codes/generate-public
+ * Generate a new public registration code (Staff only)
+ * - No name/phone required
+ * - Can be used by multiple registrants
+ * - Valid for 24 hours
+ * - Invalidates previous public codes
+ */
+router.post('/generate-public', verifyToken, async (req, res) => {
+    try {
+        // Invalidate all previous public codes
+        await db.query(
+            `UPDATE registration_codes SET status = 'expired' WHERE is_public = 1 AND status = 'active'`
+        );
+
+        // Generate unique code
+        let code;
+        let isUnique = false;
+        let attempts = 0;
+
+        while (!isUnique && attempts < 10) {
+            code = generateCode();
+            const [existing] = await db.query(
+                'SELECT id FROM registration_codes WHERE code = ?',
+                [code]
+            );
+            if (existing.length === 0) {
+                isUnique = true;
+            }
+            attempts++;
+        }
+
+        if (!isUnique) {
+            return res.status(500).json({
+                success: false,
+                message: 'Gagal generate kode unik'
+            });
+        }
+
+        // Set expiration to 24 hours from now
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 24);
+
+        // Insert public code
+        await db.query(
+            `INSERT INTO registration_codes (code, is_public, created_by, expires_at)
+             VALUES (?, 1, ?, ?)`,
+            [code, req.user.id, expiresAt]
+        );
+
+        logger.info('Public registration code generated', {
+            code,
+            createdBy: req.user.id,
+            expiresAt
+        });
+
+        res.json({
+            success: true,
+            message: 'Kode registrasi publik berhasil dibuat',
+            code,
+            expires_at: expiresAt
+        });
+
+    } catch (error) {
+        logger.error('Generate public registration code error', error);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal membuat kode registrasi publik'
+        });
+    }
+});
+
+/**
  * POST /api/registration-codes/send-whatsapp
  * Send registration code via WhatsApp (Staff only)
  */
@@ -303,6 +411,7 @@ router.post('/validate', async (req, res) => {
 /**
  * POST /api/registration-codes/use
  * Mark a code as used (Called after successful registration)
+ * Note: Public codes are NOT marked as used - they can be reused
  */
 router.post('/use', async (req, res) => {
     try {
@@ -317,11 +426,30 @@ router.post('/use', async (req, res) => {
 
         const normalizedCode = code.toUpperCase().trim();
 
-        // Update code status
+        // Check if this is a public code
+        const [codeInfo] = await db.query(
+            'SELECT is_public FROM registration_codes WHERE code = ?',
+            [normalizedCode]
+        );
+
+        if (codeInfo.length > 0 && codeInfo[0].is_public) {
+            // Public codes are not marked as used - they can be reused
+            logger.info('Public registration code used (not marking as used)', {
+                code: normalizedCode,
+                patientId: patient_id
+            });
+
+            return res.json({
+                success: true,
+                message: 'Kode publik berhasil digunakan'
+            });
+        }
+
+        // Update non-public code status
         const [result] = await db.query(
             `UPDATE registration_codes
              SET status = 'used', used_at = NOW(), used_by_patient_id = ?
-             WHERE code = ? AND status = 'active'`,
+             WHERE code = ? AND status = 'active' AND is_public = 0`,
             [patient_id || null, normalizedCode]
         );
 

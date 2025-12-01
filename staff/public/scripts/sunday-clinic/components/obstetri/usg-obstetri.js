@@ -10,8 +10,19 @@ export default {
     async render(state) {
         // Load saved USG data from medical records using getMedicalRecordContext
         const { getMedicalRecordContext } = await import('../../utils/helpers.js');
+
+        // Debug: Check state structure
+        console.log('[USG Obstetri] Render - state.medicalRecords:', state.medicalRecords);
+        console.log('[USG Obstetri] Render - state.medicalRecords?.byType?.usg:', state.medicalRecords?.byType?.usg);
+
         const context = getMedicalRecordContext(state, 'usg');
         const savedData = context?.data || {};
+
+        // Debug: Log what data is being loaded
+        console.log('[USG Obstetri] Render - context:', context);
+        console.log('[USG Obstetri] Render - savedData:', savedData);
+        console.log('[USG Obstetri] Render - photos:', savedData.photos);
+        console.log('[USG Obstetri] Render - photos count:', savedData.photos?.length || 0);
 
         // Use saved data if available
         const data = savedData;
@@ -142,33 +153,7 @@ export default {
                 </div>
             </div>
 
-            <script>
-            // Initialize USG save handler
-            setTimeout(async () => {
-                // Show save button on any field change
-                document.querySelectorAll('.usg-field').forEach(field => {
-                    field.addEventListener('input', () => {
-                        const btn = document.getElementById('btn-save-usg');
-                        if (btn) btn.style.display = 'inline-block';
-                    });
-                    field.addEventListener('change', () => {
-                        const btn = document.getElementById('btn-save-usg');
-                        if (btn) btn.style.display = 'inline-block';
-                    });
-                });
-
-                // Photo upload handler
-                const USGObstetri = (await import('./usg-obstetri.js')).default;
-                const photoInput = document.getElementById('usg-photo-upload');
-                if (photoInput) {
-                    photoInput.addEventListener('change', (e) => USGObstetri.handlePhotoUpload(e));
-                }
-                USGObstetri.initPhotoRemoveHandlers();
-
-                // NOTE: Button already has onclick="window.saveUSGExam()" in HTML
-                // No need to add onclick handler here to prevent double save
-            }, 100);
-            </script>
+            <!-- Event handlers are set up in usg.js afterRender() -->
         `;
     },
 
@@ -987,9 +972,12 @@ export default {
 
     // Photo helper methods
     renderPhotosGrid(photos) {
+        console.log('[USG Obstetri] renderPhotosGrid called with:', photos);
         if (!photos || photos.length === 0) {
+            console.log('[USG Obstetri] renderPhotosGrid - no photos, showing placeholder');
             return '<div class="col-12"><p class="text-muted">Belum ada foto USG</p></div>';
         }
+        console.log('[USG Obstetri] renderPhotosGrid - rendering', photos.length, 'photos');
         return photos.map((photo, index) => `
             <div class="col-md-3 col-sm-4 col-6 mb-3">
                 <div class="card h-100">
@@ -1130,5 +1118,54 @@ export default {
         } catch (error) {
             console.error('[USG Obstetri] Error saving photos:', error);
         }
+    },
+
+    /**
+     * After render hook - setup event handlers
+     */
+    afterRender() {
+        console.log('[USG Obstetri] afterRender called');
+        const self = this; // Preserve reference
+
+        const photoInput = document.getElementById('usg-photo-upload');
+        if (photoInput) {
+            console.log('[USG Obstetri] Photo input found, attaching handler');
+
+            // Remove any existing handlers first
+            const newInput = photoInput.cloneNode(true);
+            photoInput.parentNode.replaceChild(newInput, photoInput);
+
+            newInput.addEventListener('change', (e) => {
+                console.log('[USG Obstetri] Photo selected, files:', e.target.files.length);
+                self.handlePhotoUpload(e);
+            });
+
+            // Update label on file select
+            newInput.addEventListener('change', function() {
+                const label = this.nextElementSibling;
+                if (label && this.files.length > 0) {
+                    label.textContent = this.files.length > 1
+                        ? `${this.files.length} file dipilih`
+                        : this.files[0].name;
+                }
+            });
+        } else {
+            console.warn('[USG Obstetri] Photo input not found!');
+        }
+
+        // Initialize photo remove handlers
+        this.initPhotoRemoveHandlers();
+
+        // Setup field change handlers for save button visibility
+        document.querySelectorAll('.usg-field').forEach(field => {
+            field.addEventListener('input', () => {
+                const btn = document.getElementById('btn-save-usg');
+                if (btn) btn.style.display = 'inline-block';
+            });
+            field.addEventListener('change', () => {
+                const btn = document.getElementById('btn-save-usg');
+                if (btn) btn.style.display = 'inline-block';
+            });
+        });
     }
 };
