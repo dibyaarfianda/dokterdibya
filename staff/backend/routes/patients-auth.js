@@ -11,6 +11,7 @@ const cache = require('../utils/cache');
 const { deletePatientWithRelations } = require('../services/patientDeletion');
 const r2Storage = require('../services/r2Storage');
 const logger = require('../utils/logger');
+const { ROLE_NAMES, isAdminRole } = require('../constants/roles');
 
 // Configure multer for profile photo upload (memory storage for R2)
 const photoUpload = multer({
@@ -905,7 +906,7 @@ router.get('/all', verifyToken, async (req, res) => {
 // Delete web patient (Admin/Superadmin only)
 router.delete('/:id', verifyToken, async (req, res) => {
     try {
-        if (!req.user.is_superadmin && !['admin', 'dokter'].includes(req.user.role)) {
+        if (!req.user.is_superadmin && !isAdminRole(req.user.role_id)) {
             return res.status(403).json({ message: 'Unauthorized. Admin access required.' });
         }
 
@@ -949,7 +950,7 @@ router.patch('/:id/status', verifyToken, async (req, res) => {
         }
 
         // Check if user is admin/superadmin
-        if (!req.user.is_superadmin && !['admin', 'dokter'].includes(req.user.role)) {
+        if (!req.user.is_superadmin && !isAdminRole(req.user.role_id)) {
             return res.status(403).json({
                 success: false,
                 message: 'Akses ditolak. Hanya admin yang dapat melakukan ini.'

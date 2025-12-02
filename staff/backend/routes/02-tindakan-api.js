@@ -5,11 +5,11 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db'); // Your database connection
 const cache = require('../utils/cache');
-const { verifyToken, requirePermission } = require('../middleware/auth');
+const { verifyToken } = require('../middleware/auth');
 const { validateTindakan } = require('../middleware/validation');
 
 // ==================== GET ALL TINDAKAN ====================
-router.get('/api/tindakan', verifyToken, requirePermission('services.view'), async (req, res) => {
+router.get('/api/tindakan', verifyToken, async (req, res) => {
     try {
         const { category, active } = req.query;
         
@@ -85,7 +85,7 @@ router.get('/api/tindakan/:id', async (req, res) => {
 });
 
 // ==================== CREATE TINDAKAN ====================
-router.post('/api/tindakan', verifyToken, requirePermission('settings.services_manage'), validateTindakan, async (req, res) => {
+router.post('/api/tindakan', verifyToken, validateTindakan, async (req, res) => {
     try {
         let { code, name, category, price, created_by } = req.body;
         
@@ -157,7 +157,7 @@ router.post('/api/tindakan', verifyToken, requirePermission('settings.services_m
 });
 
 // ==================== UPDATE TINDAKAN ====================
-router.put('/api/tindakan/:id', verifyToken, requirePermission('settings.services_manage'), validateTindakan, async (req, res) => {
+router.put('/api/tindakan/:id', verifyToken, validateTindakan, async (req, res) => {
     try {
         const { id } = req.params;
         const { name, category, price, is_active, updated_by } = req.body;
@@ -223,7 +223,7 @@ router.put('/api/tindakan/:id', verifyToken, requirePermission('settings.service
 });
 
 // ==================== DELETE TINDAKAN ====================
-router.delete('/api/tindakan/:id', verifyToken, requirePermission('settings.services_manage'), async (req, res) => {
+router.delete('/api/tindakan/:id', verifyToken, async (req, res) => {
     try {
         const { id } = req.params;
         

@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../db');
 const { verifyToken } = require('../middleware/auth');
 const logger = require('../utils/logger');
+const { ROLE_IDS, ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
 const { getGMT7Timestamp, toMySQLTimestamp } = require('../utils/idGenerator');
 
 // Create medical_records table if not exists
@@ -256,15 +257,15 @@ router.post('/api/medical-records', verifyToken, async (req, res) => {
 // Helper: Check if user can access patient records
 function canAccessPatientRecords(user, patientId) {
     // Superadmin/dokter can access all records
-    if (user.is_superadmin || user.role === 'dokter' || user.role_id === 1) {
+    if (user.is_superadmin || user.role === ROLE_NAMES.DOKTER || isSuperadminRole(user.role_id)) {
         return true;
     }
     // Patient can only access their own records
     if (user.user_type === 'patient' && (user.id === patientId || user.patientId === patientId)) {
         return true;
     }
-    // Staff with medical permissions (nurse, bidan) can access for clinical purposes
-    if (['perawat', 'bidan'].includes(user.role) || [3, 4].includes(user.role_id)) {
+    // Staff with medical permissions (bidan) can access for clinical purposes
+    if (user.role === ROLE_NAMES.BIDAN || user.role_id === ROLE_IDS.BIDAN) {
         return true;
     }
     return false;

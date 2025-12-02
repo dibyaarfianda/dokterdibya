@@ -265,10 +265,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Initialize directory system
         await initializeDirectory();
 
-        // Check for initial MR ID in URL
+        // Check for initial MR ID in URL (support both path-based and query params)
         const initialRoute = parseRoute();
+        const urlParams = new URLSearchParams(window.location.search);
+        const mrIdFromQuery = urlParams.get('mr');
+
         if (initialRoute.mrId) {
+            // Path-based: /sunday-clinic/{mrId}/{section}
             await loadMedicalRecord(initialRoute.mrId, initialRoute.section);
+        } else if (mrIdFromQuery) {
+            // Query param: ?mr=xxx
+            await loadMedicalRecord(mrIdFromQuery, 'identity');
         } else {
             showWelcomeScreen();
         }
@@ -611,7 +618,11 @@ function handleDirectorySearch(e) {
         directoryState.filteredPatients = directoryState.patients;
     } else {
         directoryState.filteredPatients = directoryState.patients.filter(patient => {
-            const searchStr = `${patient.full_name} ${patient.mr_id} ${patient.phone}`.toLowerCase();
+            // Handle both camelCase and snake_case field names
+            const fullName = patient.fullName || patient.full_name || '';
+            const mrId = patient.visits?.[0]?.mrId || patient.mr_id || '';
+            const phone = patient.phone || patient.whatsapp || '';
+            const searchStr = `${fullName} ${mrId} ${phone}`.toLowerCase();
             return searchStr.includes(directoryState.searchTerm);
         });
     }
@@ -633,22 +644,29 @@ function renderDirectoryPatients() {
     }
 
     DOM.directoryPatientList.innerHTML = directoryState.filteredPatients
-        .map(patient => `
-            <div class="sc-directory-patient-item ${patient.patient_id === directoryState.selectedPatientId ? 'active' : ''}"
-                 data-patient-id="${patient.patient_id}"
-                 onclick="selectPatient('${patient.patient_id}')"
+        .map(patient => {
+            // Handle both camelCase (API) and snake_case field names
+            const patientId = patient.patientId || patient.patient_id;
+            const fullName = patient.fullName || patient.full_name || 'Unknown';
+            const mrId = patient.visits?.[0]?.mrId || patient.mr_id;
+            const phone = patient.phone || patient.whatsapp;
+
+            return `
+            <div class="sc-directory-patient-item ${patientId === directoryState.selectedPatientId ? 'active' : ''}"
+                 data-patient-id="${patientId}"
+                 onclick="selectPatient('${patientId}')"
                  role="option"
-                 aria-selected="${patient.patient_id === directoryState.selectedPatientId}">
+                 aria-selected="${patientId === directoryState.selectedPatientId}">
                 <div class="sc-directory-patient-info">
-                    <div class="sc-directory-patient-name">${patient.full_name}</div>
+                    <div class="sc-directory-patient-name">${fullName}</div>
                     <div class="sc-directory-patient-meta">
-                        ${patient.mr_id ? `MR: ${patient.mr_id}` : ''}
-                        ${patient.phone ? `• ${patient.phone}` : ''}
+                        ${mrId ? `MR: ${mrId}` : ''}
+                        ${phone ? `• ${phone}` : ''}
                     </div>
                 </div>
                 <i class="fas fa-chevron-right"></i>
             </div>
-        `)
+        `})
         .join('');
 }
 
@@ -658,40 +676,32 @@ window.selectPatient = async function(patientId) {
 
     renderDirectoryPatients();
 
-    // Load patient visits
-    const patient = directoryState.patients.find(p => p.patient_id === patientId);
+    // Load patient visits - handle both camelCase and snake_case
+    const patient = directoryState.patients.find(p =>
+        (p.patientId || p.patient_id) === patientId
+    );
 
     if (!patient) return;
+
+    // Handle both camelCase and snake_case field names
+    const fullName = patient.fullName || patient.full_name || 'Unknown';
+    const birthDate = patient.birthDate || patient.date_of_birth;
+    const phone = patient.phone || patient.whatsapp || '';
 
     // Show patient info
     if (DOM.directoryInfo) {
         DOM.directoryInfo.innerHTML = `
-            <h3>${patient.full_name}</h3>
+            <h3>${fullName}</h3>
             <p class="text-muted mb-0">
-                ${patient.date_of_birth ? `Lahir: ${formatDate(patient.date_of_birth)}` : ''}
-                ${patient.phone ? `• ${patient.phone}` : ''}
+                ${birthDate ? `Lahir: ${formatDate(birthDate)}` : ''}
+                ${phone ? `• ${phone}` : ''}
             </p>
         `;
     }
 
-    // Load visits
-    try {
-        const response = await apiClient.get(`/api/sunday-clinic/patients/${patientId}/visits`);
-
-        if (response.success && response.data) {
-            renderDirectoryVisits(response.data.visits || []);
-        }
-    } catch (error) {
-        console.error('[SundayClinic] Failed to load visits:', error);
-        if (DOM.directoryVisitList) {
-            DOM.directoryVisitList.innerHTML = `
-                <div class="text-center text-danger p-4">
-                    <i class="fas fa-exclamation-circle fa-2x mb-2"></i>
-                    <p>Gagal memuat kunjungan</p>
-                </div>
-            `;
-        }
-    }
+    // Use visits from already loaded directory data (API returns visits per patient)
+    const visits = patient.visits || [];
+    renderDirectoryVisits(visits);
 };
 
 function renderDirectoryVisits(visits) {
@@ -708,22 +718,28 @@ function renderDirectoryVisits(visits) {
     }
 
     DOM.directoryVisitList.innerHTML = visits
-        .map(visit => `
-            <div class="sc-directory-visit-item ${visit.mr_id === directoryState.selectedVisitMrId ? 'active' : ''}"
-                 data-mr-id="${visit.mr_id}"
-                 onclick="selectVisit('${visit.mr_id}')"
+        .map(visit => {
+            // Handle both camelCase (API) and snake_case field names
+            const mrId = visit.mrId || visit.mr_id;
+            const visitDate = visit.appointmentDate || visit.visit_date || visit.recordCreatedAt;
+            const mrCategory = visit.mrCategory || visit.mr_category;
+
+            return `
+            <div class="sc-directory-visit-item ${mrId === directoryState.selectedVisitMrId ? 'active' : ''}"
+                 data-mr-id="${mrId}"
+                 onclick="selectVisit('${mrId}')"
                  role="option"
-                 aria-selected="${visit.mr_id === directoryState.selectedVisitMrId}">
+                 aria-selected="${mrId === directoryState.selectedVisitMrId}">
                 <div class="sc-directory-visit-info">
-                    <div class="sc-directory-visit-mr">${visit.mr_id}</div>
-                    <div class="sc-directory-visit-date">${formatDate(visit.visit_date)}</div>
-                    ${visit.mr_category ? `<span class="badge badge-${getCategoryBadgeClass(visit.mr_category)}">${getCategoryLabel(visit.mr_category)}</span>` : ''}
+                    <div class="sc-directory-visit-mr">${mrId}</div>
+                    <div class="sc-directory-visit-date">${formatDate(visitDate)}</div>
+                    ${mrCategory ? `<span class="badge badge-${getCategoryBadgeClass(mrCategory)}">${getCategoryLabel(mrCategory)}</span>` : ''}
                 </div>
-                <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); openVisit('${visit.mr_id}')">
+                <button class="btn btn-sm btn-primary" onclick="event.stopPropagation(); openVisit('${mrId}')">
                     <i class="fas fa-folder-open"></i> Buka
                 </button>
             </div>
-        `)
+        `})
         .join('');
 }
 
@@ -731,7 +747,7 @@ window.selectVisit = function(mrId) {
     directoryState.selectedVisitMrId = mrId;
     renderDirectoryVisits(
         directoryState.patients
-            .find(p => p.patient_id === directoryState.selectedPatientId)
+            .find(p => (p.patientId || p.patient_id) === directoryState.selectedPatientId)
             ?.visits || []
     );
 };

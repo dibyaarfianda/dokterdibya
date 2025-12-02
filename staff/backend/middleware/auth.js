@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const logger = require('../utils/logger');
-const { ROLE_IDS, isSuperadminRole, isAdminRole } = require('../constants/roles');
+const { ROLE_IDS, ROLE_NAMES, isSuperadminRole, isAdminRole } = require('../constants/roles');
 
 // Ensure JWT_SECRET is set - fail fast if not
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -335,15 +335,19 @@ function requireSuperadmin(req, res, next) {
 }
 
 /**
- * Middleware to check if user has required permissions
- * Aggregates permissions from ALL assigned roles (multiple roles support)
+ * Simple role-based access control middleware
+ * Replaces the complex permission system with simple role checking
+ * @param {...string} allowedRoles - Role names that are allowed (e.g., 'dokter', 'bidan', 'administrasi')
+ *
+ * Usage: requireRoles('dokter', 'bidan', 'managerial')
+ * Superadmin/dokter always has access regardless of allowedRoles
  */
-function requirePermission(...requiredPermissions) {
-    return async (req, res, next) => {
+function requireRoles(...allowedRoles) {
+    return (req, res, next) => {
         const requestId = req.context?.requestId || 'unknown';
 
         if (!req.user) {
-            logger.warn('Missing user in requirePermission middleware', {
+            logger.warn('Missing user in requireRoles middleware', {
                 requestId,
                 ip: req.ip,
                 path: req.path
@@ -354,67 +358,143 @@ function requirePermission(...requiredPermissions) {
             });
         }
 
-        // Superadmin has all permissions
-        if (req.user.is_superadmin || isSuperadminRole(req.user.role_id)) {
-            logger.debug('Superadmin access granted', {
+        // Superadmin/dokter always has access
+        if (req.user.is_superadmin || req.user.role === ROLE_NAMES.DOKTER || isSuperadminRole(req.user.role_id)) {
+            logger.debug('Superadmin/dokter access granted', {
                 requestId,
                 userId: req.user.id,
-                requiredPermissions,
-                is_superadmin: req.user.is_superadmin
+                role: req.user.role
             });
             return next();
         }
 
+        // Check if user's role is in allowed roles
+        const userRole = req.user.role;
+        if (allowedRoles.includes(userRole)) {
+            logger.debug('Role access granted', {
+                requestId,
+                userId: req.user.id,
+                role: userRole,
+                allowedRoles
+            });
+            return next();
+        }
+
+        logger.warn('Access denied - role not allowed', {
+            requestId,
+            userId: req.user.id,
+            userRole,
+            allowedRoles,
+            path: req.path
+        });
+        return res.status(403).json({
+            success: false,
+            message: 'Access denied for your role'
+        });
+    };
+}
+
+/**
+ * @deprecated Use requireRoles instead
+ * Kept for backward compatibility - now just passes through for superadmin
+ * or allows all authenticated users
+ */
+function requirePermission(...requiredPermissions) {
+    return (req, res, next) => {
+        if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                message: 'Authentication required'
+            });
+        }
+
+        // Superadmin/dokter always has access
+        if (req.user.is_superadmin || req.user.role === ROLE_NAMES.DOKTER || isSuperadminRole(req.user.role_id)) {
+            return next();
+        }
+
+        // For backward compatibility, allow all authenticated users
+        // The frontend handles visibility based on roles
+        return next();
+    };
+}
+
+/**
+ * Middleware to check menu access based on role_visibility table
+ * @param {string} menuKey - The menu key to check (e.g., 'obat_alkes', 'keuangan')
+ */
+function requireMenuAccess(menuKey) {
+    // Lazy load db to avoid circular dependency
+    let db = null;
+
+    return async (req, res, next) => {
+        const requestId = req.context?.requestId || 'unknown';
+
+        if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                message: 'Authentication required'
+            });
+        }
+
+        // Superadmin/dokter always has access
+        if (req.user.is_superadmin || req.user.role === ROLE_NAMES.DOKTER || isSuperadminRole(req.user.role_id)) {
+            return next();
+        }
+
         try {
-            // Get user's permissions from ALL assigned roles (aggregated)
-            const db = require('../db');
+            // Lazy load database connection
+            if (!db) {
+                db = require('../db');
+            }
 
-            const [rows] = await db.query(`
-                SELECT DISTINCT p.name
-                FROM permissions p
-                INNER JOIN role_permissions rp ON p.id = rp.permission_id
-                INNER JOIN user_roles ur ON ur.role_id = rp.role_id
-                WHERE ur.user_id = ?
-            `, [req.user.id]);
-
-            const userPermissions = rows.map(row => row.name);
-
-            // Check if user has at least one of the required permissions
-            const hasPermission = requiredPermissions.some(permission =>
-                userPermissions.includes(permission)
+            const userRole = req.user.role;
+            const [rows] = await db.query(
+                'SELECT is_visible FROM role_visibility WHERE role_name = ? AND menu_key = ?',
+                [userRole, menuKey]
             );
 
-            if (!hasPermission) {
-                logger.warn('Insufficient permissions', {
+            // If no record found, default to no access
+            if (rows.length === 0) {
+                logger.warn('Menu access denied - no visibility record', {
                     requestId,
                     userId: req.user.id,
-                    userRole: req.user.role,
-                    userPermissions,
-                    requiredPermissions,
+                    userRole,
+                    menuKey,
                     path: req.path
                 });
                 return res.status(403).json({
                     success: false,
-                    message: 'Insufficient permissions'
+                    message: 'Akses ditolak untuk role Anda'
                 });
             }
 
-            logger.debug('Permission authorization successful', {
-                requestId,
-                userId: req.user.id,
-                grantedPermission: requiredPermissions.find(p => userPermissions.includes(p))
-            });
+            if (!rows[0].is_visible) {
+                logger.warn('Menu access denied - not visible for role', {
+                    requestId,
+                    userId: req.user.id,
+                    userRole,
+                    menuKey,
+                    path: req.path
+                });
+                return res.status(403).json({
+                    success: false,
+                    message: 'Akses ditolak untuk role Anda'
+                });
+            }
 
+            // Access granted
             next();
         } catch (error) {
-            logger.error('Error checking permissions', {
+            logger.error('Error checking menu access', {
                 requestId,
-                userId: req.user.id,
-                error: error.message
+                error: error.message,
+                menuKey
             });
+            // On error, deny access for security
             return res.status(500).json({
                 success: false,
-                message: 'Error checking permissions'
+                message: 'Error checking access permissions'
             });
         }
     };
@@ -424,8 +504,10 @@ module.exports = {
     verifyToken,
     verifyPatientToken,
     requireRole,
+    requireRoles,
     requireSuperadmin,
-    requirePermission,
+    requireMenuAccess,  // New: check menu visibility from database
+    requirePermission,  // Deprecated
     optionalAuth,
     recordFailedAttempt,
     isAccountLocked,

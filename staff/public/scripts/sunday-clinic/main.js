@@ -428,6 +428,9 @@ class SundayClinicApp {
 
         // Add a location indicator badge in the header if not private clinic
         this.updateLocationBadge(config, isPrivateClinic);
+
+        // Update page title based on location
+        document.title = config.name;
     }
 
     /**

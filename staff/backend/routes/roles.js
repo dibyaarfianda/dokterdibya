@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { verifyToken, requireRole, requirePermission } = require('../middleware/auth');
+const { verifyToken, requireMenuAccess, requireRole } = require('../middleware/auth');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const { sendSuccess, sendError } = require('../utils/response');
 const { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } = require('../config/constants');
@@ -13,7 +13,7 @@ const { ROLE_IDS, isSuperadminRole, isAdminRole } = require('../constants/roles'
 // ==========================================
 
 // GET /api/roles - Get all roles
-router.get('/api/roles', verifyToken, requirePermission('roles.view'), asyncHandler(async (req, res) => {
+router.get('/api/roles', verifyToken, requireMenuAccess('kelola_roles'), asyncHandler(async (req, res) => {
     const [roles] = await db.query(`
         SELECT r.*,
             COUNT(DISTINCT rp.permission_id) as permission_count,
@@ -29,7 +29,7 @@ router.get('/api/roles', verifyToken, requirePermission('roles.view'), asyncHand
 }));
 
 // GET /api/roles/:id - Get role details with permissions
-router.get('/api/roles/:id', verifyToken, requirePermission('roles.view'), asyncHandler(async (req, res) => {
+router.get('/api/roles/:id', verifyToken, requireMenuAccess('kelola_roles'), asyncHandler(async (req, res) => {
     const { id } = req.params;
 
     const [roleRows] = await db.query('SELECT * FROM roles WHERE id = ?', [id]);
@@ -55,7 +55,7 @@ router.get('/api/roles/:id', verifyToken, requirePermission('roles.view'), async
 }));
 
 // POST /api/roles - Create new role
-router.post('/api/roles', verifyToken, requirePermission('roles.create'), asyncHandler(async (req, res) => {
+router.post('/api/roles', verifyToken, requireMenuAccess('kelola_roles'), asyncHandler(async (req, res) => {
     const { name, display_name, description } = req.body;
 
     if (!name || !display_name) {
@@ -79,7 +79,7 @@ router.post('/api/roles', verifyToken, requirePermission('roles.create'), asyncH
 }));
 
 // PUT /api/roles/:id - Update role
-router.put('/api/roles/:id', verifyToken, requirePermission('roles.edit'), asyncHandler(async (req, res) => {
+router.put('/api/roles/:id', verifyToken, requireMenuAccess('kelola_roles'), asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { display_name, description } = req.body;
 
@@ -107,7 +107,7 @@ router.put('/api/roles/:id', verifyToken, requirePermission('roles.edit'), async
 }));
 
 // DELETE /api/roles/:id - Delete role
-router.delete('/api/roles/:id', verifyToken, requirePermission('roles.delete'), asyncHandler(async (req, res) => {
+router.delete('/api/roles/:id', verifyToken, requireMenuAccess('kelola_roles'), asyncHandler(async (req, res) => {
     const { id } = req.params;
 
     // Check if role exists
@@ -137,7 +137,7 @@ router.delete('/api/roles/:id', verifyToken, requirePermission('roles.delete'), 
 }));
 
 // PUT /api/roles/:id/permissions - Update role permissions
-router.put('/api/roles/:id/permissions', verifyToken, requirePermission('roles.edit'), asyncHandler(async (req, res) => {
+router.put('/api/roles/:id/permissions', verifyToken, requireMenuAccess('kelola_roles'), asyncHandler(async (req, res) => {
     const { id } = req.params;
     const { permission_ids } = req.body;
 
@@ -193,7 +193,7 @@ router.put('/api/roles/:id/permissions', verifyToken, requirePermission('roles.e
 // ==========================================
 
 // GET /api/permissions - Get all permissions
-router.get('/api/permissions', verifyToken, requirePermission('roles.view'), asyncHandler(async (req, res) => {
+router.get('/api/permissions', verifyToken, requireMenuAccess('kelola_roles'), asyncHandler(async (req, res) => {
     const [permissions] = await db.query(`
         SELECT p.*, 
             COUNT(DISTINCT rp.role_id) as role_count
@@ -220,7 +220,7 @@ router.get('/api/permissions', verifyToken, requirePermission('roles.view'), asy
 // ==========================================
 
 // GET /api/users/:userId/permissions - Get user permissions (aggregated from all roles)
-router.get('/api/users/:userId/permissions', verifyToken, asyncHandler(async (req, res) => {
+router.get('/api/users/:userId/permissions', verifyToken, requireMenuAccess('kelola_roles'), asyncHandler(async (req, res) => {
     const { userId } = req.params;
 
     // Users can view their own permissions
@@ -246,6 +246,8 @@ router.get('/api/users/:userId/permissions', verifyToken, asyncHandler(async (re
 }));
 
 // GET /api/users/:userId/roles - Get all roles assigned to user
+// Note: No requireMenuAccess here - users can always see their own roles
+// The isOwnRoles check inside handles authorization
 router.get('/api/users/:userId/roles', verifyToken, asyncHandler(async (req, res) => {
     const { userId } = req.params;
 
@@ -269,7 +271,7 @@ router.get('/api/users/:userId/roles', verifyToken, asyncHandler(async (req, res
 }));
 
 // PUT /api/users/:userId/roles - Assign multiple roles to user
-router.put('/api/users/:userId/roles', verifyToken, requirePermission('roles.edit'), asyncHandler(async (req, res) => {
+router.put('/api/users/:userId/roles', verifyToken, requireMenuAccess('kelola_roles'), asyncHandler(async (req, res) => {
     const { userId } = req.params;
     const { role_ids, primary_role_id } = req.body;
 
@@ -340,7 +342,7 @@ router.put('/api/users/:userId/roles', verifyToken, requirePermission('roles.edi
 }));
 
 // PUT /api/users/:userId/role - Assign single role (backward compatible)
-router.put('/api/users/:userId/role', verifyToken, requirePermission('roles.edit'), asyncHandler(async (req, res) => {
+router.put('/api/users/:userId/role', verifyToken, requireMenuAccess('kelola_roles'), asyncHandler(async (req, res) => {
     const { userId } = req.params;
     const { role_id } = req.body;
 

@@ -1,20 +1,20 @@
 const express = require('express');
 const router = express.Router();
 
-const { verifyToken, requirePermission } = require('../middleware/auth');
+const { verifyToken } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { sendSuccess, sendError } = require('../utils/response');
 const EmailTemplateService = require('../services/EmailTemplateService');
 const NotificationService = require('../utils/notification');
 
 // GET /api/email-settings
-router.get('/', verifyToken, requirePermission('settings.system'), asyncHandler(async (req, res) => {
+router.get('/', verifyToken, asyncHandler(async (req, res) => {
     const settings = await EmailTemplateService.getSettings();
     return sendSuccess(res, settings, 'Email settings loaded');
 }));
 
 // PUT /api/email-settings
-router.put('/', verifyToken, requirePermission('settings.system'), asyncHandler(async (req, res) => {
+router.put('/', verifyToken, asyncHandler(async (req, res) => {
     const { senderName, templates } = req.body || {};
 
     try {

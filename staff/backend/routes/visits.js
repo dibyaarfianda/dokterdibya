@@ -2,12 +2,12 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
-const { verifyToken, requirePermission } = require('../middleware/auth');
+const { verifyToken } = require('../middleware/auth');
 
 // ==================== VISITS ROUTES ====================
 
 // GET all visits (with optional filters)
-router.get('/', verifyToken, requirePermission('patients.view'), async (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
     try {
         const { patient_id, start_date, end_date, exclude_dummy } = req.query;
         
@@ -59,7 +59,7 @@ router.get('/', verifyToken, requirePermission('patients.view'), async (req, res
 });
 
 // GET single visit by ID
-router.get('/:id', verifyToken, requirePermission('patients.view'), async (req, res) => {
+router.get('/:id', verifyToken, async (req, res) => {
     try {
         const [rows] = await pool.query(
             'SELECT * FROM visits WHERE id = ?',
@@ -96,7 +96,7 @@ router.get('/:id', verifyToken, requirePermission('patients.view'), async (req, 
 // ==================== PROTECTED ROUTES (require auth) ====================
 
 // POST new visit
-router.post('/', verifyToken, requirePermission('patients.create'), async (req, res) => {
+router.post('/', verifyToken, async (req, res) => {
     try {
         const {
             patient_id,
@@ -153,7 +153,7 @@ router.post('/', verifyToken, requirePermission('patients.create'), async (req, 
 });
 
 // PUT update visit
-router.put('/:id', verifyToken, requirePermission('patients.edit'), async (req, res) => {
+router.put('/:id', verifyToken, async (req, res) => {
     try {
         const {
             patient_name,
@@ -233,7 +233,7 @@ router.put('/:id', verifyToken, requirePermission('patients.edit'), async (req, 
 });
 
 // DELETE visit
-router.delete('/:id', verifyToken, requirePermission('patients.delete'), async (req, res) => {
+router.delete('/:id', verifyToken, async (req, res) => {
     try {
         const [result] = await pool.query(
             'DELETE FROM visits WHERE id = ?',
@@ -262,7 +262,7 @@ router.delete('/:id', verifyToken, requirePermission('patients.delete'), async (
 });
 
 // GET analytics/stats
-router.get('/analytics/stats', verifyToken, requirePermission('dashboard.view'), async (req, res) => {
+router.get('/analytics/stats', verifyToken, async (req, res) => {
     try {
         const { start_date, end_date } = req.query;
         

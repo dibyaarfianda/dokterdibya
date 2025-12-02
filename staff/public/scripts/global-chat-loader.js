@@ -97,8 +97,8 @@
             }
         }
 
-        // Check if auth is valid
-        if (!window.auth.currentUser || !window.auth.currentUser.uid) {
+        // Check if auth is valid (support both Firebase 'uid' and VPS auth 'id')
+        if (!window.auth.currentUser || (!window.auth.currentUser.uid && !window.auth.currentUser.id)) {
             console.error('[GlobalChat] Cannot initialize: No valid user auth');
             return;
         }
@@ -120,27 +120,13 @@
             console.log('[GlobalChat] Chat popup script already present');
         }
 
-        // Initialize global Socket.IO connection if not already exists
-        if (!window.socket && typeof io !== 'undefined') {
-            console.log('[GlobalChat] Creating global Socket.IO connection...');
-            window.socket = io({
-                transports: ['websocket', 'polling'],
-                reconnection: true,
-                reconnectionDelay: 1000,
-                reconnectionAttempts: 10
-            });
-            
-            window.socket.on('connect', () => {
-                console.log('[GlobalChat] ✅ Global Socket.IO connected:', window.socket.id);
-            });
-            
-            window.socket.on('connect_error', (error) => {
-                console.error('[GlobalChat] ❌ Socket.IO connection error:', error);
-            });
-        } else if (typeof io === 'undefined') {
-            console.warn('[GlobalChat] Socket.IO library not loaded');
+        // Use global Socket.IO connection from realtime-sync.js
+        // DO NOT create our own socket - wait for realtime-sync to initialize it
+        if (window.socket) {
+            console.log('[GlobalChat] Using existing Socket.IO connection from realtime-sync');
         } else {
-            console.log('[GlobalChat] Using existing Socket.IO connection');
+            console.log('[GlobalChat] Socket not ready yet - realtime-sync will initialize it');
+            // Socket will be created by realtime-sync.js when user auth is ready
         }
     }
 
