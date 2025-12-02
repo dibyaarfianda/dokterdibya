@@ -5,7 +5,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db'); // Your database connection
 const cache = require('../utils/cache');
-const { verifyToken } = require('../middleware/auth');
+const { verifyToken, requireSuperadmin } = require('../middleware/auth');
 const { validateTindakan } = require('../middleware/validation');
 
 // ==================== GET ALL TINDAKAN ====================
@@ -223,7 +223,7 @@ router.put('/api/tindakan/:id', verifyToken, validateTindakan, async (req, res) 
 });
 
 // ==================== DELETE TINDAKAN ====================
-router.delete('/api/tindakan/:id', verifyToken, async (req, res) => {
+router.delete('/api/tindakan/:id', verifyToken, requireSuperadmin, async (req, res) => {
     try {
         const { id } = req.params;
         

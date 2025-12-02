@@ -9,6 +9,7 @@ import stateManager from './utils/state-manager.js';
 import { getGMT7Timestamp } from './utils/helpers.js';
 import BillingNotifications from './utils/billing-notifications.js';
 import SendToPatient from './components/shared/send-to-patient.js';
+import { applyPendingImportData } from './utils/medical-import.js';
 
 class SundayClinicApp {
     constructor() {
@@ -74,6 +75,9 @@ class SundayClinicApp {
             this.initialized = true;
 
             console.log('[SundayClinic] Initialization complete');
+
+            // Apply pending import data if any (from Import modal)
+            await applyPendingImportData();
 
         } catch (error) {
             console.error('[SundayClinic] Initialization failed:', error);

@@ -5,7 +5,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db'); // Your database connection
 const cache = require('../utils/cache');
-const { verifyToken, requireMenuAccess } = require('../middleware/auth');
+const { verifyToken, requireMenuAccess, requireSuperadmin } = require('../middleware/auth');
 const { validateObat, validateObatUpdate } = require('../middleware/validation');
 
 // ==================== OBAT ENDPOINTS ====================
@@ -223,8 +223,8 @@ router.patch('/api/obat/:id/stock', async (req, res) => {
     }
 });
 
-// DELETE OBAT
-router.delete('/api/obat/:id', verifyToken, requireMenuAccess('obat_alkes'), async (req, res) => {
+// DELETE OBAT (Superadmin/Dokter only)
+router.delete('/api/obat/:id', verifyToken, requireSuperadmin, async (req, res) => {
     try {
         // Soft delete - set is_active to 0 instead of actually deleting
         const [result] = await db.query('UPDATE obat SET is_active = 0 WHERE id = ? AND is_active = 1', [req.params.id]);

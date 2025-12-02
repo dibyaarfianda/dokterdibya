@@ -609,102 +609,173 @@ async function importMedicalApply() {
 }
 
 /**
+ * Get MR ID from current URL
+ */
+function getMrIdFromUrl() {
+    const path = window.location.pathname;
+    const match = path.match(/\/sunday-clinic\/([^\/]+)/);
+    return match ? match[1] : null;
+}
+
+/**
+ * Save section data to API for persistence
+ */
+async function saveSectionToApi(mrId, section, data) {
+    if (!mrId || !section || !data || Object.keys(data).length === 0) {
+        return false;
+    }
+
+    try {
+        const token = localStorage.getItem('token') || localStorage.getItem('vps_auth_token');
+        const response = await fetch(`/api/sunday-clinic/records/${mrId}/${section}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(data)
+        });
+
+        const result = await response.json();
+        if (result.success) {
+            console.log(`[Import] Saved ${section} to database successfully`);
+            return true;
+        } else {
+            console.warn(`[Import] Failed to save ${section}:`, result.message);
+            return false;
+        }
+    } catch (error) {
+        console.error(`[Import] Error saving ${section} to API:`, error);
+        return false;
+    }
+}
+
+/**
  * Apply pending import data after page navigation
  * Called on page load to check for pending data
  */
 async function applyPendingImportData() {
     const pendingData = sessionStorage.getItem('pendingImportData');
-    if (!pendingData) return;
+    if (!pendingData) {
+        console.log('[Import] No pending import data found');
+        return;
+    }
 
     try {
-        const { template, checkedFields, visitDate, visitLocation } = JSON.parse(pendingData);
+        const { template, checkedFields, visitDate, visitTime, visitLocation } = JSON.parse(pendingData);
+        console.log('[Import] Found pending data:', { template, checkedFields, visitDate, visitTime, visitLocation });
+
+        // Get MR ID from URL for API persistence
+        const mrId = getMrIdFromUrl();
+        console.log('[Import] MR ID from URL:', mrId);
 
         // Wait for stateManager to be ready
         let attempts = 0;
-        while (!window.stateManager && attempts < 20) {
-            await new Promise(r => setTimeout(r, 250));
+        while (!window.stateManager && attempts < 30) {
+            await new Promise(r => setTimeout(r, 200));
             attempts++;
         }
 
-        if (!window.stateManager) {
-            console.warn('[Import] StateManager not available, skipping auto-apply');
-            return;
-        }
-
-        // Wait a bit more for initialization
-        await new Promise(r => setTimeout(r, 500));
+        // Wait for DOM to be fully rendered
+        await new Promise(r => setTimeout(r, 1000));
 
         console.log('[Import] Applying pending import data...');
 
-        // Apply data to stateManager
-        if (visitDate || visitLocation) {
-            const visitUpdates = {};
-            if (visitDate) visitUpdates.visit_date = visitDate;
-            if (visitLocation) visitUpdates.visit_location = visitLocation;
-            await window.stateManager.updateSection('visit_info', visitUpdates);
-        }
+        // Prepare data for API persistence
+        const sectionsToSave = [];
 
-        if (template.identitas) {
-            const identityUpdates = {};
-            for (const [key, value] of Object.entries(template.identitas)) {
-                if (checkedFields[key] && value) {
-                    identityUpdates[key] = value;
+        // Apply data to stateManager if available
+        if (window.stateManager) {
+            try {
+                // Update visit info
+                if (visitDate || visitLocation) {
+                    const visitUpdates = {};
+                    if (visitDate) visitUpdates.visit_date = visitDate;
+                    if (visitLocation) visitUpdates.visit_location = visitLocation;
+                    await window.stateManager.updateSection('visit_info', visitUpdates);
                 }
-            }
-            if (Object.keys(identityUpdates).length > 0) {
-                await window.stateManager.updateSection('identity', identityUpdates);
-            }
-        }
 
-        if (template.anamnesa) {
-            const anamnesaUpdates = {};
-            for (const [key, value] of Object.entries(template.anamnesa)) {
-                if (checkedFields[key] && value) {
-                    anamnesaUpdates[key] = value;
-                }
-            }
-            if (template.obstetri) {
-                for (const [key, value] of Object.entries(template.obstetri)) {
-                    if (checkedFields[key] && value) {
-                        anamnesaUpdates[key] = value;
+                // Update identity - apply ALL fields from template (not just checked)
+                if (template.identitas) {
+                    const identityUpdates = {};
+                    for (const [key, value] of Object.entries(template.identitas)) {
+                        if (value) identityUpdates[key] = value;
+                    }
+                    if (Object.keys(identityUpdates).length > 0) {
+                        await window.stateManager.updateSection('identity', identityUpdates);
                     }
                 }
-            }
-            if (Object.keys(anamnesaUpdates).length > 0) {
-                await window.stateManager.updateSection('anamnesa', anamnesaUpdates);
-            }
-        }
 
-        if (template.pemeriksaan_fisik) {
-            const examUpdates = {};
-            for (const [key, value] of Object.entries(template.pemeriksaan_fisik)) {
-                if (checkedFields[key] && value) {
-                    examUpdates[key] = value;
+                // Update anamnesa
+                if (template.anamnesa) {
+                    const anamnesaUpdates = { ...template.anamnesa };
+                    if (template.obstetri) {
+                        Object.assign(anamnesaUpdates, template.obstetri);
+                    }
+                    if (Object.keys(anamnesaUpdates).length > 0) {
+                        await window.stateManager.updateSection('anamnesa', anamnesaUpdates);
+                        sectionsToSave.push({ section: 'anamnesa', data: anamnesaUpdates });
+                    }
                 }
-            }
-            if (Object.keys(examUpdates).length > 0) {
-                await window.stateManager.updateSection('physical_exam', examUpdates);
+
+                // Update physical exam
+                if (template.pemeriksaan_fisik) {
+                    await window.stateManager.updateSection('physical_exam', template.pemeriksaan_fisik);
+                    sectionsToSave.push({ section: 'physical_exam', data: template.pemeriksaan_fisik });
+                }
+
+                // Update diagnosis
+                if (template.diagnosis) {
+                    await window.stateManager.updateSection('diagnosis', template.diagnosis);
+                    sectionsToSave.push({ section: 'diagnosis', data: template.diagnosis });
+                }
+
+                // Update obstetri if available
+                if (template.obstetri) {
+                    await window.stateManager.updateSection('pemeriksaan_obstetri', template.obstetri);
+                    sectionsToSave.push({ section: 'pemeriksaan_obstetri', data: template.obstetri });
+                }
+
+                // Update planning if available
+                if (template.planning) {
+                    await window.stateManager.updateSection('planning', template.planning);
+                    sectionsToSave.push({ section: 'planning', data: template.planning });
+                }
+
+                console.log('[Import] StateManager updated successfully');
+            } catch (stateError) {
+                console.error('[Import] StateManager update error:', stateError);
             }
         }
 
-        if (template.diagnosis && checkedFields.diagnosis_utama) {
-            await window.stateManager.updateSection('diagnosis', {
-                diagnosis_utama: template.diagnosis.diagnosis_utama
-            });
+        // Also fill DOM elements directly for immediate feedback
+        fillFormFieldsDirect(template, checkedFields || {});
+
+        // PERSIST TO DATABASE via API
+        if (mrId && sectionsToSave.length > 0) {
+            console.log('[Import] Persisting data to database...');
+            let savedCount = 0;
+
+            for (const { section, data } of sectionsToSave) {
+                const saved = await saveSectionToApi(mrId, section, data);
+                if (saved) savedCount++;
+            }
+
+            console.log(`[Import] Saved ${savedCount}/${sectionsToSave.length} sections to database`);
         }
 
         // Clear pending data
         sessionStorage.removeItem('pendingImportData');
 
-        console.log('[Import] Pending import data applied successfully');
+        console.log('[Import] Pending import data applied and persisted successfully');
 
         // Show notification
         if (window.Swal) {
             Swal.fire({
                 icon: 'success',
                 title: 'Data Import Diterapkan',
-                text: 'Data dari import telah diterapkan ke MR baru',
-                timer: 2000,
+                text: 'Data dari import telah disimpan ke rekam medis',
+                timer: 2500,
                 showConfirmButton: false
             });
         }
@@ -762,12 +833,15 @@ function fillFormFieldsDirect(template, checkedFields) {
         ...(template.obstetri || {})
     };
 
+    let filledCount = 0;
     for (const [field, selectors] of Object.entries(fieldMappings)) {
-        if (!checkedFields[field] || !allData[field]) continue;
+        // Apply if data exists (ignore checkedFields for auto-apply)
+        if (!allData[field]) continue;
 
         for (const selector of selectors) {
             const element = document.querySelector(selector);
             if (element) {
+                console.log(`[Import] Filling ${field} with:`, allData[field]);
                 if (element.tagName === 'SELECT') {
                     // Try to find matching option
                     const value = String(allData[field]).toLowerCase();
@@ -784,10 +858,12 @@ function fillFormFieldsDirect(template, checkedFields) {
                 // Trigger change event
                 element.dispatchEvent(new Event('change', { bubbles: true }));
                 element.dispatchEvent(new Event('input', { bubbles: true }));
+                filledCount++;
                 break;
             }
         }
     }
+    console.log(`[Import] Filled ${filledCount} form fields via DOM`);
 }
 
 /**
