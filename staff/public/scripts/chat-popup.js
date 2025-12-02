@@ -364,20 +364,26 @@
     localStorage.setItem(LAST_READ_KEY, lastReadTimestamp);
   }
   
-        // Show clear button only for superadmin
+        // Show clear button only for superadmin or dokter
         function checkClearButtonVisibility() {
             if (!clearBtn) return;
-            
-            // Check multiple sources for user role
+
+            // Check multiple sources for user role and superadmin status
             const authData = window.auth || {};
             const currentUser = authData.currentUser || {};
-            const role = currentUser.role || authData.role || '';
-            
-            console.log('Checking clear button visibility - Role:', role);
+            const role = currentUser.role || authData.role || user.role || '';
+            const isSuperadmin = currentUser.is_superadmin || authData.is_superadmin || user.is_superadmin || false;
 
-            // Show clear button for all users
-            clearBtn.style.display = 'flex';
-            console.log('Clear button shown for all users');
+            console.log('Checking clear button visibility - Role:', role, 'Superadmin:', isSuperadmin);
+
+            // Show clear button only for superadmin or dokter
+            if (isSuperadmin || role === 'dokter') {
+                clearBtn.style.display = 'flex';
+                console.log('Clear button shown for superadmin/dokter');
+            } else {
+                clearBtn.style.display = 'none';
+                console.log('Clear button hidden - not superadmin/dokter');
+            }
         }
 
         // Function to update online users

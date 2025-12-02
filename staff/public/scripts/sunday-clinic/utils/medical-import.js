@@ -516,14 +516,12 @@ async function importMedicalApply() {
 
         // Apply to existing state manager
         if (window.stateManager) {
-            const state = window.stateManager.getState();
-
             // Update visit info if available
             if (visitDate || visitLocation) {
                 const visitUpdates = {};
                 if (visitDate) visitUpdates.visit_date = visitDate;
                 if (visitLocation) visitUpdates.visit_location = visitLocation;
-                await window.stateManager.updateSection('visit_info', visitUpdates);
+                window.stateManager.updateSectionData('visit_info', visitUpdates);
             }
 
             // Update identity fields
@@ -535,7 +533,7 @@ async function importMedicalApply() {
                     }
                 }
                 if (Object.keys(identityUpdates).length > 0) {
-                    await window.stateManager.updateSection('identity', identityUpdates);
+                    window.stateManager.updateSectionData('identity', identityUpdates);
                 }
             }
 
@@ -555,7 +553,7 @@ async function importMedicalApply() {
                     }
                 }
                 if (Object.keys(anamnesaUpdates).length > 0) {
-                    await window.stateManager.updateSection('anamnesa', anamnesaUpdates);
+                    window.stateManager.updateSectionData('anamnesa', anamnesaUpdates);
                 }
             }
 
@@ -568,13 +566,13 @@ async function importMedicalApply() {
                     }
                 }
                 if (Object.keys(examUpdates).length > 0) {
-                    await window.stateManager.updateSection('physical_exam', examUpdates);
+                    window.stateManager.updateSectionData('physical_exam', examUpdates);
                 }
             }
 
             // Update diagnosis
             if (template.diagnosis && checkedFields.diagnosis_utama) {
-                await window.stateManager.updateSection('diagnosis', {
+                window.stateManager.updateSectionData('diagnosis', {
                     diagnosis_utama: template.diagnosis.diagnosis_utama
                 });
             }
@@ -692,7 +690,7 @@ async function applyPendingImportData() {
                     const visitUpdates = {};
                     if (visitDate) visitUpdates.visit_date = visitDate;
                     if (visitLocation) visitUpdates.visit_location = visitLocation;
-                    await window.stateManager.updateSection('visit_info', visitUpdates);
+                    window.stateManager.updateSectionData('visit_info', visitUpdates);
                 }
 
                 // Update identity - apply ALL fields from template (not just checked)
@@ -702,7 +700,7 @@ async function applyPendingImportData() {
                         if (value) identityUpdates[key] = value;
                     }
                     if (Object.keys(identityUpdates).length > 0) {
-                        await window.stateManager.updateSection('identity', identityUpdates);
+                        window.stateManager.updateSectionData('identity', identityUpdates);
                     }
                 }
 
@@ -713,32 +711,32 @@ async function applyPendingImportData() {
                         Object.assign(anamnesaUpdates, template.obstetri);
                     }
                     if (Object.keys(anamnesaUpdates).length > 0) {
-                        await window.stateManager.updateSection('anamnesa', anamnesaUpdates);
+                        window.stateManager.updateSectionData('anamnesa', anamnesaUpdates);
                         sectionsToSave.push({ section: 'anamnesa', data: anamnesaUpdates });
                     }
                 }
 
                 // Update physical exam
                 if (template.pemeriksaan_fisik) {
-                    await window.stateManager.updateSection('physical_exam', template.pemeriksaan_fisik);
+                    window.stateManager.updateSectionData('physical_exam', template.pemeriksaan_fisik);
                     sectionsToSave.push({ section: 'physical_exam', data: template.pemeriksaan_fisik });
                 }
 
                 // Update diagnosis
                 if (template.diagnosis) {
-                    await window.stateManager.updateSection('diagnosis', template.diagnosis);
+                    window.stateManager.updateSectionData('diagnosis', template.diagnosis);
                     sectionsToSave.push({ section: 'diagnosis', data: template.diagnosis });
                 }
 
                 // Update obstetri if available
                 if (template.obstetri) {
-                    await window.stateManager.updateSection('pemeriksaan_obstetri', template.obstetri);
+                    window.stateManager.updateSectionData('pemeriksaan_obstetri', template.obstetri);
                     sectionsToSave.push({ section: 'pemeriksaan_obstetri', data: template.obstetri });
                 }
 
                 // Update planning if available
                 if (template.planning) {
-                    await window.stateManager.updateSection('planning', template.planning);
+                    window.stateManager.updateSectionData('planning', template.planning);
                     sectionsToSave.push({ section: 'planning', data: template.planning });
                 }
 
@@ -788,40 +786,61 @@ async function applyPendingImportData() {
 
 /**
  * Fill form fields directly via DOM
+ * Maps imported data fields to actual form element IDs in the Sunday Clinic components
  */
 function fillFormFieldsDirect(template, checkedFields) {
     const fieldMappings = {
-        // Identity
-        nama: ['input[name="nama"]', '#nama', '#patient-name'],
-        jenis_kelamin: ['select[name="jenis_kelamin"]', '#jenis_kelamin'],
-        tanggal_lahir: ['input[name="tanggal_lahir"]', '#tanggal_lahir'],
-        alamat: ['textarea[name="alamat"]', '#alamat', 'input[name="alamat"]'],
-        no_hp: ['input[name="no_hp"]', '#no_hp', 'input[name="telepon"]'],
-        pekerjaan: ['input[name="pekerjaan"]', '#pekerjaan'],
-        tinggi_badan: ['input[name="tinggi_badan"]', '#tinggi_badan'],
-        berat_badan: ['input[name="berat_badan"]', '#berat_badan'],
+        // Anamnesa fields (anamnesa-obstetri.js uses #anamnesa-* IDs)
+        keluhan_utama: ['#anamnesa-keluhan-utama'],
+        riwayat_kehamilan_saat_ini: ['#anamnesa-riwayat-kehamilan'],
+        rps: ['#anamnesa-detail-riwayat'],
+        riwayat_penyakit_sekarang: ['#anamnesa-detail-riwayat'],
+        detail_riwayat_penyakit: ['#anamnesa-detail-riwayat'],
+        rpd: ['#anamnesa-detail-riwayat'],
+        rpk: ['#anamnesa-riwayat-keluarga'],
+        riwayat_penyakit_keluarga: ['#anamnesa-riwayat-keluarga'],
+        riwayat_keluarga: ['#anamnesa-riwayat-keluarga'],
 
-        // Anamnesa
-        keluhan_utama: ['textarea[name="keluhan_utama"]', '#keluhan_utama'],
-        riwayat_penyakit_sekarang: ['textarea[name="rps"]', '#rps', 'textarea[name="riwayat_penyakit_sekarang"]'],
-        riwayat_penyakit_dahulu: ['textarea[name="rpd"]', '#rpd', 'textarea[name="riwayat_penyakit_dahulu"]'],
-        riwayat_penyakit_keluarga: ['textarea[name="rpk"]', '#rpk', 'textarea[name="riwayat_penyakit_keluarga"]'],
+        // Obstetri fields
+        hpht: ['#anamnesa-hpht'],
+        hpl: ['#anamnesa-hpl'],
+        gravida: ['#anamnesa-gravida'],
+        para: ['#anamnesa-para'],
+        abortus: ['#anamnesa-abortus'],
+        anak_hidup: ['#anamnesa-anak-hidup'],
 
-        // Obstetri
-        hpht: ['input[name="hpht"]', '#hpht'],
-        hpl: ['input[name="hpl"]', '#hpl'],
-        gravida: ['input[name="gravida"]', '#gravida'],
-        para: ['input[name="para"]', '#para'],
+        // Allergy fields
+        alergi_obat: ['#anamnesa-alergi-obat'],
+        alergi_makanan: ['#anamnesa-alergi-makanan'],
+        alergi_lingkungan: ['#anamnesa-alergi-lingkungan'],
 
-        // Physical exam
-        keadaan_umum: ['select[name="keadaan_umum"]', '#keadaan_umum'],
-        tekanan_darah: ['input[name="tekanan_darah"]', '#tekanan_darah', 'input[name="tensi"]'],
-        nadi: ['input[name="nadi"]', '#nadi'],
-        suhu: ['input[name="suhu"]', '#suhu'],
-        spo2: ['input[name="spo2"]', '#spo2'],
+        // Menstrual history
+        usia_menarche: ['#anamnesa-usia-menarche'],
+        lama_siklus: ['#anamnesa-lama-siklus'],
+        siklus_teratur: ['#anamnesa-siklus-teratur'],
 
-        // Diagnosis
-        diagnosis_utama: ['textarea[name="diagnosis_utama"]', '#diagnosis_utama', 'textarea[name="diagnosis"]']
+        // KB history
+        metode_kb_terakhir: ['#anamnesa-metode-kb'],
+        kegagalan_kb: ['#anamnesa-kegagalan-kb'],
+        jenis_kb_gagal: ['#anamnesa-jenis-kb-gagal'],
+
+        // Physical exam fields (physical-exam.js uses #pe-* IDs)
+        tekanan_darah: ['#pe-tekanan-darah'],
+        tensi: ['#pe-tekanan-darah'],
+        nadi: ['#pe-nadi'],
+        suhu: ['#pe-suhu'],
+        respirasi: ['#pe-respirasi'],
+        rr: ['#pe-respirasi'],
+        tinggi_badan: ['#pe-tinggi-badan'],
+        berat_badan: ['#pe-berat-badan'],
+        kepala_leher: ['#pe-kepala-leher'],
+        thorax: ['#pe-thorax'],
+        abdomen: ['#pe-abdomen'],
+        ekstremitas: ['#pe-ekstremitas'],
+
+        // Diagnosis fields
+        diagnosis_utama: ['#diagnosis-utama', 'textarea[name="diagnosis_utama"]'],
+        diagnosis: ['#diagnosis-utama', 'textarea[name="diagnosis"]']
     };
 
     // Flatten template data
