@@ -11,6 +11,9 @@ import BillingNotifications from './utils/billing-notifications.js';
 import SendToPatient from './components/shared/send-to-patient.js';
 import { applyPendingImportData } from './utils/medical-import.js';
 
+// Expose stateManager to window for cross-module access (used by medical-import.js)
+window.stateManager = stateManager;
+
 class SundayClinicApp {
     constructor() {
         this.currentMrId = null;
