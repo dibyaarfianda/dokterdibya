@@ -5,13 +5,13 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db'); // Your database connection
 const cache = require('../utils/cache');
-const { verifyToken, requirePermission } = require('../middleware/auth');
+const { verifyToken, requireMenuAccess } = require('../middleware/auth');
 const { validateObat, validateObatUpdate } = require('../middleware/validation');
 
 // ==================== OBAT ENDPOINTS ====================
 
-// GET ALL OBAT (Protected - requires authentication and permission)
-router.get('/api/obat', verifyToken, requirePermission('medications.view'), async (req, res) => {
+// GET ALL OBAT (Protected - requires obat_alkes menu access)
+router.get('/api/obat', verifyToken, requireMenuAccess('obat_alkes'), async (req, res) => {
     try {
         const { category, active } = req.query;
         
@@ -72,7 +72,7 @@ router.get('/api/obat', verifyToken, requirePermission('medications.view'), asyn
 });
 
 // GET OBAT BY ID (Protected)
-router.get('/api/obat/:id', verifyToken, requirePermission('medications.view'), async (req, res) => {
+router.get('/api/obat/:id', verifyToken, requireMenuAccess('obat_alkes'), async (req, res) => {
     try {
         const [rows] = await db.query('SELECT * FROM obat WHERE id = ?', [req.params.id]);
         if (rows.length === 0) {
@@ -89,7 +89,7 @@ router.get('/api/obat/:id', verifyToken, requirePermission('medications.view'), 
 // Note: Add authentication middleware here if needed
 
 // ADD NEW OBAT
-router.post('/api/obat', verifyToken, requirePermission('settings.medications_manage'), validateObat, async (req, res) => {
+router.post('/api/obat', verifyToken, requireMenuAccess('obat_alkes'), validateObat, async (req, res) => {
     try {
         const { code, name, category, price, stock, unit, min_stock } = req.body;
         
@@ -132,7 +132,7 @@ router.post('/api/obat', verifyToken, requirePermission('settings.medications_ma
 });
 
 // UPDATE OBAT
-router.put('/api/obat/:id', verifyToken, requirePermission('settings.medications_manage'), validateObatUpdate, async (req, res) => {
+router.put('/api/obat/:id', verifyToken, requireMenuAccess('obat_alkes'), validateObatUpdate, async (req, res) => {
     try {
         const { name, category, price, stock, unit, min_stock, is_active, default_supplier_id } = req.body;
 
@@ -224,7 +224,7 @@ router.patch('/api/obat/:id/stock', async (req, res) => {
 });
 
 // DELETE OBAT
-router.delete('/api/obat/:id', verifyToken, requirePermission('settings.medications_manage'), async (req, res) => {
+router.delete('/api/obat/:id', verifyToken, requireMenuAccess('obat_alkes'), async (req, res) => {
     try {
         // Soft delete - set is_active to 0 instead of actually deleting
         const [result] = await db.query('UPDATE obat SET is_active = 0 WHERE id = ? AND is_active = 1', [req.params.id]);
@@ -272,7 +272,7 @@ router.get('/public/obat/low-stock', async (req, res) => {
 // ==================== DOWNLOAD PRICE LIST PDF ====================
 const pdfGenerator = require('../utils/pdf-generator');
 
-router.get('/api/obat/download/price-list', verifyToken, async (req, res) => {
+router.get('/api/obat/download/price-list', verifyToken, requireMenuAccess('obat_alkes'), async (req, res) => {
     try {
         // Fetch all active obat
         const [rows] = await db.query(

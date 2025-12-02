@@ -454,6 +454,7 @@ function init() {
         // Just reload data if already initialized
         loadRoles();
         loadUsers();
+        loadMenuVisibility();
         return;
     }
 
@@ -484,6 +485,7 @@ function init() {
     loadRoles();
     loadPermissions();
     loadUsers();
+    loadMenuVisibility();
 
     isInitialized = true;
     console.log('✅ Kelola Roles module initialized');
@@ -652,6 +654,148 @@ async function saveUserRoles() {
     }
 }
 
+// ==================== MENU VISIBILITY SETTINGS ====================
+
+// Menu definitions for visibility
+const VISIBILITY_MENUS = [
+    { key: 'dashboard', label: 'Dashboard', icon: 'fa-tachometer-alt' },
+    { key: 'pasien_baru', label: 'Pasien Baru', icon: 'fa-user-plus' },
+    { key: 'klinik_privat', label: 'Klinik Privat', icon: 'fa-clinic-medical' },
+    { key: 'rsia_melinda', label: 'RSIA Melinda', icon: 'fa-hospital' },
+    { key: 'rsud_gambiran', label: 'RSUD Gambiran', icon: 'fa-hospital-alt' },
+    { key: 'rs_bhayangkara', label: 'RS Bhayangkara', icon: 'fa-hospital-user' },
+    { key: 'obat_alkes', label: 'Obat/Alkes', icon: 'fa-pills' },
+    { key: 'keuangan', label: 'Keuangan', icon: 'fa-money-bill-wave' },
+    { key: 'kelola_pasien', label: 'Kelola Pasien', icon: 'fa-users-cog' },
+    { key: 'kelola_roles', label: 'Kelola Roles', icon: 'fa-user-shield' }
+];
+
+const VISIBILITY_ROLES = ['bidan', 'administrasi', 'managerial', 'kasir'];
+
+let visibilityData = {};
+
+/**
+ * Load menu visibility settings from API
+ */
+async function loadMenuVisibility() {
+    const tbody = document.getElementById('visibility-tbody');
+    if (!tbody) return;
+
+    tbody.innerHTML = `
+        <tr>
+            <td colspan="5" class="text-center py-3">
+                <i class="fas fa-spinner fa-spin"></i> Memuat...
+            </td>
+        </tr>
+    `;
+
+    try {
+        const response = await apiRequest('/role-visibility');
+        visibilityData = response.data || {};
+
+        renderVisibilityTable();
+    } catch (error) {
+        console.error('Failed to load visibility:', error);
+        tbody.innerHTML = `
+            <tr>
+                <td colspan="5" class="text-center text-danger py-3">
+                    <i class="fas fa-exclamation-triangle"></i> Gagal memuat: ${error.message}
+                </td>
+            </tr>
+        `;
+    }
+}
+
+/**
+ * Render visibility table
+ */
+function renderVisibilityTable() {
+    const tbody = document.getElementById('visibility-tbody');
+    if (!tbody) return;
+
+    let html = '';
+
+    VISIBILITY_MENUS.forEach(menu => {
+        html += `
+            <tr>
+                <td>
+                    <i class="fas ${menu.icon} mr-2 text-muted"></i>
+                    ${menu.label}
+                </td>
+        `;
+
+        VISIBILITY_ROLES.forEach(role => {
+            const isVisible = visibilityData[role]?.[menu.key] ?? false;
+            const checkId = `vis-${role}-${menu.key}`;
+
+            html += `
+                <td class="text-center">
+                    <div class="custom-control custom-switch">
+                        <input type="checkbox" class="custom-control-input visibility-toggle"
+                               id="${checkId}"
+                               data-role="${role}"
+                               data-menu="${menu.key}"
+                               ${isVisible ? 'checked' : ''}
+                               onchange="toggleVisibility('${role}', '${menu.key}', this.checked)">
+                        <label class="custom-control-label" for="${checkId}"></label>
+                    </div>
+                </td>
+            `;
+        });
+
+        html += '</tr>';
+    });
+
+    tbody.innerHTML = html;
+}
+
+/**
+ * Toggle visibility for a role/menu combination
+ */
+async function toggleVisibility(role, menuKey, isVisible) {
+    const checkbox = document.getElementById(`vis-${role}-${menuKey}`);
+
+    try {
+        // Disable checkbox while saving
+        if (checkbox) checkbox.disabled = true;
+
+        await apiRequest('/role-visibility/toggle', {
+            method: 'POST',
+            body: JSON.stringify({ role, menuKey, isVisible })
+        });
+
+        // Update local state
+        if (!visibilityData[role]) visibilityData[role] = {};
+        visibilityData[role][menuKey] = isVisible;
+
+        // Show brief success indication
+        if (checkbox) {
+            const cell = checkbox.closest('td');
+            const originalBg = cell.style.backgroundColor;
+            cell.style.backgroundColor = '#d4edda';
+            setTimeout(() => {
+                cell.style.backgroundColor = originalBg;
+            }, 500);
+        }
+
+    } catch (error) {
+        console.error('Failed to toggle visibility:', error);
+
+        // Revert checkbox on error
+        if (checkbox) checkbox.checked = !isVisible;
+
+        Swal.fire({
+            icon: 'error',
+            title: 'Gagal',
+            text: error.message || 'Gagal menyimpan pengaturan',
+            timer: 2000,
+            showConfirmButton: false
+        });
+    } finally {
+        if (checkbox) checkbox.disabled = false;
+    }
+}
+
 // Export to window
 window.initKelolaRoles = init;
 window.editRole = editRole;
@@ -659,5 +803,7 @@ window.deleteRole = deleteRole;
 window.showPermissions = showPermissions;
 window.editUserRoles = editUserRoles;
 window.saveUserRoles = saveUserRoles;
+window.loadMenuVisibility = loadMenuVisibility;
+window.toggleVisibility = toggleVisibility;
 
-export { init };
+export { init, loadMenuVisibility };

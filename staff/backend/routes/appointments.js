@@ -2,12 +2,12 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
-const { verifyToken, requirePermission } = require('../middleware/auth');
+const { verifyToken } = require('../middleware/auth');
 
 // ==================== PUBLIC ROUTES ====================
 
 // GET all appointments (with optional filters)
-router.get('/', verifyToken, requirePermission('appointments.view'), async (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
     try {
         const { patient_id, start_date, end_date, status, today_only } = req.query;
         
@@ -117,7 +117,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // GET latest appointment for a specific patient
-router.get('/patient/:patient_id/latest', verifyToken, requirePermission('appointments.view'), async (req, res) => {
+router.get('/patient/:patient_id/latest', verifyToken, async (req, res) => {
     try {
         const [rows] = await pool.query(
             `SELECT * FROM appointments 
@@ -151,7 +151,7 @@ router.get('/patient/:patient_id/latest', verifyToken, requirePermission('appoin
 // ==================== PROTECTED ROUTES (require auth) ====================
 
 // POST new appointment
-router.post('/', verifyToken, requirePermission('appointments.create'), async (req, res) => {
+router.post('/', verifyToken, async (req, res) => {
     try {
         const {
             patient_id,
@@ -279,7 +279,7 @@ router.patch('/:id/status', verifyToken, async (req, res) => {
 });
 
 // PUT update appointment
-router.put('/:id', verifyToken, requirePermission('appointments.edit'), async (req, res) => {
+router.put('/:id', verifyToken, async (req, res) => {
     try {
         const { id } = req.params;
         const {
@@ -373,7 +373,7 @@ router.put('/:id', verifyToken, requirePermission('appointments.edit'), async (r
 });
 
 // DELETE appointment
-router.delete('/:id', verifyToken, requirePermission('appointments.delete'), async (req, res) => {
+router.delete('/:id', verifyToken, async (req, res) => {
     try {
         const { id } = req.params;
         
@@ -411,7 +411,7 @@ router.delete('/:id', verifyToken, requirePermission('appointments.delete'), asy
 });
 
 // HARD DELETE - Permanently remove appointment from database
-router.delete('/:id/permanent', verifyToken, requirePermission('appointments.delete'), async (req, res) => {
+router.delete('/:id/permanent', verifyToken, async (req, res) => {
     try {
         const { id } = req.params;
         

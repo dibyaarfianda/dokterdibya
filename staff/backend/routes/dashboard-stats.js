@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { verifyToken, requirePermission } = require('../middleware/auth');
+const { verifyToken } = require('../middleware/auth');
 
 /**
  * GET /api/dashboard-stats
  * Get dashboard statistics for the staff interface
  */
-router.get('/', verifyToken, requirePermission('appointments.view'), async (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
     try {
         // 1. Total Patients Count
         const [totalPatientsResult] = await db.query(

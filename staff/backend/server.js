@@ -21,7 +21,11 @@ const io = new Server(server, {
     cors: {
         origin: process.env.CORS_ORIGIN || '*',
         methods: ['GET', 'POST']
-    }
+    },
+    pingTimeout: 60000,
+    pingInterval: 25000,
+    transports: ['websocket', 'polling'],
+    allowEIO3: true
 });
 const PORT = process.env.PORT || 3000;
 
@@ -216,6 +220,10 @@ app.use('/', patientIntakeRoutes);
 app.use('/', medicalRecordsRoutes);
 app.use('/', patientRecordsRoutes);
 
+// Medical Import routes (parse text files to fill medical records)
+const medicalImportRoutes = require('./routes/medical-import');
+app.use('/', medicalImportRoutes);
+
 // Billing routes
 app.use('/api/billings', billingsRoutes);
 
@@ -232,6 +240,10 @@ app.use('/', aiRoutes);
 // Role Management routes
 const rolesRoutes = require('./routes/roles');
 app.use('/', rolesRoutes);
+
+// Role Visibility routes (menu visibility per role)
+const roleVisibilityRoutes = require('./routes/role-visibility');
+app.use('/api/role-visibility', roleVisibilityRoutes);
 
 // Booking Settings routes (admin control for patient booking sessions)
 const bookingSettingsRoutes = require('./routes/booking-settings');

@@ -11,25 +11,54 @@ let onlineUsers = new Map(); // Track online users: userId -> { name, role, acti
 
 // Initialize Socket.io connection
 export function initRealtimeSync(user) {
-    if (!user) return;
-    
+    if (!user) {
+        console.warn('🔄 [REALTIME] No user provided, skipping initialization');
+        return;
+    }
+
+    if (!user.id || !user.name) {
+        console.error('🔄 [REALTIME] Invalid user object - missing id or name:', JSON.stringify(user));
+        return;
+    }
+
+    // Check if user changed (switching accounts)
+    if (socket && socket.connected) {
+        if (currentUser && currentUser.id === user.id) {
+            console.log('🔄 [REALTIME] Already connected as same user, skipping');
+            return;
+        }
+        // Different user - re-register
+        console.log('🔄 [REALTIME] User changed, re-registering:', user.id, user.name);
+        currentUser = user;
+        socket.emit('user:register', {
+            userId: user.id,
+            name: user.name,
+            role: user.role,
+            photo: user.photo_url || user.photoURL || null
+        });
+        return;
+    }
+
+    console.log('🔄 [REALTIME] Initializing with user:', user.id, user.name, user.role);
+
     currentUser = user;
-    
+
     // Connect to Socket.io server
+    console.log('🔄 [REALTIME] Connecting to:', REALTIME_API_BASE);
     socket = io(REALTIME_API_BASE, {
         transports: ['websocket', 'polling'],
         reconnection: true,
         reconnectionDelay: 1000,
         reconnectionAttempts: 5
     });
-    
+
     // Make socket globally available for other modules
     window.socket = socket;
-    
+
     socket.on('connect', () => {
-        console.log('🔄 [REALTIME] Connected to real-time sync server');
-        console.log('🔄 [REALTIME] Current user:', user);
-        
+        console.log('🔄 [REALTIME] Connected to real-time sync server, socket id:', socket.id);
+        console.log('🔄 [REALTIME] Registering user:', user.id, user.name);
+
         // Register user
         socket.emit('user:register', {
             userId: user.id,
@@ -37,8 +66,12 @@ export function initRealtimeSync(user) {
             role: user.role,
             photo: user.photo_url || user.photoURL || null
         });
-        
+
         console.log('🔄 [REALTIME] User registration sent');
+    });
+
+    socket.on('connect_error', (error) => {
+        console.error('🔄 [REALTIME] Connection error:', error.message);
     });
     
     socket.on('disconnect', () => {

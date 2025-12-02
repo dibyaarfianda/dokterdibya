@@ -7,7 +7,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const logger = require('../utils/logger');
-const { verifyToken, checkPermission } = require('../middleware/auth');
+const { verifyToken, requireMenuAccess } = require('../middleware/auth');
 
 /**
  * Generate unique supplier code
@@ -30,7 +30,7 @@ async function generateSupplierCode() {
  * GET /api/suppliers
  * List all suppliers
  */
-router.get('/', verifyToken, async (req, res) => {
+router.get('/', verifyToken, requireMenuAccess('obat_alkes'), async (req, res) => {
     try {
         const { active } = req.query;
 
@@ -62,7 +62,7 @@ router.get('/', verifyToken, async (req, res) => {
  * GET /api/suppliers/:id
  * Get single supplier
  */
-router.get('/:id', verifyToken, async (req, res) => {
+router.get('/:id', verifyToken, requireMenuAccess('obat_alkes'), async (req, res) => {
     try {
         const [suppliers] = await db.query(
             `SELECT * FROM suppliers WHERE id = ?`,
@@ -93,7 +93,7 @@ router.get('/:id', verifyToken, async (req, res) => {
  * POST /api/suppliers
  * Create new supplier
  */
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', verifyToken, requireMenuAccess('obat_alkes'), async (req, res) => {
     try {
         const { name, phone, address, notes } = req.body;
 
@@ -137,7 +137,7 @@ router.post('/', verifyToken, async (req, res) => {
  * PUT /api/suppliers/:id
  * Update supplier
  */
-router.put('/:id', verifyToken, async (req, res) => {
+router.put('/:id', verifyToken, requireMenuAccess('obat_alkes'), async (req, res) => {
     try {
         const { name, phone, address, notes, is_active } = req.body;
 
@@ -193,7 +193,7 @@ router.put('/:id', verifyToken, async (req, res) => {
  * DELETE /api/suppliers/:id
  * Soft delete supplier
  */
-router.delete('/:id', verifyToken, async (req, res) => {
+router.delete('/:id', verifyToken, requireMenuAccess('obat_alkes'), async (req, res) => {
     try {
         const [existing] = await db.query(
             `SELECT id, name FROM suppliers WHERE id = ?`,

@@ -6,6 +6,7 @@ const db = require('../db');
 const logger = require('../utils/logger');
 const { verifyToken } = require('../middleware/auth');
 const { findRecordByMrId } = require('../services/sundayClinicService');
+const { ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
 
 // Import realtime sync for broadcasting notifications
 let realtimeSync = null;
@@ -1160,8 +1161,7 @@ router.post('/billing/:mrId/confirm', verifyToken, async (req, res, next) => {
 
     try {
         // Check if user is dokter or superadmin
-        const userRole = req.user.role || '';
-        const isDokter = userRole === 'dokter' || userRole === 'superadmin' || req.user.is_superadmin;
+        const isDokter = req.user.role === ROLE_NAMES.DOKTER || req.user.is_superadmin || isSuperadminRole(req.user.role_id);
 
         if (!isDokter) {
             return res.status(403).json({
@@ -1422,8 +1422,7 @@ router.post('/billing/revisions/:id/approve', verifyToken, async (req, res, next
     const revisionId = req.params.id;
 
     try {
-        const userRole = req.user.role || '';
-        const isDokter = userRole === 'dokter' || userRole === 'superadmin' || req.user.is_superadmin;
+        const isDokter = req.user.role === ROLE_NAMES.DOKTER || req.user.is_superadmin || isSuperadminRole(req.user.role_id);
 
         if (!isDokter) {
             return res.status(403).json({
