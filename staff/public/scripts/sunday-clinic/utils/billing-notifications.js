@@ -12,57 +12,52 @@ class BillingNotifications {
 
     /**
      * Initialize Socket.IO connection
+     * Uses existing window.socket from realtime-sync.js instead of creating our own
      */
     initializeSocket() {
-        console.log('[BillingNotifications] Initializing Socket.IO, io available?', typeof io !== 'undefined');
-        
-        if (typeof io !== 'undefined') {
-            // Connect with explicit options
-            this.socket = io({
-                transports: ['websocket', 'polling'],
-                reconnection: true,
-                reconnectionDelay: 1000,
-                reconnectionAttempts: 10
-            });
-            
-            this.socket.on('connect', () => {
-                console.log('[BillingNotifications] ✅ Socket.IO CONNECTED, socket ID:', this.socket.id);
-                console.log('[BillingNotifications] Transport:', this.socket.io.engine.transport.name);
-            });
+        console.log('[BillingNotifications] Initializing Socket.IO...');
 
-            this.socket.on('connect_error', (error) => {
-                console.error('[BillingNotifications] ❌ Connection error:', error);
-            });
-
-            this.socket.on('disconnect', (reason) => {
-                console.log('[BillingNotifications] Socket.IO disconnected, reason:', reason);
-            });
-
-            this.socket.on('reconnect', (attemptNumber) => {
-                console.log('[BillingNotifications] Reconnected after', attemptNumber, 'attempts');
-            });
-
-            // Listen for billing_confirmed events from server
-            this.socket.on('billing_confirmed', (data) => {
-                console.log('[BillingNotifications] 📨 Socket.IO received billing_confirmed:', data);
-                this.broadcast(data);
-            });
-
-            // Listen for revision_requested events from server
-            this.socket.on('revision_requested', (data) => {
-                console.log('[BillingNotifications] 📨 Socket.IO received revision_requested:', data);
-                this.broadcast(data);
-            });
-
-            // Log all events for debugging
-            this.socket.onAny((eventName, ...args) => {
-                console.log('[BillingNotifications] 🔔 Socket event received:', eventName, args);
-            });
-            
-            console.log('[BillingNotifications] Event listeners registered');
+        // Use existing socket from realtime-sync.js
+        // DO NOT create our own socket - wait for realtime-sync to initialize it
+        if (window.socket) {
+            this.socket = window.socket;
+            console.log('[BillingNotifications] ✅ Using existing socket from realtime-sync');
+            this.setupEventListeners();
         } else {
-            console.error('[BillingNotifications] ❌ Socket.IO not available (io is undefined)');
+            console.log('[BillingNotifications] Socket not ready yet - waiting for realtime-sync');
+            // Poll for socket availability
+            const checkSocket = setInterval(() => {
+                if (window.socket) {
+                    clearInterval(checkSocket);
+                    this.socket = window.socket;
+                    console.log('[BillingNotifications] ✅ Socket now available from realtime-sync');
+                    this.setupEventListeners();
+                }
+            }, 500);
+            // Stop checking after 10 seconds
+            setTimeout(() => clearInterval(checkSocket), 10000);
         }
+    }
+
+    /**
+     * Setup event listeners for billing events
+     */
+    setupEventListeners() {
+        if (!this.socket) return;
+
+        // Listen for billing_confirmed events from server
+        this.socket.on('billing_confirmed', (data) => {
+            console.log('[BillingNotifications] 📨 Socket.IO received billing_confirmed:', data);
+            this.broadcast(data);
+        });
+
+        // Listen for revision_requested events from server
+        this.socket.on('revision_requested', (data) => {
+            console.log('[BillingNotifications] 📨 Socket.IO received revision_requested:', data);
+            this.broadcast(data);
+        });
+
+        console.log('[BillingNotifications] Event listeners registered');
     }
 
     /**

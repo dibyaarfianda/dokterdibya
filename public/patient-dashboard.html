@@ -116,7 +116,44 @@
         #welcome-toggle-icon {
             transition: transform 0.3s;
         }
-        
+
+        /* Collapsible Card Styles */
+        .collapsible-header {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .collapsible-header .toggle-icon {
+            transition: transform 0.3s ease;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .collapsible-header:hover .toggle-icon {
+            color: #28a7e9;
+        }
+
+        .collapsible-content {
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            max-height: 2000px;
+            opacity: 1;
+        }
+
+        .collapsible-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+            padding: 0;
+            margin: 0;
+        }
+
+        .collapsed + .collapsible-header .toggle-icon,
+        .collapsible-header.collapsed .toggle-icon {
+            transform: rotate(-90deg);
+        }
+
         /* Alert */
         .alert-info-custom {
             background: rgba(40, 167, 233, 0.15);
@@ -1473,10 +1510,44 @@
             </div>
         </div>
 
-        <!-- Two Column Layout: Appointments & Journey Book -->
-        <div class="row" style="margin-bottom: 30px; display: flex; flex-wrap: wrap;">
-            <!-- Left Column: Upcoming Appointments (Smaller) -->
-            <div class="col-md-5" style="display: flex; flex-direction: column;">
+        <!-- Journey Book - Full Width after Announcements -->
+        <div class="row" style="margin-bottom: 30px;">
+            <div class="col-md-12">
+                <div class="dashboard-card" id="journey-book-card" style="cursor: pointer; position: relative; overflow: hidden; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); border: 1px solid rgba(212, 175, 55, 0.3);" onclick="window.location.href='/perjalanan-ibu.html'">
+                    <!-- Background Pattern -->
+                    <div style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; opacity: 0.08; background-image: url('/images/dokter-dibya-book/1.png'); background-size: cover; background-position: center;"></div>
+
+                    <!-- Decorative Gold Corner Accents -->
+                    <div style="position: absolute; top: 0; left: 0; width: 40px; height: 40px; border-top: 2px solid #d4af37; border-left: 2px solid #d4af37;"></div>
+                    <div style="position: absolute; top: 0; right: 0; width: 40px; height: 40px; border-top: 2px solid #d4af37; border-right: 2px solid #d4af37;"></div>
+                    <div style="position: absolute; bottom: 0; left: 0; width: 40px; height: 40px; border-bottom: 2px solid #d4af37; border-left: 2px solid #d4af37;"></div>
+                    <div style="position: absolute; bottom: 0; right: 0; width: 40px; height: 40px; border-bottom: 2px solid #d4af37; border-right: 2px solid #d4af37;"></div>
+
+                    <!-- Content Overlay - Horizontal Layout -->
+                    <div style="position: relative; z-index: 1; padding: 25px; display: flex; align-items: center; gap: 30px; flex-wrap: wrap;">
+                        <!-- Book Image -->
+                        <div style="flex-shrink: 0;">
+                            <img src="/images/dokter-dibya-book/thumb-book.jpeg" alt="Perjalanan menjadi Ibu" style="width: 120px; height: auto; object-fit: contain; border-radius: 8px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4); border: 2px solid rgba(212, 175, 55, 0.3);">
+                        </div>
+
+                        <!-- Text Content -->
+                        <div style="flex: 1; min-width: 200px;">
+                            <h2 style="color: #f5f5f5; font-size: 22px; font-weight: 400; margin-bottom: 5px; font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif; letter-spacing: 2px; text-shadow: 0 2px 4px rgba(0,0,0,0.3); font-style: italic;">Perjalanan menjadi Ibu</h2>
+                            <p style="font-size: 11px; font-style: italic; margin-bottom: 10px; font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif; color: #ccc;">by <span style="color: #ffffff; font-weight: 600;">dokter</span><span style="color: var(--primary); font-weight: 600;">DIBYA</span></p>
+                            <p style="color: #e0e0e0; font-size: 13px; line-height: 1.5; margin: 0; font-family: 'Georgia', serif;">
+                                <i class="fa fa-hand-pointer-o" style="color: #d4af37; margin-right: 8px;"></i>
+                                <strong style="color: #d4af37;">Klik untuk membuka</strong> buku interaktif perjalanan kehamilan Anda
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cards Layout -->
+        <div class="row" style="margin-bottom: 30px;">
+            <!-- Cards Column -->
+            <div class="col-md-12" style="display: flex; flex-direction: column;">
                 <!-- Klinik Privat Minggu -->
                 <div class="dashboard-card" id="appointments-section" style="margin-bottom: 20px;">
                     <h3><i class="fa fa-calendar-check-o"></i> Klinik Privat Minggu</h3>
@@ -1491,15 +1562,29 @@
                     </a>
                 </div>
 
+                <!-- Jadwal Praktek Dr. Dibya -->
+                <div class="dashboard-card" id="jadwal-praktek-section" style="margin-bottom: 20px;">
+                    <h3><i class="fa fa-calendar"></i> Jadwal Praktek Dr. Dibya</h3>
+                    <p class="text-muted" style="font-size: 12px; margin-bottom: 15px;">Lihat jadwal lengkap dan buat janji temu</p>
+                    <a href="/practice-locations.html" class="action-btn" style="display: block; text-align: center;">
+                        <i class="fa fa-map-marker"></i> Lihat Semua Lokasi Praktek
+                    </a>
+                </div>
+
                 <!-- Hospital Booking Section (shows after Sunday 21:00) -->
                 <div class="dashboard-card" id="hospital-booking-section" style="margin-bottom: 20px; display: none;">
-                    <h3><i class="fa fa-hospital-o"></i> Jadwal Praktek Rumah Sakit</h3>
-                    <p class="text-muted" style="font-size: 12px; margin-bottom: 15px;">Booking jadwal praktek dr. Dibya di rumah sakit lain</p>
-                    <div id="hospital-schedules-container">
-                        <p class="empty-state">
-                            <i class="fa fa-spinner fa-spin"></i>
-                            Memuat jadwal rumah sakit...
-                        </p>
+                    <h3 class="collapsible-header collapsed" id="hospital-booking-header" onclick="toggleCard('hospital-booking')">
+                        <span><i class="fa fa-hospital-o"></i> Praktek Rumah Sakit</span>
+                        <i class="fa fa-chevron-right toggle-icon" id="hospital-booking-toggle-icon"></i>
+                    </h3>
+                    <div class="collapsible-content collapsed" id="hospital-booking-content">
+                        <p class="text-muted" style="font-size: 12px; margin-bottom: 15px;">Booking jadwal praktek dr. Dibya di rumah sakit</p>
+                        <div id="hospital-schedules-container">
+                            <p class="empty-state">
+                                <i class="fa fa-spinner fa-spin"></i>
+                                Memuat jadwal rumah sakit...
+                            </p>
+                        </div>
                     </div>
                 </div>
 
@@ -1516,64 +1601,89 @@
 
                 <!-- Riwayat Kunjungan (Medical Records) -->
                 <div class="dashboard-card" id="visits-history-section" style="margin-bottom: 20px;">
-                    <h3><i class="fa fa-stethoscope"></i> Riwayat Kunjungan</h3>
-                    <p class="text-muted" style="font-size: 12px; margin-bottom: 10px;">Kunjungan Anda di berbagai lokasi praktek</p>
-                    <div id="visits-list-container">
-                        <p class="empty-state">
-                            <i class="fa fa-spinner fa-spin"></i>
-                            Memuat riwayat kunjungan...
-                        </p>
+                    <h3 class="collapsible-header collapsed" id="visits-history-header" onclick="toggleCard('visits-history')">
+                        <span><i class="fa fa-stethoscope"></i> Riwayat Kunjungan</span>
+                        <i class="fa fa-chevron-right toggle-icon" id="visits-history-toggle-icon"></i>
+                    </h3>
+                    <div class="collapsible-content collapsed" id="visits-history-content">
+                        <p class="text-muted" style="font-size: 12px; margin-bottom: 10px;">Kunjungan Anda di berbagai lokasi praktek</p>
+                        <div id="visits-list-container">
+                            <p class="empty-state">
+                                <i class="fa fa-spinner fa-spin"></i>
+                                Memuat riwayat kunjungan...
+                            </p>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Galeri USG dari Dokter -->
                 <div class="dashboard-card" id="usg-section" style="margin-bottom: 20px;">
-                    <h3><i class="fa fa-picture-o"></i> Foto USG</h3>
-                    <p class="text-muted" style="font-size: 12px; margin-bottom: 10px;">Foto USG yang dikirim oleh dokter Anda</p>
-                    <div id="ultrasound-gallery-mini">
-                        <p class="empty-state">
-                            <i class="fa fa-image"></i>
-                            Belum ada foto USG dari dokter
-                        </p>
+                    <h3 class="collapsible-header collapsed" id="usg-header" onclick="toggleCard('usg')">
+                        <span><i class="fa fa-picture-o"></i> Foto USG</span>
+                        <i class="fa fa-chevron-right toggle-icon" id="usg-toggle-icon"></i>
+                    </h3>
+                    <div class="collapsible-content collapsed" id="usg-content">
+                        <p class="text-muted" style="font-size: 12px; margin-bottom: 10px;">Foto USG yang dikirim oleh dokter Anda</p>
+                        <div id="ultrasound-gallery-mini">
+                            <p class="empty-state">
+                                <i class="fa fa-image"></i>
+                                Belum ada foto USG dari dokter
+                            </p>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Hasil Lab dari Dokter -->
                 <div class="dashboard-card" id="lab-section" style="margin-bottom: 20px;">
-                    <h3><i class="fa fa-flask"></i> Hasil Lab</h3>
-                    <p class="text-muted" style="font-size: 12px; margin-bottom: 10px;">Hasil laboratorium yang dikirim oleh dokter Anda</p>
-                    <div id="lab-results-container">
-                        <p class="empty-state">
-                            <i class="fa fa-flask"></i>
-                            Belum ada hasil lab dari dokter
-                        </p>
+                    <h3 class="collapsible-header collapsed" id="lab-header" onclick="toggleCard('lab')">
+                        <span><i class="fa fa-flask"></i> Hasil Lab</span>
+                        <i class="fa fa-chevron-right toggle-icon" id="lab-toggle-icon"></i>
+                    </h3>
+                    <div class="collapsible-content collapsed" id="lab-content">
+                        <p class="text-muted" style="font-size: 12px; margin-bottom: 10px;">Hasil laboratorium yang dikirim oleh dokter Anda</p>
+                        <div id="lab-results-container">
+                            <p class="empty-state">
+                                <i class="fa fa-flask"></i>
+                                Belum ada hasil lab dari dokter
+                            </p>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Dokumen Medis Saya -->
                 <div class="dashboard-card" id="documents-section" style="margin-bottom: 20px;">
-                    <h3><i class="fa fa-folder-open"></i> Dokumen Medis Saya</h3>
-                    <div id="my-documents-container">
-                        <div class="documents-loading" style="text-align: center; padding: 20px;">
-                            <i class="fa fa-spinner fa-spin"></i> Memuat dokumen...
+                    <h3 class="collapsible-header collapsed" id="documents-header" onclick="toggleCard('documents')">
+                        <span><i class="fa fa-folder-open"></i> Dokumen Medis Saya</span>
+                        <i class="fa fa-chevron-right toggle-icon" id="documents-toggle-icon"></i>
+                    </h3>
+                    <div class="collapsible-content collapsed" id="documents-content">
+                        <div id="my-documents-container">
+                            <div class="documents-loading" style="text-align: center; padding: 20px;">
+                                <i class="fa fa-spinner fa-spin"></i> Memuat dokumen...
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Riwayat Medis Sebelumnya (Patient Uploads) -->
                 <div class="dashboard-card patient-uploads-section" id="patient-uploads-section" style="margin-bottom: 20px;">
-                    <h3><i class="fa fa-history"></i> Riwayat Medis Sebelumnya</h3>
-                    <p class="text-muted" style="font-size: 12px; margin-bottom: 15px;">Upload hasil USG, lab, atau dokumen medis Anda sebelum menggunakan aplikasi ini</p>
+                    <h3 class="collapsible-header collapsed" id="patient-uploads-header" onclick="toggleCard('patient-uploads')">
+                        <span><i class="fa fa-history"></i> Riwayat Medis Sebelumnya</span>
+                        <i class="fa fa-chevron-right toggle-icon" id="patient-uploads-toggle-icon"></i>
+                    </h3>
+                    <div class="collapsible-content collapsed" id="patient-uploads-content">
+                        <p class="text-muted" style="font-size: 12px; margin-bottom: 15px;">Upload hasil USG, lab, atau dokumen medis Anda sebelum menggunakan aplikasi ini</p>
 
-                    <div class="upload-btn-container">
-                        <button type="button" class="upload-trigger-btn" onclick="openPatientUploadModal()">
-                            <i class="fa fa-cloud-upload"></i> Upload Dokumen
-                        </button>
-                    </div>
+                        <div class="upload-btn-container">
+                            <button type="button" class="upload-trigger-btn" onclick="openPatientUploadModal()">
+                                <i class="fa fa-cloud-upload"></i> Upload Dokumen
+                            </button>
+                        </div>
 
-                    <div id="patient-uploads-container">
-                        <div class="documents-loading" style="text-align: center; padding: 20px;">
-                            <i class="fa fa-spinner fa-spin"></i> Memuat riwayat...
+                        <div id="patient-uploads-container">
+                            <div class="documents-loading" style="text-align: center; padding: 20px;">
+                                <i class="fa fa-spinner fa-spin"></i> Memuat riwayat...
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1585,40 +1695,6 @@
                         <a href="/patient-intake.html" class="action-btn" style="display: block; text-align: center;">
                             <i class="fa fa-edit"></i> Lihat & Edit Identitas Pribadi
                         </a>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Right Column: Journey Book with Image (Larger) -->
-            <div class="col-md-7" style="display: flex;">
-                <div class="dashboard-card" style="cursor: pointer; position: relative; overflow: hidden; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); border: 1px solid rgba(212, 175, 55, 0.3); flex: 1;" onclick="window.location.href='/perjalanan-ibu.html'">
-                    <!-- Background Pattern -->
-                    <div style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; opacity: 0.08; background-image: url('/images/dokter-dibya-book/1.png'); background-size: cover; background-position: center;"></div>
-
-                    <!-- Decorative Gold Corner Accents -->
-                    <div style="position: absolute; top: 0; left: 0; width: 40px; height: 40px; border-top: 2px solid #d4af37; border-left: 2px solid #d4af37;"></div>
-                    <div style="position: absolute; top: 0; right: 0; width: 40px; height: 40px; border-top: 2px solid #d4af37; border-right: 2px solid #d4af37;"></div>
-                    <div style="position: absolute; bottom: 0; left: 0; width: 40px; height: 40px; border-bottom: 2px solid #d4af37; border-left: 2px solid #d4af37;"></div>
-                    <div style="position: absolute; bottom: 0; right: 0; width: 40px; height: 40px; border-bottom: 2px solid #d4af37; border-right: 2px solid #d4af37;"></div>
-
-                    <!-- Content Overlay -->
-                    <div style="position: relative; z-index: 1; padding: 20px; text-align: center; height: 100%; display: flex; align-items: center; justify-content: center;">
-                        <div style="background: rgba(26, 26, 46, 0.9); backdrop-filter: blur(10px); border-radius: 12px; padding: 20px; box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5); border: 1px solid rgba(212, 175, 55, 0.2); width: 100%;">
-                            <h2 style="color: #f5f5f5; font-size: 24px; font-weight: 400; margin-bottom: 8px; font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif; letter-spacing: 2px; text-shadow: 0 2px 4px rgba(0,0,0,0.3); font-style: italic;">Perjalanan menjadi Ibu</h2>
-                            <p style="font-size: 12px; font-style: italic; margin-bottom: 15px; font-family: 'Palatino Linotype', 'Book Antiqua', Palatino, serif;">by <span style="color: #ffffff; font-weight: 600;">dokter</span><span style="color: var(--primary); font-weight: 600;">DIBYA</span></p>
-
-                            <!-- Preview Image -->
-                            <div style="margin: 15px 0;">
-                                <img src="/images/dokter-dibya-book/thumb-book.jpeg" alt="Perjalanan menjadi Ibu" style="max-width: 100%; max-height: 200px; object-fit: contain; border-radius: 8px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4); border: 2px solid rgba(212, 175, 55, 0.3);">
-                            </div>
-
-                            <div style="margin-top: 15px; padding: 12px; background: rgba(212, 175, 55, 0.1); border-radius: 8px; border-left: 4px solid #d4af37;">
-                                <p style="color: #e0e0e0; font-size: 13px; line-height: 1.5; margin: 0; font-family: 'Georgia', serif;">
-                                    <i class="fa fa-hand-pointer-o" style="color: #d4af37; margin-right: 8px;"></i>
-                                    <strong style="color: #d4af37;">Klik untuk membuka</strong> buku interaktif perjalanan kehamilan Anda
-                                </p>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -1672,7 +1748,8 @@
             }
         </style>
 
-        <div class="row">
+        <!-- AKSI CEPAT - Hidden -->
+        <div class="row" style="display: none;">
             <!-- Quick Actions -->
             <div class="col-md-12">
                 <div class="dashboard-card">
@@ -2884,6 +2961,26 @@
                 wrapper.style.display = 'none';
                 icon.classList.remove('fa-chevron-down');
                 icon.classList.add('fa-chevron-up');
+            }
+        }
+
+        // Generic toggle function for collapsible cards
+        function toggleCard(cardId) {
+            const content = document.getElementById(cardId + '-content');
+            const icon = document.getElementById(cardId + '-toggle-icon');
+            const header = document.getElementById(cardId + '-header');
+            if (!content || !icon) return;
+
+            if (content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                icon.classList.remove('fa-chevron-right');
+                icon.classList.add('fa-chevron-down');
+                if (header) header.classList.remove('collapsed');
+            } else {
+                content.classList.add('collapsed');
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-right');
+                if (header) header.classList.add('collapsed');
             }
         }
 

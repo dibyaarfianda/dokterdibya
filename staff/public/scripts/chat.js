@@ -151,16 +151,28 @@ export async function initChatSlide() {
         } catch (err) {}
     });
 
-    // Load Socket.io and initialize (or reuse existing instance)
+    // Use existing socket from realtime-sync.js
+    // DO NOT create our own socket - use window.socket from realtime-sync
     try {
-        if (!window.socketIoInstance) {
-            const { default: socketIo } = await import('https://cdn.socket.io/4.7.2/socket.io.esm.min.js');
-            window.socketIoInstance = socketIo(VPS_API_BASE);
-            io = window.socketIoInstance;
-            console.log('Chat WebSocket connected');
+        if (window.socket) {
+            io = window.socket;
+            window.socketIoInstance = io; // For backwards compatibility
+            console.log('Chat using existing socket from realtime-sync');
+        } else if (!window.socketIoInstance) {
+            console.warn('Chat: Socket not ready yet - realtime features may be delayed');
+            // Fallback: poll for socket availability
+            const checkInterval = setInterval(() => {
+                if (window.socket) {
+                    clearInterval(checkInterval);
+                    io = window.socket;
+                    window.socketIoInstance = io;
+                    console.log('Chat: Socket now available from realtime-sync');
+                }
+            }, 500);
+            setTimeout(() => clearInterval(checkInterval), 10000);
         } else {
             io = window.socketIoInstance;
-            console.log('Chat WebSocket using existing connection');
+            console.log('Chat using existing socketIoInstance');
         }
         
         // Load chat history

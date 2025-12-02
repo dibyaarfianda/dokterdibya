@@ -860,6 +860,27 @@
                             <p>Registrasi Pasien</p>
                         </a>
                     </li>
+                    <li class="nav-item" id="nav-pasien-baru">
+                        <a href="#" class="nav-link" onclick="showPasienBaruPage(); return false;">
+                            <i class="nav-icon fas fa-user-plus" style="color: #6c757d;"></i>
+                            <p>Pasien Baru</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" id="nav-pengumuman">
+                        <a href="#" class="nav-link" onclick="showKelolaPengumumanPage(); return false;">
+                            <i class="nav-icon fas fa-bullhorn"></i>
+                            <p>Pengumuman</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" id="nav-jadwal">
+                        <a href="#" class="nav-link" onclick="showKelolaJadwalPage(); return false;">
+                            <i class="nav-icon fas fa-calendar-alt"></i>
+                            <p>Jadwal</p>
+                        </a>
+                    </li>
+
+                    <!-- KLINIK -->
+                    <li class="nav-header">KLINIK</li>
 
                     <!-- KLINIK PRIVAT (Collapsible) -->
                     <li class="nav-item has-treeview" id="nav-section-klinik-privat">
@@ -870,31 +891,31 @@
                         <ul class="nav nav-treeview">
                             <li class="nav-item" id="nav-klinik-private">
                                 <a href="#" class="nav-link" onclick="showKlinikPrivatePage(); return false;">
-                                    <i class="far fa-circle nav-icon"></i>
+                                    <span class="nav-icon" style="width: 1.6rem; display: inline-block;"></span>
                                     <p>Terjadwal</p>
                                 </a>
                             </li>
                             <li class="nav-item" id="nav-klinik-private-pasien">
-                                <a href="#" class="nav-link" onclick="showKelolaPasienPage(); return false;">
-                                    <i class="far fa-circle nav-icon"></i>
+                                <a href="#" class="nav-link" onclick="showHospitalPatientsPage('klinik_private'); return false;">
+                                    <span class="nav-icon" style="width: 1.6rem; display: inline-block;"></span>
                                     <p>Pasien</p>
                                 </a>
                             </li>
                             <li class="nav-item" id="management-nav-kelola-appointment">
                                 <a href="#" class="nav-link" onclick="showKelolaAppointmentPage(); return false;">
-                                    <i class="far fa-circle nav-icon"></i>
+                                    <span class="nav-icon" style="width: 1.6rem; display: inline-block;"></span>
                                     <p>Janji Temu</p>
                                 </a>
                             </li>
                             <li class="nav-item" id="management-nav-kelola-tindakan">
                                 <a href="#" class="nav-link" onclick="showKelolaTindakanPage(); return false;">
-                                    <i class="far fa-circle nav-icon"></i>
+                                    <span class="nav-icon" style="width: 1.6rem; display: inline-block;"></span>
                                     <p>Layanan</p>
                                 </a>
                             </li>
                             <li class="nav-item" id="management-nav-kelola-obat">
                                 <a href="#" class="nav-link" onclick="showKelolaObatManagementPage(); return false;">
-                                    <i class="far fa-circle nav-icon"></i>
+                                    <span class="nav-icon" style="width: 1.6rem; display: inline-block;"></span>
                                     <p>Obat/Alkes</p>
                                 </a>
                             </li>
@@ -910,13 +931,13 @@
                         <ul class="nav nav-treeview">
                             <li class="nav-item" id="nav-rsia-melinda-pasien">
                                 <a href="#" class="nav-link" onclick="showHospitalPatientsPage('rsia_melinda'); return false;">
-                                    <i class="far fa-circle nav-icon"></i>
+                                    <span class="nav-icon" style="width: 1.6rem; display: inline-block;"></span>
                                     <p>Pasien</p>
                                 </a>
                             </li>
                             <li class="nav-item" id="nav-rsia-melinda">
                                 <a href="#" class="nav-link" onclick="showHospitalAppointmentsPage('rsia_melinda'); return false;">
-                                    <i class="far fa-circle nav-icon"></i>
+                                    <span class="nav-icon" style="width: 1.6rem; display: inline-block;"></span>
                                     <p>Janji Temu</p>
                                 </a>
                             </li>
@@ -932,13 +953,13 @@
                         <ul class="nav nav-treeview">
                             <li class="nav-item" id="nav-rsud-gambiran-pasien">
                                 <a href="#" class="nav-link" onclick="showHospitalPatientsPage('rsud_gambiran'); return false;">
-                                    <i class="far fa-circle nav-icon"></i>
+                                    <span class="nav-icon" style="width: 1.6rem; display: inline-block;"></span>
                                     <p>Pasien</p>
                                 </a>
                             </li>
                             <li class="nav-item" id="nav-rsud-gambiran">
                                 <a href="#" class="nav-link" onclick="showHospitalAppointmentsPage('rsud_gambiran'); return false;">
-                                    <i class="far fa-circle nav-icon"></i>
+                                    <span class="nav-icon" style="width: 1.6rem; display: inline-block;"></span>
                                     <p>Janji Temu</p>
                                 </a>
                             </li>
@@ -954,13 +975,13 @@
                         <ul class="nav nav-treeview">
                             <li class="nav-item" id="nav-rs-bhayangkara-pasien">
                                 <a href="#" class="nav-link" onclick="showHospitalPatientsPage('rs_bhayangkara'); return false;">
-                                    <i class="far fa-circle nav-icon"></i>
+                                    <span class="nav-icon" style="width: 1.6rem; display: inline-block;"></span>
                                     <p>Pasien</p>
                                 </a>
                             </li>
                             <li class="nav-item" id="nav-rs-bhayangkara">
                                 <a href="#" class="nav-link" onclick="showHospitalAppointmentsPage('rs_bhayangkara'); return false;">
-                                    <i class="far fa-circle nav-icon"></i>
+                                    <span class="nav-icon" style="width: 1.6rem; display: inline-block;"></span>
                                     <p>Janji Temu</p>
                                 </a>
                             </li>
@@ -974,20 +995,6 @@
                         <a href="#" class="nav-link" onclick="showFinanceAnalysisPage(); return false;">
                             <i class="nav-icon fas fa-chart-line"></i>
                             <p>Finance Analysis</p>
-                        </a>
-                    </li>
-
-                    <li class="nav-item" id="nav-kelola-pengumuman">
-                        <a href="#" class="nav-link" onclick="showKelolaPengumumanPage(); return false;">
-                            <i class="nav-icon fas fa-bullhorn"></i>
-                            <p>Pengumuman</p>
-                        </a>
-                    </li>
-
-                    <li class="nav-item" id="management-nav-kelola-jadwal">
-                        <a href="#" class="nav-link" onclick="showKelolaJadwalPage(); return false;">
-                            <i class="nav-icon fas fa-calendar-alt"></i>
-                            <p>Jadwal</p>
                         </a>
                     </li>
 
@@ -1005,10 +1012,24 @@
                         </a>
                     </li>
 
+                    <li class="nav-item" id="management-nav-kelola-pasien">
+                        <a href="#" class="nav-link" onclick="showManagePatientsPage(); return false;">
+                            <i class="nav-icon fas fa-users-cog"></i>
+                            <p>Kelola Pasien</p>
+                        </a>
+                    </li>
+
                     <li class="nav-item" id="management-nav-kelola-roles">
                         <a href="#" class="nav-link" onclick="showKelolaRolesPage(); return false;">
                             <i class="nav-icon fas fa-user-shield"></i>
                             <p>Roles Manajemen</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-item superadmin-exclusive d-none" id="nav-staff-activity">
+                        <a href="#" class="nav-link" onclick="showStaffActivityPage(); return false;">
+                            <i class="nav-icon fas fa-user-clock"></i>
+                            <p>Aktivitas Staff</p>
                         </a>
                     </li>
 
@@ -2785,6 +2806,45 @@
                                 </table>
                             </div>
                         </div>
+
+                        <!-- Menu Visibility Settings Card -->
+                        <div class="card mt-4">
+                            <div class="card-header bg-warning">
+                                <h3 class="card-title"><i class="fas fa-eye mr-2"></i>Pengaturan Visibility Menu</h3>
+                                <div class="card-tools">
+                                    <button class="btn btn-light btn-sm" id="btn-refresh-visibility" onclick="loadMenuVisibility()">
+                                        <i class="fas fa-sync"></i> Refresh
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="alert alert-info m-3 mb-0">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    Centang menu yang ingin ditampilkan untuk setiap role. Perubahan langsung disimpan.
+                                    <br><small class="text-muted">Note: Dokter/Superadmin selalu bisa akses semua menu.</small>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-sm mb-0" id="visibility-table">
+                                        <thead class="thead-light">
+                                            <tr>
+                                                <th width="25%">Menu</th>
+                                                <th class="text-center">Bidan</th>
+                                                <th class="text-center">Administrasi</th>
+                                                <th class="text-center">Managerial</th>
+                                                <th class="text-center">Kasir</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="visibility-tbody">
+                                            <tr>
+                                                <td colspan="5" class="text-center py-4">
+                                                    <i class="fas fa-spinner fa-spin"></i> Memuat...
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -3799,18 +3859,118 @@
 
                 <!-- Kelola Pasien Page -->
                 <div id="manage-patients-page" class="d-none">
+                    <!-- Advanced Search Card -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="card card-outline card-info">
+                                <div class="card-header py-2">
+                                    <h3 class="card-title"><i class="fas fa-search mr-2"></i>Pencarian Lanjutan</h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <form id="advanced-search-form">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label><i class="fas fa-user text-muted mr-1"></i>Nama Pasien</label>
+                                                    <input type="text" id="adv-search-name" class="form-control form-control-sm" placeholder="Cari nama...">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label><i class="fas fa-id-card text-muted mr-1"></i>ID Pasien</label>
+                                                    <input type="text" id="adv-search-id" class="form-control form-control-sm" placeholder="DRD0001">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label><i class="fas fa-file-medical text-muted mr-1"></i>MR ID</label>
+                                                    <input type="text" id="adv-search-mr" class="form-control form-control-sm" placeholder="MR-...">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label><i class="fas fa-envelope text-muted mr-1"></i>Email</label>
+                                                    <input type="text" id="adv-search-email" class="form-control form-control-sm" placeholder="email@...">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-2">
+                                                <div class="form-group">
+                                                    <label><i class="fas fa-birthday-cake text-muted mr-1"></i>Umur</label>
+                                                    <div class="input-group input-group-sm">
+                                                        <input type="number" id="adv-search-age-min" class="form-control" placeholder="Min" min="0" max="150">
+                                                        <div class="input-group-append input-group-prepend">
+                                                            <span class="input-group-text">-</span>
+                                                        </div>
+                                                        <input type="number" id="adv-search-age-max" class="form-control" placeholder="Max" min="0" max="150">
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label><i class="fas fa-phone text-muted mr-1"></i>No. HP</label>
+                                                    <input type="text" id="adv-search-phone" class="form-control form-control-sm" placeholder="08...">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label><i class="fab fa-whatsapp text-success mr-1"></i>No. WhatsApp</label>
+                                                    <input type="text" id="adv-search-whatsapp" class="form-control form-control-sm" placeholder="08...">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label><i class="fas fa-male text-muted mr-1"></i>Nama Suami</label>
+                                                    <input type="text" id="adv-search-husband" class="form-control form-control-sm" placeholder="Nama suami...">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3 d-flex align-items-end">
+                                                <div class="form-group mb-0 w-100">
+                                                    <button type="submit" class="btn btn-primary btn-sm mr-2">
+                                                        <i class="fas fa-search mr-1"></i>Cari
+                                                    </button>
+                                                    <button type="button" class="btn btn-secondary btn-sm" onclick="resetAdvancedSearch()">
+                                                        <i class="fas fa-undo mr-1"></i>Reset
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="row">
                         <div class="col-12">
                             <div class="card card-primary">
                                 <div class="card-header">
                                     <h3 class="card-title"><i class="fas fa-users mr-2"></i>Kelola Pasien</h3>
+                                    <div class="card-tools">
+                                        <span id="adv-search-result-count" class="badge badge-light mr-2"></span>
+                                        <div class="btn-group mr-2">
+                                            <button type="button" class="btn btn-info btn-sm" onclick="openImportModal()" title="Import satu file catatan medis">
+                                                <i class="fas fa-file-import mr-1"></i>Import
+                                            </button>
+                                            <button type="button" class="btn btn-success btn-sm" onclick="openBulkImportModal()" title="Bulk import multiple file">
+                                                <i class="fas fa-file-upload mr-1"></i>Bulk
+                                            </button>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="card-body">
                                     <div class="table-responsive">
-                                        <table id="manage-patients-table" class="table table-bordered table-striped">
+                                        <table id="manage-patients-table" class="table table-bordered table-striped table-sm">
                                             <thead>
                                                 <tr>
                                                     <th>ID</th>
+                                                    <th>MR ID</th>
                                                     <th>Nama Lengkap</th>
                                                     <th>Email</th>
                                                     <th>Telepon</th>
@@ -3824,7 +3984,7 @@
                                             </thead>
                                             <tbody id="manage-patients-tbody">
                                                 <tr>
-                                                    <td colspan="11" class="text-center">Memuat data...</td>
+                                                    <td colspan="12" class="text-center">Memuat data...</td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -4150,6 +4310,127 @@
                                         <div class="text-muted small" id="activity-log-pagination-info">Showing 0 of 0</div>
                                         <nav>
                                             <ul class="pagination pagination-sm mb-0" id="activity-log-pagination"></ul>
+                                        </nav>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Staff Activity Page -->
+                <div id="staff-activity-page" class="d-none">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card card-primary">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-user-clock mr-2"></i>Log Aktivitas Staff</h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-tool" onclick="loadStaffActivityLogs()">
+                                            <i class="fas fa-sync-alt"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Summary Cards -->
+                                    <div class="row mb-3" id="staff-activity-summary">
+                                        <div class="col-md-3">
+                                            <div class="info-box bg-info">
+                                                <span class="info-box-icon"><i class="fas fa-clock"></i></span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">Total Aktivitas (7 hari)</span>
+                                                    <span class="info-box-number" id="staff-activity-total">0</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="info-box bg-success">
+                                                <span class="info-box-icon"><i class="fas fa-users"></i></span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">Staff Aktif</span>
+                                                    <span class="info-box-number" id="staff-activity-users">0</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="card card-outline card-warning mb-0">
+                                                <div class="card-header py-2">
+                                                    <h5 class="card-title text-sm">Staff Teraktif</h5>
+                                                </div>
+                                                <div class="card-body py-2" id="staff-activity-top-users">
+                                                    <span class="text-muted">Memuat...</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Filters -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-3">
+                                            <div class="form-group mb-0">
+                                                <label class="small text-muted">Filter Staff</label>
+                                                <select id="staff-activity-user-filter" class="form-control form-control-sm">
+                                                    <option value="">Semua Staff</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-group mb-0">
+                                                <label class="small text-muted">Filter Aksi</label>
+                                                <select id="staff-activity-action-filter" class="form-control form-control-sm">
+                                                    <option value="">Semua Aksi</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="form-group mb-0">
+                                                <label class="small text-muted">Dari</label>
+                                                <input type="date" id="staff-activity-start-date" class="form-control form-control-sm">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="form-group mb-0">
+                                                <label class="small text-muted">Sampai</label>
+                                                <input type="date" id="staff-activity-end-date" class="form-control form-control-sm">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="form-group mb-0">
+                                                <label class="small text-muted">&nbsp;</label>
+                                                <button type="button" class="btn btn-info btn-sm btn-block" onclick="loadStaffActivityLogs()">
+                                                    <i class="fas fa-filter"></i> Filter
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Activity Table -->
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-hover table-striped">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th style="width:160px">Waktu</th>
+                                                    <th style="width:150px">Staff</th>
+                                                    <th style="width:150px">Aksi</th>
+                                                    <th>Detail</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="staff-activity-body">
+                                                <tr>
+                                                    <td colspan="4" class="text-center text-muted py-4">
+                                                        <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                                                        <p class="mb-0">Memuat data...</p>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <!-- Pagination -->
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <div class="text-muted small" id="staff-activity-pagination-info">Menampilkan 0 dari 0</div>
+                                        <nav>
+                                            <ul class="pagination pagination-sm mb-0" id="staff-activity-pagination"></ul>
                                         </nav>
                                     </div>
                                 </div>
@@ -4825,33 +5106,8 @@ function mobileNavClick(btn, action) {
         console.log('✅ All required navigation functions are available');
     }
 
-    // Initialize Socket.IO connection for chat
-    const socketOrigin = ['localhost', '127.0.0.1'].includes(window.location.hostname)
-        ? 'http://localhost:3001'
-        : window.location.origin.replace(/\/$/, '');
-
-    try {
-        window.socket = io(socketOrigin, {
-            transports: ['websocket', 'polling'],
-            reconnection: true,
-            reconnectionDelay: 1000,
-            reconnectionAttempts: 5
-        });
-
-        window.socket.on('connect', () => {
-            console.log('✅ Socket.IO connected for chat');
-        });
-
-        window.socket.on('disconnect', () => {
-            console.log('⚠️ Socket.IO disconnected (will reconnect)');
-        });
-
-        window.socket.on('error', (error) => {
-            console.error('❌ Socket.IO error:', error);
-        });
-    } catch (error) {
-        console.error('❌ Failed to initialize Socket.IO:', error);
-    }
+    // Socket.IO is now initialized via initRealtimeSync() which handles user registration
+    // The socket is available as window.socket after initRealtimeSync completes
     
     // Global helper to hide floating panel
     window.hideFloatingPanel = function() {
@@ -4977,6 +5233,304 @@ function mobileNavClick(btn, action) {
         loadWebPatients();
     };
 
+    // ==================== Medical Import Functions ====================
+    let parsedImportData = null;
+
+    window.openImportModal = function() {
+        resetImportModal();
+        $('#import-medical-modal').modal('show');
+    };
+
+    window.openBulkImportModal = function() {
+        resetBulkImportModal();
+        $('#bulk-import-modal').modal('show');
+    };
+
+    function resetImportModal() {
+        const categoryEl = document.getElementById('import-category');
+        const textEl = document.getElementById('import-text');
+        const fileEl = document.getElementById('import-file');
+        const step1 = document.getElementById('import-step-1');
+        const step2 = document.getElementById('import-step-2');
+        const parseBtn = document.getElementById('btn-import-parse');
+        const backBtn = document.getElementById('btn-import-back');
+        const applyBtn = document.getElementById('btn-import-apply');
+
+        if (categoryEl) categoryEl.value = '';
+        if (textEl) textEl.value = '';
+        if (fileEl) fileEl.value = '';
+        if (step1) step1.style.display = 'block';
+        if (step2) step2.style.display = 'none';
+        if (parseBtn) parseBtn.style.display = 'inline-block';
+        if (backBtn) backBtn.style.display = 'none';
+        if (applyBtn) applyBtn.style.display = 'none';
+        parsedImportData = null;
+    }
+
+    function resetBulkImportModal() {
+        const filesInput = document.getElementById('bulk-import-files');
+        if (filesInput) filesInput.value = '';
+        const resultsContainer = document.getElementById('bulk-import-results');
+        if (resultsContainer) resultsContainer.innerHTML = '';
+        const progressContainer = document.getElementById('bulk-import-progress');
+        if (progressContainer) progressContainer.style.display = 'none';
+        window.bulkImportResults = null;
+    }
+
+    window.importMedicalParse = async function() {
+        const category = document.getElementById('import-category').value;
+        const text = document.getElementById('import-text').value.trim();
+
+        if (!category) { alert('Silakan pilih kategori terlebih dahulu'); return; }
+        if (!text) { alert('Silakan masukkan teks catatan medis atau upload file'); return; }
+
+        const parseBtn = document.getElementById('btn-import-parse');
+        const originalText = parseBtn.innerHTML;
+        parseBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Parsing...';
+        parseBtn.disabled = true;
+
+        try {
+            const token = localStorage.getItem('vps_auth_token');
+            const response = await fetch('/api/medical-import/parse', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ text, category })
+            });
+            const result = await response.json();
+            parseBtn.innerHTML = originalText;
+            parseBtn.disabled = false;
+
+            if (!result.success) { alert('Gagal parsing: ' + result.message); return; }
+
+            parsedImportData = result.data;
+            showImportPreview(result.data);
+        } catch (error) {
+            console.error('Import error:', error);
+            alert('Error: ' + error.message);
+            parseBtn.innerHTML = originalText;
+            parseBtn.disabled = false;
+        }
+    };
+
+    function showImportPreview(data) {
+        const template = data.template;
+        renderVisitInfoSection(data);
+        document.getElementById('preview-identitas').innerHTML = renderPreviewSection(template.identitas, {
+            nama: 'Nama', jenis_kelamin: 'Jenis Kelamin', tanggal_lahir: 'Tanggal Lahir', alamat: 'Alamat', no_hp: 'No HP'
+        });
+        document.getElementById('preview-anamnesa').innerHTML = renderPreviewSection(template.anamnesa, {
+            keluhan_utama: 'Keluhan Utama', riwayat_penyakit_sekarang: 'RPS', riwayat_penyakit_dahulu: 'RPD'
+        });
+        document.getElementById('preview-pemeriksaan').innerHTML = renderPreviewSection(template.pemeriksaan_fisik, {
+            keadaan_umum: 'Keadaan Umum', tekanan_darah: 'Tekanan Darah', nadi: 'Nadi', suhu: 'Suhu'
+        });
+        document.getElementById('preview-diagnosis').innerHTML = renderPreviewSection(template.diagnosis, {
+            diagnosis_utama: 'Diagnosis'
+        });
+
+        const confidence = data.confidence;
+        const confidenceEl = document.getElementById('import-confidence');
+        confidenceEl.textContent = `Confidence: ${confidence.percentage}% (${confidence.score}/${confidence.total} fields)`;
+        confidenceEl.className = `badge ${confidence.percentage >= 70 ? 'badge-success' : confidence.percentage >= 40 ? 'badge-warning' : 'badge-danger'}`;
+
+        document.getElementById('import-step-1').style.display = 'none';
+        document.getElementById('import-step-2').style.display = 'block';
+        document.getElementById('btn-import-parse').style.display = 'none';
+        document.getElementById('btn-import-back').style.display = 'inline-block';
+        document.getElementById('btn-import-apply').style.display = 'inline-block';
+    }
+
+    function renderVisitInfoSection(data) {
+        const container = document.getElementById('preview-visit-info');
+        if (!container) return;
+        const locationOptions = {
+            'klinik_private': 'Klinik Privat', 'rsia_melinda': 'RSIA Melinda',
+            'rsud_gambiran': 'RSUD Gambiran', 'rs_bhayangkara': 'RS Bhayangkara'
+        };
+        let html = '<div class="row"><div class="col-md-6"><div class="form-group">';
+        html += '<label class="small font-weight-bold"><i class="fas fa-calendar-alt mr-1"></i>Tanggal Kunjungan';
+        html += data.visit_date_detected ? ' <span class="badge badge-success">Terdeteksi</span>' : ' <span class="badge badge-warning">Input Manual</span>';
+        html += `</label><input type="date" class="form-control form-control-sm" id="import-visit-date" value="${data.visit_date || ''}">`;
+        html += '</div></div><div class="col-md-6"><div class="form-group">';
+        html += '<label class="small font-weight-bold"><i class="fas fa-hospital mr-1"></i>Lokasi Kunjungan';
+        html += data.visit_location_detected ? ' <span class="badge badge-success">Terdeteksi</span>' : ' <span class="badge badge-warning">Pilih Manual</span>';
+        html += '</label><select class="form-control form-control-sm" id="import-visit-location"><option value="">-- Pilih --</option>';
+        for (const [v, l] of Object.entries(locationOptions)) {
+            html += `<option value="${v}" ${data.visit_location === v ? 'selected' : ''}>${l}</option>`;
+        }
+        html += '</select></div></div></div>';
+        container.innerHTML = html;
+    }
+
+    function renderPreviewSection(data, labels) {
+        if (!data) return '<p class="text-muted small">Tidak ada data</p>';
+        let html = '<div class="preview-fields">';
+        let hasData = false;
+        for (const [key, label] of Object.entries(labels)) {
+            const value = data[key];
+            if (value !== null && value !== undefined && value !== '') {
+                hasData = true;
+                const escaped = String(value).replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                html += `<div class="custom-control custom-checkbox mb-1">
+                    <input type="checkbox" class="custom-control-input" id="import-${key}" checked data-field="${key}">
+                    <label class="custom-control-label small" for="import-${key}"><strong>${label}:</strong> ${escaped}</label>
+                </div>`;
+            }
+        }
+        html += '</div>';
+        return hasData ? html : '<p class="text-muted small">Tidak ada data terdeteksi</p>';
+    }
+
+    window.importMedicalBack = function() {
+        document.getElementById('import-step-1').style.display = 'block';
+        document.getElementById('import-step-2').style.display = 'none';
+        document.getElementById('btn-import-parse').style.display = 'inline-block';
+        document.getElementById('btn-import-back').style.display = 'none';
+        document.getElementById('btn-import-apply').style.display = 'none';
+    };
+
+    window.importMedicalApply = function() {
+        if (!parsedImportData) { alert('Tidak ada data untuk diterapkan'); return; }
+        const visitDate = document.getElementById('import-visit-date')?.value;
+        const visitLocation = document.getElementById('import-visit-location')?.value;
+        console.log('Imported data:', parsedImportData.template, 'Visit:', visitDate, visitLocation);
+        $('#import-medical-modal').modal('hide');
+        resetImportModal();
+        if (window.Swal) {
+            Swal.fire({ icon: 'success', title: 'Berhasil', text: 'Data berhasil di-parse. Gunakan data ini untuk mengisi form pasien.', timer: 2000, showConfirmButton: false });
+        } else {
+            alert('Data berhasil di-parse');
+        }
+    };
+
+    // Bulk import functions
+    window.handleBulkFilesSelect = async function(event) {
+        const files = Array.from(event.target.files);
+        if (files.length === 0) return;
+        if (files.length > 50) { alert('Maksimal 50 file'); return; }
+
+        const category = document.getElementById('bulk-import-category')?.value || 'obstetri';
+        const defaultLocation = document.getElementById('bulk-import-location')?.value || '';
+        const progressContainer = document.getElementById('bulk-import-progress');
+        const progressBar = document.getElementById('bulk-import-progress-bar');
+        const progressText = document.getElementById('bulk-import-progress-text');
+
+        if (progressContainer) progressContainer.style.display = 'block';
+
+        const records = [];
+        for (let i = 0; i < files.length; i++) {
+            const text = await readFileAsText(files[i]);
+            records.push({ text, filename: files[i].name, category });
+            if (progressBar) progressBar.style.width = `${((i + 1) / files.length) * 50}%`;
+            if (progressText) progressText.textContent = `Membaca file ${i + 1}/${files.length}...`;
+        }
+
+        if (progressText) progressText.textContent = 'Memproses data...';
+
+        try {
+            const token = localStorage.getItem('vps_auth_token');
+            const response = await fetch('/api/medical-import/bulk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+                body: JSON.stringify({ records, default_category: category, default_location: defaultLocation })
+            });
+            const result = await response.json();
+            if (progressBar) progressBar.style.width = '100%';
+            if (progressText) progressText.textContent = 'Selesai!';
+            if (!result.success) { alert('Gagal: ' + result.message); return; }
+            window.bulkImportResults = result.data;
+            displayBulkImportResults(result.data, files);
+        } catch (error) {
+            console.error('Bulk import error:', error);
+            alert('Error: ' + error.message);
+        }
+    };
+
+    function readFileAsText(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = e => resolve(e.target.result);
+            reader.onerror = reject;
+            reader.readAsText(file);
+        });
+    }
+
+    function displayBulkImportResults(data, files) {
+        const container = document.getElementById('bulk-import-results');
+        if (!container) return;
+        const locationLabels = { 'klinik_private': 'Klinik Privat', 'rsia_melinda': 'RSIA Melinda', 'rsud_gambiran': 'RSUD Gambiran', 'rs_bhayangkara': 'RS Bhayangkara' };
+        let html = `<div class="alert alert-info"><strong>Hasil:</strong> ${data.successful} berhasil, ${data.failed} gagal dari ${data.total} file</div>`;
+        html += '<div class="table-responsive"><table class="table table-sm table-bordered"><thead class="thead-light"><tr>';
+        html += '<th><input type="checkbox" id="bulk-select-all" checked onchange="toggleBulkSelectAll(this)"></th>';
+        html += '<th>File</th><th>Nama Pasien</th><th>Tanggal</th><th>Lokasi</th><th>Confidence</th></tr></thead><tbody>';
+        data.results.forEach((r, idx) => {
+            const fname = files[r.index]?.name || `Record ${r.index + 1}`;
+            const dateClass = r.visit_date_detected ? 'text-success' : 'text-warning';
+            const locClass = r.visit_location_detected ? 'text-success' : 'text-warning';
+            html += `<tr><td><input type="checkbox" class="bulk-item-check" data-index="${idx}" checked></td>`;
+            html += `<td class="small">${fname}</td><td>${r.patient_name || '-'}</td>`;
+            html += `<td><input type="date" class="form-control form-control-sm bulk-visit-date" data-index="${idx}" value="${r.visit_date || ''}" style="max-width:130px;"><small class="${dateClass}">${r.visit_date_detected ? '(auto)' : '(manual)'}</small></td>`;
+            html += `<td><select class="form-control form-control-sm bulk-visit-location" data-index="${idx}" style="max-width:130px;"><option value="">--</option>`;
+            for (const [v, l] of Object.entries(locationLabels)) html += `<option value="${v}" ${r.visit_location === v ? 'selected' : ''}>${l}</option>`;
+            html += `</select><small class="${locClass}">${r.visit_location_detected ? '(auto)' : '(manual)'}</small></td>`;
+            html += `<td><span class="badge ${r.confidence.percentage >= 70 ? 'badge-success' : r.confidence.percentage >= 40 ? 'badge-warning' : 'badge-danger'}">${r.confidence.percentage}%</span></td></tr>`;
+        });
+        html += '</tbody></table></div>';
+        html += '<div class="mt-3"><button class="btn btn-success" onclick="applyBulkImport()"><i class="fas fa-check mr-1"></i>Terapkan Terpilih</button></div>';
+        container.innerHTML = html;
+    }
+
+    window.toggleBulkSelectAll = function(checkbox) {
+        document.querySelectorAll('.bulk-item-check').forEach(cb => cb.checked = checkbox.checked);
+    };
+
+    window.applyBulkImport = function() {
+        if (!window.bulkImportResults) { alert('Tidak ada data'); return; }
+        const selected = [];
+        document.querySelectorAll('.bulk-item-check:checked').forEach(cb => {
+            const idx = parseInt(cb.dataset.index);
+            const r = window.bulkImportResults.results[idx];
+            if (r) {
+                const dateInput = document.querySelector(`.bulk-visit-date[data-index="${idx}"]`);
+                const locSelect = document.querySelector(`.bulk-visit-location[data-index="${idx}"]`);
+                selected.push({ ...r, visit_date: dateInput?.value || r.visit_date, visit_location: locSelect?.value || r.visit_location });
+            }
+        });
+        if (selected.length === 0) { alert('Pilih minimal 1 item'); return; }
+        console.log('Selected records:', selected);
+        $('#bulk-import-modal').modal('hide');
+        resetBulkImportModal();
+        if (window.Swal) {
+            Swal.fire({ icon: 'success', title: 'Berhasil', text: `${selected.length} catatan berhasil di-parse.`, timer: 2000, showConfirmButton: false });
+        } else {
+            alert(`${selected.length} catatan berhasil di-parse`);
+        }
+    };
+
+    // File input label update and file reading
+    document.addEventListener('change', function(e) {
+        if (e.target.classList.contains('custom-file-input')) {
+            const label = e.target.nextElementSibling;
+            if (label && e.target.files.length > 0) {
+                label.textContent = e.target.files.length > 1 ? `${e.target.files.length} files selected` : e.target.files[0].name;
+            }
+
+            // Read file content into textarea for single import
+            if (e.target.id === 'import-file' && e.target.files.length > 0) {
+                const file = e.target.files[0];
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    document.getElementById('import-text').value = ev.target.result;
+                };
+                reader.onerror = function() {
+                    alert('Gagal membaca file');
+                };
+                reader.readAsText(file);
+            }
+        }
+    });
+    // ==================== End Medical Import Functions ====================
+
     // Registrasi Pasien Page Functions
     let newPatientsCurrentPage = 1;
     let newPatientsTotalPages = 1;
@@ -5100,7 +5654,7 @@ function mobileNavClick(btn, action) {
             const tbody = document.getElementById('manage-patients-tbody');
             
             if (!data.data || data.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="11" class="text-center">Tidak ada pasien</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="12" class="text-center">Tidak ada pasien</td></tr>';
                 return;
             }
             
@@ -5108,13 +5662,28 @@ function mobileNavClick(btn, action) {
                 const birthDate = patient.birth_date ? new Date(patient.birth_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
                 const regDate = patient.created_at ? new Date(patient.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
                 const lastVisit = patient.last_visit ? new Date(patient.last_visit).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : 'Belum ada';
-                const statusBadge = patient.status === 'active' ? 
-                    '<span class="badge badge-success">Aktif</span>' : 
+                const statusBadge = patient.status === 'active' ?
+                    '<span class="badge badge-success">Aktif</span>' :
                     '<span class="badge badge-secondary">Nonaktif</span>';
-                
+
+                // MR ID with link to medical records
+                const locationLabels = {
+                    'klinik_private': 'Prv',
+                    'rsia_melinda': 'Mel',
+                    'rsud_gambiran': 'Gmb',
+                    'rs_bhayangkara': 'Bhy'
+                };
+                const locationBadge = patient.visit_location
+                    ? `<span class="badge badge-sm badge-info ml-1">${locationLabels[patient.visit_location] || '?'}</span>`
+                    : '';
+                const mrIdCell = patient.mr_id
+                    ? `<a href="sunday-clinic.html?patient=${patient.id}&mr=${patient.mr_id}" class="text-primary" title="Buka Rekam Medis">${patient.mr_id}</a>${locationBadge}`
+                    : `<a href="sunday-clinic.html?patient=${patient.id}" class="text-muted" title="Buat Rekam Medis Baru"><i class="fas fa-plus-circle"></i> Baru</a>`;
+
                 return `
                     <tr>
                         <td>${patient.id}</td>
+                        <td>${mrIdCell}</td>
                         <td>${patient.full_name || '-'}</td>
                         <td>${patient.email || '-'}</td>
                         <td>${patient.whatsapp || patient.phone || '-'}</td>
@@ -5127,8 +5696,8 @@ function mobileNavClick(btn, action) {
                             <button type="button" class="btn btn-sm btn-info btn-view-patient" data-patient-id="${patient.id}" title="Detail">
                                 <i class="fas fa-eye"></i>
                             </button>
-                            <button class="btn btn-sm btn-${patient.status === 'active' ? 'warning' : 'success'}" 
-                                    onclick="togglePatientStatus('${patient.id}', '${patient.status}', '${patient.full_name}')" 
+                            <button class="btn btn-sm btn-${patient.status === 'active' ? 'warning' : 'success'}"
+                                    onclick="togglePatientStatus('${patient.id}', '${patient.status}', '${patient.full_name}')"
                                     title="${patient.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}">
                                 <i class="fas fa-${patient.status === 'active' ? 'ban' : 'check'}"></i>
                             </button>
@@ -5146,7 +5715,7 @@ function mobileNavClick(btn, action) {
             }
             $('#manage-patients-table').DataTable({
                 "pageLength": 25,
-                "order": [[8, 'desc']] // Sort by registration date
+                "order": [[9, 'desc']] // Sort by registration date (column 9 after adding MR ID)
             });
             
             // Attach event listeners to view buttons
@@ -5168,11 +5737,193 @@ function mobileNavClick(btn, action) {
             
         } catch (error) {
             console.error('Error loading web patients:', error);
-            document.getElementById('manage-patients-tbody').innerHTML = 
-                '<tr><td colspan="10" class="text-center text-danger">Gagal memuat data pasien</td></tr>';
+            document.getElementById('manage-patients-tbody').innerHTML =
+                '<tr><td colspan="12" class="text-center text-danger">Gagal memuat data pasien</td></tr>';
         }
     }
-    
+
+    // Advanced Search Functions
+    let advancedSearchActive = false;
+
+    // Handle advanced search form submission
+    document.addEventListener('DOMContentLoaded', function() {
+        const advSearchForm = document.getElementById('advanced-search-form');
+        if (advSearchForm) {
+            advSearchForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                performAdvancedSearch();
+            });
+        }
+    });
+
+    async function performAdvancedSearch() {
+        try {
+            const token = localStorage.getItem('vps_auth_token');
+            const tbody = document.getElementById('manage-patients-tbody');
+            const resultCount = document.getElementById('adv-search-result-count');
+
+            // Show loading
+            tbody.innerHTML = '<tr><td colspan="10" class="text-center"><i class="fas fa-spinner fa-spin"></i> Mencari...</td></tr>';
+
+            // Collect search parameters
+            const params = new URLSearchParams();
+
+            const name = document.getElementById('adv-search-name')?.value;
+            const id = document.getElementById('adv-search-id')?.value;
+            const mr_id = document.getElementById('adv-search-mr')?.value;
+            const email = document.getElementById('adv-search-email')?.value;
+            const age_min = document.getElementById('adv-search-age-min')?.value;
+            const age_max = document.getElementById('adv-search-age-max')?.value;
+            const phone = document.getElementById('adv-search-phone')?.value;
+            const whatsapp = document.getElementById('adv-search-whatsapp')?.value;
+            const husband = document.getElementById('adv-search-husband')?.value;
+
+            if (name) params.append('name', name);
+            if (id) params.append('id', id);
+            if (mr_id) params.append('mr_id', mr_id);
+            if (email) params.append('email', email);
+            if (age_min) params.append('age_min', age_min);
+            if (age_max) params.append('age_max', age_max);
+            if (phone) params.append('phone', phone);
+            if (whatsapp) params.append('whatsapp', whatsapp);
+            if (husband) params.append('husband', husband);
+            params.append('limit', '100');
+
+            // Check if any filter is applied
+            const hasFilters = name || id || mr_id || email || age_min || age_max || phone || whatsapp || husband;
+
+            if (!hasFilters) {
+                // No filters, load all patients
+                loadWebPatients();
+                if (resultCount) resultCount.textContent = '';
+                advancedSearchActive = false;
+                return;
+            }
+
+            advancedSearchActive = true;
+
+            const response = await fetch(`/api/patients/search/advanced?${params.toString()}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Cache-Control': 'no-cache'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Search failed');
+            }
+
+            const data = await response.json();
+
+            // Update result count
+            if (resultCount) {
+                resultCount.textContent = `${data.total || data.count || 0} hasil ditemukan`;
+            }
+
+            if (!data.data || data.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="12" class="text-center text-muted">Tidak ada pasien yang sesuai dengan kriteria pencarian</td></tr>';
+                return;
+            }
+
+            // Render results
+            tbody.innerHTML = data.data.map(patient => {
+                const birthDate = patient.birth_date ? new Date(patient.birth_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
+                const regDate = patient.created_at ? new Date(patient.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
+                const lastVisit = patient.last_visit ? new Date(patient.last_visit).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
+                const statusBadge = patient.status === 'active' ?
+                    '<span class="badge badge-success">Aktif</span>' :
+                    '<span class="badge badge-secondary">Nonaktif</span>';
+
+                // MR ID with link to medical records
+                const locationLabels = {
+                    'klinik_private': 'Prv',
+                    'rsia_melinda': 'Mel',
+                    'rsud_gambiran': 'Gmb',
+                    'rs_bhayangkara': 'Bhy'
+                };
+                const locationBadge = patient.visit_location
+                    ? `<span class="badge badge-sm badge-info ml-1">${locationLabels[patient.visit_location] || '?'}</span>`
+                    : '';
+                const mrIdCell = patient.mr_id
+                    ? `<a href="sunday-clinic.html?patient=${patient.id}&mr=${patient.mr_id}" class="text-primary" title="Buka Rekam Medis"><small>${patient.mr_id}</small></a>${locationBadge}`
+                    : `<a href="sunday-clinic.html?patient=${patient.id}" class="text-muted" title="Buat Rekam Medis Baru"><i class="fas fa-plus-circle"></i></a>`;
+
+                return `
+                    <tr>
+                        <td><small>${patient.id}</small></td>
+                        <td>${mrIdCell}</td>
+                        <td>${patient.full_name || '-'}</td>
+                        <td><small>${patient.email || '-'}</small></td>
+                        <td><small>${patient.whatsapp || patient.phone || '-'}</small></td>
+                        <td><small>${birthDate}</small></td>
+                        <td>${patient.age || '-'}</td>
+                        <td><small>${lastVisit}</small></td>
+                        <td><small>${regDate}</small></td>
+                        <td>${statusBadge}</td>
+                        <td class="text-nowrap">
+                            <button type="button" class="btn btn-xs btn-info btn-view-patient" data-patient-id="${patient.id}" title="Detail">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-xs btn-${patient.status === 'active' ? 'warning' : 'success'}"
+                                    onclick="togglePatientStatus('${patient.id}', '${patient.status}', '${patient.full_name}')"
+                                    title="${patient.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}">
+                                <i class="fas fa-${patient.status === 'active' ? 'ban' : 'check'}"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+            // Reinitialize DataTable
+            if ($.fn.DataTable.isDataTable('#manage-patients-table')) {
+                $('#manage-patients-table').DataTable().destroy();
+            }
+            $('#manage-patients-table').DataTable({
+                "pageLength": 25,
+                "order": [[2, 'asc']], // Sort by name (column 2 after adding MR ID)
+                "searching": false // Disable built-in search since we have advanced search
+            });
+
+            // Attach event listeners to view buttons
+            document.querySelectorAll('.btn-view-patient').forEach(btn => {
+                btn.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const patientId = this.getAttribute('data-patient-id');
+                    viewPatientDetail(patientId);
+                });
+            });
+
+        } catch (error) {
+            console.error('Error in advanced search:', error);
+            document.getElementById('manage-patients-tbody').innerHTML =
+                '<tr><td colspan="10" class="text-center text-danger">Gagal melakukan pencarian</td></tr>';
+        }
+    }
+
+    window.resetAdvancedSearch = function() {
+        // Clear all search fields
+        document.getElementById('adv-search-name').value = '';
+        document.getElementById('adv-search-id').value = '';
+        document.getElementById('adv-search-mr').value = '';
+        document.getElementById('adv-search-email').value = '';
+        document.getElementById('adv-search-age-min').value = '';
+        document.getElementById('adv-search-age-max').value = '';
+        document.getElementById('adv-search-phone').value = '';
+        document.getElementById('adv-search-whatsapp').value = '';
+        document.getElementById('adv-search-husband').value = '';
+
+        // Clear result count
+        const resultCount = document.getElementById('adv-search-result-count');
+        if (resultCount) resultCount.textContent = '';
+
+        // Reload all patients
+        advancedSearchActive = false;
+        loadWebPatients();
+    };
+
+    window.performAdvancedSearch = performAdvancedSearch;
+
     window.deletePatient = async function(patientId, patientName, event) {
         // Get button reference from event if provided
         const deleteBtn = event ? event.target.closest('button') : null;
@@ -7717,6 +8468,153 @@ async function deleteCode(codeId) {
                 <button type="button" class="btn btn-success" onclick="submitPurchaseStock()">
                     <i class="fas fa-save mr-1"></i>Simpan
                 </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Medical Record Import Modal -->
+<div class="modal fade" id="import-medical-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title"><i class="fas fa-file-import mr-2"></i>Import Catatan Medis dari File Text</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Step 1: Input -->
+                <div id="import-step-1">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="form-group">
+                                <label>Kategori <span class="text-danger">*</span></label>
+                                <select class="form-control" id="import-category">
+                                    <option value="">-- Pilih Kategori --</option>
+                                    <option value="obstetri">Obstetri</option>
+                                    <option value="gyn_repro">Ginekologi Reproduksi</option>
+                                    <option value="gyn_special">Ginekologi Khusus</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-8">
+                            <div class="form-group">
+                                <label>Upload File</label>
+                                <div class="custom-file">
+                                    <input type="file" class="custom-file-input" id="import-file" accept=".txt,.text">
+                                    <label class="custom-file-label" for="import-file">Pilih file...</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Atau Paste Teks</label>
+                        <textarea class="form-control" id="import-text" rows="10" placeholder="Paste catatan medis di sini..."></textarea>
+                    </div>
+                </div>
+                <!-- Step 2: Preview -->
+                <div id="import-step-2" style="display: none;">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle mr-1"></i>Periksa hasil parsing sebelum mengisi form. Centang field yang ingin diisi.
+                    </div>
+                    <!-- Visit Info -->
+                    <div class="card card-outline card-secondary mb-3">
+                        <div class="card-header py-2">
+                            <h6 class="m-0"><i class="fas fa-calendar-check mr-1"></i>Info Kunjungan</h6>
+                        </div>
+                        <div class="card-body p-2" id="preview-visit-info"></div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="card card-outline card-primary">
+                                <div class="card-header py-2"><h6 class="m-0"><i class="fas fa-id-card mr-1"></i>Identitas</h6></div>
+                                <div class="card-body p-2" id="preview-identitas"></div>
+                            </div>
+                            <div class="card card-outline card-info">
+                                <div class="card-header py-2"><h6 class="m-0"><i class="fas fa-clipboard-list mr-1"></i>Anamnesa</h6></div>
+                                <div class="card-body p-2" id="preview-anamnesa"></div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card card-outline card-success">
+                                <div class="card-header py-2"><h6 class="m-0"><i class="fas fa-stethoscope mr-1"></i>Pemeriksaan Fisik</h6></div>
+                                <div class="card-body p-2" id="preview-pemeriksaan"></div>
+                            </div>
+                            <div class="card card-outline card-warning">
+                                <div class="card-header py-2"><h6 class="m-0"><i class="fas fa-diagnoses mr-1"></i>Diagnosis & Planning</h6></div>
+                                <div class="card-body p-2" id="preview-diagnosis"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-2"><span class="badge badge-info" id="import-confidence"></span></div>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fas fa-times mr-1"></i>Batal</button>
+                <div>
+                    <button type="button" class="btn btn-outline-secondary" id="btn-import-back" style="display: none;" onclick="importMedicalBack()">
+                        <i class="fas fa-arrow-left mr-1"></i>Kembali
+                    </button>
+                    <button type="button" class="btn btn-info" id="btn-import-parse" onclick="importMedicalParse()">
+                        <i class="fas fa-search mr-1"></i>Parse & Preview
+                    </button>
+                    <button type="button" class="btn btn-success" id="btn-import-apply" style="display: none;" onclick="importMedicalApply()">
+                        <i class="fas fa-check mr-1"></i>Terapkan ke Form
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Import Modal -->
+<div class="modal fade" id="bulk-import-modal" tabindex="-1" role="dialog">
+    <div class="modal-dialog modal-xl" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title"><i class="fas fa-file-upload mr-2"></i>Bulk Import Catatan Medis</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle mr-1"></i>Upload multiple file text (.txt) untuk parsing sekaligus. Maksimal 50 file.
+                </div>
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="small font-weight-bold">Kategori Default</label>
+                        <select class="form-control form-control-sm" id="bulk-import-category">
+                            <option value="obstetri">Obstetri</option>
+                            <option value="gyn_repro">Ginekologi Reproduksi</option>
+                            <option value="gyn_special">Ginekologi Khusus</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="small font-weight-bold">Lokasi Default</label>
+                        <select class="form-control form-control-sm" id="bulk-import-location">
+                            <option value="">-- Auto Detect --</option>
+                            <option value="klinik_private">Klinik Privat dr. Dibya</option>
+                            <option value="rsia_melinda">RSIA Melinda</option>
+                            <option value="rsud_gambiran">RSUD Gambiran</option>
+                            <option value="rs_bhayangkara">RS Bhayangkara</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="small font-weight-bold">Pilih File</label>
+                        <div class="custom-file">
+                            <input type="file" class="custom-file-input" id="bulk-import-files" accept=".txt,.text" multiple onchange="handleBulkFilesSelect(event)">
+                            <label class="custom-file-label" for="bulk-import-files">Pilih file...</label>
+                        </div>
+                    </div>
+                </div>
+                <div id="bulk-import-progress" style="display: none;" class="mb-3">
+                    <div class="progress" style="height: 20px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated bg-success" id="bulk-import-progress-bar" style="width: 0%"></div>
+                    </div>
+                    <small class="text-muted" id="bulk-import-progress-text">Memproses...</small>
+                </div>
+                <div id="bulk-import-results"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal"><i class="fas fa-times mr-1"></i>Tutup</button>
             </div>
         </div>
     </div>

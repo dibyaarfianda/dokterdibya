@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { verifyToken } = require('../middleware/auth');
+const { verifyToken, requireMenuAccess } = require('../middleware/auth');
 
 // Helper function to generate billing number
 async function generateBillingNumber() {
@@ -34,7 +34,7 @@ async function generateBillingNumber() {
 }
 
 // POST /api/billings - Create new billing from patient record
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', verifyToken, requireMenuAccess('keuangan'), async (req, res) => {
   const connection = await db.getConnection();
   
   try {
@@ -321,7 +321,7 @@ router.get('/:id/details', async (req, res) => {
 });
 
 // GET /api/billings/:id - Get billing by ID
-router.get('/:id', verifyToken, async (req, res) => {
+router.get('/:id', verifyToken, requireMenuAccess('keuangan'), async (req, res) => {
   try {
     const [billings] = await db.query(
       `SELECT b.*, p.full_name as patient_name, p.whatsapp, p.email,
@@ -364,7 +364,7 @@ router.get('/:id', verifyToken, async (req, res) => {
 });
 
 // GET /api/billings/patient/:patientId - Get all billings for a patient
-router.get('/patient/:patientId', verifyToken, async (req, res) => {
+router.get('/patient/:patientId', verifyToken, requireMenuAccess('keuangan'), async (req, res) => {
   try {
     const [billings] = await db.query(
       `SELECT b.*, p.full_name as patient_name
@@ -392,7 +392,7 @@ router.get('/patient/:patientId', verifyToken, async (req, res) => {
 });
 
 // POST /api/billings/:id/payment - Record payment for billing
-router.post('/:id/payment', verifyToken, async (req, res) => {
+router.post('/:id/payment', verifyToken, requireMenuAccess('keuangan'), async (req, res) => {
   const connection = await db.getConnection();
   
   try {

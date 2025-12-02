@@ -6,6 +6,16 @@ import { validatePatient, validateObatUsage, updatePatientDisplay, getCurrentPat
 import { showWarning } from './toast.js';
 import { initMedicalExam, setCurrentPatientForExam, toggleMedicalExamMenu } from './medical-exam.js';
 import { loadSession } from './session-manager.js';
+import { initRealtimeSync, disconnectRealtimeSync } from './realtime-sync.js';
+
+// -------------------- AUTH TOKEN HELPER --------------------
+// Centralized token getter to avoid inconsistency issues
+function getAuthToken() {
+    return localStorage.getItem('vps_auth_token') ||
+           sessionStorage.getItem('vps_auth_token') ||
+           localStorage.getItem('token') ||
+           localStorage.getItem('auth_token');
+}
 
 // -------------------- CLOCK --------------------
 let clockIntervalId = null;
@@ -79,6 +89,7 @@ function initPages() {
     pages.bookingSettings = grab('booking-settings-page');
     pages.activityLog = grab('activity-log-page');
     pages.kelolaSupplier = grab('kelola-supplier-page');
+    pages.staffActivity = grab('staff-activity-page');
     pages.hospitalAppointments = grab('hospital-appointments-page');
     pages.hospitalPatients = grab('hospital-patients-page');
     pages.registrasiPasien = grab('registrasi-pasien-page');
@@ -201,6 +212,7 @@ function showKlinikPrivatePage() {
 // Hospital Appointments Page
 let currentHospitalLocation = null;
 const hospitalNames = {
+    'klinik_private': 'Klinik Privat',
     'rsia_melinda': 'RSIA Melinda',
     'rsud_gambiran': 'RSUD Gambiran',
     'rs_bhayangkara': 'RS Bhayangkara'
@@ -241,17 +253,36 @@ function showHospitalPatientsPage(location) {
     loadHospitalPatients(location);
 }
 
-async function loadHospitalPatients(location) {
+// Show Pasien Baru page - patients with no visits yet
+function showPasienBaruPage() {
+    hideAllPages();
+    pages.hospitalPatients?.classList.remove('d-none');
+
+    // Update title
+    const titleEl = document.getElementById('hospital-patients-title');
+    if (titleEl) {
+        titleEl.textContent = 'Pasien Baru (Belum Berkunjung)';
+    }
+
+    setTitleAndActive('Pasien Baru', 'nav-pasien-baru', 'hospital-patients');
+    loadPasienBaru();
+}
+
+async function loadPasienBaru() {
     const tbody = document.getElementById('hospital-patients-tbody');
     if (!tbody) return;
 
-    const hospitalName = hospitalNames[location] || location;
+    // Destroy existing DataTable FIRST before loading new data
+    if ($.fn.DataTable.isDataTable('#hospital-patients-table')) {
+        $('#hospital-patients-table').DataTable().clear().destroy();
+    }
 
-    tbody.innerHTML = `<tr><td colspan="10" class="text-center"><i class="fas fa-spinner fa-spin"></i> Memuat data pasien ${hospitalName}...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="10" class="text-center"><i class="fas fa-spinner fa-spin"></i> Memuat data pasien baru...</td></tr>`;
 
     try {
-        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('token');
-        const response = await fetch(`/api/patients?hospital=${location}&_=${Date.now()}`, {
+        const token = getAuthToken();
+        // Use last_visit_location=no_visit to get patients without any visits
+        const response = await fetch(`/api/patients?last_visit_location=no_visit&_=${Date.now()}`, {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Cache-Control': 'no-cache'
@@ -263,7 +294,81 @@ async function loadHospitalPatients(location) {
         const data = await response.json();
 
         if (!data.data || data.data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="10" class="text-center">Belum ada pasien terdaftar untuk ${hospitalName}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="10" class="text-center">Tidak ada pasien baru (semua pasien sudah pernah berkunjung)</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = data.data.map(patient => {
+            const birthDate = patient.birth_date ? new Date(patient.birth_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
+            const regDate = patient.created_at ? new Date(patient.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
+            const statusBadge = patient.status === 'active' ?
+                '<span class="badge badge-success">Aktif</span>' :
+                '<span class="badge badge-secondary">Nonaktif</span>';
+
+            return `
+                <tr>
+                    <td>${patient.id}</td>
+                    <td>${patient.full_name || '-'}</td>
+                    <td>${patient.email || '-'}</td>
+                    <td>${patient.whatsapp || patient.phone || '-'}</td>
+                    <td>${birthDate}</td>
+                    <td>${patient.age || '-'}</td>
+                    <td><span class="badge badge-warning">Belum berkunjung</span></td>
+                    <td>${regDate}</td>
+                    <td>${statusBadge}</td>
+                    <td class="text-nowrap">
+                        <button type="button" class="btn btn-sm btn-info btn-view-hospital-patient" data-patient-id="${patient.id}" title="Detail">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        // Initialize DataTable (already destroyed at the beginning of function)
+        $('#hospital-patients-table').DataTable({
+            responsive: true,
+            pageLength: 25,
+            order: [[1, 'asc']],
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json'
+            }
+        });
+    } catch (error) {
+        console.error('Error loading pasien baru:', error);
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center text-danger">Gagal memuat data: ${error.message}</td></tr>`;
+    }
+}
+
+async function loadHospitalPatients(location) {
+    const tbody = document.getElementById('hospital-patients-tbody');
+    if (!tbody) return;
+
+    const hospitalName = hospitalNames[location] || location;
+
+    // Destroy existing DataTable FIRST before loading new data
+    if ($.fn.DataTable.isDataTable('#hospital-patients-table')) {
+        $('#hospital-patients-table').DataTable().clear().destroy();
+    }
+
+    tbody.innerHTML = `<tr><td colspan="10" class="text-center"><i class="fas fa-spinner fa-spin"></i> Memuat data pasien ${hospitalName}...</td></tr>`;
+
+    try {
+        const token = getAuthToken();
+        // Use last_visit_location filter to get patients whose last visit was at this location
+        const response = await fetch(`/api/patients?last_visit_location=${location}&_=${Date.now()}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Cache-Control': 'no-cache'
+            }
+        });
+
+        if (!response.ok) throw new Error('Gagal memuat data');
+
+        const data = await response.json();
+
+        if (!data.data || data.data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="10" class="text-center">Belum ada pasien dengan kunjungan terakhir di ${hospitalName}</td></tr>`;
             return;
         }
 
@@ -295,10 +400,7 @@ async function loadHospitalPatients(location) {
             `;
         }).join('');
 
-        // Initialize DataTable
-        if ($.fn.DataTable.isDataTable('#hospital-patients-table')) {
-            $('#hospital-patients-table').DataTable().destroy();
-        }
+        // Initialize DataTable (already destroyed at the beginning of function)
         $('#hospital-patients-table').DataTable({
             "pageLength": 25,
             "order": [[7, 'desc']]
@@ -336,7 +438,7 @@ async function loadHospitalAppointments(location) {
     `;
 
     try {
-        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('token');
+        const token = getAuthToken();
         const response = await fetch(`/api/appointments/hospital/${location}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -462,7 +564,7 @@ async function cancelHospitalAppointment(id) {
 
 async function updateHospitalAppointmentStatus(id, status) {
     try {
-        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('token');
+        const token = getAuthToken();
         const response = await fetch(`/api/appointments/${id}/status`, {
             method: 'PATCH',
             headers: {
@@ -705,7 +807,7 @@ function showKelolaAppointmentPage() {
 function showKelolaJadwalPage() {
     hideAllPages();
     pages.kelolaJadwal?.classList.remove('d-none');
-    setTitleAndActive('Kelola Jadwal', 'management-nav-kelola-jadwal', 'kelola-jadwal');
+    setTitleAndActive('Kelola Jadwal', 'nav-jadwal', 'kelola-jadwal');
     
     // Dynamically import and initialize the Kelola Jadwal module
     importWithVersion('./kelola-jadwal.js').then(module => {
@@ -728,7 +830,7 @@ function showKelolaObatManagementPage() {
 function showKelolaPengumumanPage() {
     hideAllPages();
     pages.kelolaPengumuman?.classList.remove('d-none');
-    setTitleAndActive('Kelola Pengumuman', 'nav-kelola-pengumuman', 'kelola-pengumuman');
+    setTitleAndActive('Kelola Pengumuman', 'nav-pengumuman', 'kelola-pengumuman');
     
     // Dynamically import and initialize the Kelola Pengumuman module
     importWithVersion('./kelola-announcement.js').then(module => {
@@ -746,7 +848,7 @@ function showKelolaRolesPage() {
     hideAllPages();
     pages.kelolaRoles?.classList.remove('d-none');
     setTitleAndActive('Roles Manajemen', 'management-nav-kelola-roles', 'kelola-roles');
-    
+
     // Dynamically import and initialize the Roles Management module
     importWithVersion('./kelola-roles.js').then(module => {
         if (typeof window.initKelolaRoles === 'function') {
@@ -758,6 +860,127 @@ function showKelolaRolesPage() {
         console.error('Failed to load kelola-roles.js:', error);
     });
 }
+
+function showStaffActivityPage() {
+    hideAllPages();
+    pages.staffActivity?.classList.remove('d-none');
+    setTitleAndActive('Aktivitas Staff', 'nav-staff-activity', 'staff-activity');
+    loadStaffActivityLogs();
+    loadStaffActivityFilters();
+}
+
+async function loadStaffActivityLogs() {
+    const token = getAuthToken();
+    const tbody = document.getElementById('staff-activity-body');
+    if (!tbody) return;
+
+    // Get filter values
+    const userId = document.getElementById('staff-activity-user-filter')?.value || '';
+    const action = document.getElementById('staff-activity-action-filter')?.value || '';
+    const startDate = document.getElementById('staff-activity-start-date')?.value || '';
+    const endDate = document.getElementById('staff-activity-end-date')?.value || '';
+
+    tbody.innerHTML = `<tr><td colspan="4" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr>`;
+
+    try {
+        // Load summary
+        const summaryRes = await fetch('/api/logs/summary?days=7', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const summaryData = await summaryRes.json();
+
+        if (summaryData.success) {
+            document.getElementById('staff-activity-total').textContent = summaryData.data.total_activities || 0;
+            document.getElementById('staff-activity-users').textContent = summaryData.data.unique_users || 0;
+
+            // Render top users
+            const topUsersEl = document.getElementById('staff-activity-top-users');
+            if (topUsersEl && summaryData.data.most_active_users?.length > 0) {
+                topUsersEl.innerHTML = summaryData.data.most_active_users.slice(0, 5)
+                    .map(u => `<span class="badge badge-secondary mr-1">${u.user_name} (${u.action_count})</span>`)
+                    .join('');
+            } else {
+                topUsersEl.innerHTML = '<span class="text-muted">Belum ada aktivitas</span>';
+            }
+        }
+
+        // Build query params
+        const params = new URLSearchParams();
+        if (userId) params.append('user_id', userId);
+        if (action) params.append('action', action);
+        if (startDate) params.append('start_date', startDate);
+        if (endDate) params.append('end_date', endDate);
+        params.append('limit', '100');
+
+        // Load logs
+        const logsRes = await fetch(`/api/logs?${params.toString()}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const logsData = await logsRes.json();
+
+        if (logsData.success && logsData.data?.length > 0) {
+            tbody.innerHTML = logsData.data.map(log => {
+                const timestamp = new Date(log.timestamp).toLocaleString('id-ID', {
+                    day: '2-digit', month: 'short', year: 'numeric',
+                    hour: '2-digit', minute: '2-digit'
+                });
+                return `
+                    <tr>
+                        <td><small>${timestamp}</small></td>
+                        <td><span class="badge badge-info">${log.user_name}</span></td>
+                        <td><span class="badge badge-light">${log.action}</span></td>
+                        <td><small class="text-muted">${log.details || '-'}</small></td>
+                    </tr>
+                `;
+            }).join('');
+
+            document.getElementById('staff-activity-pagination-info').textContent =
+                `Menampilkan ${logsData.data.length} aktivitas`;
+        } else {
+            tbody.innerHTML = `<tr><td colspan="4" class="text-center text-muted py-4">
+                <i class="fas fa-inbox fa-2x mb-2"></i><p>Belum ada aktivitas tercatat</p></td></tr>`;
+        }
+    } catch (error) {
+        console.error('Error loading staff activity:', error);
+        tbody.innerHTML = `<tr><td colspan="4" class="text-center text-danger py-4">
+            <i class="fas fa-exclamation-triangle fa-2x mb-2"></i><p>Gagal memuat data</p></td></tr>`;
+    }
+}
+
+async function loadStaffActivityFilters() {
+    const token = getAuthToken();
+
+    try {
+        // Load actions for filter
+        const actionsRes = await fetch('/api/logs/actions', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const actionsData = await actionsRes.json();
+
+        const actionSelect = document.getElementById('staff-activity-action-filter');
+        if (actionSelect && actionsData.success && actionsData.data?.length > 0) {
+            actionSelect.innerHTML = '<option value="">Semua Aksi</option>' +
+                actionsData.data.map(a => `<option value="${a}">${a}</option>`).join('');
+        }
+
+        // Load users for filter (from summary endpoint)
+        const summaryRes = await fetch('/api/logs/summary?days=30', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const summaryData = await summaryRes.json();
+
+        const userSelect = document.getElementById('staff-activity-user-filter');
+        if (userSelect && summaryData.success && summaryData.data.most_active_users?.length > 0) {
+            userSelect.innerHTML = '<option value="">Semua Staff</option>' +
+                summaryData.data.most_active_users.map(u =>
+                    `<option value="${u.user_id}">${u.user_name}</option>`
+                ).join('');
+        }
+    } catch (error) {
+        console.error('Error loading filters:', error);
+    }
+}
+
 function showFinanceAnalysisPage() {
     hideAllPages();
     pages.financeAnalysis?.classList.remove('d-none');
@@ -818,7 +1041,7 @@ async function initializeEmailSettingsForm() {
     form.addEventListener('submit', async (event) => {
         event.preventDefault();
 
-        const token = localStorage.getItem('token');
+        const token = getAuthToken();
         if (!token) {
             alert('Sesi login berakhir. Silakan login ulang.');
             return;
@@ -879,7 +1102,7 @@ async function initializeEmailSettingsForm() {
     });
 
     // Load existing settings
-    const token = localStorage.getItem('token');
+    const token = getAuthToken();
     if (!token) return;
 
     try {
@@ -1119,7 +1342,7 @@ async function fetchDailyGreeting(userId) {
 
     // Fetch from AI API
     try {
-        const token = localStorage.getItem('vps_auth_token') || localStorage.getItem('token');
+        const token = getAuthToken();
         const response = await fetch('/api/ai/daily-greeting', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -1184,7 +1407,7 @@ async function updateWelcomeCard(user) {
 
     try {
         // Fetch user's roles with descriptions
-        const token = localStorage.getItem('vps_auth_token') || localStorage.getItem('token');
+        const token = getAuthToken();
         const response = await fetch(`/api/users/${user.id}/roles`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -1230,51 +1453,93 @@ async function updateWelcomeCard(user) {
     }
 }
 
-function initializeApp(user) {
+async function initializeApp(user) {
+    console.log('[MAIN] initializeApp called with user:', user?.id || 'null', user?.name || 'no name');
     if (user) {
         // Update welcome card
         updateWelcomeCard(user);
 
-        // User is logged in, check roles
-        const isDokter = user.is_superadmin || user.role === 'dokter' || user.role === 'superadmin';
-        const isManagerial = user.role === 'managerial';
-        const isBidan = user.role === 'bidan';
+        // Fetch menu visibility from API based on user's role
+        await applyMenuVisibility(user);
 
-        // Get management navigation elements
-        const managementHeader = document.getElementById('management-header');
-        const financeNav = document.getElementById('finance-analysis-nav');
-        const kelolaPasienNav = document.getElementById('management-nav-kelola-pasien');
-        const kelolaAppointmentNav = document.getElementById('management-nav-kelola-appointment');
-        const kelolaJadwalNav = document.getElementById('management-nav-kelola-jadwal');
-        const kelolaTindakanNav = document.getElementById('management-nav-kelola-tindakan');
-        const kelolaObatNav = document.getElementById('management-nav-kelola-obat');
-        const kelolaRolesNav = document.getElementById('management-nav-kelola-roles');
-
-        if (isDokter) {
-            // Dokter sees everything - no hiding
-        } else if (isManagerial) {
-            // Managerial: Hide only patient management and roles (sensitive)
-            if (kelolaPasienNav) kelolaPasienNav.style.display = 'none';
-            if (kelolaRolesNav) kelolaRolesNav.style.display = 'none';
-        } else if (isBidan) {
-            // Bidan: Hide patient management, finance, and roles
-            if (financeNav) financeNav.style.display = 'none';
-            if (kelolaPasienNav) kelolaPasienNav.style.display = 'none';
-            if (kelolaRolesNav) kelolaRolesNav.style.display = 'none';
-        } else {
-            // Other roles: Hide all management
-            if (managementHeader) managementHeader.style.display = 'none';
-            if (financeNav) financeNav.style.display = 'none';
-            if (kelolaPasienNav) kelolaPasienNav.style.display = 'none';
-            if (kelolaAppointmentNav) kelolaAppointmentNav.style.display = 'none';
-            if (kelolaJadwalNav) kelolaJadwalNav.style.display = 'none';
-            if (kelolaTindakanNav) kelolaTindakanNav.style.display = 'none';
-            if (kelolaObatNav) kelolaObatNav.style.display = 'none';
-            if (kelolaRolesNav) kelolaRolesNav.style.display = 'none';
-        }
+        // Initialize real-time sync for online users tracking
+        console.log('[MAIN] Calling initRealtimeSync with:', { id: user.id, name: user.name, role: user.role });
+        initRealtimeSync(user);
     } else {
+        console.log('[MAIN] No user, disconnecting realtime sync');
         // User is not logged in, or session expired
-        // You might want to redirect to login page here
+        // Disconnect from real-time sync
+        disconnectRealtimeSync();
+    }
+}
+
+/**
+ * Fetch menu visibility from database and apply to sidebar
+ */
+async function applyMenuVisibility(user) {
+    // Menu key to DOM element ID mapping
+    const menuMapping = {
+        'dashboard': null, // Dashboard always visible
+        'pasien_baru': 'nav-registrasi-pasien',
+        'klinik_privat': 'nav-klinik-privat',
+        'rsia_melinda': 'nav-rsia-melinda',
+        'rsud_gambiran': 'nav-rsud-gambiran',
+        'rs_bhayangkara': 'nav-rs-bhayangkara',
+        'obat_alkes': 'management-nav-kelola-obat',
+        'keuangan': 'finance-analysis-nav',
+        'kelola_pasien': 'management-nav-kelola-pasien',
+        'kelola_roles': 'management-nav-kelola-roles'
+    };
+
+    // Superadmin/dokter sees everything
+    const isDokter = user.is_superadmin || user.role === 'dokter' || user.role === 'superadmin';
+    if (isDokter) {
+        return; // All menus visible
+    }
+
+    try {
+        const token = getAuthToken();
+        const response = await fetch('/api/role-visibility/my/menus', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            console.error('Failed to fetch menu visibility');
+            return;
+        }
+
+        const result = await response.json();
+        if (!result.success) {
+            console.error('Menu visibility API error:', result.message);
+            return;
+        }
+
+        const visibility = result.data;
+
+        // Apply visibility to each menu
+        for (const [menuKey, elementId] of Object.entries(menuMapping)) {
+            if (!elementId) continue; // Skip dashboard
+
+            const element = document.getElementById(elementId);
+            if (element) {
+                if (visibility[menuKey] === false) {
+                    element.style.display = 'none';
+                } else {
+                    element.style.display = ''; // Show
+                }
+            }
+        }
+
+        // Hide management header if no management menus are visible
+        const managementMenus = ['obat_alkes', 'keuangan', 'kelola_pasien', 'kelola_roles'];
+        const anyManagementVisible = managementMenus.some(key => visibility[key] === true);
+        const managementHeader = document.getElementById('management-header');
+        if (managementHeader && !anyManagementVisible) {
+            managementHeader.style.display = 'none';
+        }
+
+    } catch (error) {
+        console.error('Error fetching menu visibility:', error);
     }
 }
 
@@ -1366,7 +1631,7 @@ if (document.readyState === 'loading') {
 // -------------------- START PATIENT VISIT (Walk-in) --------------------
 async function startPatientVisit(patientId, patientName, location, category) {
     try {
-        const token = localStorage.getItem('vps_auth_token');
+        const token = getAuthToken();
         if (!token) {
             alert('Sesi login berakhir. Silakan login ulang.');
             return;
@@ -1443,19 +1708,20 @@ async function startPatientVisit(patientId, patientName, location, category) {
 // -------------------- PATIENT DETAIL MODAL --------------------
 async function showPatientDetail(patientId) {
     try {
+        const token = getAuthToken();
         console.log('=== showPatientDetail called ===');
         console.log('Patient ID:', patientId);
-        console.log('Auth token exists:', !!localStorage.getItem('vps_auth_token'));
-        
+        console.log('Auth token exists:', !!token);
+
         // Try the web-patients endpoint first as it includes intake data
         let response = await fetch(`/api/admin/web-patients/${patientId}`, {
             headers: {
-                'Authorization': `Bearer ${localStorage.getItem('vps_auth_token')}`
+                'Authorization': `Bearer ${token}`
             }
         });
-        
+
         let patient, intake;
-        
+
         if (response.ok) {
             // Web patient found (includes intake data)
             const data = await response.json();
@@ -1466,19 +1732,19 @@ async function showPatientDetail(patientId) {
             // Try regular patients endpoint
             response = await fetch(`/api/patients/${patientId}`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('vps_auth_token')}`
+                    'Authorization': `Bearer ${token}`
                 }
             });
-            
+
             if (!response.ok) {
                 console.error('Failed to load patient details, status:', response.status);
                 throw new Error('Patient not found');
             }
-            
+
             const data = await response.json();
             console.log('Patient data received from patients:', data);
             patient = data.data;
-            
+
             // Try to fetch intake data separately by phone
             intake = null;
             if (patient.whatsapp || patient.phone) {
@@ -1486,7 +1752,7 @@ async function showPatientDetail(patientId) {
                     const phoneToSearch = patient.whatsapp || patient.phone;
                     const intakeResponse = await fetch('/api/patient-intake', {
                         headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('vps_auth_token')}`
+                            'Authorization': `Bearer ${token}`
                         }
                     });
                     
@@ -1838,6 +2104,8 @@ window.showKelolaTindakanPage = showKelolaTindakanPage;
 window.showKelolaObatManagementPage = showKelolaObatManagementPage;
 window.showFinanceAnalysisPage = showFinanceAnalysisPage;
 window.showKelolaRolesPage = showKelolaRolesPage;
+window.showStaffActivityPage = showStaffActivityPage;
+window.loadStaffActivityLogs = loadStaffActivityLogs;
 window.showBookingSettingsPage = showBookingSettingsPage;
 window.showProfileSettings = showProfileSettings;
 // REMOVED: window.showEmailSettingsPage = showEmailSettingsPage;
@@ -1846,6 +2114,7 @@ window.showPengaturanPage = showPengaturanPage;
 window.showKelolaObatPage = showKelolaObatPage;
 window.showHospitalAppointmentsPage = showHospitalAppointmentsPage;
 window.showHospitalPatientsPage = showHospitalPatientsPage;
+window.showPasienBaruPage = showPasienBaruPage;
 window.startPatientVisit = startPatientVisit;
 window.confirmHospitalAppointment = confirmHospitalAppointment;
 window.completeHospitalAppointment = completeHospitalAppointment;

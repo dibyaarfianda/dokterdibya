@@ -90,20 +90,15 @@ function initKelolaAppointment() {
 
 // Real-time booking updates
 function setupRealtimeBookingUpdates() {
-    if (typeof io === 'undefined') {
-        console.warn('[KelolaAppointment] Socket.IO not available');
+    // Use existing socket from realtime-sync.js
+    // DO NOT create our own socket - wait for realtime-sync to initialize it
+    if (!window.socket) {
+        console.warn('[KelolaAppointment] Socket not ready yet - realtime updates disabled');
         return;
     }
 
-    // Create socket connection if not exists
-    if (!window.socket) {
-        window.socket = io({
-            transports: ['websocket', 'polling'],
-            reconnection: true
-        });
-    }
-
     const socket = window.socket;
+    console.log('[KelolaAppointment] Using existing socket for real-time updates');
 
     // Listen for new bookings
     socket.on('booking:new', (data) => {

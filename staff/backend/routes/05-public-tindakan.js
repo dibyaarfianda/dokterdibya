@@ -3,10 +3,10 @@ const router = express.Router();
 
 // Database connection
 const db = require('../db');
-const { verifyToken, requirePermission } = require('../middleware/auth');
+const { verifyToken } = require('../middleware/auth');
 
 // GET ALL TINDAKAN (Now requires authentication)
-router.get('/public/tindakan', verifyToken, requirePermission('services.view'), async (req, res) => {
+router.get('/public/tindakan', verifyToken, async (req, res) => {
     try {
         const { category } = req.query;
         

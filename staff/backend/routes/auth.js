@@ -11,7 +11,8 @@ const { sendSuccess, sendError } = require('../utils/response');
 const { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } = require('../config/constants');
 const logger = require('../utils/logger');
 const { deletePatientWithRelations, deletePatientByEmail } = require('../services/patientDeletion');
-const { ROLE_IDS, isSuperadminRole } = require('../constants/roles');
+const { ROLE_IDS, ROLE_NAMES, isSuperadminRole, isAdminRole } = require('../constants/roles');
+const activityLogger = require('../services/activityLogger');
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
@@ -51,8 +52,8 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
     const userId = user.new_id;
 
     // Set role based on user type and superadmin status
-    const resolvedRole = user.is_superadmin ? 'dokter' :
-                         user.user_type === 'staff' ? 'staff' :
+    // Use actual role from database, not literal 'staff'
+    const resolvedRole = user.is_superadmin ? ROLE_NAMES.DOKTER :
                          user.role || user.resolved_role_name || 'viewer';
     const resolvedRoleDisplay = user.resolved_role_display || resolvedRole || null;
     const roleForToken = resolvedRole;
@@ -89,6 +90,14 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
     );
 
     logger.info(`User logged in: ${user.email}`);
+
+    // Log activity
+    await activityLogger.log(
+        userId,
+        user.name || user.email,
+        activityLogger.ACTIONS.LOGIN,
+        `Logged in from ${req.ip}`
+    );
 
     sendSuccess(res, {
         token,
@@ -227,14 +236,38 @@ router.get('/api/auth/me', verifyToken, asyncHandler(async (req, res) => {
         );
         permissions = permRows.map(p => p.name);
     }
-    
+
     // Superadmin has all permissions
-    if (user.is_superadmin || user.role === 'dokter') {
+    if (user.is_superadmin || user.role === ROLE_NAMES.DOKTER || isSuperadminRole(user.role_id)) {
         const [allPerms] = await db.query('SELECT name FROM permissions');
         permissions = allPerms.map(p => p.name);
     }
 
-    sendSuccess(res, {
+    // Auto-refresh token if role/role_id changed in database
+    // Compare JWT payload with current database values
+    const tokenRole = req.user.role;
+    const tokenRoleId = req.user.role_id;
+    const dbRole = roleForClient;
+    const dbRoleId = user.role_id || null;
+
+    let newToken = null;
+    if (tokenRole !== dbRole || tokenRoleId !== dbRoleId) {
+        logger.info(`Role changed for user ${userId}: token(${tokenRole}/${tokenRoleId}) -> db(${dbRole}/${dbRoleId}), issuing new token`);
+        newToken = jwt.sign(
+            {
+                id: user.new_id,
+                name: user.name || 'Staff',
+                role: dbRole,
+                role_id: dbRoleId,
+                user_type: user.user_type || 'patient',
+                is_superadmin: user.is_superadmin || false
+            },
+            JWT_SECRET,
+            { expiresIn: JWT_EXPIRES_IN }
+        );
+    }
+
+    const response = {
         user: {
             id: user.new_id,
             name: user.name,
@@ -248,7 +281,15 @@ router.get('/api/auth/me', verifyToken, asyncHandler(async (req, res) => {
             profile_completed: user.profile_completed || false,
             permissions: permissions
         }
-    });
+    };
+
+    // Include new token if role changed
+    if (newToken) {
+        response.token = newToken;
+        response.token_refreshed = true;
+    }
+
+    sendSuccess(res, response);
 }));
 
 // GET /api/staff/verify - Verify staff token (for Sunday Clinic and other staff apps)
@@ -438,8 +479,8 @@ router.get('/api/admin/web-patients', verifyToken, asyncHandler(async (req, res)
     logger.info(`Web patients request from user: ${req.user.email} (${req.user.role})`);
     
     // Check if user is admin/superadmin
-    if (!req.user.is_superadmin && !['dokter', 'admin'].includes(req.user.role)) {
-        logger.warn(`Unauthorized web patients access attempt by ${req.user.email} (${req.user.role})`);
+    if (!req.user.is_superadmin && !isAdminRole(req.user.role_id)) {
+        logger.warn(`Unauthorized web patients access attempt by ${req.user.email} (role_id: ${req.user.role_id})`);
         throw new AppError('Unauthorized access - Admin role required', HTTP_STATUS.FORBIDDEN);
     }
     
@@ -457,8 +498,8 @@ router.get('/api/admin/web-patients', verifyToken, asyncHandler(async (req, res)
 // Get single web patient detail (Admin only)
 router.get('/api/admin/web-patients/:id', verifyToken, asyncHandler(async (req, res) => {
     // Check if user is admin/superadmin
-    if (!req.user.is_superadmin && !['dokter', 'admin'].includes(req.user.role)) {
-        logger.warn(`Unauthorized web patient detail access attempt by ${req.user.email} (${req.user.role})`);
+    if (!req.user.is_superadmin && !isAdminRole(req.user.role_id)) {
+        logger.warn(`Unauthorized web patient detail access attempt by ${req.user.email} (role_id: ${req.user.role_id})`);
         throw new AppError('Unauthorized access - Admin role required', HTTP_STATUS.FORBIDDEN);
     }
     
@@ -516,8 +557,8 @@ router.get('/api/admin/web-patients/:id', verifyToken, asyncHandler(async (req, 
 // Update web patient status (Admin only)
 router.patch('/api/admin/web-patients/:id/status', verifyToken, asyncHandler(async (req, res) => {
     // Check if user is admin/superadmin
-    if (!req.user.is_superadmin && !['dokter', 'admin'].includes(req.user.role)) {
-        logger.warn(`Unauthorized web patient status update attempt by ${req.user.email} (${req.user.role})`);
+    if (!req.user.is_superadmin && !isAdminRole(req.user.role_id)) {
+        logger.warn(`Unauthorized web patient status update attempt by ${req.user.email} (role_id: ${req.user.role_id})`);
         throw new AppError('Unauthorized access - Admin role required', HTTP_STATUS.FORBIDDEN);
     }
     
@@ -658,7 +699,7 @@ router.post('/api/admin/sync-web-patients', verifyToken, asyncHandler(async (req
 // Delete web patient (Admin only)
 router.delete('/api/admin/web-patients/:id', verifyToken, asyncHandler(async (req, res) => {
     // Check if user is admin/superadmin
-    if (!req.user.is_superadmin && !['dokter', 'admin'].includes(req.user.role)) {
+    if (!req.user.is_superadmin && !isAdminRole(req.user.role_id)) {
         throw new AppError('Unauthorized access', HTTP_STATUS.FORBIDDEN);
     }
     

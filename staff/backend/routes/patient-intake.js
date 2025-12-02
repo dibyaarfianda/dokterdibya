@@ -10,6 +10,7 @@ const PatientIntakeIntegrationService = require('../services/PatientIntakeIntegr
 const { verifyToken } = require('../middleware/auth');
 const db = require('../db');
 const { getGMT7Timestamp } = require('../utils/idGenerator');
+const { ROLE_IDS, ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
 
 const router = express.Router();
 const STORAGE_DIR = path.join(__dirname, '..', 'logs', 'patient-intake');
@@ -21,15 +22,15 @@ const VALID_INTAKE_CATEGORIES = new Set(['obstetri', 'gyn_repro', 'gyn_special',
 // Helper: Check if user can access patient intake data
 function canAccessPatientIntake(user, patientId) {
     // Superadmin/dokter can access all records
-    if (user.is_superadmin || user.role === 'dokter' || user.role_id === 1) {
+    if (user.is_superadmin || user.role === ROLE_NAMES.DOKTER || isSuperadminRole(user.role_id)) {
         return true;
     }
     // Patient can only access their own records
     if (user.user_type === 'patient' && (user.id === patientId || user.patientId === patientId)) {
         return true;
     }
-    // Staff with medical permissions (nurse, bidan) can access for clinical purposes
-    if (['perawat', 'bidan'].includes(user.role) || [3, 4].includes(user.role_id)) {
+    // Staff with medical permissions (bidan) can access for clinical purposes
+    if (user.role === ROLE_NAMES.BIDAN || user.role_id === ROLE_IDS.BIDAN) {
         return true;
     }
     return false;
