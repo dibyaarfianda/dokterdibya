@@ -5314,6 +5314,10 @@ function mobileNavClick(btn, action) {
 
     function showImportPreview(data) {
         const template = data.template;
+
+        // Load patients for selector
+        loadPatientsForImport();
+
         renderVisitInfoSection(data);
         document.getElementById('preview-identitas').innerHTML = renderPreviewSection(template.identitas, {
             nama: 'Nama', jenis_kelamin: 'Jenis Kelamin', tanggal_lahir: 'Tanggal Lahir', alamat: 'Alamat', no_hp: 'No HP'
@@ -5347,19 +5351,64 @@ function mobileNavClick(btn, action) {
             'klinik_private': 'Klinik Privat', 'rsia_melinda': 'RSIA Melinda',
             'rsud_gambiran': 'RSUD Gambiran', 'rs_bhayangkara': 'RS Bhayangkara'
         };
-        let html = '<div class="row"><div class="col-md-6"><div class="form-group">';
-        html += '<label class="small font-weight-bold"><i class="fas fa-calendar-alt mr-1"></i>Tanggal Kunjungan';
-        html += data.visit_date_detected ? ' <span class="badge badge-success">Terdeteksi</span>' : ' <span class="badge badge-warning">Input Manual</span>';
-        html += `</label><input type="date" class="form-control form-control-sm" id="import-visit-date" value="${data.visit_date || ''}">`;
-        html += '</div></div><div class="col-md-6"><div class="form-group">';
-        html += '<label class="small font-weight-bold"><i class="fas fa-hospital mr-1"></i>Lokasi Kunjungan';
-        html += data.visit_location_detected ? ' <span class="badge badge-success">Terdeteksi</span>' : ' <span class="badge badge-warning">Pilih Manual</span>';
-        html += '</label><select class="form-control form-control-sm" id="import-visit-location"><option value="">-- Pilih --</option>';
+        // Default to today's date if not detected
+        const today = new Date().toISOString().split('T')[0];
+        const visitDate = data.visit_date || today;
+
+        let html = '<div class="row">';
+        // Date
+        html += '<div class="col-md-4"><div class="form-group mb-2">';
+        html += '<label class="small font-weight-bold"><i class="fas fa-calendar-alt mr-1"></i>Tanggal';
+        html += data.visit_date_detected ? ' <span class="badge badge-success badge-sm">Terdeteksi</span>' : '';
+        html += `</label><input type="date" class="form-control form-control-sm" id="import-visit-date" value="${visitDate}">`;
+        html += '</div></div>';
+        // Time
+        html += '<div class="col-md-3"><div class="form-group mb-2">';
+        html += '<label class="small font-weight-bold"><i class="fas fa-clock mr-1"></i>Jam</label>';
+        html += '<input type="time" class="form-control form-control-sm" id="import-visit-time" value="09:00">';
+        html += '</div></div>';
+        // Location
+        html += '<div class="col-md-5"><div class="form-group mb-2">';
+        html += '<label class="small font-weight-bold"><i class="fas fa-hospital mr-1"></i>Lokasi';
+        html += data.visit_location_detected ? ' <span class="badge badge-success badge-sm">Terdeteksi</span>' : '';
+        html += '</label><select class="form-control form-control-sm" id="import-visit-location">';
         for (const [v, l] of Object.entries(locationOptions)) {
             html += `<option value="${v}" ${data.visit_location === v ? 'selected' : ''}>${l}</option>`;
         }
         html += '</select></div></div></div>';
         container.innerHTML = html;
+    }
+
+    // Load patients for import selector
+    async function loadPatientsForImport() {
+        const select = document.getElementById('import-patient-select');
+        if (!select) return;
+
+        try {
+            const token = localStorage.getItem('token') || localStorage.getItem('vps_auth_token');
+            const response = await fetch('/api/patients?limit=500', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            const result = await response.json();
+
+            if (result.success && result.data) {
+                const patients = result.data.patients || result.data;
+                select.innerHTML = '<option value="">-- Pilih Pasien --</option>';
+
+                patients.forEach(p => {
+                    const patientId = p.id || p.patient_id;
+                    const name = p.full_name || p.name || 'Unknown';
+                    const option = document.createElement('option');
+                    option.value = patientId;
+                    option.textContent = `${patientId} - ${name}`;
+                    select.appendChild(option);
+                });
+            }
+        } catch (error) {
+            console.error('Error loading patients for import:', error);
+            select.innerHTML = '<option value="">-- Gagal memuat pasien --</option>';
+        }
     }
 
     function renderPreviewSection(data, labels) {
@@ -5389,17 +5438,97 @@ function mobileNavClick(btn, action) {
         document.getElementById('btn-import-apply').style.display = 'none';
     };
 
-    window.importMedicalApply = function() {
+    window.importMedicalApply = async function() {
         if (!parsedImportData) { alert('Tidak ada data untuk diterapkan'); return; }
+
+        const patientSelect = document.getElementById('import-patient-select');
+        const patientId = patientSelect?.value;
+
+        if (!patientId) {
+            alert('Silakan pilih pasien terlebih dahulu');
+            patientSelect?.focus();
+            return;
+        }
+
         const visitDate = document.getElementById('import-visit-date')?.value;
-        const visitLocation = document.getElementById('import-visit-location')?.value;
-        console.log('Imported data:', parsedImportData.template, 'Visit:', visitDate, visitLocation);
-        $('#import-medical-modal').modal('hide');
-        resetImportModal();
-        if (window.Swal) {
-            Swal.fire({ icon: 'success', title: 'Berhasil', text: 'Data berhasil di-parse. Gunakan data ini untuk mengisi form pasien.', timer: 2000, showConfirmButton: false });
-        } else {
-            alert('Data berhasil di-parse');
+        const visitTime = document.getElementById('import-visit-time')?.value || '09:00';
+        const visitLocation = document.getElementById('import-visit-location')?.value || 'klinik_private';
+        const category = document.getElementById('import-category')?.value || 'obstetri';
+
+        // Get checked fields
+        const checkedFields = {};
+        document.querySelectorAll('#import-step-2 input[type="checkbox"]:checked').forEach(cb => {
+            checkedFields[cb.dataset.field] = true;
+        });
+
+        const applyBtn = document.getElementById('btn-import-apply');
+        const originalBtnText = applyBtn?.innerHTML;
+
+        try {
+            if (applyBtn) {
+                applyBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Membuat MR...';
+                applyBtn.disabled = true;
+            }
+
+            // Create new MR via API
+            const token = localStorage.getItem('token') || localStorage.getItem('vps_auth_token');
+            const response = await fetch('/api/sunday-clinic/start-walk-in', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    patient_id: patientId,
+                    category: category,
+                    location: visitLocation
+                })
+            });
+
+            const result = await response.json();
+
+            if (!result.success) {
+                throw new Error(result.message || 'Gagal membuat MR baru');
+            }
+
+            const newMR = result.data;
+            console.log('[Import] Created new MR:', newMR.mrId);
+
+            // Store parsed data in sessionStorage to apply after navigation
+            const importDataToApply = {
+                template: parsedImportData.template,
+                checkedFields: checkedFields,
+                visitDate: visitDate,
+                visitTime: visitTime,
+                visitLocation: visitLocation
+            };
+            sessionStorage.setItem('pendingImportData', JSON.stringify(importDataToApply));
+
+            // Close modal
+            $('#import-medical-modal').modal('hide');
+            resetImportModal();
+
+            // Show success and navigate
+            if (window.Swal) {
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'MR Berhasil Dibuat',
+                    html: `MR ID: <strong>${newMR.mrId}</strong><br>Mengalihkan ke form rekam medis...`,
+                    timer: 1500,
+                    showConfirmButton: false
+                });
+            }
+
+            // Navigate to sunday-clinic with the new MR
+            window.location.href = `/sunday-clinic/${newMR.mrId}/identity`;
+
+        } catch (error) {
+            console.error('Import apply error:', error);
+            if (applyBtn) {
+                applyBtn.innerHTML = originalBtnText;
+                applyBtn.disabled = false;
+            }
+            alert('Error: ' + error.message);
         }
     };
 
@@ -8515,6 +8644,20 @@ async function deleteCode(codeId) {
                 <div id="import-step-2" style="display: none;">
                     <div class="alert alert-info">
                         <i class="fas fa-info-circle mr-1"></i>Periksa hasil parsing sebelum mengisi form. Centang field yang ingin diisi.
+                    </div>
+                    <!-- Patient Selector -->
+                    <div class="card card-outline card-danger mb-3" id="import-patient-select-card">
+                        <div class="card-header py-2 bg-danger">
+                            <h6 class="m-0 text-white"><i class="fas fa-user-plus mr-1"></i>Pilih Pasien</h6>
+                        </div>
+                        <div class="card-body p-2">
+                            <div class="form-group mb-0">
+                                <select class="form-control form-control-sm" id="import-patient-select">
+                                    <option value="">-- Memuat daftar pasien... --</option>
+                                </select>
+                                <small class="text-muted">Pilih pasien untuk membuat MR baru dengan data yang di-import</small>
+                            </div>
+                        </div>
                     </div>
                     <!-- Visit Info -->
                     <div class="card card-outline card-secondary mb-3">

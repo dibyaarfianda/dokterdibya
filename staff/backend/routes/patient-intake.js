@@ -7,7 +7,7 @@ const crypto = require('crypto');
 const jwt = require('jsonwebtoken');
 const logger = require('../utils/logger');
 const PatientIntakeIntegrationService = require('../services/PatientIntakeIntegrationService');
-const { verifyToken } = require('../middleware/auth');
+const { verifyToken, requireSuperadmin } = require('../middleware/auth');
 const db = require('../db');
 const { getGMT7Timestamp } = require('../utils/idGenerator');
 const { ROLE_IDS, ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
@@ -1222,7 +1222,7 @@ router.put('/api/patient-intake/:submissionId/review', verifyToken, async (req, 
     }
 });
 
-router.delete('/api/patient-intake/:submissionId', verifyToken, async (req, res, next) => {
+router.delete('/api/patient-intake/:submissionId', verifyToken, requireSuperadmin, async (req, res, next) => {
     const { submissionId } = req.params;
 
     if (!submissionId || typeof submissionId !== 'string') {

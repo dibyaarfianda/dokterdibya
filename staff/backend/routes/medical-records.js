@@ -3,7 +3,6 @@ const router = express.Router();
 const db = require('../db');
 const { verifyToken } = require('../middleware/auth');
 const logger = require('../utils/logger');
-const { ROLE_IDS, ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
 const { getGMT7Timestamp, toMySQLTimestamp } = require('../utils/idGenerator');
 
 // Create medical_records table if not exists
@@ -70,9 +69,9 @@ async function ensureMedicalRecordsTable() {
         try {
             await db.query(`
                 ALTER TABLE medical_records
-                MODIFY COLUMN record_type ENUM('identitas', 'anamnesa', 'physical_exam', 'pemeriksaan_obstetri', 'pemeriksaan_ginekologi', 'usg', 'lab', 'penunjang', 'diagnosis', 'planning', 'resume_medis', 'complete') NOT NULL
+                MODIFY COLUMN record_type ENUM('identitas', 'anamnesa', 'physical_exam', 'pemeriksaan_obstetri', 'usg', 'lab', 'diagnosis', 'planning', 'resume_medis', 'complete') NOT NULL
             `);
-            logger.info('Updated record_type ENUM to include pemeriksaan_ginekologi and penunjang');
+            logger.info('Updated record_type ENUM to include pemeriksaan_obstetri and resume_medis');
         } catch (enumError) {
             // Ignore if already updated
             if (!enumError.message.includes('Duplicate')) {
@@ -254,40 +253,14 @@ router.post('/api/medical-records', verifyToken, async (req, res) => {
     }
 });
 
-// Helper: Check if user can access patient records
-function canAccessPatientRecords(user, patientId) {
-    // Superadmin/dokter can access all records
-    if (user.is_superadmin || user.role === ROLE_NAMES.DOKTER || isSuperadminRole(user.role_id)) {
-        return true;
-    }
-    // Patient can only access their own records
-    if (user.user_type === 'patient' && (user.id === patientId || user.patientId === patientId)) {
-        return true;
-    }
-    // Staff with medical permissions (bidan) can access for clinical purposes
-    if (user.role === ROLE_NAMES.BIDAN || user.role_id === ROLE_IDS.BIDAN) {
-        return true;
-    }
-    return false;
-}
-
 // Get medical records for a patient
 router.get('/api/medical-records/:patientId', verifyToken, async (req, res) => {
     try {
         const { patientId } = req.params;
-
-        // Access control check
-        if (!canAccessPatientRecords(req.user, patientId)) {
-            logger.warn(`Unauthorized medical records access attempt: User ${req.user.id} tried to access patient ${patientId}`);
-            return res.status(403).json({
-                success: false,
-                message: 'Access denied: You do not have permission to view this patient\'s records'
-            });
-        }
-
+        
         const [records] = await db.query(
-            `SELECT * FROM medical_records
-             WHERE patient_id = ?
+            `SELECT * FROM medical_records 
+             WHERE patient_id = ? 
              ORDER BY created_at DESC`,
             [patientId]
         );
@@ -317,20 +290,11 @@ router.get('/api/medical-records/:patientId', verifyToken, async (req, res) => {
 router.get('/api/medical-records/:patientId/latest', verifyToken, async (req, res) => {
     try {
         const { patientId } = req.params;
-
-        // Access control check
-        if (!canAccessPatientRecords(req.user, patientId)) {
-            logger.warn(`Unauthorized latest record access attempt: User ${req.user.id} tried to access patient ${patientId}`);
-            return res.status(403).json({
-                success: false,
-                message: 'Access denied: You do not have permission to view this patient\'s records'
-            });
-        }
-
+        
         const [records] = await db.query(
-            `SELECT * FROM medical_records
+            `SELECT * FROM medical_records 
              WHERE patient_id = ? AND record_type = 'complete'
-             ORDER BY created_at DESC
+             ORDER BY created_at DESC 
              LIMIT 1`,
             [patientId]
         );
@@ -567,45 +531,17 @@ router.post('/api/medical-records/generate-resume', verifyToken, async (req, res
 });
 
 /**
- * Format date to European format (DD/MM/YYYY)
- */
-function formatDateEuropean(dateValue) {
-    if (!dateValue) return '';
-
-    // If already in DD/MM/YYYY format, return as is
-    if (typeof dateValue === 'string' && dateValue.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/)) {
-        return dateValue;
-    }
-
-    let date;
-    if (dateValue instanceof Date) {
-        date = dateValue;
-    } else if (typeof dateValue === 'string') {
-        // Handle YYYY-MM-DD format
-        if (dateValue.match(/^\d{4}-\d{2}-\d{2}/)) {
-            const [year, month, day] = dateValue.split('T')[0].split('-');
-            return `${day}/${month}/${year}`;
-        }
-        date = new Date(dateValue);
-    } else {
-        return String(dateValue);
-    }
-
-    if (isNaN(date.getTime())) return String(dateValue);
-
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
-}
-
-/**
  * Generate professional medical resume from patient data
  * This creates a comprehensive medical summary similar to hospital discharge summaries
  */
 function generateMedicalResume(identitas, records) {
     let resume = '';
-    const today = formatDateEuropean(new Date());
+    const today = new Date().toLocaleDateString('id-ID', { 
+        day: 'numeric', 
+        month: 'long', 
+        year: 'numeric',
+        timeZone: 'Asia/Jakarta'
+    });
 
     // Get patient name for header
     const patientName = identitas?.nama || 'PASIEN';
@@ -622,7 +558,7 @@ function generateMedicalResume(identitas, records) {
         resume += 'I. IDENTITAS PASIEN\n';
         resume += '──────────────────────────────────────────────────\n';
         if (identitas.nama) resume += `Nama               : ${identitas.nama}\n`;
-        if (identitas.tanggal_lahir) resume += `Tanggal Lahir      : ${formatDateEuropean(identitas.tanggal_lahir)}\n`;
+        if (identitas.tanggal_lahir) resume += `Tanggal Lahir      : ${identitas.tanggal_lahir}\n`;
         if (identitas.umur) resume += `Usia               : ${identitas.umur} tahun\n`;
         if (identitas.alamat) resume += `Alamat             : ${identitas.alamat}\n`;
         if (identitas.no_telp) resume += `Nomor Telepon      : ${identitas.no_telp}\n`;
@@ -653,8 +589,8 @@ function generateMedicalResume(identitas, records) {
             // Riwayat Menstruasi dan Kehamilan
             if (anamnesa.hpht || anamnesa.hpl || anamnesa.usia_kehamilan) {
                 resume += 'Riwayat Menstruasi dan Kehamilan:\n';
-                if (anamnesa.hpht) resume += `- Hari Pertama Haid Terakhir (HPHT): ${formatDateEuropean(anamnesa.hpht)}\n`;
-                if (anamnesa.hpl) resume += `- Hari Perkiraan Lahir (HPL): ${formatDateEuropean(anamnesa.hpl)}\n`;
+                if (anamnesa.hpht) resume += `- Hari Pertama Haid Terakhir (HPHT): ${anamnesa.hpht}\n`;
+                if (anamnesa.hpl) resume += `- Hari Perkiraan Lahir (HPL): ${anamnesa.hpl}\n`;
                 if (anamnesa.usia_kehamilan) resume += `- Usia Kehamilan Saat Ini: ${anamnesa.usia_kehamilan}\n`;
                 if (anamnesa.usia_menarche) resume += `- Usia Menarche: ${anamnesa.usia_menarche} tahun\n`;
                 if (anamnesa.lama_siklus) resume += `- Lama Siklus Menstruasi: ${anamnesa.lama_siklus} hari\n`;
@@ -836,7 +772,7 @@ function generateMedicalResume(identitas, records) {
             if (currentTrimester === 'screening' || usg.trimester === 'screening') {
                 resume += 'Hasil Skrining Kelainan Kongenital:\n\n';
                 
-                if (usg.date) resume += `Tanggal Pemeriksaan: ${formatDateEuropean(usg.date)}\n`;
+                if (usg.date) resume += `Tanggal Pemeriksaan: ${usg.date}\n`;
                 if (usg.gender) {
                     const genderMap = { 'male': 'Laki-laki', 'female': 'Perempuan' };
                     resume += `Jenis Kelamin: ${genderMap[usg.gender] || usg.gender}\n`;
@@ -934,32 +870,16 @@ function generateMedicalResume(identitas, records) {
             if (currentTrimester === 'third' && usg.trimester_3) trimesterData = usg.trimester_3;
             if (currentTrimester === 'screening' && usg.screening) trimesterData = usg.screening;
             
-            // Trimester 1 specific: Embryo count, implantation
-            if (currentTrimester === 'first' || usg.trimester_1) {
-                const t1 = usg.trimester_1 || trimesterData;
-                if (t1.embryo_count) {
-                    const embryoMap = { 'not_visible': 'Belum Tampak', 'single': 'Tunggal', 'multiple': 'Multipel' };
-                    resume += `Jumlah Embrio: ${embryoMap[t1.embryo_count] || t1.embryo_count}\n`;
-                }
-                if (t1.implantation) {
-                    const implantMap = { 'intrauterine': 'Intrauterine', 'ectopic': 'Ectopic' };
-                    resume += `Implantasi: ${implantMap[t1.implantation] || t1.implantation}\n`;
-                }
-                if (t1.nt) resume += `Nuchal Translucency (NT): ${t1.nt} mm\n`;
-                resume += '\n';
-            }
-
-            // Biometri
+            // Biometri Janin
             const biometri = [];
-            if (trimesterData.gs) biometri.push(`Kantung Kehamilan (GS): ${trimesterData.gs} minggu`);
-            if (trimesterData.crl || trimesterData.crl_cm) biometri.push(`Crown-Rump Length (CRL): ${trimesterData.crl || trimesterData.crl_cm} cm`);
-            if (trimesterData.bpd) biometri.push(`Biparietal Diameter (BPD): ${trimesterData.bpd} minggu`);
-            if (trimesterData.ac) biometri.push(`Abdominal Circumference (AC): ${trimesterData.ac} minggu`);
-            if (trimesterData.fl) biometri.push(`Femur Length (FL): ${trimesterData.fl} minggu`);
+            if (trimesterData.crl_cm) biometri.push(`Crown-Rump Length (CRL): ${trimesterData.crl_cm} cm`);
+            if (trimesterData.bpd) biometri.push(`Biparietal Diameter (BPD): ${trimesterData.bpd} cm`);
+            if (trimesterData.ac) biometri.push(`Abdominal Circumference (AC): ${trimesterData.ac} cm`);
+            if (trimesterData.fl) biometri.push(`Femur Length (FL): ${trimesterData.fl} cm`);
             if (trimesterData.hc) biometri.push(`Head Circumference (HC): ${trimesterData.hc} cm`);
-
+            
             if (biometri.length > 0) {
-                resume += 'Biometri:\n';
+                resume += 'Biometri Janin:\n';
                 biometri.forEach(item => resume += `- ${item}\n`);
                 resume += '\n';
             }
@@ -967,23 +887,10 @@ function generateMedicalResume(identitas, records) {
             // Parameter Lainnya
             if (trimesterData.heart_rate) resume += `Denyut Jantung Janin (DJJ): ${trimesterData.heart_rate} bpm\n`;
             if (trimesterData.efw) resume += `Estimasi Berat Janin (EFW): ${trimesterData.efw} gram\n`;
-            if (trimesterData.edd) resume += `Hari Perkiraan Lahir (EDD): ${formatDateEuropean(trimesterData.edd)}\n`;
-            // Check both ga_weeks and ga_from_edd field names
-            if (trimesterData.ga_weeks) {
-                resume += `Usia Kehamilan: ${trimesterData.ga_weeks} minggu\n`;
-            } else if (trimesterData.ga_from_edd) {
-                resume += `Usia Kehamilan: ${trimesterData.ga_from_edd}\n`;
-            }
+            if (trimesterData.edd) resume += `Hari Perkiraan Lahir (EDD): ${trimesterData.edd}\n`;
+            if (trimesterData.ga_weeks) resume += `Usia Kehamilan: ${trimesterData.ga_weeks} minggu\n`;
             if (trimesterData.placenta) resume += `Lokasi Plasenta: ${trimesterData.placenta}\n`;
             if (trimesterData.afi) resume += `Amniotic Fluid Index (AFI): ${trimesterData.afi} cm\n`;
-            if (trimesterData.fetus_lie) {
-                const lieMap = { 'longitudinal': 'Longitudinal', 'transverse': 'Transversal', 'oblique': 'Oblique' };
-                resume += `Letak Janin: ${lieMap[trimesterData.fetus_lie] || trimesterData.fetus_lie}\n`;
-            }
-            if (trimesterData.presentation) {
-                const presentMap = { 'cephalic': 'Kepala', 'breech': 'Sungsang', 'transverse': 'Lintang' };
-                resume += `Presentasi: ${presentMap[trimesterData.presentation] || trimesterData.presentation}\n`;
-            }
             if (trimesterData.gender && currentTrimester !== 'screening') {
                 const genderMap = { 'male': 'Laki-laki', 'female': 'Perempuan' };
                 resume += `Jenis Kelamin: ${genderMap[trimesterData.gender] || trimesterData.gender}\n`;
@@ -1100,10 +1007,15 @@ function generateMedicalResume(identitas, records) {
     }
 
     // Footer
-    const now = new Date();
-    const footerTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
     resume += '═══════════════════════════════════════════════════════════════\n';
-    resume += `Tanggal Pembuatan Resume: ${formatDateEuropean(now)} ${footerTime}\n`;
+    resume += `Tanggal Pembuatan Resume: ${new Date().toLocaleString('id-ID', { 
+        timeZone: 'Asia/Jakarta',
+        year: 'numeric',
+        month: 'long', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+    })}\n`;
     resume += '═══════════════════════════════════════════════════════════════\n\n';
     resume += 'Bila ada file USG dan Lab/Hasil Tes akan segera dikirimkan ke Portal Anda\n';
 

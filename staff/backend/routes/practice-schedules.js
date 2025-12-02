@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { isSuperadminRole } = require('../constants/roles');
 
 // JWT Secret - Required
 const jwt = require('jsonwebtoken');
@@ -162,12 +163,17 @@ router.put('/:id', verifyStaffToken, async (req, res) => {
 
 /**
  * DELETE /api/practice-schedules/:id
- * Delete practice schedule (staff only)
+ * Delete practice schedule (superadmin/dokter only)
  */
 router.delete('/:id', verifyStaffToken, async (req, res) => {
     try {
         const { id } = req.params;
-        
+
+        // Check superadmin permission
+        if (!req.user.is_superadmin && !isSuperadminRole(req.user.role_id)) {
+            return res.status(403).json({ message: 'Akses ditolak. Hanya superadmin/dokter yang dapat menghapus.' });
+        }
+
         const [result] = await db.query(
             'DELETE FROM practice_schedules WHERE id = ?',
             [id]
