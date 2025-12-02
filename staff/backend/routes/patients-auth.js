@@ -11,7 +11,7 @@ const cache = require('../utils/cache');
 const { deletePatientWithRelations } = require('../services/patientDeletion');
 const r2Storage = require('../services/r2Storage');
 const logger = require('../utils/logger');
-const { ROLE_NAMES, isAdminRole } = require('../constants/roles');
+const { ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
 
 // Configure multer for profile photo upload (memory storage for R2)
 const photoUpload = multer({
@@ -903,11 +903,11 @@ router.get('/all', verifyToken, async (req, res) => {
     }
 });
 
-// Delete web patient (Admin/Superadmin only)
+// Delete web patient (Superadmin/Dokter only)
 router.delete('/:id', verifyToken, async (req, res) => {
     try {
-        if (!req.user.is_superadmin && !isAdminRole(req.user.role_id)) {
-            return res.status(403).json({ message: 'Unauthorized. Admin access required.' });
+        if (!req.user.is_superadmin && !isSuperadminRole(req.user.role_id)) {
+            return res.status(403).json({ message: 'Unauthorized. Superadmin access required.' });
         }
 
         const patientId = req.params.id;

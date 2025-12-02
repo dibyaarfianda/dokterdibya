@@ -7,7 +7,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const logger = require('../utils/logger');
-const { verifyToken, requireMenuAccess } = require('../middleware/auth');
+const { verifyToken, requireMenuAccess, requireSuperadmin } = require('../middleware/auth');
 
 /**
  * Generate unique supplier code
@@ -193,7 +193,7 @@ router.put('/:id', verifyToken, requireMenuAccess('obat_alkes'), async (req, res
  * DELETE /api/suppliers/:id
  * Soft delete supplier
  */
-router.delete('/:id', verifyToken, requireMenuAccess('obat_alkes'), async (req, res) => {
+router.delete('/:id', verifyToken, requireSuperadmin, async (req, res) => {
     try {
         const [existing] = await db.query(
             `SELECT id, name FROM suppliers WHERE id = ?`,

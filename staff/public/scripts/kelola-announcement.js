@@ -19,15 +19,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             return;
         }
 
-        // Use existing socket from realtime-sync.js
-        // DO NOT create our own socket - wait for realtime-sync to initialize it
-        if (window.socket) {
-            socket = window.socket;
-            console.log('Using existing socket for announcements');
-        } else {
-            console.log('Socket not ready yet - real-time announcements disabled');
-            // Socket will be created by realtime-sync.js when user auth is ready
-        }
+        // Initialize Socket.io
+        const socketUrl = window.location.hostname === 'localhost' 
+            ? 'http://localhost:3000' 
+            : 'https://dokterdibya.com';
+        socket = io(socketUrl);
+
+        socket.on('connect', () => {
+            console.log('Socket connected for announcements');
+        });
 
         // Load announcements
         await loadAnnouncements();
@@ -573,15 +573,18 @@ window.initKelolaAnnouncement = async function() {
             console.error('Failed to fetch user permissions:', err);
         }
 
-        // Use existing socket from realtime-sync.js
-        // DO NOT create our own socket - wait for realtime-sync to initialize it
-        if (window.socket) {
-            socket = window.socket;
-            console.log('Using existing socket for announcements (inline)');
-        } else {
-            console.log('Socket not ready yet - real-time announcements disabled (inline)');
-            // Socket will be created by realtime-sync.js when user auth is ready
+        // Initialize Socket.io if not already connected
+        if (!window.socket) {
+            const socketUrl = window.location.hostname === 'localhost' 
+                ? 'http://localhost:3000' 
+                : 'https://dokterdibya.com';
+            window.socket = io(socketUrl);
         }
+        socket = window.socket;
+
+        socket.on('connect', () => {
+            console.log('Socket connected for announcements');
+        });
 
         // Update container references for inline mode
         const announcementsContainer = document.getElementById('announcements-container-inline') || document.getElementById('announcements-container');

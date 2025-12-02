@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
-const { verifyToken } = require('../middleware/auth');
+const { verifyToken, requireSuperadmin } = require('../middleware/auth');
 
 // ==================== PUBLIC ROUTES ====================
 
@@ -372,8 +372,8 @@ router.put('/:id', verifyToken, async (req, res) => {
     }
 });
 
-// DELETE appointment
-router.delete('/:id', verifyToken, async (req, res) => {
+// DELETE appointment (Superadmin/Dokter only)
+router.delete('/:id', verifyToken, requireSuperadmin, async (req, res) => {
     try {
         const { id } = req.params;
         
@@ -410,8 +410,8 @@ router.delete('/:id', verifyToken, async (req, res) => {
     }
 });
 
-// HARD DELETE - Permanently remove appointment from database
-router.delete('/:id/permanent', verifyToken, async (req, res) => {
+// HARD DELETE - Permanently remove appointment from database (Superadmin/Dokter only)
+router.delete('/:id/permanent', verifyToken, requireSuperadmin, async (req, res) => {
     try {
         const { id } = req.params;
         

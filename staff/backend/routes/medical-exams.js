@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
-const { verifyToken } = require('../middleware/auth');
+const { verifyToken, requireSuperadmin } = require('../middleware/auth');
 
 // ==================== MEDICAL EXAMS ROUTES ====================
 
@@ -265,8 +265,8 @@ router.put('/:id', verifyToken, async (req, res) => {
     }
 });
 
-// DELETE medical exam
-router.delete('/:id', verifyToken, async (req, res) => {
+// DELETE medical exam (Superadmin/Dokter only)
+router.delete('/:id', verifyToken, requireSuperadmin, async (req, res) => {
     try {
         const [result] = await pool.query(
             'DELETE FROM medical_exams WHERE id = ?',

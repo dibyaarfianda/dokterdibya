@@ -2,7 +2,7 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
-const { verifyToken } = require('../middleware/auth');
+const { verifyToken, requireSuperadmin } = require('../middleware/auth');
 
 // ==================== VISITS ROUTES ====================
 
@@ -232,8 +232,8 @@ router.put('/:id', verifyToken, async (req, res) => {
     }
 });
 
-// DELETE visit
-router.delete('/:id', verifyToken, async (req, res) => {
+// DELETE visit (Superadmin/Dokter only)
+router.delete('/:id', verifyToken, requireSuperadmin, async (req, res) => {
     try {
         const [result] = await pool.query(
             'DELETE FROM visits WHERE id = ?',

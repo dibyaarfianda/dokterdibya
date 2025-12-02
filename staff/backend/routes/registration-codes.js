@@ -8,7 +8,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const logger = require('../utils/logger');
-const { verifyToken } = require('../middleware/auth');
+const { verifyToken, requireSuperadmin } = require('../middleware/auth');
 
 // Lazy load notification service
 let notificationService;
@@ -535,9 +535,9 @@ router.get('/', verifyToken, async (req, res) => {
 
 /**
  * DELETE /api/registration-codes/:id
- * Delete/revoke a registration code (Staff only)
+ * Delete/revoke a registration code (Superadmin/Dokter only)
  */
-router.delete('/:id', verifyToken, async (req, res) => {
+router.delete('/:id', verifyToken, requireSuperadmin, async (req, res) => {
     try {
         const { id } = req.params;
 

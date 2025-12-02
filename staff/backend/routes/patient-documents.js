@@ -18,7 +18,7 @@ const fs = require('fs').promises;
 const crypto = require('crypto');
 const db = require('../db');
 const logger = require('../utils/logger');
-const { verifyToken, verifyPatientToken } = require('../middleware/auth');
+const { verifyToken, verifyPatientToken, requireSuperadmin } = require('../middleware/auth');
 const r2Storage = require('../services/r2Storage');
 const whatsappService = require('../services/whatsappService');
 const { createPatientNotification } = require('./patient-notifications');
@@ -592,9 +592,9 @@ router.get('/by-patient/:patientId', verifyToken, async (req, res) => {
 
 /**
  * DELETE /api/patient-documents/:id
- * Delete a document (staff only)
+ * Delete a document (superadmin/dokter only)
  */
-router.delete('/:id', verifyToken, async (req, res) => {
+router.delete('/:id', verifyToken, requireSuperadmin, async (req, res) => {
     try {
         const { id } = req.params;
 

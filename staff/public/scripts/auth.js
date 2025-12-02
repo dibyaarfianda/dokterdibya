@@ -150,16 +150,6 @@ async function setAuthUI(user) {
             }
         });
 
-        // Show dokter-only items only to dokter/superadmin role
-        const isDokter = isSuperadminRole(user.role_id) || user.is_superadmin;
-        document.querySelectorAll('.dokter-only').forEach(el => {
-            if (isDokter) {
-                el.classList.remove('d-none');
-            } else {
-                el.classList.add('d-none');
-            }
-        });
-
         // Check profile completion after UI is set
         setTimeout(() => {
             if (!checkProfileCompletion(user)) {

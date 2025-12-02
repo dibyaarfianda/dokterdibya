@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { verifyToken, requireMenuAccess, requireRole } = require('../middleware/auth');
+const { verifyToken, requireMenuAccess, requireRole, requireSuperadmin } = require('../middleware/auth');
 const { asyncHandler, AppError } = require('../middleware/errorHandler');
 const { sendSuccess, sendError } = require('../utils/response');
 const { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } = require('../config/constants');
@@ -106,8 +106,8 @@ router.put('/api/roles/:id', verifyToken, requireMenuAccess('kelola_roles'), asy
     sendSuccess(res, null, 'Role berhasil diperbarui');
 }));
 
-// DELETE /api/roles/:id - Delete role
-router.delete('/api/roles/:id', verifyToken, requireMenuAccess('kelola_roles'), asyncHandler(async (req, res) => {
+// DELETE /api/roles/:id - Delete role (Superadmin/Dokter only)
+router.delete('/api/roles/:id', verifyToken, requireSuperadmin, asyncHandler(async (req, res) => {
     const { id } = req.params;
 
     // Check if role exists
