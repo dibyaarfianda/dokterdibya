@@ -93,7 +93,6 @@ function initPages() {
     pages.hospitalAppointments = grab('hospital-appointments-page');
     pages.hospitalPatients = grab('hospital-patients-page');
     pages.registrasiPasien = grab('registrasi-pasien-page');
-    pages.importFields = grab('import-fields-page');
 }
 function loadExternalPage(containerId, htmlFile, options = {}) {
     const { forceReload = false } = options;
@@ -219,7 +218,6 @@ const hospitalNames = {
     'rs_bhayangkara': 'RS Bhayangkara'
 };
 const hospitalColors = {
-    'klinik_private': '#007bff',
     'rsia_melinda': '#e91e63',
     'rsud_gambiran': '#2196f3',
     'rs_bhayangkara': '#4caf50'
@@ -272,16 +270,11 @@ function showPasienBaruPage() {
 
 async function loadPasienBaru() {
     const tbody = document.getElementById('hospital-patients-tbody');
-    const table = document.getElementById('hospital-patients-table');
-    if (!tbody || !table) return;
+    if (!tbody) return;
 
     // Destroy existing DataTable FIRST before loading new data
-    try {
-        if ($.fn.DataTable.isDataTable('#hospital-patients-table')) {
-            $('#hospital-patients-table').DataTable().clear().destroy();
-        }
-    } catch (e) {
-        console.warn('DataTable destroy warning:', e.message);
+    if ($.fn.DataTable.isDataTable('#hospital-patients-table')) {
+        $('#hospital-patients-table').DataTable().clear().destroy();
     }
 
     tbody.innerHTML = `<tr><td colspan="9" class="text-center"><i class="fas fa-spinner fa-spin"></i> Memuat data pasien baru...</td></tr>`;
@@ -348,18 +341,13 @@ async function loadPasienBaru() {
 
 async function loadHospitalPatients(location) {
     const tbody = document.getElementById('hospital-patients-tbody');
-    const table = document.getElementById('hospital-patients-table');
-    if (!tbody || !table) return;
+    if (!tbody) return;
 
     const hospitalName = hospitalNames[location] || location;
 
     // Destroy existing DataTable FIRST before loading new data
-    try {
-        if ($.fn.DataTable.isDataTable('#hospital-patients-table')) {
-            $('#hospital-patients-table').DataTable().clear().destroy();
-        }
-    } catch (e) {
-        console.warn('DataTable destroy warning:', e.message);
+    if ($.fn.DataTable.isDataTable('#hospital-patients-table')) {
+        $('#hospital-patients-table').DataTable().clear().destroy();
     }
 
     tbody.innerHTML = `<tr><td colspan="9" class="text-center"><i class="fas fa-spinner fa-spin"></i> Memuat data pasien ${hospitalName}...</td></tr>`;
@@ -411,17 +399,10 @@ async function loadHospitalPatients(location) {
         }).join('');
 
         // Initialize DataTable (already destroyed at the beginning of function)
-        try {
-            $('#hospital-patients-table').DataTable({
-                pageLength: 25,
-                order: [[6, 'desc']],
-                language: {
-                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json'
-                }
-            });
-        } catch (dtError) {
-            console.warn('DataTable init warning:', dtError.message);
-        }
+        $('#hospital-patients-table').DataTable({
+            "pageLength": 25,
+            "order": [[6, 'desc']]
+        });
 
         // Attach event listeners to view buttons
         document.querySelectorAll('.btn-view-hospital-patient').forEach(btn => {
@@ -1025,13 +1006,6 @@ function showBookingSettingsPage() {
     }).catch(error => {
         console.error('Failed to load kelola-booking-settings.js:', error);
     });
-}
-
-function showImportFieldsPage() {
-    hideAllPages();
-    pages.importFields?.classList.remove('d-none');
-    setTitleAndActive('Kelola Import Fields', 'nav-import-fields', 'import-fields');
-    loadExternalPage('import-fields-page', 'kelola-import-fields.html');
 }
 
 function showProfileSettings() {
@@ -2291,7 +2265,6 @@ window.showKelolaRolesPage = showKelolaRolesPage;
 window.showStaffActivityPage = showStaffActivityPage;
 window.loadStaffActivityLogs = loadStaffActivityLogs;
 window.showBookingSettingsPage = showBookingSettingsPage;
-window.showImportFieldsPage = showImportFieldsPage;
 window.showProfileSettings = showProfileSettings;
 // REMOVED: window.showEmailSettingsPage = showEmailSettingsPage;
 window.showStokOpnamePage = showStokOpnamePage;
