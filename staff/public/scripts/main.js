@@ -277,7 +277,7 @@ async function loadPasienBaru() {
         $('#hospital-patients-table').DataTable().clear().destroy();
     }
 
-    tbody.innerHTML = `<tr><td colspan="10" class="text-center"><i class="fas fa-spinner fa-spin"></i> Memuat data pasien baru...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="text-center"><i class="fas fa-spinner fa-spin"></i> Memuat data pasien baru...</td></tr>`;
 
     try {
         const token = getAuthToken();
@@ -294,7 +294,7 @@ async function loadPasienBaru() {
         const data = await response.json();
 
         if (!data.data || data.data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="10" class="text-center">Tidak ada pasien baru (semua pasien sudah pernah berkunjung)</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="9" class="text-center">Tidak ada pasien baru (semua pasien sudah pernah berkunjung)</td></tr>`;
             return;
         }
 
@@ -309,7 +309,6 @@ async function loadPasienBaru() {
                 <tr>
                     <td>${patient.id}</td>
                     <td>${patient.full_name || '-'}</td>
-                    <td>${patient.email || '-'}</td>
                     <td>${patient.whatsapp || patient.phone || '-'}</td>
                     <td>${birthDate}</td>
                     <td>${patient.age || '-'}</td>
@@ -336,7 +335,7 @@ async function loadPasienBaru() {
         });
     } catch (error) {
         console.error('Error loading pasien baru:', error);
-        tbody.innerHTML = `<tr><td colspan="10" class="text-center text-danger">Gagal memuat data: ${error.message}</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger">Gagal memuat data: ${error.message}</td></tr>`;
     }
 }
 
@@ -351,7 +350,7 @@ async function loadHospitalPatients(location) {
         $('#hospital-patients-table').DataTable().clear().destroy();
     }
 
-    tbody.innerHTML = `<tr><td colspan="10" class="text-center"><i class="fas fa-spinner fa-spin"></i> Memuat data pasien ${hospitalName}...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="9" class="text-center"><i class="fas fa-spinner fa-spin"></i> Memuat data pasien ${hospitalName}...</td></tr>`;
 
     try {
         const token = getAuthToken();
@@ -368,7 +367,7 @@ async function loadHospitalPatients(location) {
         const data = await response.json();
 
         if (!data.data || data.data.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="10" class="text-center">Belum ada pasien dengan kunjungan terakhir di ${hospitalName}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="9" class="text-center">Belum ada pasien dengan kunjungan terakhir di ${hospitalName}</td></tr>`;
             return;
         }
 
@@ -384,7 +383,6 @@ async function loadHospitalPatients(location) {
                 <tr>
                     <td>${patient.id}</td>
                     <td>${patient.full_name || '-'}</td>
-                    <td>${patient.email || '-'}</td>
                     <td>${patient.whatsapp || patient.phone || '-'}</td>
                     <td>${birthDate}</td>
                     <td>${patient.age || '-'}</td>
@@ -403,7 +401,7 @@ async function loadHospitalPatients(location) {
         // Initialize DataTable (already destroyed at the beginning of function)
         $('#hospital-patients-table').DataTable({
             "pageLength": 25,
-            "order": [[7, 'desc']]
+            "order": [[6, 'desc']]
         });
 
         // Attach event listeners to view buttons
@@ -419,7 +417,7 @@ async function loadHospitalPatients(location) {
 
     } catch (error) {
         console.error('Error loading hospital patients:', error);
-        tbody.innerHTML = `<tr><td colspan="10" class="text-center text-danger">Gagal memuat data pasien</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger">Gagal memuat data pasien</td></tr>`;
     }
 }
 
@@ -1456,6 +1454,18 @@ async function updateWelcomeCard(user) {
 async function initializeApp(user) {
     console.log('[MAIN] initializeApp called with user:', user?.id || 'null', user?.name || 'no name');
     if (user) {
+        // Check if user must change password
+        const mustChangePassword = localStorage.getItem('must_change_password') === 'true';
+        const forcePasswordChange = new URLSearchParams(window.location.search).get('force_password_change') === '1';
+
+        if (mustChangePassword || forcePasswordChange) {
+            console.log('[MAIN] User must change password - showing password change modal');
+            // Show force password change modal after DOM is ready
+            setTimeout(() => {
+                showForcePasswordChangeModal();
+            }, 500);
+        }
+
         // Update welcome card
         updateWelcomeCard(user);
 
@@ -1480,20 +1490,23 @@ async function applyMenuVisibility(user) {
     // Menu key to DOM element ID mapping
     const menuMapping = {
         'dashboard': null, // Dashboard always visible
-        'pasien_baru': 'nav-registrasi-pasien',
+        'kelola_pasien': 'nav-kelola-pasien', // Includes Pasien Baru
         'klinik_privat': 'nav-klinik-privat',
         'rsia_melinda': 'nav-rsia-melinda',
         'rsud_gambiran': 'nav-rsud-gambiran',
         'rs_bhayangkara': 'nav-rs-bhayangkara',
         'obat_alkes': 'management-nav-kelola-obat',
         'keuangan': 'finance-analysis-nav',
-        'kelola_pasien': 'management-nav-kelola-pasien',
         'kelola_roles': 'management-nav-kelola-roles'
     };
 
-    // Superadmin/dokter sees everything
+    // Superadmin/dokter sees everything - show all hidden menus
     const isDokter = user.is_superadmin || user.role === 'dokter' || user.role === 'superadmin';
     if (isDokter) {
+        // Show dokter-only elements
+        document.querySelectorAll('.dokter-only').forEach(el => el.classList.remove('d-none'));
+        // Show superadmin-exclusive elements
+        document.querySelectorAll('.superadmin-exclusive').forEach(el => el.classList.remove('d-none'));
         return; // All menus visible
     }
 
@@ -1542,6 +1555,151 @@ async function applyMenuVisibility(user) {
         console.error('Error fetching menu visibility:', error);
     }
 }
+
+// -------------------- FORCE PASSWORD CHANGE --------------------
+function showForcePasswordChangeModal() {
+    // Check if modal already exists
+    let modal = document.getElementById('force-password-change-modal');
+    if (!modal) {
+        // Create the modal dynamically
+        const modalHtml = `
+        <div class="modal fade" id="force-password-change-modal" tabindex="-1" role="dialog" data-backdrop="static" data-keyboard="false">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-warning">
+                        <h5 class="modal-title">
+                            <i class="fas fa-exclamation-triangle mr-2"></i>Ganti Password Wajib
+                        </h5>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-warning">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Password Anda telah direset. Demi keamanan, Anda <strong>wajib mengganti password</strong> sebelum melanjutkan.
+                        </div>
+                        <form id="force-password-change-form">
+                            <div class="form-group">
+                                <label for="force-current-password">Password Saat Ini</label>
+                                <input type="password" class="form-control" id="force-current-password" value="123456" readonly>
+                                <small class="text-muted">Password default: 123456</small>
+                            </div>
+                            <div class="form-group">
+                                <label for="force-new-password">Password Baru <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control" id="force-new-password" required minlength="6" placeholder="Minimal 6 karakter">
+                            </div>
+                            <div class="form-group">
+                                <label for="force-confirm-password">Konfirmasi Password Baru <span class="text-danger">*</span></label>
+                                <input type="password" class="form-control" id="force-confirm-password" required minlength="6" placeholder="Ulangi password baru">
+                            </div>
+                            <div id="force-password-error" class="alert alert-danger d-none"></div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-primary" id="force-password-submit-btn">
+                            <i class="fas fa-save mr-1"></i>Simpan Password Baru
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>`;
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        modal = document.getElementById('force-password-change-modal');
+
+        // Bind submit handler
+        document.getElementById('force-password-submit-btn').addEventListener('click', handleForcePasswordChange);
+
+        // Also bind Enter key
+        document.getElementById('force-password-change-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            handleForcePasswordChange();
+        });
+    }
+
+    // Show the modal
+    $(modal).modal('show');
+}
+
+async function handleForcePasswordChange() {
+    const currentPassword = document.getElementById('force-current-password').value;
+    const newPassword = document.getElementById('force-new-password').value;
+    const confirmPassword = document.getElementById('force-confirm-password').value;
+    const errorDiv = document.getElementById('force-password-error');
+    const submitBtn = document.getElementById('force-password-submit-btn');
+
+    // Validation
+    if (!newPassword || !confirmPassword) {
+        errorDiv.textContent = 'Semua field harus diisi';
+        errorDiv.classList.remove('d-none');
+        return;
+    }
+
+    if (newPassword.length < 6) {
+        errorDiv.textContent = 'Password baru minimal 6 karakter';
+        errorDiv.classList.remove('d-none');
+        return;
+    }
+
+    if (newPassword !== confirmPassword) {
+        errorDiv.textContent = 'Password baru dan konfirmasi tidak cocok';
+        errorDiv.classList.remove('d-none');
+        return;
+    }
+
+    if (newPassword === '123456') {
+        errorDiv.textContent = 'Password baru tidak boleh sama dengan password default';
+        errorDiv.classList.remove('d-none');
+        return;
+    }
+
+    // Hide error, show loading
+    errorDiv.classList.add('d-none');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Menyimpan...';
+
+    try {
+        const token = getAuthToken();
+        const response = await fetch('/api/auth/change-password', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                currentPassword: currentPassword,
+                newPassword: newPassword
+            })
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+            // Success - clear the flag and close modal
+            localStorage.removeItem('must_change_password');
+
+            // Show success message
+            submitBtn.innerHTML = '<i class="fas fa-check mr-1"></i>Berhasil!';
+            submitBtn.classList.remove('btn-primary');
+            submitBtn.classList.add('btn-success');
+
+            // Close modal and reload page after delay
+            setTimeout(() => {
+                $('#force-password-change-modal').modal('hide');
+                // Remove query parameter and reload
+                window.location.href = window.location.pathname;
+            }, 1500);
+        } else {
+            throw new Error(result.message || 'Gagal mengubah password');
+        }
+    } catch (error) {
+        console.error('Password change error:', error);
+        errorDiv.textContent = error.message || 'Gagal mengubah password. Silakan coba lagi.';
+        errorDiv.classList.remove('d-none');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="fas fa-save mr-1"></i>Simpan Password Baru';
+    }
+}
+
+// Make function globally available
+window.showForcePasswordChangeModal = showForcePasswordChangeModal;
 
 // -------------------- BOOT --------------------
 function initMain() {

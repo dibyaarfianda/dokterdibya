@@ -324,8 +324,15 @@
         // Check if already logged in
         onAuthStateChanged((user) => {
             if (user) {
-                // Already logged in, redirect to main app
-                window.location.replace('index-adminlte.html');
+                // Check if user must change password
+                const mustChangePassword = localStorage.getItem('must_change_password') === 'true';
+                if (mustChangePassword) {
+                    // Redirect to main app with password change flag
+                    window.location.replace('index-adminlte.html?force_password_change=1');
+                } else {
+                    // Already logged in, redirect to main app
+                    window.location.replace('index-adminlte.html');
+                }
             }
         });
 

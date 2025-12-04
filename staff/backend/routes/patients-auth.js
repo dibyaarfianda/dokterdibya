@@ -1398,4 +1398,165 @@ router.post('/reset-password', async (req, res) => {
     }
 });
 
+// ==================== PREGNANCY TRACKER ====================
+
+/**
+ * GET /pregnancy-tracker
+ * Get pregnancy tracker data for logged-in patient
+ * Uses EDD from latest USG record
+ */
+router.get('/pregnancy-tracker', verifyToken, async (req, res) => {
+    try {
+        const patientId = req.user.id;
+
+        // Get latest USG record with EDD for this patient
+        const [usgRecords] = await db.query(`
+            SELECT
+                record_data,
+                created_at as record_date
+            FROM medical_records
+            WHERE patient_id = ?
+            AND record_type = 'usg'
+            AND JSON_EXTRACT(record_data, '$.edd') IS NOT NULL
+            AND JSON_EXTRACT(record_data, '$.edd') != ''
+            AND JSON_EXTRACT(record_data, '$.edd') != 'null'
+            ORDER BY created_at DESC
+            LIMIT 1
+        `, [patientId]);
+
+        if (!usgRecords || usgRecords.length === 0) {
+            return res.json({
+                success: true,
+                data: null,
+                message: 'Belum ada data USG dengan HPL'
+            });
+        }
+
+        const usgData = typeof usgRecords[0].record_data === 'string'
+            ? JSON.parse(usgRecords[0].record_data)
+            : usgRecords[0].record_data;
+
+        const edd = usgData.edd; // EDD = Estimated Delivery Date = HPL
+        if (!edd) {
+            return res.json({
+                success: true,
+                data: null,
+                message: 'HPL belum tersedia dari USG'
+            });
+        }
+
+        // Calculate pregnancy week from EDD
+        // Pregnancy is ~40 weeks, so HPHT = EDD - 280 days
+        const eddDate = new Date(edd);
+        const today = new Date();
+        const hphtEstimate = new Date(eddDate);
+        hphtEstimate.setDate(hphtEstimate.getDate() - 280);
+
+        // Calculate days pregnant
+        const daysPregnant = Math.floor((today - hphtEstimate) / (1000 * 60 * 60 * 24));
+        const weeksPregnant = Math.floor(daysPregnant / 7);
+        const daysExtra = daysPregnant % 7;
+
+        // Days until EDD
+        const daysUntilEdd = Math.floor((eddDate - today) / (1000 * 60 * 60 * 24));
+
+        // Trimester calculation
+        let trimester = 1;
+        if (weeksPregnant >= 28) trimester = 3;
+        else if (weeksPregnant >= 14) trimester = 2;
+
+        // Baby size comparison by week
+        const babySizes = {
+            4: { size: 'Biji Poppy', emoji: '🌱', length: '0.1 cm' },
+            5: { size: 'Biji Wijen', emoji: '🌱', length: '0.2 cm' },
+            6: { size: 'Biji Lentil', emoji: '🫘', length: '0.4 cm' },
+            7: { size: 'Blueberry', emoji: '🫐', length: '1 cm' },
+            8: { size: 'Raspberry', emoji: '🍇', length: '1.6 cm' },
+            9: { size: 'Anggur', emoji: '🍇', length: '2.3 cm' },
+            10: { size: 'Kurma', emoji: '🫒', length: '3.1 cm' },
+            11: { size: 'Jeruk Limau', emoji: '🍋', length: '4.1 cm' },
+            12: { size: 'Jeruk Nipis', emoji: '🍋', length: '5.4 cm' },
+            13: { size: 'Lemon', emoji: '🍋', length: '7.4 cm' },
+            14: { size: 'Jeruk', emoji: '🍊', length: '8.7 cm' },
+            15: { size: 'Apel', emoji: '🍎', length: '10.1 cm' },
+            16: { size: 'Alpukat', emoji: '🥑', length: '11.6 cm' },
+            17: { size: 'Pir', emoji: '🍐', length: '13 cm' },
+            18: { size: 'Paprika', emoji: '🫑', length: '14.2 cm' },
+            19: { size: 'Tomat Besar', emoji: '🍅', length: '15.3 cm' },
+            20: { size: 'Pisang', emoji: '🍌', length: '16.4 cm' },
+            21: { size: 'Wortel', emoji: '🥕', length: '26.7 cm' },
+            22: { size: 'Jagung', emoji: '🌽', length: '27.8 cm' },
+            23: { size: 'Mangga', emoji: '🥭', length: '28.9 cm' },
+            24: { size: 'Jagung Besar', emoji: '🌽', length: '30 cm' },
+            25: { size: 'Terong', emoji: '🍆', length: '34.6 cm' },
+            26: { size: 'Brokoli', emoji: '🥦', length: '35.6 cm' },
+            27: { size: 'Kembang Kol', emoji: '🥬', length: '36.6 cm' },
+            28: { size: 'Terong Besar', emoji: '🍆', length: '37.6 cm' },
+            29: { size: 'Labu Siam', emoji: '🎃', length: '38.6 cm' },
+            30: { size: 'Kubis', emoji: '🥬', length: '39.9 cm' },
+            31: { size: 'Kelapa', emoji: '🥥', length: '41.1 cm' },
+            32: { size: 'Nangka', emoji: '🍈', length: '42.4 cm' },
+            33: { size: 'Nanas', emoji: '🍍', length: '43.7 cm' },
+            34: { size: 'Melon', emoji: '🍈', length: '45 cm' },
+            35: { size: 'Melon Besar', emoji: '🍈', length: '46.2 cm' },
+            36: { size: 'Pepaya', emoji: '🍈', length: '47.4 cm' },
+            37: { size: 'Labu', emoji: '🎃', length: '48.6 cm' },
+            38: { size: 'Labu Besar', emoji: '🎃', length: '49.8 cm' },
+            39: { size: 'Semangka Mini', emoji: '🍉', length: '50.7 cm' },
+            40: { size: 'Semangka', emoji: '🍉', length: '51.2 cm' }
+        };
+
+        const weekClamped = Math.max(4, Math.min(40, weeksPregnant));
+        const babySize = babySizes[weekClamped] || babySizes[40];
+
+        // Weekly milestone tips
+        const weeklyTips = {
+            4: 'Embrio mulai berkembang. Istirahat cukup dan konsumsi asam folat.',
+            8: 'Jantung bayi mulai berdetak! Jaga pola makan sehat.',
+            12: 'Risiko keguguran menurun. Trimester pertama hampir selesai.',
+            16: 'Bayi mulai bergerak! Anda mungkin merasakan gerakan halus.',
+            20: 'USG tengah kehamilan. Bayi sudah bisa mendengar suara Anda.',
+            24: 'Bayi aktif bergerak. Jaga hidrasi dan istirahat cukup.',
+            28: 'Trimester ketiga dimulai! Persiapkan perlengkapan bayi.',
+            32: 'Bayi semakin besar. Kontrol rutin sangat penting.',
+            36: 'Hampir waktunya! Bayi sudah siap posisi lahir.',
+            40: 'Selamat! Waktu persalinan sudah dekat. Tetap tenang dan siap.'
+        };
+
+        // Get closest tip
+        const tipWeek = Object.keys(weeklyTips)
+            .map(Number)
+            .filter(w => w <= weeksPregnant)
+            .pop() || 4;
+        const tip = weeklyTips[tipWeek];
+
+        res.json({
+            success: true,
+            data: {
+                edd: edd,
+                eddFormatted: new Date(edd).toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                }),
+                weeksPregnant: weeksPregnant,
+                daysExtra: daysExtra,
+                daysUntilEdd: Math.max(0, daysUntilEdd),
+                trimester: trimester,
+                progressPercent: Math.min(100, Math.round((weeksPregnant / 40) * 100)),
+                babySize: babySize,
+                tip: tip,
+                usgDate: usgRecords[0].record_date
+            }
+        });
+
+    } catch (error) {
+        console.error('Pregnancy tracker error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal memuat data kehamilan'
+        });
+    }
+});
+
 module.exports = router;

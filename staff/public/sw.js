@@ -4,9 +4,9 @@
  * Updated: Real-time friendly for service hours
  */
 
-const CACHE_NAME = 'dokterdibya-staff-v7';
-const STATIC_CACHE = 'static-v6';
-const DYNAMIC_CACHE = 'dynamic-v6';
+const CACHE_NAME = 'dokterdibya-staff-v12';
+const STATIC_CACHE = 'static-v10';
+const DYNAMIC_CACHE = 'dynamic-v10';
 
 // Static assets to cache on install (only UI assets, not data)
 const STATIC_ASSETS = [
@@ -76,7 +76,10 @@ self.addEventListener('activate', (event) => {
           }
         })
       );
-    }).then(() => self.clients.claim())
+    }).then(() => {
+      console.log('[SW] Taking control of clients');
+      return self.clients.claim();
+    })
   );
 });
 
@@ -97,6 +100,12 @@ self.addEventListener('fetch', (event) => {
 
   // IMPORTANT: Completely bypass SW for Socket.IO (real-time connections)
   if (url.pathname.includes('/socket.io')) {
+    return;
+  }
+
+  // IMPORTANT: Bypass SW for JavaScript files to prevent caching issues
+  // This ensures users always get the latest code
+  if (url.pathname.endsWith('.js') && url.pathname.includes('/scripts/')) {
     return;
   }
 

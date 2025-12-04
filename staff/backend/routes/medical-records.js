@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { verifyToken } = require('../middleware/auth');
+const { verifyToken, requirePermission } = require('../middleware/auth');
 const logger = require('../utils/logger');
 const { getGMT7Timestamp, toMySQLTimestamp } = require('../utils/idGenerator');
 
@@ -119,7 +119,7 @@ async function ensureMedicalRecordsTable() {
 ensureMedicalRecordsTable();
 
 // Save medical record
-router.post('/api/medical-records', verifyToken, async (req, res) => {
+router.post('/api/medical-records', verifyToken, requirePermission('medical_records.create'), async (req, res) => {
     try {
         const { patientId, visitId, type, data, anamnesa, physical_exam, usg, lab, diagnosis, doctorId, doctorName, timestamp } = req.body;
         
@@ -254,7 +254,7 @@ router.post('/api/medical-records', verifyToken, async (req, res) => {
 });
 
 // Get medical records for a patient
-router.get('/api/medical-records/:patientId', verifyToken, async (req, res) => {
+router.get('/api/medical-records/:patientId', verifyToken, requirePermission('medical_records.view'), async (req, res) => {
     try {
         const { patientId } = req.params;
         
@@ -287,7 +287,7 @@ router.get('/api/medical-records/:patientId', verifyToken, async (req, res) => {
 });
 
 // Get latest complete medical record for a patient
-router.get('/api/medical-records/:patientId/latest', verifyToken, async (req, res) => {
+router.get('/api/medical-records/:patientId/latest', verifyToken, requirePermission('medical_records.view'), async (req, res) => {
     try {
         const { patientId } = req.params;
         
@@ -327,7 +327,7 @@ router.get('/api/medical-records/:patientId/latest', verifyToken, async (req, re
 });
 
 // Update medical record
-router.put('/api/medical-records/:id', verifyToken, async (req, res) => {
+router.put('/api/medical-records/:id', verifyToken, requirePermission('medical_records.edit'), async (req, res) => {
     try {
         const { id } = req.params;
         const { data, type } = req.body;
@@ -426,8 +426,8 @@ router.delete('/api/medical-records/:id', verifyToken, async (req, res) => {
     }
 });
 
-// Generate AI Resume Medis
-router.post('/api/medical-records/generate-resume', verifyToken, async (req, res) => {
+// Generate AI Resume Medis (export function)
+router.post('/api/medical-records/generate-resume', verifyToken, requirePermission('medical_records.export'), async (req, res) => {
     try {
         const { patientId, visitId } = req.body;
         
