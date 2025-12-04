@@ -2287,7 +2287,7 @@ async function showPatientDetail(patientId) {
  * Show SIMRS Melinda import modal with parsed data preview
  */
 function showSimrsImportModal(data) {
-    // API returns { raw_parsed: {...}, template: {...} }
+    // API returns { raw_parsed: {...}, template: {...}, visit_date, visit_time, ... }
     // Use raw_parsed for detailed SOAP data
     const parsed = data.raw_parsed || data;
     const template = data.template || {};
@@ -2298,8 +2298,23 @@ function showSimrsImportModal(data) {
     const assessment = parsed.assessment || template.assessment || {};
     const plan = parsed.plan || template.plan || {};
 
+    // Extract visit date/time from response
+    const visitDate = data.visit_date || null;
+    const visitTime = data.visit_time || null;
+
     console.log('[Import Modal] Raw data:', data);
     console.log('[Import Modal] Parsed:', { identity, subjective, objective, assessment, plan });
+    console.log('[Import Modal] Visit date/time:', visitDate, visitTime);
+
+    // Format visit date for display
+    let visitDateDisplay = 'Tidak terdeteksi';
+    if (visitDate) {
+        const dateObj = new Date(visitDate);
+        visitDateDisplay = dateObj.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        if (visitTime) {
+            visitDateDisplay += ` pukul ${visitTime}`;
+        }
+    }
 
     // Format medications list
     const obatList = (plan.obat || []).map(o => `<li>${o}</li>`).join('') || '<li class="text-muted">Tidak ada</li>';
@@ -2319,6 +2334,13 @@ function showSimrsImportModal(data) {
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle mr-2"></i>
                             Data rekam medis berhasil di-import dari SIMRS Melinda. Review data di bawah ini.
+                        </div>
+                        <div class="alert alert-warning">
+                            <i class="fas fa-calendar-alt mr-2"></i>
+                            <strong>Tanggal Kunjungan:</strong> ${visitDateDisplay}
+                            ${visitDate ? '<span class="badge badge-success ml-2">Terdeteksi otomatis</span>' : '<span class="badge badge-secondary ml-2">Akan menggunakan tanggal hari ini</span>'}
+                            <input type="hidden" id="import-visit-date" value="${visitDate || ''}">
+                            <input type="hidden" id="import-visit-time" value="${visitTime || ''}">
                         </div>
 
                         <div class="row">
@@ -2404,13 +2426,38 @@ function showSimrsImportModal(data) {
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Patient Selection -->
+                        <div class="card card-outline card-dark mt-3">
+                            <div class="card-header py-2">
+                                <h6 class="mb-0"><i class="fas fa-search mr-2"></i>Pilih Pasien untuk Import</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="form-group mb-2">
+                                    <div class="input-group">
+                                        <input type="text" class="form-control" id="import-patient-search"
+                                               placeholder="Cari nama pasien..." autocomplete="off">
+                                        <div class="input-group-append">
+                                            <button class="btn btn-outline-secondary" type="button" onclick="searchPatientForImport()">
+                                                <i class="fas fa-search"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div id="import-patient-results" class="list-group" style="max-height: 200px; overflow-y: auto;"></div>
+                                <div id="import-selected-patient" class="alert alert-success mt-2 d-none">
+                                    <strong>Pasien terpilih:</strong> <span id="import-selected-name"></span>
+                                    <input type="hidden" id="import-selected-id">
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal">
                             <i class="fas fa-times mr-1"></i> Tutup
                         </button>
-                        <button type="button" class="btn btn-primary" onclick="navigateToPatientWithImport()">
-                            <i class="fas fa-user-plus mr-1"></i> Buka Kelola Pasien
+                        <button type="button" class="btn btn-success" id="btn-start-visit-import" onclick="startVisitWithImport()" disabled>
+                            <i class="fas fa-file-import mr-1"></i> Import Rekam Medis
                         </button>
                     </div>
                 </div>
@@ -2424,6 +2471,17 @@ function showSimrsImportModal(data) {
 
     // Add modal to DOM
     document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Store import data globally for use when starting visit
+    window._simrsImportData = data;
+
+    // Bind enter key to search
+    document.getElementById('import-patient-search').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            searchPatientForImport();
+        }
+    });
 
     // Show modal
     $('#simrsImportModal').modal('show');
@@ -2446,8 +2504,203 @@ function navigateToPatientWithImport() {
     }
 }
 
+/**
+ * Search patients for import selection
+ */
+async function searchPatientForImport() {
+    const searchInput = document.getElementById('import-patient-search');
+    const resultsDiv = document.getElementById('import-patient-results');
+    const query = searchInput.value.trim();
+
+    if (!query || query.length < 2) {
+        resultsDiv.innerHTML = '<div class="text-muted p-2">Ketik minimal 2 karakter untuk mencari</div>';
+        return;
+    }
+
+    resultsDiv.innerHTML = '<div class="text-center p-2"><i class="fas fa-spinner fa-spin"></i> Mencari...</div>';
+
+    try {
+        const token = getAuthToken();
+        const response = await fetch(`/api/patients/search?q=${encodeURIComponent(query)}&limit=10`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('Search failed');
+
+        const result = await response.json();
+        const patients = result.data || result.patients || [];
+
+        if (patients.length === 0) {
+            resultsDiv.innerHTML = '<div class="text-muted p-2">Tidak ditemukan pasien dengan nama tersebut</div>';
+            return;
+        }
+
+        resultsDiv.innerHTML = patients.map(p => `
+            <a href="#" class="list-group-item list-group-item-action" onclick="selectPatientForImport('${p.id}', '${(p.fullname || p.name || '').replace(/'/g, "\\'")}'); return false;">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>${p.fullname || p.name}</strong>
+                        <small class="text-muted ml-2">${p.patient_id || p.id}</small>
+                    </div>
+                    <small class="text-muted">${p.phone || ''}</small>
+                </div>
+            </a>
+        `).join('');
+
+    } catch (error) {
+        console.error('Search error:', error);
+        resultsDiv.innerHTML = '<div class="text-danger p-2">Gagal mencari pasien</div>';
+    }
+}
+
+/**
+ * Select patient for import
+ */
+function selectPatientForImport(id, name) {
+    document.getElementById('import-selected-id').value = id;
+    document.getElementById('import-selected-name').textContent = name;
+    document.getElementById('import-selected-patient').classList.remove('d-none');
+    document.getElementById('import-patient-results').innerHTML = '';
+    document.getElementById('import-patient-search').value = '';
+    document.getElementById('btn-start-visit-import').disabled = false;
+}
+
+/**
+ * Start visit with imported SOAP data (retrospective import)
+ */
+async function startVisitWithImport() {
+    const patientId = document.getElementById('import-selected-id').value;
+    const btn = document.getElementById('btn-start-visit-import');
+    const visitDate = document.getElementById('import-visit-date')?.value || null;
+    const visitTime = document.getElementById('import-visit-time')?.value || null;
+
+    if (!patientId) {
+        alert('Pilih pasien terlebih dahulu');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Memproses...';
+
+    try {
+        const token = getAuthToken();
+        const importData = window._simrsImportData;
+
+        // Build visit datetime for retrospective import
+        let visitDateTime = null;
+        if (visitDate) {
+            visitDateTime = visitDate;
+            if (visitTime) {
+                visitDateTime += 'T' + visitTime + ':00';
+            }
+        }
+
+        console.log('[Import] Creating retrospective visit:', { patientId, visitDateTime, visitDate, visitTime });
+
+        // Create visit record using sunday-clinic start-walk-in API with retrospective date
+        const visitResponse = await fetch('/api/sunday-clinic/start-walk-in', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                patient_id: patientId,
+                category: 'obstetri',
+                location: 'rsia_melinda',
+                visit_date: visitDateTime,  // Pass retrospective date
+                is_retrospective: !!visitDate  // Flag to indicate this is a past visit
+            })
+        });
+
+        if (!visitResponse.ok) {
+            const err = await visitResponse.json();
+            throw new Error(err.message || 'Gagal membuat rekam medis');
+        }
+
+        const visitResult = await visitResponse.json();
+        const mrId = visitResult.data?.mrId || visitResult.mrId;
+        const drdCode = mrId;
+
+        console.log('[Import] Medical record created:', { mrId, drdCode, visitDateTime });
+
+        // Store import data for form filling
+        sessionStorage.setItem('simrs_import_mr_id', mrId);
+        sessionStorage.setItem('simrs_import_data', JSON.stringify(importData));
+
+        // Close modal
+        $('#simrsImportModal').modal('hide');
+
+        // Show success message
+        const dateMsg = visitDate ? ` (tanggal ${new Date(visitDate).toLocaleDateString('id-ID')})` : '';
+        if (typeof showSuccess === 'function') {
+            showSuccess(`Rekam medis ${drdCode} dibuat${dateMsg}! Mengisi data pemeriksaan...`);
+        }
+
+        // Navigate to Sunday Clinic page with the new MR ID
+        setTimeout(() => {
+            // Redirect to Sunday Clinic anamnesa page
+            const mrSlug = mrId.toLowerCase();
+            window.location.href = `/sunday-clinic/${mrSlug}/anamnesa`;
+        }, 800);
+
+    } catch (error) {
+        console.error('Import error:', error);
+        alert('Gagal: ' + error.message);
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-file-import mr-1"></i> Import Rekam Medis';
+    }
+}
+
+/**
+ * Fill anamnesa form from import data
+ */
+function fillAnamnesaFromImport(data) {
+    const parsed = data.raw_parsed || data;
+    const subjective = parsed.subjective || {};
+    const assessment = parsed.assessment || {};
+
+    console.log('[Import] Filling anamnesa with:', { subjective, assessment });
+
+    // Try to fill form fields
+    const fields = {
+        'keluhan-utama': subjective.keluhan_utama,
+        'keluhan_utama': subjective.keluhan_utama,
+        'riwayat-penyakit-sekarang': subjective.rps,
+        'rps': subjective.rps,
+        'riwayat-penyakit-dahulu': subjective.rpd,
+        'rpd': subjective.rpd,
+        'hpht': subjective.hpht,
+        'hpl': subjective.hpl,
+        'gravida': assessment.gravida,
+        'para': assessment.para,
+        'usia-kehamilan': assessment.usia_kehamilan
+    };
+
+    for (const [fieldId, value] of Object.entries(fields)) {
+        if (value) {
+            const el = document.getElementById(fieldId) ||
+                       document.querySelector(`[name="${fieldId}"]`) ||
+                       document.querySelector(`[data-field="${fieldId}"]`);
+            if (el) {
+                el.value = value;
+                el.dispatchEvent(new Event('change', { bubbles: true }));
+                console.log(`[Import] Filled ${fieldId}:`, value);
+            }
+        }
+    }
+
+    if (typeof showSuccess === 'function') {
+        showSuccess('Data anamnesa dari SIMRS berhasil diisi');
+    }
+}
+
 window.showSimrsImportModal = showSimrsImportModal;
 window.navigateToPatientWithImport = navigateToPatientWithImport;
+window.searchPatientForImport = searchPatientForImport;
+window.selectPatientForImport = selectPatientForImport;
+window.startVisitWithImport = startVisitWithImport;
+window.fillAnamnesaFromImport = fillAnamnesaFromImport;
 
 // Export showPatientDetail to global scope for onclick handlers
 window.showPatientDetail = showPatientDetail;
