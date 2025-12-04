@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Kelola Field Import - dokterDIBYA</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+    <style>
+        .keyword-tag {
+            display: inline-flex;
+            align-items: center;
+            background: #e3f2fd;
+            color: #1565c0;
+            padding: 4px 10px;
+            border-radius: 15px;
+            margin: 2px;
+            font-size: 13px;
+        }
+        .keyword-tag .remove-keyword {
+            margin-left: 6px;
+            cursor: pointer;
+            color: #c62828;
+            font-weight: bold;
+        }
+        .keyword-tag .remove-keyword:hover {
+            color: #b71c1c;
+        }
+        .section-card {
+            margin-bottom: 20px;
+        }
+        .section-card .card-header {
+            font-weight: 600;
+        }
+        .field-row {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+        }
+        .field-row:last-child {
+            border-bottom: none;
+        }
+        .field-info {
+            flex: 1;
+        }
+        .field-name {
+            font-weight: 600;
+            color: #333;
+        }
+        .field-type {
+            font-size: 12px;
+            color: #666;
+            background: #f5f5f5;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 8px;
+        }
+        .keywords-container {
+            margin-top: 8px;
+        }
+        .add-keyword-input {
+            display: inline-flex;
+            align-items: center;
+            margin: 2px;
+        }
+        .add-keyword-input input {
+            width: 120px;
+            padding: 4px 8px;
+            border: 1px dashed #1565c0;
+            border-radius: 15px;
+            font-size: 13px;
+        }
+        .field-actions {
+            display: flex;
+            gap: 5px;
+        }
+        .btn-icon {
+            padding: 5px 10px;
+            font-size: 14px;
+        }
+        .inactive-field {
+            opacity: 0.5;
+            background: #f9f9f9;
+        }
+        .modal-keywords {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            min-height: 50px;
+        }
+    </style>
+</head>
+<body class="hold-transition sidebar-mini">
+    <div class="wrapper">
+        <!-- Navbar -->
+        <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="index-adminlte.html">
+                        <i class="fas fa-arrow-left"></i> Kembali
+                    </a>
+                </li>
+            </ul>
+            <ul class="navbar-nav ml-auto">
+                <li class="nav-item">
+                    <span class="nav-link" id="user-name">Loading...</span>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Content -->
+        <div class="content-wrapper" style="margin-left: 0;">
+            <div class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-6">
+                            <h1 class="m-0">
+                                <i class="fas fa-cogs text-primary"></i>
+                                Kelola Field Import
+                            </h1>
+                        </div>
+                        <div class="col-sm-6 text-right">
+                            <button class="btn btn-primary" onclick="showAddFieldModal()">
+                                <i class="fas fa-plus"></i> Tambah Field
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <section class="content">
+                <div class="container-fluid">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i>
+                        <strong>Petunjuk:</strong> Kelola field dan keywords untuk parsing rekam medis.
+                        Keywords adalah kata kunci yang dicari AI dalam teks untuk mengidentifikasi field.
+                    </div>
+
+                    <div id="fields-container">
+                        <div class="text-center py-5">
+                            <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+                            <p class="mt-2 text-muted">Memuat data...</p>
+                        </div>
+                    </div>
+
+                    <!-- Add/Edit Field Modal (inside content for loadExternalPage) -->
+                    <div class="modal fade" id="fieldModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="fieldModalTitle">Tambah Field Baru</h5>
+                    <button type="button" class="close" data-dismiss="modal">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <form id="fieldForm">
+                        <input type="hidden" id="fieldId">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Nama Field <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="fieldName" placeholder="contoh: golongan_darah" required>
+                                    <small class="text-muted">Gunakan huruf kecil dan underscore</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Section <span class="text-danger">*</span></label>
+                                    <select class="form-control" id="fieldSection" required>
+                                        <option value="identity">Identity (Identitas Pasien)</option>
+                                        <option value="subjective">Subjective (Anamnesa)</option>
+                                        <option value="objective">Objective (Pemeriksaan Fisik)</option>
+                                        <option value="assessment">Assessment (Diagnosis)</option>
+                                        <option value="plan">Plan (Terapi/Obat)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Display Name <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="fieldDisplayName" placeholder="contoh: Golongan Darah" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label>Tipe Data</label>
+                                    <select class="form-control" id="fieldDataType">
+                                        <option value="text">Text</option>
+                                        <option value="number">Number</option>
+                                        <option value="date">Date</option>
+                                        <option value="phone">Phone</option>
+                                        <option value="array">Array</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Keywords <span class="text-danger">*</span></label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="newKeywordInput" placeholder="Ketik keyword lalu tekan Enter atau klik Tambah">
+                                <div class="input-group-append">
+                                    <button type="button" class="btn btn-outline-primary" onclick="addKeywordToModal()">
+                                        <i class="fas fa-plus"></i> Tambah
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="modal-keywords" id="modalKeywords"></div>
+                            <small class="text-muted">Keyword yang akan dicari AI dalam teks rekam medis</small>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                    <button type="button" class="btn btn-primary" onclick="saveField()">
+                        <i class="fas fa-save"></i> Simpan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+
+    <script>
+        // Token key constant (same as vps-auth-v2.js)
+        const TOKEN_KEY = 'vps_auth_token';
+
+        let allFields = [];
+        let modalKeywords = [];
+
+        // Check if embedded in main page (import-fields-page container exists)
+        const isEmbedded = !!document.getElementById('import-fields-page');
+
+        // Initialize immediately when embedded (auth handled by main page)
+        // For standalone, we'd need to redirect to login but this page should only be accessed embedded
+        if (isEmbedded) {
+            // Small delay to ensure DOM is ready
+            setTimeout(() => window.loadFields(), 100);
+        } else {
+            // Standalone mode - redirect to main app
+            window.location.href = 'index-adminlte.html';
+        }
+
+        window.loadFields = async function() {
+            try {
+                const token = localStorage.getItem(TOKEN_KEY);
+                const response = await fetch('/api/import-config/fields/all', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    allFields = data.fields;
+                    renderFields();
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                console.error('Error loading fields:', error);
+                document.getElementById('fields-container').innerHTML = `
+                    <div class="alert alert-danger">
+                        <i class="fas fa-exclamation-triangle"></i> Gagal memuat data: ${error.message}
+                    </div>
+                `;
+            }
+        };
+
+        function renderFields() {
+            const sections = {
+                identity: { name: 'Identity (Identitas Pasien)', icon: 'user', color: 'primary' },
+                subjective: { name: 'Subjective (Anamnesa)', icon: 'comment-medical', color: 'info' },
+                objective: { name: 'Objective (Pemeriksaan)', icon: 'stethoscope', color: 'success' },
+                assessment: { name: 'Assessment (Diagnosis)', icon: 'diagnoses', color: 'warning' },
+                plan: { name: 'Plan (Terapi)', icon: 'pills', color: 'danger' }
+            };
+
+            let html = '';
+            for (const [sectionKey, sectionInfo] of Object.entries(sections)) {
+                const sectionFields = allFields.filter(f => f.section === sectionKey);
+
+                html += `
+                    <div class="card section-card">
+                        <div class="card-header bg-${sectionInfo.color} text-white">
+                            <i class="fas fa-${sectionInfo.icon}"></i> ${sectionInfo.name}
+                            <span class="badge badge-light float-right">${sectionFields.length} fields</span>
+                        </div>
+                        <div class="card-body p-0">
+                `;
+
+                if (sectionFields.length === 0) {
+                    html += `<div class="text-center text-muted py-3">Belum ada field</div>`;
+                } else {
+                    for (const field of sectionFields) {
+                        const keywords = Array.isArray(field.keywords) ? field.keywords : field.keywords.split(',');
+                        html += `
+                            <div class="field-row ${field.is_active ? '' : 'inactive-field'}">
+                                <div class="field-info">
+                                    <div>
+                                        <span class="field-name">${field.display_name}</span>
+                                        <span class="field-type">${field.data_type}</span>
+                                        ${!field.is_active ? '<span class="badge badge-secondary ml-2">Nonaktif</span>' : ''}
+                                    </div>
+                                    <small class="text-muted">Field: ${field.field_name}</small>
+                                    <div class="keywords-container">
+                                        ${keywords.map(k => `
+                                            <span class="keyword-tag">
+                                                ${k}
+                                                <span class="remove-keyword" onclick="removeKeyword(${field.id}, '${encodeURIComponent(k)}')">&times;</span>
+                                            </span>
+                                        `).join('')}
+                                        <div class="add-keyword-input">
+                                            <input type="text" placeholder="+ keyword"
+                                                onkeypress="if(event.key==='Enter'){addKeyword(${field.id}, this.value); this.value='';}"
+                                            >
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="field-actions">
+                                    <button class="btn btn-sm btn-outline-primary btn-icon" onclick="editField(${field.id})" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-${field.is_active ? 'warning' : 'success'} btn-icon"
+                                        onclick="toggleField(${field.id}, ${field.is_active ? 0 : 1})"
+                                        title="${field.is_active ? 'Nonaktifkan' : 'Aktifkan'}">
+                                        <i class="fas fa-${field.is_active ? 'eye-slash' : 'eye'}"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-danger btn-icon" onclick="deleteField(${field.id})" title="Hapus">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+
+                html += `</div></div>`;
+            }
+
+            document.getElementById('fields-container').innerHTML = html;
+        }
+
+        window.showAddFieldModal = function() {
+            document.getElementById('fieldModalTitle').textContent = 'Tambah Field Baru';
+            document.getElementById('fieldId').value = '';
+            document.getElementById('fieldName').value = '';
+            document.getElementById('fieldName').disabled = false;
+            document.getElementById('fieldSection').value = 'identity';
+            document.getElementById('fieldSection').disabled = false;
+            document.getElementById('fieldDisplayName').value = '';
+            document.getElementById('fieldDataType').value = 'text';
+            modalKeywords = [];
+            renderModalKeywords();
+            $('#fieldModal').modal('show');
+        };
+
+        window.editField = function(id) {
+            const field = allFields.find(f => f.id === id);
+            if (!field) return;
+
+            document.getElementById('fieldModalTitle').textContent = 'Edit Field';
+            document.getElementById('fieldId').value = field.id;
+            document.getElementById('fieldName').value = field.field_name;
+            document.getElementById('fieldName').disabled = true;
+            document.getElementById('fieldSection').value = field.section;
+            document.getElementById('fieldSection').disabled = true;
+            document.getElementById('fieldDisplayName').value = field.display_name;
+            document.getElementById('fieldDataType').value = field.data_type;
+            modalKeywords = Array.isArray(field.keywords) ? [...field.keywords] : field.keywords.split(',').map(k => k.trim());
+            renderModalKeywords();
+            $('#fieldModal').modal('show');
+        };
+
+        window.addKeywordToModal = function() {
+            const input = document.getElementById('newKeywordInput');
+            const keyword = input.value.trim();
+            if (keyword && !modalKeywords.includes(keyword)) {
+                modalKeywords.push(keyword);
+                renderModalKeywords();
+            }
+            input.value = '';
+            input.focus();
+        };
+
+        // Add event listener after DOM is ready
+        setTimeout(function() {
+            const input = document.getElementById('newKeywordInput');
+            if (input) {
+                input.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addKeywordToModal();
+                    }
+                });
+            }
+        }, 200);
+
+        window.removeModalKeyword = function(keyword) {
+            modalKeywords = modalKeywords.filter(k => k !== keyword);
+            renderModalKeywords();
+        };
+
+        function renderModalKeywords() {
+            const container = document.getElementById('modalKeywords');
+            if (modalKeywords.length === 0) {
+                container.innerHTML = '<span class="text-muted">Belum ada keyword</span>';
+            } else {
+                container.innerHTML = modalKeywords.map(k => `
+                    <span class="keyword-tag">
+                        ${k}
+                        <span class="remove-keyword" onclick="removeModalKeyword('${k}')">&times;</span>
+                    </span>
+                `).join('');
+            }
+        }
+
+        window.saveField = async function() {
+            const id = document.getElementById('fieldId').value;
+            const fieldName = document.getElementById('fieldName').value.trim();
+            const section = document.getElementById('fieldSection').value;
+            const displayName = document.getElementById('fieldDisplayName').value.trim();
+            const dataType = document.getElementById('fieldDataType').value;
+
+            if (!fieldName || !displayName || modalKeywords.length === 0) {
+                alert('Semua field wajib diisi dan minimal 1 keyword harus ditambahkan');
+                return;
+            }
+
+            try {
+                const token = localStorage.getItem(TOKEN_KEY);
+                const url = id ? `/api/import-config/fields/${id}` : '/api/import-config/fields';
+                const method = id ? 'PUT' : 'POST';
+
+                const body = id ? {
+                    display_name: displayName,
+                    keywords: modalKeywords,
+                    data_type: dataType
+                } : {
+                    field_name: fieldName,
+                    section: section,
+                    display_name: displayName,
+                    keywords: modalKeywords,
+                    data_type: dataType
+                };
+
+                const response = await fetch(url, {
+                    method,
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(body)
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    $('#fieldModal').modal('hide');
+                    loadFields();
+                } else {
+                    alert(data.message || 'Gagal menyimpan');
+                }
+            } catch (error) {
+                console.error('Error saving field:', error);
+                alert('Gagal menyimpan: ' + error.message);
+            }
+        };
+
+        window.addKeyword = async function(fieldId, keyword) {
+            keyword = keyword.trim();
+            if (!keyword) return;
+
+            try {
+                const token = localStorage.getItem(TOKEN_KEY);
+                const response = await fetch(`/api/import-config/fields/${fieldId}/keywords`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ keyword })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    loadFields();
+                } else {
+                    alert(data.message);
+                }
+            } catch (error) {
+                console.error('Error adding keyword:', error);
+            }
+        };
+
+        window.removeKeyword = async function(fieldId, encodedKeyword) {
+            const keyword = decodeURIComponent(encodedKeyword);
+            if (!confirm(`Hapus keyword "${keyword}"?`)) return;
+
+            try {
+                const token = localStorage.getItem(TOKEN_KEY);
+                const response = await fetch(`/api/import-config/fields/${fieldId}/keywords/${encodedKeyword}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    loadFields();
+                } else {
+                    alert(data.message);
+                }
+            } catch (error) {
+                console.error('Error removing keyword:', error);
+            }
+        };
+
+        window.toggleField = async function(fieldId, isActive) {
+            try {
+                const token = localStorage.getItem(TOKEN_KEY);
+                const response = await fetch(`/api/import-config/fields/${fieldId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ is_active: isActive })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    loadFields();
+                } else {
+                    alert(data.message);
+                }
+            } catch (error) {
+                console.error('Error toggling field:', error);
+            }
+        };
+
+        window.deleteField = async function(fieldId) {
+            if (!confirm('Yakin hapus field ini? Aksi ini tidak dapat dibatalkan.')) return;
+
+            try {
+                const token = localStorage.getItem(TOKEN_KEY);
+                const response = await fetch(`/api/import-config/fields/${fieldId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    loadFields();
+                } else {
+                    alert(data.message);
+                }
+            } catch (error) {
+                console.error('Error deleting field:', error);
+            }
+        };
+    </script>
+</body>
+</html>
