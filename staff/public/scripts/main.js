@@ -2521,7 +2521,7 @@ async function searchPatientForImport() {
 
     try {
         const token = getAuthToken();
-        const response = await fetch(`/api/patients/search?q=${encodeURIComponent(query)}&limit=10`, {
+        const response = await fetch(`/api/patients?search=${encodeURIComponent(query)}&limit=10`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
 
@@ -2536,13 +2536,13 @@ async function searchPatientForImport() {
         }
 
         resultsDiv.innerHTML = patients.map(p => `
-            <a href="#" class="list-group-item list-group-item-action" onclick="selectPatientForImport('${p.id}', '${(p.fullname || p.name || '').replace(/'/g, "\\'")}'); return false;">
+            <a href="#" class="list-group-item list-group-item-action" onclick="selectPatientForImport('${p.id}', '${(p.full_name || p.fullname || p.name || '').replace(/'/g, "\\'")}'); return false;">
                 <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <strong>${p.fullname || p.name}</strong>
+                        <strong>${p.full_name || p.fullname || p.name}</strong>
                         <small class="text-muted ml-2">${p.patient_id || p.id}</small>
                     </div>
-                    <small class="text-muted">${p.phone || ''}</small>
+                    <small class="text-muted">${p.whatsapp || p.phone || ''}</small>
                 </div>
             </a>
         `).join('');
