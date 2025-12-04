@@ -395,13 +395,26 @@ function requireRoles(...allowedRoles) {
 }
 
 /**
- * @deprecated Use requireRoles instead
- * Kept for backward compatibility - now just passes through for superadmin
- * or allows all authenticated users
+ * Middleware to check if user has required permissions
+ * Checks against role_permissions table
+ * @param {...string} requiredPermissions - Permission names (e.g., 'announcements.view', 'patients.edit')
+ *
+ * Usage: requirePermission('announcements.view')
+ *        requirePermission('patients.view', 'patients.edit') - requires ANY of these
  */
 function requirePermission(...requiredPermissions) {
-    return (req, res, next) => {
+    // Lazy load db to avoid circular dependency
+    let db = null;
+
+    return async (req, res, next) => {
+        const requestId = req.context?.requestId || 'unknown';
+
         if (!req.user) {
+            logger.warn('Missing user in requirePermission middleware', {
+                requestId,
+                ip: req.ip,
+                path: req.path
+            });
             return res.status(401).json({
                 success: false,
                 message: 'Authentication required'
@@ -410,12 +423,70 @@ function requirePermission(...requiredPermissions) {
 
         // Superadmin/dokter always has access
         if (req.user.is_superadmin || req.user.role === ROLE_NAMES.DOKTER || isSuperadminRole(req.user.role_id)) {
+            logger.debug('Superadmin/dokter permission granted', {
+                requestId,
+                userId: req.user.id,
+                permissions: requiredPermissions
+            });
             return next();
         }
 
-        // For backward compatibility, allow all authenticated users
-        // The frontend handles visibility based on roles
-        return next();
+        try {
+            // Lazy load database connection
+            if (!db) {
+                db = require('../db');
+            }
+
+            const roleId = req.user.role_id;
+            if (!roleId) {
+                logger.warn('User has no role_id', {
+                    requestId,
+                    userId: req.user.id,
+                    path: req.path
+                });
+                return res.status(403).json({
+                    success: false,
+                    message: 'User role not configured'
+                });
+            }
+
+            // Check if user's role has ANY of the required permissions
+            const placeholders = requiredPermissions.map(() => '?').join(', ');
+            const [rows] = await db.query(
+                `SELECT p.name
+                 FROM role_permissions rp
+                 JOIN permissions p ON rp.permission_id = p.id
+                 WHERE rp.role_id = ? AND p.name IN (${placeholders})`,
+                [roleId, ...requiredPermissions]
+            );
+
+            if (rows.length === 0) {
+                logger.warn(`Permission denied: user=${req.user.id} role_id=${roleId} needs=[${requiredPermissions.join(',')}] path=${req.path}`);
+                return res.status(403).json({
+                    success: false,
+                    message: 'Anda tidak memiliki izin untuk aksi ini'
+                });
+            }
+
+            logger.debug('Permission granted', {
+                requestId,
+                userId: req.user.id,
+                roleId,
+                grantedPermissions: rows.map(r => r.name)
+            });
+
+            next();
+        } catch (error) {
+            logger.error('Error checking permissions', {
+                requestId,
+                error: error.message,
+                requiredPermissions
+            });
+            return res.status(500).json({
+                success: false,
+                message: 'Error checking permissions'
+            });
+        }
     };
 }
 

@@ -2,12 +2,12 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
-const { verifyToken, requireSuperadmin } = require('../middleware/auth');
+const { verifyToken, requireSuperadmin, requirePermission } = require('../middleware/auth');
 
 // ==================== VISITS ROUTES ====================
 
 // GET all visits (with optional filters)
-router.get('/', verifyToken, async (req, res) => {
+router.get('/', verifyToken, requirePermission('visits.view'), async (req, res) => {
     try {
         const { patient_id, start_date, end_date, exclude_dummy } = req.query;
         
@@ -59,7 +59,7 @@ router.get('/', verifyToken, async (req, res) => {
 });
 
 // GET single visit by ID
-router.get('/:id', verifyToken, async (req, res) => {
+router.get('/:id', verifyToken, requirePermission('visits.view'), async (req, res) => {
     try {
         const [rows] = await pool.query(
             'SELECT * FROM visits WHERE id = ?',
@@ -96,7 +96,7 @@ router.get('/:id', verifyToken, async (req, res) => {
 // ==================== PROTECTED ROUTES (require auth) ====================
 
 // POST new visit
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', verifyToken, requirePermission('visits.create'), async (req, res) => {
     try {
         const {
             patient_id,
@@ -153,7 +153,7 @@ router.post('/', verifyToken, async (req, res) => {
 });
 
 // PUT update visit
-router.put('/:id', verifyToken, async (req, res) => {
+router.put('/:id', verifyToken, requirePermission('visits.edit'), async (req, res) => {
     try {
         const {
             patient_name,
@@ -232,8 +232,8 @@ router.put('/:id', verifyToken, async (req, res) => {
     }
 });
 
-// DELETE visit (Superadmin/Dokter only)
-router.delete('/:id', verifyToken, requireSuperadmin, async (req, res) => {
+// DELETE visit (requires visits.delete permission)
+router.delete('/:id', verifyToken, requirePermission('visits.delete'), async (req, res) => {
     try {
         const [result] = await pool.query(
             'DELETE FROM visits WHERE id = ?',

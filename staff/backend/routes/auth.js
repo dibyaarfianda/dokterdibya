@@ -31,6 +31,7 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
             u.user_type,
             u.is_superadmin,
             u.profile_completed,
+            u.must_change_password,
             r.name AS resolved_role_name,
             r.display_name AS resolved_role_display
         FROM users u
@@ -51,8 +52,8 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
     const userId = user.new_id;
 
     // Set role based on user type and superadmin status
+    // Use actual role from DB (e.g., managerial, bidan, front_office) for role_visibility to work
     const resolvedRole = user.is_superadmin ? 'dokter' :
-                         user.user_type === 'staff' ? 'staff' :
                          user.role || user.resolved_role_name || 'viewer';
     const resolvedRoleDisplay = user.resolved_role_display || resolvedRole || null;
     const roleForToken = resolvedRole;
@@ -102,7 +103,8 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
             photo_url: user.photo_url,
             user_type: user.user_type || 'patient',
             is_superadmin: user.is_superadmin || false,
-            profile_completed: user.profile_completed || false
+            profile_completed: user.profile_completed || false,
+            must_change_password: user.must_change_password || false
         }
     }, SUCCESS_MESSAGES.LOGIN_SUCCESS);
 }));
@@ -418,9 +420,12 @@ router.post('/api/auth/change-password', verifyToken, validatePasswordChange, as
         throw new AppError('Password saat ini salah', HTTP_STATUS.UNAUTHORIZED);
     }
 
-    // Hash and update new password
+    // Hash and update new password, also clear must_change_password flag
     const newPasswordHash = await bcrypt.hash(newPassword, 10);
-    const [updateResult] = await db.query('UPDATE users SET password_hash = ? WHERE new_id = ?', [newPasswordHash, userId]);
+    const [updateResult] = await db.query(
+        'UPDATE users SET password_hash = ?, must_change_password = 0 WHERE new_id = ?',
+        [newPasswordHash, userId]
+    );
     logger.info(`[PASSWORD CHANGE] Update result - affected rows: ${updateResult.affectedRows}`);
 
     if (updateResult.affectedRows === 0) {

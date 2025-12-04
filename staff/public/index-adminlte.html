@@ -482,6 +482,69 @@
             right: 20px !important;
             z-index: 9999 !important;
         }
+
+        /* Notification Badge Styles */
+        #notification-dropdown .nav-link {
+            color: #555;
+            transition: color 0.2s ease;
+        }
+
+        #notification-dropdown .nav-link:hover {
+            color: #007bff;
+        }
+
+        #notification-badge {
+            animation: none;
+        }
+
+        @keyframes notification-pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.3); }
+            100% { transform: scale(1); }
+        }
+
+        .notification-pulse {
+            animation: notification-pulse 0.5s ease-in-out 2;
+        }
+
+        #notification-dropdown .dropdown-menu {
+            min-width: 320px;
+            padding: 0;
+        }
+
+        #notification-dropdown .dropdown-header {
+            background-color: #f8f9fa;
+            padding: 10px 15px;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        #notification-dropdown .dropdown-item {
+            padding: 10px 15px;
+            border-bottom: 1px solid #f0f0f0;
+            white-space: normal;
+        }
+
+        #notification-dropdown .dropdown-item:last-child {
+            border-bottom: none;
+        }
+
+        #notification-dropdown .dropdown-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        #notification-dropdown .dropdown-item.bg-light {
+            background-color: #e8f4ff !important;
+        }
+
+        #notification-dropdown .dropdown-footer {
+            background-color: #f8f9fa;
+            color: #007bff;
+            font-weight: 500;
+        }
+
+        #notification-dropdown .dropdown-footer:hover {
+            background-color: #e9ecef;
+        }
     </style>
 
         <!-- Mobile Responsive Styles -->
@@ -748,7 +811,7 @@
     <script>
         // Force clear cache on first load
         (function() {
-            const CACHE_VERSION = 'v14'; // Increment this to force refresh
+            const CACHE_VERSION = 'v17'; // Increment this to force refresh
             const currentVersion = localStorage.getItem('cache_version');
             
             if (currentVersion !== CACHE_VERSION) {
@@ -814,6 +877,31 @@
                     <span class="badge badge-warning">Loading...</span>
                 </span>
             </li>
+            <!-- Notification Bell -->
+            <li class="nav-item dropdown" id="notification-dropdown" style="display: flex; align-items: center;">
+                <a class="nav-link" data-toggle="dropdown" href="#" aria-expanded="false" style="position: relative; padding: 0.5rem 1rem;">
+                    <i class="far fa-bell" style="font-size: 1.25rem;"></i>
+                    <span id="notification-badge" class="badge badge-danger navbar-badge" style="display: none; position: absolute; top: 5px; right: 5px; font-size: 0.65rem; padding: 2px 5px;">0</span>
+                </a>
+                <div class="dropdown-menu dropdown-menu-lg dropdown-menu-right" style="max-height: 400px; overflow-y: auto;">
+                    <div class="dropdown-header d-flex justify-content-between align-items-center">
+                        <span><strong id="notification-header-count">0</strong> Notifikasi</span>
+                        <a href="#" id="mark-all-read-btn" class="text-muted text-sm" onclick="markAllNotificationsRead(); return false;">
+                            <i class="fas fa-check-double"></i> Tandai semua dibaca
+                        </a>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <div id="notification-list">
+                        <div class="dropdown-item text-center text-muted py-3">
+                            <i class="fas fa-spinner fa-spin"></i> Memuat...
+                        </div>
+                    </div>
+                    <div class="dropdown-divider"></div>
+                    <a href="#" class="dropdown-item dropdown-footer text-center" onclick="showAllNotifications(); return false;">
+                        Lihat Semua Notifikasi
+                    </a>
+                </div>
+            </li>
             <li class="nav-item dropdown user-menu" style="display: flex; align-items: center; height: 100%;">
                 <a class="nav-link dropdown-toggle" data-toggle="dropdown" href="#" style="display: flex !important; flex-direction: row !important; align-items: center !important; padding: 0 1rem; height: 100%;">
                     <div class="d-none d-md-block" style="text-align: right; margin-right: 10px; line-height: 1.3;">
@@ -854,22 +942,22 @@
                             <p>Dashboard</p>
                         </a>
                     </li>
-                    <li class="nav-item" id="nav-registrasi-pasien">
-                        <a href="#" class="nav-link" onclick="showRegistrasiPasienPage(); return false;">
-                            <i class="nav-icon fas fa-key"></i>
-                            <p>Registrasi Pasien</p>
-                        </a>
-                    </li>
-                    <li class="nav-item" id="nav-pasien-baru">
-                        <a href="#" class="nav-link" onclick="showPasienBaruPage(); return false;">
-                            <i class="nav-icon fas fa-user-plus" style="color: #6c757d;"></i>
-                            <p>Pasien Baru</p>
+                    <li class="nav-item" id="nav-kelola-pasien">
+                        <a href="#" class="nav-link" onclick="showManagePatientsPage(); return false;">
+                            <i class="nav-icon fas fa-users"></i>
+                            <p>Kelola Pasien</p>
                         </a>
                     </li>
                     <li class="nav-item" id="nav-pengumuman">
                         <a href="#" class="nav-link" onclick="showKelolaPengumumanPage(); return false;">
                             <i class="nav-icon fas fa-bullhorn"></i>
                             <p>Pengumuman</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" id="nav-notifications">
+                        <a href="#" class="nav-link" onclick="showNotificationsPage(); return false;">
+                            <i class="nav-icon fas fa-bell"></i>
+                            <p>Notifikasi</p>
                         </a>
                     </li>
                     <li class="nav-item" id="nav-jadwal">
@@ -1009,13 +1097,6 @@
                         <a href="#" class="nav-link" onclick="showActivityLogPage(); return false;">
                             <i class="nav-icon fas fa-history"></i>
                             <p>Log Aktivitas Obat</p>
-                        </a>
-                    </li>
-
-                    <li class="nav-item" id="management-nav-kelola-pasien">
-                        <a href="#" class="nav-link" onclick="showManagePatientsPage(); return false;">
-                            <i class="nav-icon fas fa-users-cog"></i>
-                            <p>Kelola Pasien</p>
                         </a>
                     </li>
 
@@ -1649,7 +1730,6 @@
                                                 <tr>
                                                     <th>ID</th>
                                                     <th>Nama Lengkap</th>
-                                                    <th>Email</th>
                                                     <th>Telepon</th>
                                                     <th>Tanggal Lahir</th>
                                                     <th>Usia</th>
@@ -1661,63 +1741,10 @@
                                             </thead>
                                             <tbody id="hospital-patients-tbody">
                                                 <tr>
-                                                    <td colspan="10" class="text-center">Memuat data...</td>
+                                                    <td colspan="9" class="text-center">Memuat data...</td>
                                                 </tr>
                                             </tbody>
                                         </table>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Registrasi Pasien Page -->
-                <div id="registrasi-pasien-page" class="d-none">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="card card-success">
-                                <div class="card-header">
-                                    <h3 class="card-title">
-                                        <i class="fas fa-user-plus mr-2"></i>Pasien Terdaftar Baru
-                                    </h3>
-                                    <div class="card-tools">
-                                        <button class="btn btn-tool btn-warning btn-sm" onclick="openGenerateCodeModal()" title="Generate Kode Registrasi">
-                                            <i class="fas fa-key"></i> Kode Registrasi
-                                        </button>
-                                    </div>
-                                </div>
-                                <div class="card-body">
-                                    <div class="table-responsive">
-                                        <table id="new-patients-table" class="table table-sm table-bordered table-hover">
-                                            <thead class="thead-light">
-                                                <tr>
-                                                    <th>ID Pasien</th>
-                                                    <th>Nama Lengkap</th>
-                                                    <th>No. WhatsApp</th>
-                                                    <th>Terakhir Visit</th>
-                                                    <th>Terdaftar</th>
-                                                    <th>Aksi</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody id="new-patients-tbody">
-                                                <tr><td colspan="6" class="text-center">Memuat...</td></tr>
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                    <!-- Pagination Controls -->
-                                    <div class="d-flex justify-content-between align-items-center mt-3">
-                                        <div class="text-muted" id="new-patients-pagination-info">
-                                            Menampilkan 0 dari 0
-                                        </div>
-                                        <div class="btn-group">
-                                            <button type="button" class="btn btn-sm btn-outline-secondary" id="new-patients-prev-btn" onclick="loadNewPatients(newPatientsCurrentPage - 1)" disabled>
-                                                <i class="fas fa-chevron-left"></i> Sebelumnya
-                                            </button>
-                                            <button type="button" class="btn btn-sm btn-outline-secondary" id="new-patients-next-btn" onclick="loadNewPatients(newPatientsCurrentPage + 1)" disabled>
-                                                Selanjutnya <i class="fas fa-chevron-right"></i>
-                                            </button>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -2788,16 +2815,17 @@
                                     <thead>
                                         <tr>
                                             <th width="5%">#</th>
-                                            <th width="20%">Nama</th>
-                                            <th width="25%">Email</th>
-                                            <th width="30%">Roles</th>
+                                            <th width="12%">ID</th>
+                                            <th width="18%">Nama</th>
+                                            <th width="20%">Email</th>
+                                            <th width="25%">Roles</th>
                                             <th width="10%">Status</th>
                                             <th width="10%">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody id="users-roles-tbody">
                                         <tr>
-                                            <td colspan="6" class="text-center py-4">
+                                            <td colspan="7" class="text-center py-4">
                                                 <i class="fas fa-spinner fa-spin fa-2x"></i>
                                                 <p class="mt-2 mb-0">Memuat data users...</p>
                                             </td>
@@ -3859,6 +3887,59 @@
 
                 <!-- Kelola Pasien Page -->
                 <div id="manage-patients-page" class="d-none">
+                    <!-- Pasien Baru Card -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="card card-success">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-user-plus mr-2"></i>Pasien Baru
+                                    </h3>
+                                    <div class="card-tools">
+                                        <button class="btn btn-tool btn-warning btn-sm" onclick="openGenerateCodeModal()" title="Generate Kode Registrasi">
+                                            <i class="fas fa-key"></i> Kode Registrasi
+                                        </button>
+                                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table id="new-patients-table" class="table table-sm table-bordered table-hover">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th>ID Pasien</th>
+                                                    <th>Nama Lengkap</th>
+                                                    <th>No. WhatsApp</th>
+                                                    <th>Terakhir Visit</th>
+                                                    <th>Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="new-patients-tbody">
+                                                <tr><td colspan="5" class="text-center">Memuat...</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <!-- Pagination Controls -->
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <div class="text-muted" id="new-patients-pagination-info">
+                                            Menampilkan 0 dari 0
+                                        </div>
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" id="new-patients-prev-btn" onclick="loadNewPatients(newPatientsCurrentPage - 1)" disabled>
+                                                <i class="fas fa-chevron-left"></i> Sebelumnya
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" id="new-patients-next-btn" onclick="loadNewPatients(newPatientsCurrentPage + 1)" disabled>
+                                                Selanjutnya <i class="fas fa-chevron-right"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Advanced Search Card -->
                     <div class="row mb-3">
                         <div class="col-12">
@@ -4290,13 +4371,14 @@
                                                     <th width="100" class="text-right">Harga</th>
                                                     <th width="100" class="text-right">Total</th>
                                                     <th>Batch</th>
+                                                    <th>Supplier</th>
                                                     <th>Oleh</th>
                                                     <th>Catatan</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="activity-log-body">
                                                 <tr>
-                                                    <td colspan="9" class="text-center text-muted py-4">
+                                                    <td colspan="10" class="text-center text-muted py-4">
                                                         <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
                                                         <p class="mb-0">Memuat data...</p>
                                                     </td>
@@ -4431,6 +4513,110 @@
                                         <div class="text-muted small" id="staff-activity-pagination-info">Menampilkan 0 dari 0</div>
                                         <nav>
                                             <ul class="pagination pagination-sm mb-0" id="staff-activity-pagination"></ul>
+                                        </nav>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- NOTIFICATIONS PAGE -->
+                <div id="notifications-page" class="d-none">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h3 class="card-title"><i class="fas fa-bell mr-2"></i>Semua Notifikasi</h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-sm btn-outline-primary mr-2" onclick="loadNotificationsPage()">
+                                            <i class="fas fa-sync-alt"></i> Refresh
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="markAllNotificationsReadPage()">
+                                            <i class="fas fa-check-double"></i> Tandai Semua Dibaca
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Stats Cards -->
+                                    <div class="row mb-4">
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-primary">
+                                                <div class="inner">
+                                                    <h3 id="notif-stat-unread">0</h3>
+                                                    <p>Belum Dibaca</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-envelope"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-success">
+                                                <div class="inner">
+                                                    <h3 id="notif-stat-read">0</h3>
+                                                    <p>Sudah Dibaca</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-envelope-open"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-info">
+                                                <div class="inner">
+                                                    <h3 id="notif-stat-announcements">0</h3>
+                                                    <p>Pengumuman</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-bullhorn"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-secondary">
+                                                <div class="inner">
+                                                    <h3 id="notif-stat-total">0</h3>
+                                                    <p>Total Notifikasi</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-bell"></i></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Filter Tabs -->
+                                    <ul class="nav nav-tabs mb-3" id="notification-tabs">
+                                        <li class="nav-item">
+                                            <a class="nav-link active" href="#" data-filter="all" onclick="filterNotifications('all'); return false;">
+                                                <i class="fas fa-list mr-1"></i> Semua
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="#" data-filter="unread" onclick="filterNotifications('unread'); return false;">
+                                                <i class="fas fa-envelope mr-1"></i> Belum Dibaca
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="#" data-filter="notification" onclick="filterNotifications('notification'); return false;">
+                                                <i class="fas fa-bell mr-1"></i> Notifikasi
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="#" data-filter="announcement" onclick="filterNotifications('announcement'); return false;">
+                                                <i class="fas fa-bullhorn mr-1"></i> Pengumuman
+                                            </a>
+                                        </li>
+                                    </ul>
+
+                                    <!-- Notification List -->
+                                    <div id="notifications-page-list">
+                                        <div class="text-center py-5">
+                                            <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+                                            <p class="mt-2 text-muted">Memuat notifikasi...</p>
+                                        </div>
+                                    </div>
+
+                                    <!-- Pagination -->
+                                    <div class="d-flex justify-content-between align-items-center mt-3" id="notifications-pagination-container" style="display: none !important;">
+                                        <div class="text-muted small">
+                                            Menampilkan <span id="notif-showing-start">0</span> - <span id="notif-showing-end">0</span> dari <span id="notif-showing-total">0</span> notifikasi
+                                        </div>
+                                        <nav>
+                                            <ul class="pagination pagination-sm mb-0" id="notifications-pagination"></ul>
                                         </nav>
                                     </div>
                                 </div>
@@ -5048,13 +5234,9 @@ function mobileNavClick(btn, action) {
         // Chat is now handled by chat-popup.js loaded at bottom of page
         // initCashier() - Now loaded dynamically when Cashier page is opened
 
-        // Initialize real-time sync
-        try {
-            initRealtimeSync(user);
-            console.log('🔄 Real-time sync initialized for user:', user.name);
-        } catch (error) {
-            console.error('⚠️ Real-time sync initialization failed (non-critical):', error);
-        }
+        // Real-time sync is now initialized in main.js via onAuthStateChanged
+        // This ensures single socket connection and proper cleanup on auth state changes
+        console.log('🔄 Real-time sync will be initialized by main.js');
 
         // Restore session if exists
         try {
@@ -5207,7 +5389,7 @@ function mobileNavClick(btn, action) {
 
         // Update active nav
         document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
-        const kelolaPasienNav = document.querySelector('#management-nav-kelola-pasien .nav-link');
+        const kelolaPasienNav = document.querySelector('#nav-kelola-pasien .nav-link');
         if (kelolaPasienNav) {
             kelolaPasienNav.classList.add('active');
         }
@@ -5228,8 +5410,9 @@ function mobileNavClick(btn, action) {
                 floatingPanel.classList.remove('d-none');
             }
         }
-        
+
         // Load patients data
+        loadNewPatients(1);
         loadWebPatients();
     };
 
@@ -5717,14 +5900,11 @@ function mobileNavClick(btn, action) {
             document.getElementById('new-patients-next-btn').disabled = page >= newPatientsTotalPages;
 
             if (!data.data || data.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">Belum ada pasien terdaftar</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Belum ada pasien terdaftar</td></tr>';
                 return;
             }
 
             tbody.innerHTML = data.data.map(patient => {
-                const createdDate = patient.created_at ? new Date(patient.created_at).toLocaleDateString('id-ID', {
-                    day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
-                }) : '-';
                 const lastVisit = patient.last_visit ? new Date(patient.last_visit).toLocaleDateString('id-ID', {
                     day: 'numeric', month: 'short', year: 'numeric'
                 }) : '-';
@@ -5735,7 +5915,6 @@ function mobileNavClick(btn, action) {
                         <td>${patient.full_name || '-'}</td>
                         <td>${patient.whatsapp || patient.phone || '-'}</td>
                         <td>${lastVisit}</td>
-                        <td><small>${createdDate}</small></td>
                         <td>
                             <button class="btn btn-xs btn-info" onclick="viewPatientDetail('${patient.id}')" title="Lihat Detail">
                                 <i class="fas fa-eye"></i>
@@ -5749,7 +5928,7 @@ function mobileNavClick(btn, action) {
             console.error('Load new patients error:', error);
             const tbody = document.getElementById('new-patients-tbody');
             if (tbody) {
-                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger">Gagal memuat data</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Gagal memuat data</td></tr>';
             }
         }
     }
@@ -6642,7 +6821,7 @@ Apakah Anda yakin ingin melanjutkan?`;
             document.getElementById('activity-log-count').textContent = pagination.total + ' records';
 
             if (filteredData.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted py-4"><i class="fas fa-inbox fa-2x mb-2"></i><p class="mb-0">Tidak ada data aktivitas</p></td></tr>';
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center text-muted py-4"><i class="fas fa-inbox fa-2x mb-2"></i><p class="mb-0">Tidak ada data aktivitas</p></td></tr>';
                 document.getElementById('activity-log-pagination-info').textContent = 'No data';
                 document.getElementById('activity-log-pagination').innerHTML = '';
                 return;
@@ -6678,6 +6857,7 @@ Apakah Anda yakin ingin melanjutkan?`;
                     <td class="text-right">Rp ${price.toLocaleString('id-ID')}</td>
                     <td class="text-right">Rp ${total.toLocaleString('id-ID')}</td>
                     <td><code>${d.batch_number || '-'}</code></td>
+                    <td><small>${d.supplier_name || '-'}</small></td>
                     <td>${d.created_by || '-'}</td>
                     <td><small>${d.notes || '-'}</small></td>
                 </tr>`;
@@ -8762,6 +8942,575 @@ async function deleteCode(codeId) {
         </div>
     </div>
 </div>
+
+<!-- Staff Notification System -->
+<script>
+// Notification system variables
+let notificationPollInterval = null;
+let lastNotificationCount = 0;
+
+// Initialize notification system when auth is ready
+document.addEventListener('DOMContentLoaded', function() {
+    // Wait for auth to be ready
+    const checkAuth = setInterval(() => {
+        if (window.auth && window.auth.currentUser) {
+            clearInterval(checkAuth);
+            initNotificationSystem();
+        }
+    }, 500);
+
+    // Timeout after 10 seconds
+    setTimeout(() => clearInterval(checkAuth), 10000);
+});
+
+function initNotificationSystem() {
+    console.log('[Notifications] Initializing notification system');
+
+    // Load notifications initially
+    loadNotifications();
+    loadNotificationCount();
+
+    // Poll for new notifications every 30 seconds
+    notificationPollInterval = setInterval(() => {
+        loadNotificationCount();
+    }, 30000);
+
+    // Load notifications when dropdown is opened
+    const notificationDropdown = document.getElementById('notification-dropdown');
+    if (notificationDropdown) {
+        notificationDropdown.addEventListener('show.bs.dropdown', loadNotifications);
+        // Also handle jQuery events for Bootstrap 4
+        $(notificationDropdown).on('show.bs.dropdown', loadNotifications);
+    }
+}
+
+async function loadNotificationCount() {
+    try {
+        const token = await window.getIdToken();
+        if (!token) return;
+
+        const response = await fetch('/api/notifications/count', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+        if (data.success) {
+            updateNotificationBadge(data.count);
+        }
+    } catch (error) {
+        console.error('[Notifications] Error loading count:', error);
+    }
+}
+
+function updateNotificationBadge(count) {
+    const badge = document.getElementById('notification-badge');
+    const headerCount = document.getElementById('notification-header-count');
+
+    if (badge) {
+        if (count > 0) {
+            badge.textContent = count > 99 ? '99+' : count;
+            badge.style.display = 'inline';
+
+            // Animate if count increased
+            if (count > lastNotificationCount) {
+                badge.classList.add('notification-pulse');
+                setTimeout(() => badge.classList.remove('notification-pulse'), 1000);
+            }
+        } else {
+            badge.style.display = 'none';
+        }
+    }
+
+    if (headerCount) {
+        headerCount.textContent = count;
+    }
+
+    lastNotificationCount = count;
+}
+
+async function loadNotifications() {
+    try {
+        const token = await window.getIdToken();
+        if (!token) return;
+
+        const response = await fetch('/api/notifications/with-announcements?limit=10', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+        if (data.success) {
+            renderNotificationList(data.items || []);
+            updateNotificationBadge(data.unread_count);
+        }
+    } catch (error) {
+        console.error('[Notifications] Error loading notifications:', error);
+        document.getElementById('notification-list').innerHTML = `
+            <div class="dropdown-item text-center text-muted py-3">
+                <i class="fas fa-exclamation-circle text-danger"></i> Gagal memuat notifikasi
+            </div>
+        `;
+    }
+}
+
+function renderNotificationList(items) {
+    const container = document.getElementById('notification-list');
+    if (!container) return;
+
+    if (items.length === 0) {
+        container.innerHTML = `
+            <div class="dropdown-item text-center text-muted py-3">
+                <i class="far fa-bell-slash"></i> Tidak ada notifikasi
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = items.map(item => {
+        const isRead = item.is_read;
+        const timeAgo = formatTimeAgo(item.created_at);
+        const bgClass = isRead ? '' : 'bg-light';
+
+        return `
+            <a href="#" class="dropdown-item ${bgClass}" onclick="handleNotificationClick(${item.id}, '${item.source}', '${item.link || ''}'); return false;">
+                <div class="d-flex align-items-start">
+                    <div class="mr-2">
+                        <i class="${item.icon || 'fas fa-bell'} ${item.icon_color || 'text-primary'}"></i>
+                    </div>
+                    <div class="flex-grow-1" style="min-width: 0;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <strong class="text-dark" style="font-size: 13px;">${escapeHtml(item.title)}</strong>
+                            ${!isRead ? '<span class="badge badge-primary badge-sm ml-1">Baru</span>' : ''}
+                        </div>
+                        <p class="text-muted text-sm mb-0" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            ${escapeHtml(item.message?.substring(0, 80) || '')}${item.message?.length > 80 ? '...' : ''}
+                        </p>
+                        <small class="text-muted">${timeAgo}</small>
+                    </div>
+                </div>
+            </a>
+        `;
+    }).join('');
+}
+
+async function handleNotificationClick(id, source, link) {
+    // Mark as read if it's a notification
+    if (source === 'notification') {
+        try {
+            const token = await window.getIdToken();
+            await fetch(`/api/notifications/${id}/read`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            loadNotificationCount();
+        } catch (error) {
+            console.error('[Notifications] Error marking as read:', error);
+        }
+    }
+
+    // Navigate to link if provided
+    if (link) {
+        if (link.startsWith('#') || link.startsWith('javascript:')) {
+            // In-page navigation
+            eval(link.replace('javascript:', ''));
+        } else {
+            window.location.href = link;
+        }
+    }
+
+    // Close dropdown
+    $('#notification-dropdown .dropdown-toggle').dropdown('hide');
+}
+
+async function markAllNotificationsRead() {
+    try {
+        const token = await window.getIdToken();
+        if (!token) return;
+
+        const response = await fetch('/api/notifications/read-all', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            loadNotifications();
+            updateNotificationBadge(0);
+            if (typeof showToast === 'function') {
+                showToast('Semua notifikasi ditandai sudah dibaca', 'success');
+            }
+        }
+    } catch (error) {
+        console.error('[Notifications] Error marking all as read:', error);
+    }
+}
+
+function showAllNotifications() {
+    // Close dropdown
+    $('#notification-dropdown .dropdown-toggle').dropdown('hide');
+
+    // Navigate to notifications page
+    showNotificationsPage();
+}
+
+// ========== NOTIFICATIONS PAGE FUNCTIONS ==========
+let notificationPageData = [];
+let notificationPageFilter = 'all';
+let notificationPagePage = 1;
+const notificationPageLimit = 20;
+
+function showNotificationsPage() {
+    // Hide all pages
+    document.querySelectorAll('[id$="-page"]').forEach(page => {
+        page.classList.add('d-none');
+    });
+
+    // Show notifications page
+    const notifPage = document.getElementById('notifications-page');
+    if (notifPage) {
+        notifPage.classList.remove('d-none');
+    }
+
+    // Update page title
+    const pageTitle = document.getElementById('page-title');
+    if (pageTitle) {
+        pageTitle.textContent = 'Notifikasi';
+    }
+
+    // Remove active from all nav items
+    document.querySelectorAll('.nav-sidebar .nav-link').forEach(link => {
+        link.classList.remove('active');
+    });
+
+    // Set active on notifications nav
+    const navNotifications = document.querySelector('#nav-notifications .nav-link');
+    if (navNotifications) {
+        navNotifications.classList.add('active');
+    }
+
+    // Load notifications
+    loadNotificationsPage();
+}
+
+// Make showNotificationsPage globally available
+window.showNotificationsPage = showNotificationsPage;
+
+async function loadNotificationsPage() {
+    const container = document.getElementById('notifications-page-list');
+    if (!container) return;
+
+    // Show loading
+    container.innerHTML = `
+        <div class="text-center py-5">
+            <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+            <p class="mt-2 text-muted">Memuat notifikasi...</p>
+        </div>
+    `;
+
+    try {
+        const token = await window.getIdToken();
+        if (!token) {
+            container.innerHTML = '<div class="alert alert-warning">Silakan login untuk melihat notifikasi.</div>';
+            return;
+        }
+
+        // Fetch notifications
+        const notifResponse = await fetch('/api/notifications?limit=50', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        // Fetch announcements
+        const annResponse = await fetch('/api/announcements?status=active&limit=20', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        let notifications = [];
+        let announcements = [];
+
+        if (notifResponse.ok) {
+            const notifData = await notifResponse.json();
+            if (notifData.success) {
+                notifications = notifData.notifications.map(n => ({ ...n, source: 'notification' }));
+            }
+        }
+
+        if (annResponse.ok) {
+            const annData = await annResponse.json();
+            if (annData.success) {
+                announcements = (annData.data || annData.announcements || []).map(a => ({
+                    id: a.id,
+                    type: 'announcement',
+                    title: a.title,
+                    message: a.message,
+                    icon: a.priority === 'urgent' ? 'fas fa-exclamation-triangle' : (a.priority === 'important' ? 'fas fa-exclamation-circle' : 'fas fa-bullhorn'),
+                    icon_color: a.priority === 'urgent' ? 'text-danger' : (a.priority === 'important' ? 'text-warning' : 'text-info'),
+                    created_at: a.created_at,
+                    source: 'announcement',
+                    is_read: 0
+                }));
+            }
+        }
+
+        // Combine and sort
+        notificationPageData = [...notifications, ...announcements]
+            .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+        // Update stats
+        updateNotificationPageStats();
+
+        // Render with current filter
+        renderNotificationsPageList();
+
+    } catch (error) {
+        console.error('[Notifications Page] Error:', error);
+        container.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                Gagal memuat notifikasi. <a href="#" onclick="loadNotificationsPage(); return false;">Coba lagi</a>
+            </div>
+        `;
+    }
+}
+
+function updateNotificationPageStats() {
+    const notifications = notificationPageData.filter(n => n.source === 'notification');
+    const announcements = notificationPageData.filter(n => n.source === 'announcement');
+    const unread = notifications.filter(n => !n.is_read);
+    const read = notifications.filter(n => n.is_read);
+
+    document.getElementById('notif-stat-unread').textContent = unread.length;
+    document.getElementById('notif-stat-read').textContent = read.length;
+    document.getElementById('notif-stat-announcements').textContent = announcements.length;
+    document.getElementById('notif-stat-total').textContent = notificationPageData.length;
+}
+
+function filterNotifications(filter) {
+    notificationPageFilter = filter;
+    notificationPagePage = 1;
+
+    // Update tab active state
+    document.querySelectorAll('#notification-tabs .nav-link').forEach(tab => {
+        tab.classList.remove('active');
+        if (tab.dataset.filter === filter) {
+            tab.classList.add('active');
+        }
+    });
+
+    renderNotificationsPageList();
+}
+
+function renderNotificationsPageList() {
+    const container = document.getElementById('notifications-page-list');
+    if (!container) return;
+
+    // Filter data
+    let filtered = notificationPageData;
+    if (notificationPageFilter === 'unread') {
+        filtered = notificationPageData.filter(n => !n.is_read);
+    } else if (notificationPageFilter === 'notification') {
+        filtered = notificationPageData.filter(n => n.source === 'notification');
+    } else if (notificationPageFilter === 'announcement') {
+        filtered = notificationPageData.filter(n => n.source === 'announcement');
+    }
+
+    if (filtered.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-5">
+                <i class="far fa-bell-slash fa-3x text-muted mb-3"></i>
+                <p class="text-muted">Tidak ada notifikasi${notificationPageFilter !== 'all' ? ' dalam kategori ini' : ''}.</p>
+            </div>
+        `;
+        document.getElementById('notifications-pagination-container').style.display = 'none';
+        return;
+    }
+
+    // Pagination
+    const totalPages = Math.ceil(filtered.length / notificationPageLimit);
+    const start = (notificationPagePage - 1) * notificationPageLimit;
+    const end = Math.min(start + notificationPageLimit, filtered.length);
+    const pageData = filtered.slice(start, end);
+
+    // Render list
+    container.innerHTML = pageData.map(item => {
+        const isRead = item.is_read;
+        const timeAgo = formatTimeAgo(item.created_at);
+        const sourceLabel = item.source === 'announcement' ?
+            '<span class="badge badge-info badge-sm ml-2">Pengumuman</span>' :
+            '<span class="badge badge-secondary badge-sm ml-2">Notifikasi</span>';
+
+        return `
+            <div class="card mb-2 notification-card ${!isRead ? 'border-left-primary' : ''}" style="border-left-width: ${!isRead ? '4px' : '1px'};">
+                <div class="card-body py-3">
+                    <div class="d-flex align-items-start">
+                        <div class="mr-3">
+                            <span class="btn btn-${!isRead ? 'primary' : 'secondary'} btn-sm rounded-circle" style="width: 40px; height: 40px; padding: 0; display: flex; align-items: center; justify-content: center;">
+                                <i class="${item.icon || 'fas fa-bell'}"></i>
+                            </span>
+                        </div>
+                        <div class="flex-grow-1">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1 ${!isRead ? 'font-weight-bold' : ''}">
+                                        ${escapeHtml(item.title)}
+                                        ${!isRead ? '<span class="badge badge-primary ml-2">Baru</span>' : ''}
+                                        ${sourceLabel}
+                                    </h6>
+                                    <p class="text-muted mb-2" style="white-space: pre-wrap;">${escapeHtml(item.message?.substring(0, 300) || '')}${item.message?.length > 300 ? '...' : ''}</p>
+                                    <small class="text-muted">
+                                        <i class="far fa-clock mr-1"></i>${timeAgo}
+                                    </small>
+                                </div>
+                                <div class="ml-3">
+                                    ${item.source === 'notification' && !isRead ? `
+                                        <button class="btn btn-sm btn-outline-primary" onclick="markNotificationReadPage(${item.id})" title="Tandai dibaca">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    ` : ''}
+                                    ${item.link ? `
+                                        <a href="${item.link}" class="btn btn-sm btn-outline-secondary ml-1" title="Lihat detail">
+                                            <i class="fas fa-external-link-alt"></i>
+                                        </a>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Update pagination
+    document.getElementById('notif-showing-start').textContent = start + 1;
+    document.getElementById('notif-showing-end').textContent = end;
+    document.getElementById('notif-showing-total').textContent = filtered.length;
+
+    if (totalPages > 1) {
+        document.getElementById('notifications-pagination-container').style.display = 'flex';
+        renderNotificationsPagination(totalPages);
+    } else {
+        document.getElementById('notifications-pagination-container').style.display = 'none';
+    }
+}
+
+function renderNotificationsPagination(totalPages) {
+    const pagination = document.getElementById('notifications-pagination');
+    if (!pagination) return;
+
+    let html = '';
+
+    // Previous
+    html += `<li class="page-item ${notificationPagePage === 1 ? 'disabled' : ''}">
+        <a class="page-link" href="#" onclick="goToNotificationPage(${notificationPagePage - 1}); return false;">&laquo;</a>
+    </li>`;
+
+    // Page numbers
+    for (let i = 1; i <= totalPages; i++) {
+        if (i === 1 || i === totalPages || (i >= notificationPagePage - 2 && i <= notificationPagePage + 2)) {
+            html += `<li class="page-item ${i === notificationPagePage ? 'active' : ''}">
+                <a class="page-link" href="#" onclick="goToNotificationPage(${i}); return false;">${i}</a>
+            </li>`;
+        } else if (i === notificationPagePage - 3 || i === notificationPagePage + 3) {
+            html += '<li class="page-item disabled"><span class="page-link">...</span></li>';
+        }
+    }
+
+    // Next
+    html += `<li class="page-item ${notificationPagePage === totalPages ? 'disabled' : ''}">
+        <a class="page-link" href="#" onclick="goToNotificationPage(${notificationPagePage + 1}); return false;">&raquo;</a>
+    </li>`;
+
+    pagination.innerHTML = html;
+}
+
+function goToNotificationPage(page) {
+    if (page < 1) return;
+    notificationPagePage = page;
+    renderNotificationsPageList();
+    // Scroll to top
+    document.getElementById('notifications-page').scrollIntoView({ behavior: 'smooth' });
+}
+
+async function markNotificationReadPage(id) {
+    try {
+        const token = await window.getIdToken();
+        if (!token) return;
+
+        const response = await fetch(`/api/notifications/${id}/read`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            // Update local data
+            const item = notificationPageData.find(n => n.id === id && n.source === 'notification');
+            if (item) {
+                item.is_read = 1;
+            }
+            updateNotificationPageStats();
+            renderNotificationsPageList();
+            loadNotificationCount(); // Update badge
+        }
+    } catch (error) {
+        console.error('[Notifications Page] Error marking as read:', error);
+    }
+}
+
+async function markAllNotificationsReadPage() {
+    try {
+        const token = await window.getIdToken();
+        if (!token) return;
+
+        const response = await fetch('/api/notifications/read-all', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (response.ok) {
+            // Update local data
+            notificationPageData.forEach(n => {
+                if (n.source === 'notification') {
+                    n.is_read = 1;
+                }
+            });
+            updateNotificationPageStats();
+            renderNotificationsPageList();
+            loadNotificationCount(); // Update badge
+            if (typeof showToast === 'function') {
+                showToast('Semua notifikasi ditandai sudah dibaca', 'success');
+            }
+        }
+    } catch (error) {
+        console.error('[Notifications Page] Error marking all as read:', error);
+    }
+}
+
+function formatTimeAgo(dateString) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffSec = Math.floor(diffMs / 1000);
+    const diffMin = Math.floor(diffSec / 60);
+    const diffHour = Math.floor(diffMin / 60);
+    const diffDay = Math.floor(diffHour / 24);
+
+    if (diffSec < 60) return 'Baru saja';
+    if (diffMin < 60) return `${diffMin} menit lalu`;
+    if (diffHour < 24) return `${diffHour} jam lalu`;
+    if (diffDay < 7) return `${diffDay} hari lalu`;
+
+    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+</script>
 
 <!-- PWA Service Worker Registration -->
 <script>

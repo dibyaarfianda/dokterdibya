@@ -97,11 +97,11 @@ router.get('/api/patients', verifyToken, async (req, res) => {
                 params.push(searchTerm, searchTerm, searchTerm);
             }
 
-            // Apply sorting
-            if (sort === 'recent') {
-                query += ' ORDER BY p.created_at DESC';
-            } else {
+            // Apply sorting - default to last_visit DESC (most recent visit first)
+            if (sort === 'name') {
                 query += ' ORDER BY p.full_name ASC';
+            } else {
+                query += ' ORDER BY p.last_visit DESC, p.created_at DESC';
             }
         }
         // If hospital filter is provided, get patients who have appointments at that hospital
@@ -126,11 +126,11 @@ router.get('/api/patients', verifyToken, async (req, res) => {
                 params.push(searchTerm, searchTerm, searchTerm);
             }
 
-            // Apply sorting based on sort parameter
-            if (sort === 'recent') {
-                query += ' ORDER BY p.created_at DESC';
+            // Apply sorting - default to last_visit DESC (most recent visit first)
+            if (sort === 'name') {
+                query += ' ORDER BY p.full_name ASC';
             } else {
-                query += ' ORDER BY p.last_visit DESC, p.full_name ASC';
+                query += ' ORDER BY p.last_visit DESC, p.created_at DESC';
             }
         } else {
             query = `SELECT p.*,
@@ -150,11 +150,11 @@ router.get('/api/patients', verifyToken, async (req, res) => {
                 params.push(searchTerm, searchTerm, searchTerm);
             }
 
-            // Apply sorting based on sort parameter
-            if (sort === 'recent') {
-                query += ' ORDER BY p.created_at DESC';
+            // Apply sorting - default to last_visit DESC (most recent visit first)
+            if (sort === 'name') {
+                query += ' ORDER BY p.full_name ASC';
             } else {
-                query += ' ORDER BY p.last_visit DESC, p.full_name ASC';
+                query += ' ORDER BY p.last_visit DESC, p.created_at DESC';
             }
         }
 
