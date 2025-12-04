@@ -188,6 +188,27 @@ function showImportPreview(data) {
         }
     }
 
+    // Show AI parsing warning if applicable
+    const warningContainer = document.getElementById('import-warning-container');
+    if (warningContainer) {
+        if (data.warning || data.ai_error) {
+            let warningHtml = `<div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <i class="fas fa-exclamation-triangle mr-2"></i>
+                <strong>Perhatian:</strong> ${data.warning || 'AI parsing gagal, hasil mungkin kurang akurat.'}`;
+            if (data.ai_error) {
+                warningHtml += `<br><small class="text-muted">Error: ${escapeHtml(data.ai_error)}</small>`;
+            }
+            warningHtml += `<button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+            </button></div>`;
+            warningContainer.innerHTML = warningHtml;
+            warningContainer.style.display = 'block';
+        } else {
+            warningContainer.innerHTML = '';
+            warningContainer.style.display = 'none';
+        }
+    }
+
     // Render Visit Info section (date and location)
     renderVisitInfoSection(data);
 

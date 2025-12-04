@@ -811,7 +811,7 @@
     <script>
         // Force clear cache on first load
         (function() {
-            const CACHE_VERSION = 'v17'; // Increment this to force refresh
+            const CACHE_VERSION = 'v20'; // Increment this to force refresh
             const currentVersion = localStorage.getItem('cache_version');
             
             if (currentVersion !== CACHE_VERSION) {
@@ -989,8 +989,8 @@
                                     <p>Pasien</p>
                                 </a>
                             </li>
-                            <li class="nav-item" id="management-nav-kelola-appointment">
-                                <a href="#" class="nav-link" onclick="showKelolaAppointmentPage(); return false;">
+                            <li class="nav-item" id="nav-klinik-private-appointment">
+                                <a href="#" class="nav-link" onclick="showHospitalAppointmentsPage('klinik_private'); return false;">
                                     <span class="nav-icon" style="width: 1.6rem; display: inline-block;"></span>
                                     <p>Janji Temu</p>
                                 </a>
@@ -1120,6 +1120,13 @@
                             <p>Pengaturan Sesi</p>
                         </a>
                     </li>
+
+                    <li class="nav-item dokter-only d-none" id="nav-import-fields">
+                        <a href="#" class="nav-link" onclick="showImportFieldsPage(); return false;">
+                            <i class="nav-icon fas fa-file-import"></i>
+                            <p>Import Fields</p>
+                        </a>
+                    </li>
                 </ul>
             </nav>
             
@@ -1223,6 +1230,23 @@
                         </div>
                     </div>
 
+                    <!-- Registration Code Quick Access -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="card bg-gradient-primary">
+                                <div class="card-body d-flex justify-content-between align-items-center py-3">
+                                    <div>
+                                        <h5 class="mb-1 text-white"><i class="fas fa-key mr-2"></i>Kode Registrasi Pasien</h5>
+                                        <p class="mb-0 text-white-50" id="dashboard-current-code">Klik untuk generate kode baru</p>
+                                    </div>
+                                    <button class="btn btn-light btn-lg" onclick="openGenerateCodeModal()">
+                                        <i class="fas fa-plus-circle mr-1"></i> Generate Kode
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="row">
                         <div class="col-lg-8">
                             <div class="card">
@@ -1310,47 +1334,6 @@
                         </div>
                     </div>
                     
-                    <!-- Sunday Clinic Viewer Section -->
-                    <div class="row mt-3">
-                        <div class="col-12">
-                            <div class="card card-info card-outline">
-                                <div class="card-header">
-                                    <h3 class="card-title"><i class="fas fa-notes-medical mr-2"></i>Sunday Clinic Viewer</h3>
-                                </div>
-                                <div class="card-body">
-                                    <p class="text-muted mb-3">Buka dan lihat rekam medis pasien Sunday Clinic berdasarkan MR ID.</p>
-                                    <button class="btn btn-primary mb-4" id="btn-open-sunday-clinic">
-                                        <i class="fas fa-folder-open mr-2"></i>Buka Rekam Medis Sunday Clinic
-                                    </button>
-                                    
-                                    <div id="sunday-clinic-recent-patients">
-                                        <h5 class="mb-3"><i class="fas fa-history mr-2"></i>10 Pasien Terakhir</h5>
-                                        <div id="sunday-clinic-patients-loading" class="text-center py-3">
-                                            <i class="fas fa-spinner fa-spin"></i> Memuat...
-                                        </div>
-                                        <div id="sunday-clinic-patients-list" class="d-none">
-                                            <div class="table-responsive">
-                                                <table class="table table-sm table-hover">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>MR ID</th>
-                                                            <th>Nama</th>
-                                                            <th>Kunjungan Terakhir</th>
-                                                            <th>Aksi</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody id="sunday-clinic-patients-tbody"></tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                        <div id="sunday-clinic-patients-error" class="alert alert-warning d-none">
-                                            <i class="fas fa-exclamation-triangle mr-2"></i>Gagal memuat daftar pasien
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
                 </div>
 
                 <!-- FINANCE PAGE (Superadmin) -->
@@ -3621,6 +3604,9 @@
                 
                 <div id="analytics-page" class="d-none"></div>
 
+                <!-- IMPORT FIELDS PAGE (Dokter Only) -->
+                <div id="import-fields-page" class="d-none"></div>
+
                 <!-- PROFILE SETTINGS PAGE -->
                 <div id="profile-settings-page" class="d-none">
                     <div class="row">
@@ -5208,6 +5194,15 @@ function mobileNavClick(btn, action) {
             console.error('❌ Error initializing dashboard:', error);
         }
 
+        // Load current registration code for dashboard
+        try {
+            if (typeof loadDashboardCurrentCode === 'function') {
+                loadDashboardCurrentCode();
+            }
+        } catch (error) {
+            console.error('❌ Error loading dashboard code:', error);
+        }
+
         if (user.role === 'superadmin') {
             try {
                 initFinanceDashboard();
@@ -6014,14 +6009,16 @@ function mobileNavClick(btn, action) {
                 `;
             }).join('');
             
-            // Destroy and reinitialize DataTable to clear cache
-            if ($.fn.DataTable.isDataTable('#manage-patients-table')) {
-                $('#manage-patients-table').DataTable().destroy();
+            // Destroy and reinitialize DataTable to clear cache (check if DataTables is loaded)
+            if ($.fn.DataTable) {
+                if ($.fn.DataTable.isDataTable('#manage-patients-table')) {
+                    $('#manage-patients-table').DataTable().destroy();
+                }
+                $('#manage-patients-table').DataTable({
+                    "pageLength": 25,
+                    "order": [[9, 'desc']] // Sort by registration date (column 9 after adding MR ID)
+                });
             }
-            $('#manage-patients-table').DataTable({
-                "pageLength": 25,
-                "order": [[9, 'desc']] // Sort by registration date (column 9 after adding MR ID)
-            });
             
             // Attach event listeners to view buttons
             document.querySelectorAll('.btn-view-patient').forEach(btn => {
@@ -8537,6 +8534,9 @@ async function generatePublicCode() {
             loadNewPatients(newPatientsCurrentPage || 1);
         }
 
+        // Update dashboard display
+        updateDashboardCodeDisplay(data.code, data.expires_at);
+
     } catch (error) {
         alert('Error: ' + error.message);
     } finally {
@@ -8544,6 +8544,35 @@ async function generatePublicCode() {
         btn.innerHTML = '<i class="fas fa-key"></i> Generate Kode Baru';
     }
 }
+
+// Update dashboard code display
+function updateDashboardCodeDisplay(code, expiresAt) {
+    const el = document.getElementById('dashboard-current-code');
+    if (el && code) {
+        const expires = new Date(expiresAt);
+        el.innerHTML = `<strong style="font-size: 1.2em; letter-spacing: 2px;">${code}</strong> <small>(sampai ${expires.toLocaleString('id-ID')})</small>`;
+    }
+}
+
+// Load current code for dashboard on page load
+async function loadDashboardCurrentCode() {
+    try {
+        const token = localStorage.getItem('vps_auth_token');
+        const response = await fetch('/api/registration-codes/public', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (data.success && data.code) {
+            updateDashboardCodeDisplay(data.code, data.expires_at);
+        }
+    } catch (e) {
+        console.log('No active public code');
+    }
+}
+
+// Make function globally available
+window.openGenerateCodeModal = openGenerateCodeModal;
+window.loadDashboardCurrentCode = loadDashboardCurrentCode;
 
 async function sendCodeWhatsApp() {
     if (!currentGeneratedCode || !currentGeneratedPhone) {
