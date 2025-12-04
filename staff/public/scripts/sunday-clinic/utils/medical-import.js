@@ -675,12 +675,19 @@ async function saveSectionToApi(mrId, section, data) {
  * Supports both 'pendingImportData' and 'simrs_import_data' keys
  */
 async function applyPendingImportData() {
+    console.log('[Import] applyPendingImportData called');
+    console.log('[Import] sessionStorage keys:', Object.keys(sessionStorage));
+
     // Check for SIMRS import data first (from Chrome extension flow)
     const simrsData = sessionStorage.getItem('simrs_import_data');
     const simrsMrId = sessionStorage.getItem('simrs_import_mr_id');
 
+    console.log('[Import] simrsData exists:', !!simrsData);
+    console.log('[Import] simrsMrId:', simrsMrId);
+
     if (simrsData) {
         console.log('[Import] Found SIMRS import data, processing...');
+        console.log('[Import] Raw simrsData:', simrsData.substring(0, 500));
         try {
             const importData = JSON.parse(simrsData);
             const parsed = importData.raw_parsed || importData;
@@ -887,7 +894,11 @@ async function applyPendingImportData() {
  * Similar to applyPendingImportData but handles SIMRS-specific data structure
  */
 async function applySIMRSImportData(template, visitDate, visitTime, visitLocation) {
-    console.log('[Import] Applying SIMRS data:', { template, visitDate, visitTime, visitLocation });
+    console.log('[Import] applySIMRSImportData called');
+    console.log('[Import] Template anamnesa:', template.anamnesa);
+    console.log('[Import] Template obstetri:', template.obstetri);
+    console.log('[Import] Template pemeriksaan_fisik:', template.pemeriksaan_fisik);
+    console.log('[Import] visitDate/Time/Location:', { visitDate, visitTime, visitLocation });
 
     // Get MR ID from URL
     const mrId = getMrIdFromUrl();
@@ -899,9 +910,21 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
         await new Promise(r => setTimeout(r, 200));
         attempts++;
     }
+    console.log('[Import] stateManager ready after', attempts, 'attempts');
 
     // Wait for DOM to be fully rendered
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 1500)); // Increased to 1.5s
+    console.log('[Import] DOM wait complete, checking elements...');
+
+    // Debug: Check if anamnesa elements exist
+    const keluhanEl = document.querySelector('#anamnesa-keluhan-utama');
+    const hphtEl = document.querySelector('#anamnesa-hpht');
+    const gravidaEl = document.querySelector('#anamnesa-gravida');
+    console.log('[Import] Element check:', {
+        keluhanUtama: !!keluhanEl,
+        hpht: !!hphtEl,
+        gravida: !!gravidaEl
+    });
 
     console.log('[Import] Applying SIMRS import data...');
 
@@ -986,6 +1009,8 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
  * Maps imported data fields to actual form element IDs in the Sunday Clinic components
  */
 function fillFormFieldsDirect(template, checkedFields) {
+    console.log('[Import] fillFormFieldsDirect called with template:', template);
+
     const fieldMappings = {
         // Anamnesa fields (anamnesa-obstetri.js uses #anamnesa-* IDs)
         keluhan_utama: ['#anamnesa-keluhan-utama'],
