@@ -491,32 +491,90 @@ export function broadcastVisitCompleted(patientId, patientName) {
 
 // Show real-time notification
 function showRealtimeNotification(message, type = 'info') {
+    // Inject CSS animations if not exists
+    if (!document.getElementById('realtime-notification-styles')) {
+        const style = document.createElement('style');
+        style.id = 'realtime-notification-styles';
+        style.textContent = `
+            @keyframes slideInRight {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOutRight {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+
+    // Get or create notification container
+    let container = document.getElementById('realtime-notification-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'realtime-notification-container';
+        container.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 9999;
+            max-width: 350px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        `;
+        document.body.appendChild(container);
+    }
+
+    // Limit to max 3 notifications at a time
+    const existingNotifications = container.querySelectorAll('.realtime-notification');
+    if (existingNotifications.length >= 3) {
+        existingNotifications[0].remove();
+    }
+
     // Create notification element
     const notification = document.createElement('div');
-    notification.className = `alert alert-${type} alert-dismissible fade show`;
+    notification.className = `alert alert-${type} realtime-notification`;
     notification.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 9999;
-        min-width: 300px;
+        margin: 0;
         box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        animation: slideInRight 0.3s ease;
+        position: relative;
+        padding-right: 35px;
     `;
-    
+
     notification.innerHTML = `
         <i class="fas fa-sync-alt mr-2"></i>
-        <strong>Update Real-time:</strong> ${message}
-        <button type="button" class="close" data-dismiss="alert">
+        <strong>Update:</strong> ${message}
+        <button type="button" class="close" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); opacity: 0.7;">
             <span>&times;</span>
         </button>
     `;
-    
-    document.body.appendChild(notification);
-    
-    // Auto-remove after 5 seconds
+
+    // Native close handler (no Bootstrap dependency)
+    const closeBtn = notification.querySelector('.close');
+    closeBtn.addEventListener('click', () => {
+        notification.style.animation = 'slideOutRight 0.3s ease';
+        setTimeout(() => notification.remove(), 300);
+    });
+
+    container.appendChild(notification);
+
+    // Auto-remove after 4 seconds
     setTimeout(() => {
-        notification.remove();
-    }, 5000);
+        if (notification.parentNode) {
+            notification.style.animation = 'slideOutRight 0.3s ease';
+            setTimeout(() => notification.remove(), 300);
+        }
+    }, 4000);
+}
+
+// Clear all realtime notifications
+export function clearRealtimeNotifications() {
+    const container = document.getElementById('realtime-notification-container');
+    if (container) {
+        container.innerHTML = '';
+    }
 }
 
 // Auto-select patient for all users

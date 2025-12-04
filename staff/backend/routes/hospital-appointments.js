@@ -32,6 +32,13 @@ const verifyToken = (req, res, next) => {
 
 // Hospital info for display
 const hospitalInfo = {
+    'klinik_private': {
+        name: 'Klinik Privat',
+        shortName: 'Privat',
+        icon: 'clinic-medical',
+        color: '#007bff',
+        address: 'Klinik Privat'
+    },
     'rsia_melinda': {
         name: 'RSIA Melinda',
         shortName: 'Melinda',

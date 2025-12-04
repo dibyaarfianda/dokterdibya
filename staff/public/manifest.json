@@ -1,6 +1,7 @@
 {
   "name": "Dokter Dibya Staff",
   "short_name": "Staff Panel",
+  "version": "1.8.0",
   "description": "Aplikasi manajemen klinik Dokter Dibya untuk staff",
   "start_url": "/staff/public/index-adminlte.html",
   "display": "standalone",

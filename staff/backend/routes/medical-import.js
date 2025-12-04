@@ -12,124 +12,98 @@ const { OPENAI_API_KEY, OPENAI_API_URL } = require('../services/openaiService');
 const logger = require('../utils/logger');
 
 /**
- * Load field configuration from database
+ * Fixed AI prompt for medical record parsing (GPT-4o optimized)
+ * No database dependency - all field definitions are hardcoded
  */
-async function loadFieldConfig() {
-    try {
-        const [fields] = await db.query(`
-            SELECT field_name, section, display_name, keywords, data_type
-            FROM import_field_config
-            WHERE is_active = 1
-            ORDER BY section, sort_order
-        `);
+const MEDICAL_PARSER_PROMPT = `You are a medical record parser for an Indonesian obstetrics and gynecology clinic.
+Extract information from the given medical record text and return ONLY valid JSON (no markdown, no code blocks, no explanation).
 
-        const config = {
-            identity: {},
-            subjective: {},
-            objective: {},
-            assessment: {},
-            plan: {}
-        };
-
-        fields.forEach(field => {
-            config[field.section][field.field_name] = {
-                display_name: field.display_name,
-                keywords: field.keywords.split(',').map(k => k.trim()),
-                data_type: field.data_type
-            };
-        });
-
-        return config;
-    } catch (error) {
-        logger.error('Failed to load field config:', error);
-        return null;
-    }
-}
-
-/**
- * Build AI prompt from database configuration
- */
-function buildAIPrompt(fieldConfig) {
-    const buildSection = (sectionName, fields) => {
-        const lines = [];
-        for (const [fieldName, config] of Object.entries(fields)) {
-            let typeHint = 'or null';
-            if (config.data_type === 'number') typeHint = 'as number or null';
-            else if (config.data_type === 'date') typeHint = 'in DD/MM/YYYY format or null';
-            else if (config.data_type === 'phone') typeHint = 'starting with 08 or 62 only, null if invalid';
-            else if (config.data_type === 'array') typeHint = 'as array of strings';
-
-            lines.push(`    "${fieldName}": "${config.display_name} ${typeHint}"`);
-        }
-        return lines.join(',\n');
-    };
-
-    // Build keywords list for AI
-    const keywordsList = [];
-    for (const [section, fields] of Object.entries(fieldConfig)) {
-        for (const [fieldName, config] of Object.entries(fields)) {
-            keywordsList.push(`- ${config.display_name}: ${config.keywords.join(', ')}`);
-        }
-    }
-
-    return `You are a medical record parser for an Indonesian obstetrics and gynecology clinic.
-Extract information from the given medical record text and return ONLY valid JSON (no markdown, no explanation).
+IMPORTANT: The document may have labels on one line and values on the NEXT line. Check both formats.
 
 Return this exact JSON structure:
 {
   "identity": {
-${buildSection('identity', fieldConfig.identity)}
+    "nama": "Patient name or null",
+    "jenis_kelamin": "L/P/Laki-laki/Perempuan or null",
+    "usia": "Age as number or null",
+    "tanggal_lahir": "DD/MM/YYYY or null",
+    "tempat_lahir": "Birth place or null",
+    "alamat": "Address or null",
+    "no_hp": "Phone starting with 08/62 (10+ digits) or null - NOT dates!",
+    "tinggi_badan": "Height in cm as number or null",
+    "berat_badan": "Weight in kg as number or null",
+    "pekerjaan": "Occupation or null",
+    "no_identitas": "NIK/KTP number or null"
   },
   "subjective": {
-${buildSection('subjective', fieldConfig.subjective)}
+    "keluhan_utama": "Chief complaint or null",
+    "rps": "History of present illness or null",
+    "rpd": "Past medical history or null",
+    "rpk": "Family history or null",
+    "hpht": "Last menstrual period DD/MM/YYYY or null",
+    "hpl": "Expected delivery date DD/MM/YYYY or null"
   },
   "objective": {
-${buildSection('objective', fieldConfig.objective)}
+    "keadaan_umum": "General condition (Baik/Sedang/Lemah) or null",
+    "tensi": "Blood pressure like 120/80 or null",
+    "nadi": "Pulse as number or null",
+    "suhu": "Temperature as number or null",
+    "spo2": "Oxygen saturation as number or null",
+    "gcs": "GCS score or null",
+    "rr": "Respiratory rate as number or null",
+    "usg": "USG findings text or null",
+    "berat_janin": "Fetal weight in grams as number or null",
+    "presentasi": "Presentation (Kepala/Sungsang/Lintang) or null",
+    "plasenta": "Placenta position or null",
+    "ketuban": "Amniotic fluid status or null"
   },
   "assessment": {
-${buildSection('assessment', fieldConfig.assessment)},
-    "is_obstetric": true or false based on pregnancy indicators
+    "diagnosis": "Full diagnosis text or null",
+    "gravida": "Number of pregnancies as number or null",
+    "para": "Parity like '1-0-0-1' or as number",
+    "usia_kehamilan": "Gestational age text like '9 3/7mgg' or null",
+    "usia_kehamilan_minggu": "Weeks as number or null",
+    "usia_kehamilan_hari": "Days as number or null",
+    "presentasi": "Presentation or null",
+    "is_obstetric": true
   },
   "plan": {
-${buildSection('plan', fieldConfig.plan)},
-    "raw": "original plan text or null"
+    "obat": ["Array of medications with dosage like 'Folamil genio 1x1 (1 botol)'"],
+    "tindakan": ["Array of procedures"],
+    "instruksi": ["Array of instructions"],
+    "raw": "Original plan text or null"
   }
 }
 
-FIELD KEYWORDS TO LOOK FOR:
-${keywordsList.join('\n')}
+FIELD KEYWORDS (Indonesian medical terms):
+- NAMA: Nama Pasien, Nama Lengkap, Name, Nm
+- TB/TINGGI: Tinggi Badan, TB, T.B., Height
+- BB/BERAT: Berat Badan, BB, B.B., Weight
+- HPHT: Hari Pertama Haid Terakhir, LMP
+- HPL: Hari Perkiraan Lahir, EDD
+- SpO2: Saturasi, SaO2, Oxygen Sat
+- RR: Respirasi, Respiratory Rate, Nafas
+- GCS: Glasgow Coma Scale
+- UK: Usia Kehamilan, Gestational Age, GA
 
-IMPORTANT RULES:
-- NO HP (phone): Only extract if it looks like a phone number (starts with 08 or 62, has 10+ digits). Dates like "29/9/25" are NOT phone numbers.
-- TB/BB: Look anywhere in the text, including diagnosis section
-- Dates: Convert to DD/MM/YYYY format
-- Numbers: Extract as numbers, not strings (except para which can be "1-0-0-1")
-- Return null for fields not found, don't guess
-- For medications, include dosage information like "Folamil 1x1"`;
-}
+CRITICAL RULES:
+1. NO HP: ONLY extract phone if it starts with 08 or 62 and has 10+ digits. "29/9/25" is a DATE, not a phone!
+2. TB/BB: Search EVERYWHERE in the text, including in diagnosis section
+3. Look for multi-line format: label on one line, value on next line
+4. For obstetric diagnosis like "G1 P0-0 uk 9 3/7mgg": extract gravida=1, para="0-0", usia_kehamilan="9 3/7mgg"
+5. Numbers should be numbers (not strings), except para which can be string like "1-0-0-1"
+6. Return null for fields not found - DO NOT GUESS
+7. Medications must include dosage: "Folamil genio 1x1 (1 botol)" not just "Folamil"`;
 
 /**
- * Parse medical record text using GPT-4o-mini
+ * Parse medical record text using GPT-4o
  */
 async function parseWithAI(text, category) {
     if (!OPENAI_API_KEY) {
         throw new Error('OpenAI API key not configured');
     }
 
-    // Load field config from database
-    const fieldConfig = await loadFieldConfig();
-
-    // Build prompt from config or use default
-    let systemPrompt;
-    if (fieldConfig && Object.keys(fieldConfig.identity).length > 0) {
-        systemPrompt = buildAIPrompt(fieldConfig);
-        logger.info('Using database field configuration for AI prompt');
-    } else {
-        // Fallback to hardcoded prompt if no config
-        systemPrompt = `You are a medical record parser for an Indonesian obstetrics and gynecology clinic.
-Extract information and return ONLY valid JSON with sections: identity (nama, jenis_kelamin, usia, tanggal_lahir, alamat, no_hp, tinggi_badan, berat_badan, pekerjaan, no_identitas), subjective (keluhan_utama, rps, rpd, rpk, hpht, hpl), objective (keadaan_umum, tensi, nadi, suhu, spo2, rr, usg), assessment (diagnosis, gravida, para, usia_kehamilan_minggu, presentasi, is_obstetric), plan (obat, tindakan, instruksi, raw). Use null for not found. Phone must start with 08/62. Dates in DD/MM/YYYY.`;
-        logger.info('Using fallback hardcoded AI prompt');
-    }
+    logger.info('Using GPT-4o for medical record parsing');
 
     const response = await fetch(OPENAI_API_URL, {
         method: 'POST',
@@ -140,7 +114,7 @@ Extract information and return ONLY valid JSON with sections: identity (nama, je
         body: JSON.stringify({
             model: 'gpt-4o',
             messages: [
-                { role: 'system', content: systemPrompt },
+                { role: 'system', content: MEDICAL_PARSER_PROMPT },
                 { role: 'user', content: `Parse this ${category} medical record:\n\n${text}` }
             ],
             temperature: 0.1,

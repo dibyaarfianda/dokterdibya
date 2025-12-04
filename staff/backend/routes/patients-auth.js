@@ -128,7 +128,7 @@ async function validateAndConsumeCode(code, patientId) {
     );
 
     if (codes.length === 0) {
-        // Check if code exists but expired or used
+        // Check if code exists but expired
         const [expiredCodes] = await db.query(
             'SELECT * FROM registration_codes WHERE code = ?',
             [normalizedCode]
@@ -136,7 +136,8 @@ async function validateAndConsumeCode(code, patientId) {
 
         if (expiredCodes.length > 0) {
             const existingCode = expiredCodes[0];
-            if (existingCode.status === 'used') {
+            // Only check 'used' status for private codes (is_public = 0)
+            if (existingCode.status === 'used' && existingCode.is_public === 0) {
                 return { valid: false, message: 'Kode registrasi sudah digunakan' };
             } else if (existingCode.status === 'expired' || new Date(existingCode.expires_at) < new Date()) {
                 return { valid: false, message: 'Kode registrasi sudah kadaluarsa' };
@@ -146,15 +147,19 @@ async function validateAndConsumeCode(code, patientId) {
         return { valid: false, message: 'Kode registrasi tidak valid' };
     }
 
-    // Mark code as used
-    await db.query(
-        `UPDATE registration_codes
-         SET status = 'used', used_at = NOW(), used_by_patient_id = ?
-         WHERE code = ?`,
-        [patientId, normalizedCode]
-    );
+    const codeData = codes[0];
 
-    return { valid: true, codeData: codes[0] };
+    // Only mark non-public codes as used (public codes stay active for multiple registrations)
+    if (codeData.is_public === 0) {
+        await db.query(
+            `UPDATE registration_codes
+             SET status = 'used', used_at = NOW(), used_by_patient_id = ?
+             WHERE code = ? AND is_public = 0`,
+            [patientId, normalizedCode]
+        );
+    }
+
+    return { valid: true, codeData };
 }
 
 // Register with email
@@ -198,7 +203,8 @@ async function handlePatientRegister(req, res) {
 
                 if (expiredCodes.length > 0) {
                     const existingCode = expiredCodes[0];
-                    if (existingCode.status === 'used') {
+                    // Only check 'used' for private codes (public codes can be reused)
+                    if (existingCode.status === 'used' && existingCode.is_public === 0) {
                         return res.status(400).json({ message: 'Kode registrasi sudah digunakan' });
                     } else if (existingCode.status === 'expired' || new Date(existingCode.expires_at) < new Date()) {
                         return res.status(400).json({ message: 'Kode registrasi sudah kadaluarsa' });

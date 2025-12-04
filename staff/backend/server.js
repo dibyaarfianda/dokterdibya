@@ -227,6 +227,10 @@ app.use('/', patientRecordsRoutes);
 const medicalImportRoutes = require('./routes/medical-import');
 app.use('/', medicalImportRoutes);
 
+// Import Field Configuration routes (manage field mappings and keywords)
+const importConfigRoutes = require('./routes/import-config');
+app.use('/api/import-config', importConfigRoutes);
+
 // Billing routes
 app.use('/api/billings', billingsRoutes);
 

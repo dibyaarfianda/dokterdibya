@@ -1118,7 +1118,8 @@ router.post('/api/auth/set-password', asyncHandler(async (req, res) => {
 
             if (expiredCodes.length > 0) {
                 const existingCode = expiredCodes[0];
-                if (existingCode.status === 'used') {
+                // Only check 'used' for private codes (public codes can be reused)
+                if (existingCode.status === 'used' && existingCode.is_public === 0) {
                     return sendError(res, 'Kode registrasi sudah digunakan', HTTP_STATUS.BAD_REQUEST);
                 } else if (existingCode.status === 'expired' || new Date(existingCode.expires_at) < new Date()) {
                     return sendError(res, 'Kode registrasi sudah kadaluarsa', HTTP_STATUS.BAD_REQUEST);
@@ -1176,13 +1177,13 @@ router.post('/api/auth/set-password', asyncHandler(async (req, res) => {
         [userId, email, patientName, patientPhone, patientPhone, patientBirthDate, patientAge]
     );
 
-    // Mark registration code as used (if code was required)
+    // Mark registration code as used (only for private codes - public codes stay active)
     if (codeRequired && registration_code) {
         const normalizedCode = registration_code.toUpperCase().trim();
         await db.query(
             `UPDATE registration_codes
              SET status = 'used', used_at = NOW(), used_by_patient_id = ?
-             WHERE code = ?`,
+             WHERE code = ? AND is_public = 0`,
             [userId, normalizedCode]
         );
         logger.info(`Registration code ${normalizedCode} used by patient ${userId}`);
