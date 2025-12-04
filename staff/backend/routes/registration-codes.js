@@ -8,7 +8,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const logger = require('../utils/logger');
-const { verifyToken, requireSuperadmin } = require('../middleware/auth');
+const { verifyToken, requireSuperadmin, requirePermission } = require('../middleware/auth');
 
 // Lazy load notification service
 let notificationService;
@@ -35,7 +35,7 @@ function generateCode() {
  * POST /api/registration-codes/generate
  * Generate a new registration code (Staff only)
  */
-router.post('/generate', verifyToken, async (req, res) => {
+router.post('/generate', verifyToken, requirePermission('registration_codes.create'), async (req, res) => {
     try {
         const { patient_name, phone } = req.body;
 
@@ -135,7 +135,7 @@ router.post('/generate', verifyToken, async (req, res) => {
  * GET /api/registration-codes/public
  * Get current active public code (Staff only)
  */
-router.get('/public', verifyToken, async (req, res) => {
+router.get('/public', verifyToken, requirePermission('registration_codes.view'), async (req, res) => {
     try {
         const [codes] = await db.query(
             `SELECT * FROM registration_codes
@@ -175,7 +175,7 @@ router.get('/public', verifyToken, async (req, res) => {
  * - Valid for 24 hours
  * - Invalidates previous public codes
  */
-router.post('/generate-public', verifyToken, async (req, res) => {
+router.post('/generate-public', verifyToken, requirePermission('registration_codes.create'), async (req, res) => {
     try {
         // Invalidate all previous public codes
         await db.query(
@@ -243,7 +243,7 @@ router.post('/generate-public', verifyToken, async (req, res) => {
  * POST /api/registration-codes/send-whatsapp
  * Send registration code via WhatsApp (Staff only)
  */
-router.post('/send-whatsapp', verifyToken, async (req, res) => {
+router.post('/send-whatsapp', verifyToken, requirePermission('registration_codes.create'), async (req, res) => {
     try {
         const { code, phone, patient_name } = req.body;
 
@@ -483,7 +483,7 @@ router.post('/use', async (req, res) => {
  * GET /api/registration-codes
  * Get all registration codes (Staff only)
  */
-router.get('/', verifyToken, async (req, res) => {
+router.get('/', verifyToken, requirePermission('registration_codes.view'), async (req, res) => {
     try {
         const { status, page = 1, limit = 20 } = req.query;
         const offset = (page - 1) * limit;
@@ -537,7 +537,7 @@ router.get('/', verifyToken, async (req, res) => {
  * DELETE /api/registration-codes/:id
  * Delete/revoke a registration code (Superadmin/Dokter only)
  */
-router.delete('/:id', verifyToken, requireSuperadmin, async (req, res) => {
+router.delete('/:id', verifyToken, requirePermission('registration_codes.delete'), async (req, res) => {
     try {
         const { id } = req.params;
 

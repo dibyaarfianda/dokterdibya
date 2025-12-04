@@ -24,8 +24,11 @@ const io = new Server(server, {
     },
     pingTimeout: 60000,
     pingInterval: 25000,
-    transports: ['websocket', 'polling'],
-    allowEIO3: true
+    transports: ['polling'], // POLLING ONLY - mobile ISPs kill WebSocket connections
+    allowEIO3: true,
+    allowUpgrades: false, // Prevent upgrade to websocket
+    maxHttpBufferSize: 1e8, // 100MB - fix 413 errors for large polling payloads
+    httpCompression: true // Compress polling data
 });
 const PORT = process.env.PORT || 3000;
 
@@ -348,18 +351,25 @@ logger.info('Real-time sync initialized with Socket.IO');
 
 // Socket.io connection handling
 io.on('connection', (socket) => {
-    logger.info(`Client connected: ${socket.id}`);
-    
+    const clientIp = socket.handshake.headers['x-forwarded-for'] || socket.handshake.address;
+    const transport = socket.conn.transport.name;
+    logger.info(`Client connected: ${socket.id} from ${clientIp} via ${transport}`);
+
     // User registration
     socket.on('user:register', (data) => {
+        if (!data || !data.userId || !data.name) {
+            logger.warn(`Invalid user:register data received: ${JSON.stringify(data)}`);
+            return;
+        }
+
         socket.userId = data.userId;
         socket.userName = data.name;
         socket.userRole = data.role;
         socket.userActivity = 'Baru bergabung';
         socket.userPhoto = data.photo || null;
         socket.activityTimestamp = new Date().toISOString();
-        
-        logger.info(`User registered on socket: ${data.name} (${data.role})`);
+
+        logger.info(`User registered on socket: ${data.name} (${data.role}) [ID: ${data.userId}]`);
         
         // Broadcast to others that a new user connected
         socket.broadcast.emit('user:connected', {
@@ -481,9 +491,9 @@ io.on('connection', (socket) => {
         socket.emit('users:list', onlineUsers);
     });
     
-    socket.on('disconnect', () => {
-        logger.info(`Client disconnected: ${socket.id} (${socket.userName || 'unknown'})`);
-        
+    socket.on('disconnect', (reason) => {
+        logger.info(`Client disconnected: ${socket.id} (${socket.userName || 'unknown'}) reason: ${reason}`);
+
         // Broadcast to others that user disconnected
         if (socket.userId) {
             socket.broadcast.emit('user:disconnected', {

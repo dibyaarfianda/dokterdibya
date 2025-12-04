@@ -67,3 +67,37 @@ Use appropriate middleware:
 2. **Role name mismatch** - `admin` vs `administrasi`
 3. **Hardcoding role IDs** - Use `ROLE_IDS.DOKTER` not `1`
 4. **Case sensitivity** - Role names are lowercase in DB
+
+### 5. Real-time Sync (Socket.IO)
+The `realtime-sync.js` module uses a **window-level singleton pattern** to prevent multiple socket connections when the module is loaded from different cached versions.
+
+**IMPORTANT:**
+- State is stored in `window.__realtimeSyncState`
+- Always use `state.socket`, `state.currentUser`, `state.onlineUsers` instead of local variables
+- The service worker (`sw.js`) bypasses caching for `/scripts/*.js` files
+
+```javascript
+// Correct - use state object
+if (!state.socket || !state.currentUser) return;
+state.socket.emit('event', { userId: state.currentUser.id });
+
+// WRONG - don't use local variables
+if (!socket || !currentUser) return;
+```
+
+**Transport Configuration (CRITICAL):**
+- Server uses **polling-only** mode (`transports: ['polling']`) because Indonesian mobile ISPs (Telkomsel, etc.) kill WebSocket connections immediately
+- Client is also configured for polling-only, but cached versions may still try websocket
+- If users see "WebSocket connection failed" errors, they need to hard-refresh (Ctrl+Shift+R)
+- Server config in `server.js`:
+  ```javascript
+  const io = new Server(server, {
+      transports: ['polling'], // POLLING ONLY
+      allowUpgrades: false
+  });
+  ```
+
+**Cache Versioning:**
+- `CACHE_VERSION` in `index-adminlte.html` - increment to force localStorage clear
+- Service worker cache versions in `sw.js` - increment to force SW update
+- After changing socket config, ALWAYS bump both versions

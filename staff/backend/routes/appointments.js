@@ -2,12 +2,12 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
-const { verifyToken, requireSuperadmin } = require('../middleware/auth');
+const { verifyToken, requireSuperadmin, requirePermission } = require('../middleware/auth');
 
 // ==================== PUBLIC ROUTES ====================
 
 // GET all appointments (with optional filters)
-router.get('/', verifyToken, async (req, res) => {
+router.get('/', verifyToken, requirePermission('booking.view'), async (req, res) => {
     try {
         const { patient_id, start_date, end_date, status, today_only } = req.query;
         
@@ -57,7 +57,7 @@ router.get('/', verifyToken, async (req, res) => {
 });
 
 // GET appointments by hospital location
-router.get('/hospital/:location', verifyToken, async (req, res) => {
+router.get('/hospital/:location', verifyToken, requirePermission('booking.view'), async (req, res) => {
     try {
         const { location } = req.params;
 
@@ -117,7 +117,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // GET latest appointment for a specific patient
-router.get('/patient/:patient_id/latest', verifyToken, async (req, res) => {
+router.get('/patient/:patient_id/latest', verifyToken, requirePermission('booking.view'), async (req, res) => {
     try {
         const [rows] = await pool.query(
             `SELECT * FROM appointments 
@@ -151,7 +151,7 @@ router.get('/patient/:patient_id/latest', verifyToken, async (req, res) => {
 // ==================== PROTECTED ROUTES (require auth) ====================
 
 // POST new appointment
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', verifyToken, requirePermission('booking.manage'), async (req, res) => {
     try {
         const {
             patient_id,
@@ -231,7 +231,7 @@ router.post('/', verifyToken, async (req, res) => {
 });
 
 // PATCH update appointment status only
-router.patch('/:id/status', verifyToken, async (req, res) => {
+router.patch('/:id/status', verifyToken, requirePermission('booking.manage'), async (req, res) => {
     try {
         const { id } = req.params;
         const { status } = req.body;
@@ -279,7 +279,7 @@ router.patch('/:id/status', verifyToken, async (req, res) => {
 });
 
 // PUT update appointment
-router.put('/:id', verifyToken, async (req, res) => {
+router.put('/:id', verifyToken, requirePermission('booking.manage'), async (req, res) => {
     try {
         const { id } = req.params;
         const {

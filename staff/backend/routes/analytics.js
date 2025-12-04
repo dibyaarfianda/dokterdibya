@@ -9,7 +9,7 @@
 const express = require('express');
 const router = express.Router();
 const AnalyticsService = require('../services/AnalyticsService');
-const { verifyToken } = require('../middleware/auth');
+const { verifyToken, requirePermission } = require('../middleware/auth');
 const { success, error } = require('../utils/response');
 const logger = require('../utils/logger');
 
@@ -40,7 +40,7 @@ const logger = require('../utils/logger');
  *       200:
  *         description: Revenue analytics data
  */
-router.get('/revenue', verifyToken, async (req, res) => {
+router.get('/revenue', verifyToken, requirePermission('analytics.view'), async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
         
@@ -68,7 +68,7 @@ router.get('/revenue', verifyToken, async (req, res) => {
  *       200:
  *         description: Patient demographics data
  */
-router.get('/demographics', verifyToken, async (req, res) => {
+router.get('/demographics', verifyToken, requirePermission('analytics.view'), async (req, res) => {
     try {
         const data = await AnalyticsService.getPatientDemographics();
         res.json(success(data, 'Demografis pasien berhasil dimuat'));
@@ -103,7 +103,7 @@ router.get('/demographics', verifyToken, async (req, res) => {
  *       200:
  *         description: Medication analytics data
  */
-router.get('/medications', verifyToken, async (req, res) => {
+router.get('/medications', verifyToken, requirePermission('analytics.view'), async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
         
@@ -144,7 +144,7 @@ router.get('/medications', verifyToken, async (req, res) => {
  *       200:
  *         description: Visit trends data
  */
-router.get('/visits', verifyToken, async (req, res) => {
+router.get('/visits', verifyToken, requirePermission('analytics.view'), async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
         
@@ -185,7 +185,7 @@ router.get('/visits', verifyToken, async (req, res) => {
  *       200:
  *         description: Doctor performance data
  */
-router.get('/doctors', verifyToken, async (req, res) => {
+router.get('/doctors', verifyToken, requirePermission('analytics.view'), async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
         
@@ -213,7 +213,7 @@ router.get('/doctors', verifyToken, async (req, res) => {
  *       200:
  *         description: Dashboard statistics
  */
-router.get('/dashboard', verifyToken, async (req, res) => {
+router.get('/dashboard', verifyToken, requirePermission('analytics.view'), async (req, res) => {
     try {
         const data = await AnalyticsService.getDashboardStats();
         res.json(success(data, 'Statistik dashboard berhasil dimuat'));
@@ -251,7 +251,7 @@ router.get('/dashboard', verifyToken, async (req, res) => {
  *       200:
  *         description: Private clinic financial analysis
  */
-router.get('/private-clinic', verifyToken, async (req, res) => {
+router.get('/private-clinic', verifyToken, requirePermission('analytics.view'), async (req, res) => {
     const pool = require('../db');
 
     try {

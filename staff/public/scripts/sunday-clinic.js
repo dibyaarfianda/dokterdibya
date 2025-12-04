@@ -12,6 +12,7 @@
 import SundayClinicApp from './sunday-clinic/main.js?v=2.0.1';
 import apiClient from './sunday-clinic/utils/api-client.js?v=2.0.1';
 import stateManager from './sunday-clinic/utils/state-manager.js?v=2.0.1';
+import { initRealtimeSync } from './realtime-sync.js';
 
 // ============================================================================
 // CONSTANTS
@@ -247,6 +248,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                     
                     console.log('[SundayClinic] Staff identity set:', identity);
+
+                    // Initialize real-time sync for chat and online status
+                    initRealtimeSync({
+                        id: identity.id,
+                        name: identity.name,
+                        role: identity.role
+                    });
                 }
             }
         } catch (error) {

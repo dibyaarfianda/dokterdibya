@@ -7,7 +7,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const logger = require('../utils/logger');
-const { verifyToken, requireMenuAccess } = require('../middleware/auth');
+const { verifyToken, requireMenuAccess, requirePermission } = require('../middleware/auth');
 const InventoryService = require('../services/InventoryService');
 
 /**
@@ -180,7 +180,7 @@ router.get('/movements/:obatId', verifyToken, requireMenuAccess('obat_alkes'), a
  * GET /api/inventory/activity-log
  * Get all stock movements with filters for activity log page
  */
-router.get('/activity-log', verifyToken, requireMenuAccess('obat_alkes'), async (req, res) => {
+router.get('/activity-log', verifyToken, requirePermission('obat_logs.view'), async (req, res) => {
     try {
         const {
             start_date,

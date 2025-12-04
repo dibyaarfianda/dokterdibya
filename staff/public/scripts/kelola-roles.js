@@ -559,6 +559,7 @@ function renderUsersTable() {
         return `
         <tr>
             <td>${index + 1}</td>
+            <td><code class="text-muted" style="font-size: 0.75rem;">${escapeHtml(user.id || '-')}</code></td>
             <td><strong>${escapeHtml(user.name || '-')}</strong></td>
             <td><small>${escapeHtml(user.email)}</small></td>
             <td>${rolesHtml}</td>

@@ -107,6 +107,13 @@ export async function signIn(email, password, remember = false) {
             if (remember) localStorage.setItem(TOKEN_KEY, result.data.token);
             else sessionStorage.setItem(TOKEN_KEY, result.data.token);
 
+            // Store must_change_password flag
+            if (result.data.user && result.data.user.must_change_password) {
+                localStorage.setItem('must_change_password', 'true');
+            } else {
+                localStorage.removeItem('must_change_password');
+            }
+
             auth.currentUser = normalizeUser(result.data.user) || null;
             notifyAuthChange();
             return result;
@@ -123,6 +130,7 @@ export async function signIn(email, password, remember = false) {
 export async function signOut() {
     localStorage.removeItem(TOKEN_KEY);
     sessionStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem('must_change_password');
     auth.currentUser = null;
     notifyAuthChange();
 }
