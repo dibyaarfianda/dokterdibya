@@ -409,10 +409,17 @@ async function loadHospitalPatients(location) {
         }).join('');
 
         // Initialize DataTable (already destroyed at the beginning of function)
-        $('#hospital-patients-table').DataTable({
-            "pageLength": 25,
-            "order": [[6, 'desc']]
-        });
+        try {
+            $('#hospital-patients-table').DataTable({
+                pageLength: 25,
+                order: [[6, 'desc']],
+                language: {
+                    url: '//cdn.datatables.net/plug-ins/1.13.6/i18n/id.json'
+                }
+            });
+        } catch (dtError) {
+            console.warn('DataTable init warning:', dtError.message);
+        }
 
         // Attach event listeners to view buttons
         document.querySelectorAll('.btn-view-hospital-patient').forEach(btn => {
