@@ -10,15 +10,6 @@ const db = require('../db');
 const logger = require('../utils/logger');
 const { verifyToken, requireSuperadmin, requirePermission } = require('../middleware/auth');
 
-// Lazy load notification service
-let notificationService;
-function getNotificationService() {
-    if (!notificationService) {
-        notificationService = require('../utils/notification');
-    }
-    return notificationService;
-}
-
 /**
  * Generate a unique 6-character alphanumeric code
  */
@@ -30,106 +21,6 @@ function generateCode() {
     }
     return code;
 }
-
-/**
- * POST /api/registration-codes/generate
- * Generate a new registration code (Staff only)
- */
-router.post('/generate', verifyToken, requirePermission('registration_codes.create'), async (req, res) => {
-    try {
-        const { patient_name, phone } = req.body;
-
-        if (!phone) {
-            return res.status(400).json({
-                success: false,
-                message: 'Nomor telepon harus diisi'
-            });
-        }
-
-        // Normalize phone number (ensure starts with 628)
-        let normalizedPhone = phone.replace(/[^0-9]/g, '');
-        if (normalizedPhone.startsWith('0')) {
-            normalizedPhone = '62' + normalizedPhone.substring(1);
-        } else if (!normalizedPhone.startsWith('62')) {
-            normalizedPhone = '62' + normalizedPhone;
-        }
-
-        // Check if there's already an active code for this phone
-        const [existingCodes] = await db.query(
-            `SELECT * FROM registration_codes
-             WHERE phone = ? AND status = 'active' AND expires_at > NOW()
-             ORDER BY created_at DESC LIMIT 1`,
-            [normalizedPhone]
-        );
-
-        if (existingCodes.length > 0) {
-            // Return existing code
-            return res.json({
-                success: true,
-                message: 'Kode registrasi sudah ada untuk nomor ini',
-                code: existingCodes[0].code,
-                expires_at: existingCodes[0].expires_at,
-                existing: true
-            });
-        }
-
-        // Generate unique code
-        let code;
-        let isUnique = false;
-        let attempts = 0;
-
-        while (!isUnique && attempts < 10) {
-            code = generateCode();
-            const [existing] = await db.query(
-                'SELECT id FROM registration_codes WHERE code = ?',
-                [code]
-            );
-            if (existing.length === 0) {
-                isUnique = true;
-            }
-            attempts++;
-        }
-
-        if (!isUnique) {
-            return res.status(500).json({
-                success: false,
-                message: 'Gagal generate kode unik'
-            });
-        }
-
-        // Set expiration to 7 days from now
-        const expiresAt = new Date();
-        expiresAt.setDate(expiresAt.getDate() + 7);
-
-        // Insert code
-        await db.query(
-            `INSERT INTO registration_codes (code, patient_name, phone, created_by, expires_at)
-             VALUES (?, ?, ?, ?, ?)`,
-            [code, patient_name || null, normalizedPhone, req.user.id, expiresAt]
-        );
-
-        logger.info('Registration code generated', {
-            code,
-            phone: normalizedPhone,
-            createdBy: req.user.id
-        });
-
-        res.json({
-            success: true,
-            message: 'Kode registrasi berhasil dibuat',
-            code,
-            phone: normalizedPhone,
-            expires_at: expiresAt
-        });
-
-    } catch (error) {
-        logger.error('Generate registration code error', error);
-        res.status(500).json({
-            success: false,
-            message: 'Gagal membuat kode registrasi'
-        });
-    }
-});
 
 /**
  * GET /api/registration-codes/public
@@ -168,14 +59,12 @@ router.get('/public', verifyToken, requirePermission('registration_codes.view'),
 });
 
 /**
- * POST /api/registration-codes/generate-public
- * Generate a new public registration code (Staff only)
- * - No name/phone required
+ * Generate registration code handler
  * - Can be used by multiple registrants
  * - Valid for 24 hours
- * - Invalidates previous public codes
+ * - Invalidates previous codes when new one is generated
  */
-router.post('/generate-public', verifyToken, requirePermission('registration_codes.create'), async (req, res) => {
+async function generatePublicCode(req, res) {
     try {
         // Invalidate all previous public codes
         await db.query(
@@ -217,7 +106,7 @@ router.post('/generate-public', verifyToken, requirePermission('registration_cod
             [code, req.user.id, expiresAt]
         );
 
-        logger.info('Public registration code generated', {
+        logger.info('Registration code generated', {
             code,
             createdBy: req.user.id,
             expiresAt
@@ -225,120 +114,30 @@ router.post('/generate-public', verifyToken, requirePermission('registration_cod
 
         res.json({
             success: true,
-            message: 'Kode registrasi publik berhasil dibuat',
+            message: 'Kode registrasi berhasil dibuat (berlaku 24 jam)',
             code,
             expires_at: expiresAt
         });
 
     } catch (error) {
-        logger.error('Generate public registration code error', error);
+        logger.error('Generate registration code error', error);
         res.status(500).json({
             success: false,
-            message: 'Gagal membuat kode registrasi publik'
+            message: 'Gagal membuat kode registrasi'
         });
     }
-});
+}
 
-/**
- * POST /api/registration-codes/send-whatsapp
- * Send registration code via WhatsApp (Staff only)
- */
-router.post('/send-whatsapp', verifyToken, requirePermission('registration_codes.create'), async (req, res) => {
-    try {
-        const { code, phone, patient_name } = req.body;
+// POST /api/registration-codes/generate - Main endpoint
+router.post('/generate', verifyToken, requirePermission('registration_codes.create'), generatePublicCode);
 
-        if (!code || !phone) {
-            return res.status(400).json({
-                success: false,
-                message: 'Kode dan nomor telepon harus diisi'
-            });
-        }
-
-        // Normalize phone
-        let normalizedPhone = phone.replace(/[^0-9]/g, '');
-        if (normalizedPhone.startsWith('0')) {
-            normalizedPhone = '62' + normalizedPhone.substring(1);
-        } else if (!normalizedPhone.startsWith('62')) {
-            normalizedPhone = '62' + normalizedPhone;
-        }
-
-        // Build message
-        const clinicName = process.env.CLINIC_NAME || 'Klinik dr. Dibya';
-        const portalUrl = process.env.PATIENT_PORTAL_URL || 'https://dokterdibya.com';
-
-        const greeting = patient_name ? `Halo ${patient_name},\n\n` : 'Halo,\n\n';
-        const message = `${greeting}Anda telah terdaftar di ${clinicName}.\n\n` +
-            `Berikut adalah kode registrasi portal pasien Anda:\n\n` +
-            `*${code}*\n\n` +
-            `Gunakan kode ini untuk mendaftar di portal pasien kami:\n${portalUrl}/register.html\n\n` +
-            `Kode ini berlaku selama 7 hari.\n\n` +
-            `Terima kasih telah mempercayakan kesehatan Anda kepada kami.\n\n` +
-            `Salam,\n${clinicName}`;
-
-        // Try to send via WhatsApp API (Fonnte first, then Twilio, then manual)
-        const notification = getNotificationService();
-
-        const result = await notification.sendWhatsAppAuto(normalizedPhone, message);
-
-        if (result.success) {
-            if (result.method === 'fonnte') {
-                logger.info('Registration code sent via WhatsApp (Fonnte)', {
-                    code,
-                    phone: normalizedPhone,
-                    id: result.id
-                });
-
-                return res.json({
-                    success: true,
-                    message: 'Kode berhasil dikirim via WhatsApp',
-                    method: 'fonnte'
-                });
-            } else if (result.method === 'twilio') {
-                logger.info('Registration code sent via WhatsApp (Twilio)', {
-                    code,
-                    phone: normalizedPhone,
-                    sid: result.sid
-                });
-
-                return res.json({
-                    success: true,
-                    message: 'Kode berhasil dikirim via WhatsApp',
-                    method: 'twilio'
-                });
-            } else if (result.method === 'manual') {
-                // Return manual wa.me link
-                return res.json({
-                    success: true,
-                    message: 'Link WhatsApp berhasil dibuat',
-                    method: 'manual',
-                    waLink: result.waLink
-                });
-            }
-        }
-
-        // Fallback if all methods fail
-        const encodedMessage = encodeURIComponent(message);
-        const waLink = `https://wa.me/${normalizedPhone}?text=${encodedMessage}`;
-
-        res.json({
-            success: true,
-            message: 'Link WhatsApp berhasil dibuat (fallback)',
-            method: 'manual',
-            waLink
-        });
-
-    } catch (error) {
-        logger.error('Send WhatsApp registration code error', error);
-        res.status(500).json({
-            success: false,
-            message: 'Gagal mengirim kode via WhatsApp'
-        });
-    }
-});
+// POST /api/registration-codes/generate-public - Alias for backward compatibility
+router.post('/generate-public', verifyToken, requirePermission('registration_codes.create'), generatePublicCode);
 
 /**
  * POST /api/registration-codes/validate
  * Validate a registration code (Public - for patient registration)
+ * All codes are public and can be used multiple times
  */
 router.post('/validate', async (req, res) => {
     try {
@@ -353,7 +152,7 @@ router.post('/validate', async (req, res) => {
 
         const normalizedCode = code.toUpperCase().trim();
 
-        // Check if code exists and is valid
+        // Check if code exists and is valid (active and not expired)
         const [codes] = await db.query(
             `SELECT * FROM registration_codes
              WHERE code = ? AND status = 'active' AND expires_at > NOW()`,
@@ -361,7 +160,7 @@ router.post('/validate', async (req, res) => {
         );
 
         if (codes.length === 0) {
-            // Check if code exists but expired or used
+            // Check if code exists but expired
             const [expiredCodes] = await db.query(
                 'SELECT * FROM registration_codes WHERE code = ?',
                 [normalizedCode]
@@ -369,12 +168,7 @@ router.post('/validate', async (req, res) => {
 
             if (expiredCodes.length > 0) {
                 const existingCode = expiredCodes[0];
-                if (existingCode.status === 'used') {
-                    return res.status(400).json({
-                        success: false,
-                        message: 'Kode registrasi sudah digunakan'
-                    });
-                } else if (existingCode.status === 'expired' || new Date(existingCode.expires_at) < new Date()) {
+                if (existingCode.status === 'expired' || new Date(existingCode.expires_at) < new Date()) {
                     return res.status(400).json({
                         success: false,
                         message: 'Kode registrasi sudah kadaluarsa'
@@ -388,15 +182,9 @@ router.post('/validate', async (req, res) => {
             });
         }
 
-        const validCode = codes[0];
-
         res.json({
             success: true,
-            message: 'Kode registrasi valid',
-            data: {
-                patient_name: validCode.patient_name,
-                phone: validCode.phone
-            }
+            message: 'Kode registrasi valid'
         });
 
     } catch (error) {
@@ -410,8 +198,7 @@ router.post('/validate', async (req, res) => {
 
 /**
  * POST /api/registration-codes/use
- * Mark a code as used (Called after successful registration)
- * Note: Public codes are NOT marked as used - they can be reused
+ * Log code usage (all codes are public and reusable)
  */
 router.post('/use', async (req, res) => {
     try {
@@ -426,40 +213,21 @@ router.post('/use', async (req, res) => {
 
         const normalizedCode = code.toUpperCase().trim();
 
-        // Check if this is a public code
+        // Verify code exists and is valid
         const [codeInfo] = await db.query(
-            'SELECT is_public FROM registration_codes WHERE code = ?',
+            `SELECT * FROM registration_codes
+             WHERE code = ? AND status = 'active' AND expires_at > NOW()`,
             [normalizedCode]
         );
 
-        if (codeInfo.length > 0 && codeInfo[0].is_public) {
-            // Public codes are not marked as used - they can be reused
-            logger.info('Public registration code used (not marking as used)', {
-                code: normalizedCode,
-                patientId: patient_id
-            });
-
-            return res.json({
-                success: true,
-                message: 'Kode publik berhasil digunakan'
-            });
-        }
-
-        // Update non-public code status
-        const [result] = await db.query(
-            `UPDATE registration_codes
-             SET status = 'used', used_at = NOW(), used_by_patient_id = ?
-             WHERE code = ? AND status = 'active' AND is_public = 0`,
-            [patient_id || null, normalizedCode]
-        );
-
-        if (result.affectedRows === 0) {
+        if (codeInfo.length === 0) {
             return res.status(400).json({
                 success: false,
-                message: 'Kode tidak ditemukan atau sudah digunakan'
+                message: 'Kode tidak valid atau sudah kadaluarsa'
             });
         }
 
+        // Log usage (don't mark as used - codes are reusable)
         logger.info('Registration code used', {
             code: normalizedCode,
             patientId: patient_id

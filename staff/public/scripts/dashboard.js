@@ -267,7 +267,6 @@ async function loadDashboardStats() {
                             <th>ID</th>
                             <th>Nama</th>
                             <th>WhatsApp</th>
-                            <th>Keluhan Utama</th>
                             <th>Slot Waktu</th>
                         </tr>
                     </thead>
@@ -277,7 +276,6 @@ async function loadDashboardStats() {
                                 <td><small>#${apt.id}</small></td>
                                 <td><strong>${apt.nama}</strong></td>
                                 <td><small>${apt.whatsapp || '-'}</small></td>
-                                <td><small class="text-muted">${apt.keluhan ? apt.keluhan.substring(0, 50) + (apt.keluhan.length > 50 ? '...' : '') : '-'}</small></td>
                                 <td><span class="badge badge-primary">${apt.slotWaktu}</span></td>
                             </tr>
                         `).join('')}
