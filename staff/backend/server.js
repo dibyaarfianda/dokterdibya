@@ -53,9 +53,23 @@ app.use(metricsMiddleware);
 app.use(requestLogger);
 app.use(performanceLogger);
 
-// Middleware
+// CORS - allow multiple origins including Chrome extension
+const allowedOrigins = [
+    process.env.CORS_ORIGIN,
+    'https://simrs.melinda.co.id'  // Chrome extension for SIMRS Melinda export
+].filter(Boolean);
+
 app.use(cors({
-    origin: process.env.CORS_ORIGIN,
+    origin: function(origin, callback) {
+        // Allow requests with no origin (mobile apps, Postman, etc)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(null, false);
+        }
+    },
     credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
