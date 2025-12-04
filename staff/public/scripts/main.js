@@ -270,11 +270,16 @@ function showPasienBaruPage() {
 
 async function loadPasienBaru() {
     const tbody = document.getElementById('hospital-patients-tbody');
-    if (!tbody) return;
+    const table = document.getElementById('hospital-patients-table');
+    if (!tbody || !table) return;
 
     // Destroy existing DataTable FIRST before loading new data
-    if ($.fn.DataTable.isDataTable('#hospital-patients-table')) {
-        $('#hospital-patients-table').DataTable().clear().destroy();
+    try {
+        if ($.fn.DataTable.isDataTable('#hospital-patients-table')) {
+            $('#hospital-patients-table').DataTable().clear().destroy();
+        }
+    } catch (e) {
+        console.warn('DataTable destroy warning:', e.message);
     }
 
     tbody.innerHTML = `<tr><td colspan="9" class="text-center"><i class="fas fa-spinner fa-spin"></i> Memuat data pasien baru...</td></tr>`;
@@ -341,13 +346,18 @@ async function loadPasienBaru() {
 
 async function loadHospitalPatients(location) {
     const tbody = document.getElementById('hospital-patients-tbody');
-    if (!tbody) return;
+    const table = document.getElementById('hospital-patients-table');
+    if (!tbody || !table) return;
 
     const hospitalName = hospitalNames[location] || location;
 
     // Destroy existing DataTable FIRST before loading new data
-    if ($.fn.DataTable.isDataTable('#hospital-patients-table')) {
-        $('#hospital-patients-table').DataTable().clear().destroy();
+    try {
+        if ($.fn.DataTable.isDataTable('#hospital-patients-table')) {
+            $('#hospital-patients-table').DataTable().clear().destroy();
+        }
+    } catch (e) {
+        console.warn('DataTable destroy warning:', e.message);
     }
 
     tbody.innerHTML = `<tr><td colspan="9" class="text-center"><i class="fas fa-spinner fa-spin"></i> Memuat data pasien ${hospitalName}...</td></tr>`;
