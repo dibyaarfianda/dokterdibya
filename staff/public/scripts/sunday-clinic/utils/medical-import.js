@@ -672,8 +672,85 @@ async function saveSectionToApi(mrId, section, data) {
 /**
  * Apply pending import data after page navigation
  * Called on page load to check for pending data
+ * Supports both 'pendingImportData' and 'simrs_import_data' keys
  */
 async function applyPendingImportData() {
+    // Check for SIMRS import data first (from Chrome extension flow)
+    const simrsData = sessionStorage.getItem('simrs_import_data');
+    const simrsMrId = sessionStorage.getItem('simrs_import_mr_id');
+
+    if (simrsData) {
+        console.log('[Import] Found SIMRS import data, processing...');
+        try {
+            const importData = JSON.parse(simrsData);
+            const parsed = importData.raw_parsed || importData;
+            const template = importData.template || {};
+
+            // Map SIMRS data to our template format
+            const mappedTemplate = {
+                identitas: parsed.identity || template.identitas || {},
+                anamnesa: {
+                    keluhan_utama: parsed.subjective?.keluhan_utama,
+                    riwayat_penyakit_sekarang: parsed.subjective?.rps,
+                    riwayat_penyakit_dahulu: parsed.subjective?.rpd,
+                    riwayat_penyakit_keluarga: parsed.subjective?.rpk,
+                    ...template.anamnesa
+                },
+                pemeriksaan_fisik: {
+                    keadaan_umum: parsed.objective?.keadaan_umum,
+                    tekanan_darah: parsed.objective?.tensi,
+                    nadi: parsed.objective?.nadi,
+                    suhu: parsed.objective?.suhu,
+                    spo2: parsed.objective?.spo2,
+                    respirasi: parsed.objective?.rr,
+                    ...template.pemeriksaan_fisik
+                },
+                diagnosis: {
+                    diagnosis_utama: parsed.assessment?.diagnosis,
+                    gravida: parsed.assessment?.gravida,
+                    para: parsed.assessment?.para,
+                    usia_kehamilan_minggu: parsed.assessment?.usia_kehamilan_minggu,
+                    usia_kehamilan_hari: parsed.assessment?.usia_kehamilan_hari,
+                    presentasi: parsed.assessment?.presentasi,
+                    ...template.diagnosis
+                },
+                obstetri: {
+                    hpht: parsed.subjective?.hpht,
+                    hpl: parsed.subjective?.hpl,
+                    gravida: parsed.assessment?.gravida,
+                    para: parsed.assessment?.para,
+                    usia_kehamilan: parsed.assessment?.usia_kehamilan,
+                    presentasi: parsed.assessment?.presentasi || parsed.objective?.presentasi,
+                    berat_janin: parsed.objective?.berat_janin,
+                    plasenta: parsed.objective?.plasenta,
+                    ketuban: parsed.objective?.ketuban,
+                    usg_findings: parsed.objective?.usg,
+                    ...template.obstetri
+                },
+                planning: {
+                    obat: parsed.plan?.obat || [],
+                    tindakan: parsed.plan?.tindakan || [],
+                    instruksi: parsed.plan?.instruksi || [],
+                    raw: parsed.plan?.raw,
+                    ...template.planning
+                }
+            };
+
+            // Clear SIMRS data from sessionStorage
+            sessionStorage.removeItem('simrs_import_data');
+            sessionStorage.removeItem('simrs_import_mr_id');
+
+            // Apply data using existing logic
+            await applySIMRSImportData(mappedTemplate, importData.visit_date, importData.visit_time, importData.visit_location);
+            return;
+        } catch (e) {
+            console.error('[Import] Error parsing SIMRS data:', e);
+            sessionStorage.removeItem('simrs_import_data');
+            sessionStorage.removeItem('simrs_import_mr_id');
+        }
+    }
+
+    // Check for standard pendingImportData
     const pendingData = sessionStorage.getItem('pendingImportData');
     if (!pendingData) {
         console.log('[Import] No pending import data found');
@@ -802,6 +879,105 @@ async function applyPendingImportData() {
     } catch (error) {
         console.error('[Import] Error applying pending data:', error);
         sessionStorage.removeItem('pendingImportData');
+    }
+}
+
+/**
+ * Apply SIMRS import data to form
+ * Similar to applyPendingImportData but handles SIMRS-specific data structure
+ */
+async function applySIMRSImportData(template, visitDate, visitTime, visitLocation) {
+    console.log('[Import] Applying SIMRS data:', { template, visitDate, visitTime, visitLocation });
+
+    // Get MR ID from URL
+    const mrId = getMrIdFromUrl();
+    console.log('[Import] MR ID from URL:', mrId);
+
+    // Wait for stateManager to be ready
+    let attempts = 0;
+    while (!window.stateManager && attempts < 30) {
+        await new Promise(r => setTimeout(r, 200));
+        attempts++;
+    }
+
+    // Wait for DOM to be fully rendered
+    await new Promise(r => setTimeout(r, 1000));
+
+    console.log('[Import] Applying SIMRS import data...');
+
+    // Prepare sections to save to database
+    const sectionsToSave = [];
+
+    // Apply to stateManager if available
+    if (window.stateManager) {
+        try {
+            // Update anamnesa
+            if (template.anamnesa && Object.keys(template.anamnesa).some(k => template.anamnesa[k])) {
+                const anamnesaUpdates = { ...template.anamnesa };
+                if (template.obstetri) {
+                    Object.assign(anamnesaUpdates, template.obstetri);
+                }
+                window.stateManager.updateSectionData('anamnesa', anamnesaUpdates);
+                sectionsToSave.push({ section: 'anamnesa', data: anamnesaUpdates });
+            }
+
+            // Update physical exam
+            if (template.pemeriksaan_fisik && Object.keys(template.pemeriksaan_fisik).some(k => template.pemeriksaan_fisik[k])) {
+                window.stateManager.updateSectionData('physical_exam', template.pemeriksaan_fisik);
+                sectionsToSave.push({ section: 'physical_exam', data: template.pemeriksaan_fisik });
+            }
+
+            // Update diagnosis
+            if (template.diagnosis && Object.keys(template.diagnosis).some(k => template.diagnosis[k])) {
+                window.stateManager.updateSectionData('diagnosis', template.diagnosis);
+                sectionsToSave.push({ section: 'diagnosis', data: template.diagnosis });
+            }
+
+            // Update obstetri if available
+            if (template.obstetri && Object.keys(template.obstetri).some(k => template.obstetri[k])) {
+                window.stateManager.updateSectionData('pemeriksaan_obstetri', template.obstetri);
+                sectionsToSave.push({ section: 'pemeriksaan_obstetri', data: template.obstetri });
+            }
+
+            // Update planning if available
+            if (template.planning && (template.planning.obat?.length || template.planning.tindakan?.length || template.planning.raw)) {
+                window.stateManager.updateSectionData('planning', template.planning);
+                sectionsToSave.push({ section: 'planning', data: template.planning });
+            }
+
+            console.log('[Import] StateManager updated with SIMRS data');
+        } catch (stateError) {
+            console.error('[Import] StateManager update error:', stateError);
+        }
+    }
+
+    // Also fill DOM elements directly for immediate feedback
+    fillFormFieldsDirect(template, {});
+
+    // Persist to database via API
+    if (mrId && sectionsToSave.length > 0) {
+        console.log('[Import] Persisting SIMRS data to database...');
+        let savedCount = 0;
+
+        for (const { section, data } of sectionsToSave) {
+            const saved = await saveSectionToApi(mrId, section, data);
+            if (saved) savedCount++;
+        }
+
+        console.log(`[Import] Saved ${savedCount}/${sectionsToSave.length} SIMRS sections to database`);
+    }
+
+    console.log('[Import] SIMRS import data applied successfully');
+
+    // Show notification
+    if (window.Swal) {
+        Swal.fire({
+            icon: 'success',
+            title: 'Data SIMRS Diterapkan',
+            text: 'Data dari SIMRS Melinda telah disimpan ke rekam medis',
+            timer: 2500,
+            showConfirmButton: false
+        });
     }
 }
 
