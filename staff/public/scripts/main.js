@@ -1501,6 +1501,30 @@ async function initializeApp(user) {
         // Initialize real-time sync for online users tracking
         console.log('[MAIN] Calling initRealtimeSync with:', { id: user.id, name: user.name, role: user.role });
         initRealtimeSync(user);
+
+        // Check for SIMRS Melinda import data
+        const importParam = new URLSearchParams(window.location.search).get('import');
+        if (importParam) {
+            console.log('[MAIN] Detected import parameter from Chrome extension');
+            try {
+                const importData = JSON.parse(decodeURIComponent(importParam));
+                console.log('[MAIN] Import data:', importData);
+
+                // Store in sessionStorage for use by patient forms
+                sessionStorage.setItem('simrs_import_data', JSON.stringify(importData));
+
+                // Clean URL to remove import parameter
+                const cleanUrl = window.location.pathname + window.location.hash;
+                window.history.replaceState({}, '', cleanUrl);
+
+                // Show import modal after a short delay
+                setTimeout(() => {
+                    showSimrsImportModal(importData);
+                }, 1000);
+            } catch (e) {
+                console.error('[MAIN] Failed to parse import data:', e);
+            }
+        }
     } else {
         console.log('[MAIN] No user, disconnecting realtime sync');
         // User is not logged in, or session expired
@@ -2258,6 +2282,172 @@ async function showPatientDetail(patientId) {
         alert('Gagal memuat detail pasien: ' + error.message);
     }
 }
+
+/**
+ * Show SIMRS Melinda import modal with parsed data preview
+ */
+function showSimrsImportModal(data) {
+    // API returns { raw_parsed: {...}, template: {...} }
+    // Use raw_parsed for detailed SOAP data
+    const parsed = data.raw_parsed || data;
+    const template = data.template || {};
+
+    const identity = parsed.identity || template.identity || {};
+    const subjective = parsed.subjective || template.subjective || {};
+    const objective = parsed.objective || template.objective || {};
+    const assessment = parsed.assessment || template.assessment || {};
+    const plan = parsed.plan || template.plan || {};
+
+    console.log('[Import Modal] Raw data:', data);
+    console.log('[Import Modal] Parsed:', { identity, subjective, objective, assessment, plan });
+
+    // Format medications list
+    const obatList = (plan.obat || []).map(o => `<li>${o}</li>`).join('') || '<li class="text-muted">Tidak ada</li>';
+
+    const modalHtml = `
+        <div class="modal fade" id="simrsImportModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-xl" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            <i class="fas fa-file-import mr-2"></i>
+                            Data Import dari SIMRS Melinda
+                        </h5>
+                        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle mr-2"></i>
+                            Data rekam medis berhasil di-import dari SIMRS Melinda. Review data di bawah ini.
+                        </div>
+
+                        <div class="row">
+                            <!-- Identity -->
+                            <div class="col-md-6">
+                                <div class="card card-outline card-primary mb-3">
+                                    <div class="card-header py-2">
+                                        <h6 class="mb-0"><i class="fas fa-user mr-2"></i>Identitas Pasien</h6>
+                                    </div>
+                                    <div class="card-body py-2">
+                                        <table class="table table-sm table-borderless mb-0">
+                                            <tr><th width="40%">Nama</th><td><strong>${identity.nama || '-'}</strong></td></tr>
+                                            <tr><th>Tanggal Lahir</th><td>${identity.tanggal_lahir || '-'}</td></tr>
+                                            <tr><th>Jenis Kelamin</th><td>${identity.jenis_kelamin || '-'}</td></tr>
+                                            <tr><th>Alamat</th><td>${identity.alamat || '-'}</td></tr>
+                                            <tr><th>No HP</th><td>${identity.no_hp || '-'}</td></tr>
+                                            <tr><th>TB/BB</th><td>${identity.tinggi_badan || '-'} cm / ${identity.berat_badan || '-'} kg</td></tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Subjective -->
+                            <div class="col-md-6">
+                                <div class="card card-outline card-info mb-3">
+                                    <div class="card-header py-2">
+                                        <h6 class="mb-0"><i class="fas fa-comment-medical mr-2"></i>Subjective</h6>
+                                    </div>
+                                    <div class="card-body py-2">
+                                        <table class="table table-sm table-borderless mb-0">
+                                            <tr><th width="40%">Keluhan</th><td>${subjective.keluhan_utama || '-'}</td></tr>
+                                            <tr><th>HPHT</th><td>${subjective.hpht || '-'}</td></tr>
+                                            <tr><th>HPL</th><td>${subjective.hpl || '-'}</td></tr>
+                                            <tr><th>RPD</th><td>${subjective.rpd || '-'}</td></tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Objective -->
+                            <div class="col-md-6">
+                                <div class="card card-outline card-success mb-3">
+                                    <div class="card-header py-2">
+                                        <h6 class="mb-0"><i class="fas fa-stethoscope mr-2"></i>Objective</h6>
+                                    </div>
+                                    <div class="card-body py-2">
+                                        <table class="table table-sm table-borderless mb-0">
+                                            <tr><th width="40%">K/U</th><td>${objective.keadaan_umum || '-'}</td></tr>
+                                            <tr><th>Tensi</th><td>${objective.tensi || '-'}</td></tr>
+                                            <tr><th>Nadi</th><td>${objective.nadi || '-'}</td></tr>
+                                            <tr><th>Suhu</th><td>${objective.suhu || '-'}</td></tr>
+                                            <tr><th>SpO2</th><td>${objective.spo2 || '-'}</td></tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Assessment -->
+                            <div class="col-md-6">
+                                <div class="card card-outline card-warning mb-3">
+                                    <div class="card-header py-2">
+                                        <h6 class="mb-0"><i class="fas fa-diagnoses mr-2"></i>Assessment</h6>
+                                    </div>
+                                    <div class="card-body py-2">
+                                        <table class="table table-sm table-borderless mb-0">
+                                            <tr><th width="40%">Diagnosis</th><td>${assessment.diagnosis || '-'}</td></tr>
+                                            <tr><th>G/P</th><td>G${assessment.gravida || '-'} P${assessment.para || '-'}</td></tr>
+                                            <tr><th>Usia Kehamilan</th><td>${assessment.usia_kehamilan || '-'}</td></tr>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Plan -->
+                            <div class="col-12">
+                                <div class="card card-outline card-danger mb-3">
+                                    <div class="card-header py-2">
+                                        <h6 class="mb-0"><i class="fas fa-prescription mr-2"></i>Plan / Obat</h6>
+                                    </div>
+                                    <div class="card-body py-2">
+                                        <ul class="mb-0 pl-3">${obatList}</ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times mr-1"></i> Tutup
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="navigateToPatientWithImport()">
+                            <i class="fas fa-user-plus mr-1"></i> Buka Kelola Pasien
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Remove existing modal if any
+    const existing = document.getElementById('simrsImportModal');
+    if (existing) existing.remove();
+
+    // Add modal to DOM
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    // Show modal
+    $('#simrsImportModal').modal('show');
+}
+
+/**
+ * Navigate to patient management with import data ready
+ */
+function navigateToPatientWithImport() {
+    $('#simrsImportModal').modal('hide');
+
+    // Navigate to Kelola Pasien
+    if (typeof showKelolaPasienPage === 'function') {
+        showKelolaPasienPage();
+    }
+
+    // Show toast notification
+    if (typeof showSuccess === 'function') {
+        showSuccess('Data import tersedia. Gunakan tombol "Pasien Baru" atau cari pasien existing.');
+    }
+}
+
+window.showSimrsImportModal = showSimrsImportModal;
+window.navigateToPatientWithImport = navigateToPatientWithImport;
 
 // Export showPatientDetail to global scope for onclick handlers
 window.showPatientDetail = showPatientDetail;
