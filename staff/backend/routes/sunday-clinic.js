@@ -2390,7 +2390,7 @@ RSIA Melinda, Kediri`;
  */
 router.post('/start-walk-in', verifyToken, async (req, res, next) => {
     try {
-        const { patient_id, category, location } = req.body;
+        const { patient_id, category, location, visit_date, is_retrospective } = req.body;
 
         if (!patient_id) {
             return res.status(400).json({
@@ -2406,6 +2406,16 @@ router.post('/start-walk-in', verifyToken, async (req, res, next) => {
         // Validate location
         const validLocations = ['klinik_private', 'rsia_melinda', 'rsud_gambiran', 'rs_bhayangkara'];
         const finalLocation = validLocations.includes(location) ? location : 'klinik_private';
+
+        // Parse visit date for retrospective imports
+        let visitDateTime = new Date();
+        if (visit_date && is_retrospective) {
+            visitDateTime = new Date(visit_date);
+            if (isNaN(visitDateTime.getTime())) {
+                visitDateTime = new Date(); // Fallback to now if invalid
+            }
+        }
+        const visitDateStr = visitDateTime.toISOString().split('T')[0]; // YYYY-MM-DD
 
         // Check if patient exists
         const [patients] = await db.query(
@@ -2439,12 +2449,12 @@ router.post('/start-walk-in', verifyToken, async (req, res, next) => {
             const { mrId, sequence } = await generateCategoryBasedMrId(finalCategory, conn);
             const folderPath = `sunday-clinic/${mrId.toLowerCase()}`;
 
-            // Create the record with visit_location
+            // Create the record with visit_location and retrospective date if provided
             await conn.query(
                 `INSERT INTO sunday_clinic_records
-                 (mr_id, mr_category, mr_sequence, patient_id, appointment_id, visit_location, folder_path, status, created_by)
-                 VALUES (?, ?, ?, ?, NULL, ?, ?, 'draft', ?)`,
-                [mrId, finalCategory, sequence, patient_id, finalLocation, folderPath, userId]
+                 (mr_id, mr_category, mr_sequence, patient_id, appointment_id, visit_location, folder_path, status, created_by, created_at)
+                 VALUES (?, ?, ?, ?, NULL, ?, ?, 'draft', ?, ?)`,
+                [mrId, finalCategory, sequence, patient_id, finalLocation, folderPath, userId, visitDateTime]
             );
 
             // Create patient_mr_history if not exists
@@ -2457,15 +2467,16 @@ router.post('/start-walk-in', verifyToken, async (req, res, next) => {
                 await conn.query(
                     `INSERT INTO patient_mr_history
                      (patient_id, mr_id, mr_category, first_visit_date, last_visit_date, visit_count)
-                     VALUES (?, ?, ?, CURDATE(), CURDATE(), 1)`,
-                    [patient_id, mrId, finalCategory]
+                     VALUES (?, ?, ?, ?, ?, 1)`,
+                    [patient_id, mrId, finalCategory, visitDateStr, visitDateStr]
                 );
             } else {
+                // For retrospective imports, only update if the visit date is more recent than existing last_visit_date
                 await conn.query(
                     `UPDATE patient_mr_history
-                     SET last_visit_date = CURDATE(), visit_count = visit_count + 1, updated_at = NOW()
+                     SET last_visit_date = GREATEST(last_visit_date, ?), visit_count = visit_count + 1, updated_at = NOW()
                      WHERE patient_id = ? AND mr_category = ?`,
-                    [patient_id, finalCategory]
+                    [visitDateStr, patient_id, finalCategory]
                 );
             }
 
@@ -2477,12 +2488,14 @@ router.post('/start-walk-in', verifyToken, async (req, res, next) => {
                 patientName,
                 category: finalCategory,
                 location: finalLocation,
+                visitDate: visitDateStr,
+                isRetrospective: !!is_retrospective,
                 createdBy: userId
             });
 
             res.json({
                 success: true,
-                message: 'Kunjungan berhasil dibuat',
+                message: is_retrospective ? 'Rekam medis retrospektif berhasil dibuat' : 'Kunjungan berhasil dibuat',
                 data: {
                     mrId,
                     category: finalCategory,
@@ -2490,7 +2503,9 @@ router.post('/start-walk-in', verifyToken, async (req, res, next) => {
                     patientId: patient_id,
                     patientName,
                     folderPath,
-                    status: 'draft'
+                    status: 'draft',
+                    visitDate: visitDateStr,
+                    isRetrospective: !!is_retrospective
                 }
             });
 

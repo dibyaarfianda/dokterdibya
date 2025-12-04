@@ -166,14 +166,19 @@ async function parseWithAI(text, category) {
 /**
  * Parse visit date from text
  * Looks for common date patterns in Indonesian medical records
+ * Also parses doctor signature timestamps like "04 December 2025 21:20"
  */
 function parseVisitDate(text) {
     // Common date patterns in Indonesian medical records
     const patterns = [
+        // Doctor signature timestamp: "04 December 2025 21:20" (English months)
+        /(\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4})\s+\d{1,2}:\d{2}/i,
         // "Tanggal: 15 November 2024" or "Tanggal : 15/11/2024"
         /(?:Tanggal|TGL|Tgl)\s*:?\s*(\d{1,2}[-\/\s](?:\w+|\d{1,2})[-\/\s]\d{2,4})/i,
-        // "15 November 2024" at start of line
+        // "15 November 2024" at start of line (Indonesian months)
         /^(\d{1,2}\s+(?:Januari|Februari|Maret|April|Mei|Juni|Juli|Agustus|September|Oktober|November|Desember)\s+\d{4})/im,
+        // "15 December 2024" anywhere (English months)
+        /(\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4})/i,
         // "Waktu Kunjungan: 15/11/2024"
         /(?:Waktu\s*Kunjungan|Kunjungan|Visit\s*Date)\s*:?\s*(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/i,
         // "Dibuat pada: 15-11-2024"
@@ -199,17 +204,42 @@ function parseVisitDate(text) {
 }
 
 /**
+ * Parse visit time from text (for signature timestamps like "21:20")
+ */
+function parseVisitTime(text) {
+    // Look for signature timestamp with time: "04 December 2025 21:20"
+    const signatureMatch = text.match(/\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}\s+(\d{1,2}:\d{2})/i);
+    if (signatureMatch) {
+        return signatureMatch[1];
+    }
+
+    // Also try Indonesian months
+    const signatureMatchId = text.match(/\d{1,2}\s+(?:Januari|Februari|Maret|April|Mei|Juni|Juli|Agustus|September|Oktober|November|Desember)\s+\d{4}\s+(\d{1,2}:\d{2})/i);
+    if (signatureMatchId) {
+        return signatureMatchId[1];
+    }
+
+    return null;
+}
+
+/**
  * Normalize various date formats to YYYY-MM-DD
  */
 function normalizeDate(dateStr) {
     if (!dateStr) return null;
 
     const months = {
+        // Indonesian months
         'januari': '01', 'februari': '02', 'maret': '03', 'april': '04',
         'mei': '05', 'juni': '06', 'juli': '07', 'agustus': '08',
         'september': '09', 'oktober': '10', 'november': '11', 'desember': '12',
+        // English months
+        'january': '01', 'february': '02', 'march': '03',
+        'may': '05', 'june': '06', 'july': '07', 'august': '08',
+        'october': '10', 'december': '12',
+        // Short forms
         'jan': '01', 'feb': '02', 'mar': '03', 'apr': '04',
-        'may': '05', 'jun': '06', 'jul': '07', 'aug': '08',
+        'jun': '06', 'jul': '07', 'aug': '08',
         'sep': '09', 'oct': '10', 'nov': '11', 'dec': '12'
     };
 
@@ -1075,8 +1105,9 @@ router.post('/api/medical-import/parse', verifyToken, async (req, res) => {
             };
         }
 
-        // Parse visit date and location (still use regex for these)
+        // Parse visit date, time and location (still use regex for these)
         const visit_date = parseVisitDate(text);
+        const visit_time = parseVisitTime(text);
         const detected_location = detectLocation(text);
 
         // Map to template format with user-selected category
@@ -1089,6 +1120,7 @@ router.post('/api/medical-import/parse', verifyToken, async (req, res) => {
             category: category,
             confidence: calculateConfidence(parsed),
             visit_date: visit_date,
+            visit_time: visit_time,
             visit_date_detected: !!visit_date,
             visit_location: detected_location,
             visit_location_detected: !!detected_location,
