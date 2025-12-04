@@ -39,12 +39,8 @@
             padding: 20px;
         }
 
-        /* Login Form */
+        /* Login Form - shown by default */
         .login-section {
-            display: none;
-        }
-
-        .login-section.active {
             display: block;
         }
 
@@ -105,13 +101,9 @@
             cursor: not-allowed;
         }
 
-        /* Logged In Section */
+        /* Logged In Section - hidden by default */
         .logged-in-section {
             display: none;
-        }
-
-        .logged-in-section.active {
-            display: block;
         }
 
         .user-info {
@@ -217,7 +209,7 @@
 
     <div class="content">
         <!-- Login Section -->
-        <div id="login-section" class="login-section active">
+        <div id="login-section" class="login-section">
             <div id="error-message" class="error"></div>
 
             <form id="login-form">

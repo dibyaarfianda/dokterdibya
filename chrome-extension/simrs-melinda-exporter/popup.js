@@ -23,17 +23,41 @@ async function checkAuth() {
 
 // Show login section
 function showLogin() {
-    document.getElementById('login-section').style.display = 'block';
-    document.getElementById('logged-in-section').style.display = 'none';
+    var loginSection = document.getElementById('login-section');
+    var loggedInSection = document.getElementById('logged-in-section');
+
+    if (loginSection) {
+        loginSection.style.setProperty('display', 'block', 'important');
+    }
+    if (loggedInSection) {
+        loggedInSection.style.setProperty('display', 'none', 'important');
+    }
 }
 
 // Show logged in section
 function showLoggedIn(user) {
-    console.log('showLoggedIn:', user);
-    document.getElementById('login-section').style.display = 'none';
-    document.getElementById('logged-in-section').style.display = 'block';
-    document.getElementById('user-name').textContent = user.name || user.email || 'User';
-    document.getElementById('user-role').textContent = user.role || user.role_name || 'Staff';
+    console.log('showLoggedIn called with:', user);
+
+    var loginSection = document.getElementById('login-section');
+    var loggedInSection = document.getElementById('logged-in-section');
+
+    console.log('loginSection:', loginSection);
+    console.log('loggedInSection:', loggedInSection);
+
+    if (loginSection) {
+        loginSection.style.setProperty('display', 'none', 'important');
+    }
+    if (loggedInSection) {
+        loggedInSection.style.setProperty('display', 'block', 'important');
+    }
+
+    var userName = user && (user.name || user.email) ? (user.name || user.email) : 'User';
+    var userRole = user && (user.role || user.role_name) ? (user.role || user.role_name) : 'Staff';
+
+    document.getElementById('user-name').textContent = userName;
+    document.getElementById('user-role').textContent = userRole;
+
+    console.log('View switched to logged in');
 }
 
 // Show message
@@ -89,17 +113,15 @@ document.getElementById('login-form').addEventListener('submit', async function(
 
         if (token) {
             // Save to storage
+            var userData = user || { email: email, name: email.split('@')[0] };
             await chrome.storage.local.set({
                 'dibya_token': token,
-                'dibya_user': user || { email: email, name: email.split('@')[0] }
+                'dibya_user': userData
             });
 
-            showMessage('Login berhasil!', false);
-
-            // Switch view
-            setTimeout(function() {
-                showLoggedIn(user || { email: email });
-            }, 500);
+            // Switch view immediately
+            console.log('Switching to logged in view...');
+            showLoggedIn(userData);
         } else {
             showMessage(result.message || 'Login gagal', true);
         }

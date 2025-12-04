@@ -238,51 +238,45 @@
 
     // Combine all scraped data into text format for AI parsing
     function combineDataAsText() {
-        const identitas = extractIdentitas();
-        const cppt = extractCPPT();
+        // Simple approach: grab ALL visible text from the page
+        // Let the AI do the parsing - it's much better at it!
 
         let text = '';
 
-        // Identity section
-        text += '=== IDENTITAS PASIEN ===\n';
-        if (identitas.nama) text += `NAMA PASIEN: ${identitas.nama}\n`;
-        if (identitas.jenis_kelamin) text += `JENIS KELAMIN: ${identitas.jenis_kelamin}\n`;
-        if (identitas.usia) text += `USIA: ${identitas.usia}\n`;
-        if (identitas.tanggal_lahir) text += `TANGGAL LAHIR: ${identitas.tanggal_lahir}\n`;
-        if (identitas.alamat) text += `ALAMAT: ${identitas.alamat}\n`;
-        if (identitas.no_hp) text += `NO HP: ${identitas.no_hp}\n`;
-        if (identitas.no_identitas) text += `NO IDENTITAS: ${identitas.no_identitas}\n`;
-        if (identitas.pekerjaan) text += `PEKERJAAN: ${identitas.pekerjaan}\n`;
-        if (identitas.tinggi_badan) text += `TINGGI BADAN: ${identitas.tinggi_badan} cm\n`;
-        if (identitas.berat_badan) text += `BERAT BADAN: ${identitas.berat_badan} kg\n`;
+        // Try to get main content area first
+        const mainContent = document.querySelector('.main-content, #main-content, .content, main, [role="main"]');
+        if (mainContent) {
+            text = mainContent.innerText;
+        }
 
-        // CPPT sections
-        text += '\n=== CPPT ===\n';
+        // If no main content, get body text but exclude nav/header/footer
+        if (!text || text.length < 100) {
+            // Clone body and remove unwanted elements
+            const clone = document.body.cloneNode(true);
 
-        text += '\nSUBJECTIVE\n';
-        if (cppt.subjective.keluhan_utama) text += `Keluhan Utama: ${cppt.subjective.keluhan_utama}\n`;
-        if (cppt.subjective.rps) text += `RPS: ${cppt.subjective.rps}\n`;
-        if (cppt.subjective.rpd) text += `RPD: ${cppt.subjective.rpd}\n`;
-        if (cppt.subjective.rpk) text += `RPK: ${cppt.subjective.rpk}\n`;
-        if (cppt.subjective.hpl) text += `HPL: ${cppt.subjective.hpl}\n`;
-        if (cppt.subjective.hpht) text += `HPHT: ${cppt.subjective.hpht}\n`;
+            // Remove navigation, headers, footers, scripts
+            const removeSelectors = ['nav', 'header', 'footer', 'script', 'style', '.navbar', '.sidebar', '.menu'];
+            removeSelectors.forEach(sel => {
+                clone.querySelectorAll(sel).forEach(el => el.remove());
+            });
 
-        text += '\nOBJECTIVE\n';
-        if (cppt.objective.keadaan_umum) text += `K/U: ${cppt.objective.keadaan_umum}\n`;
-        if (cppt.objective.tensi) text += `Tensi: ${cppt.objective.tensi}\n`;
-        if (cppt.objective.nadi) text += `Nadi: ${cppt.objective.nadi}\n`;
-        if (cppt.objective.suhu) text += `Suhu: ${cppt.objective.suhu}\n`;
-        if (cppt.objective.spo2) text += `SpO2: ${cppt.objective.spo2}\n`;
-        if (cppt.objective.gcs) text += `GCS: ${cppt.objective.gcs}\n`;
-        if (cppt.objective.rr) text += `RR: ${cppt.objective.rr}\n`;
-        if (cppt.objective.berat_badan) text += `BB: ${cppt.objective.berat_badan}\n`;
-        if (cppt.objective.usg) text += `USG: ${cppt.objective.usg}\n`;
+            text = clone.innerText;
+        }
 
-        text += '\nASSESSMENT\n';
-        if (cppt.assessment.diagnosis) text += `${cppt.assessment.diagnosis}\n`;
+        // Clean up the text
+        text = text
+            .replace(/\t+/g, ' ')           // tabs to spaces
+            .replace(/  +/g, ' ')           // multiple spaces to single
+            .replace(/\n\s*\n\s*\n/g, '\n\n') // max 2 newlines
+            .trim();
 
-        text += '\nPLAN\n';
-        if (cppt.plan.raw) text += `${cppt.plan.raw}\n`;
+        // Limit to first 15000 chars to avoid token limits
+        if (text.length > 15000) {
+            text = text.substring(0, 15000);
+        }
+
+        console.log('[SIMRS Export] Extracted text length:', text.length);
+        console.log('[SIMRS Export] First 500 chars:', text.substring(0, 500));
 
         return text;
     }
@@ -339,41 +333,20 @@
                 throw new Error('Tidak dapat menemukan data rekam medis di halaman ini');
             }
 
-            // Get token from storage with error handling
-            let token = null;
-            try {
-                const storage = await chrome.storage.local.get(['dibya_token']);
-                token = storage.dibya_token;
-            } catch (storageError) {
-                // Extension context invalidated
-                showNotification('Extension perlu di-refresh. Reload halaman ini (F5)', 'warning');
-                resetButton(btn);
-                return;
-            }
-
-            if (!token) {
-                // Open popup to login
-                showNotification('Silakan login terlebih dahulu melalui popup extension', 'warning');
-                resetButton(btn);
-                return;
-            }
-
-            // Send to API
-            const response = await fetch(CONFIG.API_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
+            // Send to background script (avoids CORS)
+            const result = await new Promise((resolve, reject) => {
+                chrome.runtime.sendMessage({
+                    action: 'parseRecord',
                     text: text,
-                    category: 'obstetri',
-                    use_ai: true,
-                    source: 'simrs_melinda'
-                })
+                    category: 'obstetri'
+                }, (response) => {
+                    if (chrome.runtime.lastError) {
+                        reject(new Error(chrome.runtime.lastError.message));
+                    } else {
+                        resolve(response);
+                    }
+                });
             });
-
-            const result = await response.json();
 
             if (result.success) {
                 // Store parsed data for the staff panel

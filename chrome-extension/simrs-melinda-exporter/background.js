@@ -2,6 +2,8 @@
  * SIMRS Melinda Exporter - Background Service Worker
  */
 
+const API_BASE = 'https://dokterdibya.com';
+
 // Listen for installation
 chrome.runtime.onInstalled.addListener(() => {
     console.log('SIMRS Melinda Exporter installed');
@@ -13,7 +15,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         chrome.storage.local.get(['dibya_token'], (result) => {
             sendResponse({ token: result.dibya_token });
         });
-        return true; // Keep channel open for async response
+        return true;
     }
 
     if (message.action === 'openStaffPanel') {
@@ -22,6 +24,48 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
         });
         sendResponse({ success: true });
         return true;
+    }
+
+    // Handle API call from content script (avoids CORS)
+    if (message.action === 'parseRecord') {
+        (async () => {
+            try {
+                // Get token from storage
+                const storage = await chrome.storage.local.get(['dibya_token']);
+                const token = storage.dibya_token;
+
+                if (!token) {
+                    sendResponse({ success: false, message: 'Silakan login terlebih dahulu' });
+                    return;
+                }
+
+                console.log('[SIMRS BG] Text length:', message.text?.length);
+                console.log('[SIMRS BG] Text preview:', message.text?.substring(0, 300));
+
+                // Make API call
+                const response = await fetch(API_BASE + '/api/medical-import/parse', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({
+                        text: message.text,
+                        category: message.category || 'obstetri',  // Default to obstetri
+                        source: 'simrs_melinda'
+                    })
+                });
+
+                console.log('[SIMRS BG] API response status:', response.status);
+
+                const result = await response.json();
+                sendResponse(result);
+            } catch (error) {
+                console.error('API error:', error);
+                sendResponse({ success: false, message: error.message });
+            }
+        })();
+        return true; // Keep channel open for async response
     }
 });
 
