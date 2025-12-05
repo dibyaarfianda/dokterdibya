@@ -8403,9 +8403,13 @@ Apakah Anda yakin ingin melanjutkan?`;
     // Export to window for manual calling
     window.initFinanceAnalysisPage = initFinanceAnalysisPage;
 
-    // Hospital Appointments Page
+    // Hospital Appointments Page - Store current data
+    let currentHospitalAppointments = [];
+    let currentHospitalLocation = '';
+
     window.showHospitalAppointmentsPage = async function(location) {
         console.log('📋 Loading hospital appointments for:', location);
+        currentHospitalLocation = location;
 
         // Hide all pages
         document.querySelectorAll('[id$="-page"]').forEach(page => page.classList.add('d-none'));
@@ -8433,7 +8437,7 @@ Apakah Anda yakin ingin melanjutkan?`;
             }
 
             const result = await response.json();
-            const appointments = result.data || [];
+            currentHospitalAppointments = result.data || [];
 
             // Hospital info mapping
             const hospitalInfo = {
@@ -8444,59 +8448,40 @@ Apakah Anda yakin ingin melanjutkan?`;
 
             const hospital = hospitalInfo[location] || { name: location, color: '#607d8b' };
 
-            if (appointments.length === 0) {
-                container.innerHTML = `
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle"></i> Belum ada appointment untuk ${hospital.name}
+            // Build header with search
+            let html = `
+                <div class="card mb-3">
+                    <div class="card-header" style="background: linear-gradient(135deg, ${hospital.color} 0%, ${hospital.color}dd 100%); color: white;">
+                        <h4 class="mb-0"><i class="fas fa-hospital-alt mr-2"></i>${hospital.name} - Appointment</h4>
                     </div>
-                `;
-                return;
-            }
-
-            // Render appointments as cards
-            let html = `<div class="row">`;
-
-            appointments.forEach(apt => {
-                const date = new Date(apt.appointment_date);
-                const dateStr = date.toLocaleDateString('id-ID', {
-                    weekday: 'long',
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric'
-                });
-
-                const statusBadge = apt.status === 'confirmed'
-                    ? '<span class="badge badge-success"><i class="fas fa-check-circle"></i> Terkonfirmasi</span>'
-                    : '<span class="badge badge-warning"><i class="fas fa-clock"></i> Terjadwal</span>';
-
-                html += `
-                    <div class="col-md-6 col-lg-4 mb-3">
-                        <div class="card" style="border-left: 4px solid ${hospital.color};">
-                            <div class="card-header" style="background: linear-gradient(135deg, ${hospital.color}22 0%, ${hospital.color}11 100%);">
-                                <h5 class="card-title mb-0">
-                                    <i class="fas fa-user-circle"></i> ${apt.patient_name}
-                                </h5>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <div class="input-group">
+                                    <div class="input-group-prepend">
+                                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                                    </div>
+                                    <input type="text" id="hospital-patient-search" class="form-control"
+                                           placeholder="Cari nama pasien..."
+                                           onkeyup="window.filterHospitalAppointments(this.value)">
+                                </div>
                             </div>
-                            <div class="card-body">
-                                <p class="mb-2"><i class="fas fa-hospital text-muted mr-2"></i><strong>${hospital.name}</strong></p>
-                                <p class="mb-2"><i class="fas fa-calendar text-muted mr-2"></i>${dateStr}</p>
-                                <p class="mb-2"><i class="fas fa-clock text-muted mr-2"></i>${apt.appointment_time ? apt.appointment_time.substring(0,5) + ' WIB' : '-'}</p>
-                                <p class="mb-2"><i class="fas fa-heartbeat text-muted mr-2"></i>${apt.appointment_type || 'Konsultasi'}</p>
-                                ${apt.complaint ? `<p class="mb-2 small text-muted"><i class="fas fa-comment-medical mr-2"></i>${apt.complaint}</p>` : ''}
-                                <div class="mt-3">${statusBadge}</div>
-                            </div>
-                            <div class="card-footer bg-white">
-                                <button class="btn btn-primary btn-block" onclick="window.startHospitalExam(${apt.patient_id}, ${apt.id}, '${hospital.name}')">
-                                    <i class="fas fa-stethoscope mr-2"></i>PERIKSA
-                                </button>
+                            <div class="col-md-6 text-right">
+                                <span class="badge badge-primary p-2" style="font-size: 14px;">
+                                    <i class="fas fa-users mr-1"></i>
+                                    <span id="hospital-appointments-count">${currentHospitalAppointments.length}</span> Appointment
+                                </span>
                             </div>
                         </div>
                     </div>
-                `;
-            });
+                </div>
+                <div id="hospital-appointments-cards-container"></div>
+            `;
 
-            html += `</div>`;
             container.innerHTML = html;
+
+            // Render appointments
+            renderHospitalAppointments(currentHospitalAppointments, hospital);
 
         } catch (error) {
             console.error('Error loading hospital appointments:', error);
@@ -8507,6 +8492,96 @@ Apakah Anda yakin ingin melanjutkan?`;
             `;
         }
     };
+
+    // Filter appointments by patient name
+    window.filterHospitalAppointments = function(searchTerm) {
+        const term = searchTerm.toLowerCase().trim();
+
+        const filtered = term === ''
+            ? currentHospitalAppointments
+            : currentHospitalAppointments.filter(apt =>
+                apt.patient_name.toLowerCase().includes(term)
+            );
+
+        // Hospital info mapping
+        const hospitalInfo = {
+            'rsia_melinda': { name: 'RSIA Melinda', color: '#e91e63' },
+            'rsud_gambiran': { name: 'RSUD Gambiran', color: '#2196f3' },
+            'rs_bhayangkara': { name: 'RS Bhayangkara', color: '#4caf50' }
+        };
+
+        const hospital = hospitalInfo[currentHospitalLocation] || {
+            name: currentHospitalLocation,
+            color: '#607d8b'
+        };
+
+        // Update count
+        const countEl = document.getElementById('hospital-appointments-count');
+        if (countEl) {
+            countEl.textContent = filtered.length;
+        }
+
+        renderHospitalAppointments(filtered, hospital);
+    };
+
+    // Render appointments cards
+    function renderHospitalAppointments(appointments, hospital) {
+        const cardsContainer = document.getElementById('hospital-appointments-cards-container');
+        if (!cardsContainer) return;
+
+        if (appointments.length === 0) {
+            cardsContainer.innerHTML = `
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Tidak ada appointment yang sesuai
+                </div>
+            `;
+            return;
+        }
+
+        let html = `<div class="row">`;
+
+        appointments.forEach(apt => {
+            const date = new Date(apt.appointment_date);
+            const dateStr = date.toLocaleDateString('id-ID', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+
+            const statusBadge = apt.status === 'confirmed'
+                ? '<span class="badge badge-success"><i class="fas fa-check-circle"></i> Terkonfirmasi</span>'
+                : '<span class="badge badge-warning"><i class="fas fa-clock"></i> Terjadwal</span>';
+
+            html += `
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="card" style="border-left: 4px solid ${hospital.color};">
+                        <div class="card-header" style="background: linear-gradient(135deg, ${hospital.color}22 0%, ${hospital.color}11 100%);">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-user-circle"></i> ${apt.patient_name}
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <p class="mb-2"><i class="fas fa-hospital text-muted mr-2"></i><strong>${hospital.name}</strong></p>
+                            <p class="mb-2"><i class="fas fa-calendar text-muted mr-2"></i>${dateStr}</p>
+                            <p class="mb-2"><i class="fas fa-clock text-muted mr-2"></i>${apt.appointment_time ? apt.appointment_time.substring(0,5) + ' WIB' : '-'}</p>
+                            <p class="mb-2"><i class="fas fa-heartbeat text-muted mr-2"></i>${apt.appointment_type || 'Konsultasi'}</p>
+                            ${apt.complaint ? `<p class="mb-2 small text-muted"><i class="fas fa-comment-medical mr-2"></i>${apt.complaint}</p>` : ''}
+                            <div class="mt-3">${statusBadge}</div>
+                        </div>
+                        <div class="card-footer bg-white">
+                            <button class="btn btn-primary btn-block" onclick="window.startHospitalExam(${apt.patient_id}, ${apt.id}, '${hospital.name}')">
+                                <i class="fas fa-stethoscope mr-2"></i>PERIKSA
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `</div>`;
+        cardsContainer.innerHTML = html;
+    }
 
     // Start hospital examination
     window.startHospitalExam = async function(patientId, appointmentId, hospitalName) {
