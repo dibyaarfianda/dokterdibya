@@ -40,10 +40,292 @@
     <!-- DataTables CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
     <style>
+        /* ========================================
+           DESIGN SYSTEM - CSS VARIABLES
+           ======================================== */
+        :root {
+            /* Color Palette */
+            --color-primary: #0d6efd;
+            --color-primary-hover: #0b5ed7;
+            --color-success: #28a745;
+            --color-success-hover: #218838;
+            --color-info: #17a2b8;
+            --color-info-hover: #117a8b;
+            --color-warning: #ffc107;
+            --color-warning-hover: #e0a800;
+            --color-danger: #dc3545;
+            --color-danger-hover: #c82333;
+
+            --color-dark: #343a40;
+            --color-secondary: #6c757d;
+            --color-light: #f8f9fa;
+            --color-white: #ffffff;
+            --color-text: #333333;
+            --color-text-muted: #6c757d;
+            --color-bg-body: #f4f6f9;
+
+            /* Spacing Scale (Bootstrap-aligned) */
+            --spacing-0: 0;
+            --spacing-1: 0.25rem;  /* 4px */
+            --spacing-2: 0.5rem;   /* 8px */
+            --spacing-3: 1rem;     /* 16px */
+            --spacing-4: 1.5rem;   /* 24px */
+            --spacing-5: 3rem;     /* 48px */
+
+            /* Typography */
+            --font-family-base: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-size-xs: 0.65rem;   /* 10.4px */
+            --font-size-sm: 0.75rem;   /* 12px */
+            --font-size-base: 0.875rem; /* 14px */
+            --font-size-md: 1rem;      /* 16px */
+            --font-size-lg: 1.25rem;   /* 20px */
+            --font-size-xl: 1.5rem;    /* 24px */
+            --font-size-2xl: 1.75rem;  /* 28px */
+            --font-size-3xl: 2rem;     /* 32px */
+
+            --font-weight-light: 300;
+            --font-weight-normal: 400;
+            --font-weight-medium: 500;
+            --font-weight-semibold: 600;
+            --font-weight-bold: 700;
+
+            /* Shadows */
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
+            --shadow-lg: 0 6px 18px rgba(0, 0, 0, 0.15);
+            --shadow-hover: 0 6px 20px rgba(0, 0, 0, 0.18);
+
+            /* Border Radius */
+            --radius-sm: 0.25rem;  /* 4px */
+            --radius-md: 0.35rem;  /* 5.6px */
+            --radius-lg: 0.5rem;   /* 8px */
+            --radius-xl: 0.75rem;  /* 12px */
+
+            /* Transitions */
+            --transition-fast: 140ms ease;
+            --transition-base: 180ms ease;
+            --transition-slow: 220ms ease;
+            --transition-card: 200ms ease;
+        }
+
         /* Apply Poppins font globally */
         body, .sidebar, .main-sidebar, .content-wrapper, .card, .btn, .nav-link, .brand-text, h1, h2, h3, h4, h5, h6, p, span, div, a, input, select, textarea, table, th, td, .small-box, .info-box {
-            font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+            font-family: var(--font-family-base) !important;
         }
+
+        /* ========================================
+           STANDARDIZED HEADING HIERARCHY
+           ======================================== */
+        #page-title,
+        .page-title {
+            font-size: var(--font-size-2xl);
+            font-weight: var(--font-weight-semibold);
+            color: var(--color-text);
+            margin: 0;
+            line-height: 1.3;
+        }
+
+        .section-title {
+            font-size: var(--font-size-xl);
+            font-weight: var(--font-weight-semibold);
+            color: var(--color-text);
+            margin-bottom: var(--spacing-3);
+        }
+
+        .subsection-title {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-medium);
+            color: var(--color-text);
+            margin-bottom: var(--spacing-2);
+        }
+
+        /* ========================================
+           STANDARDIZED CARD STYLES
+           ======================================== */
+        .card {
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow var(--transition-card), transform var(--transition-card);
+            border: none;
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Card Header Standardization */
+        .card-header {
+            padding: var(--spacing-3) var(--spacing-3);
+            background-color: var(--color-white);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0 !important;
+        }
+
+        .card-header.compact {
+            padding: var(--spacing-2) var(--spacing-3);
+        }
+
+        .card-header .card-title {
+            font-size: var(--font-size-md);
+            font-weight: var(--font-weight-semibold);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-2);
+        }
+
+        /* Card Body Standardization */
+        .card-body {
+            padding: var(--spacing-3);
+        }
+
+        .card-body.compact {
+            padding: var(--spacing-2);
+        }
+
+        .card-body.no-padding {
+            padding: 0;
+        }
+
+        /* Card Footer Standardization */
+        .card-footer {
+            padding: var(--spacing-3);
+            background-color: var(--color-light);
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+        }
+
+        /* ========================================
+           STANDARDIZED BUTTON STYLES
+           ======================================== */
+        .btn {
+            font-size: var(--font-size-base);
+            font-weight: var(--font-weight-medium);
+            padding: var(--spacing-2) var(--spacing-3);
+            border-radius: var(--radius-md);
+            transition: transform var(--transition-fast), box-shadow var(--transition-fast);
+            border: none;
+        }
+
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-sm {
+            font-size: var(--font-size-sm);
+            padding: var(--spacing-1) var(--spacing-2);
+        }
+
+        .btn-lg {
+            font-size: var(--font-size-md);
+            padding: var(--spacing-3) var(--spacing-4);
+        }
+
+        .btn-xs {
+            font-size: var(--font-size-xs);
+            padding: 0.15rem var(--spacing-2);
+        }
+
+        /* ========================================
+           STANDARDIZED FORM STYLES
+           ======================================== */
+        .form-control,
+        .custom-select,
+        select.form-control,
+        textarea.form-control {
+            font-size: var(--font-size-base);
+            border-radius: var(--radius-md);
+            border: 1px solid #ced4da;
+            transition: box-shadow var(--transition-base), border-color var(--transition-base), background-color var(--transition-base);
+        }
+
+        .form-control:focus,
+        .custom-select:focus,
+        select.form-control:focus,
+        textarea.form-control:focus {
+            box-shadow: 0 0 0 0.15rem rgba(13, 110, 253, 0.2);
+            border-color: var(--color-primary);
+        }
+
+        .form-control-sm {
+            font-size: var(--font-size-sm);
+            padding: var(--spacing-1) var(--spacing-2);
+        }
+
+        .form-label,
+        label {
+            font-size: var(--font-size-sm);
+            font-weight: var(--font-weight-medium);
+            color: var(--color-text);
+            margin-bottom: var(--spacing-1);
+        }
+
+        .form-label.required::after {
+            content: " *";
+            color: var(--color-danger);
+        }
+
+        /* ========================================
+           STANDARDIZED MODAL STYLES
+           ======================================== */
+        .modal-header {
+            background: linear-gradient(135deg, var(--color-primary) 0%, rgba(13, 110, 253, 0.9) 100%);
+            color: var(--color-white);
+            padding: var(--spacing-3) var(--spacing-4);
+            border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+        }
+
+        .modal-header .modal-title {
+            font-size: var(--font-size-lg);
+            font-weight: var(--font-weight-semibold);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-2);
+        }
+
+        .modal-header .close {
+            color: var(--color-white);
+            opacity: 0.8;
+            text-shadow: none;
+        }
+
+        .modal-header .close:hover {
+            opacity: 1;
+        }
+
+        .modal-body {
+            padding: var(--spacing-4);
+        }
+
+        .modal-footer {
+            padding: var(--spacing-3) var(--spacing-4);
+            background-color: var(--color-light);
+        }
+
+        /* ========================================
+           UTILITY CLASSES
+           ======================================== */
+        .shadow-sm { box-shadow: var(--shadow-sm); }
+        .shadow-md { box-shadow: var(--shadow-md); }
+        .shadow-lg { box-shadow: var(--shadow-lg); }
+
+        .text-xs { font-size: var(--font-size-xs); }
+        .text-sm { font-size: var(--font-size-sm); }
+        .text-base { font-size: var(--font-size-base); }
+        .text-md { font-size: var(--font-size-md); }
+        .text-lg { font-size: var(--font-size-lg); }
+        .text-xl { font-size: var(--font-size-xl); }
+        .text-2xl { font-size: var(--font-size-2xl); }
+
+        .font-light { font-weight: var(--font-weight-light); }
+        .font-normal { font-weight: var(--font-weight-normal); }
+        .font-medium { font-weight: var(--font-weight-medium); }
+        .font-semibold { font-weight: var(--font-weight-semibold); }
+        .font-bold { font-weight: var(--font-weight-bold); }
 
         /* Smaller sidebar navigation font */
         .sidebar .nav-sidebar .nav-link {
@@ -180,14 +462,10 @@
             padding-top: .2rem !important; /* default ~.25rem */
             padding-bottom: .2rem !important;
         }
-        /* Modern micro-interactions (no color changes) */
+
+        /* Modern micro-interactions */
         html { scroll-behavior: smooth; }
-        .card { border-radius: .5rem; box-shadow: 0 2px 10px rgba(0,0,0,.06); transition: box-shadow 200ms ease, transform 200ms ease; }
-        .card:hover { box-shadow: 0 6px 18px rgba(0,0,0,.12); }
-        .btn { transition: transform 140ms ease, box-shadow 140ms ease; }
-        .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 14px rgba(0,0,0,.12); }
-        .form-control, .custom-select, select.form-control, textarea.form-control { border-radius: .35rem; transition: box-shadow 180ms ease, border-color 180ms ease, background-color 180ms ease; }
-        .form-control:focus, .custom-select:focus, select.form-control:focus, textarea.form-control:focus { box-shadow: 0 0 0 .15rem rgba(0,123,255,.2); }
+
         /* Smooth reveal for obstetri section */
         #quick-preg-section { opacity: 0; transform: translateY(-6px); transition: opacity 220ms ease, transform 220ms ease; }
         #quick-preg-section.reveal { opacity: 1; transform: none; }
