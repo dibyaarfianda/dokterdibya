@@ -2749,43 +2749,45 @@
 
             let html = '';
 
-            // Add button to add custom medication - Modern style
+            // Add button to add custom medication - Prominent style
             html += `
-                <div style="margin-bottom: 15px;">
+                <div style="margin-bottom: 20px;">
                     <button onclick="showAddMedicationForm()" style="
-                        background: linear-gradient(135deg, #28a745, #20c997);
+                        background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
                         color: white;
                         border: none;
-                        padding: 14px 24px;
-                        border-radius: 16px;
-                        font-size: 14px;
-                        font-weight: 600;
+                        padding: 18px 28px;
+                        border-radius: 20px;
+                        font-size: 16px;
+                        font-weight: 700;
                         cursor: pointer;
                         width: 100%;
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        gap: 10px;
-                        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+                        gap: 12px;
+                        box-shadow: 0 6px 25px rgba(255, 107, 107, 0.4);
                         transition: all 0.3s ease;
-                    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(40,167,69,0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(40,167,69,0.3)'">
-                        <i class="fa fa-plus-circle" style="font-size: 16px;"></i> Tambah Obat/Vitamin
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                    " onmouseover="this.style.transform='translateY(-3px) scale(1.02)'; this.style.boxShadow='0 8px 30px rgba(255,107,107,0.5)'" onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 6px 25px rgba(255,107,107,0.4)'">
+                        <i class="fa fa-plus-circle" style="font-size: 20px;"></i> Tambah Obat/Vitamin
                     </button>
                 </div>
             `;
 
-            // Add medication form (hidden by default) - Modern Glassmorphism style
+            // Add medication form (hidden by default) - Ultra transparent glassmorphism
             html += `
                 <div id="add-medication-form" style="
                     display: none;
-                    background: rgba(255, 255, 255, 0.7);
-                    backdrop-filter: blur(20px);
-                    -webkit-backdrop-filter: blur(20px);
-                    border-radius: 20px;
-                    padding: 20px;
-                    margin-bottom: 15px;
-                    border: 1px solid rgba(255, 255, 255, 0.5);
-                    box-shadow: 0 8px 32px rgba(40, 167, 69, 0.15);
+                    background: rgba(255, 255, 255, 0.3);
+                    backdrop-filter: blur(25px);
+                    -webkit-backdrop-filter: blur(25px);
+                    border-radius: 24px;
+                    padding: 24px;
+                    margin-bottom: 20px;
+                    border: 2px solid rgba(255, 255, 255, 0.6);
+                    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8);
                 ">
                     <h4 style="
                         margin: 0 0 18px 0;
