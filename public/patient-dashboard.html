@@ -2708,12 +2708,12 @@
                                 <!-- Like Button -->
                                 <button id="article-like-btn-${article.id}" onclick="toggleArticleLike(${article.id})" style="
                                     width: 100%;
-                                    background: linear-gradient(135deg, rgba(40,167,233,0.1), rgba(30,136,229,0.1));
-                                    border: 2px solid rgba(40,167,233,0.3);
+                                    background: linear-gradient(135deg, rgba(40,167,69,0.1), rgba(32,201,151,0.1));
+                                    border: 2px solid rgba(40,167,69,0.3);
                                     border-radius: 14px;
                                     padding: 14px;
                                     margin-bottom: 20px;
-                                    color: #28a7e9;
+                                    color: #28a745;
                                     font-size: 14px;
                                     font-weight: 600;
                                     cursor: pointer;
@@ -2722,8 +2722,8 @@
                                     justify-content: center;
                                     gap: 10px;
                                     transition: all 0.3s ease;
-                                " onmouseover="this.style.transform='translateY(-2px)'; this.style.borderColor='rgba(40,167,233,0.5)'" onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='rgba(40,167,233,0.3)'">
-                                    <i class="fa fa-thumbs-up" id="article-like-icon-${article.id}"></i>
+                                " onmouseover="this.style.transform='translateY(-2px)'; this.style.borderColor='rgba(40,167,69,0.5)'" onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='rgba(40,167,69,0.3)'">
+                                    <i class="fa fa-thumbs-up" id="article-like-icon-${article.id}" style="color: #ffc107;"></i>
                                     <span id="article-like-text-${article.id}">Loading...</span>
                                 </button>
 
@@ -2802,14 +2802,18 @@
             if (!btn || !icon || !text) return;
 
             if (isLiked) {
-                btn.style.background = 'linear-gradient(135deg, rgba(40,167,233,0.3), rgba(30,136,229,0.3))';
-                btn.style.borderColor = 'rgba(40,167,233,0.6)';
+                btn.style.background = 'linear-gradient(135deg, rgba(40,167,69,0.3), rgba(32,201,151,0.3))';
+                btn.style.borderColor = 'rgba(40,167,69,0.6)';
+                btn.style.color = '#28a745';
                 icon.className = 'fa fa-thumbs-up';
+                icon.style.color = '#ffc107';
                 text.textContent = `Anda & ${likeCount > 1 ? (likeCount - 1) + ' lainnya' : '0 lainnya'} menyukai artikel ini`;
             } else {
-                btn.style.background = 'linear-gradient(135deg, rgba(40,167,233,0.1), rgba(30,136,229,0.1))';
-                btn.style.borderColor = 'rgba(40,167,233,0.3)';
+                btn.style.background = 'linear-gradient(135deg, rgba(40,167,69,0.1), rgba(32,201,151,0.1))';
+                btn.style.borderColor = 'rgba(40,167,69,0.3)';
+                btn.style.color = '#28a745';
                 icon.className = 'fa fa-thumbs-o-up';
+                icon.style.color = '#ffc107';
                 text.textContent = `${likeCount || 0} orang menyukai artikel ini`;
             }
         }
