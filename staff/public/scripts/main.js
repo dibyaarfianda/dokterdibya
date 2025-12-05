@@ -1066,7 +1066,7 @@ async function loadArticlesAdmin() {
         const result = await response.json();
 
         if (!result.data || result.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Belum ada artikel. Klik "Tambah Artikel" untuk membuat.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4">Belum ada artikel. Klik "Tambah Artikel" untuk membuat.</td></tr>';
             return;
         }
 
@@ -1083,6 +1083,9 @@ async function loadArticlesAdmin() {
                         : '<span class="badge badge-secondary">Draft</span>'}
                 </td>
                 <td>${article.view_count || 0}</td>
+                <td>
+                    <i class="fas fa-thumbs-up text-primary"></i> ${article.like_count || 0}
+                </td>
                 <td><small>${formatDate(article.updated_at)}</small></td>
                 <td>
                     <button class="btn btn-sm btn-info" onclick="editArticle(${article.id})" title="Edit">
@@ -1102,7 +1105,7 @@ async function loadArticlesAdmin() {
 
     } catch (error) {
         console.error('Error loading articles:', error);
-        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">Gagal memuat artikel</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4">Gagal memuat artikel</td></tr>';
     }
 }
 
