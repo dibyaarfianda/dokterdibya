@@ -1241,6 +1241,57 @@ async function deleteArticle(id) {
     }
 }
 
+// Initialize Markdown preview for article editor
+function initArticleMarkdownPreview() {
+    const contentTextarea = document.getElementById('article-content');
+    const previewDiv = document.getElementById('article-preview');
+    const previewTab = document.querySelector('a[href="#preview-tab"]');
+
+    if (!contentTextarea || !previewDiv || !previewTab) return;
+
+    // Update preview when switching to preview tab
+    previewTab.addEventListener('shown.bs.tab', function() {
+        updateArticlePreview();
+    });
+
+    // Also update on input (with debounce for performance)
+    let previewTimeout;
+    contentTextarea.addEventListener('input', function() {
+        clearTimeout(previewTimeout);
+        previewTimeout = setTimeout(updateArticlePreview, 500);
+    });
+}
+
+// Update the Markdown preview
+function updateArticlePreview() {
+    const contentTextarea = document.getElementById('article-content');
+    const previewDiv = document.getElementById('article-preview');
+
+    if (!contentTextarea || !previewDiv) return;
+
+    const markdownContent = contentTextarea.value.trim();
+
+    if (!markdownContent) {
+        previewDiv.innerHTML = '<p class="text-muted"><i>Preview akan muncul di sini...</i></p>';
+        return;
+    }
+
+    // Check if marked is available
+    if (typeof marked === 'undefined') {
+        previewDiv.innerHTML = '<p class="text-danger"><i>Marked.js library tidak tersedia</i></p>';
+        return;
+    }
+
+    try {
+        // Parse and render Markdown
+        const htmlContent = marked.parse(markdownContent);
+        previewDiv.innerHTML = htmlContent;
+    } catch (error) {
+        console.error('Error parsing Markdown:', error);
+        previewDiv.innerHTML = `<p class="text-danger"><i>Error: ${error.message}</i></p>`;
+    }
+}
+
 function formatDate(dateStr) {
     if (!dateStr) return '-';
     const date = new Date(dateStr);
@@ -1973,6 +2024,7 @@ function initMain() {
     bindBasics();
     bindSundayClinicLauncher();
     initMedicalExam(); // Initialize medical examination pages
+    initArticleMarkdownPreview(); // Initialize Markdown preview for article editor
     onAuthStateChanged(initializeApp);
     
     // Set up global debug function for appointments

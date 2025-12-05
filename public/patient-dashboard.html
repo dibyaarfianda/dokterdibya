@@ -2673,7 +2673,7 @@
                                         font-size: 15px;
                                         line-height: 1.7;
                                         margin: 0 0 20px 0;
-                                    ">${article.content}</div>
+                                    ">${typeof marked !== 'undefined' ? marked.parse(article.content) : article.content}</div>
                                 ` : `
                                     <p style="
                                         color: #ccc;
