@@ -1567,11 +1567,31 @@
             </div>
         </div>
 
-        <!-- Cards Layout -->
+        <!-- Ruang Membaca dari dokterDIBYA - Moved after Journey Book -->
         <div class="row" style="margin-bottom: 30px;">
-            <!-- Cards Column -->
-            <div class="col-md-12" style="display: flex; flex-direction: column;">
-                <!-- Klinik Privat Minggu -->
+            <div class="col-md-12">
+                <div class="dashboard-card" id="articles-section" style="margin-bottom: 20px;">
+                    <h3 class="collapsible-header" id="articles-header" onclick="toggleCard('articles')">
+                        <span><i class="fa fa-book"></i> Ruang Membaca</span>
+                        <i class="fa fa-chevron-down toggle-icon" id="articles-toggle-icon"></i>
+                    </h3>
+                    <div class="collapsible-content" id="articles-content">
+                        <p class="text-muted" style="font-size: 12px; margin-bottom: 15px;">
+                            <i class="fa fa-stethoscope"></i> Artikel pilihan dari <strong style="color: var(--primary);">dokterDIBYA</strong> berdasarkan jurnal terkini
+                        </p>
+                        <div id="articles-container">
+                            <!-- Articles will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Cards Layout - 2 Column on Desktop -->
+        <div class="row" style="margin-bottom: 30px;">
+            <!-- Left Column -->
+            <div class="col-md-6 col-xs-12" style="display: flex; flex-direction: column;">
+                <!-- 1. Klinik Privat Minggu -->
                 <div class="dashboard-card" id="appointments-section" style="margin-bottom: 20px;">
                     <h3><i class="fa fa-calendar-check-o"></i> Klinik Privat Minggu</h3>
                     <div id="booking-status-container">
@@ -1585,19 +1605,19 @@
                     </a>
                 </div>
 
-                <!-- Jadwal Praktek Dr. Dibya -->
+                <!-- 2. Jadwal dan Lokasi -->
                 <div class="dashboard-card" id="jadwal-praktek-section" style="margin-bottom: 20px;">
-                    <h3><i class="fa fa-calendar"></i> Jadwal Praktek Dr. Dibya</h3>
-                    <p class="text-muted" style="font-size: 12px; margin-bottom: 15px;">Lihat jadwal lengkap dan buat janji temu</p>
+                    <h3><i class="fa fa-calendar"></i> Jadwal dan Lokasi</h3>
+                    <p class="text-muted" style="font-size: 12px; margin-bottom: 15px;">Lihat jadwal lengkap dan lokasi praktek</p>
                     <a href="/practice-locations.html" class="action-btn" style="display: block; text-align: center;">
                         <i class="fa fa-map-marker"></i> Lihat Semua Lokasi Praktek
                     </a>
                 </div>
 
-                <!-- Hospital Booking Section (shows after Sunday 21:00) -->
+                <!-- 3. Janji Temu di RS (Hospital Booking) -->
                 <div class="dashboard-card" id="hospital-booking-section" style="margin-bottom: 20px; display: none;">
                     <h3 class="collapsible-header collapsed" id="hospital-booking-header" onclick="toggleCard('hospital-booking')">
-                        <span><i class="fa fa-hospital-o"></i> Praktek Rumah Sakit</span>
+                        <span><i class="fa fa-hospital-o"></i> Janji Temu di RS</span>
                         <i class="fa fa-chevron-right toggle-icon" id="hospital-booking-toggle-icon"></i>
                     </h3>
                     <div class="collapsible-content collapsed" id="hospital-booking-content">
@@ -1611,18 +1631,7 @@
                     </div>
                 </div>
 
-                <!-- Riwayat Janji Temu (Hidden - diganti dengan Riwayat Kunjungan) -->
-                <div class="dashboard-card" id="appointments-history-section" style="margin-bottom: 20px; display: none;">
-                    <h3><i class="fa fa-history"></i> Riwayat Janji Temu</h3>
-                    <div id="booking-history-container">
-                        <p class="empty-state">
-                            <i class="fa fa-calendar-o"></i>
-                            Belum ada riwayat janji temu
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Riwayat Kunjungan (Medical Records) -->
+                <!-- 4. Riwayat Kunjungan (Medical Records) -->
                 <div class="dashboard-card" id="visits-history-section" style="margin-bottom: 20px;">
                     <h3 class="collapsible-header collapsed" id="visits-history-header" onclick="toggleCard('visits-history')">
                         <span><i class="fa fa-stethoscope"></i> Riwayat Kunjungan</span>
@@ -1639,92 +1648,10 @@
                     </div>
                 </div>
 
-                <!-- Vitamin & Obat (Medications) -->
-                <div class="dashboard-card" id="medications-section" style="margin-bottom: 20px;">
-                    <h3 class="collapsible-header" id="medications-header" onclick="toggleCard('medications')">
-                        <span><i class="fa fa-medkit"></i> Vitamin & Obat</span>
-                        <i class="fa fa-chevron-down toggle-icon" id="medications-toggle-icon"></i>
-                    </h3>
-                    <div class="collapsible-content" id="medications-content">
-                        <p class="text-muted" style="font-size: 12px; margin-bottom: 10px;">Daftar obat dan vitamin yang diresepkan</p>
-                        <div id="medications-list-container">
-                            <p class="empty-state">
-                                <i class="fa fa-spinner fa-spin"></i>
-                                Memuat daftar obat...
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Ruang Membaca dari dokterDIBYA -->
-                <div class="dashboard-card" id="articles-section" style="margin-bottom: 20px;">
-                    <h3 class="collapsible-header" id="articles-header" onclick="toggleCard('articles')">
-                        <span><i class="fa fa-book"></i> Ruang Membaca</span>
-                        <i class="fa fa-chevron-down toggle-icon" id="articles-toggle-icon"></i>
-                    </h3>
-                    <div class="collapsible-content" id="articles-content">
-                        <p class="text-muted" style="font-size: 12px; margin-bottom: 15px;">
-                            <i class="fa fa-stethoscope"></i> Artikel pilihan dari <strong style="color: var(--primary);">dokterDIBYA</strong> berdasarkan jurnal terkini
-                        </p>
-                        <div id="articles-container">
-                            <!-- Articles will be loaded here -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Galeri USG dari Dokter -->
-                <div class="dashboard-card" id="usg-section" style="margin-bottom: 20px;">
-                    <h3 class="collapsible-header collapsed" id="usg-header" onclick="toggleCard('usg')">
-                        <span><i class="fa fa-picture-o"></i> Foto USG</span>
-                        <i class="fa fa-chevron-right toggle-icon" id="usg-toggle-icon"></i>
-                    </h3>
-                    <div class="collapsible-content collapsed" id="usg-content">
-                        <p class="text-muted" style="font-size: 12px; margin-bottom: 10px;">Foto USG yang dikirim oleh dokter Anda</p>
-                        <div id="ultrasound-gallery-mini">
-                            <p class="empty-state">
-                                <i class="fa fa-image"></i>
-                                Belum ada foto USG dari dokter
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Hasil Lab dari Dokter -->
-                <div class="dashboard-card" id="lab-section" style="margin-bottom: 20px;">
-                    <h3 class="collapsible-header collapsed" id="lab-header" onclick="toggleCard('lab')">
-                        <span><i class="fa fa-flask"></i> Hasil Lab</span>
-                        <i class="fa fa-chevron-right toggle-icon" id="lab-toggle-icon"></i>
-                    </h3>
-                    <div class="collapsible-content collapsed" id="lab-content">
-                        <p class="text-muted" style="font-size: 12px; margin-bottom: 10px;">Hasil laboratorium yang dikirim oleh dokter Anda</p>
-                        <div id="lab-results-container">
-                            <p class="empty-state">
-                                <i class="fa fa-flask"></i>
-                                Belum ada hasil lab dari dokter
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Dokumen Medis Saya -->
-                <div class="dashboard-card" id="documents-section" style="margin-bottom: 20px;">
-                    <h3 class="collapsible-header collapsed" id="documents-header" onclick="toggleCard('documents')">
-                        <span><i class="fa fa-folder-open"></i> Dokumen Medis Saya</span>
-                        <i class="fa fa-chevron-right toggle-icon" id="documents-toggle-icon"></i>
-                    </h3>
-                    <div class="collapsible-content collapsed" id="documents-content">
-                        <div id="my-documents-container">
-                            <div class="documents-loading" style="text-align: center; padding: 20px;">
-                                <i class="fa fa-spinner fa-spin"></i> Memuat dokumen...
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Riwayat Medis Sebelumnya (Patient Uploads) -->
+                <!-- 5. Riwayat Medis (Patient Uploads) -->
                 <div class="dashboard-card patient-uploads-section" id="patient-uploads-section" style="margin-bottom: 20px;">
                     <h3 class="collapsible-header collapsed" id="patient-uploads-header" onclick="toggleCard('patient-uploads')">
-                        <span><i class="fa fa-history"></i> Riwayat Medis Sebelumnya</span>
+                        <span><i class="fa fa-history"></i> Riwayat Medis</span>
                         <i class="fa fa-chevron-right toggle-icon" id="patient-uploads-toggle-icon"></i>
                     </h3>
                     <div class="collapsible-content collapsed" id="patient-uploads-content">
@@ -1743,9 +1670,77 @@
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Rekam Medis -->
-                <div class="dashboard-card">
+            <!-- Right Column -->
+            <div class="col-md-6 col-xs-12" style="display: flex; flex-direction: column;">
+                <!-- 1. Jadwal Vitamin -->
+                <div class="dashboard-card" id="medications-section" style="margin-bottom: 20px;">
+                    <h3 class="collapsible-header collapsed" id="medications-header" onclick="toggleCard('medications')">
+                        <span><i class="fa fa-medkit"></i> Jadwal Vitamin</span>
+                        <i class="fa fa-chevron-right toggle-icon" id="medications-toggle-icon"></i>
+                    </h3>
+                    <div class="collapsible-content collapsed" id="medications-content">
+                        <p class="text-muted" style="font-size: 12px; margin-bottom: 15px;">Kelola jadwal vitamin dan obat Anda</p>
+                        <div id="medications-list-container">
+                            <p class="empty-state">
+                                <i class="fa fa-medkit"></i>
+                                Belum ada jadwal vitamin atau obat
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Rekam Medis Saya -->
+                <div class="dashboard-card" id="documents-section" style="margin-bottom: 20px;">
+                    <h3 class="collapsible-header collapsed" id="documents-header" onclick="toggleCard('documents')">
+                        <span><i class="fa fa-folder-open"></i> Rekam Medis Saya</span>
+                        <i class="fa fa-chevron-right toggle-icon" id="documents-toggle-icon"></i>
+                    </h3>
+                    <div class="collapsible-content collapsed" id="documents-content">
+                        <div id="my-documents-container">
+                            <div class="documents-loading" style="text-align: center; padding: 20px;">
+                                <i class="fa fa-spinner fa-spin"></i> Memuat dokumen...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. Album USG (renamed from Foto USG) -->
+                <div class="dashboard-card" id="usg-section" style="margin-bottom: 20px;">
+                    <h3 class="collapsible-header" id="usg-header" onclick="toggleCard('usg')">
+                        <span><i class="fa fa-picture-o"></i> Album USG</span>
+                        <i class="fa fa-chevron-down toggle-icon" id="usg-toggle-icon"></i>
+                    </h3>
+                    <div class="collapsible-content" id="usg-content">
+                        <div id="ultrasound-gallery-mini">
+                            <p class="empty-state">
+                                <i class="fa fa-image"></i>
+                                Belum ada foto USG dari dokter
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Hasil Lab dari Dokter -->
+                <div class="dashboard-card" id="lab-section" style="margin-bottom: 20px;">
+                    <h3 class="collapsible-header collapsed" id="lab-header" onclick="toggleCard('lab')">
+                        <span><i class="fa fa-flask"></i> Hasil Lab</span>
+                        <i class="fa fa-chevron-right toggle-icon" id="lab-toggle-icon"></i>
+                    </h3>
+                    <div class="collapsible-content collapsed" id="lab-content">
+                        <p class="text-muted" style="font-size: 12px; margin-bottom: 10px;">Hasil laboratorium yang dikirim oleh dokter Anda</p>
+                        <div id="lab-results-container">
+                            <p class="empty-state">
+                                <i class="fa fa-flask"></i>
+                                Belum ada hasil lab dari dokter
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. Identitas Pribadi (moved to right column) -->
+                <div class="dashboard-card" id="identity-section" style="margin-bottom: 20px;">
                     <h3 style="font-size: 19.2px;"><i class="fa fa-file-text"></i> IDENTITAS PRIBADI</h3>
                     <div style="padding: 15px 0; display: flex; align-items: center; justify-content: center;">
                         <a href="/patient-intake.html" class="action-btn" style="display: block; text-align: center;">
@@ -4529,6 +4524,10 @@
                 return;
             }
 
+            // Get custom thumbnail preference
+            const customThumbnailId = localStorage.getItem('usg_thumbnail_id');
+            const isThumbnailId = (id) => customThumbnailId && parseInt(customThumbnailId) === id;
+
             const galleryHTML = ultrasoundImages.map(img => {
                 const imgDate = new Date(img.date);
                 const formattedDate = imgDate.toLocaleDateString('id-ID', {
@@ -4539,21 +4538,76 @@
 
                 const safeNotes = (img.notes || img.title || '').replace(/'/g, "\\'");
                 const glowClass = img.isNew ? 'glow-new' : '';
+                const isThumbnail = isThumbnailId(img.id);
 
                 return `
-                    <div class="ultrasound-item ${glowClass}" onclick="viewUsgAndMarkViewed(${img.id}, '${img.url}', '${formattedDate}', '${safeNotes}', this)" style="cursor: pointer; position: relative;">
-                        ${img.isNew ? '<span class="new-badge" style="position: absolute; top: 8px; right: 8px; background: #28e97f; color: #000; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; z-index: 2;">BARU</span>' : ''}
-                        <img src="${img.url}" alt="USG ${formattedDate}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27200%27 height=%27200%27%3E%3Crect width=%27200%27 height=%27200%27 fill=%27%23404040%27/%3E%3Ctext x=%2750%25%27 y=%2750%25%27 font-size=%2720%27 fill=%27%2328a7e9%27 text-anchor=%27middle%27 dy=%27.3em%27%3EGambar Error%3C/text%3E%3C/svg%3E'">
+                    <div class="ultrasound-item ${glowClass}" style="position: relative;">
+                        ${img.isNew ? '<span class="new-badge" style="position: absolute; top: 8px; right: 8px; background: #28e97f; color: #000; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; z-index: 3;">BARU</span>' : ''}
+                        ${isThumbnail ? '<span class="thumbnail-badge" style="position: absolute; top: 8px; left: 8px; background: #ffd700; color: #000; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; z-index: 3;"><i class="fa fa-star"></i> THUMBNAIL</span>' : ''}
+                        <img src="${img.url}"
+                             alt="USG ${formattedDate}"
+                             onclick="viewUsgAndMarkViewed(${img.id}, '${img.url}', '${formattedDate}', '${safeNotes}', this.parentElement)"
+                             style="cursor: pointer;"
+                             onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27200%27 height=%27200%27%3E%3Crect width=%27200%27 height=%27200%27 fill=%27%23404040%27/%3E%3Ctext x=%2750%25%27 y=%2750%25%27 font-size=%2720%27 fill=%27%2328a7e9%27 text-anchor=%27middle%27 dy=%27.3em%27%3EGambar Error%3C/text%3E%3C/svg%3E'">
                         <div class="overlay">
                             ${formattedDate}
                             ${img.title ? '<br>' + img.title : ''}
                         </div>
+                        <button onclick="event.stopPropagation(); setUsgThumbnail(${img.id})"
+                                style="position: absolute; bottom: 10px; right: 10px; background: ${isThumbnail ? '#ffd700' : 'rgba(40, 167, 233, 0.9)'}; color: ${isThumbnail ? '#000' : '#fff'}; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 11px; font-weight: 600; z-index: 3; box-shadow: 0 2px 8px rgba(0,0,0,0.3);">
+                            <i class="fa fa-star${isThumbnail ? '' : '-o'}"></i> ${isThumbnail ? 'Thumbnail' : 'Set Thumbnail'}
+                        </button>
                     </div>
                 `;
             }).join('');
 
             if (gallery) gallery.innerHTML = galleryHTML;
-            if (galleryMini) galleryMini.innerHTML = galleryHTML;
+
+            // For mini gallery, use custom thumbnail or latest USG
+            if (galleryMini) {
+                let thumbnailImg;
+                if (customThumbnailId) {
+                    thumbnailImg = ultrasoundImages.find(img => img.id === parseInt(customThumbnailId));
+                }
+                // Fallback to latest if custom thumbnail not found or not set
+                if (!thumbnailImg) {
+                    thumbnailImg = ultrasoundImages[0];
+                }
+
+                const latestImg = thumbnailImg; // Use selected or latest
+                const imgDate = new Date(latestImg.date);
+                const formattedDate = imgDate.toLocaleDateString('id-ID', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                const safeNotes = (latestImg.notes || latestImg.title || '').replace(/'/g, "\\'");
+                const totalCount = ultrasoundImages.length;
+
+                galleryMini.innerHTML = `
+                    <div style="display: flex; flex-direction: column; gap: 10px;">
+                        <div onclick="viewUsgAndMarkViewed(${latestImg.id}, '${latestImg.url}', '${formattedDate}', '${safeNotes}', this)"
+                             style="position: relative; cursor: pointer; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: transform 0.3s;"
+                             onmouseover="this.style.transform='scale(1.02)'"
+                             onmouseout="this.style.transform='scale(1)'">
+                            ${latestImg.isNew ? '<span class="new-badge" style="position: absolute; top: 8px; right: 8px; background: #28e97f; color: #000; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; z-index: 2;">BARU</span>' : ''}
+                            <img src="${latestImg.url}"
+                                 alt="USG Terbaru"
+                                 style="width: 100%; height: 200px; object-fit: cover; display: block;"
+                                 onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27300%27 height=%27200%27%3E%3Crect width=%27300%27 height=%27200%27 fill=%27%23404040%27/%3E%3Ctext x=%2750%25%27 y=%2750%25%27 font-size=%2720%27 fill=%27%2328a7e9%27 text-anchor=%27middle%27 dy=%27.3em%27%3EGambar Error%3C/text%3E%3C/svg%3E'">
+                            <div style="position: absolute; bottom: 0; left: 0; right: 0; background: linear-gradient(to top, rgba(0,0,0,0.8), transparent); padding: 15px 10px 10px; color: white;">
+                                <div style="font-size: 13px; font-weight: 600;">${formattedDate}</div>
+                                ${latestImg.title ? '<div style="font-size: 11px; color: #ddd; margin-top: 3px;">' + latestImg.title + '</div>' : ''}
+                            </div>
+                        </div>
+                        ${totalCount > 1 ? `
+                            <div style="text-align: center; padding: 8px; background: rgba(40, 167, 233, 0.1); border-radius: 6px; font-size: 12px; color: #28a7e9;">
+                                <i class="fa fa-images"></i> ${totalCount} foto USG tersedia
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
 
             // Update quick action thumbnail with first USG image
             updateQuickActionThumbnail('quick-usg-thumb', ultrasoundImages[0]?.url, 'fa-heartbeat');
@@ -4571,6 +4625,19 @@
                 localStorage.setItem('ultrasound_images', JSON.stringify(ultrasoundImages));
                 renderUltrasoundGallery();
             }
+        }
+
+        // Set custom USG thumbnail
+        function setUsgThumbnail(id) {
+            localStorage.setItem('usg_thumbnail_id', id.toString());
+            renderUltrasoundGallery();
+
+            // Show success message
+            const msg = document.createElement('div');
+            msg.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #ffd700; color: #000; padding: 12px 20px; border-radius: 8px; z-index: 9999; font-weight: 600; box-shadow: 0 4px 15px rgba(0,0,0,0.3);';
+            msg.innerHTML = '<i class="fa fa-check-circle"></i> Thumbnail berhasil diatur!';
+            document.body.appendChild(msg);
+            setTimeout(() => msg.remove(), 2000);
         }
 
         function viewUltrasoundImage(url, date, notes) {
