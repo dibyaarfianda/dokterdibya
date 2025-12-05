@@ -2705,6 +2705,28 @@
                                     </p>
                                 </div>
 
+                                <!-- Like Button -->
+                                <button id="article-like-btn-${article.id}" onclick="toggleArticleLike(${article.id})" style="
+                                    width: 100%;
+                                    background: linear-gradient(135deg, rgba(40,167,233,0.1), rgba(30,136,229,0.1));
+                                    border: 2px solid rgba(40,167,233,0.3);
+                                    border-radius: 14px;
+                                    padding: 14px;
+                                    margin-bottom: 20px;
+                                    color: #28a7e9;
+                                    font-size: 14px;
+                                    font-weight: 600;
+                                    cursor: pointer;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    gap: 10px;
+                                    transition: all 0.3s ease;
+                                " onmouseover="this.style.transform='translateY(-2px)'; this.style.borderColor='rgba(40,167,233,0.5)'" onmouseout="this.style.transform='translateY(0)'; this.style.borderColor='rgba(40,167,233,0.3)'">
+                                    <i class="fa fa-thumbs-up" id="article-like-icon-${article.id}"></i>
+                                    <span id="article-like-text-${article.id}">Loading...</span>
+                                </button>
+
                                 <div style="
                                     background: linear-gradient(135deg, rgba(40,167,69,0.1), rgba(32,201,151,0.1));
                                     border: 1px solid rgba(40,167,69,0.2);
@@ -2723,6 +2745,9 @@
 
                 document.body.insertAdjacentHTML('beforeend', modalHtml);
 
+                // Check if user has liked this article
+                checkArticleLikeStatus(article.id, article.like_count || 0);
+
             } catch (error) {
                 console.error('Error loading article:', error);
                 closeArticleModal();
@@ -2733,6 +2758,111 @@
         function closeArticleModal() {
             const modal = document.getElementById('article-modal');
             if (modal) modal.remove();
+        }
+
+        // Check if user has liked an article
+        async function checkArticleLikeStatus(articleId, likeCount) {
+            try {
+                const token = await getToken();
+                if (!token) {
+                    // User not logged in - show generic like button
+                    updateLikeButton(articleId, false, likeCount);
+                    return;
+                }
+
+                const response = await fetch(`/api/articles/${articleId}/liked`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    updateLikeButton(articleId, result.liked, likeCount);
+                } else {
+                    updateLikeButton(articleId, false, likeCount);
+                }
+            } catch (error) {
+                console.error('Error checking like status:', error);
+                updateLikeButton(articleId, false, likeCount);
+            }
+        }
+
+        // Update like button UI
+        function updateLikeButton(articleId, isLiked, likeCount) {
+            const btn = document.getElementById(`article-like-btn-${articleId}`);
+            const icon = document.getElementById(`article-like-icon-${articleId}`);
+            const text = document.getElementById(`article-like-text-${articleId}`);
+
+            if (!btn || !icon || !text) return;
+
+            if (isLiked) {
+                btn.style.background = 'linear-gradient(135deg, rgba(40,167,233,0.3), rgba(30,136,229,0.3))';
+                btn.style.borderColor = 'rgba(40,167,233,0.6)';
+                icon.className = 'fa fa-thumbs-up';
+                text.textContent = `Anda & ${likeCount > 1 ? (likeCount - 1) + ' lainnya' : '0 lainnya'} menyukai artikel ini`;
+            } else {
+                btn.style.background = 'linear-gradient(135deg, rgba(40,167,233,0.1), rgba(30,136,229,0.1))';
+                btn.style.borderColor = 'rgba(40,167,233,0.3)';
+                icon.className = 'fa fa-thumbs-o-up';
+                text.textContent = `${likeCount || 0} orang menyukai artikel ini`;
+            }
+        }
+
+        // Toggle like status
+        async function toggleArticleLike(articleId) {
+            try {
+                const token = await getToken();
+                if (!token) {
+                    alert('Silakan login terlebih dahulu untuk menyukai artikel');
+                    return;
+                }
+
+                const btn = document.getElementById(`article-like-btn-${articleId}`);
+                if (!btn) return;
+
+                // Disable button during request
+                btn.disabled = true;
+                btn.style.opacity = '0.6';
+
+                const response = await fetch(`/api/articles/${articleId}/like`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) throw new Error('Failed to toggle like');
+
+                const result = await response.json();
+
+                // Re-check like status to update UI with new count
+                const statusResponse = await fetch(`/api/articles/${articleId}/liked`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (statusResponse.ok) {
+                    const statusResult = await statusResponse.json();
+
+                    // Get updated article to get new like count
+                    const articleResponse = await fetch(`/api/articles/${articleId}`);
+                    if (articleResponse.ok) {
+                        const articleResult = await articleResponse.json();
+                        updateLikeButton(articleId, statusResult.liked, articleResult.data.like_count || 0);
+                    }
+                }
+
+                // Re-enable button
+                btn.disabled = false;
+                btn.style.opacity = '1';
+
+            } catch (error) {
+                console.error('Error toggling like:', error);
+                alert('Gagal menyukai artikel. Silakan coba lagi.');
+
+                // Re-enable button
+                const btn = document.getElementById(`article-like-btn-${articleId}`);
+                if (btn) {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                }
+            }
         }
 
         function openArticlesPage() {

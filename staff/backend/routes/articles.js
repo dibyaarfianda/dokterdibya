@@ -19,7 +19,7 @@ router.get('/', async (req, res) => {
 
         let query = `
             SELECT id, title, summary, category, icon, color, source,
-                   view_count, created_at, updated_at
+                   view_count, like_count, created_at, updated_at
             FROM health_articles
             WHERE is_published = 1
         `;
@@ -271,6 +271,80 @@ router.patch('/:id/publish', verifyToken, requireRoles(ROLE_NAMES.DOKTER), async
     } catch (error) {
         logger.error('Error toggling publish status:', error);
         res.status(500).json({ success: false, message: 'Failed to update article' });
+    }
+});
+
+// ============ LIKE FUNCTIONALITY ============
+
+/**
+ * POST /api/articles/:id/like - Like an article (requires authentication)
+ */
+router.post('/:id/like', verifyToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const patientId = req.user.id; // Firebase UID
+
+        // Check if article exists
+        const [articles] = await db.query(`SELECT id FROM health_articles WHERE id = ?`, [id]);
+        if (articles.length === 0) {
+            return res.status(404).json({ success: false, message: 'Article not found' });
+        }
+
+        // Check if already liked
+        const [existing] = await db.query(`
+            SELECT id FROM article_likes WHERE article_id = ? AND patient_id = ?
+        `, [id, patientId]);
+
+        if (existing.length > 0) {
+            // Already liked - toggle unlike
+            await db.query(`DELETE FROM article_likes WHERE article_id = ? AND patient_id = ?`, [id, patientId]);
+            await db.query(`UPDATE health_articles SET like_count = GREATEST(like_count - 1, 0) WHERE id = ?`, [id]);
+
+            logger.info(`Article unliked: article_id=${id}, patient_id=${patientId}`);
+
+            return res.json({
+                success: true,
+                message: 'Article unliked',
+                liked: false
+            });
+        } else {
+            // Add new like
+            await db.query(`INSERT INTO article_likes (article_id, patient_id) VALUES (?, ?)`, [id, patientId]);
+            await db.query(`UPDATE health_articles SET like_count = like_count + 1 WHERE id = ?`, [id]);
+
+            logger.info(`Article liked: article_id=${id}, patient_id=${patientId}`);
+
+            return res.json({
+                success: true,
+                message: 'Article liked',
+                liked: true
+            });
+        }
+    } catch (error) {
+        logger.error('Error liking article:', error);
+        res.status(500).json({ success: false, message: 'Failed to like article' });
+    }
+});
+
+/**
+ * GET /api/articles/:id/liked - Check if user has liked an article
+ */
+router.get('/:id/liked', verifyToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const patientId = req.user.id;
+
+        const [likes] = await db.query(`
+            SELECT id FROM article_likes WHERE article_id = ? AND patient_id = ?
+        `, [id, patientId]);
+
+        res.json({
+            success: true,
+            liked: likes.length > 0
+        });
+    } catch (error) {
+        logger.error('Error checking like status:', error);
+        res.status(500).json({ success: false, message: 'Failed to check like status' });
     }
 });
 
