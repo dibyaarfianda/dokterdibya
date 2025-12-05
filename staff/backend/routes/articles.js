@@ -165,7 +165,7 @@ router.post('/', verifyToken, requireRoles(ROLE_NAMES.DOKTER), async (req, res) 
             color || '#28a7e9',
             source || null,
             is_published ? 1 : 0,
-            req.user.id
+            null  // Set to null instead of req.user.id to avoid type mismatch
         ]);
 
         logger.info(`Article created: id=${result.insertId}, title="${title}", by user ${req.user.id}`);
