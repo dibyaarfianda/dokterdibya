@@ -2760,10 +2760,17 @@
             if (modal) modal.remove();
         }
 
+        // Get authentication token
+        function getToken() {
+            return localStorage.getItem('vps_auth_token') ||
+                   sessionStorage.getItem('vps_auth_token') ||
+                   localStorage.getItem('patient_token');
+        }
+
         // Check if user has liked an article
         async function checkArticleLikeStatus(articleId, likeCount) {
             try {
-                const token = await getToken();
+                const token = getToken();
                 if (!token) {
                     // User not logged in - show generic like button
                     updateLikeButton(articleId, false, likeCount);
@@ -2810,7 +2817,7 @@
         // Toggle like status
         async function toggleArticleLike(articleId) {
             try {
-                const token = await getToken();
+                const token = getToken();
                 if (!token) {
                     alert('Silakan login terlebih dahulu untuk menyukai artikel');
                     return;
