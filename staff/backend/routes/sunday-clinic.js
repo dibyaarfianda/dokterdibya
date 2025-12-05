@@ -715,6 +715,40 @@ router.post('/records/:mrId/:section', verifyToken, async (req, res, next) => {
             [normalizedMrId]
         );
 
+        // Auto-complete hospital appointment when resume_medis is saved
+        // Only for RSIA Melinda, RSUD Gambiran, RS Bhayangkara (not Klinik Private or Sunday Clinic)
+        if (section === 'resume_medis') {
+            try {
+                // Check if this patient has a pending/confirmed appointment at the 3 hospitals
+                const [appointmentCheck] = await db.query(
+                    `SELECT id, hospital_location, appointment_date
+                     FROM appointments
+                     WHERE patient_id = ?
+                     AND hospital_location IN ('rsia_melinda', 'rsud_gambiran', 'rs_bhayangkara')
+                     AND status IN ('scheduled', 'confirmed')
+                     ORDER BY appointment_date DESC, created_at DESC
+                     LIMIT 1`,
+                    [recordRow.patient_id]
+                );
+
+                if (appointmentCheck.length > 0) {
+                    const appointmentScheduler = require('../services/appointmentScheduler');
+                    await appointmentScheduler.autoCompleteOnPayment(
+                        appointmentCheck[0].id,
+                        `Resume saved for MR ${normalizedMrId}`
+                    );
+                    logger.info('Auto-completed hospital appointment on resume save', {
+                        appointmentId: appointmentCheck[0].id,
+                        hospitalLocation: appointmentCheck[0].hospital_location,
+                        patientId: recordRow.patient_id
+                    });
+                }
+            } catch (appointmentError) {
+                logger.warn('Appointment auto-complete warning:', appointmentError);
+                // Don't fail the resume save, just log the error
+            }
+        }
+
         logger.info('Saved section data for Sunday Clinic', {
             mrId: normalizedMrId,
             section,

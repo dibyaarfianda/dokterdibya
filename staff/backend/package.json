@@ -33,6 +33,7 @@
     "multer": "^2.0.2",
     "mysql2": "^3.6.5",
     "node-cache": "^5.1.2",
+    "node-cron": "^4.2.1",
     "nodemailer": "^7.0.10",
     "openai": "^6.9.1",
     "pdfkit": "^0.17.2",

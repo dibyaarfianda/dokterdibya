@@ -545,6 +545,50 @@
         #notification-dropdown .dropdown-footer:hover {
             background-color: #e9ecef;
         }
+
+        /* Notification Message Markdown Styles */
+        .notification-message {
+            font-size: 0.9rem;
+            line-height: 1.5;
+        }
+        .notification-message h1,
+        .notification-message h2,
+        .notification-message h3,
+        .notification-message h4,
+        .notification-message h5,
+        .notification-message h6 {
+            font-size: 1rem;
+            font-weight: 600;
+            margin: 0 0 0.5rem 0;
+            color: #333;
+        }
+        .notification-message p {
+            margin: 0 0 0.5rem 0;
+        }
+        .notification-message strong {
+            font-weight: 600;
+        }
+        .notification-message em {
+            font-style: italic;
+        }
+        .notification-message ul,
+        .notification-message ol {
+            margin: 0 0 0.5rem 1.5rem;
+            padding: 0;
+        }
+        .notification-message li {
+            margin-bottom: 0.25rem;
+        }
+        .notification-message code {
+            background: #f4f4f4;
+            padding: 0.1rem 0.3rem;
+            border-radius: 3px;
+            font-size: 0.85em;
+        }
+        .notification-message a {
+            color: #007bff;
+            text-decoration: underline;
+        }
     </style>
 
         <!-- Mobile Responsive Styles -->
@@ -966,6 +1010,12 @@
                             <p>Jadwal</p>
                         </a>
                     </li>
+                    <li class="nav-item dokter-only d-none" id="nav-artikel-kesehatan">
+                        <a href="#" class="nav-link" onclick="showArtikelKesehatanPage(); return false;">
+                            <i class="nav-icon fas fa-book-reader"></i>
+                            <p>Ruang Membaca</p>
+                        </a>
+                    </li>
 
                     <!-- KLINIK -->
                     <li class="nav-header">KLINIK</li>
@@ -977,20 +1027,14 @@
                             <p>Klinik Privat<i class="fas fa-angle-left right"></i></p>
                         </a>
                         <ul class="nav nav-treeview">
-                            <li class="nav-item" id="nav-klinik-private">
-                                <a href="#" class="nav-link" onclick="showKlinikPrivatePage(); return false;">
-                                    <span class="nav-icon" style="width: 1.6rem; display: inline-block;"></span>
-                                    <p>Terjadwal</p>
-                                </a>
-                            </li>
                             <li class="nav-item" id="nav-klinik-private-pasien">
                                 <a href="#" class="nav-link" onclick="showHospitalPatientsPage('klinik_private'); return false;">
                                     <span class="nav-icon" style="width: 1.6rem; display: inline-block;"></span>
                                     <p>Pasien</p>
                                 </a>
                             </li>
-                            <li class="nav-item" id="nav-klinik-private-appointment">
-                                <a href="#" class="nav-link" onclick="showHospitalAppointmentsPage('klinik_private'); return false;">
+                            <li class="nav-item" id="nav-klinik-private">
+                                <a href="#" class="nav-link" onclick="showKlinikPrivatePage(); return false;">
                                     <span class="nav-icon" style="width: 1.6rem; display: inline-block;"></span>
                                     <p>Janji Temu</p>
                                 </a>
@@ -3606,6 +3650,160 @@
 
                 <!-- IMPORT FIELDS PAGE (Dokter Only) -->
                 <div id="import-fields-page" class="d-none"></div>
+
+                <!-- ARTIKEL KESEHATAN PAGE (Dokter Only) -->
+                <div id="artikel-kesehatan-page" class="d-none">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-book-reader mr-2"></i>Ruang Membaca</h3>
+                                    <div class="card-tools">
+                                        <button class="btn btn-primary btn-sm" onclick="showAddArticleModal()">
+                                            <i class="fas fa-plus mr-1"></i> Tambah Artikel
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Filter Section -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-4">
+                                            <select id="article-filter-category" class="form-control form-control-sm" onchange="loadArticlesAdmin()">
+                                                <option value="all">Semua Kategori</option>
+                                                <option value="Kehamilan">Kehamilan</option>
+                                                <option value="Nutrisi">Nutrisi & Makanan</option>
+                                                <option value="Tips">Tips & Perawatan</option>
+                                                <option value="Darurat">Tanda Darurat</option>
+                                                <option value="Persalinan">Persalinan</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <select id="article-filter-status" class="form-control form-control-sm" onchange="loadArticlesAdmin()">
+                                                <option value="all">Semua Status</option>
+                                                <option value="published">Published</option>
+                                                <option value="draft">Draft</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-4 text-right">
+                                            <button class="btn btn-outline-secondary btn-sm" onclick="loadArticlesAdmin()">
+                                                <i class="fas fa-sync-alt"></i> Refresh
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    <!-- Articles Table -->
+                                    <div class="table-responsive">
+                                        <table class="table table-striped table-hover" id="articles-admin-table">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width: 30%">Judul</th>
+                                                    <th style="width: 15%">Kategori</th>
+                                                    <th style="width: 10%">Status</th>
+                                                    <th style="width: 10%">Views</th>
+                                                    <th style="width: 15%">Updated</th>
+                                                    <th style="width: 20%">Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="articles-admin-tbody">
+                                                <tr>
+                                                    <td colspan="6" class="text-center text-muted py-4">
+                                                        <i class="fas fa-spinner fa-spin"></i> Memuat artikel...
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Article Modal -->
+                <div class="modal fade" id="articleModal" tabindex="-1">
+                    <div class="modal-dialog modal-xl">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="articleModalTitle">Tambah Artikel</h5>
+                                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="articleForm">
+                                    <input type="hidden" id="article-id">
+                                    <div class="row">
+                                        <div class="col-md-8">
+                                            <div class="form-group">
+                                                <label>Judul Artikel <span class="text-danger">*</span></label>
+                                                <input type="text" id="article-title" class="form-control" required placeholder="Masukkan judul artikel">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label>Kategori</label>
+                                                <select id="article-category" class="form-control">
+                                                    <option value="Kehamilan">Kehamilan</option>
+                                                    <option value="Nutrisi">Nutrisi & Makanan</option>
+                                                    <option value="Tips">Tips & Perawatan</option>
+                                                    <option value="Darurat">Tanda Darurat</option>
+                                                    <option value="Persalinan">Persalinan</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Ringkasan</label>
+                                        <textarea id="article-summary" class="form-control" rows="2" placeholder="Ringkasan singkat artikel (akan tampil di preview)"></textarea>
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Konten Artikel</label>
+                                        <textarea id="article-content" class="form-control" rows="15" placeholder="Tulis konten artikel di sini... Mendukung HTML."></textarea>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label>Sumber</label>
+                                                <input type="text" id="article-source" class="form-control" placeholder="Sumber atau referensi">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label>Icon</label>
+                                                <select id="article-icon" class="form-control">
+                                                    <option value="fa-heartbeat">Heartbeat</option>
+                                                    <option value="fa-baby">Baby</option>
+                                                    <option value="fa-utensils">Makanan</option>
+                                                    <option value="fa-apple-alt">Buah</option>
+                                                    <option value="fa-exclamation-triangle">Peringatan</option>
+                                                    <option value="fa-stethoscope">Stethoscope</option>
+                                                    <option value="fa-hospital">Hospital</option>
+                                                    <option value="fa-calendar-check">Kalender</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="form-group">
+                                                <label>Warna</label>
+                                                <input type="color" id="article-color" class="form-control" value="#28a7e9">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="form-group">
+                                        <div class="custom-control custom-switch">
+                                            <input type="checkbox" class="custom-control-input" id="article-published">
+                                            <label class="custom-control-label" for="article-published">Publish langsung</label>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                                <button type="button" class="btn btn-primary" onclick="saveArticle()">
+                                    <i class="fas fa-save mr-1"></i> Simpan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
 
                 <!-- PROFILE SETTINGS PAGE -->
                 <div id="profile-settings-page" class="d-none">
@@ -9327,6 +9525,30 @@ function filterNotifications(filter) {
     renderNotificationsPageList();
 }
 
+// Render markdown for notification messages (safe subset)
+function renderNotificationMarkdown(text) {
+    if (!text) return '';
+    try {
+        // Use marked.js to parse markdown
+        if (typeof marked !== 'undefined') {
+            // Configure marked for safe output
+            marked.setOptions({
+                breaks: true,
+                gfm: true
+            });
+            // Parse and return
+            let html = marked.parse(text);
+            // Remove wrapping <p> tags to keep it inline-ish
+            html = html.replace(/^<p>/, '').replace(/<\/p>\n?$/, '');
+            return html;
+        }
+    } catch (e) {
+        console.error('[Notifications] Markdown parse error:', e);
+    }
+    // Fallback to escaped text
+    return escapeHtml(text);
+}
+
 function renderNotificationsPageList() {
     const container = document.getElementById('notifications-page-list');
     if (!container) return;
@@ -9383,7 +9605,7 @@ function renderNotificationsPageList() {
                                         ${!isRead ? '<span class="badge badge-primary ml-2">Baru</span>' : ''}
                                         ${sourceLabel}
                                     </h6>
-                                    <p class="text-muted mb-2" style="white-space: pre-wrap;">${escapeHtml(item.message?.substring(0, 300) || '')}${item.message?.length > 300 ? '...' : ''}</p>
+                                    <div class="text-muted mb-2 notification-message">${renderNotificationMarkdown(item.message?.substring(0, 500) || '')}${item.message?.length > 500 ? '...' : ''}</div>
                                     <small class="text-muted">
                                         <i class="far fa-clock mr-1"></i>${timeAgo}
                                     </small>
