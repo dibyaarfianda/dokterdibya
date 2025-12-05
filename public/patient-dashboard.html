@@ -2749,29 +2749,27 @@
 
             let html = '';
 
-            // Add button to add custom medication - Prominent style
+            // Add button to add custom medication - Balanced prominent style
             html += `
-                <div style="margin-bottom: 20px;">
+                <div style="margin-bottom: 16px;">
                     <button onclick="showAddMedicationForm()" style="
                         background: linear-gradient(135deg, #ff6b6b, #ee5a6f);
                         color: white;
                         border: none;
-                        padding: 18px 28px;
-                        border-radius: 20px;
-                        font-size: 16px;
-                        font-weight: 700;
+                        padding: 14px 22px;
+                        border-radius: 16px;
+                        font-size: 14px;
+                        font-weight: 600;
                         cursor: pointer;
                         width: 100%;
                         display: flex;
                         align-items: center;
                         justify-content: center;
-                        gap: 12px;
-                        box-shadow: 0 6px 25px rgba(255, 107, 107, 0.4);
+                        gap: 10px;
+                        box-shadow: 0 4px 20px rgba(255, 107, 107, 0.35);
                         transition: all 0.3s ease;
-                        text-transform: uppercase;
-                        letter-spacing: 0.5px;
-                    " onmouseover="this.style.transform='translateY(-3px) scale(1.02)'; this.style.boxShadow='0 8px 30px rgba(255,107,107,0.5)'" onmouseout="this.style.transform='translateY(0) scale(1)'; this.style.boxShadow='0 6px 25px rgba(255,107,107,0.4)'">
-                        <i class="fa fa-plus-circle" style="font-size: 20px;"></i> Tambah Obat/Vitamin
+                    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 24px rgba(255,107,107,0.45)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 20px rgba(255,107,107,0.35)'">
+                        <i class="fa fa-plus-circle" style="font-size: 16px;"></i> Tambah Obat/Vitamin
                     </button>
                 </div>
             `;
@@ -2872,7 +2870,7 @@
                         </div>
                     </div>
                     <div style="margin-bottom: 12px;">
-                        <select id="med-frequency" style="
+                        <select id="med-frequency" onchange="updateTimeInputs()" style="
                             width: 100%;
                             padding: 14px 16px;
                             border: none;
@@ -2889,11 +2887,14 @@
                             background-repeat: no-repeat;
                             background-position: right 12px center;
                         ">
-                            <option value="1">1x sehari (pagi)</option>
-                            <option value="2">2x sehari (pagi & malam)</option>
-                            <option value="3">3x sehari (pagi, siang, malam)</option>
+                            <option value="1">1x sehari</option>
+                            <option value="2">2x sehari</option>
+                            <option value="3">3x sehari</option>
                             <option value="4">4x sehari</option>
                         </select>
+                    </div>
+                    <div id="time-inputs-container" style="margin-bottom: 12px;">
+                        <!-- Time inputs will be dynamically added here -->
                     </div>
                     <div style="
                         margin-bottom: 18px;
@@ -2966,7 +2967,7 @@
 
                 customMeds.forEach((med, index) => {
                     const freqText = med.frequency === 1 ? '1x/hari' : `${med.frequency}x/hari`;
-                    const reminderTimes = getReminderTimesForFrequency(med.frequency);
+                    const reminderTimes = getReminderTimesForFrequency(med.frequency, med.reminderTimes);
                     const qtyText = med.quantity ? `${med.quantity} ${med.unit || 'tablet'}` : '';
 
                     html += `
@@ -3147,7 +3148,12 @@
             container.innerHTML = html;
         }
 
-        function getReminderTimesForFrequency(freq) {
+        function getReminderTimesForFrequency(freq, customTimes) {
+            // Use custom times if available
+            if (customTimes && customTimes.length > 0) {
+                return customTimes.join(', ');
+            }
+            // Fallback to defaults
             const times = {
                 1: '08:00',
                 2: '08:00, 20:00',
@@ -3157,8 +3163,51 @@
             return times[freq] || times[1];
         }
 
+        function updateTimeInputs() {
+            const frequency = parseInt(document.getElementById('med-frequency').value);
+            const container = document.getElementById('time-inputs-container');
+
+            const defaultTimes = {
+                1: ['08:00'],
+                2: ['08:00', '20:00'],
+                3: ['08:00', '14:00', '20:00'],
+                4: ['08:00', '12:00', '18:00', '22:00']
+            };
+
+            const times = defaultTimes[frequency] || ['08:00'];
+            const labels = ['Pertama', 'Kedua', 'Ketiga', 'Keempat'];
+
+            let html = '<div style="background: rgba(40, 167, 233, 0.08); padding: 14px; border-radius: 14px;">';
+            html += '<div style="font-size: 12px; color: #17a2b8; font-weight: 600; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;"><i class="fa fa-clock-o"></i> Atur Jam Reminder</div>';
+
+            times.forEach((time, index) => {
+                html += `
+                    <div style="margin-bottom: ${index < times.length - 1 ? '8px' : '0'};">
+                        <label style="display: block; font-size: 11px; color: #666; margin-bottom: 4px; font-weight: 500;">${labels[index]}</label>
+                        <input type="time" id="med-time-${index}" value="${time}" style="
+                            width: 100%;
+                            padding: 12px 14px;
+                            border: none;
+                            border-radius: 12px;
+                            font-size: 14px;
+                            font-weight: 500;
+                            box-sizing: border-box;
+                            background: rgba(255, 255, 255, 0.95);
+                            color: #222;
+                            box-shadow: inset 0 2px 6px rgba(0,0,0,0.05);
+                            cursor: pointer;
+                        ">
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
         function showAddMedicationForm() {
             document.getElementById('add-medication-form').style.display = 'block';
+            updateTimeInputs(); // Initialize time inputs
             document.getElementById('med-name').focus();
         }
 
@@ -3169,6 +3218,7 @@
             document.getElementById('med-unit').value = 'tablet';
             document.getElementById('med-frequency').value = '1';
             document.getElementById('med-reminder').checked = true;
+            document.getElementById('time-inputs-container').innerHTML = '';
         }
 
         function addCustomMedication() {
@@ -3183,6 +3233,15 @@
                 return;
             }
 
+            // Collect custom reminder times
+            const reminderTimes = [];
+            for (let i = 0; i < frequency; i++) {
+                const timeInput = document.getElementById(`med-time-${i}`);
+                if (timeInput) {
+                    reminderTimes.push(timeInput.value);
+                }
+            }
+
             const meds = getCustomMedications();
             meds.push({
                 id: Date.now(),
@@ -3191,6 +3250,7 @@
                 unit: unit,
                 frequency: frequency,
                 reminder: reminder,
+                reminderTimes: reminderTimes, // Save custom times
                 created: new Date().toISOString()
             });
             saveCustomMedications(meds);
