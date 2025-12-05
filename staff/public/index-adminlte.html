@@ -8402,6 +8402,147 @@ Apakah Anda yakin ingin melanjutkan?`;
 
     // Export to window for manual calling
     window.initFinanceAnalysisPage = initFinanceAnalysisPage;
+
+    // Hospital Appointments Page
+    window.showHospitalAppointmentsPage = async function(location) {
+        console.log('📋 Loading hospital appointments for:', location);
+
+        // Hide all pages
+        document.querySelectorAll('[id$="-page"]').forEach(page => page.classList.add('d-none'));
+
+        // Show hospital appointments page
+        const hospitalPage = document.getElementById('hospital-appointments-page');
+        if (hospitalPage) {
+            hospitalPage.classList.remove('d-none');
+        }
+
+        const container = document.getElementById('hospital-appointments-container');
+        if (!container) return;
+
+        // Show loading
+        container.innerHTML = '<div class="text-center py-5"><i class="fas fa-spinner fa-spin fa-3x text-primary"></i><p class="mt-3">Memuat appointment...</p></div>';
+
+        try {
+            const token = localStorage.getItem('vps_auth_token');
+            const response = await fetch(`/api/appointments?hospital_location=${location}&status=scheduled,confirmed`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) {
+                throw new Error('Gagal memuat appointment');
+            }
+
+            const result = await response.json();
+            const appointments = result.data || [];
+
+            // Hospital info mapping
+            const hospitalInfo = {
+                'rsia_melinda': { name: 'RSIA Melinda', color: '#e91e63' },
+                'rsud_gambiran': { name: 'RSUD Gambiran', color: '#2196f3' },
+                'rs_bhayangkara': { name: 'RS Bhayangkara', color: '#4caf50' }
+            };
+
+            const hospital = hospitalInfo[location] || { name: location, color: '#607d8b' };
+
+            if (appointments.length === 0) {
+                container.innerHTML = `
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> Belum ada appointment untuk ${hospital.name}
+                    </div>
+                `;
+                return;
+            }
+
+            // Render appointments as cards
+            let html = `<div class="row">`;
+
+            appointments.forEach(apt => {
+                const date = new Date(apt.appointment_date);
+                const dateStr = date.toLocaleDateString('id-ID', {
+                    weekday: 'long',
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+
+                const statusBadge = apt.status === 'confirmed'
+                    ? '<span class="badge badge-success"><i class="fas fa-check-circle"></i> Terkonfirmasi</span>'
+                    : '<span class="badge badge-warning"><i class="fas fa-clock"></i> Terjadwal</span>';
+
+                html += `
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card" style="border-left: 4px solid ${hospital.color};">
+                            <div class="card-header" style="background: linear-gradient(135deg, ${hospital.color}22 0%, ${hospital.color}11 100%);">
+                                <h5 class="card-title mb-0">
+                                    <i class="fas fa-user-circle"></i> ${apt.patient_name}
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="mb-2"><i class="fas fa-hospital text-muted mr-2"></i><strong>${hospital.name}</strong></p>
+                                <p class="mb-2"><i class="fas fa-calendar text-muted mr-2"></i>${dateStr}</p>
+                                <p class="mb-2"><i class="fas fa-clock text-muted mr-2"></i>${apt.appointment_time ? apt.appointment_time.substring(0,5) + ' WIB' : '-'}</p>
+                                <p class="mb-2"><i class="fas fa-heartbeat text-muted mr-2"></i>${apt.appointment_type || 'Konsultasi'}</p>
+                                ${apt.complaint ? `<p class="mb-2 small text-muted"><i class="fas fa-comment-medical mr-2"></i>${apt.complaint}</p>` : ''}
+                                <div class="mt-3">${statusBadge}</div>
+                            </div>
+                            <div class="card-footer bg-white">
+                                <button class="btn btn-primary btn-block" onclick="window.startHospitalExam(${apt.patient_id}, ${apt.id}, '${hospital.name}')">
+                                    <i class="fas fa-stethoscope mr-2"></i>PERIKSA
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += `</div>`;
+            container.innerHTML = html;
+
+        } catch (error) {
+            console.error('Error loading hospital appointments:', error);
+            container.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i> ${error.message}
+                </div>
+            `;
+        }
+    };
+
+    // Start hospital examination
+    window.startHospitalExam = async function(patientId, appointmentId, hospitalName) {
+        console.log('🏥 Starting exam for patient:', patientId, 'appointment:', appointmentId);
+
+        try {
+            // Create or get medical record for this patient
+            const token = localStorage.getItem('vps_auth_token');
+
+            // Mark appointment as in-progress
+            await fetch(`/api/appointments/${appointmentId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ status: 'confirmed' })
+            });
+
+            // Load the Sunday Clinic exam page with this patient
+            if (typeof window.loadSundayClinic === 'function') {
+                await window.loadSundayClinic(patientId);
+            } else {
+                showError('Modul pemeriksaan tidak tersedia. Silakan refresh halaman.');
+            }
+
+        } catch (error) {
+            console.error('Error starting hospital exam:', error);
+            if (typeof showError === 'function') {
+                showError('Gagal memulai pemeriksaan: ' + error.message);
+            } else {
+                alert('Gagal memulai pemeriksaan: ' + error.message);
+            }
+        }
+    };
+
  </script>
 
  <!-- Mobile Helper Script -->
