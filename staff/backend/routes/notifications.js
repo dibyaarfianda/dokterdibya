@@ -342,6 +342,58 @@ router.get('/with-announcements', verifyToken, async (req, res) => {
     }
 });
 
+/**
+ * GET /api/notifications/badge-counts
+ * Get counts for sidebar notification badges
+ */
+router.get('/badge-counts', verifyToken, async (req, res) => {
+    try {
+        const counts = {
+            articleLikes: 0,
+            klinikPending: 0,
+            lowStockObat: 0
+        };
+
+        // 1. Count article likes from last 7 days
+        const [likesResult] = await db.query(`
+            SELECT COUNT(*) as count
+            FROM article_likes
+            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+        `);
+        counts.articleLikes = likesResult[0]?.count || 0;
+
+        // 2. Count pending Klinik Privat appointments (future dates only)
+        const [pendingResult] = await db.query(`
+            SELECT COUNT(*) as count
+            FROM sunday_appointments
+            WHERE status = 'pending'
+            AND appointment_date >= CURDATE()
+        `);
+        counts.klinikPending = pendingResult[0]?.count || 0;
+
+        // 3. Count low stock medications (stock <= min_stock)
+        const [lowStockResult] = await db.query(`
+            SELECT COUNT(*) as count
+            FROM obat
+            WHERE stock <= min_stock
+            AND is_active = 1
+        `);
+        counts.lowStockObat = lowStockResult[0]?.count || 0;
+
+        res.json({
+            success: true,
+            counts
+        });
+
+    } catch (error) {
+        console.error('Error getting badge counts:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to get badge counts'
+        });
+    }
+});
+
 // Helper function to create notification (for use in other modules)
 async function createNotification({
     type = 'system',
