@@ -1316,7 +1316,10 @@
                     <li class="nav-item dokter-only d-none" id="nav-artikel-kesehatan">
                         <a href="#" class="nav-link" onclick="showArtikelKesehatanPage(); return false;">
                             <i class="nav-icon fas fa-book-reader"></i>
-                            <p>Ruang Membaca</p>
+                            <p>
+                                Ruang Membaca
+                                <span class="badge badge-success right d-none" id="badge-artikel-likes">0</span>
+                            </p>
                         </a>
                     </li>
 
@@ -1339,7 +1342,10 @@
                             <li class="nav-item" id="nav-klinik-private">
                                 <a href="#" class="nav-link" onclick="showKlinikPrivatePage(); return false;">
                                     <span class="nav-icon" style="width: 1.6rem; display: inline-block;"></span>
-                                    <p>Janji Temu</p>
+                                    <p>
+                                        Janji Temu
+                                        <span class="badge badge-warning right d-none" id="badge-klinik-pending">0</span>
+                                    </p>
                                 </a>
                             </li>
                             <li class="nav-item" id="management-nav-kelola-tindakan">
@@ -1351,7 +1357,10 @@
                             <li class="nav-item" id="management-nav-kelola-obat">
                                 <a href="#" class="nav-link" onclick="showKelolaObatManagementPage(); return false;">
                                     <span class="nav-icon" style="width: 1.6rem; display: inline-block;"></span>
-                                    <p>Obat/Alkes</p>
+                                    <p>
+                                        Obat/Alkes
+                                        <span class="badge badge-danger right d-none" id="badge-obat-lowstock">0</span>
+                                    </p>
                                 </a>
                             </li>
                         </ul>

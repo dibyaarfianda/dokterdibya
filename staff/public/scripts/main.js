@@ -1303,6 +1303,64 @@ function formatDate(dateStr) {
 
 // ==================== END ARTIKEL KESEHATAN ====================
 
+// ==================== NOTIFICATION BADGES ====================
+
+/**
+ * Load and update sidebar notification badge counts
+ */
+async function loadNotificationBadges() {
+    try {
+        const token = getAuthToken();
+        if (!token) return;
+
+        const response = await fetch('/api/notifications/badge-counts', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) return;
+
+        const result = await response.json();
+        if (!result.success) return;
+
+        const { counts } = result;
+
+        // Update Article Likes badge
+        const articleBadge = document.getElementById('badge-artikel-likes');
+        if (articleBadge && counts.articleLikes > 0) {
+            articleBadge.textContent = counts.articleLikes;
+            articleBadge.classList.remove('d-none');
+        } else if (articleBadge) {
+            articleBadge.classList.add('d-none');
+        }
+
+        // Update Klinik Privat Pending badge
+        const klinikBadge = document.getElementById('badge-klinik-pending');
+        if (klinikBadge && counts.klinikPending > 0) {
+            klinikBadge.textContent = counts.klinikPending;
+            klinikBadge.classList.remove('d-none');
+        } else if (klinikBadge) {
+            klinikBadge.classList.add('d-none');
+        }
+
+        // Update Low Stock Obat badge
+        const obatBadge = document.getElementById('badge-obat-lowstock');
+        if (obatBadge && counts.lowStockObat > 0) {
+            obatBadge.textContent = counts.lowStockObat;
+            obatBadge.classList.remove('d-none');
+        } else if (obatBadge) {
+            obatBadge.classList.add('d-none');
+        }
+
+    } catch (error) {
+        console.error('Error loading notification badges:', error);
+    }
+}
+
+// Reload badges every 2 minutes
+setInterval(loadNotificationBadges, 120000);
+
+// ==================== END NOTIFICATION BADGES ====================
+
 function showProfileSettings() {
     hideAllPages();
     pages.profile?.classList.remove('d-none');
@@ -1766,6 +1824,9 @@ async function initializeApp(user) {
 
         // Fetch menu visibility from API based on user's role
         await applyMenuVisibility(user);
+
+        // Load notification badge counts
+        loadNotificationBadges();
 
         // Initialize real-time sync for online users tracking
         console.log('[MAIN] Calling initRealtimeSync with:', { id: user.id, name: user.name, role: user.role });
