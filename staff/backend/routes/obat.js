@@ -91,42 +91,42 @@ router.get('/api/obat/:id', verifyToken, requirePermission('obat_alkes.view'), a
 // ADD NEW OBAT
 router.post('/api/obat', verifyToken, requirePermission('obat_alkes.create'), validateObat, async (req, res) => {
     try {
-        const { code, name, category, price, stock, unit, min_stock } = req.body;
-        
+        const { code, name, category, price, stock, unit, min_stock, default_supplier_id } = req.body;
+
         if (!code || !name || !category || price === undefined) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Missing required fields: code, name, category, price' 
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: code, name, category, price'
             });
         }
-        
+
         const [result] = await db.query(
-            'INSERT INTO obat (code, name, category, price, stock, unit, min_stock) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [code, name, category, price, stock || 0, unit || 'tablet', min_stock || 10]
+            'INSERT INTO obat (code, name, category, price, stock, unit, min_stock, default_supplier_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [code, name, category, price, stock || 0, unit || 'tablet', min_stock || 10, default_supplier_id || null]
         );
-        
+
         // Invalidate obat cache
         cache.delPattern('obat:');
-        
-        res.status(201).json({ 
-            success: true, 
-            message: 'Obat added successfully', 
-            id: result.insertId 
+
+        res.status(201).json({
+            success: true,
+            message: 'Obat added successfully',
+            id: result.insertId
         });
     } catch (error) {
         console.error('Error adding obat:', error);
-        
+
         if (error.code === 'ER_DUP_ENTRY') {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Kode obat sudah digunakan' 
+            return res.status(400).json({
+                success: false,
+                message: 'Kode obat sudah digunakan'
             });
         }
-        
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to add obat', 
-            error: error.message 
+
+        res.status(500).json({
+            success: false,
+            message: 'Failed to add obat',
+            error: error.message
         });
     }
 });

@@ -23,28 +23,29 @@ let initialized = false;
 export function initKelolaObat() {
     console.log('🚀 [KELOLA-OBAT] initKelolaObat() called');
     console.log('📊 [KELOLA-OBAT] Initialized status:', initialized);
-    
+
     if (initialized) {
         console.log('⚠️ [KELOLA-OBAT] Already initialized, reloading data...');
         loadObat(); // Just reload data if already initialized
         return;
     }
-    
+
     initialized = true;
     console.log('🔧 [KELOLA-OBAT] First initialization...');
-    
+
     // Check if required DOM elements exist
     const form = document.getElementById('kelola-obat-form');
     const tbody = document.getElementById('kelola-obat-list-body');
     const searchInput = document.getElementById('kelola-obat-search');
-    
+
     console.log('🎯 [KELOLA-OBAT] DOM elements check:');
     console.log('   - Form:', !!form);
     console.log('   - Table body:', !!tbody);
     console.log('   - Search input:', !!searchInput);
-    
+
     bindFormSubmit();
     bindSearchFilter();
+    loadSuppliers(); // Load suppliers for dropdown
     loadObat();
 }
 
@@ -55,14 +56,16 @@ function bindFormSubmit() {
 
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
-        
+
         const nameInput = document.getElementById('kelola-obat-name');
         const categoryInput = document.getElementById('kelola-obat-category');
+        const supplierInput = document.getElementById('kelola-obat-supplier');
         const priceInput = document.getElementById('kelola-obat-price');
         const stockInput = document.getElementById('kelola-obat-stock');
 
         const name = nameInput?.value?.trim();
         const category = categoryInput?.value?.trim();
+        const supplierId = supplierInput?.value || null;
         const price = parseFloat(priceInput?.value || 0);
         const stock = parseInt(stockInput?.value || 0);
         const unit = 'pcs'; // Default unit
@@ -90,14 +93,15 @@ function bindFormSubmit() {
                 response = await fetch(`${API_BASE}/obat/${editingObatId}`, {
                     method: 'PUT',
                     headers: headers,
-                    body: JSON.stringify({ 
-                        name, 
-                        category, 
-                        price, 
-                        stock, 
+                    body: JSON.stringify({
+                        name,
+                        category,
+                        price,
+                        stock,
                         unit: 'pcs',
                         min_stock: 10,
-                        is_active: true 
+                        is_active: true,
+                        default_supplier_id: supplierId
                     })
                 });
             } else {
@@ -106,7 +110,16 @@ function bindFormSubmit() {
                 response = await fetch(`${API_BASE}/obat`, {
                     method: 'POST',
                     headers: headers,
-                    body: JSON.stringify({ code, name, category, price, stock, unit: 'pcs', min_stock: 10 })
+                    body: JSON.stringify({
+                        code,
+                        name,
+                        category,
+                        price,
+                        stock,
+                        unit: 'pcs',
+                        min_stock: 10,
+                        default_supplier_id: supplierId
+                    })
                 });
             }
 
@@ -168,6 +181,13 @@ async function loadSuppliers() {
             if (result.success) {
                 allSuppliers = result.data;
                 console.log('✅ Loaded', allSuppliers.length, 'suppliers');
+
+                // Populate supplier dropdown
+                const supplierDropdown = document.getElementById('kelola-obat-supplier');
+                if (supplierDropdown) {
+                    supplierDropdown.innerHTML = '<option value="">Pilih Supplier</option>' +
+                        allSuppliers.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+                }
             }
         }
     } catch (error) {
@@ -335,12 +355,14 @@ function editObat(obatId) {
 
     const nameInput = document.getElementById('kelola-obat-name');
     const categoryInput = document.getElementById('kelola-obat-category');
+    const supplierInput = document.getElementById('kelola-obat-supplier');
     const priceInput = document.getElementById('kelola-obat-price');
     const stockInput = document.getElementById('kelola-obat-stock');
     const submitBtn = document.querySelector('#kelola-obat-form button[type="submit"]');
 
     if (nameInput) nameInput.value = obat.name || '';
     if (categoryInput) categoryInput.value = obat.category || '';
+    if (supplierInput) supplierInput.value = obat.supplier_id || obat.default_supplier_id || '';
     if (priceInput) priceInput.value = parseFloat(obat.price) || 0;
     if (stockInput) stockInput.value = obat.stock || 0;
 
@@ -400,6 +422,9 @@ async function deleteObat(obatId) {
 function resetForm() {
     isEditMode = false;
     editingObatId = null;
+
+    const supplierInput = document.getElementById('kelola-obat-supplier');
+    if (supplierInput) supplierInput.value = '';
 
     const submitBtn = document.querySelector('#kelola-obat-form button[type="submit"]');
     if (submitBtn) {
