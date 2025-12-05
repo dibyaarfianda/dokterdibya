@@ -1565,4 +1565,48 @@ router.get('/pregnancy-tracker', verifyToken, async (req, res) => {
     }
 });
 
+/**
+ * GET /medications
+ * Get current medications/prescriptions for logged-in patient
+ */
+router.get('/medications', verifyToken, async (req, res) => {
+    try {
+        const patientId = req.user.id;
+
+        // Get planning records with terapi data from the last 90 days
+        const [medications] = await db.query(`
+            SELECT
+                mr.id,
+                mr.mr_id,
+                mr.created_at as visit_date,
+                JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.terapi')) as terapi,
+                CASE
+                    WHEN mr.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1
+                    ELSE 0
+                END as is_current
+            FROM medical_records mr
+            WHERE mr.patient_id = ?
+            AND mr.record_type = 'planning'
+            AND JSON_EXTRACT(mr.record_data, '$.terapi') IS NOT NULL
+            AND JSON_EXTRACT(mr.record_data, '$.terapi') != ''
+            AND JSON_EXTRACT(mr.record_data, '$.terapi') != 'null'
+            AND mr.created_at >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+            ORDER BY mr.created_at DESC
+            LIMIT 10
+        `, [patientId]);
+
+        res.json({
+            success: true,
+            data: medications
+        });
+
+    } catch (error) {
+        console.error('Medications error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal memuat data obat'
+        });
+    }
+});
+
 module.exports = router;

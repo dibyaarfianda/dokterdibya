@@ -179,13 +179,17 @@ export default {
             console.error('[Plan] Failed to load saved data:', error);
         }
 
-        // Merge with state.recordData.plan (fallback to savedData from medicalRecords)
-        const statePlan = state.recordData?.plan || {};
+        // Merge with state.recordData.planning (fallback to savedData from medicalRecords)
+        // Note: stateManager stores planning data under 'planning' key, not 'plan'
+        const statePlan = state.recordData?.planning || state.recordData?.plan || {};
+        console.log('[Plan] statePlan from stateManager:', statePlan);
+        console.log('[Plan] savedData from medicalRecords:', savedData);
         const planData = {
             tindakan: savedData.tindakan || statePlan.tindakan || '',
             terapi: savedData.terapi || statePlan.terapi || '',
             rencana: savedData.rencana || statePlan.rencana || ''
         };
+        console.log('[Plan] Final planData:', planData);
 
         const escapeHtml = (str) => {
             if (!str) return '';

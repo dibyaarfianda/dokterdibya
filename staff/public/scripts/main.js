@@ -94,6 +94,8 @@ function initPages() {
     pages.hospitalPatients = grab('hospital-patients-page');
     pages.registrasiPasien = grab('registrasi-pasien-page');
     pages.importFields = grab('import-fields-page');
+    pages.notifications = grab('notifications-page');
+    pages.artikelKesehatan = grab('artikel-kesehatan-page');
 }
 function loadExternalPage(containerId, htmlFile, options = {}) {
     const { forceReload = false } = options;
@@ -1033,6 +1035,219 @@ function showImportFieldsPage() {
     setTitleAndActive('Kelola Import Fields', 'nav-import-fields', 'import-fields');
     loadExternalPage('import-fields-page', 'kelola-import-fields.html');
 }
+
+function showArtikelKesehatanPage() {
+    hideAllPages();
+    pages.artikelKesehatan?.classList.remove('d-none');
+    setTitleAndActive('Ruang Membaca', 'nav-artikel-kesehatan', 'artikel-kesehatan');
+    loadArticlesAdmin();
+}
+
+// ==================== ARTIKEL KESEHATAN FUNCTIONS ====================
+
+async function loadArticlesAdmin() {
+    const tbody = document.getElementById('articles-admin-tbody');
+    if (!tbody) return;
+
+    const category = document.getElementById('article-filter-category')?.value || 'all';
+    const status = document.getElementById('article-filter-status')?.value || 'all';
+
+    tbody.innerHTML = '<tr><td colspan="6" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr>';
+
+    try {
+        const token = getAuthToken();
+        const params = new URLSearchParams({ category, status, limit: 100 });
+        const response = await fetch(`/api/articles/admin/all?${params}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('Failed to load articles');
+
+        const result = await response.json();
+
+        if (!result.data || result.data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Belum ada artikel. Klik "Tambah Artikel" untuk membuat.</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = result.data.map(article => `
+            <tr>
+                <td>
+                    <strong>${escapeHtml(article.title)}</strong>
+                    ${article.summary ? `<br><small class="text-muted">${escapeHtml(article.summary.substring(0, 60))}...</small>` : ''}
+                </td>
+                <td><span class="badge badge-info">${escapeHtml(article.category || 'Kehamilan')}</span></td>
+                <td>
+                    ${article.is_published
+                        ? '<span class="badge badge-success">Published</span>'
+                        : '<span class="badge badge-secondary">Draft</span>'}
+                </td>
+                <td>${article.view_count || 0}</td>
+                <td><small>${formatDate(article.updated_at)}</small></td>
+                <td>
+                    <button class="btn btn-sm btn-info" onclick="editArticle(${article.id})" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm ${article.is_published ? 'btn-warning' : 'btn-success'}"
+                            onclick="togglePublishArticle(${article.id}, ${!article.is_published})"
+                            title="${article.is_published ? 'Unpublish' : 'Publish'}">
+                        <i class="fas ${article.is_published ? 'fa-eye-slash' : 'fa-eye'}"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteArticle(${article.id})" title="Hapus">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+
+    } catch (error) {
+        console.error('Error loading articles:', error);
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center text-danger py-4">Gagal memuat artikel</td></tr>';
+    }
+}
+
+function showAddArticleModal() {
+    document.getElementById('articleModalTitle').textContent = 'Tambah Artikel Baru';
+    document.getElementById('articleForm').reset();
+    document.getElementById('article-id').value = '';
+    document.getElementById('article-color').value = '#28a7e9';
+    $('#articleModal').modal('show');
+}
+
+async function editArticle(id) {
+    try {
+        const token = getAuthToken();
+        const response = await fetch(`/api/articles/${id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('Failed to fetch article');
+
+        const result = await response.json();
+        const article = result.data;
+
+        document.getElementById('articleModalTitle').textContent = 'Edit Artikel';
+        document.getElementById('article-id').value = article.id;
+        document.getElementById('article-title').value = article.title || '';
+        document.getElementById('article-summary').value = article.summary || '';
+        document.getElementById('article-content').value = article.content || '';
+        document.getElementById('article-category').value = article.category || 'Kehamilan';
+        document.getElementById('article-source').value = article.source || '';
+        document.getElementById('article-icon').value = article.icon || 'fa-heartbeat';
+        document.getElementById('article-color').value = article.color || '#28a7e9';
+        document.getElementById('article-published').checked = article.is_published === 1;
+
+        $('#articleModal').modal('show');
+    } catch (error) {
+        console.error('Error fetching article:', error);
+        alert('Gagal memuat artikel');
+    }
+}
+
+async function saveArticle() {
+    const id = document.getElementById('article-id').value;
+    const isEdit = !!id;
+
+    const data = {
+        title: document.getElementById('article-title').value.trim(),
+        summary: document.getElementById('article-summary').value.trim(),
+        content: document.getElementById('article-content').value,
+        category: document.getElementById('article-category').value,
+        source: document.getElementById('article-source').value.trim(),
+        icon: document.getElementById('article-icon').value,
+        color: document.getElementById('article-color').value,
+        is_published: document.getElementById('article-published').checked
+    };
+
+    if (!data.title) {
+        alert('Judul artikel wajib diisi');
+        return;
+    }
+
+    try {
+        const token = getAuthToken();
+        const url = isEdit ? `/api/articles/${id}` : '/api/articles';
+        const method = isEdit ? 'PUT' : 'POST';
+
+        const response = await fetch(url, {
+            method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (!response.ok) throw new Error('Failed to save article');
+
+        $('#articleModal').modal('hide');
+        loadArticlesAdmin();
+
+        // Show success notification
+        if (typeof toastr !== 'undefined') {
+            toastr.success(isEdit ? 'Artikel berhasil diupdate' : 'Artikel berhasil dibuat');
+        }
+    } catch (error) {
+        console.error('Error saving article:', error);
+        alert('Gagal menyimpan artikel');
+    }
+}
+
+async function togglePublishArticle(id, publish) {
+    try {
+        const token = getAuthToken();
+        const response = await fetch(`/api/articles/${id}/publish`, {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ is_published: publish })
+        });
+
+        if (!response.ok) throw new Error('Failed to update publish status');
+
+        loadArticlesAdmin();
+
+        if (typeof toastr !== 'undefined') {
+            toastr.success(publish ? 'Artikel dipublish' : 'Artikel di-unpublish');
+        }
+    } catch (error) {
+        console.error('Error toggling publish:', error);
+        alert('Gagal mengubah status publish');
+    }
+}
+
+async function deleteArticle(id) {
+    if (!confirm('Yakin ingin menghapus artikel ini?')) return;
+
+    try {
+        const token = getAuthToken();
+        const response = await fetch(`/api/articles/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('Failed to delete article');
+
+        loadArticlesAdmin();
+
+        if (typeof toastr !== 'undefined') {
+            toastr.success('Artikel berhasil dihapus');
+        }
+    } catch (error) {
+        console.error('Error deleting article:', error);
+        alert('Gagal menghapus artikel');
+    }
+}
+
+function formatDate(dateStr) {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+// ==================== END ARTIKEL KESEHATAN ====================
 
 function showProfileSettings() {
     hideAllPages();
@@ -2735,6 +2950,13 @@ window.showStaffActivityPage = showStaffActivityPage;
 window.loadStaffActivityLogs = loadStaffActivityLogs;
 window.showBookingSettingsPage = showBookingSettingsPage;
 window.showImportFieldsPage = showImportFieldsPage;
+window.showArtikelKesehatanPage = showArtikelKesehatanPage;
+window.loadArticlesAdmin = loadArticlesAdmin;
+window.showAddArticleModal = showAddArticleModal;
+window.editArticle = editArticle;
+window.saveArticle = saveArticle;
+window.togglePublishArticle = togglePublishArticle;
+window.deleteArticle = deleteArticle;
 window.showProfileSettings = showProfileSettings;
 // REMOVED: window.showEmailSettingsPage = showEmailSettingsPage;
 window.showStokOpnamePage = showStokOpnamePage;

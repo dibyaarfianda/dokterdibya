@@ -496,6 +496,30 @@ router.post('/:id/payment', verifyToken, requireMenuAccess('keuangan'), async (r
         console.error('Inventory deduction error:', inventoryError);
         // Don't fail the payment, just log the error
       }
+
+      // Auto-complete appointment when payment is marked as paid
+      // Only for Klinik Private (other hospitals auto-complete on resume save)
+      try {
+        const [appointmentCheck] = await connection.query(
+          `SELECT id, hospital_location FROM appointments
+           WHERE patient_id = ? AND appointment_date = ?
+           ORDER BY created_at DESC LIMIT 1`,
+          [billing.patient_id, billing.billing_date]
+        );
+
+        // Only auto-complete if appointment is for Klinik Private
+        if (appointmentCheck.length > 0 &&
+            appointmentCheck[0].hospital_location === 'klinik_private') {
+          const appointmentScheduler = require('../services/appointmentScheduler');
+          await appointmentScheduler.autoCompleteOnPayment(
+            appointmentCheck[0].id,
+            billing.billing_number
+          );
+        }
+      } catch (appointmentError) {
+        console.warn('Appointment auto-complete warning:', appointmentError.message);
+        // Don't fail the payment, just log the error
+      }
     }
 
     await connection.commit();
