@@ -840,9 +840,29 @@ async function applyPendingImportData() {
                 }
 
                 // Update planning if available
-                if (template.planning) {
-                    window.stateManager.updateSectionData('planning', template.planning);
-                    sectionsToSave.push({ section: 'planning', data: template.planning });
+                if (template.planning && (template.planning.obat?.length || template.planning.tindakan?.length || template.planning.raw)) {
+                    // Convert planning data to include terapi and tindakan strings
+                    const planningData = { ...template.planning };
+
+                    // Build terapi text from obat/raw data (medications only)
+                    let terapiText = '';
+                    if (template.planning.raw) {
+                        terapiText = template.planning.raw;
+                    }
+                    if (!terapiText && template.planning.obat && template.planning.obat.length > 0) {
+                        terapiText = template.planning.obat.join('\n');
+                    }
+                    if (terapiText) {
+                        planningData.terapi = terapiText;
+                    }
+
+                    // Build tindakan text separately (procedures)
+                    if (template.planning.tindakan && template.planning.tindakan.length > 0) {
+                        planningData.tindakan = template.planning.tindakan.join('\n');
+                    }
+
+                    window.stateManager.updateSectionData('planning', planningData);
+                    sectionsToSave.push({ section: 'planning', data: planningData });
                 }
 
                 console.log('[Import] StateManager updated successfully');
@@ -898,6 +918,7 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
     console.log('[Import] Template anamnesa:', template.anamnesa);
     console.log('[Import] Template obstetri:', template.obstetri);
     console.log('[Import] Template pemeriksaan_fisik:', template.pemeriksaan_fisik);
+    console.log('[Import] Template planning:', template.planning);
     console.log('[Import] visitDate/Time/Location:', { visitDate, visitTime, visitLocation });
 
     // Get MR ID from URL
@@ -964,8 +985,28 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
 
             // Update planning if available
             if (template.planning && (template.planning.obat?.length || template.planning.tindakan?.length || template.planning.raw)) {
-                window.stateManager.updateSectionData('planning', template.planning);
-                sectionsToSave.push({ section: 'planning', data: template.planning });
+                // Convert planning data to include terapi and tindakan strings
+                const planningData = { ...template.planning };
+
+                // Build terapi text from obat/raw data (medications only)
+                let terapiText = '';
+                if (template.planning.raw) {
+                    terapiText = template.planning.raw;
+                }
+                if (!terapiText && template.planning.obat && template.planning.obat.length > 0) {
+                    terapiText = template.planning.obat.join('\n');
+                }
+                if (terapiText) {
+                    planningData.terapi = terapiText;
+                }
+
+                // Build tindakan text separately (procedures)
+                if (template.planning.tindakan && template.planning.tindakan.length > 0) {
+                    planningData.tindakan = template.planning.tindakan.join('\n');
+                }
+
+                window.stateManager.updateSectionData('planning', planningData);
+                sectionsToSave.push({ section: 'planning', data: planningData });
             }
 
             console.log('[Import] StateManager updated with SIMRS data');
@@ -1062,7 +1103,15 @@ function fillFormFieldsDirect(template, checkedFields) {
 
         // Diagnosis fields
         diagnosis_utama: ['#diagnosis-utama', 'textarea[name="diagnosis_utama"]'],
-        diagnosis: ['#diagnosis-utama', 'textarea[name="diagnosis"]']
+        diagnosis: ['#diagnosis-utama', 'textarea[name="diagnosis"]'],
+
+        // Planning/Terapi fields
+        terapi: ['#planning-terapi'],
+        obat: ['#planning-terapi'],
+        raw: ['#planning-terapi'],
+
+        // Tindakan field (separate from terapi)
+        tindakan: ['#planning-tindakan']
     };
 
     // Flatten template data
@@ -1073,6 +1122,42 @@ function fillFormFieldsDirect(template, checkedFields) {
         ...template.diagnosis,
         ...(template.obstetri || {})
     };
+
+    // Add planning data - convert obat array to terapi string, tindakan array to tindakan string
+    if (template.planning) {
+        // Build terapi text from obat/raw data (medications only)
+        let terapiText = '';
+
+        // Add raw plan text if available
+        if (template.planning.raw) {
+            terapiText = template.planning.raw;
+        }
+
+        // If no raw text, build from obat array
+        if (!terapiText && template.planning.obat && template.planning.obat.length > 0) {
+            terapiText = template.planning.obat.join('\n');
+        }
+
+        // Add instruksi to terapi if available
+        if (template.planning.instruksi && template.planning.instruksi.length > 0) {
+            if (terapiText) terapiText += '\n\n';
+            terapiText += 'Instruksi:\n' + template.planning.instruksi.join('\n');
+        }
+
+        if (terapiText) {
+            allData.terapi = terapiText;
+            console.log('[Import] Built terapi text:', terapiText.substring(0, 200));
+        }
+
+        // Build tindakan text separately (procedures)
+        if (template.planning.tindakan && template.planning.tindakan.length > 0) {
+            const tindakanText = template.planning.tindakan.join('\n');
+            allData.tindakan = tindakanText;
+            console.log('[Import] Built tindakan text:', tindakanText.substring(0, 200));
+        }
+    }
+
+    console.log('[Import] fillFormFieldsDirect allData keys:', Object.keys(allData));
 
     let filledCount = 0;
     for (const [field, selectors] of Object.entries(fieldMappings)) {

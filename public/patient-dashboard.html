@@ -1639,6 +1639,39 @@
                     </div>
                 </div>
 
+                <!-- Vitamin & Obat (Medications) -->
+                <div class="dashboard-card" id="medications-section" style="margin-bottom: 20px;">
+                    <h3 class="collapsible-header" id="medications-header" onclick="toggleCard('medications')">
+                        <span><i class="fa fa-medkit"></i> Vitamin & Obat</span>
+                        <i class="fa fa-chevron-down toggle-icon" id="medications-toggle-icon"></i>
+                    </h3>
+                    <div class="collapsible-content" id="medications-content">
+                        <p class="text-muted" style="font-size: 12px; margin-bottom: 10px;">Daftar obat dan vitamin yang diresepkan</p>
+                        <div id="medications-list-container">
+                            <p class="empty-state">
+                                <i class="fa fa-spinner fa-spin"></i>
+                                Memuat daftar obat...
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ruang Membaca dari dokterDIBYA -->
+                <div class="dashboard-card" id="articles-section" style="margin-bottom: 20px;">
+                    <h3 class="collapsible-header" id="articles-header" onclick="toggleCard('articles')">
+                        <span><i class="fa fa-book"></i> Ruang Membaca</span>
+                        <i class="fa fa-chevron-down toggle-icon" id="articles-toggle-icon"></i>
+                    </h3>
+                    <div class="collapsible-content" id="articles-content">
+                        <p class="text-muted" style="font-size: 12px; margin-bottom: 15px;">
+                            <i class="fa fa-stethoscope"></i> Artikel pilihan dari <strong style="color: var(--primary);">dokterDIBYA</strong> berdasarkan jurnal terkini
+                        </p>
+                        <div id="articles-container">
+                            <!-- Articles will be loaded here -->
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Galeri USG dari Dokter -->
                 <div class="dashboard-card" id="usg-section" style="margin-bottom: 20px;">
                     <h3 class="collapsible-header collapsed" id="usg-header" onclick="toggleCard('usg')">
@@ -2083,6 +2116,10 @@
             loadUserProfile();
             // Load pregnancy tracker
             loadPregnancyTracker();
+            // Load medications
+            loadMedications();
+            // Load health articles
+            loadArticles();
             // Load ultrasound images
             loadUltrasoundImages();
             // Load lab results
@@ -2353,6 +2390,897 @@
                 console.error('Error loading pregnancy tracker:', error);
                 trackerRow.style.display = 'none';
             }
+        }
+
+        // ==================== MEDICATIONS ====================
+        function getCustomMedications() {
+            return JSON.parse(localStorage.getItem('custom_medications') || '[]');
+        }
+
+        function saveCustomMedications(meds) {
+            localStorage.setItem('custom_medications', JSON.stringify(meds));
+        }
+
+        // ============ ARTIKEL KESEHATAN ============
+        // Cache for loaded articles
+        let cachedArticles = [];
+
+        async function loadArticles() {
+            const container = document.getElementById('articles-container');
+            if (!container) return;
+
+            // Show loading state
+            container.innerHTML = `
+                <div style="text-align: center; padding: 30px; color: #999;">
+                    <i class="fa fa-spinner fa-spin" style="font-size: 24px;"></i>
+                    <p style="margin-top: 10px; font-size: 14px;">Memuat artikel...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch('/api/articles?limit=3');
+                const result = await response.json();
+
+                if (!result.success || !result.data || result.data.length === 0) {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 30px; color: #999;">
+                            <i class="fa fa-newspaper-o" style="font-size: 32px; margin-bottom: 10px;"></i>
+                            <p style="font-size: 14px;">Belum ada artikel kesehatan.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                cachedArticles = result.data;
+                const totalArticles = result.total || result.data.length;
+                let html = '';
+
+                result.data.forEach((article) => {
+                    const color = article.color || '#28a7e9';
+                    const icon = article.icon || 'fa-heartbeat';
+                    const dateStr = formatArticleDate(article.created_at);
+
+                    html += `
+                        <div class="article-card" onclick="openArticle(${article.id})" style="
+                            background: rgba(255, 255, 255, 0.6);
+                            backdrop-filter: blur(15px);
+                            -webkit-backdrop-filter: blur(15px);
+                            border-radius: 16px;
+                            padding: 16px;
+                            margin-bottom: 12px;
+                            border: 1px solid rgba(0, 0, 0, 0.08);
+                            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.1)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(0,0,0,0.05)'">
+                            <div style="display: flex; gap: 12px;">
+                                <div style="
+                                    background: ${color}20;
+                                    width: 48px;
+                                    height: 48px;
+                                    border-radius: 12px;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    flex-shrink: 0;
+                                ">
+                                    <i class="fa ${icon}" style="color: ${color}; font-size: 20px;"></i>
+                                </div>
+                                <div style="flex: 1; min-width: 0;">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+                                        <span style="
+                                            background: ${color};
+                                            color: white;
+                                            font-size: 9px;
+                                            font-weight: 600;
+                                            padding: 2px 8px;
+                                            border-radius: 10px;
+                                            text-transform: uppercase;
+                                        ">${article.category || 'Kehamilan'}</span>
+                                        <span style="font-size: 10px; color: #999;">${dateStr}</span>
+                                    </div>
+                                    <h4 style="
+                                        font-size: 14px;
+                                        font-weight: 600;
+                                        color: #1a1a2e;
+                                        margin: 0 0 6px 0;
+                                        line-height: 1.3;
+                                    ">${escapeHtml(article.title)}</h4>
+                                    <p style="
+                                        font-size: 12px;
+                                        color: #666;
+                                        margin: 0;
+                                        line-height: 1.4;
+                                        display: -webkit-box;
+                                        -webkit-line-clamp: 2;
+                                        -webkit-box-orient: vertical;
+                                        overflow: hidden;
+                                    ">${escapeHtml(article.summary || '')}</p>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                // Add "See all articles" button
+                html += `
+                    <button onclick="openArticlesPage()" style="
+                        width: 100%;
+                        background: linear-gradient(135deg, var(--primary), #1e88e5);
+                        color: white;
+                        border: none;
+                        padding: 14px;
+                        border-radius: 14px;
+                        font-size: 14px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 8px;
+                        box-shadow: 0 4px 15px rgba(40, 167, 233, 0.3);
+                        transition: all 0.3s ease;
+                    " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                        <i class="fa fa-book"></i> Lihat Semua Artikel (${totalArticles})
+                    </button>
+                `;
+
+                container.innerHTML = html;
+
+            } catch (error) {
+                console.error('Error loading articles:', error);
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 30px; color: #dc3545;">
+                        <i class="fa fa-exclamation-circle" style="font-size: 32px; margin-bottom: 10px;"></i>
+                        <p style="font-size: 14px;">Gagal memuat artikel.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function formatArticleDate(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+            return `${months[date.getMonth()]} ${date.getFullYear()}`;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        async function openArticle(articleId) {
+            // Show loading modal
+            const loadingHtml = `
+                <div id="article-modal" style="
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    background: rgba(0, 0, 0, 0.8);
+                    backdrop-filter: blur(10px);
+                    z-index: 10000;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 20px;
+                ">
+                    <div style="color: white; text-align: center;">
+                        <i class="fa fa-spinner fa-spin" style="font-size: 32px;"></i>
+                        <p style="margin-top: 15px;">Memuat artikel...</p>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', loadingHtml);
+
+            try {
+                const response = await fetch(`/api/articles/${articleId}`);
+                const result = await response.json();
+
+                if (!result.success || !result.data) {
+                    throw new Error('Article not found');
+                }
+
+                const article = result.data;
+                const color = article.color || '#28a7e9';
+                const icon = article.icon || 'fa-heartbeat';
+                const dateStr = formatArticleDate(article.updated_at || article.created_at);
+
+                // Remove loading and show article
+                closeArticleModal();
+
+                const modalHtml = `
+                    <div id="article-modal" style="
+                        position: fixed;
+                        top: 0;
+                        left: 0;
+                        right: 0;
+                        bottom: 0;
+                        background: rgba(0, 0, 0, 0.8);
+                        backdrop-filter: blur(10px);
+                        z-index: 10000;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        padding: 20px;
+                    " onclick="if(event.target.id === 'article-modal') closeArticleModal()">
+                        <div style="
+                            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+                            border-radius: 24px;
+                            max-width: 500px;
+                            width: 100%;
+                            max-height: 80vh;
+                            overflow-y: auto;
+                            position: relative;
+                            border: 1px solid rgba(255,255,255,0.1);
+                        ">
+                            <!-- Header -->
+                            <div style="
+                                background: ${color};
+                                padding: 30px 24px;
+                                border-radius: 24px 24px 0 0;
+                                position: relative;
+                            ">
+                                <button onclick="closeArticleModal()" style="
+                                    position: absolute;
+                                    top: 15px;
+                                    right: 15px;
+                                    background: rgba(255,255,255,0.2);
+                                    border: none;
+                                    width: 36px;
+                                    height: 36px;
+                                    border-radius: 50%;
+                                    color: white;
+                                    font-size: 18px;
+                                    cursor: pointer;
+                                ">
+                                    <i class="fa fa-times"></i>
+                                </button>
+                                <div style="
+                                    width: 60px;
+                                    height: 60px;
+                                    background: rgba(255,255,255,0.2);
+                                    border-radius: 16px;
+                                    display: flex;
+                                    align-items: center;
+                                    justify-content: center;
+                                    margin-bottom: 15px;
+                                ">
+                                    <i class="fa ${icon}" style="color: white; font-size: 28px;"></i>
+                                </div>
+                                <span style="
+                                    background: rgba(255,255,255,0.2);
+                                    color: white;
+                                    font-size: 10px;
+                                    font-weight: 600;
+                                    padding: 4px 12px;
+                                    border-radius: 12px;
+                                    text-transform: uppercase;
+                                ">${article.category || 'Kehamilan'}</span>
+                                <h2 style="
+                                    color: white;
+                                    font-size: 20px;
+                                    font-weight: 700;
+                                    margin: 12px 0 0 0;
+                                    line-height: 1.3;
+                                ">${escapeHtml(article.title)}</h2>
+                            </div>
+
+                            <!-- Content -->
+                            <div style="padding: 24px;">
+                                ${article.content ? `
+                                    <div style="
+                                        color: #ccc;
+                                        font-size: 15px;
+                                        line-height: 1.7;
+                                        margin: 0 0 20px 0;
+                                    ">${article.content}</div>
+                                ` : `
+                                    <p style="
+                                        color: #ccc;
+                                        font-size: 15px;
+                                        line-height: 1.7;
+                                        margin: 0 0 20px 0;
+                                    ">${escapeHtml(article.summary || '')}</p>
+                                `}
+
+                                <div style="
+                                    background: rgba(255,255,255,0.05);
+                                    border-radius: 12px;
+                                    padding: 15px;
+                                    margin-bottom: 20px;
+                                ">
+                                    ${article.source ? `
+                                        <p style="color: #888; font-size: 12px; margin: 0;">
+                                            <i class="fa fa-book" style="margin-right: 8px;"></i>
+                                            Sumber: <strong style="color: #aaa;">${escapeHtml(article.source)}</strong>
+                                        </p>
+                                    ` : ''}
+                                    <p style="color: #888; font-size: 12px; margin: ${article.source ? '8px' : '0'} 0 0 0;">
+                                        <i class="fa fa-calendar" style="margin-right: 8px;"></i>
+                                        Diperbarui: ${dateStr}
+                                    </p>
+                                    <p style="color: #888; font-size: 12px; margin: 8px 0 0 0;">
+                                        <i class="fa fa-eye" style="margin-right: 8px;"></i>
+                                        Dibaca: ${article.view_count || 0}x
+                                    </p>
+                                </div>
+
+                                <div style="
+                                    background: linear-gradient(135deg, rgba(40,167,69,0.1), rgba(32,201,151,0.1));
+                                    border: 1px solid rgba(40,167,69,0.2);
+                                    border-radius: 12px;
+                                    padding: 15px;
+                                ">
+                                    <p style="color: #28a745; font-size: 13px; margin: 0; display: flex; align-items: flex-start; gap: 10px;">
+                                        <i class="fa fa-info-circle" style="margin-top: 2px;"></i>
+                                        <span>Artikel ini disusun oleh <strong>dokterDIBYA</strong> berdasarkan jurnal dan panduan medis terkini. Untuk kondisi spesifik, konsultasikan langsung dengan dokter Anda.</span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+            } catch (error) {
+                console.error('Error loading article:', error);
+                closeArticleModal();
+                alert('Gagal memuat artikel');
+            }
+        }
+
+        function closeArticleModal() {
+            const modal = document.getElementById('article-modal');
+            if (modal) modal.remove();
+        }
+
+        function openArticlesPage() {
+            // Navigate to full articles page
+            window.location.href = '/artikel-kesehatan.html';
+        }
+
+        async function loadMedications() {
+            const container = document.getElementById('medications-list-container');
+            if (!container) return;
+
+            // Get custom medications from localStorage
+            const customMeds = getCustomMedications();
+
+            let html = '';
+
+            // Add button to add custom medication - Modern style
+            html += `
+                <div style="margin-bottom: 15px;">
+                    <button onclick="showAddMedicationForm()" style="
+                        background: linear-gradient(135deg, #28a745, #20c997);
+                        color: white;
+                        border: none;
+                        padding: 14px 24px;
+                        border-radius: 16px;
+                        font-size: 14px;
+                        font-weight: 600;
+                        cursor: pointer;
+                        width: 100%;
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 10px;
+                        box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+                        transition: all 0.3s ease;
+                    " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(40,167,69,0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(40,167,69,0.3)'">
+                        <i class="fa fa-plus-circle" style="font-size: 16px;"></i> Tambah Obat/Vitamin
+                    </button>
+                </div>
+            `;
+
+            // Add medication form (hidden by default) - Modern Glassmorphism style
+            html += `
+                <div id="add-medication-form" style="
+                    display: none;
+                    background: rgba(255, 255, 255, 0.7);
+                    backdrop-filter: blur(20px);
+                    -webkit-backdrop-filter: blur(20px);
+                    border-radius: 20px;
+                    padding: 20px;
+                    margin-bottom: 15px;
+                    border: 1px solid rgba(255, 255, 255, 0.5);
+                    box-shadow: 0 8px 32px rgba(40, 167, 69, 0.15);
+                ">
+                    <h4 style="
+                        margin: 0 0 18px 0;
+                        font-size: 15px;
+                        font-weight: 600;
+                        color: #1a1a2e;
+                        display: flex;
+                        align-items: center;
+                        gap: 10px;
+                    ">
+                        <span style="
+                            background: linear-gradient(135deg, #28a745, #20c997);
+                            width: 32px;
+                            height: 32px;
+                            border-radius: 10px;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                        ">
+                            <i class="fa fa-pills" style="color: white; font-size: 14px;"></i>
+                        </span>
+                        Tambah Obat Baru
+                    </h4>
+                    <div style="margin-bottom: 12px;">
+                        <input type="text" id="med-name" placeholder="Nama obat (cth: Asam Folat)" style="
+                            width: 100%;
+                            padding: 14px 16px;
+                            border: none;
+                            border-radius: 14px;
+                            font-size: 14px;
+                            font-weight: 450;
+                            box-sizing: border-box;
+                            background: rgba(255, 255, 255, 0.9);
+                            color: #222;
+                            box-shadow: inset 0 2px 8px rgba(0,0,0,0.06);
+                            transition: all 0.3s ease;
+                            outline: none;
+                        " onfocus="this.style.boxShadow='inset 0 2px 8px rgba(0,0,0,0.06), 0 0 0 3px rgba(40,167,69,0.2)'" onblur="this.style.boxShadow='inset 0 2px 8px rgba(0,0,0,0.06)'">
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-bottom: 12px;">
+                        <div style="flex: 1;">
+                            <input type="number" id="med-quantity" placeholder="Jumlah" min="1" value="1" style="
+                                width: 100%;
+                                padding: 14px 16px;
+                                border: none;
+                                border-radius: 14px;
+                                font-size: 14px;
+                                font-weight: 450;
+                                box-sizing: border-box;
+                                background: rgba(255, 255, 255, 0.9);
+                                color: #222;
+                                box-shadow: inset 0 2px 8px rgba(0,0,0,0.06);
+                                transition: all 0.3s ease;
+                                outline: none;
+                            " onfocus="this.style.boxShadow='inset 0 2px 8px rgba(0,0,0,0.06), 0 0 0 3px rgba(40,167,69,0.2)'" onblur="this.style.boxShadow='inset 0 2px 8px rgba(0,0,0,0.06)'">
+                        </div>
+                        <div style="flex: 2;">
+                            <select id="med-unit" style="
+                                width: 100%;
+                                padding: 14px 16px;
+                                border: none;
+                                border-radius: 14px;
+                                font-size: 14px;
+                                font-weight: 450;
+                                box-sizing: border-box;
+                                background: rgba(255, 255, 255, 0.9);
+                                color: #222;
+                                box-shadow: inset 0 2px 8px rgba(0,0,0,0.06);
+                                cursor: pointer;
+                                appearance: none;
+                                background-image: url('data:image/svg+xml;utf8,<svg fill=\"%23222\" height=\"24\" viewBox=\"0 0 24 24\" width=\"24\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M7 10l5 5 5-5z\"/></svg>');
+                                background-repeat: no-repeat;
+                                background-position: right 12px center;
+                            ">
+                                <option value="tablet">Tablet</option>
+                                <option value="kapsul">Kapsul</option>
+                                <option value="strip">Strip</option>
+                                <option value="botol">Botol</option>
+                                <option value="tube">Tube</option>
+                                <option value="sachet">Sachet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div style="margin-bottom: 12px;">
+                        <select id="med-frequency" style="
+                            width: 100%;
+                            padding: 14px 16px;
+                            border: none;
+                            border-radius: 14px;
+                            font-size: 14px;
+                            font-weight: 450;
+                            box-sizing: border-box;
+                            background: rgba(255, 255, 255, 0.9);
+                            color: #222;
+                            box-shadow: inset 0 2px 8px rgba(0,0,0,0.06);
+                            cursor: pointer;
+                            appearance: none;
+                            background-image: url('data:image/svg+xml;utf8,<svg fill=\"%23222\" height=\"24\" viewBox=\"0 0 24 24\" width=\"24\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M7 10l5 5 5-5z\"/></svg>');
+                            background-repeat: no-repeat;
+                            background-position: right 12px center;
+                        ">
+                            <option value="1">1x sehari (pagi)</option>
+                            <option value="2">2x sehari (pagi & malam)</option>
+                            <option value="3">3x sehari (pagi, siang, malam)</option>
+                            <option value="4">4x sehari</option>
+                        </select>
+                    </div>
+                    <div style="
+                        margin-bottom: 18px;
+                        background: rgba(23, 162, 184, 0.1);
+                        padding: 12px 14px;
+                        border-radius: 12px;
+                    ">
+                        <label style="display: flex; align-items: center; gap: 10px; font-size: 13px; color: #333; cursor: pointer;">
+                            <div style="position: relative;">
+                                <input type="checkbox" id="med-reminder" checked style="
+                                    width: 22px;
+                                    height: 22px;
+                                    accent-color: #17a2b8;
+                                    cursor: pointer;
+                                ">
+                            </div>
+                            <i class="fa fa-bell" style="color: #17a2b8; font-size: 16px;"></i>
+                            <span>Ingatkan saya minum obat</span>
+                        </label>
+                    </div>
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="addCustomMedication()" style="
+                            flex: 1;
+                            background: linear-gradient(135deg, #28a745, #20c997);
+                            color: white;
+                            border: none;
+                            padding: 14px;
+                            border-radius: 14px;
+                            font-size: 14px;
+                            font-weight: 600;
+                            cursor: pointer;
+                            box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+                            transition: all 0.3s ease;
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            gap: 8px;
+                        " onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 6px 20px rgba(40,167,69,0.4)'" onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(40,167,69,0.3)'">
+                            <i class="fa fa-check"></i> Simpan
+                        </button>
+                        <button onclick="hideAddMedicationForm()" style="
+                            flex: 1;
+                            background: rgba(108, 117, 125, 0.15);
+                            color: #495057;
+                            border: none;
+                            padding: 14px;
+                            border-radius: 14px;
+                            font-size: 14px;
+                            font-weight: 500;
+                            cursor: pointer;
+                            transition: all 0.3s ease;
+                        " onmouseover="this.style.background='rgba(108,117,125,0.25)'" onmouseout="this.style.background='rgba(108,117,125,0.15)'">
+                            Batal
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // Display custom medications - Modern glassmorphism style
+            if (customMeds.length > 0) {
+                html += '<div class="medications-list">';
+                html += `<h4 style="
+                    font-size: 11px;
+                    color: #888;
+                    margin-bottom: 12px;
+                    text-transform: uppercase;
+                    letter-spacing: 1px;
+                    font-weight: 600;
+                ">Obat Saya</h4>`;
+
+                customMeds.forEach((med, index) => {
+                    const freqText = med.frequency === 1 ? '1x/hari' : `${med.frequency}x/hari`;
+                    const reminderTimes = getReminderTimesForFrequency(med.frequency);
+                    const qtyText = med.quantity ? `${med.quantity} ${med.unit || 'tablet'}` : '';
+
+                    html += `
+                        <div class="medication-card" style="
+                            background: rgba(255, 255, 255, 0.6);
+                            backdrop-filter: blur(15px);
+                            -webkit-backdrop-filter: blur(15px);
+                            border-radius: 16px;
+                            padding: 16px;
+                            margin-bottom: 12px;
+                            border: 1px solid rgba(40, 167, 69, 0.2);
+                            box-shadow: 0 4px 20px rgba(40, 167, 69, 0.1);
+                        ">
+                            <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                                <div style="flex: 1;">
+                                    <div style="font-size: 15px; font-weight: 600; color: #1a1a2e; margin-bottom: 6px; display: flex; align-items: center; gap: 10px;">
+                                        <span style="
+                                            background: linear-gradient(135deg, #28a745, #20c997);
+                                            width: 28px;
+                                            height: 28px;
+                                            border-radius: 8px;
+                                            display: flex;
+                                            align-items: center;
+                                            justify-content: center;
+                                        ">
+                                            <i class="fa fa-pills" style="color: white; font-size: 12px;"></i>
+                                        </span>
+                                        ${escapeHtml(med.name)}
+                                        ${qtyText ? `<span style="font-size: 12px; font-weight: 500; color: #666; background: rgba(40,167,69,0.1); padding: 2px 8px; border-radius: 8px;">${qtyText}</span>` : ''}
+                                    </div>
+                                    <div style="font-size: 12px; color: #666; margin-left: 38px;">
+                                        <i class="fa fa-clock-o" style="color: #888;"></i> ${freqText}
+                                        ${med.reminder ? `<span style="margin-left: 10px; color: #17a2b8;"><i class="fa fa-bell"></i> ${reminderTimes}</span>` : '<span style="margin-left: 10px; color: #aaa;"><i class="fa fa-bell-slash"></i> Tidak aktif</span>'}
+                                    </div>
+                                </div>
+                                <div style="display: flex; gap: 6px;">
+                                    <button onclick="toggleMedicationReminder(${index})" style="
+                                        background: ${med.reminder ? 'linear-gradient(135deg, #17a2b8, #138496)' : 'rgba(108, 117, 125, 0.2)'};
+                                        color: ${med.reminder ? 'white' : '#6c757d'};
+                                        border: none;
+                                        width: 34px;
+                                        height: 34px;
+                                        border-radius: 10px;
+                                        cursor: pointer;
+                                        font-size: 13px;
+                                        transition: all 0.3s ease;
+                                        box-shadow: ${med.reminder ? '0 2px 8px rgba(23, 162, 184, 0.3)' : 'none'};
+                                    " title="${med.reminder ? 'Matikan pengingat' : 'Aktifkan pengingat'}">
+                                        <i class="fa fa-bell${med.reminder ? '' : '-slash'}"></i>
+                                    </button>
+                                    <button onclick="deleteCustomMedication(${index})" style="
+                                        background: rgba(220, 53, 69, 0.15);
+                                        color: #dc3545;
+                                        border: none;
+                                        width: 34px;
+                                        height: 34px;
+                                        border-radius: 10px;
+                                        cursor: pointer;
+                                        font-size: 13px;
+                                        transition: all 0.3s ease;
+                                    " title="Hapus" onmouseover="this.style.background='rgba(220,53,69,0.25)'" onmouseout="this.style.background='rgba(220,53,69,0.15)'">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                html += '</div>';
+            }
+
+            // Fetch prescriptions from doctor
+            try {
+                const response = await fetch('/api/patients/medications', {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('patient_token') }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success && result.data && result.data.length > 0) {
+                        html += '<div class="doctor-prescriptions" style="margin-top: 20px;">';
+                        html += `<h4 style="
+                            font-size: 11px;
+                            color: #888;
+                            margin-bottom: 12px;
+                            text-transform: uppercase;
+                            letter-spacing: 1px;
+                            font-weight: 600;
+                        ">Resep dari Dokter</h4>`;
+
+                        result.data.forEach((med) => {
+                            const visitDate = new Date(med.visit_date).toLocaleDateString('id-ID', {
+                                day: 'numeric', month: 'short', year: 'numeric'
+                            });
+                            const medLines = (med.terapi || '').split('\n').filter(line => line.trim());
+
+                            html += `
+                                <div style="
+                                    background: rgba(255, 255, 255, 0.5);
+                                    backdrop-filter: blur(15px);
+                                    -webkit-backdrop-filter: blur(15px);
+                                    border-radius: 16px;
+                                    padding: 16px;
+                                    margin-bottom: 12px;
+                                    border: 1px solid rgba(108, 117, 125, 0.15);
+                                    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+                                ">
+                                    <div style="font-size: 11px; color: #888; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                                        <span style="
+                                            background: linear-gradient(135deg, #6c757d, #495057);
+                                            width: 24px;
+                                            height: 24px;
+                                            border-radius: 6px;
+                                            display: flex;
+                                            align-items: center;
+                                            justify-content: center;
+                                        ">
+                                            <i class="fa fa-stethoscope" style="color: white; font-size: 10px;"></i>
+                                        </span>
+                                        ${visitDate}
+                                        ${med.is_current ? '<span style="background: linear-gradient(135deg, #28a745, #20c997); color: white; padding: 3px 10px; border-radius: 10px; font-size: 9px; font-weight: 600; margin-left: auto;">Terbaru</span>' : ''}
+                                    </div>
+                            `;
+
+                            medLines.forEach(line => {
+                                const displayLine = line.replace(/^R\/\s*/, '').trim();
+                                if (displayLine) {
+                                    html += `
+                                        <div style="
+                                            display: flex;
+                                            align-items: center;
+                                            padding: 8px 10px;
+                                            margin: 4px 0;
+                                            font-size: 13px;
+                                            color: #333;
+                                            background: rgba(255, 255, 255, 0.5);
+                                            border-radius: 10px;
+                                        ">
+                                            <i class="fa fa-prescription" style="color: #6c757d; margin-right: 10px; width: 14px;"></i>
+                                            <span style="flex: 1;">${escapeHtml(displayLine)}</span>
+                                            <button onclick="addFromPrescription('${escapeHtml(displayLine).replace(/'/g, "\\'")}')" style="
+                                                background: rgba(40, 167, 69, 0.15);
+                                                border: none;
+                                                color: #28a745;
+                                                cursor: pointer;
+                                                font-size: 12px;
+                                                padding: 6px 10px;
+                                                border-radius: 8px;
+                                                transition: all 0.3s ease;
+                                            " title="Tambah ke daftar saya" onmouseover="this.style.background='rgba(40,167,69,0.25)'" onmouseout="this.style.background='rgba(40,167,69,0.15)'">
+                                                <i class="fa fa-plus"></i>
+                                            </button>
+                                        </div>
+                                    `;
+                                }
+                            });
+
+                            html += '</div>';
+                        });
+
+                        html += '</div>';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading prescriptions:', error);
+            }
+
+            if (customMeds.length === 0 && html.indexOf('Resep dari Dokter') === -1) {
+                html += `
+                    <p class="empty-state" style="text-align: center; color: #999; padding: 20px;">
+                        <i class="fa fa-medkit" style="font-size: 24px; margin-bottom: 10px; display: block;"></i>
+                        Belum ada obat. Klik tombol di atas untuk menambah.
+                    </p>
+                `;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function getReminderTimesForFrequency(freq) {
+            const times = {
+                1: '08:00',
+                2: '08:00, 20:00',
+                3: '08:00, 14:00, 20:00',
+                4: '08:00, 12:00, 18:00, 22:00'
+            };
+            return times[freq] || times[1];
+        }
+
+        function showAddMedicationForm() {
+            document.getElementById('add-medication-form').style.display = 'block';
+            document.getElementById('med-name').focus();
+        }
+
+        function hideAddMedicationForm() {
+            document.getElementById('add-medication-form').style.display = 'none';
+            document.getElementById('med-name').value = '';
+            document.getElementById('med-quantity').value = '1';
+            document.getElementById('med-unit').value = 'tablet';
+            document.getElementById('med-frequency').value = '1';
+            document.getElementById('med-reminder').checked = true;
+        }
+
+        function addCustomMedication() {
+            const name = document.getElementById('med-name').value.trim();
+            const quantity = parseInt(document.getElementById('med-quantity').value) || 1;
+            const unit = document.getElementById('med-unit').value;
+            const frequency = parseInt(document.getElementById('med-frequency').value);
+            const reminder = document.getElementById('med-reminder').checked;
+
+            if (!name) {
+                alert('Masukkan nama obat');
+                return;
+            }
+
+            const meds = getCustomMedications();
+            meds.push({
+                id: Date.now(),
+                name: name,
+                quantity: quantity,
+                unit: unit,
+                frequency: frequency,
+                reminder: reminder,
+                created: new Date().toISOString()
+            });
+            saveCustomMedications(meds);
+
+            // Request notification permission if reminder is enabled
+            if (reminder && 'Notification' in window) {
+                Notification.requestPermission();
+            }
+
+            hideAddMedicationForm();
+            loadMedications();
+
+            // Show confirmation
+            if (reminder) {
+                const times = getReminderTimesForFrequency(frequency);
+                alert(`${name} berhasil ditambahkan!\nPengingat: ${times}`);
+            }
+        }
+
+        function addFromPrescription(medName) {
+            document.getElementById('add-medication-form').style.display = 'block';
+            document.getElementById('med-name').value = medName;
+            document.getElementById('med-name').focus();
+
+            // Scroll to form
+            document.getElementById('add-medication-form').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function toggleMedicationReminder(index) {
+            const meds = getCustomMedications();
+            if (meds[index]) {
+                meds[index].reminder = !meds[index].reminder;
+                saveCustomMedications(meds);
+                loadMedications();
+
+                if (meds[index].reminder && 'Notification' in window) {
+                    Notification.requestPermission();
+                }
+            }
+        }
+
+        function deleteCustomMedication(index) {
+            if (!confirm('Hapus obat ini dari daftar?')) return;
+
+            const meds = getCustomMedications();
+            meds.splice(index, 1);
+            saveCustomMedications(meds);
+            loadMedications();
+        }
+
+        // Check medication reminders
+        function checkMedicationReminders() {
+            const meds = getCustomMedications().filter(m => m.reminder);
+            if (meds.length === 0) return;
+
+            const now = new Date();
+            const currentTime = now.getHours().toString().padStart(2, '0') + ':' +
+                               now.getMinutes().toString().padStart(2, '0');
+
+            // Get reminder times based on frequency
+            const reminderSchedule = {
+                1: ['08:00'],
+                2: ['08:00', '20:00'],
+                3: ['08:00', '14:00', '20:00'],
+                4: ['08:00', '12:00', '18:00', '22:00']
+            };
+
+            meds.forEach(med => {
+                const times = reminderSchedule[med.frequency] || ['08:00'];
+                if (times.includes(currentTime)) {
+                    if (Notification.permission === 'granted') {
+                        new Notification('Waktunya Minum Obat!', {
+                            body: med.name,
+                            icon: '/images/logo.png',
+                            tag: 'med-' + med.id,
+                            requireInteraction: true
+                        });
+                    }
+                }
+            });
+        }
+
+        // Check reminders every minute
+        setInterval(checkMedicationReminders, 60000);
+        // Also check on page load
+        if ('Notification' in window && Notification.permission === 'granted') {
+            checkMedicationReminders();
         }
 
         async function loadBookingStatus() {

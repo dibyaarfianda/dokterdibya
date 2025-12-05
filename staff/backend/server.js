@@ -14,6 +14,7 @@ const { requestLogger, performanceLogger } = require('./middleware/requestLogger
 const { metricsMiddleware, getMetrics, resetMetrics } = require('./middleware/metrics');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
+const activityLogger = require('./services/activityLogger');
 
 const app = express();
 const server = http.createServer(app);
@@ -294,6 +295,10 @@ app.use('/api/suppliers', suppliersRoutes);
 const inventoryRoutes = require('./routes/inventory');
 app.use('/api/inventory', inventoryRoutes);
 
+// Health articles routes (public + admin)
+const articlesRoutes = require('./routes/articles');
+app.use('/api/articles', articlesRoutes);
+
 // API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
     customSiteTitle: 'Dibya Klinik API Documentation',
@@ -367,6 +372,11 @@ const realtimeSync = require('./realtime-sync');
 realtimeSync.init(io);
 logger.info('Real-time sync initialized with Socket.IO');
 
+// Initialize appointment schedulers
+const appointmentScheduler = require('./services/appointmentScheduler');
+appointmentScheduler.initSchedulers();
+logger.info('Appointment schedulers initialized');
+
 // Socket.io connection handling
 io.on('connection', (socket) => {
     const clientIp = socket.handshake.headers['x-forwarded-for'] || socket.handshake.address;
@@ -438,51 +448,120 @@ io.on('connection', (socket) => {
     });
     
     // Patient selection broadcast
-    socket.on('patient:select', (data) => {
+    socket.on('patient:select', async (data) => {
         logger.info(`Patient selected by ${data.userName}: ${data.patientName} (ID: ${data.patientId})`);
-        
+
+        // Log activity to database
+        await activityLogger.log(
+            data.userId,
+            data.userName,
+            activityLogger.ACTIONS.VIEW_PATIENT,
+            `Memilih pasien: ${data.patientName}`,
+            io
+        );
+
         // Store current selected patient globally
         currentSelectedPatient = data;
         logger.info(`Current selected patient stored: ${JSON.stringify(currentSelectedPatient)}`);
-        
+
         // Broadcast to all other clients (including future connections)
         socket.broadcast.emit('patient:selected', data);
         logger.info(`Broadcast patient:selected to all other clients`);
     });
     
     // Anamnesa update broadcast
-    socket.on('anamnesa:update', (data) => {
+    socket.on('anamnesa:update', async (data) => {
         logger.info(`Anamnesa updated by ${data.userName} for ${data.patientName}`);
+
+        // Log activity to database
+        await activityLogger.log(
+            data.userId,
+            data.userName,
+            activityLogger.ACTIONS.UPDATE_MR,
+            `Update anamnesa: ${data.patientName}`,
+            io
+        );
+
         socket.broadcast.emit('anamnesa:updated', data);
     });
-    
+
     // Physical exam update broadcast
-    socket.on('physical:update', (data) => {
+    socket.on('physical:update', async (data) => {
         logger.info(`Physical exam updated by ${data.userName} for ${data.patientName}`);
+
+        // Log activity to database
+        await activityLogger.log(
+            data.userId,
+            data.userName,
+            activityLogger.ACTIONS.UPDATE_MR,
+            `Update pemeriksaan fisik: ${data.patientName}`,
+            io
+        );
+
         socket.broadcast.emit('physical:updated', data);
     });
-    
+
     // USG exam update broadcast
-    socket.on('usg:update', (data) => {
+    socket.on('usg:update', async (data) => {
         logger.info(`USG exam updated by ${data.userName} for ${data.patientName}`);
+
+        // Log activity to database
+        await activityLogger.log(
+            data.userId,
+            data.userName,
+            activityLogger.ACTIONS.UPDATE_MR,
+            `Update USG: ${data.patientName}`,
+            io
+        );
+
         socket.broadcast.emit('usg:updated', data);
     });
-    
+
     // Lab exam update broadcast
-    socket.on('lab:update', (data) => {
+    socket.on('lab:update', async (data) => {
         logger.info(`Lab exam updated by ${data.userName} for ${data.patientName}`);
+
+        // Log activity to database
+        await activityLogger.log(
+            data.userId,
+            data.userName,
+            activityLogger.ACTIONS.UPDATE_MR,
+            `Update pemeriksaan penunjang: ${data.patientName}`,
+            io
+        );
+
         socket.broadcast.emit('lab:updated', data);
     });
     
     // Billing update broadcast
-    socket.on('billing:update', (data) => {
+    socket.on('billing:update', async (data) => {
         logger.info(`Billing updated by ${data.userName} for ${data.patientName}`);
+
+        // Log activity to database
+        await activityLogger.log(
+            data.userId,
+            data.userName,
+            activityLogger.ACTIONS.UPDATE_INVOICE,
+            `Update billing: ${data.patientName}`,
+            io
+        );
+
         socket.broadcast.emit('billing:updated', data);
     });
-    
+
     // Visit completion broadcast
-    socket.on('visit:complete', (data) => {
+    socket.on('visit:complete', async (data) => {
         logger.info(`Visit completed by ${data.userName} for ${data.patientName}`);
+
+        // Log activity to database
+        await activityLogger.log(
+            data.userId,
+            data.userName,
+            activityLogger.ACTIONS.FINALIZE_VISIT,
+            `Menyelesaikan kunjungan: ${data.patientName}`,
+            io
+        );
+
         socket.broadcast.emit('visit:completed', data);
     });
     
