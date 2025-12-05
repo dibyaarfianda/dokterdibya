@@ -3383,23 +3383,30 @@
             if (!section || !container) return;
 
             try {
-                const response = await fetch('/api/hospital-appointments/schedules', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
+                // Load both schedules and existing appointments
+                const [schedulesResponse, appointmentsResponse] = await Promise.all([
+                    fetch('/api/hospital-appointments/schedules', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }),
+                    fetch('/api/hospital-appointments/patient', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    })
+                ]);
 
-                if (!response.ok) {
+                if (!schedulesResponse.ok) {
                     throw new Error('Gagal memuat jadwal rumah sakit');
                 }
 
-                const data = await response.json();
+                const schedulesData = await schedulesResponse.json();
+                const appointmentsData = appointmentsResponse.ok ? await appointmentsResponse.json() : { appointments: [] };
 
-                if (!data.showHospitalBooking) {
+                if (!schedulesData.showHospitalBooking) {
                     section.style.display = 'none';
                     return;
                 }
 
                 section.style.display = 'block';
-                renderHospitalSchedules(data.schedules);
+                renderHospitalSchedules(schedulesData.schedules, appointmentsData.appointments || []);
 
             } catch (error) {
                 console.error('Error loading hospital schedules:', error);
@@ -3407,59 +3414,100 @@
             }
         }
 
-        function renderHospitalSchedules(schedules) {
+        function renderHospitalSchedules(schedules, appointments) {
             const container = document.getElementById('hospital-schedules-container');
-            if (!container || !schedules || schedules.length === 0) {
-                container.innerHTML = `
-                    <p class="empty-state">
-                        <i class="fa fa-calendar-o"></i>
-                        Tidak ada jadwal tersedia minggu ini
-                    </p>
-                `;
-                return;
+            if (!container) return;
+
+            let html = '';
+
+            // Filter upcoming appointments (not completed, not cancelled)
+            const upcoming = (appointments || [])
+                .filter(apt => !apt.isPast && apt.status !== 'cancelled' && apt.status !== 'completed')
+                .sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date));
+
+            // Show upcoming appointments first (same style as Klinik Private)
+            if (upcoming.length > 0) {
+                html += '<div style="margin-bottom: 20px;">';
+                html += '<h4 style="font-size: 13px; color: #28a7e9; margin-bottom: 12px; font-weight: 600;"><i class="fa fa-calendar-check-o"></i> Janji Temu Anda</h4>';
+
+                upcoming.forEach(apt => {
+                    const statusInfo = getBookingStatusInfo(apt.status);
+                    const notes = apt.notes ? `<p style="margin-top: 10px;"><strong>Catatan:</strong><br>${escapeText(apt.notes)}</p>` : '';
+                    const complaint = apt.complaint ? `<p style="margin-top: 10px;"><strong>Keluhan:</strong> ${escapeText(apt.complaint)}</p>` : '';
+
+                    html += `
+                        <div class="appointment-info-box" style="margin-bottom: 15px; border-left: 4px solid ${apt.hospitalColor || '#28a7e9'};">
+                            <p><strong>Rumah Sakit:</strong> ${escapeHtml(apt.hospitalName || apt.location)}</p>
+                            <p><strong>Status:</strong> <span style="color: ${statusInfo.color}; font-weight: 600;">${statusInfo.label}</span></p>
+                            <p><strong>Tanggal:</strong> ${apt.dateFormatted}</p>
+                            <p><strong>Jam Konsultasi:</strong> ${apt.time} WIB</p>
+                            <p><strong>Tipe:</strong> ${apt.appointment_type || 'Konsultasi'}</p>
+                            ${complaint}
+                            ${notes}
+                            <p style="margin-top: 10px;">${statusInfo.message}</p>
+                        </div>
+                    `;
+                });
+                html += '</div>';
             }
 
-            const html = schedules.map(schedule => `
-                <div class="hospital-schedule-card" style="
-                    background: rgba(255,255,255,0.05);
-                    border-left: 4px solid ${schedule.hospitalColor || '#607d8b'};
-                    border-radius: 8px;
-                    padding: 15px;
-                    margin-bottom: 10px;
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    flex-wrap: wrap;
-                    gap: 10px;
-                ">
-                    <div style="flex: 1; min-width: 200px;">
-                        <div style="font-weight: 600; color: #fff; margin-bottom: 5px;">
-                            <i class="fa fa-${schedule.hospitalIcon || 'hospital-o'}" style="color: ${schedule.hospitalColor}; margin-right: 8px;"></i>
-                            ${schedule.hospitalName}
-                        </div>
-                        <div style="font-size: 13px; color: #aaa;">
-                            <i class="fa fa-calendar" style="margin-right: 5px;"></i>
-                            ${schedule.dayName}, ${new Date(schedule.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long' })}
-                        </div>
-                        <div style="font-size: 12px; color: #888; margin-top: 3px;">
-                            <i class="fa fa-clock-o" style="margin-right: 5px;"></i>
-                            ${schedule.startTime} - ${schedule.endTime} WIB
-                        </div>
-                    </div>
-                    <button class="btn-hospital-book" onclick="openHospitalBookingModal('${schedule.date}', '${schedule.location}', '${schedule.hospitalName}', '${schedule.formatted}')" style="
-                        background: ${schedule.hospitalColor || '#607d8b'};
-                        color: white;
-                        border: none;
-                        padding: 8px 16px;
-                        border-radius: 20px;
-                        cursor: pointer;
-                        font-size: 13px;
-                        transition: all 0.3s;
+            // Show available schedules for booking
+            if (!schedules || schedules.length === 0) {
+                if (upcoming.length === 0) {
+                    html = `
+                        <p class="empty-state">
+                            <i class="fa fa-calendar-o"></i>
+                            Tidak ada jadwal tersedia minggu ini
+                        </p>
+                    `;
+                }
+            } else {
+                html += '<div>';
+                html += '<h4 style="font-size: 13px; color: #888; margin-bottom: 12px; font-weight: 600; text-transform: uppercase;"><i class="fa fa-hospital-o"></i> Jadwal Tersedia</h4>';
+
+                html += schedules.map(schedule => `
+                    <div class="hospital-schedule-card" style="
+                        background: rgba(255,255,255,0.05);
+                        border-left: 4px solid ${schedule.hospitalColor || '#607d8b'};
+                        border-radius: 8px;
+                        padding: 15px;
+                        margin-bottom: 10px;
+                        display: flex;
+                        justify-content: space-between;
+                        align-items: center;
+                        flex-wrap: wrap;
+                        gap: 10px;
                     ">
-                        <i class="fa fa-calendar-plus-o"></i> Booking
-                    </button>
-                </div>
-            `).join('');
+                        <div style="flex: 1; min-width: 200px;">
+                            <div style="font-weight: 600; color: #fff; margin-bottom: 5px;">
+                                <i class="fa fa-${schedule.hospitalIcon || 'hospital-o'}" style="color: ${schedule.hospitalColor}; margin-right: 8px;"></i>
+                                ${schedule.hospitalName}
+                            </div>
+                            <div style="font-size: 13px; color: #aaa;">
+                                <i class="fa fa-calendar" style="margin-right: 5px;"></i>
+                                ${schedule.dayName}, ${new Date(schedule.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long' })}
+                            </div>
+                            <div style="font-size: 12px; color: #888; margin-top: 3px;">
+                                <i class="fa fa-clock-o" style="margin-right: 5px;"></i>
+                                ${schedule.startTime} - ${schedule.endTime} WIB
+                            </div>
+                        </div>
+                        <button class="btn-hospital-book" onclick="openHospitalBookingModal('${schedule.date}', '${schedule.location}', '${schedule.hospitalName}', '${schedule.formatted}')" style="
+                            background: ${schedule.hospitalColor || '#607d8b'};
+                            color: white;
+                            border: none;
+                            padding: 8px 16px;
+                            border-radius: 20px;
+                            cursor: pointer;
+                            font-size: 13px;
+                            transition: all 0.3s;
+                        ">
+                            <i class="fa fa-calendar-plus-o"></i> Booking
+                        </button>
+                    </div>
+                `).join('');
+                html += '</div>';
+            }
 
             container.innerHTML = html;
         }
