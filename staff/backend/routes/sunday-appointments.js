@@ -376,11 +376,11 @@ router.post('/book', verifyToken, async (req, res) => {
         const validCategories = ['obstetri', 'gyn_repro', 'gyn_special'];
         const category = validCategories.includes(consultation_category) ? consultation_category : 'obstetri';
 
-        // Create appointment
+        // Create appointment with auto-confirmed status
         const [result] = await db.query(
             `INSERT INTO sunday_appointments
              (patient_id, patient_name, patient_phone, appointment_date, session, slot_number, chief_complaint, consultation_category, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'confirmed')`,
             [patient.id, patient.full_name, patient.phone, appointment_date, session, slot_number, chief_complaint, category]
         );
 
@@ -392,12 +392,13 @@ router.post('/book', verifyToken, async (req, res) => {
             session: session,
             session_label: getSessionLabel(session),
             slot_number: slot_number,
-            status: 'pending'
+            status: 'confirmed'
         });
 
         res.status(201).json({
-            message: 'Janji temu berhasil dibuat',
+            message: 'Janji temu berhasil dibuat dan langsung terkonfirmasi!',
             appointmentId: result.insertId,
+            status: 'confirmed',
             details: {
                 date: appointmentDate.toLocaleDateString('id-ID', {
                     weekday: 'long',
