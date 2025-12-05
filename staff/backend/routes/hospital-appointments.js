@@ -57,7 +57,7 @@ const hospitalInfo = {
         name: 'RS Bhayangkara',
         shortName: 'Bhayangkara',
         icon: 'hospital-o',
-        color: '#4caf50',
+        color: '#2196f3',
         address: 'Jl. Bhayangkara No. 1'
     }
 };
