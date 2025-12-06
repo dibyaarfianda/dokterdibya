@@ -1543,44 +1543,35 @@
                         <div class="col-12">
                             <div class="card" id="welcome-card" style="border: none; border-radius: 12px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);">
                                 <div class="card-body py-4 px-4">
-                                    <!-- Mobile: Code on top -->
-                                    <div class="d-lg-none text-center mb-3">
-                                        <div class="d-inline-block bg-primary text-white rounded p-2 mb-2" style="font-size: 22px; font-weight: 700; letter-spacing: 3px; font-family: monospace;" id="dashboard-current-code-mobile">
-                                            ------
-                                        </div>
-                                        <br>
-                                        <button class="btn btn-outline-primary btn-sm" onclick="openGenerateCodeModal()">
-                                            <i class="fas fa-sync-alt mr-1"></i> Generate Kode
-                                        </button>
-                                    </div>
-
-                                    <div class="d-flex justify-content-between align-items-start">
-                                        <!-- Left: Welcome Message -->
-                                        <div class="flex-grow-1">
+                                    <!-- Header: Title + Code -->
+                                    <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <div>
                                             <p class="mb-1" style="font-size: 13px; letter-spacing: 1px; color: #6c757d;">SELAMAT DATANG DI</p>
-                                            <h3 class="font-weight-bold mb-3" style="font-size: 1.75rem; color: #343a40;">dokter<span style="color: #007BFF;">DIBYA</span></h3>
-                                            <h5 class="mb-4" id="welcome-greeting" style="color: #495057;">
-                                                Halo, <span id="welcome-name" class="font-weight-bold" style="color: #212529;"></span>
-                                            </h5>
-                                            <div id="welcome-jobdesk">
-                                                <div id="roles-description-list">
-                                                    <!-- Role descriptions will be inserted here -->
-                                                </div>
-                                            </div>
-                                            <p class="mt-4 mb-0" id="daily-greeting" style="font-size: 17px; color: #343a40; font-weight: 500; line-height: 1.5;">
-                                                Selamat bekerja, semoga harimu menyenangkan!
-                                            </p>
+                                            <h3 class="font-weight-bold mb-0" style="font-size: 1.75rem; color: #343a40;">dokter<span style="color: #007BFF;">DIBYA</span></h3>
                                         </div>
-                                        <!-- Right: Registration Code (Desktop only) -->
-                                        <div class="text-center d-none d-lg-block" style="min-width: 145px;">
-                                            <div class="bg-primary text-white rounded p-2 mb-2" style="font-size: 24px; font-weight: 700; letter-spacing: 3px; font-family: monospace;" id="dashboard-current-code">
+                                        <!-- Registration Code -->
+                                        <div class="text-center">
+                                            <div class="bg-primary text-white rounded p-2 mb-1" style="font-size: 20px; font-weight: 700; letter-spacing: 2px; font-family: monospace;" id="dashboard-current-code">
                                                 ------
                                             </div>
-                                            <button class="btn btn-outline-primary btn-sm" onclick="openGenerateCodeModal()">
+                                            <button class="btn btn-link btn-sm p-0 text-primary" onclick="openGenerateCodeModal()">
                                                 <i class="fas fa-sync-alt mr-1"></i> Generate Kode
                                             </button>
                                         </div>
                                     </div>
+
+                                    <!-- Content: Full width -->
+                                    <h5 class="mb-3" id="welcome-greeting" style="color: #495057;">
+                                        Halo, <span id="welcome-name" class="font-weight-bold" style="color: #212529;"></span>
+                                    </h5>
+                                    <div id="welcome-jobdesk">
+                                        <div id="roles-description-list">
+                                            <!-- Role descriptions will be inserted here -->
+                                        </div>
+                                    </div>
+                                    <p class="mt-4 mb-0" id="daily-greeting" style="font-size: 17px; color: #343a40; font-weight: 500; line-height: 1.5;">
+                                        Selamat bekerja, semoga harimu menyenangkan!
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -9484,13 +9475,11 @@ async function generatePublicCode() {
     }
 }
 
-// Update dashboard code display (desktop + mobile)
+// Update dashboard code display
 function updateDashboardCodeDisplay(code, expiresAt) {
     const el = document.getElementById('dashboard-current-code');
-    const elMobile = document.getElementById('dashboard-current-code-mobile');
-    if (code) {
-        if (el) el.textContent = code;
-        if (elMobile) elMobile.textContent = code;
+    if (el && code) {
+        el.textContent = code;
     }
 }
 
