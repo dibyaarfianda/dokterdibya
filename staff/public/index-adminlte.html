@@ -6599,7 +6599,16 @@ function mobileNavClick(btn, action) {
     // Advanced Search Functions
     let advancedSearchActive = false;
 
-    // Handle advanced search form submission
+    // Debounce function for live search
+    let searchDebounceTimer = null;
+    function debounceSearch(delay = 300) {
+        clearTimeout(searchDebounceTimer);
+        searchDebounceTimer = setTimeout(() => {
+            performAdvancedSearch();
+        }, delay);
+    }
+
+    // Handle advanced search form submission and live search
     document.addEventListener('DOMContentLoaded', function() {
         const advSearchForm = document.getElementById('advanced-search-form');
         if (advSearchForm) {
@@ -6608,6 +6617,39 @@ function mobileNavClick(btn, action) {
                 performAdvancedSearch();
             });
         }
+
+        // Live search - trigger search on typing (with debounce)
+        const searchFields = [
+            'adv-search-name',
+            'adv-search-id',
+            'adv-search-mr',
+            'adv-search-email',
+            'adv-search-phone',
+            'adv-search-whatsapp',
+            'adv-search-husband'
+        ];
+
+        searchFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('input', function() {
+                    // Trigger search after 1 character minimum
+                    if (this.value.length >= 1 || this.value.length === 0) {
+                        debounceSearch(400); // 400ms delay for smoother UX
+                    }
+                });
+            }
+        });
+
+        // For age fields, trigger on change
+        ['adv-search-age-min', 'adv-search-age-max'].forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (field) {
+                field.addEventListener('input', function() {
+                    debounceSearch(500);
+                });
+            }
+        });
     });
 
     async function performAdvancedSearch() {
