@@ -1060,6 +1060,103 @@ function showFinanceAnalysisPage() {
     }, 100);
 }
 
+// ==================== INVOICE HISTORY ====================
+function showInvoiceHistoryPage() {
+    hideAllPages();
+    const page = document.getElementById('invoice-history-page');
+    if (page) page.classList.remove('d-none');
+    setTitleAndActive('Riwayat Invoice', 'nav-invoice-history', 'invoice-history');
+
+    // Set default date range (last 30 days)
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 30);
+
+    document.getElementById('invoice-start-date').value = startDate.toISOString().split('T')[0];
+    document.getElementById('invoice-end-date').value = endDate.toISOString().split('T')[0];
+
+    loadInvoiceHistory();
+}
+
+async function loadInvoiceHistory() {
+    const tbody = document.getElementById('invoice-history-tbody');
+    const countBadge = document.getElementById('invoice-count');
+
+    tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4"><i class="fas fa-spinner fa-spin"></i> Memuat data...</td></tr>';
+
+    try {
+        const token = getAuthToken();
+        const startDate = document.getElementById('invoice-start-date').value || '';
+        const endDate = document.getElementById('invoice-end-date').value || '';
+        const status = document.getElementById('invoice-status-filter').value || '';
+        const search = document.getElementById('invoice-search').value || '';
+
+        const params = new URLSearchParams();
+        if (startDate) params.append('start_date', startDate);
+        if (endDate) params.append('end_date', endDate);
+        if (status) params.append('status', status);
+        if (search) params.append('search', search);
+
+        const response = await fetch(`/api/invoices/history?${params.toString()}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('Failed to load invoices');
+
+        const data = await response.json();
+        const invoices = data.invoices || [];
+
+        countBadge.textContent = `${invoices.length} invoice`;
+
+        if (invoices.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted py-4"><i class="fas fa-file-invoice"></i> Tidak ada invoice ditemukan</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = invoices.map(inv => {
+            const visitDate = new Date(inv.visit_date).toLocaleDateString('id-ID', {
+                day: 'numeric', month: 'short', year: 'numeric'
+            });
+            const amount = new Intl.NumberFormat('id-ID', {
+                style: 'currency', currency: 'IDR', minimumFractionDigits: 0
+            }).format(inv.total_amount || 0);
+
+            const statusBadges = {
+                'paid': '<span class="badge badge-success">Lunas</span>',
+                'pending': '<span class="badge badge-warning">Pending</span>',
+                'cancelled': '<span class="badge badge-danger">Dibatalkan</span>'
+            };
+            const statusBadge = statusBadges[inv.invoice_status] || '<span class="badge badge-secondary">-</span>';
+
+            return `
+                <tr>
+                    <td><code>${inv.invoice_number}</code></td>
+                    <td>${visitDate}</td>
+                    <td>
+                        <strong>${inv.patient_name || '-'}</strong><br>
+                        <small class="text-muted">${inv.patient_id}</small>
+                    </td>
+                    <td>${inv.visit_type || '-'}</td>
+                    <td class="text-right font-weight-bold">${amount}</td>
+                    <td>${statusBadge}</td>
+                    <td class="text-center">
+                        ${inv.invoice_url ? `<a href="${inv.invoice_url}" target="_blank" class="btn btn-xs btn-info" title="Lihat Invoice"><i class="fas fa-eye"></i></a>` : ''}
+                        ${inv.etiket_url ? `<a href="${inv.etiket_url}" target="_blank" class="btn btn-xs btn-secondary ml-1" title="Lihat Etiket"><i class="fas fa-tag"></i></a>` : ''}
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Error loading invoice history:', error);
+        tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger py-4"><i class="fas fa-exclamation-triangle"></i> Gagal memuat data</td></tr>';
+    }
+}
+
+window.showInvoiceHistoryPage = showInvoiceHistoryPage;
+window.loadInvoiceHistory = loadInvoiceHistory;
+// ==================== END INVOICE HISTORY ====================
+
 function showBookingSettingsPage() {
     hideAllPages();
     pages.bookingSettings?.classList.remove('d-none');

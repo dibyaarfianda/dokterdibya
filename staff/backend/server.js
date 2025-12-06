@@ -299,6 +299,10 @@ app.use('/api/inventory', inventoryRoutes);
 const articlesRoutes = require('./routes/articles');
 app.use('/api/articles', articlesRoutes);
 
+// Invoice history routes
+const invoicesRoutes = require('./routes/invoices');
+app.use('/api/invoices', invoicesRoutes);
+
 // API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
     customSiteTitle: 'Dibya Klinik API Documentation',

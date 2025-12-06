@@ -1448,6 +1448,13 @@
                         </a>
                     </li>
 
+                    <li class="nav-item" id="nav-invoice-history">
+                        <a href="#" class="nav-link" onclick="showInvoiceHistoryPage(); return false;">
+                            <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                            <p>Riwayat Invoice</p>
+                        </a>
+                    </li>
+
                     <li class="nav-item" id="management-nav-kelola-supplier">
                         <a href="#" class="nav-link" onclick="showKelolaSupplierPage(); return false;">
                             <i class="nav-icon fas fa-truck"></i>
@@ -4785,6 +4792,87 @@ Contoh Markdown:
                                                     <td colspan="5" class="text-center text-muted py-4">
                                                         <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
                                                         <p class="mb-0">Memuat data...</p>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Invoice History Page -->
+                <div id="invoice-history-page" class="d-none">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card card-primary">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-file-invoice-dollar mr-2"></i>Riwayat Invoice</h3>
+                                    <div class="card-tools">
+                                        <span class="badge badge-light" id="invoice-count">0 invoice</span>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Filters -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-2">
+                                            <div class="form-group mb-0">
+                                                <label class="small text-muted">Dari Tanggal</label>
+                                                <input type="date" id="invoice-start-date" class="form-control form-control-sm">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="form-group mb-0">
+                                                <label class="small text-muted">Sampai Tanggal</label>
+                                                <input type="date" id="invoice-end-date" class="form-control form-control-sm">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <div class="form-group mb-0">
+                                                <label class="small text-muted">Status</label>
+                                                <select id="invoice-status-filter" class="form-control form-control-sm">
+                                                    <option value="">Semua</option>
+                                                    <option value="paid">Lunas</option>
+                                                    <option value="pending">Pending</option>
+                                                    <option value="cancelled">Dibatalkan</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-group mb-0">
+                                                <label class="small text-muted">Cari Pasien</label>
+                                                <input type="text" id="invoice-search" class="form-control form-control-sm" placeholder="Nama atau ID pasien...">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-group mb-0">
+                                                <label class="small text-muted">&nbsp;</label>
+                                                <button class="btn btn-primary btn-sm btn-block" onclick="loadInvoiceHistory()">
+                                                    <i class="fas fa-search mr-1"></i>Filter
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- Table -->
+                                    <div class="table-responsive">
+                                        <table class="table table-hover table-striped" id="invoice-history-table">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th>No. Invoice</th>
+                                                    <th>Tanggal</th>
+                                                    <th>Pasien</th>
+                                                    <th>Jenis Kunjungan</th>
+                                                    <th class="text-right">Total</th>
+                                                    <th>Status</th>
+                                                    <th class="text-center">Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="invoice-history-tbody">
+                                                <tr>
+                                                    <td colspan="7" class="text-center text-muted py-4">
+                                                        <i class="fas fa-spinner fa-spin"></i> Memuat data...
                                                     </td>
                                                 </tr>
                                             </tbody>
