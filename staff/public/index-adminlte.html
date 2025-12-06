@@ -6507,6 +6507,11 @@ function mobileNavClick(btn, action) {
                 return;
             }
             
+            // IMPORTANT: Destroy DataTable FIRST before modifying DOM
+            if ($.fn.DataTable && $.fn.DataTable.isDataTable('#manage-patients-table')) {
+                $('#manage-patients-table').DataTable().clear().destroy();
+            }
+
             tbody.innerHTML = data.data.map(patient => {
                 const birthDate = patient.birth_date ? new Date(patient.birth_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
                 const regDate = patient.created_at ? new Date(patient.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
@@ -6557,12 +6562,9 @@ function mobileNavClick(btn, action) {
                     </tr>
                 `;
             }).join('');
-            
-            // Destroy and reinitialize DataTable to clear cache (check if DataTables is loaded)
+
+            // Initialize DataTable with fresh data (already cleared before DOM update)
             if ($.fn.DataTable) {
-                if ($.fn.DataTable.isDataTable('#manage-patients-table')) {
-                    $('#manage-patients-table').DataTable().destroy();
-                }
                 $('#manage-patients-table').DataTable({
                     "pageLength": 25,
                     "order": [[9, 'desc']], // Sort by registration date (column 9 after adding MR ID)
@@ -6679,6 +6681,11 @@ function mobileNavClick(btn, action) {
                 resultCount.textContent = `${data.total || data.count || 0} hasil ditemukan`;
             }
 
+            // IMPORTANT: Destroy DataTable FIRST before modifying DOM
+            if ($.fn.DataTable && $.fn.DataTable.isDataTable('#manage-patients-table')) {
+                $('#manage-patients-table').DataTable().clear().destroy();
+            }
+
             if (!data.data || data.data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="12" class="text-center text-muted">Tidak ada pasien yang sesuai dengan kriteria pencarian</td></tr>';
                 return;
@@ -6733,14 +6740,13 @@ function mobileNavClick(btn, action) {
                 `;
             }).join('');
 
-            // Reinitialize DataTable
-            if ($.fn.DataTable.isDataTable('#manage-patients-table')) {
-                $('#manage-patients-table').DataTable().destroy();
-            }
+            // Reinitialize DataTable with fresh data
             $('#manage-patients-table').DataTable({
                 "pageLength": 25,
                 "order": [[2, 'asc']], // Sort by name (column 2 after adding MR ID)
-                "searching": false // Disable built-in search since we have advanced search
+                "searching": false, // Disable built-in search since we have advanced search
+                "paging": data.data.length > 25, // Only show pagination if more than 25 results
+                "info": true
             });
 
             // Attach event listeners to view buttons
