@@ -1314,7 +1314,7 @@
                         </a>
                     </li>
                     <li class="nav-item dokter-only d-none" id="nav-artikel-kesehatan">
-                        <a href="#" class="nav-link" onclick="showArtikelKesehatanPage(); return false;">
+                        <a href="#" class="nav-link" onclick="showArtikelKesehatanPage(); markBadgeRead('artikel'); return false;">
                             <i class="nav-icon fas fa-book-reader"></i>
                             <p>
                                 Ruang Membaca
@@ -1333,19 +1333,19 @@
                             <p>Klinik Privat<i class="fas fa-angle-left right"></i></p>
                         </a>
                         <ul class="nav nav-treeview">
+                            <li class="nav-item" id="nav-klinik-private">
+                                <a href="#" class="nav-link" onclick="showKlinikPrivatePage(); markBadgeRead('klinik_private'); return false;">
+                                    <span class="nav-icon" style="width: 1.6rem; display: inline-block;"></span>
+                                    <p>
+                                        Janji Temu
+                                        <span class="badge badge-warning right d-none" id="badge-klinik-private">0</span>
+                                    </p>
+                                </a>
+                            </li>
                             <li class="nav-item" id="nav-klinik-private-pasien">
                                 <a href="#" class="nav-link" onclick="showHospitalPatientsPage('klinik_private'); return false;">
                                     <span class="nav-icon" style="width: 1.6rem; display: inline-block;"></span>
                                     <p>Pasien</p>
-                                </a>
-                            </li>
-                            <li class="nav-item" id="nav-klinik-private">
-                                <a href="#" class="nav-link" onclick="showKlinikPrivatePage(); return false;">
-                                    <span class="nav-icon" style="width: 1.6rem; display: inline-block;"></span>
-                                    <p>
-                                        Janji Temu
-                                        <span class="badge badge-warning right d-none" id="badge-klinik-pending">0</span>
-                                    </p>
                                 </a>
                             </li>
                             <li class="nav-item" id="management-nav-kelola-tindakan">
@@ -1357,10 +1357,7 @@
                             <li class="nav-item" id="management-nav-kelola-obat">
                                 <a href="#" class="nav-link" onclick="showKelolaObatManagementPage(); return false;">
                                     <span class="nav-icon" style="width: 1.6rem; display: inline-block;"></span>
-                                    <p>
-                                        Obat/Alkes
-                                        <span class="badge badge-danger right d-none" id="badge-obat-lowstock">0</span>
-                                    </p>
+                                    <p>Obat/Alkes</p>
                                 </a>
                             </li>
                         </ul>
@@ -1374,9 +1371,12 @@
                         </a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item" id="nav-rsia-melinda">
-                                <a href="#" class="nav-link" onclick="showHospitalAppointmentsPage('rsia_melinda'); return false;">
+                                <a href="#" class="nav-link" onclick="showHospitalAppointmentsPage('rsia_melinda'); markBadgeRead('rsia_melinda'); return false;">
                                     <span class="nav-icon" style="width: 1.6rem; display: inline-block;"></span>
-                                    <p>Janji Temu</p>
+                                    <p>
+                                        Janji Temu
+                                        <span class="badge badge-warning right d-none" id="badge-rsia-melinda">0</span>
+                                    </p>
                                 </a>
                             </li>
                             <li class="nav-item" id="nav-rsia-melinda-pasien">
@@ -1396,9 +1396,12 @@
                         </a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item" id="nav-rsud-gambiran">
-                                <a href="#" class="nav-link" onclick="showHospitalAppointmentsPage('rsud_gambiran'); return false;">
+                                <a href="#" class="nav-link" onclick="showHospitalAppointmentsPage('rsud_gambiran'); markBadgeRead('rsud_gambiran'); return false;">
                                     <span class="nav-icon" style="width: 1.6rem; display: inline-block;"></span>
-                                    <p>Janji Temu</p>
+                                    <p>
+                                        Janji Temu
+                                        <span class="badge badge-warning right d-none" id="badge-rsud-gambiran">0</span>
+                                    </p>
                                 </a>
                             </li>
                             <li class="nav-item" id="nav-rsud-gambiran-pasien">
@@ -1418,9 +1421,12 @@
                         </a>
                         <ul class="nav nav-treeview">
                             <li class="nav-item" id="nav-rs-bhayangkara">
-                                <a href="#" class="nav-link" onclick="showHospitalAppointmentsPage('rs_bhayangkara'); return false;">
+                                <a href="#" class="nav-link" onclick="showHospitalAppointmentsPage('rs_bhayangkara'); markBadgeRead('rs_bhayangkara'); return false;">
                                     <span class="nav-icon" style="width: 1.6rem; display: inline-block;"></span>
-                                    <p>Janji Temu</p>
+                                    <p>
+                                        Janji Temu
+                                        <span class="badge badge-warning right d-none" id="badge-rs-bhayangkara">0</span>
+                                    </p>
                                 </a>
                             </li>
                             <li class="nav-item" id="nav-rs-bhayangkara-pasien">
