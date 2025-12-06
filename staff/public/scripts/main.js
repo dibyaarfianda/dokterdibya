@@ -197,7 +197,76 @@ function setTitleAndActive(title, navId, mobileAction) {
         }));
     }
 }
-function showDashboardPage() { hideAllPages(); pages.dashboard?.classList.remove('d-none'); setTitleAndActive('Dashboard', 'nav-dashboard', 'dashboard'); }
+function showDashboardPage() {
+    hideAllPages();
+    pages.dashboard?.classList.remove('d-none');
+    setTitleAndActive('Dashboard', 'nav-dashboard', 'dashboard');
+    loadDashboardNewPatients();
+}
+
+// Dashboard New Patients
+let dashboardNewPatientsPage = 1;
+let dashboardNewPatientsTotalPages = 1;
+
+async function loadDashboardNewPatients(page = 1) {
+    const tbody = document.getElementById('dashboard-new-patients-tbody');
+    if (!tbody) return;
+
+    dashboardNewPatientsPage = page;
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr>';
+
+    try {
+        const token = getAuthToken();
+        const response = await fetch(`/api/patients?sort=recent&limit=10&page=${page}&_=${Date.now()}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('Gagal memuat data');
+
+        const data = await response.json();
+        const pagination = data.pagination || { total: 0, page: 1, totalPages: 1 };
+        dashboardNewPatientsTotalPages = pagination.totalPages;
+
+        const start = data.data?.length > 0 ? ((page - 1) * 10) + 1 : 0;
+        const end = start > 0 ? start + data.data.length - 1 : 0;
+
+        document.getElementById('dashboard-new-patients-info').textContent =
+            `Menampilkan ${start}-${end} dari ${pagination.total}`;
+        document.getElementById('dashboard-new-patients-prev').disabled = page <= 1;
+        document.getElementById('dashboard-new-patients-next').disabled = page >= dashboardNewPatientsTotalPages;
+
+        if (!data.data || data.data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Belum ada pasien terdaftar</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = data.data.map(patient => {
+            const regDate = patient.created_at ? new Date(patient.created_at).toLocaleDateString('id-ID', {
+                day: 'numeric', month: 'short', year: 'numeric'
+            }) : '-';
+
+            return `
+                <tr>
+                    <td><code class="font-weight-bold">${patient.id}</code></td>
+                    <td>${patient.full_name || '-'}</td>
+                    <td>${patient.whatsapp || patient.phone || '-'}</td>
+                    <td>${regDate}</td>
+                    <td>
+                        <button class="btn btn-xs btn-info" onclick="viewPatientDetail('${patient.id}')" title="Lihat Detail">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Load dashboard new patients error:', error);
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Gagal memuat data</td></tr>';
+    }
+}
+window.loadDashboardNewPatients = loadDashboardNewPatients;
+window.dashboardNewPatientsPage = dashboardNewPatientsPage;
 function showKlinikPrivatePage() {
     hideAllPages();
     pages.klinikPrivate?.classList.remove('d-none');

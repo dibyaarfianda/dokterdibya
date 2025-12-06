@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup Sidebar - All Styles</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <!-- Font Awesome 6 Free (untuk simulasi duotone) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 30px;
+        }
+
+        h1 {
+            text-align: center;
+            color: white;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: rgba(255,255,255,0.8);
+            margin-bottom: 40px;
+            font-size: 14px;
+        }
+
+        .mockups-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .mockup-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        .mockup-header {
+            padding: 16px 20px;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .mockup-header h2 {
+            font-size: 16px;
+            color: #1e293b;
+            margin-bottom: 4px;
+        }
+
+        .mockup-header p {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .mockup-label {
+            display: inline-block;
+            padding: 4px 10px;
+            background: #10b981;
+            color: white;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        /* ==================== */
+        /* SIDEBAR BASE STYLES  */
+        /* ==================== */
+        .sidebar {
+            min-height: 580px;
+        }
+
+        .sidebar-header {
+            padding: 20px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sidebar-header .logo {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .sidebar-header .brand {
+            font-weight: 700;
+            font-size: 16px;
+        }
+
+        .nav-section {
+            padding: 12px 10px;
+        }
+
+        .nav-header {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            padding: 0 12px;
+            margin-bottom: 8px;
+        }
+
+        .nav-item {
+            list-style: none;
+            margin-bottom: 2px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 11px 14px;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.2s ease;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .nav-link i, .nav-link .icon {
+            font-size: 18px;
+            width: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-link .badge {
+            margin-left: auto;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 7px;
+            border-radius: 10px;
+        }
+
+        /* ==================== */
+        /* STYLE 2: FA DUOTONE  */
+        /* ==================== */
+        .sidebar.duotone {
+            background: #0f172a;
+        }
+
+        .sidebar.duotone .sidebar-header {
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .sidebar.duotone .logo {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: white;
+        }
+
+        .sidebar.duotone .brand {
+            color: white;
+        }
+
+        .sidebar.duotone .brand span {
+            color: #a78bfa;
+        }
+
+        .sidebar.duotone .nav-header {
+            color: #475569;
+        }
+
+        .sidebar.duotone .nav-link {
+            color: #94a3b8;
+        }
+
+        .sidebar.duotone .nav-link:hover {
+            background: rgba(99, 102, 241, 0.1);
+            color: #c7d2fe;
+        }
+
+        .sidebar.duotone .nav-link.active {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+        }
+
+        .sidebar.duotone .nav-link .badge {
+            background: #ef4444;
+            color: white;
+        }
+
+        /* Duotone icon effect */
+        .sidebar.duotone .nav-link i {
+            color: #818cf8;
+        }
+
+        .sidebar.duotone .nav-link.active i {
+            color: white;
+        }
+
+        .duotone-icon {
+            position: relative;
+        }
+
+        .duotone-icon::before {
+            opacity: 0.4;
+        }
+
+        /* ==================== */
+        /* STYLE 3: GLASSMORPHISM */
+        /* ==================== */
+        .glass-container {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            padding: 20px;
+            min-height: 620px;
+        }
+
+        .sidebar.glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+        }
+
+        .sidebar.glass .sidebar-header {
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .sidebar.glass .logo {
+            background: linear-gradient(135deg, #00d9ff 0%, #00ff88 100%);
+            color: #0f172a;
+        }
+
+        .sidebar.glass .brand {
+            color: white;
+        }
+
+        .sidebar.glass .brand span {
+            background: linear-gradient(135deg, #00d9ff 0%, #00ff88 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .sidebar.glass .nav-header {
+            color: rgba(255,255,255,0.4);
+        }
+
+        .sidebar.glass .nav-link {
+            color: rgba(255,255,255,0.7);
+        }
+
+        .sidebar.glass .nav-link:hover {
+            background: rgba(255,255,255,0.08);
+            color: white;
+        }
+
+        .sidebar.glass .nav-link.active {
+            background: rgba(0, 217, 255, 0.15);
+            color: #00d9ff;
+            border: 1px solid rgba(0, 217, 255, 0.3);
+        }
+
+        .sidebar.glass .nav-link i {
+            color: #00d9ff;
+        }
+
+        .sidebar.glass .nav-link .badge {
+            background: rgba(239, 68, 68, 0.8);
+            color: white;
+        }
+
+        /* ==================== */
+        /* STYLE 4: COMPLETE REDESIGN */
+        /* ==================== */
+        .sidebar.redesign {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: #ffffff;
+            border-right: 1px solid #e5e7eb;
+        }
+
+        .sidebar.redesign .sidebar-header {
+            border-bottom: 1px solid #f3f4f6;
+            padding: 24px 20px;
+        }
+
+        .sidebar.redesign .logo {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            color: white;
+            border-radius: 12px;
+            width: 44px;
+            height: 44px;
+        }
+
+        .sidebar.redesign .brand {
+            color: #111827;
+            font-size: 18px;
+        }
+
+        .sidebar.redesign .brand span {
+            color: #059669;
+        }
+
+        .sidebar.redesign .nav-header {
+            color: #9ca3af;
+            font-size: 11px;
+            margin-top: 8px;
+        }
+
+        .sidebar.redesign .nav-link {
+            color: #4b5563;
+            border-radius: 10px;
+            margin: 0 8px;
+            padding: 12px 14px;
+        }
+
+        .sidebar.redesign .nav-link:hover {
+            background: #f9fafb;
+            color: #111827;
+        }
+
+        .sidebar.redesign .nav-link.active {
+            background: linear-gradient(135deg, #059669 0%, #10b981 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(5, 150, 105, 0.3);
+        }
+
+        .sidebar.redesign .nav-link i {
+            font-size: 20px;
+        }
+
+        .sidebar.redesign .nav-link .badge {
+            background: #fef3c7;
+            color: #d97706;
+        }
+
+        .sidebar.redesign .nav-link.active .badge {
+            background: rgba(255,255,255,0.25);
+            color: white;
+        }
+
+        /* Pill indicator for active */
+        .sidebar.redesign .nav-link.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 24px;
+            background: #059669;
+            border-radius: 0 4px 4px 0;
+        }
+
+        .sidebar.redesign .nav-item {
+            position: relative;
+        }
+
+        /* User profile at bottom */
+        .user-profile {
+            padding: 16px;
+            border-top: 1px solid #f3f4f6;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: auto;
+        }
+
+        .user-profile .avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+        }
+
+        .user-profile .info {
+            flex: 1;
+        }
+
+        .user-profile .name {
+            font-size: 13px;
+            font-weight: 600;
+            color: #111827;
+        }
+
+        .user-profile .role {
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        /* ==================== */
+        /* COMPARISON TABLE     */
+        /* ==================== */
+        .comparison-table {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-top: 40px;
+            max-width: 1000px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .comparison-table h3 {
+            margin-bottom: 16px;
+            color: #1e293b;
+        }
+
+        .comparison-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .comparison-table th, .comparison-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 13px;
+        }
+
+        .comparison-table th {
+            background: #f8fafc;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .comparison-table td {
+            color: #64748b;
+        }
+
+        .check { color: #10b981; }
+        .cross { color: #ef4444; }
+
+        .rec-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #dcfce7;
+            color: #166534;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <h1>Sidebar Design Options</h1>
+    <p class="subtitle">Pilih style yang paling cocok untuk aplikasi</p>
+
+    <div class="mockups-grid">
+        <!-- MOCKUP 1: Phosphor Icons (dari sebelumnya) -->
+        <div class="mockup-card">
+            <div class="mockup-header">
+                <span class="mockup-label">Option 1</span>
+                <h2>Phosphor Icons + Dark</h2>
+                <p>Modern, clean, 100% gratis</p>
+            </div>
+            <aside class="sidebar duotone">
+                <div class="sidebar-header">
+                    <div class="logo">
+                        <i class="ph-bold ph-stethoscope"></i>
+                    </div>
+                    <div class="brand">Dokter<span>DIBYA</span></div>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-header">Main</div>
+                    <ul>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link active">
+                                <i class="ph-bold ph-squares-four"></i>
+                                Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-users-three"></i>
+                                Kelola Pasien
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-bell"></i>
+                                Notifikasi
+                                <span class="badge">3</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-calendar-blank"></i>
+                                Jadwal
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-header">Klinik</div>
+                    <ul>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-first-aid-kit" style="color: #60a5fa;"></i>
+                                Klinik Privat
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-hospital" style="color: #f472b6;"></i>
+                                RSIA Melinda
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-hospital" style="color: #22d3ee;"></i>
+                                RSUD Gambiran
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-header">Management</div>
+                    <ul>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-chart-line-up"></i>
+                                Finance
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-shield-check"></i>
+                                Roles
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </aside>
+        </div>
+
+        <!-- MOCKUP 2: Font Awesome Duotone Style -->
+        <div class="mockup-card">
+            <div class="mockup-header">
+                <span class="mockup-label" style="background: #6366f1;">Option 2</span>
+                <h2>FA Duotone Style</h2>
+                <p>Two-tone icons, premium look</p>
+            </div>
+            <aside class="sidebar duotone">
+                <div class="sidebar-header">
+                    <div class="logo">
+                        <i class="fa-solid fa-stethoscope"></i>
+                    </div>
+                    <div class="brand">Dokter<span>DIBYA</span></div>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-header">Main</div>
+                    <ul>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link active">
+                                <i class="fa-solid fa-gauge-high"></i>
+                                Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="fa-solid fa-users"></i>
+                                Kelola Pasien
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="fa-solid fa-bell"></i>
+                                Notifikasi
+                                <span class="badge">3</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="fa-solid fa-calendar-days"></i>
+                                Jadwal
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-header">Klinik</div>
+                    <ul>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="fa-solid fa-house-medical" style="color: #60a5fa;"></i>
+                                Klinik Privat
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="fa-solid fa-hospital" style="color: #f472b6;"></i>
+                                RSIA Melinda
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="fa-solid fa-hospital" style="color: #22d3ee;"></i>
+                                RSUD Gambiran
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-header">Management</div>
+                    <ul>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="fa-solid fa-chart-line"></i>
+                                Finance
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="fa-solid fa-shield-halved"></i>
+                                Roles
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </aside>
+        </div>
+
+        <!-- MOCKUP 3: Glassmorphism -->
+        <div class="mockup-card">
+            <div class="mockup-header">
+                <span class="mockup-label" style="background: #0891b2;">Option 3</span>
+                <h2>Glassmorphism</h2>
+                <p>Blur effect, futuristic, trendy</p>
+            </div>
+            <div class="glass-container">
+                <aside class="sidebar glass">
+                    <div class="sidebar-header">
+                        <div class="logo">
+                            <i class="ph-bold ph-stethoscope"></i>
+                        </div>
+                        <div class="brand">Dokter<span>DIBYA</span></div>
+                    </div>
+                    <div class="nav-section">
+                        <div class="nav-header">Main</div>
+                        <ul>
+                            <li class="nav-item">
+                                <a href="#" class="nav-link active">
+                                    <i class="ph-bold ph-squares-four"></i>
+                                    Dashboard
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" class="nav-link">
+                                    <i class="ph-bold ph-users-three"></i>
+                                    Kelola Pasien
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" class="nav-link">
+                                    <i class="ph-bold ph-bell"></i>
+                                    Notifikasi
+                                    <span class="badge">3</span>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" class="nav-link">
+                                    <i class="ph-bold ph-calendar-blank"></i>
+                                    Jadwal
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="nav-section">
+                        <div class="nav-header">Klinik</div>
+                        <ul>
+                            <li class="nav-item">
+                                <a href="#" class="nav-link">
+                                    <i class="ph-bold ph-first-aid-kit"></i>
+                                    Klinik Privat
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" class="nav-link">
+                                    <i class="ph-bold ph-hospital"></i>
+                                    RSIA Melinda
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" class="nav-link">
+                                    <i class="ph-bold ph-hospital"></i>
+                                    RSUD Gambiran
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="nav-section">
+                        <div class="nav-header">Management</div>
+                        <ul>
+                            <li class="nav-item">
+                                <a href="#" class="nav-link">
+                                    <i class="ph-bold ph-chart-line-up"></i>
+                                    Finance
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="#" class="nav-link">
+                                    <i class="ph-bold ph-shield-check"></i>
+                                    Roles
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </aside>
+            </div>
+        </div>
+
+        <!-- MOCKUP 4: Complete Redesign -->
+        <div class="mockup-card">
+            <div class="mockup-header">
+                <span class="mockup-label" style="background: #059669;">Option 4</span>
+                <h2>Complete Redesign</h2>
+                <p>Light theme, Plus Jakarta Sans, clean</p>
+            </div>
+            <aside class="sidebar redesign">
+                <div class="sidebar-header">
+                    <div class="logo">
+                        <i class="ph-bold ph-stethoscope"></i>
+                    </div>
+                    <div class="brand">Dokter<span>DIBYA</span></div>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-header">Main</div>
+                    <ul>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link active">
+                                <i class="ph-bold ph-squares-four"></i>
+                                Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-users-three"></i>
+                                Kelola Pasien
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-bell"></i>
+                                Notifikasi
+                                <span class="badge">3</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-calendar-blank"></i>
+                                Jadwal
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-header">Klinik</div>
+                    <ul>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-first-aid-kit" style="color: #3b82f6;"></i>
+                                Klinik Privat
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-hospital" style="color: #ec4899;"></i>
+                                RSIA Melinda
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-hospital" style="color: #06b6d4;"></i>
+                                RSUD Gambiran
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="nav-section">
+                    <div class="nav-header">Management</div>
+                    <ul>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-chart-line-up"></i>
+                                Finance
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-shield-check"></i>
+                                Roles
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+                <div class="user-profile">
+                    <div class="avatar">DR</div>
+                    <div class="info">
+                        <div class="name">Dr. Dibya</div>
+                        <div class="role">Dokter</div>
+                    </div>
+                    <i class="ph-bold ph-gear" style="color: #9ca3af;"></i>
+                </div>
+            </aside>
+        </div>
+    </div>
+
+    <!-- Comparison Table -->
+    <div class="comparison-table">
+        <h3>Perbandingan Options</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Fitur</th>
+                    <th>Option 1<br><small>Phosphor Dark</small></th>
+                    <th>Option 2<br><small>FA Duotone</small></th>
+                    <th>Option 3<br><small>Glassmorphism</small></th>
+                    <th>Option 4<br><small>Complete Redesign</small></th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>Icon Library</td>
+                    <td>Phosphor (Free)</td>
+                    <td>Font Awesome 6</td>
+                    <td>Phosphor (Free)</td>
+                    <td>Phosphor (Free)</td>
+                </tr>
+                <tr>
+                    <td>Font</td>
+                    <td>Inter</td>
+                    <td>Inter</td>
+                    <td>Inter</td>
+                    <td>Plus Jakarta Sans</td>
+                </tr>
+                <tr>
+                    <td>Theme</td>
+                    <td>Dark</td>
+                    <td>Dark (Purple)</td>
+                    <td>Glass/Blur</td>
+                    <td>Light</td>
+                </tr>
+                <tr>
+                    <td>Kompleksitas</td>
+                    <td>Rendah</td>
+                    <td>Rendah</td>
+                    <td>Sedang</td>
+                    <td>Tinggi</td>
+                </tr>
+                <tr>
+                    <td>Performa</td>
+                    <td><span class="check">✓</span> Ringan</td>
+                    <td><span class="check">✓</span> Ringan</td>
+                    <td><span class="cross">✗</span> Blur heavy</td>
+                    <td><span class="check">✓</span> Ringan</td>
+                </tr>
+                <tr>
+                    <td>Mobile Friendly</td>
+                    <td><span class="check">✓</span> Ya</td>
+                    <td><span class="check">✓</span> Ya</td>
+                    <td><span class="cross">✗</span> Kurang</td>
+                    <td><span class="check">✓</span> Ya</td>
+                </tr>
+                <tr>
+                    <td>Rekomendasi</td>
+                    <td><span class="rec-badge">Best Overall</span></td>
+                    <td>Good</td>
+                    <td>Trendy</td>
+                    <td><span class="rec-badge">Best for Clinic</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <p style="text-align: center; color: rgba(255,255,255,0.6); margin-top: 30px; font-size: 13px;">
+        Pilih nomor option yang diinginkan untuk implementasi
+    </p>
+</body>
+</html>

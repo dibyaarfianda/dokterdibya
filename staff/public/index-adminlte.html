@@ -1640,6 +1640,53 @@
                         </div>
                     </div>
 
+                    <!-- Pasien Baru -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card card-success">
+                                <div class="card-header">
+                                    <h3 class="card-title">
+                                        <i class="fas fa-user-plus mr-2"></i>Pasien Baru
+                                    </h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <div class="table-responsive">
+                                        <table id="dashboard-new-patients-table" class="table table-sm table-bordered table-hover">
+                                            <thead class="thead-light">
+                                                <tr>
+                                                    <th>ID Pasien</th>
+                                                    <th>Nama Lengkap</th>
+                                                    <th>No. WhatsApp</th>
+                                                    <th>Tgl Registrasi</th>
+                                                    <th>Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="dashboard-new-patients-tbody">
+                                                <tr><td colspan="5" class="text-center">Memuat...</td></tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <div class="text-muted" id="dashboard-new-patients-info">Menampilkan 0 dari 0</div>
+                                        <div class="btn-group">
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" id="dashboard-new-patients-prev" onclick="loadDashboardNewPatients(dashboardNewPatientsPage - 1)" disabled>
+                                                <i class="fas fa-chevron-left"></i> Sebelumnya
+                                            </button>
+                                            <button type="button" class="btn btn-sm btn-outline-secondary" id="dashboard-new-patients-next" onclick="loadDashboardNewPatients(dashboardNewPatientsPage + 1)" disabled>
+                                                Selanjutnya <i class="fas fa-chevron-right"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="row">
                         <div class="col-12">
                             <div class="card">
