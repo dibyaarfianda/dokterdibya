@@ -1617,32 +1617,11 @@
                         </div>
                     </div>
 
+                    <!-- 2 Column Layout -->
                     <div class="row">
-                        <div class="col-lg-8">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3 class="card-title"><i class="fas fa-calendar-check mr-2"></i>Appointment Minggu Depan</h3>
-                                </div>
-                                <div class="card-body" id="dashboard-today-appointments">
-                                    <p class="text-muted mb-0">Tidak ada data.</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-lg-4">
-                            <div class="card">
-                                <div class="card-header">
-                                    <h3 class="card-title"><i class="fas fa-bell mr-2"></i>Aktivitas Terbaru</h3>
-                                </div>
-                                <div class="card-body" id="dashboard-recent-activity" style="max-height: 260px; overflow-y: auto;">
-                                    <p class="text-muted mb-0">Belum ada aktivitas.</p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Pasien Baru -->
-                    <div class="row">
-                        <div class="col-12">
+                        <!-- LEFT COLUMN -->
+                        <div class="col-lg-6">
+                            <!-- Pasien Baru -->
                             <div class="card card-success">
                                 <div class="card-header">
                                     <h3 class="card-title">
@@ -1659,45 +1638,73 @@
                                         <table id="dashboard-new-patients-table" class="table table-sm table-bordered table-hover">
                                             <thead class="thead-light">
                                                 <tr>
-                                                    <th>ID Pasien</th>
-                                                    <th>Nama Lengkap</th>
-                                                    <th>No. WhatsApp</th>
-                                                    <th>Tgl Registrasi</th>
-                                                    <th>Aksi</th>
+                                                    <th>Nama</th>
+                                                    <th>Registrasi</th>
+                                                    <th style="width: 50px;"></th>
                                                 </tr>
                                             </thead>
                                             <tbody id="dashboard-new-patients-tbody">
-                                                <tr><td colspan="5" class="text-center">Memuat...</td></tr>
+                                                <tr><td colspan="3" class="text-center">Memuat...</td></tr>
                                             </tbody>
                                         </table>
                                     </div>
-                                    <div class="d-flex justify-content-between align-items-center mt-3">
-                                        <div class="text-muted" id="dashboard-new-patients-info">Menampilkan 0 dari 0</div>
-                                        <div class="btn-group">
-                                            <button type="button" class="btn btn-sm btn-outline-secondary" id="dashboard-new-patients-prev" onclick="loadDashboardNewPatients(dashboardNewPatientsPage - 1)" disabled>
-                                                <i class="fas fa-chevron-left"></i> Sebelumnya
+                                    <div class="d-flex justify-content-between align-items-center mt-2">
+                                        <small class="text-muted" id="dashboard-new-patients-info">0 dari 0</small>
+                                        <div class="btn-group btn-group-sm">
+                                            <button type="button" class="btn btn-outline-secondary" id="dashboard-new-patients-prev" onclick="loadDashboardNewPatients(dashboardNewPatientsPage - 1)" disabled>
+                                                <i class="fas fa-chevron-left"></i>
                                             </button>
-                                            <button type="button" class="btn btn-sm btn-outline-secondary" id="dashboard-new-patients-next" onclick="loadDashboardNewPatients(dashboardNewPatientsPage + 1)" disabled>
-                                                Selanjutnya <i class="fas fa-chevron-right"></i>
+                                            <button type="button" class="btn btn-outline-secondary" id="dashboard-new-patients-next" onclick="loadDashboardNewPatients(dashboardNewPatientsPage + 1)" disabled>
+                                                <i class="fas fa-chevron-right"></i>
                                             </button>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </div>
 
-                    <div class="row">
-                        <div class="col-12">
+                            <!-- Chart -->
                             <div class="card">
                                 <div class="card-header d-flex justify-content-between align-items-center">
-                                    <h3 class="card-title mb-0"><i class="fas fa-chart-area mr-2"></i>Kunjungan 30 Hari Terakhir</h3>
+                                    <h3 class="card-title mb-0"><i class="fas fa-chart-area mr-2"></i>Kunjungan 30 Hari</h3>
                                     <span class="badge badge-primary badge-pill" id="stat-visits-30days-total">-</span>
                                 </div>
                                 <div class="card-body">
-                                    <div id="visits-30-days-chart" class="text-center text-muted" style="min-height: 220px;">
+                                    <div id="visits-30-days-chart" class="text-center text-muted" style="min-height: 200px;">
                                         <small>Memuat data kunjungan...</small>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- RIGHT COLUMN -->
+                        <div class="col-lg-6">
+                            <!-- Appointment Minggu Depan -->
+                            <div class="card card-primary">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-calendar-check mr-2"></i>Appointment Minggu Depan</h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body" id="dashboard-today-appointments" style="max-height: 350px; overflow-y: auto;">
+                                    <p class="text-muted mb-0">Tidak ada data.</p>
+                                </div>
+                            </div>
+
+                            <!-- Aktivitas Terbaru -->
+                            <div class="card card-info">
+                                <div class="card-header">
+                                    <h3 class="card-title"><i class="fas fa-bell mr-2"></i>Aktivitas Terbaru</h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body" id="dashboard-recent-activity" style="max-height: 280px; overflow-y: auto;">
+                                    <p class="text-muted mb-0">Belum ada aktivitas.</p>
                                 </div>
                             </div>
                         </div>
