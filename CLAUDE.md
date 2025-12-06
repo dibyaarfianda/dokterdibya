@@ -124,3 +124,26 @@ Files created by Claude/root often have wrong permissions. **ALWAYS fix permissi
 **If permission issues occur:**
 1. Run `/var/www/dokterdibya/fix-permissions.sh`
 2. Or manually: `chmod 644 <file>` for files, `chmod 755 <dir>` for directories
+
+### 7. AdminLTE CSS Overrides
+AdminLTE memiliki default styles dengan specificity tinggi. **Selalu gunakan `!important` saat override AdminLTE styles.**
+
+**Contoh yang BENAR:**
+```css
+/* Override di section <style> dalam index-adminlte.html */
+.nav-treeview .nav-link .nav-icon.fa-circle {
+    font-size: 5px !important;
+    width: 1.6rem !important;
+}
+```
+
+**Contoh yang SALAH (tidak akan bekerja):**
+```html
+<!-- Inline style tanpa !important akan di-override AdminLTE -->
+<i class="fas fa-circle nav-icon" style="font-size: 5px;"></i>
+```
+
+**Tips:**
+- Tambahkan custom CSS di section `<style>` dalam `index-adminlte.html` (mulai line 42)
+- Gunakan selector yang spesifik (misal: `.nav-treeview .nav-link .nav-icon`)
+- Selalu tambahkan `!important` untuk override AdminLTE defaults
