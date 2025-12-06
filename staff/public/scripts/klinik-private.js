@@ -192,19 +192,14 @@ function renderAppointments(appointments) {
 
     appointments.forEach(appointment => {
         const tr = document.createElement('tr');
-        const patientIdBadge = `<span class="badge badge-secondary">${formatPatientId(appointment.patient_id)}</span>`;
+        // Format slot time for first column
+        const time = appointment.time || '-';
+        const slotNumber = appointment.slot_number || '-';
+        const slotBadge = `<span class="badge badge-info">${escapeHtml(time)}</span><div class="small text-muted mt-1">Slot ${slotNumber}</div>`;
 
-        const infoParts = [];
-        if (appointment.time) {
-            infoParts.push(`${escapeHtml(appointment.time)} WIB`);
-        }
-        if (appointment.sessionLabel) {
-            infoParts.push(escapeHtml(appointment.sessionLabel));
-        }
-        if (Number.isFinite(Number(appointment.slot_number))) {
-            infoParts.push(`Slot ${appointment.slot_number}`);
-        }
-        const infoLine = infoParts.length ? `<div class="small text-muted">${infoParts.join(' · ')}</div>` : '';
+        // Format session info for name column
+        const sessionLabel = appointment.sessionLabel || '';
+        const infoLine = sessionLabel ? `<div class="small text-muted">${escapeHtml(sessionLabel)}</div>` : '';
 
         // Category badge
         const categoryBadges = {
@@ -219,7 +214,7 @@ function renderAppointments(appointments) {
         const statusBadge = `<span class="badge ${statusMeta.className}">${escapeHtml(statusMeta.label)}</span>`;
 
         tr.innerHTML = `
-            <td>${patientIdBadge}</td>
+            <td class="text-center">${slotBadge}</td>
             <td>
                 <div class="font-weight-bold">${escapeHtml(appointment.patient_name || '-')}</div>
                 ${infoLine}
