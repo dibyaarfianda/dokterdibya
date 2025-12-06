@@ -147,3 +147,42 @@ AdminLTE memiliki default styles dengan specificity tinggi. **Selalu gunakan `!i
 - Tambahkan custom CSS di section `<style>` dalam `index-adminlte.html` (mulai line 42)
 - Gunakan selector yang spesifik (misal: `.nav-treeview .nav-link .nav-icon`)
 - Selalu tambahkan `!important` untuk override AdminLTE defaults
+
+### 8. Mobile App (Future Plan)
+
+**Pilihan: Capacitor** untuk membuat APK patient portal yang bisa di-publish ke Google Play Store dan App Store.
+
+**Alasan:**
+
+- Bisa pakai kode web patient portal (`/public/`) yang sudah ada
+- Support Android + iOS dengan codebase yang sama
+- Akses fitur native (push notification, kamera, dll)
+- Bisa upgrade ke full native jika perlu
+
+**Struktur yang akan dibuat:**
+
+```text
+dokterdibya-patient-app/
+├── capacitor.config.ts
+├── www/                    ← Copy dari /public/
+├── android/                ← Auto-generated
+└── ios/                    ← Auto-generated (butuh Mac)
+```
+
+**Requirements untuk publish:**
+
+- Google Play Developer Account ($25)
+- App Icon 512x512 PNG
+- Feature Graphic 1024x500
+- Screenshots (min 2)
+- Privacy Policy URL
+- Signing Key
+
+**Native plugins yang akan digunakan:**
+
+- `@capacitor/push-notifications` - Notifikasi
+- `@capacitor/camera` - Upload foto
+- `@capacitor/local-notifications` - Reminder janji
+- `@capacitor/splash-screen` - Loading screen
+
+**Note:** Admin panel tetap web-based (`/staff/public/`)
