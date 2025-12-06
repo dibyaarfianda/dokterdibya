@@ -584,14 +584,15 @@ function renderHospitalAppointmentsTable(appointments, hospitalName, hospitalCol
     };
 
     const rows = appointments.map(apt => {
-        const patientIdBadge = `<span class="badge badge-secondary">${String(apt.patient_id || '').replace(/^P/, '')}</span>`;
-
-        // Format time and session info
+        // Format slot time for first column
         const time = apt.appointment_time ? apt.appointment_time.substring(0, 5) : '';
+        const slotNumber = apt.slot_number || '-';
+        const slotBadge = `<span class="badge badge-info">${time || '-'}</span><div class="small text-muted mt-1">Slot ${slotNumber}</div>`;
+
+        // Format session info for name column
         const session = apt.session_type || 'Pagi';
-        const slot = apt.slot_number ? `Slot ${apt.slot_number}` : '';
-        const infoParts = [time ? `${time} WIB` : '', session ? `${session}` : '', slot].filter(Boolean);
-        const infoLine = infoParts.length ? `<div class="small text-muted">${infoParts.join(' · ')}</div>` : '';
+        const sessionRange = apt.session_start && apt.session_end ? `${apt.session_start.substring(0,5)} - ${apt.session_end.substring(0,5)}` : '';
+        const infoLine = sessionRange ? `<div class="small text-muted">${sessionRange} (${session})</div>` : '';
 
         // Age
         const age = apt.patient_age ? `${apt.patient_age} th` : '-';
@@ -608,7 +609,7 @@ function renderHospitalAppointmentsTable(appointments, hospitalName, hospitalCol
 
         return `
             <tr>
-                <td>${patientIdBadge}</td>
+                <td class="text-center">${slotBadge}</td>
                 <td>
                     <div class="font-weight-bold">${apt.patient_name || '-'}</div>
                     ${infoLine}
@@ -645,7 +646,7 @@ function renderHospitalAppointmentsTable(appointments, hospitalName, hospitalCol
                     <table class="table table-hover mb-0">
                         <thead class="thead-light">
                             <tr>
-                                <th style="width: 8%;">ID</th>
+                                <th style="width: 8%;" class="text-center">Waktu</th>
                                 <th style="width: 25%;">Nama Pasien</th>
                                 <th style="width: 8%;">Usia</th>
                                 <th style="width: 12%;">Kategori</th>
