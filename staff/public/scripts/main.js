@@ -236,21 +236,19 @@ async function loadDashboardNewPatients(page = 1) {
         document.getElementById('dashboard-new-patients-next').disabled = page >= dashboardNewPatientsTotalPages;
 
         if (!data.data || data.data.length === 0) {
-            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Belum ada pasien terdaftar</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted">Belum ada pasien terdaftar</td></tr>';
             return;
         }
 
         tbody.innerHTML = data.data.map(patient => {
-            const regDate = patient.created_at ? new Date(patient.created_at).toLocaleDateString('id-ID', {
-                day: 'numeric', month: 'short', year: 'numeric'
+            const regDateTime = patient.created_at ? new Date(patient.created_at).toLocaleString('id-ID', {
+                day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
             }) : '-';
 
             return `
                 <tr>
-                    <td><code class="font-weight-bold">${patient.id}</code></td>
                     <td>${patient.full_name || '-'}</td>
-                    <td>${patient.whatsapp || patient.phone || '-'}</td>
-                    <td>${regDate}</td>
+                    <td><small class="text-muted">${regDateTime}</small></td>
                     <td>
                         <button class="btn btn-xs btn-info" onclick="viewPatientDetail('${patient.id}')" title="Lihat Detail">
                             <i class="fas fa-eye"></i>
@@ -262,7 +260,7 @@ async function loadDashboardNewPatients(page = 1) {
 
     } catch (error) {
         console.error('Load dashboard new patients error:', error);
-        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger">Gagal memuat data</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="3" class="text-center text-danger">Gagal memuat data</td></tr>';
     }
 }
 window.loadDashboardNewPatients = loadDashboardNewPatients;
