@@ -145,7 +145,7 @@
 
     /* Add padding to TOP for top navigation bar */
     body .content-wrapper {
-        padding-top: 56px !important;
+        padding-top: 30px !important;
         padding-bottom: 1rem !important;
     }
 
