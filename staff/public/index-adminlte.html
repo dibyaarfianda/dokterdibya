@@ -6565,7 +6565,8 @@ function mobileNavClick(btn, action) {
                 }
                 $('#manage-patients-table').DataTable({
                     "pageLength": 25,
-                    "order": [[9, 'desc']] // Sort by registration date (column 9 after adding MR ID)
+                    "order": [[9, 'desc']], // Sort by registration date (column 9 after adding MR ID)
+                    "searching": false // Disable built-in search, use advanced search only
                 });
             }
             
@@ -6665,6 +6666,13 @@ function mobileNavClick(btn, action) {
             }
 
             const data = await response.json();
+
+            // Debug logging
+            console.log('[SEARCH DEBUG] Search params:', { name, id, mr_id, email, phone, whatsapp, husband });
+            console.log('[SEARCH DEBUG] API Response:', data);
+            if (data.data) {
+                console.log('[SEARCH DEBUG] Results:', data.data.map(p => ({ id: p.id, name: p.full_name })));
+            }
 
             // Update result count
             if (resultCount) {
