@@ -2432,7 +2432,7 @@
 
                 result.data.forEach((article) => {
                     const color = article.color || '#28a7e9';
-                    const icon = article.icon || 'fa-heartbeat';
+                    const icon = article.icon || 'fa-book';
                     const dateStr = formatArticleDate(article.created_at);
 
                     html += `
@@ -2582,7 +2582,7 @@
 
                 const article = result.data;
                 const color = article.color || '#28a7e9';
-                const icon = article.icon || 'fa-heartbeat';
+                const icon = article.icon || 'fa-book';
                 const dateStr = formatArticleDate(article.updated_at || article.created_at);
 
                 // Remove loading and show article
