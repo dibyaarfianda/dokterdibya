@@ -1354,6 +1354,45 @@ function formatDate(dateStr) {
 // ==================== NOTIFICATION BADGES ====================
 
 /**
+ * Get last seen timestamp for a location from localStorage
+ */
+function getLastSeenTimestamp(location) {
+    const key = `badge_last_seen_${location}`;
+    return localStorage.getItem(key) || null;
+}
+
+/**
+ * Mark a badge as read - save current timestamp to localStorage
+ */
+function markBadgeRead(location) {
+    const key = `badge_last_seen_${location}`;
+    localStorage.setItem(key, new Date().toISOString());
+
+    // Hide the badge immediately
+    const badgeId = `badge-${location.replace(/_/g, '-')}`;
+    const badge = document.getElementById(badgeId);
+    if (badge) {
+        badge.classList.add('d-none');
+        badge.textContent = '0';
+    }
+}
+
+/**
+ * Update a single badge element
+ */
+function updateBadge(badgeId, count) {
+    const badge = document.getElementById(badgeId);
+    if (!badge) return;
+
+    if (count > 0) {
+        badge.textContent = count;
+        badge.classList.remove('d-none');
+    } else {
+        badge.classList.add('d-none');
+    }
+}
+
+/**
  * Load and update sidebar notification badge counts
  */
 async function loadNotificationBadges() {
@@ -1361,8 +1400,22 @@ async function loadNotificationBadges() {
         const token = getAuthToken();
         if (!token) return;
 
+        // Get last seen timestamps for all locations
+        const lastSeen = {
+            klinik_private: getLastSeenTimestamp('klinik_private'),
+            rsia_melinda: getLastSeenTimestamp('rsia_melinda'),
+            rsud_gambiran: getLastSeenTimestamp('rsud_gambiran'),
+            rs_bhayangkara: getLastSeenTimestamp('rs_bhayangkara'),
+            artikel: getLastSeenTimestamp('artikel')
+        };
+
         const response = await fetch('/api/notifications/badge-counts', {
-            headers: { 'Authorization': `Bearer ${token}` }
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ lastSeen })
         });
 
         if (!response.ok) return;
@@ -1372,37 +1425,20 @@ async function loadNotificationBadges() {
 
         const { counts } = result;
 
-        // Update Article Likes badge
-        const articleBadge = document.getElementById('badge-artikel-likes');
-        if (articleBadge && counts.articleLikes > 0) {
-            articleBadge.textContent = counts.articleLikes;
-            articleBadge.classList.remove('d-none');
-        } else if (articleBadge) {
-            articleBadge.classList.add('d-none');
-        }
-
-        // Update Klinik Privat Pending badge
-        const klinikBadge = document.getElementById('badge-klinik-pending');
-        if (klinikBadge && counts.klinikPending > 0) {
-            klinikBadge.textContent = counts.klinikPending;
-            klinikBadge.classList.remove('d-none');
-        } else if (klinikBadge) {
-            klinikBadge.classList.add('d-none');
-        }
-
-        // Update Low Stock Obat badge
-        const obatBadge = document.getElementById('badge-obat-lowstock');
-        if (obatBadge && counts.lowStockObat > 0) {
-            obatBadge.textContent = counts.lowStockObat;
-            obatBadge.classList.remove('d-none');
-        } else if (obatBadge) {
-            obatBadge.classList.add('d-none');
-        }
+        // Update all badges
+        updateBadge('badge-klinik-private', counts.klinik_private || 0);
+        updateBadge('badge-rsia-melinda', counts.rsia_melinda || 0);
+        updateBadge('badge-rsud-gambiran', counts.rsud_gambiran || 0);
+        updateBadge('badge-rs-bhayangkara', counts.rs_bhayangkara || 0);
+        updateBadge('badge-artikel-likes', counts.artikel || 0);
 
     } catch (error) {
         console.error('Error loading notification badges:', error);
     }
 }
+
+// Export markBadgeRead to window
+window.markBadgeRead = markBadgeRead;
 
 // Reload badges every 2 minutes
 setInterval(loadNotificationBadges, 120000);
