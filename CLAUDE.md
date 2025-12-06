@@ -101,3 +101,26 @@ if (!socket || !currentUser) return;
 - `CACHE_VERSION` in `index-adminlte.html` - increment to force localStorage clear
 - Service worker cache versions in `sw.js` - increment to force SW update
 - After changing socket config, ALWAYS bump both versions
+
+### 6. File Permissions
+Files created by Claude/root often have wrong permissions. **ALWAYS fix permissions after creating/modifying files.**
+
+**Quick fix:**
+```bash
+/var/www/dokterdibya/fix-permissions.sh
+```
+
+**Auto-fix is enabled via git hooks:**
+- `.git/hooks/post-checkout` - runs after git checkout
+- `.git/hooks/post-merge` - runs after git pull
+
+**Correct permissions:**
+| Type | Permission | Numeric |
+|------|------------|---------|
+| Directories | rwxr-xr-x | 755 |
+| Files | rw-r--r-- | 644 |
+| Owner | www-data:www-data | - |
+
+**If permission issues occur:**
+1. Run `/var/www/dokterdibya/fix-permissions.sh`
+2. Or manually: `chmod 644 <file>` for files, `chmod 755 <dir>` for directories
