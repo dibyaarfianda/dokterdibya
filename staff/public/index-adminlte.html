@@ -4449,7 +4449,7 @@ Contoh Markdown:
                                                     <th>ID Pasien</th>
                                                     <th>Nama Lengkap</th>
                                                     <th>No. WhatsApp</th>
-                                                    <th>Terakhir Visit</th>
+                                                    <th>Tgl Registrasi</th>
                                                     <th>Aksi</th>
                                                 </tr>
                                             </thead>
@@ -6541,7 +6541,7 @@ function mobileNavClick(btn, action) {
             }
 
             tbody.innerHTML = data.data.map(patient => {
-                const lastVisit = patient.last_visit ? new Date(patient.last_visit).toLocaleDateString('id-ID', {
+                const regDate = patient.created_at ? new Date(patient.created_at).toLocaleDateString('id-ID', {
                     day: 'numeric', month: 'short', year: 'numeric'
                 }) : '-';
 
@@ -6550,7 +6550,7 @@ function mobileNavClick(btn, action) {
                         <td><code class="font-weight-bold">${patient.id}</code></td>
                         <td>${patient.full_name || '-'}</td>
                         <td>${patient.whatsapp || patient.phone || '-'}</td>
-                        <td>${lastVisit}</td>
+                        <td>${regDate}</td>
                         <td>
                             <button class="btn btn-xs btn-info" onclick="viewPatientDetail('${patient.id}')" title="Lihat Detail">
                                 <i class="fas fa-eye"></i>
