@@ -571,7 +571,7 @@
 
             grid.innerHTML = articles.map(article => {
                 const color = article.color || '#28a7e9';
-                const icon = article.icon || 'fa-book';
+                const icon = article.icon || 'fa-book-reader';
                 const dateStr = formatDate(article.created_at);
                 const source = article.source || 'dokterDIBYA';
 
@@ -633,7 +633,7 @@
 
                 const article = result.data;
                 const color = article.color || '#28a7e9';
-                const icon = article.icon || 'fa-book';
+                const icon = article.icon || 'fa-book-reader';
                 const dateStr = formatDate(article.updated_at || article.created_at);
 
                 // Update modal content

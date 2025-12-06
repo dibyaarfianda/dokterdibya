@@ -3621,26 +3621,16 @@
                             <h3 class="card-title"><i class="fas fa-calculator mr-2"></i>Estimasi Biaya Kontrol Kehamilan</h3>
                         </div>
                         <div class="card-body">
-                            <!-- Phase Selection -->
+                            <!-- Global Options -->
                             <div class="row mb-4">
                                 <div class="col-md-4">
                                     <div class="form-group">
-                                        <label><i class="fas fa-baby mr-1"></i> Fase Kehamilan</label>
+                                        <label><i class="fas fa-baby mr-1"></i> Trimester</label>
                                         <select class="form-control" id="estimasi-fase" onchange="updateEstimasiBiaya()">
-                                            <option value="awal">Awal (1-20 Minggu)</option>
-                                            <option value="tengah">Tengah (21-36 Minggu)</option>
-                                            <option value="akhir">Akhir (37+ Minggu)</option>
-                                            <option value="semua">Semua Fase (Full Package)</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="form-group">
-                                        <label><i class="fas fa-ultrasound mr-1"></i> Opsi USG</label>
-                                        <select class="form-control" id="estimasi-usg" onchange="updateEstimasiBiaya()">
-                                            <option value="2d">USG 2D Saja</option>
-                                            <option value="4d" selected>USG 4D (di 28 Minggu)</option>
-                                            <option value="combo">Kombinasi 2D + 4D</option>
+                                            <option value="t1">Trimester 1 (1-13 Minggu)</option>
+                                            <option value="t2">Trimester 2 (14-27 Minggu)</option>
+                                            <option value="t3">Trimester 3 (28-40 Minggu)</option>
+                                            <option value="semua">Semua Trimester (Full Package)</option>
                                         </select>
                                     </div>
                                 </div>
@@ -3657,61 +3647,105 @@
 
                             <!-- Estimation Results -->
                             <div class="row">
-                                <!-- Fase Awal -->
-                                <div class="col-lg-4 mb-3" id="estimasi-card-awal">
+                                <!-- Trimester 1 -->
+                                <div class="col-lg-4 mb-3" id="estimasi-card-t1">
                                     <div class="card bg-light h-100">
-                                        <div class="card-header bg-info text-white">
-                                            <h5 class="mb-0"><i class="fas fa-seedling mr-1"></i> Fase Awal (1-20 Minggu)</h5>
+                                        <div class="card-header bg-info text-white py-2">
+                                            <h6 class="mb-0"><i class="fas fa-seedling mr-1"></i> Trimester 1 (1-13 Minggu)</h6>
                                         </div>
                                         <div class="card-body p-2">
-                                            <table class="table table-sm table-borderless mb-0" id="tabel-estimasi-awal">
-                                                <!-- Filled by JS -->
+                                            <div class="mb-2">
+                                                <label class="small font-weight-bold mb-1"><i class="fas fa-pills mr-1"></i> Obat:</label>
+                                                <select class="form-control form-control-sm" id="t1-obat" onchange="updateEstimasiBiaya()">
+                                                    <option value="none">Tanpa Obat</option>
+                                                    <option value="cost">Cost-Effective</option>
+                                                    <option value="premium">Premium</option>
+                                                </select>
+                                            </div>
+                                            <hr class="my-2">
+                                            <table class="table table-sm table-borderless mb-0" id="tabel-estimasi-t1">
                                             </table>
                                         </div>
-                                        <div class="card-footer bg-info text-white">
-                                            <div class="d-flex justify-content-between">
-                                                <strong>Subtotal:</strong>
-                                                <strong id="subtotal-awal">Rp 0</strong>
+                                        <div class="card-footer bg-info text-white py-2">
+                                            <div class="d-flex justify-content-between mb-1">
+                                                <strong>Subtotal (~3 kontrol):</strong>
+                                                <strong id="subtotal-t1">Rp 0</strong>
+                                            </div>
+                                            <div class="d-flex justify-content-between small" style="opacity: 0.9;">
+                                                <span>Est. 1x kontrol:</span>
+                                                <span id="perkontrol-t1">Rp 0</span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Fase Tengah -->
-                                <div class="col-lg-4 mb-3" id="estimasi-card-tengah">
+                                <!-- Trimester 2 -->
+                                <div class="col-lg-4 mb-3" id="estimasi-card-t2">
                                     <div class="card bg-light h-100">
-                                        <div class="card-header bg-warning text-dark">
-                                            <h5 class="mb-0"><i class="fas fa-baby mr-1"></i> Fase Tengah (21-36 Minggu)</h5>
+                                        <div class="card-header bg-warning text-dark py-2">
+                                            <h6 class="mb-0"><i class="fas fa-baby mr-1"></i> Trimester 2 (14-27 Minggu)</h6>
                                         </div>
                                         <div class="card-body p-2">
-                                            <table class="table table-sm table-borderless mb-0" id="tabel-estimasi-tengah">
-                                                <!-- Filled by JS -->
+                                            <div class="custom-control custom-switch mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="t2-skrining" onchange="updateEstimasiBiaya()">
+                                                <label class="custom-control-label small" for="t2-skrining">USG Skrining Kelainan (20-24mg)</label>
+                                            </div>
+                                            <div class="mb-2">
+                                                <label class="small font-weight-bold mb-1"><i class="fas fa-pills mr-1"></i> Obat:</label>
+                                                <select class="form-control form-control-sm" id="t2-obat" onchange="updateEstimasiBiaya()">
+                                                    <option value="none">Tanpa Obat</option>
+                                                    <option value="cost">Cost-Effective</option>
+                                                    <option value="premium">Premium</option>
+                                                </select>
+                                            </div>
+                                            <hr class="my-2">
+                                            <table class="table table-sm table-borderless mb-0" id="tabel-estimasi-t2">
                                             </table>
                                         </div>
-                                        <div class="card-footer bg-warning text-dark">
-                                            <div class="d-flex justify-content-between">
-                                                <strong>Subtotal:</strong>
-                                                <strong id="subtotal-tengah">Rp 0</strong>
+                                        <div class="card-footer bg-warning text-dark py-2">
+                                            <div class="d-flex justify-content-between mb-1">
+                                                <strong>Subtotal (~4 kontrol):</strong>
+                                                <strong id="subtotal-t2">Rp 0</strong>
+                                            </div>
+                                            <div class="d-flex justify-content-between small" style="opacity: 0.85;">
+                                                <span>Est. 1x kontrol:</span>
+                                                <span id="perkontrol-t2">Rp 0</span>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Fase Akhir -->
-                                <div class="col-lg-4 mb-3" id="estimasi-card-akhir">
+                                <!-- Trimester 3 -->
+                                <div class="col-lg-4 mb-3" id="estimasi-card-t3">
                                     <div class="card bg-light h-100">
-                                        <div class="card-header bg-success text-white">
-                                            <h5 class="mb-0"><i class="fas fa-heart mr-1"></i> Fase Akhir (37+ Minggu)</h5>
+                                        <div class="card-header bg-success text-white py-2">
+                                            <h6 class="mb-0"><i class="fas fa-heart mr-1"></i> Trimester 3 (28-40 Minggu)</h6>
                                         </div>
                                         <div class="card-body p-2">
-                                            <table class="table table-sm table-borderless mb-0" id="tabel-estimasi-akhir">
-                                                <!-- Filled by JS -->
+                                            <div class="custom-control custom-switch mb-2">
+                                                <input type="checkbox" class="custom-control-input" id="t3-4d" onchange="updateEstimasiBiaya()">
+                                                <label class="custom-control-label small" for="t3-4d">USG 4D (28 Minggu)</label>
+                                            </div>
+                                            <div class="mb-2">
+                                                <label class="small font-weight-bold mb-1"><i class="fas fa-pills mr-1"></i> Obat:</label>
+                                                <select class="form-control form-control-sm" id="t3-obat" onchange="updateEstimasiBiaya()">
+                                                    <option value="none">Tanpa Obat</option>
+                                                    <option value="cost">Cost-Effective</option>
+                                                    <option value="premium">Premium</option>
+                                                </select>
+                                            </div>
+                                            <hr class="my-2">
+                                            <table class="table table-sm table-borderless mb-0" id="tabel-estimasi-t3">
                                             </table>
                                         </div>
-                                        <div class="card-footer bg-success text-white">
-                                            <div class="d-flex justify-content-between">
-                                                <strong>Subtotal:</strong>
-                                                <strong id="subtotal-akhir">Rp 0</strong>
+                                        <div class="card-footer bg-success text-white py-2">
+                                            <div class="d-flex justify-content-between mb-1">
+                                                <strong>Subtotal (~7 kontrol):</strong>
+                                                <strong id="subtotal-t3">Rp 0</strong>
+                                            </div>
+                                            <div class="d-flex justify-content-between small" style="opacity: 0.9;">
+                                                <span>Est. 1x kontrol:</span>
+                                                <span id="perkontrol-t3">Rp 0</span>
                                             </div>
                                         </div>
                                     </div>
@@ -3737,9 +3771,10 @@
                             <div class="alert alert-info mt-3 mb-0">
                                 <h6><i class="fas fa-info-circle mr-1"></i> Catatan:</h6>
                                 <ul class="mb-0 pl-3">
+                                    <li>USG skrining kelainan janin <strong>18-23 minggu</strong></li>
                                     <li>USG 4D direkomendasikan di usia kehamilan <strong>28 minggu</strong> untuk melihat wajah janin dengan jelas</li>
-                                    <li>Frekuensi kontrol: Awal (1x/bulan), Tengah (2x/bulan), Akhir (1x/minggu)</li>
-                                    <li>Biaya tidak termasuk obat/vitamin dan pemeriksaan tambahan</li>
+                                    <li>Frekuensi kontrol: Awal (1x/bulan) 4-27 mgg, Tengah (2x/bulan) 28-36 mgg, Akhir (1x/minggu) 37-40 mgg</li>
+                                    <li>Biaya estimasi total disesuai kontrol dengan atau tanpa obat/vitamin dan pemeriksaan tambahan</li>
                                     <li>Harga dapat berubah sewaktu-waktu</li>
                                 </ul>
                             </div>

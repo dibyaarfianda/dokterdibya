@@ -976,68 +976,140 @@ function showEstimasiBiayaPage() {
 
 // Pricing data based on actual tindakan table
 const ESTIMASI_HARGA = {
+    // Tindakan
     admin: 5000,           // S01 - Biaya Admin
-    konsultasi: 70000,     // S40 - Konsultasi
     bukuANC: 25000,        // S03 - Buku Kontrol
-    bukuLengkap: 50000,    // S04 - Buku Panduan Lengkap & ANC
+    tvs: 150000,           // TVS (Transvaginal Sonography)
     usg2d: 110000,         // S06 - USG 2 Dimensi
     usg4d: 200000,         // S09 - USG 4 Dimensi
-    usgKelainan: 300000,   // S07 - USG Kelainan Janin (18-23 minggu)
+    usgKelainan: 300000,   // S07 - USG Kelainan Janin (20-24 minggu)
     usg2dKembar: 200000,   // S10 - USG 2D Janin Kembar
     usg4dKembar: 400000,   // S11 - USG 4D Janin Kembar
     labT1: 200000,         // S30 - Paket T1 (Hb, GDA, Gol Darah, Rhesus, PPIA)
     labT3: 70000,          // S31 - Paket T3 (Hb, GDA)
     ctgNst: 50000,         // S05 - Rekam Jantung Janin (NST/CTG)
-    vaginalTouche: 30000,  // S13 - Pemeriksaan Dalam
-    tesLakmus: 30000       // S41 - Tes Lakmus
+    strippingMembrane: 150000, // Stripping of Membrane
+
+    // Obat T1 Cost-Effective
+    t1CostFolamilGenio: 85000,    // Folamil Genio 30 tablet
+
+    // Obat T1 Premium
+    t1PremOndavell: 150000,       // Ondavell 1x1 pagi
+    t1PremElevit: 280000,         // Elevit Pronatal 30 tablet
+    t1PremMaltofer: 180000,       // Maltofer Fol 30 tablet
+
+    // Obat T2 Cost-Effective (20-34 minggu)
+    t2CostFolamilGold: 95000,     // Folamil Gold 30 tablet
+    t2CostFormicalB: 65000,       // Formical B 30 tablet
+
+    // Obat T2 Premium (<20 minggu)
+    t2PremElevit: 280000,         // Elevit Pronatal 30 tablet
+    t2PremMaltofer: 180000,       // Maltofer Fol 30 tablet
+
+    // Obat T2 Premium (>20 minggu)
+    t2Prem20Elevit: 280000,       // Elevit Pronatal 30 tablet
+    t2Prem20Prolacta: 320000,     // Prolacta for Mother 30 softgel
+    t2Prem20Maltofer: 180000,     // Maltofer Fol 30 tablet
+    t2Prem20Ossoral: 150000,      // Ossoral 200 30 tablet
+
+    // Obat T3 Cost-Effective (34-menyusui)
+    t3CostDomavit: 75000,         // Domavit 60 tablet (2x1)
+    t3CostFolamilGold: 95000,     // Folamil Gold 30 tablet
+    t3CostFormicalB: 65000,       // Formical B 30 tablet
+
+    // Obat T3 Premium (sama dengan T2 >20mg)
+    t3PremElevit: 280000,
+    t3PremProlacta: 320000,
+    t3PremMaltofer: 180000,
+    t3PremOssoral: 150000
 };
 
 function updateEstimasiBiaya() {
-    const fase = document.getElementById('estimasi-fase')?.value || 'semua';
-    const usgOption = document.getElementById('estimasi-usg')?.value || '4d';
+    const trimester = document.getElementById('estimasi-fase')?.value || 'semua';
     const tipe = document.getElementById('estimasi-tipe')?.value || 'tunggal';
+
+    // Get options
+    const t1Obat = document.getElementById('t1-obat')?.value || 'none';
+    const t2Skrining = document.getElementById('t2-skrining')?.checked || false;
+    const t2Obat = document.getElementById('t2-obat')?.value || 'none';
+    const t3Dengan4D = document.getElementById('t3-4d')?.checked || false;
+    const t3Obat = document.getElementById('t3-obat')?.value || 'none';
 
     const isKembar = tipe === 'kembar';
     const usg2dPrice = isKembar ? ESTIMASI_HARGA.usg2dKembar : ESTIMASI_HARGA.usg2d;
     const usg4dPrice = isKembar ? ESTIMASI_HARGA.usg4dKembar : ESTIMASI_HARGA.usg4d;
 
-    // Fase Awal (1-20 minggu): ~5 kunjungan
-    const awalItems = [
-        { nama: 'Konsultasi', harga: ESTIMASI_HARGA.konsultasi, qty: 5 },
-        { nama: 'Biaya Admin', harga: ESTIMASI_HARGA.admin, qty: 5 },
+    // Trimester 1 (1-13 minggu): ~3 kunjungan
+    const t1Items = [
+        { nama: 'Biaya Admin', harga: ESTIMASI_HARGA.admin, qty: 3 },
         { nama: 'Buku ANC', harga: ESTIMASI_HARGA.bukuANC, qty: 1 },
-        { nama: usgOption === '2d' ? 'USG 2D' : 'USG 2D', harga: usg2dPrice, qty: usgOption === '4d' ? 2 : 3 },
-        { nama: 'Lab Paket T1', harga: ESTIMASI_HARGA.labT1, qty: 1 },
-        { nama: 'USG Kelainan (18-23mg)', harga: ESTIMASI_HARGA.usgKelainan, qty: 1 }
+        { nama: 'TVS', harga: ESTIMASI_HARGA.tvs, qty: 1 },
+        { nama: 'USG 2D', harga: usg2dPrice, qty: 2 },
+        { nama: 'Lab Paket T1', harga: ESTIMASI_HARGA.labT1, qty: 1 }
     ];
 
-    // Fase Tengah (21-36 minggu): ~8 kunjungan, USG 4D di minggu 28
-    const tengahItems = [
-        { nama: 'Konsultasi', harga: ESTIMASI_HARGA.konsultasi, qty: 8 },
+    // Add T1 medications (x3 untuk T1)
+    if (t1Obat === 'cost') {
+        t1Items.push({ nama: 'Folamil Genio (30 tab)', harga: ESTIMASI_HARGA.t1CostFolamilGenio, qty: 3 });
+    } else if (t1Obat === 'premium') {
+        t1Items.push({ nama: 'Ondavell', harga: ESTIMASI_HARGA.t1PremOndavell, qty: 3 });
+        t1Items.push({ nama: 'Elevit Pronatal (30 tab)', harga: ESTIMASI_HARGA.t1PremElevit, qty: 3 });
+        t1Items.push({ nama: 'Maltofer Fol (30 tab)', harga: ESTIMASI_HARGA.t1PremMaltofer, qty: 3 });
+    }
+
+    // Trimester 2 (14-27 minggu): ~5 kunjungan
+    // USG 2D: 3x jika tanpa skrining, 2x jika dengan skrining
+    const t2Usg2dQty = t2Skrining ? 2 : 3;
+    const t2Items = [
+        { nama: 'Biaya Admin', harga: ESTIMASI_HARGA.admin, qty: 5 },
+        { nama: 'USG 2D', harga: usg2dPrice, qty: t2Usg2dQty }
+    ];
+
+    // Add USG Skrining if checked
+    if (t2Skrining) {
+        t2Items.push({ nama: 'USG Skrining Kelainan (20-24mg)', harga: ESTIMASI_HARGA.usgKelainan, qty: 1 });
+    }
+
+    // Add T2 medications (x3 untuk T2)
+    if (t2Obat === 'cost') {
+        t2Items.push({ nama: 'Folamil Gold (30 tab)', harga: ESTIMASI_HARGA.t2CostFolamilGold, qty: 3 });
+        t2Items.push({ nama: 'Formical B (30 tab)', harga: ESTIMASI_HARGA.t2CostFormicalB, qty: 3 });
+    } else if (t2Obat === 'premium') {
+        // Premium untuk >20 minggu (mayoritas T2)
+        t2Items.push({ nama: 'Elevit Pronatal (30 tab)', harga: ESTIMASI_HARGA.t2Prem20Elevit, qty: 3 });
+        t2Items.push({ nama: 'Prolacta for Mother (30 softgel)', harga: ESTIMASI_HARGA.t2Prem20Prolacta, qty: 3 });
+        t2Items.push({ nama: 'Maltofer Fol (30 tab)', harga: ESTIMASI_HARGA.t2Prem20Maltofer, qty: 3 });
+        t2Items.push({ nama: 'Ossoral 200 (30 tab)', harga: ESTIMASI_HARGA.t2Prem20Ossoral, qty: 3 });
+    }
+
+    // Trimester 3 (28-40 minggu): ~8 kunjungan
+    const t3Items = [
         { nama: 'Biaya Admin', harga: ESTIMASI_HARGA.admin, qty: 8 }
     ];
 
-    if (usgOption === '2d') {
-        tengahItems.push({ nama: 'USG 2D', harga: usg2dPrice, qty: 4 });
-    } else if (usgOption === '4d') {
-        tengahItems.push({ nama: 'USG 2D', harga: usg2dPrice, qty: 2 });
-        tengahItems.push({ nama: 'USG 4D (28 minggu)', harga: usg4dPrice, qty: 1 });
+    // USG options
+    if (t3Dengan4D) {
+        t3Items.push({ nama: 'USG 2D', harga: usg2dPrice, qty: 3 });
+        t3Items.push({ nama: 'USG 4D (28 minggu)', harga: usg4dPrice, qty: 1 });
     } else {
-        tengahItems.push({ nama: 'USG 2D', harga: usg2dPrice, qty: 2 });
-        tengahItems.push({ nama: 'USG 4D (28 minggu)', harga: usg4dPrice, qty: 1 });
+        t3Items.push({ nama: 'USG 2D', harga: usg2dPrice, qty: 4 });
     }
 
-    tengahItems.push({ nama: 'Lab Paket T3', harga: ESTIMASI_HARGA.labT3, qty: 1 });
-    tengahItems.push({ nama: 'CTG/NST', harga: ESTIMASI_HARGA.ctgNst, qty: 2 });
+    t3Items.push({ nama: 'Lab Paket T3', harga: ESTIMASI_HARGA.labT3, qty: 1 });
+    t3Items.push({ nama: 'CTG/NST', harga: ESTIMASI_HARGA.ctgNst, qty: 2 });
+    t3Items.push({ nama: 'Stripping of Membrane', harga: ESTIMASI_HARGA.strippingMembrane, qty: 2 });
 
-    // Fase Akhir (37+ minggu): ~4 kunjungan
-    const akhirItems = [
-        { nama: 'Konsultasi', harga: ESTIMASI_HARGA.konsultasi, qty: 4 },
-        { nama: 'Biaya Admin', harga: ESTIMASI_HARGA.admin, qty: 4 },
-        { nama: 'USG 2D', harga: usg2dPrice, qty: 2 },
-        { nama: 'CTG/NST', harga: ESTIMASI_HARGA.ctgNst, qty: 4 },
-        { nama: 'Pemeriksaan Dalam', harga: ESTIMASI_HARGA.vaginalTouche, qty: 2 }
-    ];
+    // Add T3 medications (x3 untuk T3)
+    if (t3Obat === 'cost') {
+        t3Items.push({ nama: 'Domavit (60 tab 3x1) 36mg-menyusui', harga: ESTIMASI_HARGA.t3CostDomavit, qty: 3 });
+        t3Items.push({ nama: 'Folamil Gold (30 tab)', harga: ESTIMASI_HARGA.t3CostFolamilGold, qty: 3 });
+        t3Items.push({ nama: 'Formical B (30 tab)', harga: ESTIMASI_HARGA.t3CostFormicalB, qty: 3 });
+    } else if (t3Obat === 'premium') {
+        t3Items.push({ nama: 'Elevit Pronatal (30 tab)', harga: ESTIMASI_HARGA.t3PremElevit, qty: 3 });
+        t3Items.push({ nama: 'Prolacta for Mother (30 softgel)', harga: ESTIMASI_HARGA.t3PremProlacta, qty: 3 });
+        t3Items.push({ nama: 'Maltofer Fol (30 tab)', harga: ESTIMASI_HARGA.t3PremMaltofer, qty: 3 });
+        t3Items.push({ nama: 'Ossoral 200 (30 tab)', harga: ESTIMASI_HARGA.t3PremOssoral, qty: 3 });
+    }
 
     // Render tables
     const renderTable = (items, tableId) => {
@@ -1052,9 +1124,9 @@ function updateEstimasiBiaya() {
             subtotal += total;
             html += `
                 <tr>
-                    <td style="font-size: 12px;">${item.nama}</td>
-                    <td class="text-right text-nowrap" style="font-size: 11px;">
-                        ${formatRupiah(item.harga)} x${item.qty}
+                    <td style="font-size: 11px;">${item.nama}</td>
+                    <td class="text-right text-nowrap" style="font-size: 10px;">
+                        ${formatRupiah(item.harga)}${item.qty > 1 ? ' x' + item.qty : ''}
                     </td>
                 </tr>
             `;
@@ -1064,39 +1136,42 @@ function updateEstimasiBiaya() {
         return subtotal;
     };
 
-    // Show/hide cards based on phase selection
-    const cardAwal = document.getElementById('estimasi-card-awal');
-    const cardTengah = document.getElementById('estimasi-card-tengah');
-    const cardAkhir = document.getElementById('estimasi-card-akhir');
+    // Show/hide cards based on trimester selection
+    const cardT1 = document.getElementById('estimasi-card-t1');
+    const cardT2 = document.getElementById('estimasi-card-t2');
+    const cardT3 = document.getElementById('estimasi-card-t3');
 
-    let subtotalAwal = 0, subtotalTengah = 0, subtotalAkhir = 0;
+    let subtotalT1 = 0, subtotalT2 = 0, subtotalT3 = 0;
 
-    if (fase === 'awal' || fase === 'semua') {
-        cardAwal?.classList.remove('d-none');
-        subtotalAwal = renderTable(awalItems, 'tabel-estimasi-awal');
-        document.getElementById('subtotal-awal').textContent = formatRupiah(subtotalAwal);
+    if (trimester === 't1' || trimester === 'semua') {
+        cardT1?.classList.remove('d-none');
+        subtotalT1 = renderTable(t1Items, 'tabel-estimasi-t1');
+        document.getElementById('subtotal-t1').textContent = formatRupiah(subtotalT1);
+        document.getElementById('perkontrol-t1').textContent = formatRupiah(Math.round(subtotalT1 / 3));
     } else {
-        cardAwal?.classList.add('d-none');
+        cardT1?.classList.add('d-none');
     }
 
-    if (fase === 'tengah' || fase === 'semua') {
-        cardTengah?.classList.remove('d-none');
-        subtotalTengah = renderTable(tengahItems, 'tabel-estimasi-tengah');
-        document.getElementById('subtotal-tengah').textContent = formatRupiah(subtotalTengah);
+    if (trimester === 't2' || trimester === 'semua') {
+        cardT2?.classList.remove('d-none');
+        subtotalT2 = renderTable(t2Items, 'tabel-estimasi-t2');
+        document.getElementById('subtotal-t2').textContent = formatRupiah(subtotalT2);
+        document.getElementById('perkontrol-t2').textContent = formatRupiah(Math.round(subtotalT2 / 4));
     } else {
-        cardTengah?.classList.add('d-none');
+        cardT2?.classList.add('d-none');
     }
 
-    if (fase === 'akhir' || fase === 'semua') {
-        cardAkhir?.classList.remove('d-none');
-        subtotalAkhir = renderTable(akhirItems, 'tabel-estimasi-akhir');
-        document.getElementById('subtotal-akhir').textContent = formatRupiah(subtotalAkhir);
+    if (trimester === 't3' || trimester === 'semua') {
+        cardT3?.classList.remove('d-none');
+        subtotalT3 = renderTable(t3Items, 'tabel-estimasi-t3');
+        document.getElementById('subtotal-t3').textContent = formatRupiah(subtotalT3);
+        document.getElementById('perkontrol-t3').textContent = formatRupiah(Math.round(subtotalT3 / 7));
     } else {
-        cardAkhir?.classList.add('d-none');
+        cardT3?.classList.add('d-none');
     }
 
     // Total
-    const total = subtotalAwal + subtotalTengah + subtotalAkhir;
+    const total = subtotalT1 + subtotalT2 + subtotalT3;
     document.getElementById('total-estimasi').textContent = formatRupiah(total);
 }
 
