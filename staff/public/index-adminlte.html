@@ -1538,41 +1538,38 @@
             <div class="container-fluid">
                 <!-- DASHBOARD PAGE -->
                 <div id="dashboard-page">
-                    <!-- Welcome Card -->
+                    <!-- Welcome Card with Registration Code -->
                     <div class="row mb-3">
                         <div class="col-12">
                             <div class="card" id="welcome-card" style="border: none; border-radius: 12px; background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%); box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);">
                                 <div class="card-body py-4 px-4">
-                                    <p class="mb-1" style="font-size: 13px; letter-spacing: 1px; color: #6c757d;">SELAMAT DATANG DI</p>
-                                    <h3 class="font-weight-bold mb-3" style="font-size: 1.75rem; color: #343a40;">dokter<span style="color: #007BFF;">DIBYA</span></h3>
-                                    <h5 class="mb-4" id="welcome-greeting" style="color: #495057;">
-                                        Halo, <span id="welcome-name" class="font-weight-bold" style="color: #212529;"></span>
-                                    </h5>
-                                    <div id="welcome-jobdesk">
-                                        <div id="roles-description-list">
-                                            <!-- Role descriptions will be inserted here -->
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <!-- Left: Welcome Message -->
+                                        <div class="flex-grow-1">
+                                            <p class="mb-1" style="font-size: 13px; letter-spacing: 1px; color: #6c757d;">SELAMAT DATANG DI</p>
+                                            <h3 class="font-weight-bold mb-3" style="font-size: 1.75rem; color: #343a40;">dokter<span style="color: #007BFF;">DIBYA</span></h3>
+                                            <h5 class="mb-4" id="welcome-greeting" style="color: #495057;">
+                                                Halo, <span id="welcome-name" class="font-weight-bold" style="color: #212529;"></span>
+                                            </h5>
+                                            <div id="welcome-jobdesk">
+                                                <div id="roles-description-list">
+                                                    <!-- Role descriptions will be inserted here -->
+                                                </div>
+                                            </div>
+                                            <p class="mt-4 mb-0" id="daily-greeting" style="font-size: 17px; color: #343a40; font-weight: 500; line-height: 1.5;">
+                                                Selamat bekerja, semoga harimu menyenangkan!
+                                            </p>
+                                        </div>
+                                        <!-- Right: Registration Code -->
+                                        <div class="text-center ml-4" style="min-width: 180px;">
+                                            <div class="bg-primary text-white rounded p-3 mb-2" style="font-size: 24px; font-weight: 700; letter-spacing: 3px; font-family: monospace;" id="dashboard-current-code">
+                                                ------
+                                            </div>
+                                            <button class="btn btn-outline-primary btn-sm" onclick="openGenerateCodeModal()">
+                                                <i class="fas fa-sync-alt mr-1"></i> Generate Kode
+                                            </button>
                                         </div>
                                     </div>
-                                    <p class="mt-4 mb-0" id="daily-greeting" style="font-size: 17px; color: #343a40; font-weight: 500; line-height: 1.5;">
-                                        Selamat bekerja, semoga harimu menyenangkan!
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Registration Code Quick Access -->
-                    <div class="row mb-3">
-                        <div class="col-12">
-                            <div class="card bg-gradient-primary">
-                                <div class="card-body d-flex justify-content-between align-items-center py-3">
-                                    <div>
-                                        <h5 class="mb-1 text-white"><i class="fas fa-key mr-2"></i>Kode Registrasi Pasien</h5>
-                                        <p class="mb-0 text-white-50" id="dashboard-current-code">Klik untuk generate kode baru</p>
-                                    </div>
-                                    <button class="btn btn-light btn-lg" onclick="openGenerateCodeModal()">
-                                        <i class="fas fa-plus-circle mr-1"></i> Generate Kode
-                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -9480,8 +9477,7 @@ async function generatePublicCode() {
 function updateDashboardCodeDisplay(code, expiresAt) {
     const el = document.getElementById('dashboard-current-code');
     if (el && code) {
-        const expires = new Date(expiresAt);
-        el.innerHTML = `<strong style="font-size: 1.2em; letter-spacing: 2px;">${code}</strong> <small>(sampai ${expires.toLocaleString('id-ID')})</small>`;
+        el.textContent = code;
     }
 }
 
