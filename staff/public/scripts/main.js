@@ -84,6 +84,7 @@ function initPages() {
     pages.kelolaJadwal = grab('kelola-jadwal-page');
     pages.kelolaTindakan = grab('kelola-tindakan-page');
     pages.kelolaObatManagement = grab('kelola-obat-management-page');
+    pages.estimasiBiaya = grab('estimasi-biaya-page');
     pages.financeAnalysis = grab('finance-analysis-page');
     pages.kelolaRoles = grab('kelola-roles-page');
     pages.bookingSettings = grab('booking-settings-page');
@@ -962,6 +963,147 @@ function showKelolaTindakanPage() {
 function showKelolaObatManagementPage() {
     showKelolaObatPage();
 }
+
+// ============================================
+// ESTIMASI BIAYA KEHAMILAN
+// ============================================
+function showEstimasiBiayaPage() {
+    hideAllPages();
+    pages.estimasiBiaya?.classList.remove('d-none');
+    setTitleAndActive('Estimasi Biaya', 'nav-estimasi-biaya', 'estimasi-biaya');
+    updateEstimasiBiaya();
+}
+
+// Pricing data based on actual tindakan table
+const ESTIMASI_HARGA = {
+    admin: 5000,           // S01 - Biaya Admin
+    konsultasi: 70000,     // S40 - Konsultasi
+    bukuANC: 25000,        // S03 - Buku Kontrol
+    bukuLengkap: 50000,    // S04 - Buku Panduan Lengkap & ANC
+    usg2d: 110000,         // S06 - USG 2 Dimensi
+    usg4d: 200000,         // S09 - USG 4 Dimensi
+    usgKelainan: 300000,   // S07 - USG Kelainan Janin (18-23 minggu)
+    usg2dKembar: 200000,   // S10 - USG 2D Janin Kembar
+    usg4dKembar: 400000,   // S11 - USG 4D Janin Kembar
+    labT1: 200000,         // S30 - Paket T1 (Hb, GDA, Gol Darah, Rhesus, PPIA)
+    labT3: 70000,          // S31 - Paket T3 (Hb, GDA)
+    ctgNst: 50000,         // S05 - Rekam Jantung Janin (NST/CTG)
+    vaginalTouche: 30000,  // S13 - Pemeriksaan Dalam
+    tesLakmus: 30000       // S41 - Tes Lakmus
+};
+
+function updateEstimasiBiaya() {
+    const fase = document.getElementById('estimasi-fase')?.value || 'semua';
+    const usgOption = document.getElementById('estimasi-usg')?.value || '4d';
+    const tipe = document.getElementById('estimasi-tipe')?.value || 'tunggal';
+
+    const isKembar = tipe === 'kembar';
+    const usg2dPrice = isKembar ? ESTIMASI_HARGA.usg2dKembar : ESTIMASI_HARGA.usg2d;
+    const usg4dPrice = isKembar ? ESTIMASI_HARGA.usg4dKembar : ESTIMASI_HARGA.usg4d;
+
+    // Fase Awal (1-20 minggu): ~5 kunjungan
+    const awalItems = [
+        { nama: 'Konsultasi', harga: ESTIMASI_HARGA.konsultasi, qty: 5 },
+        { nama: 'Biaya Admin', harga: ESTIMASI_HARGA.admin, qty: 5 },
+        { nama: 'Buku ANC', harga: ESTIMASI_HARGA.bukuANC, qty: 1 },
+        { nama: usgOption === '2d' ? 'USG 2D' : 'USG 2D', harga: usg2dPrice, qty: usgOption === '4d' ? 2 : 3 },
+        { nama: 'Lab Paket T1', harga: ESTIMASI_HARGA.labT1, qty: 1 },
+        { nama: 'USG Kelainan (18-23mg)', harga: ESTIMASI_HARGA.usgKelainan, qty: 1 }
+    ];
+
+    // Fase Tengah (21-36 minggu): ~8 kunjungan, USG 4D di minggu 28
+    const tengahItems = [
+        { nama: 'Konsultasi', harga: ESTIMASI_HARGA.konsultasi, qty: 8 },
+        { nama: 'Biaya Admin', harga: ESTIMASI_HARGA.admin, qty: 8 }
+    ];
+
+    if (usgOption === '2d') {
+        tengahItems.push({ nama: 'USG 2D', harga: usg2dPrice, qty: 4 });
+    } else if (usgOption === '4d') {
+        tengahItems.push({ nama: 'USG 2D', harga: usg2dPrice, qty: 2 });
+        tengahItems.push({ nama: 'USG 4D (28 minggu)', harga: usg4dPrice, qty: 1 });
+    } else {
+        tengahItems.push({ nama: 'USG 2D', harga: usg2dPrice, qty: 2 });
+        tengahItems.push({ nama: 'USG 4D (28 minggu)', harga: usg4dPrice, qty: 1 });
+    }
+
+    tengahItems.push({ nama: 'Lab Paket T3', harga: ESTIMASI_HARGA.labT3, qty: 1 });
+    tengahItems.push({ nama: 'CTG/NST', harga: ESTIMASI_HARGA.ctgNst, qty: 2 });
+
+    // Fase Akhir (37+ minggu): ~4 kunjungan
+    const akhirItems = [
+        { nama: 'Konsultasi', harga: ESTIMASI_HARGA.konsultasi, qty: 4 },
+        { nama: 'Biaya Admin', harga: ESTIMASI_HARGA.admin, qty: 4 },
+        { nama: 'USG 2D', harga: usg2dPrice, qty: 2 },
+        { nama: 'CTG/NST', harga: ESTIMASI_HARGA.ctgNst, qty: 4 },
+        { nama: 'Pemeriksaan Dalam', harga: ESTIMASI_HARGA.vaginalTouche, qty: 2 }
+    ];
+
+    // Render tables
+    const renderTable = (items, tableId) => {
+        const table = document.getElementById(tableId);
+        if (!table) return 0;
+
+        let html = '';
+        let subtotal = 0;
+
+        items.forEach(item => {
+            const total = item.harga * item.qty;
+            subtotal += total;
+            html += `
+                <tr>
+                    <td style="font-size: 12px;">${item.nama}</td>
+                    <td class="text-right text-nowrap" style="font-size: 11px;">
+                        ${formatRupiah(item.harga)} x${item.qty}
+                    </td>
+                </tr>
+            `;
+        });
+
+        table.innerHTML = html;
+        return subtotal;
+    };
+
+    // Show/hide cards based on phase selection
+    const cardAwal = document.getElementById('estimasi-card-awal');
+    const cardTengah = document.getElementById('estimasi-card-tengah');
+    const cardAkhir = document.getElementById('estimasi-card-akhir');
+
+    let subtotalAwal = 0, subtotalTengah = 0, subtotalAkhir = 0;
+
+    if (fase === 'awal' || fase === 'semua') {
+        cardAwal?.classList.remove('d-none');
+        subtotalAwal = renderTable(awalItems, 'tabel-estimasi-awal');
+        document.getElementById('subtotal-awal').textContent = formatRupiah(subtotalAwal);
+    } else {
+        cardAwal?.classList.add('d-none');
+    }
+
+    if (fase === 'tengah' || fase === 'semua') {
+        cardTengah?.classList.remove('d-none');
+        subtotalTengah = renderTable(tengahItems, 'tabel-estimasi-tengah');
+        document.getElementById('subtotal-tengah').textContent = formatRupiah(subtotalTengah);
+    } else {
+        cardTengah?.classList.add('d-none');
+    }
+
+    if (fase === 'akhir' || fase === 'semua') {
+        cardAkhir?.classList.remove('d-none');
+        subtotalAkhir = renderTable(akhirItems, 'tabel-estimasi-akhir');
+        document.getElementById('subtotal-akhir').textContent = formatRupiah(subtotalAkhir);
+    } else {
+        cardAkhir?.classList.add('d-none');
+    }
+
+    // Total
+    const total = subtotalAwal + subtotalTengah + subtotalAkhir;
+    document.getElementById('total-estimasi').textContent = formatRupiah(total);
+}
+
+function formatRupiah(amount) {
+    return 'Rp ' + amount.toLocaleString('id-ID');
+}
+
 function showKelolaPengumumanPage() {
     hideAllPages();
     pages.kelolaPengumuman?.classList.remove('d-none');
@@ -3309,6 +3451,8 @@ window.showKelolaAppointmentPage = showKelolaAppointmentPage;
 window.showKelolaJadwalPage = showKelolaJadwalPage;
 window.showKelolaTindakanPage = showKelolaTindakanPage;
 window.showKelolaObatManagementPage = showKelolaObatManagementPage;
+window.showEstimasiBiayaPage = showEstimasiBiayaPage;
+window.updateEstimasiBiaya = updateEstimasiBiaya;
 window.showFinanceAnalysisPage = showFinanceAnalysisPage;
 window.showKelolaRolesPage = showKelolaRolesPage;
 window.showStaffActivityPage = showStaffActivityPage;
