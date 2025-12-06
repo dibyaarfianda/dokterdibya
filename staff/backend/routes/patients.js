@@ -292,6 +292,9 @@ router.get('/api/patients/search/advanced', verifyToken, async (req, res) => {
             page
         } = req.query;
 
+        // Debug logging
+        console.log('[ADVANCED SEARCH] Received params:', { name, id, mr_id, email, age_min, age_max, phone, whatsapp, husband });
+
         // Build dynamic query with LEFT JOINs for MR and email
         let query = `
             SELECT DISTINCT
@@ -382,6 +385,10 @@ router.get('/api/patients/search/advanced', verifyToken, async (req, res) => {
         params.push(limitNum, offset);
 
         const [rows] = await db.query(query, params);
+
+        // Debug logging
+        console.log('[ADVANCED SEARCH] Query returned', rows.length, 'rows');
+        console.log('[ADVANCED SEARCH] Results:', rows.map(p => ({ id: p.id, name: p.full_name })));
 
         // Map and deduplicate results
         const seen = new Set();
