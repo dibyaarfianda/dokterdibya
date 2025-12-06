@@ -343,42 +343,75 @@ router.get('/with-announcements', verifyToken, async (req, res) => {
 });
 
 /**
- * GET /api/notifications/badge-counts
- * Get counts for sidebar notification badges
+ * POST /api/notifications/badge-counts
+ * Get counts for sidebar notification badges (only items newer than lastSeen)
  */
-router.get('/badge-counts', verifyToken, async (req, res) => {
+router.post('/badge-counts', verifyToken, async (req, res) => {
     try {
+        const { lastSeen = {} } = req.body;
         const counts = {
-            articleLikes: 0,
-            klinikPending: 0,
-            lowStockObat: 0
+            klinik_private: 0,
+            rsia_melinda: 0,
+            rsud_gambiran: 0,
+            rs_bhayangkara: 0,
+            artikel: 0
         };
 
-        // 1. Count article likes from last 7 days
-        const [likesResult] = await db.query(`
-            SELECT COUNT(*) as count
-            FROM article_likes
-            WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-        `);
-        counts.articleLikes = likesResult[0]?.count || 0;
-
-        // 2. Count pending Klinik Privat appointments (future dates only)
-        const [pendingResult] = await db.query(`
+        // 1. Count new Klinik Privat appointments (sunday_appointments)
+        const klinikLastSeen = lastSeen.klinik_private || '1970-01-01';
+        const [klinikResult] = await db.query(`
             SELECT COUNT(*) as count
             FROM sunday_appointments
-            WHERE status = 'pending'
-            AND appointment_date >= CURDATE()
-        `);
-        counts.klinikPending = pendingResult[0]?.count || 0;
+            WHERE appointment_date >= CURDATE()
+            AND status IN ('pending', 'confirmed')
+            AND created_at > ?
+        `, [klinikLastSeen]);
+        counts.klinik_private = klinikResult[0]?.count || 0;
 
-        // 3. Count low stock medications (stock <= min_stock)
-        const [lowStockResult] = await db.query(`
+        // 2. Count new RSIA Melinda appointments
+        const rsiaLastSeen = lastSeen.rsia_melinda || '1970-01-01';
+        const [rsiaResult] = await db.query(`
             SELECT COUNT(*) as count
-            FROM obat
-            WHERE stock <= min_stock
-            AND is_active = 1
-        `);
-        counts.lowStockObat = lowStockResult[0]?.count || 0;
+            FROM appointments
+            WHERE hospital_location = 'rsia_melinda'
+            AND appointment_date >= CURDATE()
+            AND status IN ('scheduled', 'confirmed')
+            AND created_at > ?
+        `, [rsiaLastSeen]);
+        counts.rsia_melinda = rsiaResult[0]?.count || 0;
+
+        // 3. Count new RSUD Gambiran appointments
+        const rsudLastSeen = lastSeen.rsud_gambiran || '1970-01-01';
+        const [rsudResult] = await db.query(`
+            SELECT COUNT(*) as count
+            FROM appointments
+            WHERE hospital_location = 'rsud_gambiran'
+            AND appointment_date >= CURDATE()
+            AND status IN ('scheduled', 'confirmed')
+            AND created_at > ?
+        `, [rsudLastSeen]);
+        counts.rsud_gambiran = rsudResult[0]?.count || 0;
+
+        // 4. Count new RS Bhayangkara appointments
+        const bhayangkaraLastSeen = lastSeen.rs_bhayangkara || '1970-01-01';
+        const [bhayangkaraResult] = await db.query(`
+            SELECT COUNT(*) as count
+            FROM appointments
+            WHERE hospital_location = 'rs_bhayangkara'
+            AND appointment_date >= CURDATE()
+            AND status IN ('scheduled', 'confirmed')
+            AND created_at > ?
+        `, [bhayangkaraLastSeen]);
+        counts.rs_bhayangkara = bhayangkaraResult[0]?.count || 0;
+
+        // 5. Count new article likes
+        const artikelLastSeen = lastSeen.artikel || '1970-01-01';
+        const [artikelResult] = await db.query(`
+            SELECT COUNT(*) as count
+            FROM article_likes
+            WHERE created_at > ?
+        `, [artikelLastSeen]);
+        counts.artikel = artikelResult[0]?.count || 0;
 
         res.json({
             success: true,
