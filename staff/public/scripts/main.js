@@ -481,43 +481,79 @@ function renderHospitalAppointmentsTable(appointments, hospitalName, hospitalCol
     const container = document.getElementById('hospital-appointments-container');
     if (!container) return;
 
+    // Get today's date for display
+    const today = new Date();
+    const dateLabel = today.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
     if (appointments.length === 0) {
         container.innerHTML = `
-            <div class="alert alert-info">
-                <i class="fas fa-info-circle"></i> Belum ada appointment untuk ${hospitalName}
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center" style="background: ${hospitalColor}; color: white;">
+                    <div>
+                        <h3 class="card-title mb-1"><i class="fas fa-user-plus mr-2"></i>Pasien Terjadwal</h3>
+                        <div class="text-white-50 small">${dateLabel}</div>
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <span class="badge badge-light mr-3">0 Pasien</span>
+                        <button class="btn btn-sm btn-outline-light" onclick="showHospitalAppointmentsPage('${currentHospitalLocation}')">
+                            <i class="fas fa-sync-alt mr-1"></i>Refresh
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body text-center py-5 text-muted">
+                    <i class="fas fa-calendar-times fa-2x mb-2"></i>
+                    <p class="mb-0">Belum ada pasien yang terjadwal untuk ${hospitalName}</p>
+                </div>
             </div>
         `;
         return;
     }
 
+    // Category badges
+    const categoryBadges = {
+        'obstetri': '<span class="badge badge-info">Obstetri</span>',
+        'gyn_repro': '<span class="badge badge-success">Reproduksi</span>',
+        'gyn_special': '<span class="badge badge-warning">Ginekologi</span>'
+    };
+
     const rows = appointments.map(apt => {
-        const date = new Date(apt.appointment_date);
-        const dateStr = date.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        const patientIdBadge = `<span class="badge badge-secondary">${String(apt.patient_id || '').replace(/^P/, '')}</span>`;
+
+        // Format time and session info
+        const time = apt.appointment_time ? apt.appointment_time.substring(0, 5) : '';
+        const session = apt.session_type || 'Pagi';
+        const slot = apt.slot_number ? `Slot ${apt.slot_number}` : '';
+        const infoParts = [time ? `${time} WIB` : '', session ? `${session}` : '', slot].filter(Boolean);
+        const infoLine = infoParts.length ? `<div class="small text-muted">${infoParts.join(' · ')}</div>` : '';
+
+        // Age
+        const age = apt.patient_age ? `${apt.patient_age} th` : '-';
+
+        // Category
+        const category = apt.detected_category || apt.consultation_category || apt.appointment_type || '';
+        const categoryBadge = categoryBadges[category.toLowerCase()] || `<span class="badge badge-secondary">${category || '-'}</span>`;
+
+        // Complaint
+        const complaint = apt.chief_complaint || apt.complaint || apt.notes || '-';
+
+        // Status
         const statusBadge = getStatusBadge(apt.status);
 
         return `
             <tr>
-                <td>${dateStr}</td>
-                <td>${apt.appointment_time ? apt.appointment_time.substring(0, 5) : '-'}</td>
+                <td>${patientIdBadge}</td>
                 <td>
-                    <strong>${apt.patient_name || '-'}</strong><br>
-                    <small class="text-muted">${apt.patient_id || '-'}</small>
+                    <div class="font-weight-bold">${apt.patient_name || '-'}</div>
+                    ${infoLine}
                 </td>
-                <td>${apt.detected_category || apt.appointment_type || '-'}</td>
-                <td>${apt.complaint || apt.notes || '-'}</td>
+                <td>${age}</td>
+                <td>${categoryBadge}</td>
+                <td>${complaint}</td>
                 <td>${statusBadge}</td>
-                <td>
-                    <div class="btn-group btn-group-sm">
-                        <button class="btn btn-outline-success" onclick="confirmHospitalAppointment(${apt.id})" title="Konfirmasi" ${apt.status === 'confirmed' ? 'disabled' : ''}>
-                            <i class="fas fa-check"></i>
-                        </button>
-                        <button class="btn btn-outline-primary" onclick="completeHospitalAppointment(${apt.id})" title="Selesai" ${apt.status === 'completed' ? 'disabled' : ''}>
-                            <i class="fas fa-check-double"></i>
-                        </button>
-                        <button class="btn btn-outline-danger" onclick="cancelHospitalAppointment(${apt.id})" title="Batalkan" ${apt.status === 'cancelled' ? 'disabled' : ''}>
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
+                <td class="text-center">
+                    <button type="button" class="btn btn-sm btn-primary" onclick="startHospitalExam(${apt.id}, '${apt.patient_id}', '${(apt.patient_name || '').replace(/'/g, "\\'")}')">
+                        <i class="fas fa-stethoscope mr-1"></i>Periksa
+                    </button>
                 </td>
             </tr>
         `;
@@ -525,24 +561,30 @@ function renderHospitalAppointmentsTable(appointments, hospitalName, hospitalCol
 
     container.innerHTML = `
         <div class="card">
-            <div class="card-header" style="background: ${hospitalColor}; color: white;">
-                <h3 class="card-title mb-0">
-                    <i class="fas fa-hospital mr-2"></i>
-                    Appointment ${hospitalName}
-                </h3>
+            <div class="card-header d-flex justify-content-between align-items-center" style="background: ${hospitalColor}; color: white;">
+                <div>
+                    <h3 class="card-title mb-1"><i class="fas fa-user-plus mr-2"></i>Pasien Terjadwal</h3>
+                    <div class="text-white-50 small">${dateLabel}</div>
+                </div>
+                <div class="d-flex align-items-center">
+                    <span class="badge badge-light mr-3">${appointments.length} Pasien</span>
+                    <button class="btn btn-sm btn-outline-light" onclick="showHospitalAppointmentsPage('${currentHospitalLocation}')">
+                        <i class="fas fa-sync-alt mr-1"></i>Refresh
+                    </button>
+                </div>
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover table-striped mb-0">
-                        <thead>
+                    <table class="table table-hover mb-0">
+                        <thead class="thead-light">
                             <tr>
-                                <th>Tanggal</th>
-                                <th>Jam</th>
-                                <th>Pasien</th>
-                                <th>Jenis</th>
-                                <th>Keluhan</th>
-                                <th>Status</th>
-                                <th>Aksi</th>
+                                <th style="width: 8%;">ID</th>
+                                <th style="width: 25%;">Nama Pasien</th>
+                                <th style="width: 8%;">Usia</th>
+                                <th style="width: 12%;">Kategori</th>
+                                <th style="width: 25%;">Alasan Kontrol</th>
+                                <th style="width: 12%;">Status</th>
+                                <th style="width: 10%;" class="text-center">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -553,6 +595,12 @@ function renderHospitalAppointmentsTable(appointments, hospitalName, hospitalCol
             </div>
         </div>
     `;
+}
+
+// Start hospital examination - navigate to sunday-clinic with patient info
+function startHospitalExam(appointmentId, patientId, patientName) {
+    // Navigate to sunday-clinic page with patient info
+    window.location.href = `sunday-clinic.html?patient=${patientId}&appointment=${appointmentId}&location=${currentHospitalLocation}`;
 }
 
 function getStatusBadge(status) {
@@ -3085,3 +3133,4 @@ window.startPatientVisit = startPatientVisit;
 window.confirmHospitalAppointment = confirmHospitalAppointment;
 window.completeHospitalAppointment = completeHospitalAppointment;
 window.cancelHospitalAppointment = cancelHospitalAppointment;
+window.startHospitalExam = startHospitalExam;
