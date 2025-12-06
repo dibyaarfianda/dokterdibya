@@ -61,21 +61,39 @@ router.get('/hospital/:location', verifyToken, requirePermission('booking.view')
     try {
         const { location } = req.params;
 
-        // Get appointments for this hospital, upcoming first
+        // Get appointments for this hospital with patient age, upcoming first
         const [rows] = await pool.query(`
             SELECT
-                id, patient_id, patient_name, hospital_location, appointment_date,
-                appointment_time, appointment_type, location, notes, complaint,
-                detected_category, status, created_at
-            FROM appointments
-            WHERE hospital_location = ?
-            AND appointment_date >= CURDATE()
-            ORDER BY appointment_date ASC, appointment_time ASC
+                a.id, a.patient_id, a.patient_name, a.hospital_location, a.appointment_date,
+                a.appointment_time, a.appointment_type, a.location, a.notes, a.complaint,
+                a.detected_category, a.status, a.created_at,
+                p.age as patient_age,
+                p.birth_date as patient_birth_date
+            FROM appointments a
+            LEFT JOIN patients p ON a.patient_id = p.id
+            WHERE a.hospital_location = ?
+            AND a.appointment_date >= CURDATE()
+            ORDER BY a.appointment_date ASC, a.appointment_time ASC
         `, [location]);
+
+        // Calculate age from birth_date if age is not available
+        const appointmentsWithAge = rows.map(apt => {
+            if (!apt.patient_age && apt.patient_birth_date) {
+                const today = new Date();
+                const birthDate = new Date(apt.patient_birth_date);
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const monthDiff = today.getMonth() - birthDate.getMonth();
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+                apt.patient_age = age >= 0 ? age : null;
+            }
+            return apt;
+        });
 
         res.json({
             success: true,
-            appointments: rows
+            appointments: appointmentsWithAge
         });
     } catch (error) {
         console.error('Error fetching hospital appointments:', error);
