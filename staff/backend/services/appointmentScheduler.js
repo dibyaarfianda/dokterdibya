@@ -137,11 +137,138 @@ async function findAndCompleteAppointmentByBilling(patientId, billingDate) {
 }
 
 /**
+ * Generate a unique 6-character alphanumeric code
+ */
+function generateCode() {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // Removed I, O, 0, 1 for clarity
+    let code = '';
+    for (let i = 0; i < 6; i++) {
+        code += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return code;
+}
+
+/**
+ * Auto-generate public registration code at midnight WIB
+ * Runs daily at 00:00 WIB (17:00 UTC)
+ */
+function startPublicCodeScheduler() {
+    // Run at 17:00 UTC = 00:00 WIB (midnight)
+    cron.schedule('0 17 * * *', async () => {
+        try {
+            logger.info('[Scheduler] Running auto-generate public code job...');
+
+            // Invalidate all previous public codes
+            await db.query(
+                `UPDATE registration_codes SET status = 'expired' WHERE is_public = 1 AND status = 'active'`
+            );
+
+            // Generate unique code
+            let code;
+            let isUnique = false;
+            let attempts = 0;
+
+            while (!isUnique && attempts < 10) {
+                code = generateCode();
+                const [existing] = await db.query(
+                    'SELECT id FROM registration_codes WHERE code = ?',
+                    [code]
+                );
+                if (existing.length === 0) {
+                    isUnique = true;
+                }
+                attempts++;
+            }
+
+            if (!isUnique) {
+                logger.error('[Scheduler] Failed to generate unique public code after 10 attempts');
+                return;
+            }
+
+            // Set expiration to 24 hours from now
+            const expiresAt = new Date();
+            expiresAt.setHours(expiresAt.getHours() + 24);
+
+            // Insert public code
+            await db.query(
+                `INSERT INTO registration_codes (code, is_public, created_by, expires_at)
+                 VALUES (?, 1, ?, ?)`,
+                [code, 'system-scheduler', expiresAt]
+            );
+
+            logger.info('[Scheduler] Auto-generated public registration code', {
+                code,
+                expiresAt: expiresAt.toISOString()
+            });
+
+        } catch (error) {
+            logger.error('[Scheduler] Error in auto-generate public code job:', error);
+        }
+    });
+
+    logger.info('[Scheduler] Public code auto-generation scheduler started (runs daily at 00:00 WIB)');
+}
+
+/**
+ * Manually trigger public code generation (for testing)
+ */
+async function generatePublicCodeNow() {
+    try {
+        logger.info('[Scheduler] Manual public code generation triggered...');
+
+        // Invalidate all previous public codes
+        await db.query(
+            `UPDATE registration_codes SET status = 'expired' WHERE is_public = 1 AND status = 'active'`
+        );
+
+        // Generate unique code
+        let code;
+        let isUnique = false;
+        let attempts = 0;
+
+        while (!isUnique && attempts < 10) {
+            code = generateCode();
+            const [existing] = await db.query(
+                'SELECT id FROM registration_codes WHERE code = ?',
+                [code]
+            );
+            if (existing.length === 0) {
+                isUnique = true;
+            }
+            attempts++;
+        }
+
+        if (!isUnique) {
+            throw new Error('Failed to generate unique code');
+        }
+
+        // Set expiration to 24 hours from now
+        const expiresAt = new Date();
+        expiresAt.setHours(expiresAt.getHours() + 24);
+
+        // Insert public code
+        await db.query(
+            `INSERT INTO registration_codes (code, is_public, created_by, expires_at)
+             VALUES (?, 1, ?, ?)`,
+            [code, 'system-scheduler', expiresAt]
+        );
+
+        logger.info('[Scheduler] Manual public code generated', { code, expiresAt });
+        return { success: true, code, expiresAt };
+
+    } catch (error) {
+        logger.error('[Scheduler] Error in manual public code generation:', error);
+        throw error;
+    }
+}
+
+/**
  * Initialize all schedulers
  */
 function initSchedulers() {
     logger.info('[Scheduler] Initializing appointment schedulers...');
     startAutoConfirmScheduler();
+    startPublicCodeScheduler();
     logger.info('[Scheduler] All appointment schedulers initialized');
 }
 
@@ -149,5 +276,6 @@ module.exports = {
     initSchedulers,
     autoCompleteOnPayment,
     findAndCompleteAppointmentByBilling,
+    generatePublicCodeNow,
     AUTO_CONFIRM_LOCATIONS
 };

@@ -97,6 +97,7 @@ function initPages() {
     pages.importFields = grab('import-fields-page');
     pages.notifications = grab('notifications-page');
     pages.artikelKesehatan = grab('artikel-kesehatan-page');
+    pages.penjualanObat = grab('penjualan-obat-page');
 }
 function loadExternalPage(containerId, htmlFile, options = {}) {
     const { forceReload = false } = options;
@@ -1193,6 +1194,23 @@ function showKelolaPengumumanPage() {
         }
     }).catch(error => {
         console.error('Failed to load kelola-announcement.js:', error);
+    });
+}
+
+function showPenjualanObatPage() {
+    hideAllPages();
+    pages.penjualanObat?.classList.remove('d-none');
+    setTitleAndActive('Penjualan Obat', 'nav-penjualan-obat', 'penjualan-obat');
+
+    // Dynamically import and initialize the Penjualan Obat module
+    importWithVersion('./penjualan-obat.js').then(module => {
+        if (typeof window.initPenjualanObat === 'function') {
+            window.initPenjualanObat();
+        } else {
+            console.error('Penjualan Obat module loaded, but initPenjualanObat function not found on window.');
+        }
+    }).catch(error => {
+        console.error('Failed to load penjualan-obat.js:', error);
     });
 }
 
@@ -2343,7 +2361,8 @@ async function applyMenuVisibility(user) {
         'rs_bhayangkara': 'nav-rs-bhayangkara',
         'obat_alkes': 'management-nav-kelola-obat',
         'keuangan': 'finance-analysis-nav',
-        'kelola_roles': 'management-nav-kelola-roles'
+        'kelola_roles': 'management-nav-kelola-roles',
+        'penjualan-obat': 'nav-penjualan-obat'
     };
 
     // Superadmin/dokter sees everything - show all hidden menus
@@ -3546,6 +3565,7 @@ window.showProfileSettings = showProfileSettings;
 window.showStokOpnamePage = showStokOpnamePage;
 window.showPengaturanPage = showPengaturanPage;
 window.showKelolaObatPage = showKelolaObatPage;
+window.showPenjualanObatPage = showPenjualanObatPage;
 window.showHospitalAppointmentsPage = showHospitalAppointmentsPage;
 window.showHospitalPatientsPage = showHospitalPatientsPage;
 window.showPasienBaruPage = showPasienBaruPage;

@@ -277,3 +277,38 @@ res.redirect(signedUrl);             // ❌
 
 - `sunday_clinic_billings.invoice_url` - R2 key for invoice
 - `sunday_clinic_billings.etiket_url` - R2 key for etiket
+
+### 11. Window Exports for Page Functions
+
+**When adding a new page function in `main.js`, you MUST also export it to `window`.**
+
+Functions used in `onclick` handlers in HTML must be globally accessible. In `main.js`, add the window export at the bottom of the file (around line 3540+):
+
+```javascript
+// At the end of main.js, add:
+window.showYourNewPage = showYourNewPage;
+```
+
+**Example - Adding a new page:**
+
+1. Add page element in `initPages()`:
+   ```javascript
+   pages.yourNewPage = grab('your-new-page');
+   ```
+
+2. Create the function:
+   ```javascript
+   function showYourNewPage() {
+       hideAllPages();
+       pages.yourNewPage?.classList.remove('d-none');
+       setTitleAndActive('Your Page Title', 'nav-your-page', 'your-page');
+       // ... load module or content
+   }
+   ```
+
+3. **CRITICAL: Export to window** (at bottom of file):
+   ```javascript
+   window.showYourNewPage = showYourNewPage;
+   ```
+
+Without step 3, clicking the menu will throw: `Uncaught ReferenceError: showYourNewPage is not defined`
