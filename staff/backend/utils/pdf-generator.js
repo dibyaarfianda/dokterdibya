@@ -1,11 +1,13 @@
 /**
  * PDF Generator for Billing Documents
  * Generates Invoice and Etiket (Label) PDFs
+ * Stores files in Cloudflare R2 storage
  */
 
 const PDFDocument = require('pdfkit');
 const fs = require('fs');
 const path = require('path');
+const r2Storage = require('../services/r2Storage');
 
 class PDFGenerator {
     constructor() {
@@ -32,7 +34,19 @@ class PDFGenerator {
     }
 
     /**
+     * Get date folder name in DDMMYYYY format
+     */
+    getDateFolder(date = new Date()) {
+        const d = date instanceof Date ? date : new Date(date);
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}${month}${year}`;
+    }
+
+    /**
      * Generate Invoice PDF (A6 Format - matching screenshot format)
+     * Uploads to R2: invoices/DDMMYYYY/{mrId}inv.pdf
      */
     async generateInvoice(billingData, patientData, recordData) {
         return new Promise((resolve, reject) => {
@@ -48,11 +62,12 @@ class PDFGenerator {
                         Creator: 'Sunday Clinic System'
                     }
                 });
-                const filename = `${recordData.mrId}inv.pdf`;
-                const filepath = path.join(this.invoicesDir, filename);
-                const stream = fs.createWriteStream(filepath);
 
-                doc.pipe(stream);
+                // Collect PDF as buffer for R2 upload
+                const chunks = [];
+                doc.on('data', chunk => chunks.push(chunk));
+
+                const filename = `${recordData.mrId}inv.pdf`;
 
                 const pageWidth = doc.page.width;
                 const leftMargin = 15;
@@ -186,13 +201,33 @@ class PDFGenerator {
                 doc.text('GRAND TOTAL', leftMargin + 50, y);
                 doc.text(this.formatRupiah(tindakanTotal + obatTotal), leftMargin, y, { width: contentWidth, align: 'right' });
 
-                doc.end();
+                // Upload to R2 when PDF is complete
+                doc.on('end', async () => {
+                    try {
+                        const pdfBuffer = Buffer.concat(chunks);
+                        const dateFolder = this.getDateFolder();
+                        const r2Key = `invoices/${dateFolder}/${filename}`;
 
-                stream.on('finish', () => {
-                    resolve({ filepath, filename });
+                        // Upload to R2
+                        const result = await r2Storage.uploadFile(
+                            pdfBuffer,
+                            filename,
+                            'application/pdf',
+                            `invoices/${dateFolder}`
+                        );
+
+                        resolve({
+                            filename,
+                            r2Key: result.key,
+                            url: result.url,
+                            size: pdfBuffer.length
+                        });
+                    } catch (uploadError) {
+                        reject(uploadError);
+                    }
                 });
 
-                stream.on('error', reject);
+                doc.end();
 
             } catch (error) {
                 reject(error);
@@ -201,17 +236,19 @@ class PDFGenerator {
     }
 
     /**
-     * Generate Etiket (Label) PDF - 2 columns per page with colored text
+     * Generate Etiket (Label) PDF - 3 columns per page
+     * Uploads to R2: etikets/DDMMYYYY/{mrId}e.pdf
      */
     async generateEtiket(billingData, patientData, recordData) {
         return new Promise((resolve, reject) => {
             try {
                 const doc = new PDFDocument({ size: 'A4', margin: 20 });
-                const filename = `${recordData.mrId}e.pdf`;
-                const filepath = path.join(this.invoicesDir, filename);
-                const stream = fs.createWriteStream(filepath);
 
-                doc.pipe(stream);
+                // Collect PDF as buffer for R2 upload
+                const chunks = [];
+                doc.on('data', chunk => chunks.push(chunk));
+
+                const filename = `${recordData.mrId}e.pdf`;
 
                 // Label dimensions for 3-column layout
                 const labelWidth = 180;
@@ -319,13 +356,32 @@ class PDFGenerator {
                     }
                 });
 
-                doc.end();
+                // Upload to R2 when PDF is complete
+                doc.on('end', async () => {
+                    try {
+                        const pdfBuffer = Buffer.concat(chunks);
+                        const dateFolder = this.getDateFolder();
 
-                stream.on('finish', () => {
-                    resolve({ filepath, filename });
+                        // Upload to R2
+                        const result = await r2Storage.uploadFile(
+                            pdfBuffer,
+                            filename,
+                            'application/pdf',
+                            `etikets/${dateFolder}`
+                        );
+
+                        resolve({
+                            filename,
+                            r2Key: result.key,
+                            url: result.url,
+                            size: pdfBuffer.length
+                        });
+                    } catch (uploadError) {
+                        reject(uploadError);
+                    }
                 });
 
-                stream.on('error', reject);
+                doc.end();
 
             } catch (error) {
                 reject(error);
@@ -621,6 +677,7 @@ class PDFGenerator {
 
     /**
      * Generate Resume Medis PDF (A4 Format)
+     * Uploads to R2: resume-medis/DDMMYYYY/{mrId}_resume.pdf
      */
     async generateResumeMedis(resumeData, patientData, recordData) {
         return new Promise((resolve, reject) => {
@@ -636,11 +693,11 @@ class PDFGenerator {
                     }
                 });
 
-                const filename = `${recordData.mrId}_resume.pdf`;
-                const filepath = path.join(this.invoicesDir, filename);
-                const stream = fs.createWriteStream(filepath);
+                // Collect PDF as buffer for R2 upload
+                const chunks = [];
+                doc.on('data', chunk => chunks.push(chunk));
 
-                doc.pipe(stream);
+                const filename = `${recordData.mrId}_resume.pdf`;
 
                 const pageWidth = doc.page.width;
                 const leftMargin = 40;
@@ -745,13 +802,32 @@ class PDFGenerator {
                 doc.font('Helvetica-Bold');
                 doc.text('dr. Dibya Arfianda, Sp.OG', leftMargin + 350, y);
 
-                doc.end();
+                // Upload to R2 when PDF is complete
+                doc.on('end', async () => {
+                    try {
+                        const pdfBuffer = Buffer.concat(chunks);
+                        const dateFolder = this.getDateFolder();
 
-                stream.on('finish', () => {
-                    resolve({ filepath, filename });
+                        // Upload to R2
+                        const result = await r2Storage.uploadFile(
+                            pdfBuffer,
+                            filename,
+                            'application/pdf',
+                            `resume-medis/${dateFolder}`
+                        );
+
+                        resolve({
+                            filename,
+                            r2Key: result.key,
+                            url: result.url,
+                            size: pdfBuffer.length
+                        });
+                    } catch (uploadError) {
+                        reject(uploadError);
+                    }
                 });
 
-                stream.on('error', reject);
+                doc.end();
 
             } catch (error) {
                 reject(error);

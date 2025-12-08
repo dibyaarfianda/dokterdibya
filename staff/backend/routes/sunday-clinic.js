@@ -1515,10 +1515,10 @@ router.post('/billing/:mrId/print-etiket', verifyToken, async (req, res, next) =
             [normalizedMrId]
         );
 
-        if (!billing || billing.status !== 'confirmed') {
+        if (!billing || !['confirmed', 'paid'].includes(billing.status)) {
             return res.status(400).json({
                 success: false,
-                message: 'Billing belum dikonfirmasi'
+                message: 'Billing belum dikonfirmasi atau dibayar'
             });
         }
 
@@ -1549,15 +1549,24 @@ router.post('/billing/:mrId/print-etiket', verifyToken, async (req, res, next) =
             { mrId: normalizedMrId }
         );
 
-        // Update printed status
+        // Update printed status and store R2 key
         await db.query(
             `UPDATE sunday_clinic_billings
-             SET printed_at = NOW(), printed_by = ?
+             SET printed_at = NOW(), printed_by = ?, etiket_url = ?
              WHERE mr_id = ?`,
-            [req.user.name || req.user.id, normalizedMrId]
+            [req.user.name || req.user.id, result.r2Key, normalizedMrId]
         );
 
-        res.download(result.filepath, result.filename);
+        // Get signed URL for download (valid for 1 hour)
+        const r2Storage = require('../services/r2Storage');
+        const signedUrl = await r2Storage.getSignedDownloadUrl(result.r2Key, 3600);
+
+        // Return JSON with download URL (frontend will handle the download)
+        res.json({
+            success: true,
+            downloadUrl: signedUrl,
+            filename: result.filename
+        });
     } catch (error) {
         logger.error('Failed to print etiket', { error: error.message });
         next(error);
@@ -1577,10 +1586,10 @@ router.post('/billing/:mrId/print-invoice', verifyToken, async (req, res, next) 
             [normalizedMrId]
         );
 
-        if (!billing || billing.status !== 'confirmed') {
+        if (!billing || !['confirmed', 'paid'].includes(billing.status)) {
             return res.status(400).json({
                 success: false,
-                message: 'Billing belum dikonfirmasi'
+                message: 'Billing belum dikonfirmasi atau dibayar'
             });
         }
 
@@ -1611,15 +1620,24 @@ router.post('/billing/:mrId/print-invoice', verifyToken, async (req, res, next) 
             { mrId: normalizedMrId }
         );
 
-        // Update printed status
+        // Update printed status and store R2 key
         await db.query(
             `UPDATE sunday_clinic_billings
-             SET printed_at = NOW(), printed_by = ?
+             SET printed_at = NOW(), printed_by = ?, invoice_url = ?
              WHERE mr_id = ?`,
-            [req.user.name || req.user.id, normalizedMrId]
+            [req.user.name || req.user.id, result.r2Key, normalizedMrId]
         );
 
-        res.download(result.filepath, result.filename);
+        // Get signed URL for download (valid for 1 hour)
+        const r2Storage = require('../services/r2Storage');
+        const signedUrl = await r2Storage.getSignedDownloadUrl(result.r2Key, 3600);
+
+        // Return JSON with download URL (frontend will handle the download)
+        res.json({
+            success: true,
+            downloadUrl: signedUrl,
+            filename: result.filename
+        });
     } catch (error) {
         logger.error('Failed to print invoice', { error: error.message });
         next(error);
@@ -2261,12 +2279,17 @@ router.post('/resume-medis/pdf', verifyToken, async (req, res, next) => {
 
         const result = await pdfGenerator.generateResumeMedis(resumeData, patientData, recordData);
 
+        // Get signed URL for download (valid for 24 hours)
+        const r2Storage = require('../services/r2Storage');
+        const signedUrl = await r2Storage.getSignedDownloadUrl(result.r2Key, 86400);
+
         res.json({
             success: true,
             message: 'PDF generated successfully',
             data: {
                 filename: result.filename,
-                downloadUrl: `/api/sunday-clinic/resume-medis/download/${result.filename}`
+                downloadUrl: signedUrl,
+                r2Key: result.r2Key
             }
         });
 
@@ -2358,9 +2381,9 @@ router.post('/resume-medis/send-whatsapp', verifyToken, async (req, res, next) =
 
         const pdfResult = await pdfGenerator.generateResumeMedis(resumeData, patientData, recordData);
 
-        // Create download URL
-        const baseUrl = process.env.FRONTEND_URL || 'https://dokterdibya.com';
-        const pdfUrl = `${baseUrl}/api/sunday-clinic/resume-medis/download/${pdfResult.filename}`;
+        // Get signed URL for download (valid for 24 hours)
+        const r2Storage = require('../services/r2Storage');
+        const pdfUrl = await r2Storage.getSignedDownloadUrl(pdfResult.r2Key, 86400);
 
         // Generate WhatsApp message
         const whatsappService = require('../services/whatsappService');
