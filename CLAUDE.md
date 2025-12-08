@@ -3,22 +3,24 @@
 ## Code Standards
 
 ### 1. Authentication Token
-**NEVER hardcode token storage keys.** Always use the constant:
+**NEVER hardcode token storage keys.** Use the appropriate helper:
 
 ```javascript
-// Frontend (ES Module)
-import { TOKEN_KEY, getIdToken } from './vps-auth-v2.js';
+// In main.js - use the built-in helper function (line 13-18)
+const token = getAuthToken();
 
-// Usage
-const token = localStorage.getItem(TOKEN_KEY);
-// or use the helper
+// In ES Modules (other .js files)
+import { TOKEN_KEY, getIdToken } from './vps-auth-v2.js';
 const token = await getIdToken();
 ```
 
-**DO NOT use:**
-- `localStorage.getItem('token')`
-- `localStorage.getItem('auth_token')`
-- `localStorage.getItem('vps_auth_token')` (hardcoded)
+**DO NOT use in main.js:**
+- `localStorage.getItem(TOKEN_KEY)` ❌ (TOKEN_KEY not defined)
+- `localStorage.getItem(window.TOKEN_KEY || 'vps_auth_token')` ❌ (unreliable)
+- `localStorage.getItem('vps_auth_token')` ❌ (hardcoded)
+
+**ALWAYS use in main.js:**
+- `getAuthToken()` ✅ (defined at top of main.js)
 
 ### 2. Role Constants
 **NEVER hardcode role names or IDs.** Always import from constants:
@@ -186,3 +188,92 @@ dokterdibya-patient-app/
 - `@capacitor/splash-screen` - Loading screen
 
 **Note:** Admin panel tetap web-based (`/staff/public/`)
+
+### 9. Testing Before Completion
+
+**NEVER declare a task as "done" or "complete" until it has been tested and verified working.**
+
+**Rules:**
+
+1. After implementing a feature, ALWAYS test it before saying it's done
+2. Run actual commands/tests to verify functionality
+3. If the test fails, fix the issue first
+4. Only mark a task as complete when the test passes without errors
+
+**Examples of proper testing:**
+
+- After modifying backend code → restart server and test the endpoint
+- After adding database columns → verify with `DESCRIBE table_name`
+- After implementing R2 upload → run a test upload and verify the URL works
+- After fixing a bug → reproduce the original error case and confirm it's resolved
+
+**DO NOT:**
+
+- Say "done" based on code changes alone
+- Assume code will work without testing
+- Skip verification steps
+
+### 10. Cloudflare R2 Storage
+
+**PDFs (invoices, etikets, resume medis) are stored in Cloudflare R2**, not on local VPS filesystem.
+
+**Folder Structure:**
+
+```text
+dokterdibya-medis (R2 Bucket)
+├── invoices/
+│   └── DDMMYYYY/           ← Date folder (e.g., 07122025)
+│       └── {mrId}inv.pdf
+├── etikets/
+│   └── DDMMYYYY/
+│       └── {mrId}e.pdf
+└── resume-medis/
+    └── DDMMYYYY/
+        └── {mrId}rm.pdf
+```
+
+**R2 Service Location:**
+
+- Backend service: `staff/backend/services/r2Storage.js`
+- PDF generator: `staff/backend/utils/pdf-generator.js`
+
+**Important: Use Signed URLs (Private Bucket)**
+R2 bucket is private. Always use signed URLs for downloads:
+
+```javascript
+const r2Storage = require('../services/r2Storage');
+
+// Upload file
+const result = await r2Storage.uploadFile(
+    buffer,
+    filename,
+    'application/pdf',
+    'invoices/07122025'  // folder path
+);
+
+// Get download URL (expires in 1 hour)
+const signedUrl = await r2Storage.getSignedDownloadUrl(result.key, 3600);
+```
+
+**CORS Considerations:**
+
+- DO NOT use `fetch().blob()` then redirect to R2 URL - causes CORS error
+- Instead: Return JSON with `downloadUrl`, then use `window.open(url, '_blank')`
+
+```javascript
+// Backend - CORRECT
+res.json({ success: true, downloadUrl: signedUrl, filename });
+
+// Frontend - CORRECT
+const data = await response.json();
+window.open(data.downloadUrl, '_blank');
+
+// WRONG - will cause CORS error
+const blob = await response.blob();  // ❌
+res.redirect(signedUrl);             // ❌
+```
+
+**Database Columns:**
+
+- `sunday_clinic_billings.invoice_url` - R2 key for invoice
+- `sunday_clinic_billings.etiket_url` - R2 key for etiket
