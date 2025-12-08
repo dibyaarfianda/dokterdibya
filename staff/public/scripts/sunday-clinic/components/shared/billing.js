@@ -1139,7 +1139,7 @@ export default {
                             try {
                                 const token = window.getToken?.();
                                 const mrId = window.routeMrSlug;
-                                
+
                                 const response = await fetch(`/api/sunday-clinic/billing/${mrId}/print-etiket`, {
                                     method: 'POST',
                                     headers: {
@@ -1150,15 +1150,13 @@ export default {
 
                                 if (!response.ok) throw new Error('Gagal mencetak etiket');
 
-                                const blob = await response.blob();
-                                const url = window.URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.download = `${mrId}e.pdf`;
-                                document.body.appendChild(a);
-                                a.click();
-                                window.URL.revokeObjectURL(url);
-                                document.body.removeChild(a);
+                                const data = await response.json();
+                                if (data.success && data.downloadUrl) {
+                                    // Open download URL in new tab
+                                    window.open(data.downloadUrl, '_blank');
+                                } else {
+                                    throw new Error(data.message || 'Gagal mencetak etiket');
+                                }
 
                                 if (window.showSuccess) {
                                     window.showSuccess('Etiket berhasil dicetak!');
@@ -1184,11 +1182,11 @@ export default {
                     if (invoiceBtn) {
                         invoiceBtn.addEventListener('click', async function() {
                             if (this.disabled) return;
-                            
+
                             try {
                                 const token = window.getToken?.();
                                 const mrId = window.routeMrSlug;
-                                
+
                                 const response = await fetch(`/api/sunday-clinic/billing/${mrId}/print-invoice`, {
                                     method: 'POST',
                                     headers: {
@@ -1199,15 +1197,13 @@ export default {
 
                                 if (!response.ok) throw new Error('Gagal mencetak invoice');
 
-                                const blob = await response.blob();
-                                const url = window.URL.createObjectURL(blob);
-                                const a = document.createElement('a');
-                                a.href = url;
-                                a.download = `${mrId}inv.pdf`;
-                                document.body.appendChild(a);
-                                a.click();
-                                window.URL.revokeObjectURL(url);
-                                document.body.removeChild(a);
+                                const data = await response.json();
+                                if (data.success && data.downloadUrl) {
+                                    // Open download URL in new tab
+                                    window.open(data.downloadUrl, '_blank');
+                                } else {
+                                    throw new Error(data.message || 'Gagal mencetak invoice');
+                                }
 
                                 if (window.showSuccess) {
                                     window.showSuccess('Invoice berhasil dicetak!');
