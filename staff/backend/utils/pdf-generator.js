@@ -730,7 +730,7 @@ class PDFGenerator {
                 // Patient Info
                 y += 15;
                 doc.fontSize(10).font('Helvetica');
-                const patientName = this.sanitizeTextForPdf(patientData.fullName || patientData.full_name || '-');
+                const patientName = this.sanitizeTextForPdfForPdf(patientData.fullName || patientData.full_name || '-');
                 doc.text(`Nama Pasien: ${patientName}`, leftMargin, y);
                 doc.text(`Tanggal: ${this.formatDateEuropean()}`, leftMargin + 300, y);
 
@@ -748,7 +748,7 @@ class PDFGenerator {
                 let resumeText = resumeData.resume || resumeData || '';
 
                 // Sanitize the resume text
-                resumeText = this.sanitizeTextForPdf(resumeText);
+                resumeText = this.sanitizeTextForPdfForPdf(resumeText);
 
                 if (resumeText) {
                     doc.fontSize(10).font('Helvetica');
@@ -829,6 +829,185 @@ class PDFGenerator {
 
                 doc.end();
 
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
+    /**
+     * Generate Obat Sale Invoice PDF (A6 Format)
+     * Hospital-branded header (not Dr. Dibya clinic)
+     * Uploads to R2: invoices/obat-sales/DDMMYYYY/{saleNumber}inv.pdf
+     */
+    async generateObatSaleInvoice(saleData) {
+        return new Promise((resolve, reject) => {
+            try {
+                const hospitalHeaders = {
+                    'rsia_melinda': {
+                        name: 'RSIA MELINDA',
+                        address: 'Jl. Balowerti 2 No. 59, Kediri'
+                    },
+                    'rsud_gambiran': {
+                        name: 'RSUD GAMBIRAN',
+                        address: 'Jl. KH. Wachid Hasyim No. 64, Kediri'
+                    },
+                    'rs_bhayangkara': {
+                        name: 'RS BHAYANGKARA',
+                        address: 'Jl. Imam Bonjol No. 1, Kediri'
+                    }
+                };
+
+                const hospital = hospitalHeaders[saleData.hospital_source] || {
+                    name: 'RUMAH SAKIT',
+                    address: 'Kediri'
+                };
+
+                // A6 format
+                const doc = new PDFDocument({
+                    size: 'A6',
+                    margin: 15,
+                    info: {
+                        Title: `Invoice ${saleData.sale_number}`,
+                        Author: hospital.name,
+                        Subject: 'Invoice Penjualan Obat',
+                        Creator: 'Obat Sales System'
+                    }
+                });
+
+                const chunks = [];
+                doc.on('data', chunk => chunks.push(chunk));
+
+                const filename = `${saleData.sale_number}inv.pdf`;
+
+                const pageWidth = doc.page.width;
+                const leftMargin = 15;
+                const rightMargin = 15;
+                const rightEdge = pageWidth - rightMargin;
+                const contentWidth = rightEdge - leftMargin;
+                let y = 15;
+
+                // Header - Hospital Name
+                doc.fontSize(14)
+                   .font('Helvetica-Bold')
+                   .text(hospital.name, leftMargin, y, { width: contentWidth, align: 'center' });
+
+                y += 18;
+                doc.fontSize(7)
+                   .font('Helvetica')
+                   .text(hospital.address, leftMargin, y, { width: contentWidth, align: 'center' });
+
+                // Invoice Title
+                y += 18;
+                doc.fontSize(12)
+                   .font('Helvetica-Bold')
+                   .text('Invoice Penjualan Obat', leftMargin, y, { width: contentWidth, align: 'center' });
+                y += 16;
+                doc.moveTo(leftMargin, y).lineTo(rightEdge, y).lineWidth(0.5).stroke();
+
+                // Patient Info and Date
+                y += 8;
+                doc.fontSize(8).font('Helvetica');
+
+                const patientAge = saleData.patient_age ? ` (${saleData.patient_age} th)` : '';
+                doc.text(`Nama: ${this.sanitizeTextForPdf(saleData.patient_name || '-')}${patientAge}`, leftMargin, y);
+                doc.text(`No: ${saleData.sale_number}`, leftMargin, y, { width: contentWidth, align: 'right' });
+
+                y += 12;
+                doc.text(`Tanggal: ${this.formatDateEuropean(saleData.created_at)}`, leftMargin, y);
+
+                // Separator
+                y += 12;
+                doc.moveTo(leftMargin, y).lineTo(rightEdge, y).lineWidth(0.5).stroke();
+
+                // Items Table Header
+                y += 8;
+                const colWidths = {
+                    name: contentWidth * 0.45,
+                    qty: contentWidth * 0.12,
+                    price: contentWidth * 0.20,
+                    total: contentWidth * 0.23
+                };
+
+                doc.font('Helvetica-Bold').fontSize(7);
+                let x = leftMargin;
+                doc.text('Obat', x, y);
+                x += colWidths.name;
+                doc.text('Qty', x, y, { width: colWidths.qty, align: 'center' });
+                x += colWidths.qty;
+                doc.text('Harga', x, y, { width: colWidths.price, align: 'right' });
+                x += colWidths.price;
+                doc.text('Subtotal', x, y, { width: colWidths.total, align: 'right' });
+
+                y += 10;
+                doc.moveTo(leftMargin, y).lineTo(rightEdge, y).lineWidth(0.3).stroke();
+
+                // Items
+                doc.font('Helvetica').fontSize(7);
+                const items = saleData.items || [];
+
+                for (const item of items) {
+                    y += 10;
+
+                    if (y > doc.page.height - 60) {
+                        doc.addPage();
+                        y = 15;
+                    }
+
+                    x = leftMargin;
+                    const itemName = this.sanitizeTextForPdf(item.obat_name || '-');
+                    const truncatedName = itemName.length > 25 ? itemName.substring(0, 24) + '...' : itemName;
+
+                    doc.text(truncatedName, x, y, { width: colWidths.name });
+                    x += colWidths.name;
+                    doc.text(String(item.quantity || 1), x, y, { width: colWidths.qty, align: 'center' });
+                    x += colWidths.qty;
+                    doc.text(this.formatRupiahSimple(item.price), x, y, { width: colWidths.price, align: 'right' });
+                    x += colWidths.price;
+                    doc.text(this.formatRupiahSimple(item.total), x, y, { width: colWidths.total, align: 'right' });
+                }
+
+                // Total
+                y += 15;
+                doc.moveTo(leftMargin, y).lineTo(rightEdge, y).lineWidth(0.5).stroke();
+
+                y += 8;
+                doc.font('Helvetica-Bold').fontSize(9);
+                doc.text('TOTAL', leftMargin, y);
+                doc.text(this.formatRupiah(saleData.total), leftMargin, y, { width: contentWidth, align: 'right' });
+
+                // Footer
+                y += 20;
+                doc.font('Helvetica').fontSize(6);
+                doc.text('Terima kasih atas kepercayaan Anda', leftMargin, y, { width: contentWidth, align: 'center' });
+
+                // End document and upload to R2
+                doc.on('end', async () => {
+                    try {
+                        const pdfBuffer = Buffer.concat(chunks);
+                        const dateFolder = this.getDateFolder();
+                        const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+                        const uniqueFilename = `${saleData.sale_number}inv-${uniqueSuffix}.pdf`;
+
+                        const result = await r2Storage.uploadFile(
+                            pdfBuffer,
+                            uniqueFilename,
+                            'application/pdf',
+                            `invoices/obat-sales/${dateFolder}`
+                        );
+
+                        resolve({
+                            filename,
+                            r2Key: result.key,
+                            url: result.url,
+                            size: pdfBuffer.length
+                        });
+                    } catch (uploadError) {
+                        reject(uploadError);
+                    }
+                });
+
+                doc.end();
             } catch (error) {
                 reject(error);
             }

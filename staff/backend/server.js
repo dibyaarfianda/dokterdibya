@@ -253,6 +253,10 @@ app.use('/api/billings', billingsRoutes);
 const announcementsRoutes = require('./routes/announcements');
 app.use('/api/announcements', announcementsRoutes);
 
+// Staff Announcements routes (internal staff only)
+const staffAnnouncementsRoutes = require('./routes/staff-announcements');
+app.use('/api/staff-announcements', staffAnnouncementsRoutes);
+
 // Visit invoice routes for printing and tracking
 app.use('/api/visit-invoices', visitInvoicesRoutes);
 
@@ -294,6 +298,10 @@ app.use('/api/suppliers', suppliersRoutes);
 // Inventory routes (stock batches, movements, FIFO)
 const inventoryRoutes = require('./routes/inventory');
 app.use('/api/inventory', inventoryRoutes);
+
+// Obat Sales routes (medication sales for hospital patients)
+const obatSalesRoutes = require('./routes/obat-sales');
+app.use('/api/obat-sales', obatSalesRoutes);
 
 // Health articles routes (public + admin)
 const articlesRoutes = require('./routes/articles');

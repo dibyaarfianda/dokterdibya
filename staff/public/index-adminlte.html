@@ -1169,7 +1169,7 @@
     <script>
         // Force clear cache on first load
         (function() {
-            const CACHE_VERSION = 'v21'; // Increment this to force refresh
+            const CACHE_VERSION = 'v25'; // Increment this to force refresh
             const currentVersion = localStorage.getItem('cache_version');
             
             if (currentVersion !== CACHE_VERSION) {
@@ -1313,6 +1313,12 @@
                         <a href="#" class="nav-link" onclick="showKelolaPengumumanPage(); return false;">
                             <i class="nav-icon fas fa-bullhorn"></i>
                             <p>Pengumuman</p>
+                        </a>
+                    </li>
+                    <li class="nav-item" id="nav-penjualan-obat">
+                        <a href="#" class="nav-link" onclick="showPenjualanObatPage(); return false;">
+                            <i class="nav-icon fas fa-pills"></i>
+                            <p>Penjualan Obat</p>
                         </a>
                     </li>
                     <li class="nav-item" id="nav-notifications">
@@ -1569,14 +1575,12 @@
                                             <p class="mb-1" style="font-size: 13px; letter-spacing: 1px; color: #6c757d;">SELAMAT DATANG DI</p>
                                             <h3 class="font-weight-bold mb-0" style="font-size: 1.75rem; color: #343a40;">dokter<span style="color: #007BFF;">DIBYA</span></h3>
                                         </div>
-                                        <!-- Registration Code -->
+                                        <!-- Registration Code (Auto-generated daily at 00:00 WIB) -->
                                         <div class="text-center">
                                             <div class="bg-primary text-white rounded p-1 px-2 mb-1" style="font-size: 14px; font-weight: 700; letter-spacing: 2px; font-family: monospace;" id="dashboard-current-code">
                                                 ------
                                             </div>
-                                            <button class="btn btn-link p-0 text-primary" style="font-size: 11px;" onclick="openGenerateCodeModal()">
-                                                <i class="fas fa-sync-alt mr-1"></i> Generate Kode
-                                            </button>
+                                            <small class="text-muted" style="font-size: 10px;">Kode Registrasi Pasien</small>
                                         </div>
                                     </div>
 
@@ -3088,6 +3092,9 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- PENJUALAN OBAT PAGE -->
+                <div id="penjualan-obat-page" class="d-none"></div>
 
                 <!-- KELOLA ROLES PAGE -->
                 <div id="kelola-roles-page" class="d-none">
@@ -5313,6 +5320,22 @@ Contoh Markdown:
                                     </div>
                                 </div>
                                 <div class="card-body">
+                                    <!-- Staff Announcements Section -->
+                                    <div id="staff-announcements-section" class="mb-4">
+                                        <div class="d-flex justify-content-between align-items-center mb-3">
+                                            <h5 class="mb-0"><i class="fas fa-bullhorn text-warning mr-2"></i>Pengumuman Staff</h5>
+                                            <button type="button" class="btn btn-sm btn-primary dokter-only d-none" onclick="showCreateStaffAnnouncement()">
+                                                <i class="fas fa-plus"></i> Buat Pengumuman
+                                            </button>
+                                        </div>
+                                        <div id="staff-announcements-list">
+                                            <div class="text-center py-3 text-muted">
+                                                <i class="fas fa-spinner fa-spin"></i> Memuat pengumuman...
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <hr class="mb-4">
+
                                     <!-- Stats Cards -->
                                     <div class="row mb-4">
                                         <div class="col-lg-3 col-6">
@@ -5395,6 +5418,58 @@ Contoh Markdown:
                                         </nav>
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Staff Announcement Modal -->
+                <div class="modal fade" id="modal-staff-announcement" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header bg-warning">
+                                <h5 class="modal-title" id="modal-staff-announcement-title">Buat Pengumuman Staff</h5>
+                                <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="form-staff-announcement">
+                                    <input type="hidden" id="staff-announcement-id">
+                                    <div class="form-group">
+                                        <label>Judul <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control" id="staff-announcement-title" required placeholder="Judul pengumuman...">
+                                    </div>
+                                    <div class="form-group">
+                                        <label>Isi Pengumuman <span class="text-danger">*</span></label>
+                                        <textarea class="form-control" id="staff-announcement-message" rows="5" required placeholder="Isi pengumuman..."></textarea>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label>Prioritas</label>
+                                                <select class="form-control" id="staff-announcement-priority">
+                                                    <option value="normal">Normal</option>
+                                                    <option value="important">Penting</option>
+                                                    <option value="urgent">Urgent</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label>Status</label>
+                                                <select class="form-control" id="staff-announcement-status">
+                                                    <option value="active">Aktif</option>
+                                                    <option value="inactive">Nonaktif</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                                <button type="button" class="btn btn-primary" onclick="saveStaffAnnouncement()">
+                                    <i class="fas fa-save"></i> Simpan
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -10279,12 +10354,198 @@ function showNotificationsPage() {
         navNotifications.classList.add('active');
     }
 
-    // Load notifications
+    // Load notifications and staff announcements
     loadNotificationsPage();
+    loadStaffAnnouncements();
 }
 
 // Make showNotificationsPage globally available
 window.showNotificationsPage = showNotificationsPage;
+
+// ========== STAFF ANNOUNCEMENTS ==========
+async function loadStaffAnnouncements() {
+    const container = document.getElementById('staff-announcements-list');
+    if (!container) return;
+
+    try {
+        const token = getAuthToken();
+        if (!token) return;
+
+        const response = await fetch('/api/staff-announcements', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('Failed to load');
+
+        const data = await response.json();
+        const announcements = data.data || [];
+
+        if (announcements.length === 0) {
+            container.innerHTML = '<div class="text-muted text-center py-3"><i class="fas fa-info-circle mr-2"></i>Tidak ada pengumuman staff.</div>';
+            return;
+        }
+
+        const isDokter = window.auth?.currentUser?.is_superadmin || window.auth?.currentUser?.role === 'dokter';
+
+        container.innerHTML = announcements.map(a => {
+            const priorityClass = a.priority === 'urgent' ? 'border-danger' : (a.priority === 'important' ? 'border-warning' : 'border-info');
+            const priorityIcon = a.priority === 'urgent' ? 'fa-exclamation-triangle text-danger' : (a.priority === 'important' ? 'fa-exclamation-circle text-warning' : 'fa-bullhorn text-info');
+            const priorityBadge = a.priority === 'urgent' ? '<span class="badge badge-danger ml-2">URGENT</span>' : (a.priority === 'important' ? '<span class="badge badge-warning ml-2">Penting</span>' : '');
+            const timeAgo = formatTimeAgo(new Date(a.created_at));
+
+            return `
+                <div class="callout ${priorityClass} mb-2">
+                    <div class="d-flex justify-content-between">
+                        <h6 class="mb-1"><i class="fas ${priorityIcon} mr-2"></i>${escapeHtml(a.title)}${priorityBadge}</h6>
+                        ${isDokter ? `
+                            <div class="btn-group btn-group-sm">
+                                <button class="btn btn-outline-secondary btn-xs" onclick="editStaffAnnouncement(${a.id})" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="btn btn-outline-danger btn-xs" onclick="deleteStaffAnnouncement(${a.id})" title="Hapus">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                    <p class="mb-1" style="white-space: pre-wrap;">${escapeHtml(a.message)}</p>
+                    <small class="text-muted">${a.created_by_name || 'Admin'} - ${timeAgo}</small>
+                </div>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Failed to load staff announcements:', error);
+        container.innerHTML = '<div class="text-danger text-center py-3"><i class="fas fa-exclamation-circle mr-2"></i>Gagal memuat pengumuman.</div>';
+    }
+}
+
+function showCreateStaffAnnouncement() {
+    document.getElementById('staff-announcement-id').value = '';
+    document.getElementById('staff-announcement-title').value = '';
+    document.getElementById('staff-announcement-message').value = '';
+    document.getElementById('staff-announcement-priority').value = 'normal';
+    document.getElementById('staff-announcement-status').value = 'active';
+    document.getElementById('modal-staff-announcement-title').textContent = 'Buat Pengumuman Staff';
+    $('#modal-staff-announcement').modal('show');
+}
+
+async function editStaffAnnouncement(id) {
+    try {
+        const token = getAuthToken();
+        const response = await fetch(`/api/staff-announcements/${id}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (!data.success) throw new Error(data.message);
+
+        const a = data.data;
+        document.getElementById('staff-announcement-id').value = a.id;
+        document.getElementById('staff-announcement-title').value = a.title;
+        document.getElementById('staff-announcement-message').value = a.message;
+        document.getElementById('staff-announcement-priority').value = a.priority;
+        document.getElementById('staff-announcement-status').value = a.status;
+        document.getElementById('modal-staff-announcement-title').textContent = 'Edit Pengumuman Staff';
+        $('#modal-staff-announcement').modal('show');
+    } catch (error) {
+        Swal.fire('Error', error.message, 'error');
+    }
+}
+
+async function saveStaffAnnouncement() {
+    const id = document.getElementById('staff-announcement-id').value;
+    const title = document.getElementById('staff-announcement-title').value.trim();
+    const message = document.getElementById('staff-announcement-message').value.trim();
+    const priority = document.getElementById('staff-announcement-priority').value;
+    const status = document.getElementById('staff-announcement-status').value;
+
+    if (!title || !message) {
+        Swal.fire('Error', 'Judul dan isi pengumuman harus diisi', 'error');
+        return;
+    }
+
+    try {
+        const token = getAuthToken();
+        const url = id ? `/api/staff-announcements/${id}` : '/api/staff-announcements';
+        const method = id ? 'PUT' : 'POST';
+
+        const response = await fetch(url, {
+            method,
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ title, message, priority, status })
+        });
+
+        const data = await response.json();
+        if (!data.success) throw new Error(data.message);
+
+        $('#modal-staff-announcement').modal('hide');
+        Swal.fire('Sukses', id ? 'Pengumuman berhasil diperbarui' : 'Pengumuman berhasil dibuat', 'success');
+        loadStaffAnnouncements();
+    } catch (error) {
+        Swal.fire('Error', error.message, 'error');
+    }
+}
+
+async function deleteStaffAnnouncement(id) {
+    const result = await Swal.fire({
+        title: 'Hapus Pengumuman?',
+        text: 'Pengumuman akan dihapus permanen.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Ya, Hapus',
+        cancelButtonText: 'Batal'
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+        const token = getAuthToken();
+        const response = await fetch(`/api/staff-announcements/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const data = await response.json();
+        if (!data.success) throw new Error(data.message);
+
+        Swal.fire('Sukses', 'Pengumuman berhasil dihapus', 'success');
+        loadStaffAnnouncements();
+    } catch (error) {
+        Swal.fire('Error', error.message, 'error');
+    }
+}
+
+// Helper: format time ago
+function formatTimeAgo(date) {
+    const seconds = Math.floor((new Date() - date) / 1000);
+    if (seconds < 60) return 'Baru saja';
+    const minutes = Math.floor(seconds / 60);
+    if (minutes < 60) return `${minutes} menit lalu`;
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return `${hours} jam lalu`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days} hari lalu`;
+    return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+// Helper: escape HTML
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Export functions
+window.loadStaffAnnouncements = loadStaffAnnouncements;
+window.showCreateStaffAnnouncement = showCreateStaffAnnouncement;
+window.editStaffAnnouncement = editStaffAnnouncement;
+window.saveStaffAnnouncement = saveStaffAnnouncement;
+window.deleteStaffAnnouncement = deleteStaffAnnouncement;
+
+// ========== END STAFF ANNOUNCEMENTS ==========
 
 async function loadNotificationsPage() {
     const container = document.getElementById('notifications-page-list');
