@@ -28,7 +28,7 @@
   },
   "content_scripts": [
     {
-      "matches": ["https://simrs.rsbhayangkara-kediri.com/*", "https://*.rsbhayangkara-kediri.com/*"],
+      "matches": ["https://erm.rsbhayangkarakediri.com/*", "https://*.rsbhayangkarakediri.com/*"],
       "js": ["content.js"],
       "css": ["content.css"]
     }
