@@ -1169,7 +1169,7 @@
     <script>
         // Force clear cache on first load
         (function() {
-            const CACHE_VERSION = 'v25'; // Increment this to force refresh
+            const CACHE_VERSION = 'v30'; // Increment this to force refresh
             const currentVersion = localStorage.getItem('cache_version');
             
             if (currentVersion !== CACHE_VERSION) {
@@ -1205,6 +1205,18 @@
                 }
             }
         })();
+    </script>
+
+    <!-- Global Auth Helper - ALWAYS AVAILABLE -->
+    <script>
+        // Define getAuthToken globally so it's available everywhere
+        // This prevents "getAuthToken is not defined" errors in inline scripts
+        window.getAuthToken = function() {
+            return localStorage.getItem('vps_auth_token');
+        };
+
+        // Also expose TOKEN_KEY for consistency
+        window.TOKEN_KEY = 'vps_auth_token';
     </script>
 
     <!-- Mobile Responsive CSS -->
@@ -1462,6 +1474,14 @@
                                 </a>
                             </li>
                         </ul>
+                    </li>
+
+                    <!-- BULK UPLOAD USG (All Hospitals) -->
+                    <li class="nav-item" id="nav-bulk-upload-usg">
+                        <a href="#" class="nav-link" onclick="showBulkUploadUSGPage(); return false;">
+                            <i class="nav-icon fas fa-cloud-upload-alt" style="color: #6f42c1;"></i>
+                            <p>Bulk Upload USG</p>
+                        </a>
                     </li>
 
                     <!-- MANAGEMENT -->
@@ -3095,6 +3115,9 @@
 
                 <!-- PENJUALAN OBAT PAGE -->
                 <div id="penjualan-obat-page" class="d-none"></div>
+
+                <!-- BULK UPLOAD USG PAGE -->
+                <div id="bulk-upload-usg-page" class="d-none"></div>
 
                 <!-- KELOLA ROLES PAGE -->
                 <div id="kelola-roles-page" class="d-none">
@@ -4742,12 +4765,10 @@ Contoh Markdown:
                                         <table id="manage-patients-table" class="table table-bordered table-striped table-sm">
                                             <thead>
                                                 <tr>
-                                                    <th>ID</th>
+                                                    <th>ID Pasien</th>
                                                     <th>MR ID</th>
                                                     <th>Nama Lengkap</th>
-                                                    <th>Email</th>
                                                     <th>Telepon</th>
-                                                    <th>Tanggal Lahir</th>
                                                     <th>Usia</th>
                                                     <th>Kunjungan Terakhir</th>
                                                     <th>Tgl Registrasi</th>
@@ -4757,7 +4778,7 @@ Contoh Markdown:
                                             </thead>
                                             <tbody id="manage-patients-tbody">
                                                 <tr>
-                                                    <td colspan="12" class="text-center">Memuat data...</td>
+                                                    <td colspan="9" class="text-center">Memuat data...</td>
                                                 </tr>
                                             </tbody>
                                         </table>
@@ -6745,18 +6766,28 @@ function mobileNavClick(btn, action) {
             const data = await response.json();
             const tbody = document.getElementById('new-patients-tbody');
 
+            // Guard against null tbody
+            if (!tbody) {
+                console.warn('new-patients-tbody element not found');
+                return;
+            }
+
             // Update pagination info
             const pagination = data.pagination || { total: 0, page: 1, totalPages: 1 };
             newPatientsTotalPages = pagination.totalPages;
             const start = data.data && data.data.length > 0 ? ((page - 1) * 10) + 1 : 0;
             const end = start > 0 ? start + data.data.length - 1 : 0;
 
-            document.getElementById('new-patients-pagination-info').textContent =
-                `Menampilkan ${start}-${end} dari ${pagination.total}`;
+            const paginationInfo = document.getElementById('new-patients-pagination-info');
+            if (paginationInfo) {
+                paginationInfo.textContent = `Menampilkan ${start}-${end} dari ${pagination.total}`;
+            }
 
             // Update button states
-            document.getElementById('new-patients-prev-btn').disabled = page <= 1;
-            document.getElementById('new-patients-next-btn').disabled = page >= newPatientsTotalPages;
+            const prevBtn = document.getElementById('new-patients-prev-btn');
+            const nextBtn = document.getElementById('new-patients-next-btn');
+            if (prevBtn) prevBtn.disabled = page <= 1;
+            if (nextBtn) nextBtn.disabled = page >= newPatientsTotalPages;
 
             if (!data.data || data.data.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Belum ada pasien terdaftar</td></tr>';
@@ -6821,7 +6852,7 @@ function mobileNavClick(btn, action) {
             const tbody = document.getElementById('manage-patients-tbody');
             
             if (!data.data || data.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="12" class="text-center">Tidak ada pasien</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center">Tidak ada pasien</td></tr>';
                 return;
             }
             
@@ -6854,12 +6885,10 @@ function mobileNavClick(btn, action) {
 
                 return `
                     <tr>
-                        <td>${patient.id}</td>
+                        <td><a href="#" class="text-primary" onclick="showPatientMRList('${patient.id}', '${(patient.full_name || '').replace(/'/g, "\\'")}'); return false;" title="Lihat Daftar Rekam Medis">${patient.id}</a></td>
                         <td>${mrIdCell}</td>
                         <td>${patient.full_name || '-'}</td>
-                        <td>${patient.email || '-'}</td>
                         <td>${patient.whatsapp || patient.phone || '-'}</td>
-                        <td>${birthDate}</td>
                         <td>${patient.age || '-'}</td>
                         <td>${lastVisit}</td>
                         <td>${regDate}</td>
@@ -6885,7 +6914,7 @@ function mobileNavClick(btn, action) {
             if ($.fn.DataTable) {
                 $('#manage-patients-table').DataTable({
                     "pageLength": 25,
-                    "order": [[9, 'desc']], // Sort by registration date (column 9 after adding MR ID)
+                    "order": [[6, 'desc']], // Sort by registration date (column 6: Tgl Registrasi)
                     "searching": false // Disable built-in search, use advanced search only
                 });
             }
@@ -6910,7 +6939,7 @@ function mobileNavClick(btn, action) {
         } catch (error) {
             console.error('Error loading web patients:', error);
             document.getElementById('manage-patients-tbody').innerHTML =
-                '<tr><td colspan="12" class="text-center text-danger">Gagal memuat data pasien</td></tr>';
+                '<tr><td colspan="9" class="text-center text-danger">Gagal memuat data pasien</td></tr>';
         }
     }
 
@@ -6977,7 +7006,7 @@ function mobileNavClick(btn, action) {
             const resultCount = document.getElementById('adv-search-result-count');
 
             // Show loading
-            tbody.innerHTML = '<tr><td colspan="10" class="text-center"><i class="fas fa-spinner fa-spin"></i> Mencari...</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center"><i class="fas fa-spinner fa-spin"></i> Mencari...</td></tr>';
 
             // Collect search parameters
             const params = new URLSearchParams();
@@ -7047,7 +7076,7 @@ function mobileNavClick(btn, action) {
             }
 
             if (!data.data || data.data.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="12" class="text-center text-muted">Tidak ada pasien yang sesuai dengan kriteria pencarian</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">Tidak ada pasien yang sesuai dengan kriteria pencarian</td></tr>';
                 return;
             }
 
@@ -7076,12 +7105,10 @@ function mobileNavClick(btn, action) {
 
                 return `
                     <tr>
-                        <td><small>${patient.id}</small></td>
+                        <td><a href="#" class="text-primary" onclick="showPatientMRList('${patient.id}', '${(patient.full_name || '').replace(/'/g, "\\'")}'); return false;" title="Lihat Daftar Rekam Medis"><small>${patient.id}</small></a></td>
                         <td>${mrIdCell}</td>
                         <td>${patient.full_name || '-'}</td>
-                        <td><small>${patient.email || '-'}</small></td>
                         <td><small>${patient.whatsapp || patient.phone || '-'}</small></td>
-                        <td><small>${birthDate}</small></td>
                         <td>${patient.age || '-'}</td>
                         <td><small>${lastVisit}</small></td>
                         <td><small>${regDate}</small></td>
@@ -7122,7 +7149,7 @@ function mobileNavClick(btn, action) {
         } catch (error) {
             console.error('Error in advanced search:', error);
             document.getElementById('manage-patients-tbody').innerHTML =
-                '<tr><td colspan="10" class="text-center text-danger">Gagal melakukan pencarian</td></tr>';
+                '<tr><td colspan="9" class="text-center text-danger">Gagal melakukan pencarian</td></tr>';
         }
     }
 
@@ -7530,7 +7557,173 @@ Apakah Anda yakin ingin melanjutkan?`;
             alert('Gagal memuat detail pasien: ' + error.message);
         }
     };
-    
+
+    /**
+     * Show patient's medical records list in a modal
+     * @param {string} patientId - Patient ID
+     * @param {string} patientName - Patient name
+     */
+    window.showPatientMRList = async function(patientId, patientName) {
+        try {
+            // Show loading modal first
+            const loadingModal = `
+                <div class="modal fade" id="patientMRListModal" tabindex="-1" role="dialog">
+                    <div class="modal-dialog modal-lg" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header bg-primary">
+                                <h5 class="modal-title text-white">
+                                    <i class="fas fa-notes-medical mr-2"></i>
+                                    Daftar Rekam Medis - ${patientName || patientId}
+                                </h5>
+                                <button type="button" class="close text-white" data-dismiss="modal">
+                                    <span>&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body text-center py-5">
+                                <i class="fas fa-spinner fa-spin fa-3x text-primary mb-3"></i>
+                                <p>Memuat data rekam medis...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // Remove existing modal if any
+            $('#patientMRListModal').remove();
+            $('body').append(loadingModal);
+            $('#patientMRListModal').modal('show');
+
+            // Fetch medical records for this patient
+            const token = localStorage.getItem('vps_auth_token');
+            const response = await fetch(`/api/sunday-clinic/patient-visits/${patientId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('Gagal memuat data rekam medis');
+            }
+
+            const result = await response.json();
+            const records = result.data || [];
+
+            // Build records table
+            let recordsHtml = '';
+            if (records.length === 0) {
+                recordsHtml = `
+                    <div class="text-center py-4">
+                        <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">Belum ada rekam medis untuk pasien ini</p>
+                        <a href="sunday-clinic.html?patient=${patientId}" class="btn btn-primary">
+                            <i class="fas fa-plus mr-1"></i> Buat Rekam Medis Baru
+                        </a>
+                    </div>
+                `;
+            } else {
+                recordsHtml = `
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>MR ID</th>
+                                    <th>Tanggal Kunjungan</th>
+                                    <th>Lokasi</th>
+                                    <th>Kategori</th>
+                                    <th>Status</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${records.map(record => {
+                                    const visitDate = record.visit_date ? new Date(record.visit_date).toLocaleDateString('id-ID', {
+                                        weekday: 'short',
+                                        day: 'numeric',
+                                        month: 'short',
+                                        year: 'numeric'
+                                    }) : '-';
+                                    const category = record.mr_category || '-';
+                                    const statusBadge = record.status === 'finalized'
+                                        ? '<span class="badge badge-success">Selesai</span>'
+                                        : record.status === 'in_progress'
+                                        ? '<span class="badge badge-warning">Dalam Proses</span>'
+                                        : '<span class="badge badge-secondary">Draft</span>';
+
+                                    return `
+                                        <tr>
+                                            <td>
+                                                <strong class="text-primary">${record.mr_id || '-'}</strong>
+                                            </td>
+                                            <td>${visitDate}</td>
+                                            <td><small>${record.location_short || record.visit_location || '-'}</small></td>
+                                            <td><small>${category}</small></td>
+                                            <td>${statusBadge}</td>
+                                            <td>
+                                                <a href="sunday-clinic.html?patient=${patientId}&mr=${record.mr_id}"
+                                                   class="btn btn-sm btn-info" title="Buka Rekam Medis">
+                                                    <i class="fas fa-external-link-alt"></i>
+                                                </a>
+                                                <button class="btn btn-sm ${record.status === 'finalized' ? 'btn-outline-danger' : 'btn-danger'} ml-1"
+                                                        onclick="deleteMedicalRecord('${record.mr_id}', ${record.status === 'finalized'})"
+                                                        title="${record.status === 'finalized' ? 'Hapus (Finalized - konfirmasi ekstra)' : 'Hapus Rekam Medis'}">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="text-right mt-3">
+                        <a href="sunday-clinic.html?patient=${patientId}" class="btn btn-success">
+                            <i class="fas fa-plus mr-1"></i> Kunjungan Baru
+                        </a>
+                    </div>
+                `;
+            }
+
+            // Update modal body content only (don't replace entire modal to avoid Bootstrap state issues)
+            const modalBodyContent = `
+                <p class="text-muted mb-3">
+                    <i class="fas fa-user mr-1"></i> ID Pasien: <strong>${patientId}</strong>
+                    <span class="badge badge-info ml-2">${records.length} rekam medis</span>
+                </p>
+                ${recordsHtml}
+            `;
+
+            // Update only the modal body
+            $('#patientMRListModal .modal-body').html(modalBodyContent);
+
+            // Add footer if not exists
+            if ($('#patientMRListModal .modal-footer').length === 0) {
+                $('#patientMRListModal .modal-content').append(`
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                    </div>
+                `);
+            }
+
+            // Clean up modal after close
+            $('#patientMRListModal').on('hidden.bs.modal', function () {
+                $(this).remove();
+                $('.modal-backdrop').remove();
+            });
+
+        } catch (error) {
+            console.error('Error loading patient MR list:', error);
+
+            // Update modal with error
+            $('#patientMRListModal .modal-body').html(`
+                <div class="text-center py-4">
+                    <i class="fas fa-exclamation-triangle fa-3x text-danger mb-3"></i>
+                    <p class="text-danger">${error.message || 'Gagal memuat data rekam medis'}</p>
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                </div>
+            `);
+        }
+    };
+
     window.syncWebPatients = async function() {
         if (!confirm('Apakah Anda yakin ingin menyinkronkan semua pasien web yang sudah lengkap profil ke tabel Data Pasien?\n\nIni akan membuat ID pasien baru (P###) untuk setiap pasien web yang belum ada di Data Pasien.')) {
             return;
@@ -8354,6 +8547,21 @@ Apakah Anda yakin ingin melanjutkan?`;
                     history.replaceState(null, null, ' ');
                 }, 500);
             }
+        }
+
+        // URL Parameter Handler - Handle showMRList param (from delete redirect)
+        const urlParams = new URLSearchParams(window.location.search);
+        const showMRListPatientId = urlParams.get('showMRList');
+        if (showMRListPatientId) {
+            const patientName = urlParams.get('patientName') || showMRListPatientId;
+            // Wait for page to fully load then show modal
+            setTimeout(() => {
+                if (typeof showPatientMRList === 'function') {
+                    showPatientMRList(showMRListPatientId, patientName);
+                    // Clear URL params after showing modal
+                    history.replaceState(null, null, window.location.pathname);
+                }
+            }, 1000);
         }
     });
  </script>
@@ -10368,7 +10576,7 @@ async function loadStaffAnnouncements() {
     if (!container) return;
 
     try {
-        const token = getAuthToken();
+        const token = localStorage.getItem('vps_auth_token');
         if (!token) return;
 
         const response = await fetch('/api/staff-announcements', {
@@ -10432,7 +10640,7 @@ function showCreateStaffAnnouncement() {
 
 async function editStaffAnnouncement(id) {
     try {
-        const token = getAuthToken();
+        const token = localStorage.getItem('vps_auth_token');
         const response = await fetch(`/api/staff-announcements/${id}`, {
             headers: { 'Authorization': `Bearer ${token}` }
         });
@@ -10465,7 +10673,7 @@ async function saveStaffAnnouncement() {
     }
 
     try {
-        const token = getAuthToken();
+        const token = localStorage.getItem('vps_auth_token');
         const url = id ? `/api/staff-announcements/${id}` : '/api/staff-announcements';
         const method = id ? 'PUT' : 'POST';
 
@@ -10502,7 +10710,7 @@ async function deleteStaffAnnouncement(id) {
     if (!result.isConfirmed) return;
 
     try {
-        const token = getAuthToken();
+        const token = localStorage.getItem('vps_auth_token');
         const response = await fetch(`/api/staff-announcements/${id}`, {
             method: 'DELETE',
             headers: { 'Authorization': `Bearer ${token}` }

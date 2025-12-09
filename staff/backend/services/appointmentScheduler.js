@@ -150,11 +150,11 @@ function generateCode() {
 
 /**
  * Auto-generate public registration code at midnight WIB
- * Runs daily at 00:00 WIB (17:00 UTC)
+ * Runs daily at 00:00 WIB (server timezone is WIB)
  */
 function startPublicCodeScheduler() {
-    // Run at 17:00 UTC = 00:00 WIB (midnight)
-    cron.schedule('0 17 * * *', async () => {
+    // Run at 00:00 WIB (midnight) - server uses WIB timezone
+    cron.schedule('0 0 * * *', async () => {
         try {
             logger.info('[Scheduler] Running auto-generate public code job...');
 
@@ -185,9 +185,10 @@ function startPublicCodeScheduler() {
                 return;
             }
 
-            // Set expiration to 24 hours from now
+            // Set expiration to next midnight (00:00 WIB)
             const expiresAt = new Date();
-            expiresAt.setHours(expiresAt.getHours() + 24);
+            expiresAt.setDate(expiresAt.getDate() + 1); // Tomorrow
+            expiresAt.setHours(0, 0, 0, 0); // Midnight
 
             // Insert public code
             await db.query(
@@ -242,9 +243,10 @@ async function generatePublicCodeNow() {
             throw new Error('Failed to generate unique code');
         }
 
-        // Set expiration to 24 hours from now
+        // Set expiration to next midnight (00:00 WIB)
         const expiresAt = new Date();
-        expiresAt.setHours(expiresAt.getHours() + 24);
+        expiresAt.setDate(expiresAt.getDate() + 1); // Tomorrow
+        expiresAt.setHours(0, 0, 0, 0); // Midnight
 
         // Insert public code
         await db.query(

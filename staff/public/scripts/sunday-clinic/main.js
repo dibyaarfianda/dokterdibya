@@ -256,16 +256,108 @@ class SundayClinicApp {
 
         const category = categoryLabels[this.currentCategory] || categoryLabels[MR_CATEGORIES.OBSTETRI];
 
+        // Check if user is dokter/superadmin for delete button
+        const userRole = window.currentStaffIdentity?.role || '';
+        const isDokter = userRole === 'dokter' || userRole === 'superadmin';
+
+        // Get record status from state
+        const state = stateManager.getState();
+        const recordStatus = state.recordData?.record?.status || state.recordData?.status || 'draft';
+        const isDraft = recordStatus === 'draft';
+
+        // Delete button only for dokter and draft records
+        const deleteBtn = isDokter ? `
+            <button class="btn btn-sm btn-outline-danger ml-2" onclick="window.SundayClinicApp.deleteMedicalRecord('${this.currentMrId}')" title="Hapus Rekam Medis ${isDraft ? '' : '(Finalized - butuh konfirmasi ekstra)'}">
+                <i class="fas fa-trash"></i>
+            </button>
+        ` : '';
+
         return `
-            <div class="mb-3">
+            <div class="mb-3 d-flex align-items-center">
                 <span class="badge badge-${category.color} badge-lg">
                     <i class="fas fa-tag"></i> ${category.label}
                 </span>
                 <span class="badge badge-secondary badge-lg ml-2">
                     ${this.currentMrId}
                 </span>
+                <span class="badge badge-${isDraft ? 'warning' : 'success'} badge-lg ml-2">
+                    <i class="fas fa-${isDraft ? 'edit' : 'check-circle'}"></i> ${isDraft ? 'Draft' : 'Finalized'}
+                </span>
+                ${deleteBtn}
             </div>
         `;
+    }
+
+    /**
+     * Delete medical record (Dokter/Superadmin only)
+     */
+    async deleteMedicalRecord(mrId) {
+        const state = stateManager.getState();
+        const recordStatus = state.recordData?.record?.status || state.recordData?.status || 'draft';
+        const isFinalized = recordStatus === 'finalized';
+
+        let confirmMessage = `Apakah Anda yakin ingin menghapus rekam medis ${mrId}?\n\nData yang dihapus tidak dapat dikembalikan.`;
+
+        if (isFinalized) {
+            confirmMessage = `⚠️ PERINGATAN: Rekam medis ${mrId} sudah FINALIZED!\n\nMenghapus rekam medis yang sudah finalized akan menghapus semua data termasuk billing.\n\nApakah Anda YAKIN ingin melanjutkan?`;
+        }
+
+        if (!confirm(confirmMessage)) {
+            return;
+        }
+
+        // Extra confirmation for finalized records
+        if (isFinalized) {
+            const extraConfirm = prompt(`Ketik "${mrId}" untuk konfirmasi penghapusan:`);
+            if (extraConfirm !== mrId) {
+                this.showError('Penghapusan dibatalkan - konfirmasi tidak cocok');
+                return;
+            }
+        }
+
+        try {
+            const { getIdToken } = await import('../vps-auth-v2.js');
+            const token = await getIdToken();
+
+            const forceParam = isFinalized ? '?force=true' : '';
+            const response = await fetch(`/api/sunday-clinic/records/${mrId}${forceParam}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || 'Gagal menghapus rekam medis');
+            }
+
+            this.showSuccess(`Rekam medis ${mrId} berhasil dihapus`);
+
+            // Get patient info from state to reopen modal after redirect
+            const patientData = state.patientData;
+            const patientId = patientData?.id || state.recordData?.patient_id;
+            const patientName = patientData?.full_name || patientData?.name || '';
+
+            // Redirect to main admin page with params to reopen patient MR modal
+            setTimeout(() => {
+                const params = new URLSearchParams();
+                if (patientId) {
+                    params.set('showMRList', patientId);
+                    if (patientName) {
+                        params.set('patientName', patientName);
+                    }
+                }
+                const url = '/staff/public/index-adminlte.html' + (params.toString() ? '?' + params.toString() : '');
+                window.location.href = url;
+            }, 1500);
+
+        } catch (error) {
+            console.error('[SundayClinic] Delete failed:', error);
+            this.showError(error.message);
+        }
     }
 
     /**
