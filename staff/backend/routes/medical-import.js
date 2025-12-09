@@ -1414,4 +1414,121 @@ router.post('/api/medical-import/save', verifyToken, async (req, res) => {
     }
 });
 
+/**
+ * POST /api/medical-import/parse-pdf
+ * Parse medical record from PDF URL
+ * Used by Chrome extensions when viewing PDF files
+ */
+router.post('/parse-pdf', verifyToken, async (req, res) => {
+    try {
+        const { pdf_url, category = 'obstetri', source } = req.body;
+
+        if (!pdf_url) {
+            return res.status(400).json({
+                success: false,
+                message: 'PDF URL is required'
+            });
+        }
+
+        console.log('[PDF Import] Fetching PDF from:', pdf_url);
+
+        // Fetch PDF from URL
+        const pdfParse = require('pdf-parse');
+        const fetch = require('node-fetch');
+
+        const pdfResponse = await fetch(pdf_url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+            }
+        });
+
+        if (!pdfResponse.ok) {
+            throw new Error(`Failed to fetch PDF: ${pdfResponse.status} ${pdfResponse.statusText}`);
+        }
+
+        const pdfBuffer = await pdfResponse.buffer();
+        console.log('[PDF Import] PDF size:', pdfBuffer.length, 'bytes');
+
+        // Extract text from PDF
+        const pdfData = await pdfParse(pdfBuffer);
+        const text = pdfData.text;
+
+        console.log('[PDF Import] Extracted text length:', text.length);
+        console.log('[PDF Import] Text preview:', text.substring(0, 500));
+
+        if (!text || text.length < 50) {
+            return res.status(400).json({
+                success: false,
+                message: 'PDF tidak mengandung teks yang dapat dibaca'
+            });
+        }
+
+        // Now parse the text using AI (same logic as /parse endpoint)
+        const use_ai = true;
+        let parsed;
+
+        if (use_ai && OPENAI_API_KEY) {
+            try {
+                parsed = await parseWithAI(text, category);
+            } catch (aiError) {
+                console.error('[PDF Import] AI parsing error:', aiError.message);
+                parsed = parseWithRegex(text);
+                parsed._ai_error = aiError.message;
+            }
+        } else {
+            parsed = parseWithRegex(text);
+        }
+
+        // Parse date/time from text
+        const visit_date = parseVisitDate(text);
+        const visit_time = parseVisitTime(text);
+        const detected_location = detectLocation(text);
+
+        // Map source to visit_location
+        const sourceToLocation = {
+            'simrs_melinda': 'rsia_melinda',
+            'rsud_gambiran': 'rsud_gambiran',
+            'rs_bhayangkara': 'rs_bhayangkara'
+        };
+        const final_location = source ? (sourceToLocation[source] || detected_location) : detected_location;
+
+        // Map to template format
+        const template = mapToTemplate(parsed, category);
+
+        const responseData = {
+            raw_parsed: parsed,
+            template: template,
+            category: category,
+            confidence: calculateConfidence(parsed),
+            visit_date: visit_date,
+            visit_time: visit_time,
+            visit_date_detected: !!visit_date,
+            visit_location: final_location,
+            visit_location_detected: !!source || !!detected_location,
+            parsed_by: parsed._parsed_by || 'regex',
+            source: source || 'unknown',
+            pdf_pages: pdfData.numpages,
+            pdf_text_length: text.length
+        };
+
+        if (parsed._ai_error) {
+            responseData.ai_error = parsed._ai_error;
+            responseData.warning = 'AI parsing gagal, menggunakan regex parsing.';
+        }
+
+        res.json({
+            success: true,
+            data: responseData
+        });
+
+    } catch (error) {
+        console.error('[PDF Import] Error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to parse PDF',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;
