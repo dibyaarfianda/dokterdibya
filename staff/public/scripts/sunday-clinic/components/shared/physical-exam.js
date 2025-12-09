@@ -198,7 +198,7 @@ export default {
                     </div>
                     <div class="mb-3">
                         <label class="font-weight-bold">Pemeriksaan Abdomen</label>
-                        <textarea class="form-control" id="pe-abdomen" rows="3">${escapeHtml(exam.abdomen || 'BU (+), Soepel\nGravida tampak sesuai usia kehamilan / Massa abdomen')}</textarea>
+                        <textarea class="form-control" id="pe-abdomen" rows="3">${escapeHtml(exam.abdomen || 'BU (+) normal')}</textarea>
                     </div>
                     <div class="mb-3">
                         <label class="font-weight-bold">Pemeriksaan Ekstremitas</label>

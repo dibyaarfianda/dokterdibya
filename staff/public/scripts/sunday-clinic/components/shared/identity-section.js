@@ -19,6 +19,7 @@ export default {
         const patient = state.patientData || {};
         const record = state.recordData?.record || {};
         const appointment = state.appointmentData || {};
+        const intake = state.intakeData || {};
         const category = record.mr_category || 'obstetri';
 
         // Use old simple format for obstetri category
@@ -41,7 +42,7 @@ export default {
                     <hr>
 
                     <!-- Patient Demographics -->
-                    ${this.renderDemographics(patient)}
+                    ${this.renderDemographics(patient, intake)}
 
                     <hr>
 
@@ -90,10 +91,13 @@ export default {
         const insurance = patient.insurance || intakePayload.insurance;
         const emergencyPhone = patient.emergency_contact_phone || intakePayload.emergency_contact_phone;
 
+        const height = patient.height || intakePayload.height;
+
         const primaryRows = [
             ['Nama Lengkap', formatValue(fullName)],
             ['ID Pasien', formatValue(patientId)],
             ['Usia', formatValue(dateOfBirth ? this.calculateAge(dateOfBirth) + ' tahun' : '')],
+            ['Tinggi Badan', formatValue(height ? height + ' cm' : '')],
             ['Telepon', formatPhone(phone)],
             ['Kontak Darurat', formatPhone(emergencyPhone)],
             ['Email', formatValue(email)],
@@ -239,11 +243,13 @@ export default {
     /**
      * Render Patient Demographics
      */
-    renderDemographics(patient) {
+    renderDemographics(patient, intake = {}) {
+        const intakePayload = intake.payload || {};
         const fullName = patient.full_name || patient.name || 'N/A';
         const dob = patient.date_of_birth || patient.dob || '';
         const dobFormatted = dob ? this.formatDate(dob) : 'N/A';
         const age = dob ? this.calculateAge(dob) : 'N/A';
+        const height = patient.height || intakePayload.height || '';
         const gender = patient.gender || 'female';
         const genderLabel = gender === 'male' ? 'Laki-laki' : 'Perempuan';
         const genderIcon = gender === 'male' ? 'mars' : 'venus';
@@ -296,7 +302,7 @@ export default {
                 </div>
 
                 <div class="row">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="info-group mb-3">
                             <label class="text-muted mb-1">Tanggal Lahir:</label>
                             <div class="info-value">
@@ -314,7 +320,16 @@ export default {
                         </div>
                     </div>
 
-                    <div class="col-md-3">
+                    <div class="col-md-2">
+                        <div class="info-group mb-3">
+                            <label class="text-muted mb-1">Tinggi Badan:</label>
+                            <div class="info-value">
+                                ${height ? `<strong>${height}</strong> cm` : 'N/A'}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-2">
                         <div class="info-group mb-3">
                             <label class="text-muted mb-1">Agama:</label>
                             <div class="info-value">

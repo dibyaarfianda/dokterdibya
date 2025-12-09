@@ -549,8 +549,6 @@ function generateMedicalResume(identitas, records) {
     // Header - Professional Format
     resume += '═══════════════════════════════════════════════════════════════\n';
     resume += `                    RESUME MEDIS ${patientName.toUpperCase()}\n`;
-    resume += '═══════════════════════════════════════════════════════════════\n';
-    resume += `Tanggal: ${today}\n`;
     resume += '═══════════════════════════════════════════════════════════════\n\n';
 
     // I. IDENTITAS PASIEN
@@ -872,7 +870,9 @@ function generateMedicalResume(identitas, records) {
             
             // Biometri Janin
             const biometri = [];
-            if (trimesterData.crl_cm) biometri.push(`Crown-Rump Length (CRL): ${trimesterData.crl_cm} cm`);
+            // Check both crl and crl_cm (different field names in different components)
+            const crlValue = trimesterData.crl || trimesterData.crl_cm;
+            if (crlValue) biometri.push(`Crown-Rump Length (CRL): ${crlValue} cm`);
             if (trimesterData.bpd) biometri.push(`Biparietal Diameter (BPD): ${trimesterData.bpd} cm`);
             if (trimesterData.ac) biometri.push(`Abdominal Circumference (AC): ${trimesterData.ac} cm`);
             if (trimesterData.fl) biometri.push(`Femur Length (FL): ${trimesterData.fl} cm`);
@@ -1008,16 +1008,8 @@ function generateMedicalResume(identitas, records) {
 
     // Footer
     resume += '═══════════════════════════════════════════════════════════════\n';
-    resume += `Tanggal Pembuatan Resume: ${new Date().toLocaleString('id-ID', { 
-        timeZone: 'Asia/Jakarta',
-        year: 'numeric',
-        month: 'long', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    })}\n`;
-    resume += '═══════════════════════════════════════════════════════════════\n\n';
     resume += 'Bila ada file USG dan Lab/Hasil Tes akan segera dikirimkan ke Portal Anda\n';
+    resume += '═══════════════════════════════════════════════════════════════\n';
 
     return resume;
 }

@@ -98,6 +98,7 @@ function initPages() {
     pages.notifications = grab('notifications-page');
     pages.artikelKesehatan = grab('artikel-kesehatan-page');
     pages.penjualanObat = grab('penjualan-obat-page');
+    pages.bulkUploadUSG = grab('bulk-upload-usg-page');
 }
 function loadExternalPage(containerId, htmlFile, options = {}) {
     const { forceReload = false } = options;
@@ -1214,6 +1215,23 @@ function showPenjualanObatPage() {
     });
 }
 
+function showBulkUploadUSGPage() {
+    hideAllPages();
+    pages.bulkUploadUSG?.classList.remove('d-none');
+    setTitleAndActive('Bulk Upload USG', 'nav-bulk-upload-usg', 'bulk-upload-usg');
+
+    // Dynamically import and initialize the Bulk Upload USG module
+    importWithVersion('./usg-bulk-upload.js').then(module => {
+        if (module.initBulkUploadUSG) {
+            module.initBulkUploadUSG();
+        } else {
+            console.error('USG Bulk Upload module loaded, but initBulkUploadUSG function not found.');
+        }
+    }).catch(error => {
+        console.error('Failed to load usg-bulk-upload.js:', error);
+    });
+}
+
 function showKelolaRolesPage() {
     hideAllPages();
     pages.kelolaRoles?.classList.remove('d-none');
@@ -2290,6 +2308,10 @@ async function updateWelcomeCard(user) {
 
 async function initializeApp(user) {
     console.log('[MAIN] initializeApp called with user:', user?.id || 'null', user?.name || 'no name');
+
+    // Store user globally for later access (e.g., showPatientDetail)
+    window.currentStaffUser = user || null;
+
     if (user) {
         // Check if user must change password
         const mustChangePassword = localStorage.getItem('must_change_password') === 'true';
@@ -2662,7 +2684,7 @@ async function startPatientVisit(patientId, patientName, location, category) {
         }
 
         // Show loading state on button
-        const btn = document.getElementById('btn-start-patient-visit');
+        const btn = document.getElementById('btn-confirm-new-visit');
         if (btn) {
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Memproses...';
@@ -2721,10 +2743,10 @@ async function startPatientVisit(patientId, patientName, location, category) {
         alert('Gagal memulai kunjungan: ' + error.message);
 
         // Reset button state
-        const btn = document.getElementById('btn-start-patient-visit');
+        const btn = document.getElementById('btn-confirm-new-visit');
         if (btn) {
             btn.disabled = false;
-            btn.innerHTML = '<i class="fas fa-play-circle mr-2"></i>Mulai Kunjungan';
+            btn.innerHTML = '<i class="fas fa-play-circle mr-1"></i> Mulai Kunjungan';
         }
     }
 }
@@ -2808,7 +2830,101 @@ async function showPatientDetail(patientId) {
         }
         
         console.log('Final intake data:', intake);
-        
+
+        // Fetch patient's medical records (visit history)
+        let patientVisits = [];
+        try {
+            const visitsResponse = await fetch(`/api/sunday-clinic/patient-visits/${patientId}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            if (visitsResponse.ok) {
+                const visitsData = await visitsResponse.json();
+                patientVisits = visitsData.data || [];
+                console.log('Patient visits loaded:', patientVisits.length);
+            }
+        } catch (visitsError) {
+            console.warn('Failed to fetch patient visits:', visitsError);
+        }
+
+        // Build visits table HTML
+        const categoryLabels = {
+            'obstetri': '<span class="badge badge-info"><i class="fas fa-baby mr-1"></i>Obstetri</span>',
+            'gyn_repro': '<span class="badge badge-success"><i class="fas fa-venus mr-1"></i>Reproduksi</span>',
+            'gyn_special': '<span class="badge badge-warning"><i class="fas fa-microscope mr-1"></i>Ginekologi</span>'
+        };
+        const statusLabels = {
+            'draft': '<span class="badge badge-secondary">Draft</span>',
+            'in_progress': '<span class="badge badge-primary">Dalam Proses</span>',
+            'finalized': '<span class="badge badge-success">Selesai</span>',
+            'billed': '<span class="badge badge-info">Sudah Billing</span>'
+        };
+
+        // Check if user is dokter/superadmin for delete button
+        // Decode JWT token directly to get user info (most reliable method)
+        let isDokter = false;
+        try {
+            const token = getAuthToken();
+            if (token) {
+                const payload = JSON.parse(atob(token.split('.')[1]));
+                isDokter = payload.is_superadmin || payload.role === 'dokter' || payload.role === 'superadmin';
+                console.log('[Patient Detail] JWT payload:', { role: payload.role, is_superadmin: payload.is_superadmin, isDokter });
+            }
+        } catch (e) {
+            console.warn('[Patient Detail] Could not decode token:', e);
+            // Fallback to auth.currentUser
+            const staffUser = auth.currentUser || window.currentStaffUser;
+            isDokter = staffUser?.is_superadmin || staffUser?.role === 'dokter' || staffUser?.role === 'superadmin';
+        }
+
+        let visitsTableHtml = '';
+        if (patientVisits.length > 0) {
+            const visitsRows = patientVisits.map(visit => {
+                const visitDate = new Date(visit.visit_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+                const isFinalized = visit.status === 'finalized';
+                const btnClass = isFinalized ? 'btn-outline-danger' : 'btn-danger';
+                const btnTitle = isFinalized ? 'Hapus (Finalized - konfirmasi ekstra)' : 'Hapus Rekam Medis';
+
+                return `<tr>
+                    <td><code>${visit.mr_id}</code></td>
+                    <td>${visitDate}</td>
+                    <td><small>${visit.location_short || visit.visit_location}</small></td>
+                    <td>${categoryLabels[visit.mr_category] || visit.mr_category || '-'}</td>
+                    <td>${statusLabels[visit.status] || visit.status || '-'}</td>
+                    <td class="text-center">
+                        <a href="/sunday-clinic/${visit.mr_id.toLowerCase()}/identitas" class="btn btn-xs btn-info" title="Buka Rekam Medis">
+                            <i class="fas fa-external-link-alt"></i>
+                        </a>
+                        <button class="btn btn-xs ${btnClass} ml-1" onclick="deleteMedicalRecord('${visit.mr_id}', ${isFinalized})" title="${btnTitle}">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>`;
+            }).join('');
+
+            visitsTableHtml = `<div class="table-responsive">
+                <table class="table table-hover table-striped mb-0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>MR ID</th>
+                            <th>Tanggal Kunjungan</th>
+                            <th>Lokasi</th>
+                            <th>Kategori</th>
+                            <th>Status</th>
+                            <th class="text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>${visitsRows}</tbody>
+                </table>
+            </div>`;
+        } else {
+            visitsTableHtml = `<div class="text-center py-4 text-muted">
+                <i class="fas fa-folder-open fa-3x mb-3"></i>
+                <p class="mb-0">Belum ada rekam medis</p>
+            </div>`;
+        }
+
         // Normalize patient data structure (handle differences between endpoints)
         const normalizedPatient = {
             id: patient.id,
@@ -3005,57 +3121,16 @@ async function showPatientDetail(patientId) {
 
                             <hr>
                             <div class="card card-primary card-outline">
-                                <div class="card-header">
+                                <div class="card-header d-flex justify-content-between align-items-center">
                                     <h5 class="card-title mb-0">
-                                        <i class="fas fa-clinic-medical"></i> Mulai Kunjungan
+                                        <i class="fas fa-file-medical"></i> Daftar Rekam Medis
                                     </h5>
+                                    <button type="button" class="btn btn-primary btn-sm" id="btn-new-visit" data-patient-id="${normalizedPatient.id}" data-patient-name="${normalizedPatient.fullname}">
+                                        <i class="fas fa-plus mr-1"></i> Kunjungan Baru
+                                    </button>
                                 </div>
-                                <div class="card-body">
-                                    <div class="row">
-                                        <div class="col-md-6">
-                                            <label class="font-weight-bold mb-2">Lokasi Kunjungan:</label>
-                                            <div class="location-options">
-                                                <label class="d-block mb-2">
-                                                    <input type="radio" name="visit_location" value="klinik_private" checked>
-                                                    <span class="ml-2"><i class="fas fa-clinic-medical text-primary mr-1"></i> Klinik Private</span>
-                                                </label>
-                                                <label class="d-block mb-2">
-                                                    <input type="radio" name="visit_location" value="rsia_melinda">
-                                                    <span class="ml-2"><i class="fas fa-hospital text-pink mr-1" style="color:#e91e63"></i> RSIA Melinda</span>
-                                                </label>
-                                                <label class="d-block mb-2">
-                                                    <input type="radio" name="visit_location" value="rsud_gambiran">
-                                                    <span class="ml-2"><i class="fas fa-hospital text-info mr-1"></i> RSUD Gambiran</span>
-                                                </label>
-                                                <label class="d-block mb-2">
-                                                    <input type="radio" name="visit_location" value="rs_bhayangkara">
-                                                    <span class="ml-2"><i class="fas fa-hospital text-success mr-1"></i> RS Bhayangkara</span>
-                                                </label>
-                                            </div>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <label class="font-weight-bold mb-2">Kategori Konsultasi:</label>
-                                            <div class="category-options">
-                                                <label class="d-block mb-2">
-                                                    <input type="radio" name="visit_category" value="obstetri" checked>
-                                                    <span class="ml-2"><i class="fas fa-baby text-info mr-1"></i> <strong>Obstetri</strong> - Kehamilan</span>
-                                                </label>
-                                                <label class="d-block mb-2">
-                                                    <input type="radio" name="visit_category" value="gyn_repro">
-                                                    <span class="ml-2"><i class="fas fa-venus text-success mr-1"></i> <strong>Reproduksi</strong> - Program Hamil, KB</span>
-                                                </label>
-                                                <label class="d-block mb-2">
-                                                    <input type="radio" name="visit_category" value="gyn_special">
-                                                    <span class="ml-2"><i class="fas fa-microscope text-warning mr-1"></i> <strong>Ginekologi</strong> - Kista, Miom</span>
-                                                </label>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="mt-3 text-center">
-                                        <button type="button" class="btn btn-primary btn-lg" id="btn-start-patient-visit" data-patient-id="${normalizedPatient.id}" data-patient-name="${normalizedPatient.fullname}">
-                                            <i class="fas fa-play-circle mr-2"></i>Mulai Kunjungan
-                                        </button>
-                                    </div>
+                                <div class="card-body p-0">
+                                    ${visitsTableHtml}
                                 </div>
                             </div>
                         </div>
@@ -3077,14 +3152,13 @@ async function showPatientDetail(patientId) {
         $('body').append(modal);
         $('#patientDetailModal').modal('show');
 
-        // Bind event for "Mulai Kunjungan" button
-        document.getElementById('btn-start-patient-visit')?.addEventListener('click', async function() {
+        // Bind event for "Kunjungan Baru" button
+        document.getElementById('btn-new-visit')?.addEventListener('click', function() {
             const patientId = this.dataset.patientId;
             const patientName = this.dataset.patientName;
-            const location = document.querySelector('input[name="visit_location"]:checked')?.value || 'klinik_private';
-            const category = document.querySelector('input[name="visit_category"]:checked')?.value || 'obstetri';
 
-            await startPatientVisit(patientId, patientName, location, category);
+            // Show new visit modal with location/category selection
+            showNewVisitModal(patientId, patientName);
         });
 
         // Clean up modal after close
@@ -3097,6 +3171,202 @@ async function showPatientDetail(patientId) {
         console.error('Error stack:', error.stack);
         alert('Gagal memuat detail pasien: ' + error.message);
     }
+}
+
+/**
+ * Show modal to select location and category for new visit
+ * Checks for existing draft/in_progress records first
+ */
+async function showNewVisitModal(patientId, patientName) {
+    const token = getAuthToken();
+
+    // Check for existing draft/in_progress records
+    let pendingRecords = [];
+    try {
+        const response = await fetch(`/api/sunday-clinic/patient-visits/${patientId}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (response.ok) {
+            const data = await response.json();
+            pendingRecords = (data.data || []).filter(v => v.status === 'draft' || v.status === 'in_progress');
+        }
+    } catch (err) {
+        console.warn('Failed to check existing records:', err);
+    }
+
+    // If there are pending records, show warning first
+    if (pendingRecords.length > 0) {
+        const categoryLabels = {
+            'obstetri': 'Obstetri',
+            'gyn_repro': 'Reproduksi',
+            'gyn_special': 'Ginekologi'
+        };
+
+        const pendingList = pendingRecords.map(r => {
+            const date = new Date(r.visit_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+            return `<tr>
+                <td><code>${r.mr_id}</code></td>
+                <td>${date}</td>
+                <td>${r.location_short || r.visit_location}</td>
+                <td>${categoryLabels[r.mr_category] || r.mr_category}</td>
+                <td>
+                    <a href="/sunday-clinic/${r.mr_id.toLowerCase()}/identitas" class="btn btn-sm btn-success">
+                        <i class="fas fa-arrow-right mr-1"></i>Lanjutkan
+                    </a>
+                </td>
+            </tr>`;
+        }).join('');
+
+        const warningHtml = `
+            <div class="modal fade" id="pendingRecordsModal" tabindex="-1" role="dialog">
+                <div class="modal-dialog modal-lg" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header bg-warning">
+                            <h5 class="modal-title">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>Rekam Medis Belum Selesai
+                            </h5>
+                            <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            <p>Pasien <strong>${patientName}</strong> memiliki ${pendingRecords.length} rekam medis yang belum selesai:</p>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th>MR ID</th>
+                                            <th>Tanggal</th>
+                                            <th>Lokasi</th>
+                                            <th>Kategori</th>
+                                            <th>Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>${pendingList}</tbody>
+                                </table>
+                            </div>
+                            <div class="alert alert-info mt-3 mb-0">
+                                <i class="fas fa-info-circle mr-2"></i>
+                                Disarankan untuk melanjutkan rekam medis yang sudah ada daripada membuat baru.
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                            <button type="button" class="btn btn-warning" id="btn-force-new-visit">
+                                <i class="fas fa-plus mr-1"></i>Tetap Buat Baru
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        $('#pendingRecordsModal').remove();
+        $('body').append(warningHtml);
+        $('#pendingRecordsModal').modal('show');
+
+        // Handle "Tetap Buat Baru" button
+        document.getElementById('btn-force-new-visit')?.addEventListener('click', function() {
+            $('#pendingRecordsModal').modal('hide');
+            showNewVisitForm(patientId, patientName);
+        });
+
+        $('#pendingRecordsModal').on('hidden.bs.modal', function() {
+            $(this).remove();
+        });
+
+        return;
+    }
+
+    // No pending records, show the form directly
+    showNewVisitForm(patientId, patientName);
+}
+
+/**
+ * Show the new visit form (location/category selection)
+ */
+function showNewVisitForm(patientId, patientName) {
+    const modalHtml = `
+        <div class="modal fade" id="newVisitModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            <i class="fas fa-plus-circle mr-2"></i>Kunjungan Baru
+                        </h5>
+                        <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-3">Pasien: <strong>${patientName}</strong></p>
+                        <div class="form-group">
+                            <label class="font-weight-bold mb-2">Lokasi Kunjungan:</label>
+                            <div class="location-options">
+                                <label class="d-block mb-2">
+                                    <input type="radio" name="new_visit_location" value="klinik_private" checked>
+                                    <span class="ml-2"><i class="fas fa-clinic-medical text-primary mr-1"></i> Klinik Private</span>
+                                </label>
+                                <label class="d-block mb-2">
+                                    <input type="radio" name="new_visit_location" value="rsia_melinda">
+                                    <span class="ml-2"><i class="fas fa-hospital mr-1" style="color:#e91e63"></i> RSIA Melinda</span>
+                                </label>
+                                <label class="d-block mb-2">
+                                    <input type="radio" name="new_visit_location" value="rsud_gambiran">
+                                    <span class="ml-2"><i class="fas fa-hospital text-info mr-1"></i> RSUD Gambiran</span>
+                                </label>
+                                <label class="d-block mb-2">
+                                    <input type="radio" name="new_visit_location" value="rs_bhayangkara">
+                                    <span class="ml-2"><i class="fas fa-hospital text-success mr-1"></i> RS Bhayangkara</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label class="font-weight-bold mb-2">Kategori Konsultasi:</label>
+                            <div class="category-options">
+                                <label class="d-block mb-2">
+                                    <input type="radio" name="new_visit_category" value="obstetri" checked>
+                                    <span class="ml-2"><i class="fas fa-baby text-info mr-1"></i> <strong>Obstetri</strong> - Kehamilan</span>
+                                </label>
+                                <label class="d-block mb-2">
+                                    <input type="radio" name="new_visit_category" value="gyn_repro">
+                                    <span class="ml-2"><i class="fas fa-venus text-success mr-1"></i> <strong>Reproduksi</strong> - Program Hamil, KB</span>
+                                </label>
+                                <label class="d-block mb-2">
+                                    <input type="radio" name="new_visit_category" value="gyn_special">
+                                    <span class="ml-2"><i class="fas fa-microscope text-warning mr-1"></i> <strong>Ginekologi</strong> - Kista, Miom</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                        <button type="button" class="btn btn-primary" id="btn-confirm-new-visit">
+                            <i class="fas fa-play-circle mr-1"></i> Mulai Kunjungan
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Remove existing modal if any
+    $('#newVisitModal').remove();
+    $('body').append(modalHtml);
+    $('#newVisitModal').modal('show');
+
+    // Bind confirm button
+    document.getElementById('btn-confirm-new-visit')?.addEventListener('click', async function() {
+        const location = document.querySelector('input[name="new_visit_location"]:checked')?.value || 'klinik_private';
+        const category = document.querySelector('input[name="new_visit_category"]:checked')?.value || 'obstetri';
+
+        // Close this modal
+        $('#newVisitModal').modal('hide');
+
+        // Start the visit
+        await startPatientVisit(patientId, patientName, location, category);
+    });
+
+    // Clean up modal after close
+    $('#newVisitModal').on('hidden.bs.modal', function() {
+        $(this).remove();
+    });
 }
 
 /**
@@ -3518,8 +3788,82 @@ window.selectPatientForImport = selectPatientForImport;
 window.startVisitWithImport = startVisitWithImport;
 window.fillAnamnesaFromImport = fillAnamnesaFromImport;
 
+/**
+ * Delete a medical record (Dokter/Superadmin only)
+ * @param {string} mrId - Medical record ID
+ * @param {boolean} isFinalized - Whether the record is finalized (requires extra confirmation)
+ */
+async function deleteMedicalRecord(mrId, isFinalized = false) {
+    let confirmMessage = `Apakah Anda yakin ingin menghapus rekam medis ${mrId}?\n\nData yang dihapus tidak dapat dikembalikan.`;
+
+    if (isFinalized) {
+        confirmMessage = `⚠️ PERINGATAN: Rekam medis ${mrId} sudah FINALIZED!\n\nMenghapus rekam medis yang sudah finalized akan menghapus semua data termasuk billing.\n\nApakah Anda YAKIN ingin melanjutkan?`;
+    }
+
+    if (!confirm(confirmMessage)) {
+        return;
+    }
+
+    // Extra confirmation for finalized records
+    if (isFinalized) {
+        const extraConfirm = prompt(`Ketik "${mrId}" untuk konfirmasi penghapusan:`);
+        if (extraConfirm !== mrId) {
+            alert('Penghapusan dibatalkan - konfirmasi tidak cocok');
+            return;
+        }
+    }
+
+    try {
+        const token = getAuthToken();
+        const forceParam = isFinalized ? '?force=true' : '';
+        const response = await fetch(`/api/sunday-clinic/records/${mrId}${forceParam}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            if (response.status === 403) {
+                alert('Hanya Dokter (Superadmin) yang dapat menghapus rekam medis.');
+            } else {
+                alert(result.message || 'Gagal menghapus rekam medis');
+            }
+            return;
+        }
+
+        alert(result.message || `Rekam medis ${mrId} berhasil dihapus`);
+
+        // Remove the deleted row from any table showing this MR
+        document.querySelectorAll(`button[onclick*="'${mrId}'"]`).forEach(btn => {
+            const row = btn.closest('tr');
+            if (row) {
+                row.remove();
+            }
+        });
+
+        // Update badge count if exists
+        const badge = document.querySelector('#patientMRListModal .badge-info');
+        if (badge) {
+            const currentCount = parseInt(badge.textContent) || 0;
+            if (currentCount > 0) {
+                badge.textContent = `${currentCount - 1} rekam medis`;
+            }
+        }
+
+    } catch (error) {
+        console.error('Error deleting medical record:', error);
+        alert('Gagal menghapus rekam medis: ' + error.message);
+    }
+}
+
 // Export showPatientDetail to global scope for onclick handlers
 window.showPatientDetail = showPatientDetail;
+window.showNewVisitModal = showNewVisitModal;
+window.showNewVisitForm = showNewVisitForm;
+window.deleteMedicalRecord = deleteMedicalRecord;
 window.openSundayClinicWithMrId = openSundayClinicWithMrId;
 
 // Export for manual initialization if needed
@@ -3566,6 +3910,7 @@ window.showStokOpnamePage = showStokOpnamePage;
 window.showPengaturanPage = showPengaturanPage;
 window.showKelolaObatPage = showKelolaObatPage;
 window.showPenjualanObatPage = showPenjualanObatPage;
+window.showBulkUploadUSGPage = showBulkUploadUSGPage;
 window.showHospitalAppointmentsPage = showHospitalAppointmentsPage;
 window.showHospitalPatientsPage = showHospitalPatientsPage;
 window.showPasienBaruPage = showPasienBaruPage;

@@ -414,10 +414,18 @@ async function saveUSGGynSpecial() {
             notes: document.getElementById('usg-notes')?.value || ''
         };
 
-        const patientId = state.derived?.patientId;
+        const patientId = state.derived?.patientId ||
+                         state.recordData?.patientId ||
+                         state.patientData?.id ||
+                         state.recordData?.patient_id;
+        const mrId = state.currentMrId ||
+                    state.recordData?.mrId ||
+                    state.recordData?.mr_id ||
+                    state.recordData?.id;
+
         if (!patientId) throw new Error('Patient ID not found');
 
-        const payload = { patientId, type: 'usg', data: usgData };
+        const payload = { patientId, mrId, type: 'usg', data: usgData };
 
         if (existingRecordId) {
             await apiClient.put(`/api/medical-records/${existingRecordId}`, { type: 'usg', data: usgData });
@@ -427,7 +435,7 @@ async function saveUSGGynSpecial() {
 
         window.showSuccess('Data USG berhasil disimpan!');
         const SundayClinicApp = (await import('../../main.js')).default;
-        await SundayClinicApp.fetchRecord(state.currentMrId);
+        await SundayClinicApp.fetchRecord(mrId);
         SundayClinicApp.render(state.activeSection);
 
     } catch (error) {

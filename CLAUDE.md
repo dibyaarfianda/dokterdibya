@@ -6,21 +6,25 @@
 **NEVER hardcode token storage keys.** Use the appropriate helper:
 
 ```javascript
-// In main.js - use the built-in helper function (line 13-18)
-const token = getAuthToken();
+// In index-adminlte.html inline scripts OR main.js
+const token = getAuthToken();  // ✅ Globally available
 
 // In ES Modules (other .js files)
 import { TOKEN_KEY, getIdToken } from './vps-auth-v2.js';
 const token = await getIdToken();
 ```
 
-**DO NOT use in main.js:**
-- `localStorage.getItem(TOKEN_KEY)` ❌ (TOKEN_KEY not defined)
-- `localStorage.getItem(window.TOKEN_KEY || 'vps_auth_token')` ❌ (unreliable)
-- `localStorage.getItem('vps_auth_token')` ❌ (hardcoded)
+**Global `getAuthToken()` is defined in index-adminlte.html (line ~1214)** and available everywhere:
+- In `<script>` tags inside index-adminlte.html ✅
+- In main.js ✅
+- In any inline JavaScript ✅
 
-**ALWAYS use in main.js:**
-- `getAuthToken()` ✅ (defined at top of main.js)
+**DO NOT use:**
+- `localStorage.getItem(TOKEN_KEY)` ❌ (TOKEN_KEY might not be defined)
+- `localStorage.getItem('vps_auth_token')` ❌ (hardcoded, use getAuthToken() instead)
+
+**ALWAYS use:**
+- `getAuthToken()` ✅ (defined globally in index-adminlte.html)
 
 ### 2. Role Constants
 **NEVER hardcode role names or IDs.** Always import from constants:
@@ -62,6 +66,18 @@ Use appropriate middleware:
 | Frontend auth & token | `staff/public/scripts/vps-auth-v2.js` |
 | Auth middleware | `staff/backend/middleware/auth.js` |
 | Role visibility table | MySQL `role_visibility` |
+
+## Database
+
+**Database name:** `dibyaklinik`
+
+```bash
+# Access database
+mysql -u root dibyaklinik
+
+# Example query
+mysql -u root dibyaklinik -e "SELECT * FROM patients LIMIT 5;"
+```
 
 ## Common Mistakes to Avoid
 

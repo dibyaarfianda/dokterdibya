@@ -9,6 +9,7 @@ const router = express.Router();
 const db = require('../db');
 const logger = require('../utils/logger');
 const { verifyToken, requireSuperadmin, requirePermission } = require('../middleware/auth');
+const { generatePublicCodeNow } = require('../services/appointmentScheduler');
 
 /**
  * Generate a unique 6-character alphanumeric code
@@ -133,6 +134,29 @@ router.post('/generate', verifyToken, requirePermission('registration_codes.crea
 
 // POST /api/registration-codes/generate-public - Alias for backward compatibility
 router.post('/generate-public', verifyToken, requirePermission('registration_codes.create'), generatePublicCode);
+
+/**
+ * POST /api/registration-codes/generate-now
+ * Manually trigger scheduler code generation (Superadmin only)
+ * Used when midnight scheduler was missed
+ */
+router.post('/generate-now', verifyToken, requireSuperadmin, async (req, res) => {
+    try {
+        const result = await generatePublicCodeNow();
+        res.json({
+            success: true,
+            message: 'Kode registrasi berhasil di-generate',
+            code: result.code,
+            expires_at: result.expiresAt
+        });
+    } catch (error) {
+        logger.error('Manual code generation error', error);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal generate kode: ' + error.message
+        });
+    }
+});
 
 /**
  * POST /api/registration-codes/validate
