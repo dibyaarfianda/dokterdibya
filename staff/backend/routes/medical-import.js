@@ -1056,7 +1056,7 @@ function mapToTemplate(parsed, category) {
  */
 router.post('/api/medical-import/parse', verifyToken, async (req, res) => {
     try {
-        const { text, category, use_ai = true } = req.body;
+        const { text, category, use_ai = true, source } = req.body;
 
         if (!text || typeof text !== 'string') {
             return res.status(400).json({
@@ -1110,6 +1110,15 @@ router.post('/api/medical-import/parse', verifyToken, async (req, res) => {
         const visit_time = parseVisitTime(text);
         const detected_location = detectLocation(text);
 
+        // Map source to visit_location (source from Chrome extension takes priority)
+        const sourceToLocation = {
+            'simrs_melinda': 'rsia_melinda',
+            'rsud_gambiran': 'rsud_gambiran',
+            'rs_bhayangkara': 'rs_bhayangkara'
+        };
+        const final_location = source ? (sourceToLocation[source] || detected_location) : detected_location;
+        const location_detected = !!source || !!detected_location;
+
         // Map to template format with user-selected category
         const template = mapToTemplate(parsed, category);
 
@@ -1122,9 +1131,10 @@ router.post('/api/medical-import/parse', verifyToken, async (req, res) => {
             visit_date: visit_date,
             visit_time: visit_time,
             visit_date_detected: !!visit_date,
-            visit_location: detected_location,
-            visit_location_detected: !!detected_location,
-            parsed_by: parsed._parsed_by || 'regex'
+            visit_location: final_location,
+            visit_location_detected: location_detected,
+            parsed_by: parsed._parsed_by || 'regex',
+            source: source || 'simrs_melinda'  // Pass through source for hospital identification
         };
 
         // Include AI error message if fallback was used

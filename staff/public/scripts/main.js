@@ -2588,6 +2588,118 @@ async function handleForcePasswordChange() {
 // Make function globally available
 window.showForcePasswordChangeModal = showForcePasswordChangeModal;
 
+// -------------------- CHROME EXTENSION IMPORT --------------------
+/**
+ * AUTOMATIC import from Chrome extension (SIMRS Gambiran/Melinda)
+ * Flow: Parse → Search patient → Create MR → Navigate (NO confirmations)
+ */
+async function checkExtensionImportData() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const importData = urlParams.get('import');
+    if (!importData) return;
+
+    // Clean URL immediately
+    window.history.replaceState({}, '', window.location.pathname + window.location.hash);
+
+    try {
+        const data = JSON.parse(importData);
+        const patientName = data.template?.identitas?.nama || data.raw_parsed?.identity?.nama;
+        const visitLocation = data.visit_location || data.source || 'rsud_gambiran';
+        const category = data.category || 'obstetri';
+        const hospitalNames = { 'rsud_gambiran': 'RSUD Gambiran', 'rsia_melinda': 'RSIA Melinda', 'rs_bhayangkara': 'RS Bhayangkara' };
+        const hospitalName = hospitalNames[visitLocation] || 'SIMRS';
+
+        console.log('[Import] Auto-import:', patientName, visitLocation);
+
+        // Show loading (no buttons, just spinner)
+        if (window.Swal) {
+            Swal.fire({
+                title: hospitalName,
+                html: `Mengimport <b>${patientName || 'data'}</b>...`,
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                didOpen: () => Swal.showLoading()
+            });
+        }
+
+        const token = getAuthToken();
+        let patientId = null;
+
+        // Search patient by name
+        if (patientName) {
+            const res = await fetch(`/api/patients?search=${encodeURIComponent(patientName)}&limit=10`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            const result = await res.json();
+            if (result.success && result.data) {
+                const patients = result.data.patients || result.data;
+                // Exact match or single result
+                const exact = patients.find(p => (p.full_name || p.name || '').toLowerCase().trim() === patientName.toLowerCase().trim());
+                patientId = exact ? (exact.id || exact.patient_id) : (patients.length === 1 ? (patients[0].id || patients[0].patient_id) : null);
+            }
+        }
+
+        // If no match, show simple selector (minimal UI)
+        if (!patientId) {
+            if (window.Swal) Swal.close();
+            patientId = await showQuickPatientSelector(patientName, hospitalName);
+            if (!patientId) return; // User cancelled
+        }
+
+        // Create MR directly
+        const mrRes = await fetch('/api/sunday-clinic/start-walk-in', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+            body: JSON.stringify({ patient_id: patientId, category, location: visitLocation, import_source: data.source })
+        });
+        const mrResult = await mrRes.json();
+
+        if (!mrResult.success) throw new Error(mrResult.message || 'Gagal membuat MR');
+
+        const mrId = mrResult.data.mrId || mrResult.data.mr_id;
+        sessionStorage.setItem('simrs_import_data', JSON.stringify(data));
+        sessionStorage.setItem('simrs_import_mr_id', mrId);
+
+        // Navigate directly - no confirmation
+        if (window.Swal) Swal.close();
+        window.location.href = `/sunday-clinic/${mrId.toLowerCase()}/anamnesa`;
+
+    } catch (e) {
+        console.error('[Import] Error:', e);
+        if (window.Swal) Swal.fire({ icon: 'error', title: 'Error', text: e.message, timer: 3000 });
+    }
+}
+
+/**
+ * Quick patient selector - minimal UI, just a dropdown
+ */
+async function showQuickPatientSelector(searchName, hospitalName) {
+    const token = getAuthToken();
+    let options = '';
+    try {
+        const res = await fetch('/api/patients?limit=500', { headers: { 'Authorization': `Bearer ${token}` } });
+        const result = await res.json();
+        if (result.success && result.data) {
+            (result.data.patients || result.data).forEach(p => {
+                options += `<option value="${p.id || p.patient_id}">${p.full_name || p.name}</option>`;
+            });
+        }
+    } catch (e) { console.error(e); }
+
+    const result = await Swal.fire({
+        title: hospitalName,
+        html: `<p class="mb-2">Pasien "${searchName || 'Unknown'}" tidak ditemukan.</p>
+               <select id="quick-patient" class="swal2-select">${options}</select>`,
+        confirmButtonText: 'Import',
+        showCancelButton: true,
+        cancelButtonText: 'Batal',
+        preConfirm: () => document.getElementById('quick-patient')?.value
+    });
+
+    return result.isConfirmed ? result.value : null;
+}
+
 // -------------------- BOOT --------------------
 function initMain() {
     initPages();
@@ -2596,6 +2708,10 @@ function initMain() {
     bindSundayClinicLauncher();
     initMedicalExam(); // Initialize medical examination pages
     initArticleMarkdownPreview(); // Initialize Markdown preview for article editor
+
+    // Check for import data from Chrome extension (SIMRS Gambiran/Melinda)
+    checkExtensionImportData();
+
     onAuthStateChanged(initializeApp);
     
     // Set up global debug function for appointments
@@ -3370,10 +3486,11 @@ function showNewVisitForm(patientId, patientName) {
 }
 
 /**
- * Show SIMRS Melinda import modal with parsed data preview
+ * Show SIMRS import modal with parsed data preview
+ * Supports multiple hospital sources: SIMRS Melinda, RSUD Gambiran, etc.
  */
 function showSimrsImportModal(data) {
-    // API returns { raw_parsed: {...}, template: {...}, visit_date, visit_time, ... }
+    // API returns { raw_parsed: {...}, template: {...}, visit_date, visit_time, source, ... }
     // Use raw_parsed for detailed SOAP data
     const parsed = data.raw_parsed || data;
     const template = data.template || {};
@@ -3388,7 +3505,17 @@ function showSimrsImportModal(data) {
     const visitDate = data.visit_date || null;
     const visitTime = data.visit_time || null;
 
+    // Detect source hospital
+    const source = data.source || 'simrs_melinda';
+    const hospitalNames = {
+        'simrs_melinda': 'SIMRS Melinda',
+        'rsud_gambiran': 'RSUD Gambiran',
+        'rs_bhayangkara': 'RS Bhayangkara'
+    };
+    const hospitalName = hospitalNames[source] || 'SIMRS';
+
     console.log('[Import Modal] Raw data:', data);
+    console.log('[Import Modal] Source:', source, '-> Hospital:', hospitalName);
     console.log('[Import Modal] Parsed:', { identity, subjective, objective, assessment, plan });
     console.log('[Import Modal] Visit date/time:', visitDate, visitTime);
 
@@ -3412,14 +3539,14 @@ function showSimrsImportModal(data) {
                     <div class="modal-header bg-primary text-white">
                         <h5 class="modal-title">
                             <i class="fas fa-file-import mr-2"></i>
-                            Data Import dari SIMRS Melinda
+                            Data Import dari ${hospitalName}
                         </h5>
                         <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
                     </div>
                     <div class="modal-body">
                         <div class="alert alert-info">
                             <i class="fas fa-info-circle mr-2"></i>
-                            Data rekam medis berhasil di-import dari SIMRS Melinda. Review data di bawah ini.
+                            Data rekam medis berhasil di-import dari ${hospitalName}. Review data di bawah ini.
                         </div>
                         <div class="alert alert-warning">
                             <i class="fas fa-calendar-alt mr-2"></i>

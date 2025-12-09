@@ -307,6 +307,7 @@ function formatRecord(row) {
         mrId: row.mr_id,
         mr_category: row.mr_category, // Include category for template selection
         visit_location: row.visit_location || 'klinik_private', // Include visit location for UI context
+        import_source: row.import_source || null, // Import source: simrs_gambiran, simrs_melinda, etc.
         patientId: row.patient_id,
         appointmentId: row.appointment_id,
         folderPath: row.folder_path,
@@ -2492,7 +2493,7 @@ RSIA Melinda, Kediri`;
  */
 router.post('/start-walk-in', verifyToken, async (req, res, next) => {
     try {
-        const { patient_id, category, location, visit_date, is_retrospective } = req.body;
+        const { patient_id, category, location, visit_date, is_retrospective, import_source } = req.body;
 
         if (!patient_id) {
             return res.status(400).json({
@@ -2551,12 +2552,13 @@ router.post('/start-walk-in', verifyToken, async (req, res, next) => {
             const { mrId, sequence } = await generateCategoryBasedMrId(finalCategory, conn);
             const folderPath = `sunday-clinic/${mrId.toLowerCase()}`;
 
-            // Create the record with visit_location and retrospective date if provided
+            // Create the record with visit_location, import_source, and retrospective date if provided
+            // import_source values: simrs_gambiran, simrs_melinda, simrs_bhayangkara, or NULL for manual
             await conn.query(
                 `INSERT INTO sunday_clinic_records
-                 (mr_id, mr_category, mr_sequence, patient_id, appointment_id, visit_location, folder_path, status, created_by, created_at)
-                 VALUES (?, ?, ?, ?, NULL, ?, ?, 'draft', ?, ?)`,
-                [mrId, finalCategory, sequence, patient_id, finalLocation, folderPath, userId, visitDateTime]
+                 (mr_id, mr_category, mr_sequence, patient_id, appointment_id, visit_location, import_source, folder_path, status, created_by, created_at)
+                 VALUES (?, ?, ?, ?, NULL, ?, ?, ?, 'draft', ?, ?)`,
+                [mrId, finalCategory, sequence, patient_id, finalLocation, import_source || null, folderPath, userId, visitDateTime]
             );
 
             // Create patient_mr_history if not exists
@@ -2590,6 +2592,7 @@ router.post('/start-walk-in', verifyToken, async (req, res, next) => {
                 patientName,
                 category: finalCategory,
                 location: finalLocation,
+                importSource: import_source || null,
                 visitDate: visitDateStr,
                 isRetrospective: !!is_retrospective,
                 createdBy: userId
@@ -2602,6 +2605,7 @@ router.post('/start-walk-in', verifyToken, async (req, res, next) => {
                     mrId,
                     category: finalCategory,
                     location: finalLocation,
+                    importSource: import_source || null,
                     patientId: patient_id,
                     patientName,
                     folderPath,

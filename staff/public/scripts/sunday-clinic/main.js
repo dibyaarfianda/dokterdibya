@@ -50,9 +50,11 @@ class SundayClinicApp {
                                   response.data.intake?.summary?.intakeCategory ||
                                   MR_CATEGORIES.OBSTETRI;
             this.currentLocation = response.data.record.visit_location || 'klinik_private';
+            this.importSource = response.data.record.import_source || null;
 
             console.log('[SundayClinic] Category detected:', this.currentCategory);
             console.log('[SundayClinic] Location detected:', this.currentLocation);
+            console.log('[SundayClinic] Import source:', this.importSource);
 
             // Update sidebar based on category
             this.updateSidebarForCategory();
@@ -550,11 +552,18 @@ class SundayClinicApp {
         const headerContainer = document.getElementById('summary-cards-container');
         if (!headerContainer) return;
 
+        // Check if this is an imported record (import_source exists)
+        const importSourceBadge = this.importSource
+            ? `<span class="badge badge-info ml-2" style="font-size: 0.85rem;">
+                   <i class="fas fa-file-import mr-1"></i>Import SIMRS
+               </span>`
+            : '';
+
         const badgeHtml = `
             <div id="location-context-badge" class="mr-3 d-flex align-items-center">
                 <span class="badge badge-warning badge-lg" style="font-size: 0.9rem;">
                     <i class="fas fa-hospital mr-1"></i>${config.name}
-                </span>
+                </span>${importSourceBadge}
                 <small class="text-muted ml-2">(Billing tidak tersedia)</small>
             </div>
         `;

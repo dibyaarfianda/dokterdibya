@@ -1169,7 +1169,7 @@
     <script>
         // Force clear cache on first load
         (function() {
-            const CACHE_VERSION = 'v30'; // Increment this to force refresh
+            const CACHE_VERSION = 'v33'; // Increment this to force refresh - added import_source tagging
             const currentVersion = localStorage.getItem('cache_version');
             
             if (currentVersion !== CACHE_VERSION) {
@@ -1476,8 +1476,8 @@
                         </ul>
                     </li>
 
-                    <!-- BULK UPLOAD USG (All Hospitals) -->
-                    <li class="nav-item" id="nav-bulk-upload-usg">
+                    <!-- BULK UPLOAD USG (Dokter Only) -->
+                    <li class="nav-item dokter-only d-none" id="nav-bulk-upload-usg" data-menu-key="bulk-upload-usg">
                         <a href="#" class="nav-link" onclick="showBulkUploadUSGPage(); return false;">
                             <i class="nav-icon fas fa-cloud-upload-alt" style="color: #6f42c1;"></i>
                             <p>Bulk Upload USG</p>
