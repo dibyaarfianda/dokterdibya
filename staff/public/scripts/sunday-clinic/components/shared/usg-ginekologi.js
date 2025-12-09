@@ -15,27 +15,11 @@ export default {
         const usg = state.recordData?.usg || {};
         const isSaved = !!usg.saved_at;
 
-        // Get metadata context for display
-        let metaHtml = '';
-        try {
-            const { getMedicalRecordContext, renderRecordMeta } = await import('../../utils/helpers.js');
-            const context = getMedicalRecordContext(state, 'usg');
-            if (context) {
-                metaHtml = renderRecordMeta(context, 'usg');
-            }
-        } catch (error) {
-            console.error('[USGGinekologi] Failed to load metadata:', error);
-        }
-
         return `
             <div class="sc-section">
                 <div class="sc-section-header">
                     <h3>Pemeriksaan USG Ginekologi</h3>
-                    <button class="btn btn-primary btn-sm" id="usg-save">
-                        <i class="fas fa-save"></i> Simpan
-                    </button>
                 </div>
-                ${metaHtml}
 
                 <div class="sc-grid two">
                     <div class="sc-card">
@@ -525,8 +509,13 @@ export default {
                     >
                 </div>
 
-                <div class="mt-3 text-muted small" id="usg-status">
-                    ${isSaved ? `<i class="fas fa-check text-success"></i> Terakhir disimpan: ${new Date(usg.saved_at).toLocaleString('id-ID')}` : '<i class="fas fa-info-circle"></i> Belum disimpan'}
+                <div class="mt-3 d-flex justify-content-between align-items-center">
+                    <div class="text-muted small" id="usg-status">
+                        ${isSaved ? `<i class="fas fa-check text-success"></i> Terakhir disimpan: ${new Date(usg.saved_at).toLocaleString('id-ID')}` : '<i class="fas fa-info-circle"></i> Belum disimpan'}
+                    </div>
+                    <button class="btn btn-primary" id="usg-save">
+                        <i class="fas fa-save"></i> Simpan
+                    </button>
                 </div>
             </div>
         `;
@@ -974,6 +963,15 @@ export default {
     afterRender() {
         console.log('[USG Ginekologi] afterRender called');
         const self = this;
+
+        // Attach save button handler
+        const saveBtn = document.getElementById('usg-save');
+        if (saveBtn) {
+            console.log('[USG Ginekologi] Save button found, attaching handler');
+            saveBtn.addEventListener('click', () => self.save());
+        } else {
+            console.warn('[USG Ginekologi] Save button not found!');
+        }
 
         const photoInput = document.getElementById('usg-photo-upload');
         if (photoInput) {

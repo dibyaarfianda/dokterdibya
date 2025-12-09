@@ -205,6 +205,10 @@ app.use('/api/lab-results', labResultsRoutes);
 const usgPhotosRoutes = require('./routes/usg-photos');
 app.use('/api/usg-photos', usgPhotosRoutes);
 
+// USG bulk upload routes (bulk upload from RSIA Melinda)
+const usgBulkUploadRoutes = require('./routes/usg-bulk-upload');
+app.use('/api/usg-bulk-upload', usgBulkUploadRoutes);
+
 // Patient documents routes (share documents with patients)
 const patientDocumentsRoutes = require('./routes/patient-documents');
 app.use('/api/patient-documents', patientDocumentsRoutes);

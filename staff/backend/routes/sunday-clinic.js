@@ -4,7 +4,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const logger = require('../utils/logger');
-const { verifyToken } = require('../middleware/auth');
+const { verifyToken, requireSuperadmin } = require('../middleware/auth');
 const { findRecordByMrId } = require('../services/sundayClinicService');
 const { ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
 
@@ -747,6 +747,34 @@ router.post('/records/:mrId/:section', verifyToken, async (req, res, next) => {
                 logger.warn('Appointment auto-complete warning:', appointmentError);
                 // Don't fail the resume save, just log the error
             }
+
+            // Auto-finalize for hospital records (no billing) when resume_medis is saved
+            // RSIA Melinda, RSUD Gambiran, RS Bhayangkara don't use billing system
+            try {
+                const [recordInfo] = await db.query(
+                    'SELECT visit_location, status FROM sunday_clinic_records WHERE mr_id = ?',
+                    [normalizedMrId]
+                );
+
+                if (recordInfo.length > 0 && recordInfo[0].status === 'draft') {
+                    const hospitalLocations = ['rsia_melinda', 'rsud_gambiran', 'rs_bhayangkara'];
+                    if (hospitalLocations.includes(recordInfo[0].visit_location)) {
+                        const userId = req.user.new_id || req.user.id || null;
+                        await db.query(
+                            `UPDATE sunday_clinic_records
+                             SET status = 'finalized',
+                                 finalized_at = NOW(),
+                                 finalized_by = ?
+                             WHERE mr_id = ?`,
+                            [userId, normalizedMrId]
+                        );
+                        logger.info(`Medical record ${normalizedMrId} auto-finalized after resume_medis saved (hospital: ${recordInfo[0].visit_location})`);
+                    }
+                }
+            } catch (finalizeError) {
+                logger.warn('Auto-finalize warning:', finalizeError);
+                // Don't fail the resume save
+            }
         }
 
         logger.info('Saved section data for Sunday Clinic', {
@@ -1335,6 +1363,23 @@ router.post('/billing/:mrId/mark-paid', verifyToken, async (req, res, next) => {
             }
         } catch (inventoryError) {
             logger.error('Inventory deduction error:', inventoryError);
+            // Don't fail the payment, just log the error
+        }
+
+        // Auto-finalize the medical record when billing is paid
+        try {
+            const userId = req.user.new_id || req.user.id || null;
+            await db.query(
+                `UPDATE sunday_clinic_records
+                 SET status = 'finalized',
+                     finalized_at = NOW(),
+                     finalized_by = ?
+                 WHERE mr_id = ? AND status = 'draft'`,
+                [userId, normalizedMrId]
+            );
+            logger.info(`Medical record ${normalizedMrId} auto-finalized after payment by user ${userId}`);
+        } catch (finalizeError) {
+            logger.error('Auto-finalize error:', finalizeError);
             // Don't fail the payment, just log the error
         }
 
@@ -2664,6 +2709,105 @@ router.get('/patient-visits/:patientId', verifyToken, async (req, res, next) => 
 
     } catch (error) {
         logger.error('Error fetching patient visits:', error);
+        next(error);
+    }
+});
+
+/**
+ * DELETE /api/sunday-clinic/records/:mrId
+ * Delete a medical record completely (Superadmin/Dokter only)
+ * Use with caution - this permanently removes all data for this MR
+ */
+router.delete('/records/:mrId', verifyToken, requireSuperadmin, async (req, res, next) => {
+    const { mrId } = req.params;
+
+    try {
+        logger.info(`[DELETE MR] Superadmin ${req.user.name} attempting to delete ${mrId}`);
+
+        // First verify the record exists
+        const [existing] = await db.query(
+            'SELECT mr_id, patient_id, status FROM sunday_clinic_records WHERE mr_id = ?',
+            [mrId]
+        );
+
+        if (existing.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: `Rekam medis ${mrId} tidak ditemukan`
+            });
+        }
+
+        const record = existing[0];
+
+        // Prevent deleting finalized/billed records unless forced
+        if (record.status === 'finalized' || record.status === 'billed') {
+            const forceDelete = req.query.force === 'true';
+            if (!forceDelete) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Rekam medis ${mrId} sudah ${record.status}. Tambahkan ?force=true untuk tetap menghapus.`
+                });
+            }
+        }
+
+        // Start transaction for cleanup
+        const connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        try {
+            // Delete related billing items first (if any)
+            await connection.query(
+                'DELETE FROM sunday_clinic_billing_items WHERE billing_id IN (SELECT id FROM sunday_clinic_billings WHERE mr_id = ?)',
+                [mrId]
+            );
+
+            // Delete billing record
+            await connection.query(
+                'DELETE FROM sunday_clinic_billings WHERE mr_id = ?',
+                [mrId]
+            );
+
+            // Delete medical records (JSON data)
+            await connection.query(
+                'DELETE FROM medical_records WHERE mr_id = ?',
+                [mrId]
+            );
+
+            // Delete patient documents (optional - keep for audit?)
+            // await connection.query(
+            //     'DELETE FROM patient_documents WHERE mr_id = ?',
+            //     [mrId]
+            // );
+
+            // Finally delete the main record
+            await connection.query(
+                'DELETE FROM sunday_clinic_records WHERE mr_id = ?',
+                [mrId]
+            );
+
+            await connection.commit();
+
+            logger.info(`[DELETE MR] Successfully deleted ${mrId} by ${req.user.name}`, {
+                mrId,
+                patientId: record.patient_id,
+                deletedBy: req.user.id,
+                deletedByName: req.user.name
+            });
+
+            res.json({
+                success: true,
+                message: `Rekam medis ${mrId} berhasil dihapus`
+            });
+
+        } catch (txError) {
+            await connection.rollback();
+            throw txError;
+        } finally {
+            connection.release();
+        }
+
+    } catch (error) {
+        logger.error(`[DELETE MR] Error deleting ${mrId}:`, error);
         next(error);
     }
 });
