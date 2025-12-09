@@ -1,6 +1,6 @@
 /**
- * SIMRS Melinda to Klinik Dibya Exporter
- * Content script - runs on simrs.melinda.co.id pages
+ * RSUD Gambiran to Klinik Dibya Exporter
+ * Content script - runs on simrsg.kedirikota.go.id pages
  */
 
 (function() {
@@ -14,9 +14,11 @@
         FLOATING_BUTTON_ID: 'dibya-floating-btn'
     };
 
-    // Check if we're on a patient page
+    // Check if we're on a patient/medical record page
     function isPatientPage() {
-        return window.location.pathname.includes('/kasus/med');
+        const path = window.location.pathname;
+        // Match patterns like /kasus/med.../datamedis/cppt or /kasus/med...
+        return path.includes('/kasus/med') || path.includes('/datamedis');
     }
 
     // Create and inject the export button
@@ -39,78 +41,7 @@
         document.getElementById(CONFIG.BUTTON_ID).addEventListener('click', handleExport);
     }
 
-    // Extract patient identity data
-    function extractIdentitas() {
-        const data = {};
-
-        // Try to find identity section
-        const infoUmum = document.querySelector('.card-body, [class*="informasi"]');
-        if (!infoUmum) return data;
-
-        // Common selectors for SIMRS data
-        const selectors = {
-            nama: ['NAMA PASIEN', 'Nama Pasien', 'NAMA'],
-            jenis_kelamin: ['JENIS KELAMIN', 'Jenis Kelamin'],
-            usia: ['USIA', 'Usia'],
-            tanggal_lahir: ['TEMPAT, TANGGAL LAHIR', 'Tanggal Lahir', 'TTL'],
-            alamat: ['ALAMAT', 'Alamat'],
-            no_hp: ['NO HP', 'No HP', 'Telepon'],
-            no_identitas: ['NO IDENTITAS', 'NIK', 'No Identitas'],
-            pekerjaan: ['PEKERJAAN', 'Pekerjaan'],
-            tinggi_badan: ['TINGGI BADAN', 'TB'],
-            berat_badan: ['BERAT BADAN', 'BB']
-        };
-
-        // Method 1: Try extracting from labeled divs/spans
-        const pageText = document.body.innerText;
-
-        for (const [field, labels] of Object.entries(selectors)) {
-            for (const label of labels) {
-                // Find label element and get adjacent value
-                const labelEls = Array.from(document.querySelectorAll('*')).filter(
-                    el => el.innerText && el.innerText.trim().toUpperCase() === label.toUpperCase()
-                );
-
-                for (const labelEl of labelEls) {
-                    // Check next sibling or parent's next element
-                    let valueEl = labelEl.nextElementSibling;
-                    if (!valueEl) {
-                        valueEl = labelEl.parentElement?.nextElementSibling;
-                    }
-                    if (valueEl && valueEl.innerText) {
-                        const value = valueEl.innerText.trim();
-                        if (value && value !== '-' && !value.toUpperCase().includes(label.toUpperCase())) {
-                            data[field] = value;
-                            break;
-                        }
-                    }
-                }
-                if (data[field]) break;
-            }
-        }
-
-        // Method 2: Regex extraction from page text
-        const patterns = {
-            nama: /NAMA\s*PASIEN[\s:]+([A-Z\s]+?)(?=\n|JENIS|STATUS)/i,
-            no_identitas: /NO\s*IDENTITAS[\s:]+(\d{16})/i,
-            no_hp: /NO\s*HP[\s:]+(\d{10,13})/i,
-            tinggi_badan: /TINGGI\s*BADAN[\s:]+(\d+)\s*(?:cm)?/i,
-            berat_badan: /BERAT\s*BADAN[\s:]+(\d+(?:[.,]\d+)?)\s*(?:kg)?/i
-        };
-
-        for (const [field, pattern] of Object.entries(patterns)) {
-            if (!data[field]) {
-                const match = pageText.match(pattern);
-                if (match) {
-                    data[field] = match[1].trim();
-                }
-            }
-        }
-
-        return data;
-    }
-
-    // Extract CPPT (medical progress notes)
+    // Extract CPPT (Catatan Perkembangan Pasien Terintegrasi) data
     function extractCPPT() {
         const cpptData = {
             subjective: {},
@@ -119,25 +50,10 @@
             plan: {}
         };
 
-        // Find CPPT section
-        const cpptSection = document.querySelector('[class*="cppt"], #cppt, [data-tab="cppt"]');
-        let cpptText = '';
-
-        if (cpptSection) {
-            cpptText = cpptSection.innerText;
-        } else {
-            // Try to find SUBJECTIVE/OBJECTIVE sections directly
-            const pageText = document.body.innerText;
-            const cpptMatch = pageText.match(/SUBJECTIVE[\s\S]*?(?=Dibuat\s*Oleh|TTD|$)/i);
-            if (cpptMatch) {
-                cpptText = cpptMatch[0];
-            }
-        }
-
-        if (!cpptText) return cpptData;
+        const pageText = document.body.innerText;
 
         // Parse SUBJECTIVE section
-        const subjectiveMatch = cpptText.match(/SUBJECTIVE([\s\S]*?)(?=OBJECTIVE|$)/i);
+        const subjectiveMatch = pageText.match(/SUBJECTIVE([\s\S]*?)(?=OBJECTIVE|$)/i);
         if (subjectiveMatch) {
             const subText = subjectiveMatch[1];
 
@@ -161,17 +77,17 @@
         }
 
         // Parse OBJECTIVE section
-        const objectiveMatch = cpptText.match(/OBJECTIVE([\s\S]*?)(?=ASSESSMENT|$)/i);
+        const objectiveMatch = pageText.match(/OBJECTIVE([\s\S]*?)(?=ASSESSMENT|$)/i);
         if (objectiveMatch) {
             const objText = objectiveMatch[1];
 
-            const kuMatch = objText.match(/(?:K\/U|KU|k\/u)\s*:?\s*(\w+)/i);
+            const kuMatch = objText.match(/(?:K\/U|KU|k\/u|Keadaan\s*Umum)\s*:?\s*(\w+)/i);
             if (kuMatch) cpptData.objective.keadaan_umum = kuMatch[1].trim();
 
-            const tensiMatch = objText.match(/Tensi\s*:?\s*(\d+\/\d+)/i);
+            const tensiMatch = objText.match(/(?:Tensi|TD|Tekanan\s*Darah)\s*:?\s*(\d+\/\d+)/i);
             if (tensiMatch) cpptData.objective.tensi = tensiMatch[1];
 
-            const nadiMatch = objText.match(/Nadi\s*:?\s*(\d+)/i);
+            const nadiMatch = objText.match(/(?:Nadi|HR)\s*:?\s*(\d+)/i);
             if (nadiMatch) cpptData.objective.nadi = parseInt(nadiMatch[1]);
 
             const suhuMatch = objText.match(/Suhu\s*:?\s*(\d+(?:[.,]\d+)?)/i);
@@ -183,28 +99,30 @@
             const gcsMatch = objText.match(/GCS\s*:?\s*([\d\-]+)/i);
             if (gcsMatch) cpptData.objective.gcs = gcsMatch[1];
 
-            const rrMatch = objText.match(/RR\s*:?\s*(\d+)/i);
+            const rrMatch = objText.match(/(?:RR|Resp)\s*:?\s*(\d+)/i);
             if (rrMatch) cpptData.objective.rr = parseInt(rrMatch[1]);
 
-            const bbMatch = objText.match(/BB\s*:?\s*(\d+(?:[.,]\d+)?)/i);
+            const bbMatch = objText.match(/(?:BB|Berat\s*Badan)\s*:?\s*(\d+(?:[.,]\d+)?)/i);
             if (bbMatch) cpptData.objective.berat_badan = parseFloat(bbMatch[1].replace(',', '.'));
+
+            const tbMatch = objText.match(/(?:TB|Tinggi\s*Badan)\s*:?\s*(\d+)/i);
+            if (tbMatch) cpptData.objective.tinggi_badan = parseInt(tbMatch[1]);
 
             const usgMatch = objText.match(/USG\s*:?\s*([^\n]+)/i);
             if (usgMatch) cpptData.objective.usg = usgMatch[1].trim();
         }
 
         // Parse ASSESSMENT section
-        const assessmentMatch = cpptText.match(/ASSESSMENT([\s\S]*?)(?=PLAN|PLANNING|$)/i);
+        const assessmentMatch = pageText.match(/ASSESSMENT([\s\S]*?)(?=PLAN|PLANNING|$)/i);
         if (assessmentMatch) {
             const assText = assessmentMatch[1].trim();
 
-            // Get first non-empty line as diagnosis
             const lines = assText.split('\n').filter(l => l.trim());
             if (lines.length > 0) {
                 cpptData.assessment.diagnosis = lines[0].trim();
             }
 
-            // Parse obstetric formula
+            // Parse obstetric formula (G_P_)
             const obsMatch = assText.match(/G(\d+)\s*P([\d\-]+)/i);
             if (obsMatch) {
                 cpptData.assessment.gravida = parseInt(obsMatch[1]);
@@ -213,7 +131,7 @@
             }
 
             // Parse gestational age
-            const ukMatch = assText.match(/uk\s*(\d+)\s*(?:(\d+)\/7)?\s*(?:mgg|minggu)/i);
+            const ukMatch = assText.match(/(?:uk|usia\s*kehamilan)\s*(\d+)\s*(?:(\d+)\/7)?\s*(?:mgg|minggu)/i);
             if (ukMatch) {
                 cpptData.assessment.usia_kehamilan_minggu = parseInt(ukMatch[1]);
                 cpptData.assessment.usia_kehamilan_hari = ukMatch[2] ? parseInt(ukMatch[2]) : 0;
@@ -221,15 +139,14 @@
         }
 
         // Parse PLAN section
-        const planMatch = cpptText.match(/(?:PLAN|PLANNING)([\s\S]*?)(?=Dibuat|TTD|$)/i);
+        const planMatch = pageText.match(/(?:PLAN|PLANNING)([\s\S]*?)(?=Dibuat|TTD|Tanggal|$)/i);
         if (planMatch) {
             const planText = planMatch[1].trim();
             cpptData.plan.raw = planText;
 
-            // Extract medications
             const lines = planText.split('\n').filter(l => l.trim());
             cpptData.plan.obat = lines.filter(l =>
-                /\d+\s*x\s*\d+|tab|kap|botol|strip/i.test(l)
+                /\d+\s*x\s*\d+|tab|kap|botol|strip|mg|ml/i.test(l)
             );
         }
 
@@ -238,24 +155,28 @@
 
     // Combine all scraped data into text format for AI parsing
     function combineDataAsText() {
-        // Simple approach: grab ALL visible text from the page
-        // Let the AI do the parsing - it's much better at it!
-
         let text = '';
 
-        // Try to get main content area first
-        const mainContent = document.querySelector('.main-content, #main-content, .content, main, [role="main"]');
+        // Try to get main content area first (Medify uses various containers)
+        const mainContent = document.querySelector(
+            '.main-content, #main-content, .content, main, [role="main"], ' +
+            '.card-body, .container-fluid, .page-content'
+        );
+
         if (mainContent) {
             text = mainContent.innerText;
         }
 
-        // If no main content, get body text but exclude nav/header/footer
+        // If no main content found or too short, get body text
         if (!text || text.length < 100) {
-            // Clone body and remove unwanted elements
             const clone = document.body.cloneNode(true);
 
             // Remove navigation, headers, footers, scripts
-            const removeSelectors = ['nav', 'header', 'footer', 'script', 'style', '.navbar', '.sidebar', '.menu'];
+            const removeSelectors = [
+                'nav', 'header', 'footer', 'script', 'style',
+                '.navbar', '.sidebar', '.menu', '.nav', '.breadcrumb',
+                '[role="navigation"]', '.modal', '.dropdown-menu'
+            ];
             removeSelectors.forEach(sel => {
                 clone.querySelectorAll(sel).forEach(el => el.remove());
             });
@@ -265,9 +186,9 @@
 
         // Clean up the text
         text = text
-            .replace(/\t+/g, ' ')           // tabs to spaces
-            .replace(/  +/g, ' ')           // multiple spaces to single
-            .replace(/\n\s*\n\s*\n/g, '\n\n') // max 2 newlines
+            .replace(/\t+/g, ' ')
+            .replace(/  +/g, ' ')
+            .replace(/\n\s*\n\s*\n/g, '\n\n')
             .trim();
 
         // Limit to first 15000 chars to avoid token limits
@@ -275,8 +196,8 @@
             text = text.substring(0, 15000);
         }
 
-        console.log('[SIMRS Export] Extracted text length:', text.length);
-        console.log('[SIMRS Export] First 500 chars:', text.substring(0, 500));
+        console.log('[RSUD Gambiran Export] Extracted text length:', text.length);
+        console.log('[RSUD Gambiran Export] First 500 chars:', text.substring(0, 500));
 
         return text;
     }
@@ -338,7 +259,8 @@
                 chrome.runtime.sendMessage({
                     action: 'parseRecord',
                     text: text,
-                    category: 'obstetri'
+                    category: 'obstetri',
+                    source: 'rsud_gambiran'
                 }, (response) => {
                     if (chrome.runtime.lastError) {
                         reject(new Error(chrome.runtime.lastError.message));
@@ -354,7 +276,7 @@
                     await chrome.storage.local.set({
                         'dibya_import_data': result.data,
                         'dibya_import_timestamp': Date.now(),
-                        'dibya_import_source': 'simrs_melinda'
+                        'dibya_import_source': 'rsud_gambiran'
                     });
                 } catch (e) {
                     // Ignore storage error, still show success
@@ -362,8 +284,7 @@
 
                 showNotification('Data berhasil di-parse! Membuka Staff Panel...', 'success');
 
-                // Open staff panel in new tab with import data
-                // Staff Panel will auto: search patient → create MR → navigate
+                // Open staff panel in new tab
                 setTimeout(() => {
                     window.open(CONFIG.STAFF_URL + '?import=' + encodeURIComponent(JSON.stringify(result.data)), '_blank');
                 }, 1000);
@@ -374,7 +295,6 @@
         } catch (error) {
             console.error('Export error:', error);
 
-            // Handle specific errors
             if (error.message.includes('Extension context invalidated')) {
                 showNotification('Extension perlu di-refresh. Reload halaman ini (F5)', 'warning');
             } else {

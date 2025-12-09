@@ -432,17 +432,20 @@ router.post('/execute', verifyToken, requirePermission('medical_records.edit'), 
                     // Append to existing record
                     const existingData = typeof existingRecords[0].record_data === 'string'
                         ? JSON.parse(existingRecords[0].record_data)
-                        : existingRecords[0].record_data;
+                        : existingRecords[0].record_data || {};
 
                     const existingPhotos = existingData.photos || [];
-                    const newPhotos = [...existingPhotos, ...uploadedPhotos];
+                    const updatedData = {
+                        ...existingData,
+                        photos: [...existingPhotos, ...uploadedPhotos]
+                    };
 
                     await db.query(`
                         UPDATE medical_records
-                        SET record_data = JSON_SET(record_data, '$.photos', CAST(? AS JSON)),
+                        SET record_data = ?,
                             updated_at = NOW()
                         WHERE id = ?
-                    `, [JSON.stringify(newPhotos), existingRecords[0].id]);
+                    `, [JSON.stringify(updatedData), existingRecords[0].id]);
 
                     logger.info('[BulkUSG] Updated existing USG record', {
                         patient_id,

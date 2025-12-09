@@ -413,8 +413,15 @@ function importMedicalBack() {
 /**
  * Create a new MR via API and navigate to it
  */
-async function createNewMRAndNavigate(patientId, category, location, visitDate) {
+async function createNewMRAndNavigate(patientId, category, location, visitDate, importSource) {
     const token = localStorage.getItem('token') || localStorage.getItem('vps_auth_token');
+
+    // Derive import_source from location if not provided
+    // rsud_gambiran → simrs_gambiran, rsia_melinda → simrs_melinda
+    let finalImportSource = importSource;
+    if (!finalImportSource && location && location !== 'klinik_private') {
+        finalImportSource = 'simrs_' + location.replace('rsia_', '').replace('rsud_', '');
+    }
 
     const response = await fetch('/api/sunday-clinic/start-walk-in', {
         method: 'POST',
@@ -425,7 +432,8 @@ async function createNewMRAndNavigate(patientId, category, location, visitDate) 
         body: JSON.stringify({
             patient_id: patientId,
             category: category,
-            location: location
+            location: location,
+            import_source: finalImportSource || null
         })
     });
 
@@ -488,10 +496,12 @@ async function importMedicalApply() {
             }
 
             try {
-                // Create new MR
-                const newMR = await createNewMRAndNavigate(patientId, category, visitLocation || 'klinik_private', visitDate);
+                // Create new MR with import_source from parsed data
+                // parsedImportData.source contains: 'rsud_gambiran', 'simrs_melinda', etc.
+                const importSource = parsedImportData?.source || null;
+                const newMR = await createNewMRAndNavigate(patientId, category, visitLocation || 'klinik_private', visitDate, importSource);
 
-                console.log('[Import] Created new MR:', newMR.mrId);
+                console.log('[Import] Created new MR:', newMR.mrId, 'importSource:', importSource);
 
                 // Close modal first
                 $('#import-medical-modal').modal('hide');
@@ -1033,12 +1043,20 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
 
     console.log('[Import] SIMRS import data applied successfully');
 
-    // Show notification
+    // Show notification with correct hospital name
+    const hospitalNames = {
+        'simrs_melinda': 'SIMRS Melinda',
+        'rsud_gambiran': 'RSUD Gambiran',
+        'rs_bhayangkara': 'RS Bhayangkara'
+    };
+    const source = parsedImportData?.source || 'simrs_melinda';
+    const hospitalName = hospitalNames[source] || 'SIMRS';
+
     if (window.Swal) {
         Swal.fire({
             icon: 'success',
             title: 'Data SIMRS Diterapkan',
-            text: 'Data dari SIMRS Melinda telah disimpan ke rekam medis',
+            text: `Data dari ${hospitalName} telah disimpan ke rekam medis`,
             timer: 2500,
             showConfirmButton: false
         });
@@ -1214,6 +1232,45 @@ function resetImportModal() {
 function openImportModal() {
     resetImportModal();
     $('#import-medical-modal').modal('show');
+}
+
+/**
+ * Open import modal with pre-parsed data from Chrome extension
+ * Reads data from sessionStorage (set by main.js from URL param)
+ */
+function openImportModalWithExtensionData() {
+    const simrsData = sessionStorage.getItem('simrs_import_data');
+    if (!simrsData) {
+        console.log('[Import] No SIMRS data in sessionStorage, opening empty modal');
+        openImportModal();
+        return;
+    }
+
+    try {
+        const data = JSON.parse(simrsData);
+        console.log('[Import] Opening import modal with extension data');
+        console.log('[Import] Source:', data.source);
+        console.log('[Import] Visit location:', data.visit_location);
+
+        // Store as parsedImportData for the apply function
+        parsedImportData = data;
+
+        // Set category dropdown if available
+        const categorySelect = document.getElementById('import-category');
+        if (categorySelect && data.category) {
+            categorySelect.value = data.category;
+        }
+
+        // Show preview directly (skip text input step)
+        showImportPreview(data);
+
+        // Show the modal
+        $('#import-medical-modal').modal('show');
+
+    } catch (e) {
+        console.error('[Import] Error parsing extension data:', e);
+        openImportModal();
+    }
 }
 
 /**
@@ -1562,21 +1619,62 @@ async function findOrCreatePatient(identitas) {
     return null;
 }
 
+/**
+ * Check for import data in URL parameter (from Chrome extension)
+ * The extension opens: /staff/public/index-adminlte.html?import={json_data}
+ */
+function checkUrlImportParam() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const importData = urlParams.get('import');
+
+    if (importData) {
+        try {
+            const data = JSON.parse(importData);
+            console.log('[Import] Found import data in URL parameter');
+            console.log('[Import] Source:', data.source);
+            console.log('[Import] Visit location:', data.visit_location);
+
+            // Store in sessionStorage for processing by applyPendingImportData
+            sessionStorage.setItem('simrs_import_data', JSON.stringify(data));
+
+            // Also store MR ID if we're on a Sunday Clinic page
+            const mrMatch = window.location.pathname.match(/\/sunday-clinic\/([^\/]+)/);
+            if (mrMatch) {
+                sessionStorage.setItem('simrs_import_mr_id', mrMatch[1]);
+            }
+
+            // Clean up URL to remove import param (prevents re-processing on refresh)
+            const newUrl = window.location.pathname + window.location.hash;
+            window.history.replaceState({}, '', newUrl);
+
+            console.log('[Import] Stored in sessionStorage, cleaned URL');
+            return true;
+        } catch (e) {
+            console.error('[Import] Error parsing import URL param:', e);
+        }
+    }
+    return false;
+}
+
 // Export functions to window for onclick handlers
 window.importMedicalParse = importMedicalParse;
 window.importMedicalBack = importMedicalBack;
 window.importMedicalApply = importMedicalApply;
 window.openImportModal = openImportModal;
+window.openImportModalWithExtensionData = openImportModalWithExtensionData;
 window.openBulkImportModal = openBulkImportModal;
 window.handleBulkFilesSelect = handleBulkFilesSelect;
 window.toggleBulkSelectAll = toggleBulkSelectAll;
 window.applyBulkImport = applyBulkImport;
 window.applyPendingImportData = applyPendingImportData;
+window.checkUrlImportParam = checkUrlImportParam;
 
 // Initialize on DOM ready
 document.addEventListener('DOMContentLoaded', () => {
     initMedicalImport();
-    // Check for pending import data after page navigation
+    // Check for import data in URL first (from Chrome extension)
+    checkUrlImportParam();
+    // Then check for pending import data after page navigation
     applyPendingImportData();
 });
 
