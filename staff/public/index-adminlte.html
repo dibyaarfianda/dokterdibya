@@ -1169,14 +1169,18 @@
     <script>
         // Force clear cache on first load
         (function() {
-            const CACHE_VERSION = 'v33'; // Increment this to force refresh - added import_source tagging
+            const CACHE_VERSION = 'v35'; // Increment this to force refresh - status resume + date format
             const currentVersion = localStorage.getItem('cache_version');
-            
+
             if (currentVersion !== CACHE_VERSION) {
                 console.log('Cache version mismatch. Clearing cache...');
-                
-                // Clear localStorage patient data
+
+                // Clear localStorage patient data (keep auth and chat read timestamps)
                 const keysToKeep = ['vps_auth_token', 'user_role', 'user_email'];
+                // Also keep chat_last_read_* keys
+                Object.keys(localStorage).forEach(key => {
+                    if (key.startsWith('chat_last_read_')) keysToKeep.push(key);
+                });
                 const tempData = {};
                 keysToKeep.forEach(key => {
                     const val = localStorage.getItem(key);
@@ -1491,6 +1495,13 @@
                         <a href="#" class="nav-link" onclick="showFinanceAnalysisPage(); return false;">
                             <i class="nav-icon fas fa-chart-line"></i>
                             <p>Finance Analysis</p>
+                        </a>
+                    </li>
+
+                    <li class="nav-item dokter-only d-none" id="nav-birth-congrats">
+                        <a href="#" class="nav-link" onclick="showBirthCongratsPage(); return false;">
+                            <i class="nav-icon fas fa-baby" style="color: #007bff;"></i>
+                            <p>Ucapan Kelahiran</p>
                         </a>
                     </li>
 
@@ -4132,6 +4143,169 @@
                     </div>
                 </div>
 
+                <!-- BIRTH CONGRATULATIONS PAGE (Dokter Only) -->
+                <div id="birth-congrats-page" class="d-none">
+                    <div class="container-fluid">
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="card card-primary">
+                                    <div class="card-header" style="background: linear-gradient(135deg, #007bff, #0056b3);">
+                                        <h3 class="card-title"><i class="fas fa-baby mr-2"></i>Ucapan Selamat Kelahiran</h3>
+                                        <div class="card-tools">
+                                            <button class="btn btn-light btn-sm" onclick="showAddBirthCongratsModal()">
+                                                <i class="fas fa-plus mr-1"></i>Tambah Baru
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <div id="birth-congrats-list">
+                                            <div class="text-center text-muted py-5">
+                                                <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+                                                <p>Memuat data...</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Birth Congratulations Modal -->
+                <div class="modal fade" id="birthCongratsModal" tabindex="-1">
+                    <div class="modal-dialog modal-lg">
+                        <div class="modal-content">
+                            <div class="modal-header" style="background: linear-gradient(135deg, #007bff, #0056b3); color: white;">
+                                <h5 class="modal-title"><i class="fas fa-baby mr-2"></i><span id="birthCongratsModalTitle">Tambah Ucapan Kelahiran</span></h5>
+                                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <form id="birthCongratsForm">
+                                    <input type="hidden" id="bc-edit-id">
+
+                                    <!-- Patient Selection -->
+                                    <div class="form-group">
+                                        <label><i class="fas fa-user text-primary mr-1"></i>Pilih Pasien <span class="text-danger">*</span></label>
+                                        <select class="form-control" id="bc-patient-id" style="width: 100%;" required>
+                                            <option value="">-- Pilih Pasien --</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label><i class="fas fa-baby text-primary mr-1"></i>Nama Bayi</label>
+                                                <input type="text" class="form-control" id="bc-baby-name" placeholder="Contoh: Baby Ananda">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label><i class="fas fa-venus-mars text-primary mr-1"></i>Jenis Kelamin</label>
+                                                <select class="form-control" id="bc-gender">
+                                                    <option value="">-- Pilih --</option>
+                                                    <option value="male">Laki-laki</option>
+                                                    <option value="female">Perempuan</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label><i class="fas fa-calendar text-primary mr-1"></i>Tanggal Lahir</label>
+                                                <input type="date" class="form-control" id="bc-birth-date">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label><i class="fas fa-clock text-primary mr-1"></i>Jam Lahir</label>
+                                                <input type="time" class="form-control" id="bc-birth-time">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label><i class="fas fa-weight text-primary mr-1"></i>Berat Badan</label>
+                                                <input type="text" class="form-control" id="bc-birth-weight" placeholder="Contoh: 3.2 kg">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group">
+                                                <label><i class="fas fa-ruler-vertical text-primary mr-1"></i>Panjang Badan</label>
+                                                <input type="text" class="form-control" id="bc-birth-length" placeholder="Contoh: 50 cm">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label><i class="fas fa-comment-dots text-primary mr-1"></i>Pesan dari Dokter</label>
+                                        <textarea class="form-control" id="bc-message" rows="3" placeholder="Tuliskan ucapan selamat..."></textarea>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label><i class="fas fa-image text-primary mr-1"></i>Foto Kelahiran</label>
+                                        <div class="custom-file">
+                                            <input type="file" class="custom-file-input" id="bc-photo" accept="image/*">
+                                            <label class="custom-file-label" for="bc-photo">Pilih foto...</label>
+                                        </div>
+                                        <small class="text-muted">Maks. 10MB, format: JPG, PNG</small>
+                                        <div id="bc-photo-preview" class="mt-2" style="display: none;">
+                                            <img src="" alt="Preview" style="max-width: 200px; max-height: 200px; border-radius: 10px;">
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label><i class="fas fa-palette text-primary mr-1"></i>Tema Warna</label>
+                                        <div class="d-flex flex-wrap" id="bc-color-options">
+                                            <div class="color-option mr-2 mb-2 text-center" style="cursor: pointer;" onclick="selectBirthCongratsColor('pink')">
+                                                <div style="width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #fff5f8, #ffd6e8); border: 3px solid #333;" class="color-box" data-color="pink"></div>
+                                                <small class="d-block">Pink</small>
+                                            </div>
+                                            <div class="color-option mr-2 mb-2 text-center" style="cursor: pointer;" onclick="selectBirthCongratsColor('blue')">
+                                                <div style="width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #e3f2fd, #bbdefb); border: 3px solid transparent;" class="color-box" data-color="blue"></div>
+                                                <small class="d-block">Blue</small>
+                                            </div>
+                                            <div class="color-option mr-2 mb-2 text-center" style="cursor: pointer;" onclick="selectBirthCongratsColor('green')">
+                                                <div style="width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #e8f5e9, #c8e6c9); border: 3px solid transparent;" class="color-box" data-color="green"></div>
+                                                <small class="d-block">Green</small>
+                                            </div>
+                                            <div class="color-option mr-2 mb-2 text-center" style="cursor: pointer;" onclick="selectBirthCongratsColor('purple')">
+                                                <div style="width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #f3e5f5, #e1bee7); border: 3px solid transparent;" class="color-box" data-color="purple"></div>
+                                                <small class="d-block">Purple</small>
+                                            </div>
+                                            <div class="color-option mr-2 mb-2 text-center" style="cursor: pointer;" onclick="selectBirthCongratsColor('gold')">
+                                                <div style="width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #fffde7, #fff9c4); border: 3px solid transparent;" class="color-box" data-color="gold"></div>
+                                                <small class="d-block">Gold</small>
+                                            </div>
+                                            <div class="color-option mr-2 mb-2 text-center" style="cursor: pointer;" onclick="selectBirthCongratsColor('peach')">
+                                                <div style="width: 40px; height: 40px; border-radius: 8px; background: linear-gradient(135deg, #fff3e0, #ffe0b2); border: 3px solid transparent;" class="color-box" data-color="peach"></div>
+                                                <small class="d-block">Peach</small>
+                                            </div>
+                                        </div>
+                                        <input type="hidden" name="bc-theme-color" id="bc-theme-color" value="pink">
+                                    </div>
+
+                                    <div class="form-group">
+                                        <div class="custom-control custom-switch">
+                                            <input type="checkbox" class="custom-control-input" id="bc-is-published" checked>
+                                            <label class="custom-control-label" for="bc-is-published">Tampilkan di Dashboard Pasien</label>
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                                <button type="button" class="btn btn-primary" onclick="saveBirthCongrats()">
+                                    <i class="fas fa-save mr-1"></i>Simpan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- APPOINTMENTS PAGE -->
                 <div id="appointments-page" class="d-none">
                     <div class="row">
@@ -4770,7 +4944,7 @@ Contoh Markdown:
                                                     <th>Nama Lengkap</th>
                                                     <th>Telepon</th>
                                                     <th>Usia</th>
-                                                    <th>Kunjungan Terakhir</th>
+                                                    <th>Status Resume</th>
                                                     <th>Tgl Registrasi</th>
                                                     <th>Status</th>
                                                     <th>Aksi</th>
@@ -6795,9 +6969,7 @@ function mobileNavClick(btn, action) {
             }
 
             tbody.innerHTML = data.data.map(patient => {
-                const regDate = patient.created_at ? new Date(patient.created_at).toLocaleDateString('id-ID', {
-                    day: 'numeric', month: 'short', year: 'numeric'
-                }) : '-';
+                const regDate = patient.created_at ? (() => { const d = new Date(patient.created_at); return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear().toString().slice(-2)}`; })() : '-';
 
                 return `
                     <tr>
@@ -6863,8 +7035,15 @@ function mobileNavClick(btn, action) {
 
             tbody.innerHTML = data.data.map(patient => {
                 const birthDate = patient.birth_date ? new Date(patient.birth_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
-                const regDate = patient.created_at ? new Date(patient.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
-                const lastVisit = patient.last_visit ? new Date(patient.last_visit).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : 'Belum ada';
+                const regDate = patient.created_at ? (() => { const d = new Date(patient.created_at); return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear().toString().slice(-2)}`; })() : '-';
+                // Resume status badge
+                const resumeStatusMap = {
+                    'sudah_kirim_usg_resume': '<span class="badge badge-success">USG + Resume ✓</span>',
+                    'sudah_kirim_resume': '<span class="badge badge-info">Resume ✓</span>',
+                    'sudah_simpan': '<span class="badge badge-warning">Tersimpan</span>',
+                    'belum_generate': '<span class="badge badge-secondary">Belum Generate</span>'
+                };
+                const resumeStatusBadge = resumeStatusMap[patient.resume_status] || '<span class="badge badge-light">Pasien Baru</span>';
                 const statusBadge = patient.status === 'active' ?
                     '<span class="badge badge-success">Aktif</span>' :
                     '<span class="badge badge-secondary">Nonaktif</span>';
@@ -6879,9 +7058,10 @@ function mobileNavClick(btn, action) {
                 const locationBadge = patient.visit_location
                     ? `<span class="badge badge-sm badge-info ml-1">${locationLabels[patient.visit_location] || '?'}</span>`
                     : '';
+                const escapedName = (patient.full_name || '').replace(/'/g, "\\'");
                 const mrIdCell = patient.mr_id
                     ? `<a href="sunday-clinic.html?patient=${patient.id}&mr=${patient.mr_id}" class="text-primary" title="Buka Rekam Medis">${patient.mr_id}</a>${locationBadge}`
-                    : `<a href="sunday-clinic.html?patient=${patient.id}" class="text-muted" title="Buat Rekam Medis Baru"><i class="fas fa-plus-circle"></i> Baru</a>`;
+                    : `<a href="#" onclick="showNewVisitModal('${patient.id}', '${escapedName}'); return false;" class="text-muted" title="Buat Rekam Medis Baru"><i class="fas fa-plus-circle"></i> Baru</a>`;
 
                 return `
                     <tr>
@@ -6890,7 +7070,7 @@ function mobileNavClick(btn, action) {
                         <td>${patient.full_name || '-'}</td>
                         <td>${patient.whatsapp || patient.phone || '-'}</td>
                         <td>${patient.age || '-'}</td>
-                        <td>${lastVisit}</td>
+                        <td>${resumeStatusBadge}</td>
                         <td>${regDate}</td>
                         <td>${statusBadge}</td>
                         <td class="text-nowrap">
@@ -7083,8 +7263,15 @@ function mobileNavClick(btn, action) {
             // Render results
             tbody.innerHTML = data.data.map(patient => {
                 const birthDate = patient.birth_date ? new Date(patient.birth_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
-                const regDate = patient.created_at ? new Date(patient.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
-                const lastVisit = patient.last_visit ? new Date(patient.last_visit).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
+                const regDate = patient.created_at ? (() => { const d = new Date(patient.created_at); return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear().toString().slice(-2)}`; })() : '-';
+                // Resume status badge
+                const resumeStatusMap = {
+                    'sudah_kirim_usg_resume': '<span class="badge badge-success">USG + Resume ✓</span>',
+                    'sudah_kirim_resume': '<span class="badge badge-info">Resume ✓</span>',
+                    'sudah_simpan': '<span class="badge badge-warning">Tersimpan</span>',
+                    'belum_generate': '<span class="badge badge-secondary">Belum Generate</span>'
+                };
+                const resumeStatusBadge = resumeStatusMap[patient.resume_status] || '<span class="badge badge-light">Pasien Baru</span>';
                 const statusBadge = patient.status === 'active' ?
                     '<span class="badge badge-success">Aktif</span>' :
                     '<span class="badge badge-secondary">Nonaktif</span>';
@@ -7099,18 +7286,19 @@ function mobileNavClick(btn, action) {
                 const locationBadge = patient.visit_location
                     ? `<span class="badge badge-sm badge-info ml-1">${locationLabels[patient.visit_location] || '?'}</span>`
                     : '';
+                const escapedName = (patient.full_name || '').replace(/'/g, "\\'");
                 const mrIdCell = patient.mr_id
                     ? `<a href="sunday-clinic.html?patient=${patient.id}&mr=${patient.mr_id}" class="text-primary" title="Buka Rekam Medis"><small>${patient.mr_id}</small></a>${locationBadge}`
-                    : `<a href="sunday-clinic.html?patient=${patient.id}" class="text-muted" title="Buat Rekam Medis Baru"><i class="fas fa-plus-circle"></i></a>`;
+                    : `<a href="#" onclick="showNewVisitModal('${patient.id}', '${escapedName}'); return false;" class="text-muted" title="Buat Rekam Medis Baru"><i class="fas fa-plus-circle"></i></a>`;
 
                 return `
                     <tr>
-                        <td><a href="#" class="text-primary" onclick="showPatientMRList('${patient.id}', '${(patient.full_name || '').replace(/'/g, "\\'")}'); return false;" title="Lihat Daftar Rekam Medis"><small>${patient.id}</small></a></td>
+                        <td><a href="#" class="text-primary" onclick="showPatientMRList('${patient.id}', '${escapedName}'); return false;" title="Lihat Daftar Rekam Medis"><small>${patient.id}</small></a></td>
                         <td>${mrIdCell}</td>
                         <td>${patient.full_name || '-'}</td>
                         <td><small>${patient.whatsapp || patient.phone || '-'}</small></td>
                         <td>${patient.age || '-'}</td>
-                        <td><small>${lastVisit}</small></td>
+                        <td>${resumeStatusBadge}</td>
                         <td><small>${regDate}</small></td>
                         <td>${statusBadge}</td>
                         <td class="text-nowrap">
@@ -7610,14 +7798,15 @@ Apakah Anda yakin ingin melanjutkan?`;
 
             // Build records table
             let recordsHtml = '';
+            const escapedPatientName = (patientName || '').replace(/'/g, "\\'");
             if (records.length === 0) {
                 recordsHtml = `
                     <div class="text-center py-4">
                         <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
                         <p class="text-muted">Belum ada rekam medis untuk pasien ini</p>
-                        <a href="sunday-clinic.html?patient=${patientId}" class="btn btn-primary">
+                        <button type="button" class="btn btn-primary" onclick="$('#patientMRListModal').modal('hide'); showNewVisitModal('${patientId}', '${escapedPatientName}');">
                             <i class="fas fa-plus mr-1"></i> Buat Rekam Medis Baru
-                        </a>
+                        </button>
                     </div>
                 `;
             } else {
@@ -7676,9 +7865,9 @@ Apakah Anda yakin ingin melanjutkan?`;
                         </table>
                     </div>
                     <div class="text-right mt-3">
-                        <a href="sunday-clinic.html?patient=${patientId}" class="btn btn-success">
+                        <button type="button" class="btn btn-success" onclick="$('#patientMRListModal').modal('hide'); showNewVisitModal('${patientId}', '${escapedPatientName}');">
                             <i class="fas fa-plus mr-1"></i> Kunjungan Baru
-                        </a>
+                        </button>
                     </div>
                 `;
             }

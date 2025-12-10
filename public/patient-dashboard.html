@@ -1489,8 +1489,110 @@
         
         <!-- Alert for first-time users -->
         <div class="alert-info-custom" id="first-time-alert" style="display: none;">
-            <i class="fa fa-info-circle"></i> <strong>Langkah Selanjutnya:</strong> 
+            <i class="fa fa-info-circle"></i> <strong>Langkah Selanjutnya:</strong>
             Lengkapi formulir identitas pribadi Anda untuk memulai journey Anda.
+        </div>
+
+        <!-- Birth Congratulations Card - Hidden by default, shown when data exists -->
+        <div class="row" id="birth-congrats-row" style="margin-bottom: 30px; display: none;">
+            <div class="col-md-12">
+                <div class="dashboard-card" id="birth-congrats-card" style="
+                    background: transparent;
+                    border: none;
+                    position: relative;
+                    overflow: visible;
+                ">
+                    <!-- Decorative Corner Accents -->
+                    <div class="birth-corner-accent" id="birth-corner-tl" style="position: absolute; top: 0; left: 0; width: 50px; height: 50px; border-top: 3px solid #a855f7; border-left: 3px solid #a855f7; z-index: 10;"></div>
+                    <div class="birth-corner-accent" id="birth-corner-tr" style="position: absolute; top: 0; right: 0; width: 50px; height: 50px; border-top: 3px solid #a855f7; border-right: 3px solid #a855f7; z-index: 10;"></div>
+                    <div class="birth-corner-accent" id="birth-corner-bl" style="position: absolute; bottom: 0; left: 0; width: 50px; height: 50px; border-bottom: 3px solid #a855f7; border-left: 3px solid #a855f7; z-index: 10;"></div>
+                    <div class="birth-corner-accent" id="birth-corner-br" style="position: absolute; bottom: 0; right: 0; width: 50px; height: 50px; border-bottom: 3px solid #a855f7; border-right: 3px solid #a855f7; z-index: 10;"></div>
+
+                    <!-- Header -->
+                    <div style="margin-bottom: 20px;">
+                        <h2 id="birth-card-title" style="color: #a855f7; font-size: 22px; font-weight: 600; margin-bottom: 5px;">
+                            <i class="fa fa-heart" id="birth-card-icon" style="color: #a855f7; margin-right: 8px;"></i>
+                            Selamat atas Kelahiran Buah Hati!
+                        </h2>
+                        <p style="color: #888; font-size: 12px; margin: 0;" id="birth-congrats-doctor"></p>
+                    </div>
+
+                    <!-- Content Container -->
+                    <div style="display: flex; align-items: flex-start; gap: 25px; flex-wrap: wrap;">
+                        <!-- Photo -->
+                        <div id="birth-photo-container" onclick="openBirthPhotoModal()" style="
+                            width: 180px;
+                            height: 180px;
+                            border-radius: 15px;
+                            overflow: hidden;
+                            box-shadow: 0 8px 25px rgba(168, 85, 247, 0.3);
+                            border: 3px solid rgba(168, 85, 247, 0.5);
+                            flex-shrink: 0;
+                            cursor: pointer;
+                        ">
+                            <img id="birth-photo" src="" alt="Foto Kelahiran" style="width: 100%; height: 100%; object-fit: cover;" />
+                        </div>
+
+                        <!-- Details -->
+                        <div style="flex: 1; min-width: 280px; text-align: left;">
+                            <h3 id="birth-baby-name" style="color: #a855f7; font-size: 28px; font-weight: 700; margin-bottom: 8px;"></h3>
+                            <p id="birth-subtitle" style="color: #9ca3af; font-size: 13px; margin-bottom: 15px;"></p>
+
+                            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px;" id="birth-details-grid">
+                                <div class="birth-detail-box" style="
+                                    padding: 15px;
+                                    border-radius: 12px;
+                                    background: rgba(30, 30, 40, 0.9);
+                                    border: 1px solid rgba(168, 85, 247, 0.3);
+                                ">
+                                    <div class="birth-detail-label" style="color: #9ca3af; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Tanggal Lahir</div>
+                                    <div id="birth-date" style="color: #ffffff; font-weight: 600; font-size: 15px;"></div>
+                                </div>
+                                <div class="birth-detail-box" style="
+                                    padding: 15px;
+                                    border-radius: 12px;
+                                    background: rgba(30, 30, 40, 0.9);
+                                    border: 1px solid rgba(168, 85, 247, 0.3);
+                                ">
+                                    <div class="birth-detail-label" style="color: #9ca3af; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Jam</div>
+                                    <div id="birth-time" style="color: #ffffff; font-weight: 600; font-size: 15px;"></div>
+                                </div>
+                                <div class="birth-detail-box" style="
+                                    padding: 15px;
+                                    border-radius: 12px;
+                                    background: rgba(30, 30, 40, 0.9);
+                                    border: 1px solid rgba(168, 85, 247, 0.3);
+                                ">
+                                    <div class="birth-detail-label" style="color: #9ca3af; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Berat Badan</div>
+                                    <div id="birth-weight" style="color: #ffffff; font-weight: 600; font-size: 15px;"></div>
+                                </div>
+                                <div class="birth-detail-box" style="
+                                    padding: 15px;
+                                    border-radius: 12px;
+                                    background: rgba(30, 30, 40, 0.9);
+                                    border: 1px solid rgba(168, 85, 247, 0.3);
+                                ">
+                                    <div class="birth-detail-label" style="color: #9ca3af; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px;">Panjang Badan</div>
+                                    <div id="birth-length" style="color: #ffffff; font-weight: 600; font-size: 15px;"></div>
+                                </div>
+                            </div>
+
+                            <!-- Message from Doctor -->
+                            <div id="birth-message-container" style="
+                                padding: 15px 20px;
+                                border-radius: 12px;
+                                background: rgba(30, 30, 40, 0.9);
+                                border-left: 3px solid #a855f7;
+                            ">
+                                <div class="birth-message-label" style="color: #a855f7; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
+                                    <i class="fa fa-quote-left" style="margin-right: 5px;"></i> Pesan dari Dokter
+                                </div>
+                                <p id="birth-message" style="color: #e5e7eb; font-size: 14px; margin: 0; line-height: 1.6;"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Announcements Section -->
@@ -2275,10 +2377,150 @@
 
                 loadVisitInvoices();
 
+                // Load birth congratulations card
+                loadBirthCongratulations();
+
             } catch (error) {
                 console.error('Error loading profile:', error);
                 // Token might be invalid, logout
                 logout();
+            }
+        }
+
+        // ==================== BIRTH CONGRATULATIONS ====================
+        async function loadBirthCongratulations() {
+            try {
+                const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+                const response = await fetch('/api/patient/birth-congratulations', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (!response.ok) return;
+
+                const result = await response.json();
+                if (!result.success || !result.data) return;
+
+                const data = result.data;
+                const row = document.getElementById('birth-congrats-row');
+                if (!row) return;
+
+                // Fill in the data
+                document.getElementById('birth-baby-name').textContent = data.baby_name || 'Baby';
+                document.getElementById('birth-congrats-doctor').textContent = 'Dari ' + (data.doctor_name || 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.');
+
+                // Format date
+                if (data.birth_date) {
+                    const birthDate = new Date(data.birth_date);
+                    document.getElementById('birth-date').textContent = birthDate.toLocaleDateString('id-ID', {
+                        weekday: 'long',
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+                }
+
+                // Format time
+                if (data.birth_time) {
+                    const timeParts = data.birth_time.split(':');
+                    document.getElementById('birth-time').textContent = timeParts[0] + ':' + timeParts[1] + ' WIB';
+                }
+
+                document.getElementById('birth-weight').textContent = data.birth_weight || '-';
+                document.getElementById('birth-length').textContent = data.birth_length || '-';
+                document.getElementById('birth-message').textContent = data.message || 'Selamat atas kelahiran buah hati Anda!';
+
+                // Define theme colors (dark style with accent colors)
+                const themeColors = {
+                    pink: {
+                        accent: '#ec4899',
+                        accentLight: 'rgba(236, 72, 153, 0.3)',
+                        shadow: 'rgba(236, 72, 153, 0.3)'
+                    },
+                    blue: {
+                        accent: '#3b82f6',
+                        accentLight: 'rgba(59, 130, 246, 0.3)',
+                        shadow: 'rgba(59, 130, 246, 0.3)'
+                    },
+                    green: {
+                        accent: '#22c55e',
+                        accentLight: 'rgba(34, 197, 94, 0.3)',
+                        shadow: 'rgba(34, 197, 94, 0.3)'
+                    },
+                    purple: {
+                        accent: '#a855f7',
+                        accentLight: 'rgba(168, 85, 247, 0.3)',
+                        shadow: 'rgba(168, 85, 247, 0.3)'
+                    },
+                    gold: {
+                        accent: '#f59e0b',
+                        accentLight: 'rgba(245, 158, 11, 0.3)',
+                        shadow: 'rgba(245, 158, 11, 0.3)'
+                    },
+                    peach: {
+                        accent: '#fb923c',
+                        accentLight: 'rgba(251, 146, 60, 0.3)',
+                        shadow: 'rgba(251, 146, 60, 0.3)'
+                    }
+                };
+
+                const theme = themeColors[data.theme_color] || themeColors.purple;
+
+                // Handle photo with theme-appropriate colors
+                const photoContainer = document.getElementById('birth-photo-container');
+                const photoImg = document.getElementById('birth-photo');
+                if (data.photo_url) {
+                    photoImg.src = data.photo_url;
+                    photoImg.onerror = function() {
+                        photoContainer.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(30,30,40,0.8);"><i class="fa fa-baby" style="font-size:60px;color:${theme.accent};"></i></div>`;
+                    };
+                } else {
+                    // No photo - show icon placeholder with theme colors
+                    photoContainer.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(30,30,40,0.8);"><i class="fa fa-heart" style="font-size:60px;color:${theme.accent};"></i></div>`;
+                }
+
+                // Update photo container border and shadow
+                if (photoContainer) {
+                    photoContainer.style.border = `3px solid ${theme.accentLight}`;
+                    photoContainer.style.boxShadow = `0 8px 25px ${theme.shadow}`;
+                }
+
+                // Update title and icon colors
+                const cardTitle = document.getElementById('birth-card-title');
+                const cardIcon = document.getElementById('birth-card-icon');
+                const babyName = document.getElementById('birth-baby-name');
+                if (cardTitle) cardTitle.style.color = theme.accent;
+                if (cardIcon) cardIcon.style.color = theme.accent;
+                if (babyName) babyName.style.color = theme.accent;
+
+                // Apply theme to detail boxes
+                document.querySelectorAll('.birth-detail-box').forEach(box => {
+                    box.style.background = 'rgba(30, 30, 40, 0.9)';
+                    box.style.border = `1px solid ${theme.accentLight}`;
+                });
+
+                // Apply theme to message container
+                const msgContainer = document.getElementById('birth-message-container');
+                if (msgContainer) {
+                    msgContainer.style.background = 'rgba(30, 30, 40, 0.9)';
+                    msgContainer.style.borderLeft = `3px solid ${theme.accent}`;
+                }
+
+                // Update message label color
+                const msgLabel = msgContainer?.querySelector('.birth-message-label');
+                if (msgLabel) msgLabel.style.color = theme.accent;
+
+                // Update corner accent colors
+                document.querySelectorAll('.birth-corner-accent').forEach(corner => {
+                    corner.style.borderColor = theme.accent;
+                });
+
+                // Show the card and hide pregnancy tracker
+                row.style.display = 'block';
+                const pregnancyRow = document.getElementById('pregnancy-tracker-row');
+                if (pregnancyRow) pregnancyRow.style.display = 'none';
+
+            } catch (error) {
+                console.error('Error loading birth congratulations:', error);
             }
         }
 
@@ -6376,7 +6618,7 @@
                     typeBadge = '<span class="badge badge-warning" style="font-size: 10px;"><i class="fa fa-bullhorn"></i> Pengumuman</span>';
                 }
 
-                return '<div class="notification-item ' + (isUnread ? 'unread' : '') + '" data-id="' + n.id + '" data-source="' + n.source + '" onclick="handleNotifClick(' + n.id + ', \'' + n.source + '\')">' +
+                return '<div class="notification-item ' + (isUnread ? 'unread' : '') + '" data-id="' + n.id + '" data-source="' + n.source + '" data-type="' + (n.type || '') + '" onclick="handleNotifClick(' + n.id + ', \'' + n.source + '\', \'' + (n.type || '') + '\')">' +
                     '<div style="display: flex; align-items: flex-start; gap: 12px;">' +
                         '<div class="notif-icon ' + iconColor + '">' +
                             '<i class="' + iconClass + '"></i>' +
@@ -6397,7 +6639,7 @@
         }
 
         // Handle notification click
-        async function handleNotifClick(id, source) {
+        async function handleNotifClick(id, source, type) {
             if (source === 'notification') {
                 try {
                     const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
@@ -6417,6 +6659,53 @@
                 } catch (error) {
                     console.error('Error marking notification as read:', error);
                 }
+            }
+
+            // Navigate to relevant section based on notification type
+            if (type === 'document') {
+                // Close notifications modal (Bootstrap modal)
+                $('#notificationsModal').modal('hide');
+
+                // Wait for modal to close, then scroll
+                setTimeout(() => {
+                    // Expand documents section if collapsed
+                    const content = document.getElementById('documents-content');
+                    if (content && content.classList.contains('collapsed')) {
+                        toggleCard('documents');
+                    }
+
+                    // Scroll to documents section
+                    const section = document.getElementById('documents-section');
+                    if (section) {
+                        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        // Add highlight effect
+                        section.style.boxShadow = '0 0 20px rgba(40, 167, 233, 0.5)';
+                        setTimeout(() => {
+                            section.style.boxShadow = '';
+                        }, 2000);
+                    }
+                }, 300);
+            } else if (type === 'appointment') {
+                // Close notifications modal (Bootstrap modal)
+                $('#notificationsModal').modal('hide');
+
+                setTimeout(() => {
+                    // Expand hospital booking section if collapsed
+                    const content = document.getElementById('hospital-booking-content');
+                    if (content && content.classList.contains('collapsed')) {
+                        toggleCard('hospital-booking');
+                    }
+
+                    // Scroll to hospital booking section
+                    const section = document.getElementById('hospital-booking-section');
+                    if (section) {
+                        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        section.style.boxShadow = '0 0 20px rgba(40, 167, 69, 0.5)';
+                        setTimeout(() => {
+                            section.style.boxShadow = '';
+                        }, 2000);
+                    }
+                }, 300);
             }
         }
 
@@ -6467,6 +6756,66 @@
             if (text.length <= maxLen) return text;
             return text.substring(0, maxLen) + '...';
         }
+
+        // Birth Photo Modal Functions
+        function openBirthPhotoModal() {
+            const photoImg = document.getElementById('birth-photo');
+            if (!photoImg || !photoImg.src) return;
+
+            const modalImg = document.getElementById('birth-photo-modal-img');
+            modalImg.src = photoImg.src;
+            document.getElementById('birth-photo-modal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeBirthPhotoModal() {
+            document.getElementById('birth-photo-modal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeBirthPhotoModal();
+            }
+        });
     </script>
+
+    <!-- Birth Photo Modal -->
+    <div id="birth-photo-modal" onclick="closeBirthPhotoModal()" style="
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.9);
+        z-index: 9999;
+        justify-content: center;
+        align-items: center;
+        cursor: pointer;
+    ">
+        <button onclick="closeBirthPhotoModal()" style="
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            font-size: 30px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 10000;
+        ">&times;</button>
+        <img id="birth-photo-modal-img" src="" alt="Foto Kelahiran" onclick="event.stopPropagation()" style="
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            border-radius: 10px;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.5);
+        " />
+    </div>
 </body>
 </html>

@@ -5,9 +5,25 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const cache = require('../utils/cache');
-const { verifyToken } = require('../middleware/auth');
+const multer = require('multer');
+const sharp = require('sharp');
+const r2Storage = require('../services/r2Storage');
+const { verifyToken, verifyPatientToken } = require('../middleware/auth');
 const { validatePatient } = require('../middleware/validation');
 const { deletePatientWithRelations } = require('../services/patientDeletion');
+
+// Configure multer for birth photo upload
+const birthPhotoUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
+    fileFilter: (req, file, cb) => {
+        if (file.mimetype.startsWith('image/')) {
+            cb(null, true);
+        } else {
+            cb(new Error('Only image files are allowed'), false);
+        }
+    }
+});
 
 // ==================== PATIENT ENDPOINTS ====================
 
@@ -234,10 +250,56 @@ router.get('/api/patients', verifyToken, async (req, res) => {
         // Map phone to whatsapp if whatsapp is null (for backward compatibility)
         // Use actual_last_visit from sunday_appointments if last_visit is null
         // Also use last_visit_date from sunday_clinic_records for location-based queries
-        const mappedRows = rows.map(patient => ({
-            ...patient,
-            whatsapp: patient.whatsapp || patient.phone || null,
-            last_visit: patient.last_visit || patient.actual_last_visit || patient.last_visit_date || null
+        // Calculate resume_status for each patient
+        const mappedRows = await Promise.all(rows.map(async (patient) => {
+            let resume_status = null;
+
+            // Only calculate if patient has an MR
+            if (patient.mr_id) {
+                try {
+                    // Check if resume_medis record exists in medical_records
+                    const [resumeRecord] = await db.query(
+                        `SELECT 1 FROM medical_records WHERE mr_id = ? AND record_type = 'resume_medis' LIMIT 1`,
+                        [patient.mr_id]
+                    );
+
+                    // Check if there's a published resume document
+                    const [resumeDoc] = await db.query(
+                        `SELECT 1 FROM patient_documents WHERE mr_id = ? AND document_type = 'resume_medis' AND status = 'published' LIMIT 1`,
+                        [patient.mr_id]
+                    );
+
+                    // Check if there's a published USG document
+                    const [usgDoc] = await db.query(
+                        `SELECT 1 FROM patient_documents WHERE mr_id = ? AND document_type IN ('usg_2d', 'usg_4d', 'patient_usg') AND status = 'published' LIMIT 1`,
+                        [patient.mr_id]
+                    );
+
+                    const hasResumeRecord = resumeRecord.length > 0;
+                    const hasPublishedResume = resumeDoc.length > 0;
+                    const hasPublishedUsg = usgDoc.length > 0;
+
+                    if (hasPublishedResume && hasPublishedUsg) {
+                        resume_status = 'sudah_kirim_usg_resume';
+                    } else if (hasPublishedResume) {
+                        resume_status = 'sudah_kirim_resume';
+                    } else if (hasResumeRecord) {
+                        resume_status = 'sudah_simpan';
+                    } else {
+                        resume_status = 'belum_generate';
+                    }
+                } catch (err) {
+                    console.error('Error calculating resume status for patient', patient.id, err.message);
+                    resume_status = 'belum_generate';
+                }
+            }
+
+            return {
+                ...patient,
+                whatsapp: patient.whatsapp || patient.phone || null,
+                last_visit: patient.last_visit || patient.actual_last_visit || patient.last_visit_date || null,
+                resume_status
+            };
         }));
 
         const response = {
@@ -750,6 +812,234 @@ router.get('/api/patients/generate-id', async (req, res) => {
             success: false, 
             message: 'Failed to generate patient ID', 
             error: error.message 
+        });
+    }
+});
+
+// ==================== BIRTH CONGRATULATIONS ====================
+
+// GET birth congratulations for logged-in patient (Patient Dashboard)
+router.get('/api/patient/birth-congratulations', verifyPatientToken, async (req, res) => {
+    try {
+        const patientId = req.patient.id;
+
+        const [rows] = await db.query(`
+            SELECT
+                id,
+                baby_name,
+                birth_date,
+                birth_time,
+                birth_weight,
+                birth_length,
+                gender,
+                photo_url,
+                photo_r2_key,
+                message,
+                doctor_name,
+                theme_color,
+                created_at
+            FROM birth_congratulations
+            WHERE patient_id = ? AND is_published = 1
+            ORDER BY created_at DESC
+            LIMIT 1
+        `, [patientId]);
+
+        if (rows.length === 0) {
+            return res.json({ success: true, data: null });
+        }
+
+        const data = rows[0];
+
+        // Regenerate signed URL if R2 key exists
+        if (data.photo_r2_key) {
+            try {
+                data.photo_url = await r2Storage.getSignedDownloadUrl(data.photo_r2_key, 3600); // 1 hour
+            } catch (r2Error) {
+                console.error('Error generating signed URL:', r2Error);
+                // Keep existing photo_url as fallback
+            }
+        }
+
+        // Remove r2_key from response
+        delete data.photo_r2_key;
+
+        res.json({ success: true, data });
+    } catch (error) {
+        console.error('Error fetching birth congratulations:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch birth congratulations',
+            error: error.message
+        });
+    }
+});
+
+// POST/PUT birth congratulations (Staff only)
+router.post('/api/patients/:patientId/birth-congratulations', verifyToken, async (req, res) => {
+    try {
+        const { patientId } = req.params;
+        const { baby_name, birth_date, birth_time, birth_weight, birth_length, gender, photo_url, message, is_published, theme_color } = req.body;
+
+        // Check if record exists
+        const [existing] = await db.query(
+            'SELECT id FROM birth_congratulations WHERE patient_id = ?',
+            [patientId]
+        );
+
+        if (existing.length > 0) {
+            // Update existing
+            await db.query(`
+                UPDATE birth_congratulations SET
+                    baby_name = COALESCE(?, baby_name),
+                    birth_date = COALESCE(?, birth_date),
+                    birth_time = COALESCE(?, birth_time),
+                    birth_weight = COALESCE(?, birth_weight),
+                    birth_length = COALESCE(?, birth_length),
+                    gender = COALESCE(?, gender),
+                    photo_url = COALESCE(?, photo_url),
+                    message = COALESCE(?, message),
+                    is_published = COALESCE(?, is_published),
+                    theme_color = COALESCE(?, theme_color)
+                WHERE patient_id = ?
+            `, [baby_name, birth_date, birth_time, birth_weight, birth_length, gender, photo_url, message, is_published, theme_color, patientId]);
+
+            res.json({ success: true, message: 'Birth congratulations updated' });
+        } else {
+            // Insert new
+            await db.query(`
+                INSERT INTO birth_congratulations
+                (patient_id, baby_name, birth_date, birth_time, birth_weight, birth_length, gender, photo_url, message, is_published, theme_color)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `, [patientId, baby_name, birth_date, birth_time, birth_weight, birth_length, gender, photo_url, message, is_published || 0, theme_color || 'pink']);
+
+            res.json({ success: true, message: 'Birth congratulations created' });
+        }
+    } catch (error) {
+        console.error('Error saving birth congratulations:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to save birth congratulations',
+            error: error.message
+        });
+    }
+});
+
+// Upload birth photo (Staff only)
+router.post('/api/patients/:patientId/birth-congratulations/photo', verifyToken, birthPhotoUpload.single('photo'), async (req, res) => {
+    try {
+        const { patientId } = req.params;
+
+        if (!req.file) {
+            return res.status(400).json({ success: false, message: 'No photo uploaded' });
+        }
+
+        // Resize image to max 1024px (width or height)
+        const resizedBuffer = await sharp(req.file.buffer)
+            .resize(1024, 1024, {
+                fit: 'inside',
+                withoutEnlargement: true
+            })
+            .jpeg({ quality: 85 })
+            .toBuffer();
+
+        // Upload to R2
+        const dateFolder = new Date().toLocaleDateString('en-GB').replace(/\//g, '');
+        const filename = `${patientId}_birth_${Date.now()}.jpg`;
+        const folder = `birth-photos/${dateFolder}`;
+
+        const uploadResult = await r2Storage.uploadFile(
+            resizedBuffer,
+            filename,
+            'image/jpeg',
+            folder
+        );
+
+        // Get signed URL for the photo (7 days = 604800 seconds, max allowed)
+        const signedUrl = await r2Storage.getSignedDownloadUrl(uploadResult.key, 604800);
+
+        // Update database - store both the signed URL and R2 key
+        // The signed URL will be regenerated when needed via the GET endpoint
+        await db.query(
+            'UPDATE birth_congratulations SET photo_url = ?, photo_r2_key = ? WHERE patient_id = ?',
+            [signedUrl, uploadResult.key, patientId]
+        );
+
+        res.json({
+            success: true,
+            message: 'Photo uploaded successfully',
+            photo_url: signedUrl
+        });
+    } catch (error) {
+        console.error('Error uploading birth photo:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to upload photo',
+            error: error.message
+        });
+    }
+});
+
+// GET all birth congratulations (Staff only - for admin panel)
+router.get('/api/patients/birth-congratulations/all', verifyToken, async (req, res) => {
+    try {
+        const [rows] = await db.query(`
+            SELECT bc.*, p.full_name as patient_name
+            FROM birth_congratulations bc
+            JOIN patients p ON bc.patient_id = p.id
+            ORDER BY bc.created_at DESC
+        `);
+
+        // Regenerate signed URLs for all photos
+        for (const row of rows) {
+            if (row.photo_r2_key) {
+                try {
+                    row.photo_url = await r2Storage.getSignedDownloadUrl(row.photo_r2_key, 3600);
+                } catch (r2Error) {
+                    console.error('Error generating signed URL:', r2Error);
+                }
+            }
+        }
+
+        res.json({ success: true, data: rows });
+    } catch (error) {
+        console.error('Error fetching all birth congratulations:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch birth congratulations',
+            error: error.message
+        });
+    }
+});
+
+// DELETE birth congratulations (Staff only)
+router.delete('/api/patients/:patientId/birth-congratulations', verifyToken, async (req, res) => {
+    try {
+        const { patientId } = req.params;
+
+        // Get R2 key to delete photo
+        const [existing] = await db.query(
+            'SELECT photo_r2_key FROM birth_congratulations WHERE patient_id = ?',
+            [patientId]
+        );
+
+        if (existing.length > 0 && existing[0].photo_r2_key) {
+            // Delete photo from R2
+            try {
+                await r2Storage.deleteFile(existing[0].photo_r2_key);
+            } catch (r2Error) {
+                console.error('Error deleting photo from R2:', r2Error);
+            }
+        }
+
+        await db.query('DELETE FROM birth_congratulations WHERE patient_id = ?', [patientId]);
+
+        res.json({ success: true, message: 'Birth congratulations deleted' });
+    } catch (error) {
+        console.error('Error deleting birth congratulations:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to delete birth congratulations',
+            error: error.message
         });
     }
 });
