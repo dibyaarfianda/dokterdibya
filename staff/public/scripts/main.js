@@ -86,6 +86,7 @@ function initPages() {
     pages.kelolaObatManagement = grab('kelola-obat-management-page');
     pages.estimasiBiaya = grab('estimasi-biaya-page');
     pages.financeAnalysis = grab('finance-analysis-page');
+    pages.birthCongrats = grab('birth-congrats-page');
     pages.kelolaRoles = grab('kelola-roles-page');
     pages.bookingSettings = grab('booking-settings-page');
     pages.activityLog = grab('activity-log-page');
@@ -1380,6 +1381,310 @@ function showFinanceAnalysisPage() {
         }
     }, 100);
 }
+
+// ==================== BIRTH CONGRATULATIONS ====================
+function showBirthCongratsPage() {
+    hideAllPages();
+    pages.birthCongrats?.classList.remove('d-none');
+    setTitleAndActive('Ucapan Kelahiran', 'nav-birth-congrats', 'birth-congrats');
+    loadBirthCongratsList();
+}
+
+async function loadBirthCongratsList() {
+    const container = document.getElementById('birth-congrats-list');
+    if (!container) return;
+
+    container.innerHTML = `<div class="text-center text-muted py-5">
+        <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+        <p>Memuat data...</p>
+    </div>`;
+
+    try {
+        const token = getAuthToken();
+        const response = await fetch('/api/patients/birth-congratulations/all', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('Failed to fetch');
+
+        const result = await response.json();
+        if (!result.success) throw new Error(result.message);
+
+        // Store data globally for edit function
+        window.birthCongratsData = {};
+        if (result.data) {
+            result.data.forEach(item => {
+                window.birthCongratsData[item.patient_id] = item;
+            });
+        }
+
+        if (!result.data || result.data.length === 0) {
+            container.innerHTML = `<div class="text-center text-muted py-5">
+                <i class="fas fa-baby fa-3x mb-3" style="color: #007bff; opacity: 0.5;"></i>
+                <p>Belum ada data ucapan kelahiran</p>
+                <button class="btn btn-primary btn-sm" onclick="showAddBirthCongratsModal()">
+                    <i class="fas fa-plus mr-1"></i>Tambah Baru
+                </button>
+            </div>`;
+            return;
+        }
+
+        let html = '<div class="row">';
+        for (const item of result.data) {
+            const birthDate = item.birth_date ? new Date(item.birth_date).toLocaleDateString('id-ID', {
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+            }) : '-';
+            const genderIcon = item.gender === 'male' ? 'fa-mars text-info' : item.gender === 'female' ? 'fa-venus text-danger' : 'fa-question text-muted';
+            const genderText = item.gender === 'male' ? 'Laki-laki' : item.gender === 'female' ? 'Perempuan' : '-';
+            const statusBadge = item.is_published
+                ? '<span class="badge badge-success"><i class="fas fa-eye"></i> Tampil</span>'
+                : '<span class="badge badge-secondary"><i class="fas fa-eye-slash"></i> Sembunyi</span>';
+
+            html += `
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card h-100" style="border: 2px solid #90caf9; border-radius: 15px; overflow: hidden;">
+                    <div class="card-header" style="background: linear-gradient(135deg, #e3f2fd, #bbdefb); border-bottom: none;">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0" style="color: #1976d2;"><i class="fas fa-baby mr-2"></i>${item.baby_name || 'Baby'}</h5>
+                            ${statusBadge}
+                        </div>
+                        <small class="text-muted">Ibu: ${item.patient_name || '-'}</small>
+                    </div>
+                    <div class="card-body">
+                        ${item.photo_url ? `<div class="text-center mb-3"><img src="${item.photo_url}" alt="Foto" style="max-width: 100%; max-height: 150px; border-radius: 10px; object-fit: cover;"></div>` : ''}
+                        <div class="row text-center mb-2">
+                            <div class="col-6">
+                                <small class="text-muted d-block">Tanggal</small>
+                                <strong style="font-size: 12px;">${birthDate}</strong>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted d-block">Jam</small>
+                                <strong>${item.birth_time ? item.birth_time.substring(0, 5) + ' WIB' : '-'}</strong>
+                            </div>
+                        </div>
+                        <div class="row text-center mb-2">
+                            <div class="col-4">
+                                <small class="text-muted d-block">Berat</small>
+                                <strong>${item.birth_weight || '-'}</strong>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted d-block">Panjang</small>
+                                <strong>${item.birth_length || '-'}</strong>
+                            </div>
+                            <div class="col-4">
+                                <small class="text-muted d-block">Gender</small>
+                                <strong><i class="fas ${genderIcon}"></i> ${genderText}</strong>
+                            </div>
+                        </div>
+                        ${item.message ? `<div class="alert alert-light mb-0 mt-2" style="font-size: 12px; font-style: italic; border-left: 3px solid #007bff;">"${item.message}"</div>` : ''}
+                    </div>
+                    <div class="card-footer bg-white text-right">
+                        <button class="btn btn-outline-info btn-sm" onclick="editBirthCongrats('${item.patient_id}', birthCongratsData['${item.patient_id}'])">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="btn btn-outline-danger btn-sm" onclick="deleteBirthCongrats('${item.patient_id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>`;
+        }
+        html += '</div>';
+        container.innerHTML = html;
+
+    } catch (error) {
+        console.error('Error loading birth congratulations:', error);
+        container.innerHTML = `<div class="alert alert-danger">Gagal memuat data: ${error.message}</div>`;
+    }
+}
+
+async function showAddBirthCongratsModal() {
+    // Reset form
+    document.getElementById('birthCongratsForm').reset();
+    document.getElementById('bc-edit-id').value = '';
+    document.getElementById('birthCongratsModalTitle').textContent = 'Tambah Ucapan Kelahiran';
+    document.getElementById('bc-photo-preview').style.display = 'none';
+    document.getElementById('bc-is-published').checked = true;
+
+    // Reset color picker to default (pink)
+    selectBirthCongratsColor('pink');
+
+    // Load patients for dropdown
+    await loadPatientsForBirthCongrats();
+
+    $('#birthCongratsModal').modal('show');
+}
+
+async function loadPatientsForBirthCongrats() {
+    const select = document.getElementById('bc-patient-id');
+    select.innerHTML = '<option value="">-- Memuat pasien... --</option>';
+
+    try {
+        const token = getAuthToken();
+        const response = await fetch('/api/patients?limit=1000', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const result = await response.json();
+
+        select.innerHTML = '<option value="">-- Pilih Pasien --</option>';
+        if (result.success && result.data) {
+            for (const p of result.data) {
+                select.innerHTML += `<option value="${p.id}">${p.full_name} (${p.id})</option>`;
+            }
+        }
+    } catch (error) {
+        console.error('Error loading patients:', error);
+        select.innerHTML = '<option value="">-- Error loading --</option>';
+    }
+}
+
+// Color picker function for birth congratulations
+function selectBirthCongratsColor(color) {
+    // Update hidden input
+    document.getElementById('bc-theme-color').value = color;
+
+    // Update visual - reset all borders then set selected
+    document.querySelectorAll('#bc-color-options .color-box').forEach(box => {
+        box.style.borderColor = box.dataset.color === color ? '#333' : 'transparent';
+    });
+}
+
+async function saveBirthCongrats() {
+    const patientId = document.getElementById('bc-patient-id').value;
+    if (!patientId) {
+        showToast('Pilih pasien terlebih dahulu', 'error');
+        return;
+    }
+
+    // Get selected theme color from hidden input
+    const themeColor = document.getElementById('bc-theme-color').value || 'pink';
+
+    const data = {
+        baby_name: document.getElementById('bc-baby-name').value,
+        birth_date: document.getElementById('bc-birth-date').value || null,
+        birth_time: document.getElementById('bc-birth-time').value || null,
+        birth_weight: document.getElementById('bc-birth-weight').value,
+        birth_length: document.getElementById('bc-birth-length').value,
+        gender: document.getElementById('bc-gender').value || null,
+        message: document.getElementById('bc-message').value,
+        is_published: document.getElementById('bc-is-published').checked ? 1 : 0,
+        theme_color: themeColor
+    };
+
+    try {
+        const token = getAuthToken();
+
+        // Save data first
+        const response = await fetch(`/api/patients/${patientId}/birth-congratulations`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(data)
+        });
+
+        if (!response.ok) throw new Error('Failed to save');
+
+        // Upload photo if selected
+        const photoInput = document.getElementById('bc-photo');
+        if (photoInput.files && photoInput.files[0]) {
+            const formData = new FormData();
+            formData.append('photo', photoInput.files[0]);
+
+            const photoResponse = await fetch(`/api/patients/${patientId}/birth-congratulations/photo`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` },
+                body: formData
+            });
+
+            if (!photoResponse.ok) {
+                console.error('Photo upload failed');
+                showToast('Data tersimpan, tapi foto gagal diupload', 'warning');
+            }
+        }
+
+        showToast('Ucapan kelahiran berhasil disimpan', 'success');
+        $('#birthCongratsModal').modal('hide');
+        loadBirthCongratsList();
+
+    } catch (error) {
+        console.error('Error saving birth congratulations:', error);
+        showToast('Gagal menyimpan: ' + error.message, 'error');
+    }
+}
+
+async function editBirthCongrats(patientId, existingData) {
+    await showAddBirthCongratsModal();
+    document.getElementById('bc-edit-id').value = patientId;
+    document.getElementById('birthCongratsModalTitle').textContent = 'Edit Ucapan Kelahiran';
+    document.getElementById('bc-patient-id').value = patientId;
+
+    // Fill form with existing data
+    if (existingData) {
+        document.getElementById('bc-baby-name').value = existingData.baby_name || '';
+        document.getElementById('bc-birth-date').value = existingData.birth_date ? existingData.birth_date.split('T')[0] : '';
+        document.getElementById('bc-birth-time').value = existingData.birth_time || '';
+        document.getElementById('bc-birth-weight').value = existingData.birth_weight || '';
+        document.getElementById('bc-birth-length').value = existingData.birth_length || '';
+        document.getElementById('bc-gender').value = existingData.gender || '';
+        document.getElementById('bc-message').value = existingData.message || '';
+        document.getElementById('bc-is-published').checked = existingData.is_published == 1;
+
+        // Set theme color
+        selectBirthCongratsColor(existingData.theme_color || 'pink');
+
+        // Show existing photo preview if available
+        if (existingData.photo_url) {
+            const preview = document.getElementById('bc-photo-preview');
+            if (preview) {
+                preview.innerHTML = `<img src="${existingData.photo_url}" style="max-width:150px;max-height:150px;border-radius:8px;">`;
+            }
+        }
+    }
+}
+
+async function deleteBirthCongrats(patientId) {
+    if (!confirm('Hapus ucapan kelahiran untuk pasien ini?')) return;
+
+    try {
+        const token = getAuthToken();
+        const response = await fetch(`/api/patients/${patientId}/birth-congratulations`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('Failed to delete');
+
+        showToast('Ucapan kelahiran berhasil dihapus', 'success');
+        loadBirthCongratsList();
+    } catch (error) {
+        console.error('Error deleting:', error);
+        showToast('Gagal menghapus', 'error');
+    }
+}
+
+// Photo preview handler
+document.addEventListener('DOMContentLoaded', function() {
+    const photoInput = document.getElementById('bc-photo');
+    if (photoInput) {
+        photoInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    const preview = document.getElementById('bc-photo-preview');
+                    preview.querySelector('img').src = event.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+
+                // Update label
+                document.querySelector('label[for="bc-photo"]').textContent = file.name;
+            }
+        });
+    }
+});
 
 // ==================== INVOICE HISTORY ====================
 function showInvoiceHistoryPage() {
@@ -4019,6 +4324,13 @@ window.showKelolaObatManagementPage = showKelolaObatManagementPage;
 window.showEstimasiBiayaPage = showEstimasiBiayaPage;
 window.updateEstimasiBiaya = updateEstimasiBiaya;
 window.showFinanceAnalysisPage = showFinanceAnalysisPage;
+window.showBirthCongratsPage = showBirthCongratsPage;
+window.loadBirthCongratsList = loadBirthCongratsList;
+window.showAddBirthCongratsModal = showAddBirthCongratsModal;
+window.saveBirthCongrats = saveBirthCongrats;
+window.editBirthCongrats = editBirthCongrats;
+window.deleteBirthCongrats = deleteBirthCongrats;
+window.selectBirthCongratsColor = selectBirthCongratsColor;
 window.showKelolaRolesPage = showKelolaRolesPage;
 window.showStaffActivityPage = showStaffActivityPage;
 window.loadStaffActivityLogs = loadStaffActivityLogs;

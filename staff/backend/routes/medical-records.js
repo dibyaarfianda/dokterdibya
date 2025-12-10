@@ -766,98 +766,102 @@ function generateMedicalResume(identitas, records) {
             // Check current trimester
             const currentTrimester = usg.current_trimester || usg.trimester;
             
-            // Skrining Kongenital - Check for screening data (flat structure)
+            // Skrining Kongenital - Check for screening data (nested or flat structure)
             if (currentTrimester === 'screening' || usg.trimester === 'screening') {
+                // Get screening data from nested object or flat structure
+                const scr = usg.screening || usg;
+
                 resume += 'Hasil Skrining Kelainan Kongenital:\n\n';
-                
-                if (usg.date) resume += `Tanggal Pemeriksaan: ${usg.date}\n`;
-                if (usg.gender) {
+
+                // Date and gender from screening object
+                if (scr.date) resume += `Tanggal Pemeriksaan: ${scr.date}\n`;
+                if (scr.gender) {
                     const genderMap = { 'male': 'Laki-laki', 'female': 'Perempuan' };
-                    resume += `Jenis Kelamin: ${genderMap[usg.gender] || usg.gender}\n`;
+                    resume += `Jenis Kelamin: ${genderMap[scr.gender] || scr.gender}\n`;
                 }
                 resume += '\n';
-                
-                // Kepala dan Otak
+
+                // Kepala dan Otak - support both old and new field names
                 const headItems = [];
-                if (usg.simetris_hemisfer) headItems.push('Simetris hemisfer');
-                if (usg.falx_bpd) headItems.push('Falx cerebri jelas, BPD sesuai usia kehamilan');
-                if (usg.ventrikel) headItems.push('Ventrikel lateral, Atrium < 10 mm');
-                if (usg.cavum_septum) headItems.push('Cavum septum pellucidum');
+                if (scr.hemisphere || scr.simetris_hemisfer) headItems.push('Simetris hemisfer');
+                if (scr.falx_bpd) headItems.push('Falx cerebri jelas, BPD sesuai usia kehamilan');
+                if (scr.lateral_vent || scr.ventrikel) headItems.push('Ventrikel lateral, Atrium < 10 mm');
+                if (scr.cavum || scr.cavum_septum) headItems.push('Cavum septum pellucidum');
                 if (headItems.length > 0) {
                     resume += 'Kepala dan Otak:\n';
                     headItems.forEach(item => resume += `• ${item}\n`);
                     resume += '\n';
                 }
-                
+
                 // Muka dan Leher
                 const faceItems = [];
-                if (usg.profil_muka) faceItems.push('Profil muka normal');
-                if (usg.tulang_hidung) faceItems.push('Tulang hidung tampak, ukuran normal');
-                if (usg.garis_bibir) faceItems.push('Garis bibir atas menyambung');
+                if (scr.profile || scr.profil_muka) faceItems.push('Profil muka normal');
+                if (scr.nasal_bone || scr.tulang_hidung) faceItems.push('Tulang hidung tampak, ukuran normal');
+                if (scr.upper_lip || scr.garis_bibir) faceItems.push('Garis bibir atas menyambung');
                 if (faceItems.length > 0) {
                     resume += 'Muka dan Leher:\n';
                     faceItems.forEach(item => resume += `• ${item}\n`);
                     resume += '\n';
                 }
-                
+
                 // Jantung dan Rongga Dada
                 const heartItems = [];
-                if (usg.four_chamber) heartItems.push('Gambaran jelas 4-chamber view');
-                if (usg.jantung_kiri) heartItems.push('Jantung di sebelah kiri');
-                if (usg.septum_interv) heartItems.push('Septum interventrikular intak');
-                if (usg.besar_jantung) heartItems.push('Besar jantung <1/3 area dada');
-                if (usg.dua_atrium) heartItems.push('Terlihat 2 atrium');
-                if (usg.katup_atrioventricular) heartItems.push('Katup atrioventricular terlihat');
-                if (usg.ritme_jantung) heartItems.push('Ritme jantung normal');
-                if (usg.echogenic_pads) heartItems.push('Tidak ada echogenic intracardiac focus');
+                if (scr['4chamber'] || scr.four_chamber) heartItems.push('Gambaran jelas 4-chamber view');
+                if (scr.heart_left || scr.jantung_kiri) heartItems.push('Jantung di sebelah kiri');
+                if (scr.apex || scr.septum_interv) heartItems.push('Septum interventrikular intak');
+                if (scr.heart_size || scr.besar_jantung) heartItems.push('Besar jantung <1/3 area dada');
+                if (scr.dua_atrium) heartItems.push('Terlihat 2 atrium');
+                if (scr.katup_atrioventricular) heartItems.push('Katup atrioventricular terlihat');
+                if (scr.ritme_jantung) heartItems.push('Ritme jantung normal');
+                if (scr.echogenic_pads) heartItems.push('Tidak ada echogenic intracardiac focus');
                 if (heartItems.length > 0) {
                     resume += 'Jantung dan Rongga Dada:\n';
                     heartItems.forEach(item => resume += `• ${item}\n`);
                     resume += '\n';
                 }
-                
+
                 // Tulang Belakang
                 const spineItems = [];
-                if (usg.vertebra) spineItems.push('Tidak tampak kelainan vertebra');
-                if (usg.kulit_dorsal) spineItems.push('Garis kulit dorsal tampak baik');
+                if (scr.vertebra) spineItems.push('Tidak tampak kelainan vertebra');
+                if (scr.skin || scr.kulit_dorsal) spineItems.push('Garis kulit dorsal tampak baik');
                 if (spineItems.length > 0) {
                     resume += 'Tulang Belakang:\n';
                     spineItems.forEach(item => resume += `• ${item}\n`);
                     resume += '\n';
                 }
-                
+
                 // Anggota Gerak
                 const limbItems = [];
-                if (usg.alat_gerak_atas) limbItems.push('Alat gerak kiri kanan atas normal');
-                if (usg.alat_gerak_bawah) limbItems.push('Alat gerak kiri kanan bawah normal');
-                if (usg.visual_tangan) limbItems.push('Visualisasi tulang tangan dan kaki baik');
+                if (scr.upper_limbs || scr.alat_gerak_atas) limbItems.push('Alat gerak kiri kanan atas normal');
+                if (scr.lower_limbs || scr.alat_gerak_bawah) limbItems.push('Alat gerak kiri kanan bawah normal');
+                if (scr.visual_tangan) limbItems.push('Visualisasi tulang tangan dan kaki baik');
                 if (limbItems.length > 0) {
                     resume += 'Anggota Gerak:\n';
                     limbItems.forEach(item => resume += `• ${item}\n`);
                     resume += '\n';
                 }
-                
+
                 // Rongga Perut
                 const abdomenItems = [];
-                if (usg.lambung_kiri) abdomenItems.push('Lambung di sebelah kiri');
-                if (usg.posisi_liver) abdomenItems.push('Posisi liver dan echogenicity normal');
-                if (usg.ginjal_kiri_kanan) abdomenItems.push('Terlihat ginjal kiri & kanan');
-                if (usg.ginjal_echohypoic) abdomenItems.push('Ginjal tampak echohypoic normal');
-                if (usg.kandung_kemih) abdomenItems.push('Kandung kemih terisi');
-                if (usg.insersi_tali_pusat) abdomenItems.push('Insersi tali pusat baik');
-                if (usg.dinding_perut) abdomenItems.push('Dinding perut tidak tampak defek');
+                if (scr.stomach || scr.lambung_kiri) abdomenItems.push('Lambung di sebelah kiri');
+                if (scr.liver || scr.posisi_liver) abdomenItems.push('Posisi liver dan echogenicity normal');
+                if (scr.kidneys || scr.ginjal_kiri_kanan) abdomenItems.push('Terlihat ginjal kiri & kanan');
+                if (scr.ginjal_echohypoic) abdomenItems.push('Ginjal tampak echohypoic normal');
+                if (scr.bladder || scr.kandung_kemih) abdomenItems.push('Kandung kemih terisi');
+                if (scr.cord || scr.insersi_tali_pusat) abdomenItems.push('Insersi tali pusat baik');
+                if (scr.abdominal_wall || scr.dinding_perut) abdomenItems.push('Dinding perut tidak tampak defek');
                 if (abdomenItems.length > 0) {
                     resume += 'Rongga Perut:\n';
                     abdomenItems.forEach(item => resume += `• ${item}\n`);
                     resume += '\n';
                 }
-                
+
                 // Kesimpulan Skrining
-                if (usg.tidak_kelainan) {
+                if (scr.no_anomaly || scr.tidak_kelainan) {
                     resume += 'Kesimpulan: Tidak tampak kelainan kongenital mayor\n\n';
-                } else if (usg.kecurigaan) {
+                } else if (scr.suspect || scr.kecurigaan) {
                     resume += 'Kesimpulan: Dicurigai ada kelainan\n';
-                    if (usg.kecurigaan_text) resume += `Catatan: ${usg.kecurigaan_text}\n\n`;
+                    if (scr.suspect_notes || scr.kecurigaan_text) resume += `Catatan: ${scr.suspect_notes || scr.kecurigaan_text}\n\n`;
                 }
             }
             

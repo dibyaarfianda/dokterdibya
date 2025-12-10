@@ -602,9 +602,9 @@
       messagesContainer.insertAdjacentHTML('beforeend', messageHTML);
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-      // Badge if closed + received + unread (newer than lastReadTimestamp)
-      // Skip badge update during history loading to prevent showing stale counts
-      if (!isChatOpen && type === 'received' && !isHistoryLoading) {
+      // Badge ONLY for new real-time messages, NOT history
+      // Skip ALL badge updates during history loading
+      if (!isHistoryLoading && !isChatOpen && type === 'received') {
         const msgTime = timestamp ? new Date(timestamp).toISOString() : new Date().toISOString();
         const isUnread = msgTime > lastReadTimestamp;
 

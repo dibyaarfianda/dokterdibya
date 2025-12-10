@@ -77,6 +77,18 @@ function toDate(val) {
     return isNaN(d.getTime()) ? null : d;
 }
 
+// Helper to get resume status badge
+function getResumeStatusBadge(status) {
+    const statusMap = {
+        'sudah_kirim_usg_resume': { label: 'USG + Resume ✓', class: 'badge-success' },
+        'sudah_kirim_resume': { label: 'Resume ✓', class: 'badge-info' },
+        'sudah_simpan': { label: 'Tersimpan', class: 'badge-warning' },
+        'belum_generate': { label: 'Belum Generate', class: 'badge-secondary' }
+    };
+    const info = statusMap[status] || { label: 'Pasien Baru', class: 'badge-light' };
+    return `<span class="badge ${info.class}" style="font-size: 0.7rem;">${info.label}</span>`;
+}
+
 function renderList(items) {
     if (!listEl) return;
     listEl.innerHTML = '';
@@ -87,37 +99,25 @@ function renderList(items) {
     const frag = document.createDocumentFragment();
     items.forEach(p => {
         const row = document.createElement('div');
-        row.className = 'border rounded p-2 mb-2 hover-shadow';
+        row.className = 'border rounded p-2 mb-1 hover-shadow';
         row.style.cursor = 'pointer';
         row.style.transition = 'all 0.2s';
-        const last = toDate(p.lastVisit);
         const patientId = String(p.patientId || '').padStart(5, '0');
-        
-        // Debug log
-        if (p.name === 'Feby Kumalasari') {
-            console.log('Patient Feby Kumalasari data:', {
-                lastVisit: p.lastVisit,
-                lastVisitParsed: last,
-                visitCount: p.visitCount
-            });
-        }
-        
+
         row.innerHTML = `
-            <div class="d-flex justify-content-between align-items-center">
-                <div class="flex-grow-1" style="cursor: pointer;">
-                    <div class="d-flex align-items-center">
-                        <span class="badge badge-secondary mr-2">${patientId}</span>
-                        <span class="h6 mb-0" style="font-weight: 600;">${p.name || '-'}</span>
+            <div class="d-flex justify-content-between align-items-center" style="gap: 8px;">
+                <div class="flex-grow-1" style="cursor: pointer; min-width: 0;">
+                    <div class="d-flex align-items-center" style="gap: 6px;">
+                        <span class="badge badge-secondary" style="font-size: 0.7rem;">${patientId}</span>
+                        <span class="text-truncate" style="font-weight: 600; font-size: 0.9rem;">${p.name || '-'}</span>
                     </div>
-                    <div class="small text-muted">📞 ${p.whatsapp || '-'}</div>
+                    <div class="small text-muted" style="font-size: 0.75rem;">📞 ${p.whatsapp || '-'}</div>
                 </div>
-                <div class="text-right">
-                    <button class="btn btn-sm btn-success select-patient-btn" data-patient-id="${p.id}" data-patient-name="${p.name}">
-                        <i class="fas fa-check mr-1"></i>Pilih
+                <div class="text-right d-flex align-items-center" style="gap: 6px; flex-shrink: 0;">
+                    ${getResumeStatusBadge(p.resume_status)}
+                    <button class="btn btn-sm btn-success select-patient-btn py-0 px-2" data-patient-id="${p.id}" data-patient-name="${p.name}" style="font-size: 0.75rem;">
+                        <i class="fas fa-check"></i>
                     </button>
-                    <div class="small text-muted mt-1">
-                        <div>Terakhir: ${last ? last.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) + ' ' + last.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'Belum ada'}</div>
-                    </div>
                 </div>
             </div>
         `;
@@ -401,7 +401,8 @@ async function loadPatients() {
                     birthDate: patient.birth_date,
                     age: patient.age,
                     lastVisit: patient.last_visit ? new Date(patient.last_visit) : null,
-                    visitCount: patient.visit_count || 0
+                    visitCount: patient.visit_count || 0,
+                    resume_status: patient.resume_status || null
                 }));
             }
         }

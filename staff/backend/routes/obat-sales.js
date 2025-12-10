@@ -368,11 +368,13 @@ router.delete('/:id', verifyToken, async (req, res, next) => {
 
 /**
  * POST /api/obat-sales/:id/confirm
- * Confirm sale (any staff can confirm)
+ * Confirm sale - deducts stock using FIFO and calculates profit
  */
 router.post('/:id/confirm', verifyToken, async (req, res, next) => {
+    const connection = await db.getConnection();
+
     try {
-        const [[sale]] = await db.query(
+        const [[sale]] = await connection.query(
             'SELECT * FROM obat_sales WHERE id = ?',
             [req.params.id]
         );
@@ -388,31 +390,113 @@ router.post('/:id/confirm', verifyToken, async (req, res, next) => {
             });
         }
 
-        await db.query(
-            `UPDATE obat_sales
-             SET status = 'confirmed', confirmed_at = NOW(), confirmed_by = ?
-             WHERE id = ?`,
-            [req.user.name || req.user.id, sale.id]
+        await connection.beginTransaction();
+
+        // Get sale items
+        const [items] = await connection.query(
+            'SELECT * FROM obat_sale_items WHERE sale_id = ?',
+            [sale.id]
         );
 
-        logger.info('Obat sale confirmed', { saleNumber: sale.sale_number, by: req.user.name });
+        let totalCost = 0;
+        const deductionResults = [];
 
-        res.json({ success: true, message: 'Penjualan berhasil dikonfirmasi' });
+        // Deduct stock for each item using FIFO
+        for (const item of items) {
+            try {
+                const result = await InventoryService.deductStockFIFO(
+                    item.obat_id,
+                    item.quantity,
+                    'obat_sale',      // reference_type
+                    sale.id,          // reference_id
+                    req.user.name || req.user.id  // created_by
+                );
+
+                totalCost += result.totalCost || 0;
+                deductionResults.push({
+                    obatId: item.obat_id,
+                    obatName: item.obat_name,
+                    quantity: item.quantity,
+                    cost: result.totalCost,
+                    success: true
+                });
+
+                logger.info('Stock deducted for sale', {
+                    saleNumber: sale.sale_number,
+                    obatId: item.obat_id,
+                    obatName: item.obat_name,
+                    quantity: item.quantity,
+                    cost: result.totalCost
+                });
+            } catch (stockError) {
+                // Log warning but continue (allow confirmation even if stock insufficient)
+                logger.warn('Stock deduction failed', {
+                    saleNumber: sale.sale_number,
+                    obatId: item.obat_id,
+                    error: stockError.message
+                });
+                deductionResults.push({
+                    obatId: item.obat_id,
+                    obatName: item.obat_name,
+                    quantity: item.quantity,
+                    success: false,
+                    error: stockError.message
+                });
+            }
+        }
+
+        // Calculate profit (revenue - cost)
+        const revenue = parseFloat(sale.total) || 0;
+        const profit = revenue - totalCost;
+
+        // Update sale status and profit info
+        await connection.query(
+            `UPDATE obat_sales
+             SET status = 'confirmed',
+                 confirmed_at = NOW(),
+                 confirmed_by = ?,
+                 cost_total = ?,
+                 profit = ?
+             WHERE id = ?`,
+            [req.user.name || req.user.id, totalCost, profit, sale.id]
+        );
+
+        await connection.commit();
+
+        logger.info('Obat sale confirmed with stock deduction', {
+            saleNumber: sale.sale_number,
+            revenue,
+            cost: totalCost,
+            profit,
+            by: req.user.name
+        });
+
+        res.json({
+            success: true,
+            message: 'Penjualan berhasil dikonfirmasi, stok telah dikurangi',
+            data: {
+                revenue,
+                cost: totalCost,
+                profit,
+                deductions: deductionResults
+            }
+        });
     } catch (error) {
+        await connection.rollback();
         logger.error('Failed to confirm obat sale', { error: error.message });
         next(error);
+    } finally {
+        connection.release();
     }
 });
 
 /**
  * POST /api/obat-sales/:id/mark-paid
- * Mark as paid + deduct stock using FIFO
+ * Mark as paid (stock already deducted at confirmation)
  */
 router.post('/:id/mark-paid', verifyToken, async (req, res, next) => {
-    const connection = await db.getConnection();
-
     try {
-        const [[sale]] = await connection.query(
+        const [[sale]] = await db.query(
             'SELECT * FROM obat_sales WHERE id = ?',
             [req.params.id]
         );
@@ -428,51 +512,20 @@ router.post('/:id/mark-paid', verifyToken, async (req, res, next) => {
             });
         }
 
-        await connection.beginTransaction();
-
-        // Update status to paid
-        await connection.query(
+        // Update status to paid (stock already deducted at confirmation)
+        await db.query(
             `UPDATE obat_sales
              SET status = 'paid', paid_at = NOW(), paid_by = ?
              WHERE id = ?`,
             [req.user.name || req.user.id, sale.id]
         );
 
-        // Get items and deduct stock
-        const [items] = await connection.query(
-            'SELECT * FROM obat_sale_items WHERE sale_id = ?',
-            [sale.id]
-        );
-
-        for (const item of items) {
-            try {
-                await InventoryService.deductStockFIFO(item.obat_id, item.quantity);
-                logger.info('Stock deducted', {
-                    obatId: item.obat_id,
-                    obatName: item.obat_name,
-                    quantity: item.quantity,
-                    saleNumber: sale.sale_number
-                });
-            } catch (stockError) {
-                logger.warn('Failed to deduct stock (continuing)', {
-                    obatId: item.obat_id,
-                    error: stockError.message
-                });
-                // Continue even if stock deduction fails (log warning)
-            }
-        }
-
-        await connection.commit();
-
         logger.info('Obat sale marked as paid', { saleNumber: sale.sale_number, by: req.user.name });
 
-        res.json({ success: true, message: 'Pembayaran berhasil dicatat, stok telah dikurangi' });
+        res.json({ success: true, message: 'Pembayaran berhasil dicatat' });
     } catch (error) {
-        await connection.rollback();
         logger.error('Failed to mark obat sale as paid', { error: error.message });
         next(error);
-    } finally {
-        connection.release();
     }
 });
 
