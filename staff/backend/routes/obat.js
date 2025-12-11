@@ -134,11 +134,11 @@ router.post('/api/obat', verifyToken, requirePermission('obat_alkes.create'), va
 // UPDATE OBAT
 router.put('/api/obat/:id', verifyToken, requirePermission('obat_alkes.edit'), validateObatUpdate, async (req, res) => {
     try {
-        const { name, category, price, stock, unit, min_stock, is_active, default_supplier_id } = req.body;
+        const { name, category, price, stock, unit, min_stock, is_active, default_supplier_id, default_cost_price, discount } = req.body;
 
         const [result] = await db.query(
-            `UPDATE obat SET name = ?, category = ?, price = ?, stock = ?, unit = ?, min_stock = ?, is_active = ?, default_supplier_id = ? WHERE id = ?`,
-            [name, category, price, stock, unit, min_stock, is_active, default_supplier_id || null, req.params.id]
+            `UPDATE obat SET name = ?, category = ?, price = ?, stock = ?, unit = ?, min_stock = ?, is_active = ?, default_supplier_id = ?, default_cost_price = ?, discount = ? WHERE id = ?`,
+            [name, category, price, stock, unit, min_stock, is_active, default_supplier_id || null, default_cost_price || 0, discount || null, req.params.id]
         );
 
         if (result.affectedRows === 0) {

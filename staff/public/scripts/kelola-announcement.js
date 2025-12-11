@@ -72,6 +72,17 @@ function setupEventListeners() {
         });
     }
 
+    // Image file upload
+    const imageFile = document.getElementById('imageFile');
+    if (imageFile) {
+        imageFile.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                await uploadAnnouncementImage(file);
+            }
+        });
+    }
+
     // Update preview button
     const btnUpdatePreview = document.getElementById('btn-update-preview');
     if (btnUpdatePreview) {
@@ -105,6 +116,70 @@ function setupEventListeners() {
         });
     }
 }
+
+// Upload announcement image to R2
+async function uploadAnnouncementImage(file) {
+    const progressBar = document.getElementById('imageUploadProgress');
+    const previewContainer = document.getElementById('imagePreviewContainer');
+    const preview = document.getElementById('imagePreview');
+    const imageUrl = document.getElementById('imageUrl');
+    const fileLabel = document.getElementById('imageFileLabel');
+
+    try {
+        // Show progress
+        if (progressBar) progressBar.style.display = 'block';
+
+        const token = window.getIdTokenOverride ? await window.getIdTokenOverride() : await getIdToken();
+
+        const formData = new FormData();
+        formData.append('image', file);
+
+        const response = await fetch(`${API_URL}/announcements/upload-image`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: formData
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.message || 'Upload failed');
+        }
+
+        const result = await response.json();
+
+        // Set image URL
+        if (imageUrl) imageUrl.value = result.image_url;
+
+        // Show preview
+        if (preview) preview.src = result.image_url;
+        if (previewContainer) previewContainer.style.display = 'block';
+        if (fileLabel) fileLabel.textContent = file.name;
+
+        showAlert('success', 'Gambar berhasil diupload');
+    } catch (error) {
+        console.error('Error uploading image:', error);
+        showAlert('error', 'Gagal upload gambar: ' + error.message);
+    } finally {
+        if (progressBar) progressBar.style.display = 'none';
+    }
+}
+
+// Remove announcement image
+window.removeAnnouncementImage = function() {
+    const imageUrl = document.getElementById('imageUrl');
+    const imageFile = document.getElementById('imageFile');
+    const fileLabel = document.getElementById('imageFileLabel');
+    const previewContainer = document.getElementById('imagePreviewContainer');
+    const preview = document.getElementById('imagePreview');
+
+    if (imageUrl) imageUrl.value = '';
+    if (imageFile) imageFile.value = '';
+    if (fileLabel) fileLabel.textContent = 'Pilih gambar...';
+    if (previewContainer) previewContainer.style.display = 'none';
+    if (preview) preview.src = '';
+};
 
 async function loadAnnouncements() {
     try {
@@ -349,6 +424,17 @@ window.openModal = function(announcement = null) {
     form.reset();
     document.getElementById('announcementId').value = '';
 
+    // Reset image fields
+    const imageFile = document.getElementById('imageFile');
+    const fileLabel = document.getElementById('imageFileLabel');
+    const previewContainer = document.getElementById('imagePreviewContainer');
+    const preview = document.getElementById('imagePreview');
+    const imageUrl = document.getElementById('imageUrl');
+
+    if (imageFile) imageFile.value = '';
+    if (fileLabel) fileLabel.textContent = 'Pilih gambar...';
+    if (imageUrl) imageUrl.value = '';
+
     // Reset tabs to form tab if available
     const formTab = document.getElementById('form-tab');
     if (formTab) {
@@ -361,10 +447,19 @@ window.openModal = function(announcement = null) {
         document.getElementById('announcementId').value = announcement.id;
         document.getElementById('title').value = announcement.title;
         document.getElementById('message').value = announcement.message;
-        document.getElementById('imageUrl').value = announcement.image_url || '';
+        if (imageUrl) imageUrl.value = announcement.image_url || '';
         document.getElementById('contentType').value = announcement.content_type || 'plain';
         document.getElementById('priority').value = announcement.priority;
         document.getElementById('status').value = announcement.status;
+
+        // Show image preview if exists
+        if (announcement.image_url && previewContainer && preview) {
+            preview.src = announcement.image_url;
+            previewContainer.style.display = 'block';
+            if (fileLabel) fileLabel.textContent = 'Gambar sudah ada';
+        } else if (previewContainer) {
+            previewContainer.style.display = 'none';
+        }
 
         // Show toolbar if markdown (only if toolbar exists)
         if (toolbar) {
@@ -380,6 +475,7 @@ window.openModal = function(announcement = null) {
         document.getElementById('status').value = 'active';
         document.getElementById('priority').value = 'normal';
         document.getElementById('contentType').value = 'plain';
+        if (previewContainer) previewContainer.style.display = 'none';
         if (toolbar) {
             toolbar.style.display = 'none';
         }

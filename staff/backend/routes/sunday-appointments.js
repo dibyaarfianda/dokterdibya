@@ -274,25 +274,42 @@ router.get('/available', verifyToken, async (req, res) => {
 
 /**
  * GET /api/sunday-appointments/sundays
- * Get list of next available Sundays
+ * Get list of next available Sundays (excluding disabled dates)
  */
 router.get('/sundays', verifyToken, async (req, res) => {
     try {
         const sundays = getNextSundays(8);
         const formattedSundays = sundays.map(date => ({
             date: date.toISOString().split('T')[0],
-            formatted: date.toLocaleDateString('id-ID', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
+            formatted: date.toLocaleDateString('id-ID', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
                 day: 'numeric',
                 timeZone: 'UTC'
             }),
             dayOfWeek: date.getUTCDay() // Should be 0 for Sunday
         }));
-        
-        console.log('Sundays generated:', formattedSundays);
-        res.json({ sundays: formattedSundays });
+
+        // Check for disabled dates (klinik_privat or all locations)
+        const dateStrings = formattedSundays.map(s => s.date);
+        const [disabledDates] = await db.query(
+            `SELECT disabled_date, reason FROM disabled_practice_dates
+             WHERE disabled_date IN (?) AND (location IS NULL OR location = 'klinik_privat')`,
+            [dateStrings]
+        );
+
+        // Create a set of disabled date strings for fast lookup
+        const disabledSet = new Set(disabledDates.map(d => {
+            const dateObj = new Date(d.disabled_date);
+            return dateObj.toISOString().split('T')[0];
+        }));
+
+        // Filter out disabled Sundays
+        const availableSundays = formattedSundays.filter(s => !disabledSet.has(s.date));
+
+        console.log('Sundays generated:', formattedSundays.length, 'Available:', availableSundays.length);
+        res.json({ sundays: availableSundays });
     } catch (error) {
         console.error('Error getting sundays:', error);
         res.status(500).json({ message: 'Terjadi kesalahan' });
@@ -330,7 +347,20 @@ router.post('/book', verifyToken, async (req, res) => {
         if (appointmentDate.getDay() !== 0) {
             return res.status(400).json({ message: 'Janji temu hanya tersedia di hari Minggu' });
         }
-        
+
+        // Check if date is disabled
+        const [disabledCheck] = await db.query(
+            `SELECT id, reason FROM disabled_practice_dates
+             WHERE disabled_date = ? AND (location IS NULL OR location = 'klinik_privat')`,
+            [appointment_date]
+        );
+        if (disabledCheck.length > 0) {
+            const reason = disabledCheck[0].reason || 'Jadwal tidak tersedia';
+            return res.status(400).json({
+                message: `Maaf, tanggal ini tidak tersedia untuk booking. ${reason}`
+            });
+        }
+
         // Get patient info
         const [patients] = await db.query(
             'SELECT id, full_name, phone FROM patients WHERE id = ?',
