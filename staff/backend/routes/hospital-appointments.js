@@ -98,11 +98,11 @@ router.get('/schedules', verifyToken, async (req, res) => {
             });
         }
 
-        // Get hospital schedules from practice_schedules
+        // Get hospital schedules from practice_schedules (include inactive for display)
         const [schedules] = await db.query(`
-            SELECT location, day_of_week, start_time, end_time
+            SELECT location, day_of_week, start_time, end_time, is_active
             FROM practice_schedules
-            WHERE is_active = 1 AND location != 'sunday_clinic'
+            WHERE location != 'sunday_clinic'
             ORDER BY day_of_week ASC, start_time ASC
         `);
 
@@ -158,7 +158,8 @@ router.get('/schedules', verifyToken, async (req, res) => {
                             hospitalColor: hospital.color,
                             startTime: schedule.start_time.substring(0, 5),
                             endTime: schedule.end_time.substring(0, 5),
-                            formatted: `${dayNames[dayOfWeek]}, ${checkDate.getDate()} ${checkDate.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`
+                            formatted: `${dayNames[dayOfWeek]}, ${checkDate.getDate()} ${checkDate.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`,
+                            isActive: schedule.is_active === 1
                         });
                     }
                 }
@@ -188,7 +189,8 @@ router.get('/schedules', verifyToken, async (req, res) => {
                         hospitalColor: hospital.color,
                         startTime: schedule.start_time.substring(0, 5),
                         endTime: schedule.end_time.substring(0, 5),
-                        formatted: `${dayNames[dayOfWeek]}, ${checkDate.getDate()} ${checkDate.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`
+                        formatted: `${dayNames[dayOfWeek]}, ${checkDate.getDate()} ${checkDate.toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}`,
+                        isActive: schedule.is_active === 1
                     });
                 }
             }

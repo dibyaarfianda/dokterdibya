@@ -155,6 +155,60 @@ app.get(/^\/sunday-clinic\/[\w-]+(?:\/.*)?$/, (req, res) => {
 });
 
 // Use routes
+
+// ==================== PATIENT ACCESS BLOCKER ====================
+// Block patients from accessing staff-only API routes
+// Whitelist: routes that patients CAN access
+const PATIENT_ALLOWED_ROUTES = [
+    '/api/patients',           // Patient auth & profile
+    '/api/patient/',           // Patient-specific endpoints (birth-congratulations, etc)
+    '/api/sunday-appointments', // Sunday clinic booking
+    '/api/hospital-appointments', // Hospital booking
+    '/api/articles',           // Public articles
+    '/api/patient-notifications', // Patient notifications
+    '/api/announcements',      // Public announcements
+];
+
+app.use('/api', (req, res, next) => {
+    const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+
+    // No auth header = let route handle it
+    if (!authHeader) return next();
+
+    const parts = authHeader.split(' ');
+    if (parts.length !== 2 || parts[0] !== 'Bearer') return next();
+
+    try {
+        const jwt = require('jsonwebtoken');
+        const payload = jwt.verify(parts[1], process.env.JWT_SECRET);
+
+        // Check if this is a patient token
+        if (payload.user_type === 'patient' || payload.role === 'patient') {
+            // Check if route is whitelisted for patients
+            const fullPath = req.originalUrl || req.url;
+            const isAllowed = PATIENT_ALLOWED_ROUTES.some(route => fullPath.startsWith(route));
+
+            if (!isAllowed) {
+                logger.warn('Patient attempted staff route access', {
+                    userId: payload.id,
+                    email: payload.email,
+                    path: fullPath,
+                    ip: req.ip
+                });
+                return res.status(403).json({
+                    success: false,
+                    message: 'Akses ditolak. Anda tidak memiliki izin untuk mengakses halaman ini.'
+                });
+            }
+        }
+    } catch (err) {
+        // Invalid token - let route handle it
+    }
+
+    next();
+});
+// ==================== END PATIENT ACCESS BLOCKER ====================
+
 // API v1 (modern, service-based)
 app.use('/api/v1', v1Routes);
 

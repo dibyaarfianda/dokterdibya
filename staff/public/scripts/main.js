@@ -1639,6 +1639,7 @@ async function editBirthCongrats(patientId, existingData) {
             const preview = document.getElementById('bc-photo-preview');
             if (preview) {
                 preview.innerHTML = `<img src="${existingData.photo_url}" style="max-width:150px;max-height:150px;border-radius:8px;">`;
+                preview.style.display = 'block';
             }
         }
     }

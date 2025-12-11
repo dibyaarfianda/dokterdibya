@@ -286,7 +286,7 @@ router.get('/with-announcements', verifyToken, async (req, res) => {
                 'announcement' as type,
                 title,
                 SUBSTRING(message, 1, 200) as message,
-                NULL as link,
+                'javascript:showKelolaPengumumanPage()' as link,
                 CASE priority
                     WHEN 'urgent' THEN 'fas fa-exclamation-triangle'
                     WHEN 'important' THEN 'fas fa-exclamation-circle'

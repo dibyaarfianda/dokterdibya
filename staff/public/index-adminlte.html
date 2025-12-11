@@ -1169,7 +1169,7 @@
     <script>
         // Force clear cache on first load
         (function() {
-            const CACHE_VERSION = 'v35'; // Increment this to force refresh - status resume + date format
+            const CACHE_VERSION = 'v37'; // Increment this to force refresh - add cost price & discount fields
             const currentVersion = localStorage.getItem('cache_version');
 
             if (currentVersion !== CACHE_VERSION) {
@@ -3646,6 +3646,43 @@
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Disabled Practice Dates -->
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="card card-warning">
+                                    <div class="card-header">
+                                        <h3 class="card-title"><i class="fas fa-calendar-times mr-2"></i>Hari Libur / Non-Aktif Sementara</h3>
+                                        <div class="card-tools">
+                                            <button class="btn btn-warning btn-sm" onclick="showDisabledDateModal()">
+                                                <i class="fas fa-plus"></i> Nonaktifkan Tanggal
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body">
+                                        <p class="text-muted mb-3">
+                                            <i class="fas fa-info-circle"></i> Daftar tanggal yang dinonaktifkan sementara (misal: dokter ada acara, cuti, dll)
+                                        </p>
+                                        <table class="table table-bordered table-sm">
+                                            <thead class="bg-warning">
+                                                <tr>
+                                                    <th width="15%">Tanggal</th>
+                                                    <th width="20%">Lokasi</th>
+                                                    <th width="30%">Alasan</th>
+                                                    <th width="20%">Dibuat oleh</th>
+                                                    <th width="15%">Aksi</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="disabled-dates-tbody">
+                                                <tr>
+                                                    <td colspan="5" class="text-center text-muted">Memuat data...</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -5022,6 +5059,26 @@ Contoh Markdown:
                                                 </div>
                                             </div>
                                         </div>
+                                        <!-- Row 2: Harga Beli & Diskon -->
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label>Harga Beli (Rp)</label>
+                                                    <input type="number" id="kelola-obat-cost-price" class="form-control" placeholder="0" min="0">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label>Diskon Distributor</label>
+                                                    <input type="text" id="kelola-obat-discount" class="form-control" placeholder="Contoh: 10% atau Rp 5.000">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <small class="text-muted d-block mt-4">
+                                                    <i class="fas fa-info-circle"></i> Harga beli & diskon untuk referensi, tidak mempengaruhi perhitungan penjualan.
+                                                </small>
+                                            </div>
+                                        </div>
                                     </form>
 
                                     <!-- Search & Filter -->
@@ -5739,8 +5796,22 @@ Contoh Markdown:
                         <input type="text" class="form-control" id="title" required maxlength="255">
                     </div>
                     <div class="form-group">
-                        <label for="imageUrl">URL Gambar (opsional)</label>
-                        <input type="url" class="form-control" id="imageUrl" placeholder="https://example.com/image.jpg">
+                        <label>Gambar (opsional)</label>
+                        <div class="custom-file mb-2">
+                            <input type="file" class="custom-file-input" id="imageFile" accept="image/jpeg,image/png,image/gif,image/webp">
+                            <label class="custom-file-label" for="imageFile" id="imageFileLabel">Pilih gambar...</label>
+                        </div>
+                        <div id="imageUploadProgress" class="progress mb-2" style="display: none; height: 5px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated" style="width: 100%"></div>
+                        </div>
+                        <div id="imagePreviewContainer" class="mb-2" style="display: none;">
+                            <img id="imagePreview" src="" class="img-fluid rounded" style="max-height: 150px;">
+                            <button type="button" class="btn btn-sm btn-danger ml-2" onclick="removeAnnouncementImage()">
+                                <i class="fas fa-times"></i> Hapus
+                            </button>
+                        </div>
+                        <input type="hidden" id="imageUrl">
+                        <small class="text-muted">Format: JPG, PNG, GIF, WebP. Maks 5MB</small>
                     </div>
                     <div class="form-group">
                         <label for="contentType">Tipe Konten</label>
@@ -6001,6 +6072,46 @@ Contoh Markdown:
     </div>
 </div>
 
+<!-- Disabled Practice Date Modal -->
+<div class="modal fade" id="disabledDateModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning">
+                <h5 class="modal-title"><i class="fas fa-calendar-times mr-2"></i>Nonaktifkan Tanggal Praktek</h5>
+                <button type="button" class="close" data-dismiss="modal">
+                    <span>&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Tanggal <span class="text-danger">*</span></label>
+                    <input type="date" class="form-control" id="disabled-date" required>
+                </div>
+                <div class="form-group">
+                    <label>Lokasi</label>
+                    <select class="form-control" id="disabled-location">
+                        <option value="">Semua Lokasi</option>
+                        <option value="klinik_privat">Klinik Privat Minggu</option>
+                        <option value="rsud_gambiran">Poli RSUD Gambiran Kediri</option>
+                        <option value="rsia_melinda">Poli RSIA Melinda Kediri</option>
+                        <option value="rs_bhayangkara">Poli RS Bhayangkara Kediri</option>
+                    </select>
+                    <small class="text-muted">Kosongkan untuk menonaktifkan semua lokasi</small>
+                </div>
+                <div class="form-group">
+                    <label>Alasan</label>
+                    <textarea class="form-control" id="disabled-reason" rows="2" placeholder="Contoh: Dokter ada acara, cuti, dll"></textarea>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-warning" onclick="saveDisabledDate()">
+                    <i class="fas fa-calendar-times"></i> Nonaktifkan
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Mobile Menu Functions - MUST be before the buttons -->
 <script>
@@ -10991,6 +11102,7 @@ async function loadNotificationsPage() {
                     type: 'announcement',
                     title: a.title,
                     message: a.message,
+                    link: 'javascript:showKelolaPengumumanPage()',
                     icon: a.priority === 'urgent' ? 'fas fa-exclamation-triangle' : (a.priority === 'important' ? 'fas fa-exclamation-circle' : 'fas fa-bullhorn'),
                     icon_color: a.priority === 'urgent' ? 'text-danger' : (a.priority === 'important' ? 'text-warning' : 'text-info'),
                     created_at: a.created_at,
@@ -11112,7 +11224,7 @@ function renderNotificationsPageList() {
             '<span class="badge badge-secondary badge-sm ml-2">Notifikasi</span>';
 
         return `
-            <div class="card mb-2 notification-card ${!isRead ? 'border-left-primary' : ''}" style="border-left-width: ${!isRead ? '4px' : '1px'};">
+            <div class="card mb-2 notification-card ${!isRead ? 'border-left-primary' : ''}" style="border-left-width: ${!isRead ? '4px' : '1px'}; cursor: ${item.link ? 'pointer' : 'default'};" onclick="${item.link ? `handleNotifPageClick('${item.link}')` : ''}">
                 <div class="card-body py-3">
                     <div class="d-flex align-items-start">
                         <div class="mr-3">
@@ -11281,6 +11393,16 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
+
+function handleNotifPageClick(link) {
+    if (!link) return;
+    if (link.startsWith('javascript:')) {
+        eval(link.replace('javascript:', ''));
+    } else {
+        window.location.href = link;
+    }
+}
+window.handleNotifPageClick = handleNotifPageClick;
 </script>
 
 <!-- PWA Service Worker Registration -->

@@ -820,6 +820,11 @@ router.get('/api/patients/generate-id', async (req, res) => {
 
 // GET birth congratulations for logged-in patient (Patient Dashboard)
 router.get('/api/patient/birth-congratulations', verifyPatientToken, async (req, res) => {
+    // Prevent browser caching - always fetch fresh data
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
     try {
         const patientId = req.patient.id;
 

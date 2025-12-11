@@ -16,6 +16,8 @@ const locationNames = {
 
 const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 
+let disabledDates = [];
+
 function initKelolaJadwal() {
     // Check authentication
     const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
@@ -64,6 +66,9 @@ function initKelolaJadwal() {
 
     // Load schedules
     loadSchedules();
+
+    // Load disabled dates
+    loadDisabledDates();
 }
 
 async function loadSchedules() {
@@ -244,11 +249,150 @@ function logout() {
     window.location.href = 'login.html';
 }
 
+// ==================== DISABLED DATES FUNCTIONS ====================
+
+async function loadDisabledDates() {
+    try {
+        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+
+        const response = await fetch(`${API_BASE}/disabled-dates`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('Failed to load disabled dates');
+
+        const data = await response.json();
+        disabledDates = data.data || [];
+
+        renderDisabledDates(disabledDates);
+
+    } catch (error) {
+        console.error('Error loading disabled dates:', error);
+    }
+}
+
+function renderDisabledDates(dates) {
+    const tbody = $('#disabled-dates-tbody');
+    tbody.empty();
+
+    if (dates.length === 0) {
+        tbody.html('<tr><td colspan="5" class="text-center text-muted">Tidak ada tanggal yang dinonaktifkan</td></tr>');
+        return;
+    }
+
+    // Sort by date descending
+    dates.sort((a, b) => new Date(b.disabled_date) - new Date(a.disabled_date));
+
+    dates.forEach(item => {
+        const dateObj = new Date(item.disabled_date);
+        const dayName = dayNames[dateObj.getDay()];
+        const formattedDate = dateObj.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+
+        const locationText = item.location ? locationNames[item.location] : '<span class="text-danger font-weight-bold">Semua Lokasi</span>';
+
+        const isPast = dateObj < new Date(new Date().setHours(0, 0, 0, 0));
+        const rowClass = isPast ? 'text-muted' : '';
+
+        tbody.append(`
+            <tr class="${rowClass}">
+                <td><strong>${dayName}</strong>, ${formattedDate}</td>
+                <td>${locationText}</td>
+                <td>${item.reason || '-'}</td>
+                <td>${item.created_by}</td>
+                <td>
+                    <button class="btn btn-xs btn-success" onclick="deleteDisabledDate(${item.id})" title="Aktifkan Kembali">
+                        <i class="fas fa-check"></i> Aktifkan
+                    </button>
+                </td>
+            </tr>
+        `);
+    });
+}
+
+function showDisabledDateModal() {
+    // Set default date to tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+    $('#disabled-date').val(tomorrowStr);
+    $('#disabled-location').val('');
+    $('#disabled-reason').val('');
+    $('#disabledDateModal').modal('show');
+}
+
+async function saveDisabledDate() {
+    try {
+        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+        const disabled_date = $('#disabled-date').val();
+        const location = $('#disabled-location').val();
+        const reason = $('#disabled-reason').val();
+
+        if (!disabled_date) {
+            showToast('Tanggal wajib diisi', 'error');
+            return;
+        }
+
+        const response = await fetch(`${API_BASE}/disabled-dates`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                disabled_date,
+                location: location || null,
+                reason: reason || null
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.message || 'Gagal menyimpan');
+        }
+
+        $('#disabledDateModal').modal('hide');
+        showToast('Tanggal berhasil dinonaktifkan', 'success');
+        loadDisabledDates();
+
+    } catch (error) {
+        console.error('Error saving disabled date:', error);
+        showToast(error.message || 'Gagal menyimpan', 'error');
+    }
+}
+
+async function deleteDisabledDate(id) {
+    if (!confirm('Yakin ingin mengaktifkan kembali tanggal ini?')) return;
+
+    try {
+        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+
+        const response = await fetch(`${API_BASE}/disabled-dates/${id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('Failed to delete');
+
+        showToast('Tanggal berhasil diaktifkan kembali', 'success');
+        loadDisabledDates();
+
+    } catch (error) {
+        console.error('Error deleting disabled date:', error);
+        showToast('Gagal menghapus', 'error');
+    }
+}
+
 // Export functions for SPA usage
 window.initKelolaJadwal = initKelolaJadwal;
 window.showAddModal = showAddModal;
+window.saveSchedule = saveSchedule;
 window.editSchedule = editSchedule;
 window.deleteSchedule = deleteSchedule;
 window.logout = logout;
+window.showDisabledDateModal = showDisabledDateModal;
+window.saveDisabledDate = saveDisabledDate;
+window.deleteDisabledDate = deleteDisabledDate;
 
 })(); // End IIFE

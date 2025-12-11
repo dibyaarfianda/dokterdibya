@@ -266,6 +266,85 @@ function verifyPatientToken(req, res, next) {
 }
 
 /**
+ * Middleware to verify staff JWT token
+ * Ensures user is NOT a patient - blocks patient tokens from accessing staff routes
+ */
+function verifyStaffToken(req, res, next) {
+    const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+    const requestId = req.context?.requestId || 'unknown';
+
+    if (!authHeader) {
+        logger.warn('Missing authorization header (staff)', {
+            requestId,
+            ip: req.ip,
+            path: req.path
+        });
+        return res.status(401).json({
+            success: false,
+            message: 'Missing authorization header'
+        });
+    }
+
+    const parts = authHeader.split(' ');
+
+    if (parts.length !== 2 || parts[0] !== 'Bearer') {
+        return res.status(401).json({
+            success: false,
+            message: 'Invalid authorization header format'
+        });
+    }
+
+    const token = parts[1];
+
+    try {
+        const payload = jwt.verify(token, JWT_SECRET);
+
+        // Block patient tokens from accessing staff routes
+        if (payload.user_type === 'patient' || payload.role === 'patient') {
+            logger.warn('Patient token used on staff endpoint', {
+                requestId,
+                userId: payload.id,
+                userType: payload.user_type,
+                role: payload.role,
+                path: req.path
+            });
+            return res.status(403).json({
+                success: false,
+                message: 'Akses ditolak. Endpoint ini hanya untuk staff.'
+            });
+        }
+
+        req.user = payload;
+
+        logger.debug('Staff token verified', {
+            requestId,
+            userId: payload.id,
+            role: payload.role
+        });
+
+        next();
+    } catch (err) {
+        logger.warn('Staff token verification failed', {
+            requestId,
+            errorName: err.name,
+            message: err.message,
+            ip: req.ip
+        });
+
+        if (err.name === 'TokenExpiredError') {
+            return res.status(401).json({
+                success: false,
+                message: 'Token has expired'
+            });
+        }
+        return res.status(401).json({
+            success: false,
+            message: 'Token tidak valid'
+        });
+    }
+}
+
+/**
  * Optional authentication middleware (doesn't fail if missing)
  */
 function optionalAuth(req, res, next) {
@@ -574,6 +653,7 @@ function requireMenuAccess(menuKey) {
 module.exports = {
     verifyToken,
     verifyPatientToken,
+    verifyStaffToken,  // Block patients from staff routes
     requireRole,
     requireRoles,
     requireSuperadmin,

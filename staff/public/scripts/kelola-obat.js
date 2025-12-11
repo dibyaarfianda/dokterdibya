@@ -62,12 +62,16 @@ function bindFormSubmit() {
         const supplierInput = document.getElementById('kelola-obat-supplier');
         const priceInput = document.getElementById('kelola-obat-price');
         const stockInput = document.getElementById('kelola-obat-stock');
+        const costPriceInput = document.getElementById('kelola-obat-cost-price');
+        const discountInput = document.getElementById('kelola-obat-discount');
 
         const name = nameInput?.value?.trim();
         const category = categoryInput?.value?.trim();
         const supplierId = supplierInput?.value || null;
         const price = parseFloat(priceInput?.value || 0);
         const stock = parseInt(stockInput?.value || 0);
+        const costPrice = parseFloat(costPriceInput?.value || 0);
+        const discount = discountInput?.value?.trim() || null;
         const unit = 'pcs'; // Default unit
 
         if (!name || !category || price < 0) {
@@ -101,7 +105,9 @@ function bindFormSubmit() {
                         unit: 'pcs',
                         min_stock: 10,
                         is_active: true,
-                        default_supplier_id: supplierId
+                        default_supplier_id: supplierId,
+                        default_cost_price: costPrice,
+                        discount: discount
                     })
                 });
             } else {
@@ -358,6 +364,8 @@ function editObat(obatId) {
     const supplierInput = document.getElementById('kelola-obat-supplier');
     const priceInput = document.getElementById('kelola-obat-price');
     const stockInput = document.getElementById('kelola-obat-stock');
+    const costPriceInput = document.getElementById('kelola-obat-cost-price');
+    const discountInput = document.getElementById('kelola-obat-discount');
     const submitBtn = document.querySelector('#kelola-obat-form button[type="submit"]');
 
     if (nameInput) nameInput.value = obat.name || '';
@@ -365,6 +373,8 @@ function editObat(obatId) {
     if (supplierInput) supplierInput.value = obat.supplier_id || obat.default_supplier_id || '';
     if (priceInput) priceInput.value = parseFloat(obat.price) || 0;
     if (stockInput) stockInput.value = obat.stock || 0;
+    if (costPriceInput) costPriceInput.value = parseFloat(obat.default_cost_price) || 0;
+    if (discountInput) discountInput.value = obat.discount || '';
 
     if (submitBtn) {
         submitBtn.innerHTML = '<i class="fas fa-save mr-1"></i>Update';
@@ -425,6 +435,12 @@ function resetForm() {
 
     const supplierInput = document.getElementById('kelola-obat-supplier');
     if (supplierInput) supplierInput.value = '';
+
+    const costPriceInput = document.getElementById('kelola-obat-cost-price');
+    if (costPriceInput) costPriceInput.value = '';
+
+    const discountInput = document.getElementById('kelola-obat-discount');
+    if (discountInput) discountInput.value = '';
 
     const submitBtn = document.querySelector('#kelola-obat-form button[type="submit"]');
     if (submitBtn) {

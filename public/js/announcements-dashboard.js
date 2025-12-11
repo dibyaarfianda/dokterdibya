@@ -42,8 +42,14 @@ function initializeSocket() {
 
 async function loadAnnouncements() {
     try {
-        const response = await fetch(`${API_URL}/announcements/active`);
-        
+        const patientId = window.currentProfile?.id;
+        let url = `${API_URL}/announcements/active`;
+        if (patientId) {
+            url += `?patient_id=${patientId}`;
+        }
+
+        const response = await fetch(url);
+
         if (!response.ok) {
             throw new Error('Failed to load announcements');
         }
@@ -53,6 +59,48 @@ async function loadAnnouncements() {
     } catch (error) {
         console.error('Error loading announcements:', error);
         displayError();
+    }
+}
+
+// Toggle like on announcement
+async function toggleLike(announcementId, buttonEl) {
+    const patientId = window.currentProfile?.id;
+    if (!patientId) {
+        alert('Silakan login untuk menyukai pengumuman');
+        return;
+    }
+
+    try {
+        buttonEl.disabled = true;
+        const response = await fetch(`${API_URL}/announcements/${announcementId}/like`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ patient_id: patientId })
+        });
+
+        if (!response.ok) throw new Error('Failed to toggle like');
+
+        const data = await response.json();
+
+        // Update button appearance
+        const icon = buttonEl.querySelector('i');
+        const countSpan = buttonEl.querySelector('.like-count');
+
+        if (data.liked) {
+            icon.classList.remove('fa-thumbs-o-up');
+            icon.classList.add('fa-thumbs-up');
+            buttonEl.style.color = '#28a7e9';
+        } else {
+            icon.classList.remove('fa-thumbs-up');
+            icon.classList.add('fa-thumbs-o-up');
+            buttonEl.style.color = '#999';
+        }
+
+        countSpan.textContent = data.like_count;
+    } catch (error) {
+        console.error('Error toggling like:', error);
+    } finally {
+        buttonEl.disabled = false;
     }
 }
 
@@ -88,20 +136,27 @@ function displayAnnouncements(announcements) {
     }
 
     container.innerHTML = announcements.map(announcement => {
-        // Render image if available
-        const imageHtml = announcement.image_url ? `
-            <div style="margin: 15px 0;">
-                <img src="${escapeHtml(announcement.image_url)}"
-                     alt="Announcement image"
-                     style="max-width: 100%; height: auto; border-radius: 8px; display: block;"
-                     onerror="this.style.display='none'">
-            </div>
-        ` : '';
-
         // Render formatted content or plain message
         const contentHtml = announcement.formatted_content && announcement.content_type === 'markdown' ?
             announcement.formatted_content :
             renderContent(announcement.message, announcement.content_type || 'plain');
+
+        // Build content area with thumbnail image beside text if image exists
+        const contentAreaHtml = announcement.image_url ? `
+            <div style="display: flex; gap: 12px; margin: 15px 0; align-items: flex-start;">
+                <img src="${escapeHtml(announcement.image_url)}"
+                     alt="Announcement image"
+                     style="width: 60px; height: 60px; object-fit: cover; border-radius: 6px; flex-shrink: 0;"
+                     onerror="this.style.display='none'">
+                <div style="color: #e0e0e0; line-height: 1.7; font-size: 15px; flex: 1;">
+                    ${contentHtml}
+                </div>
+            </div>
+        ` : `
+            <div style="color: #e0e0e0; margin: 15px 0; line-height: 1.7; font-size: 15px;">
+                ${contentHtml}
+            </div>
+        `;
 
         return `
             <div class="announcement-item" style="
@@ -128,17 +183,32 @@ function displayAnnouncements(announcements) {
                         white-space: nowrap;
                     ">${getPriorityLabel(announcement.priority)}</span>
                 </div>
-                ${imageHtml}
-                <div style="color: #e0e0e0; margin: 15px 0; line-height: 1.7; font-size: 15px;">
-                    ${contentHtml}
-                </div>
+                ${contentAreaHtml}
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 15px; border-top: 1px solid #404040; flex-wrap: wrap; gap: 10px;">
                     <small style="color: #28a7e9; font-weight: 500;">
                         <i class="fa fa-user-md"></i> ${escapeHtml(announcement.created_by_name)}
                     </small>
-                    <small style="color: #999;">
-                        <i class="fa fa-clock-o"></i> ${formatDate(announcement.created_at)}
-                    </small>
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <button onclick="toggleLike(${announcement.id}, this)" style="
+                            background: none;
+                            border: none;
+                            cursor: pointer;
+                            padding: 5px 10px;
+                            border-radius: 20px;
+                            display: flex;
+                            align-items: center;
+                            gap: 5px;
+                            color: ${announcement.liked_by_me ? '#28a7e9' : '#999'};
+                            transition: all 0.2s;
+                            font-size: 14px;
+                        " onmouseover="this.style.background='#333'" onmouseout="this.style.background='none'">
+                            <i class="fa ${announcement.liked_by_me ? 'fa-thumbs-up' : 'fa-thumbs-o-up'}"></i>
+                            <span class="like-count">${announcement.like_count || 0}</span>
+                        </button>
+                        <small style="color: #999;">
+                            <i class="fa fa-clock-o"></i> ${formatDate(announcement.created_at)}
+                        </small>
+                    </div>
                 </div>
             </div>
         `;
