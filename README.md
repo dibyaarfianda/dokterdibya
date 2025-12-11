@@ -5,7 +5,21 @@ This repository now groups the public-facing site and the staff portal under a s
 - `dokterdibya/public` – landing site and marketing assets (ex-praktekdrdibya).
 - `dokterdibya/staff` – clinical portal backend, admin static pages, and operational docs (former dibyaklinik).
 
-Refer to the `staff/README.md` for legacy backend instructions and `public/package.json` for the landing site build scripts.
+## 🚀 Getting Started
+
+**New to the project?** Check out **[CONNECTION_GUIDE.md](./CONNECTION_GUIDE.md)** for complete setup instructions including:
+- System requirements and prerequisites
+- Database setup and configuration
+- Backend server installation
+- Environment variable configuration
+- How to access staff portal and patient portal
+- Common troubleshooting solutions
+
+For detailed instructions, refer to:
+- `CONNECTION_GUIDE.md` – Complete setup and connection guide
+- `staff/README.md` – Staff portal architecture and development notes
+- `DEPLOYMENT_GUIDE.md` – Production deployment procedures
+- `public/package.json` – Landing site build scripts
 
 ## Archive directories
 
