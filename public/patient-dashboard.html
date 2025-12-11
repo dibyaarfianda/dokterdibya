@@ -2391,11 +2391,18 @@
         async function loadBirthCongratulations() {
             try {
                 const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
-                const response = await fetch('/api/patient/birth-congratulations', {
-                    headers: { 'Authorization': 'Bearer ' + token }
+                // Add cache-busting timestamp
+                const response = await fetch('/api/patient/birth-congratulations?_t=' + Date.now(), {
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Cache-Control': 'no-cache'
+                    }
                 });
 
-                if (!response.ok) return;
+                if (!response.ok) {
+                    console.warn('Birth congratulations fetch failed:', response.status);
+                    return;
+                }
 
                 const result = await response.json();
                 if (!result.success || !result.data) return;
@@ -3848,10 +3855,24 @@
                 html += '<div>';
                 html += '<h4 style="font-size: 13px; color: #888; margin-bottom: 12px; font-weight: 600; text-transform: uppercase;"><i class="fa fa-hospital-o"></i> Jadwal Tersedia</h4>';
 
-                html += schedules.map(schedule => `
+                html += schedules.map(schedule => {
+                    const isActive = schedule.isActive !== false; // default true for backwards compat
+                    const cardStyle = isActive
+                        ? `background: rgba(255,255,255,0.05); border-left: 4px solid ${schedule.hospitalColor || '#607d8b'};`
+                        : `background: rgba(100,100,100,0.1); border-left: 4px solid #666; opacity: 0.7;`;
+                    const buttonStyle = isActive
+                        ? `background: ${schedule.hospitalColor || '#607d8b'}; color: white; cursor: pointer;`
+                        : `background: #555; color: #999; cursor: not-allowed;`;
+                    const buttonOnclick = isActive
+                        ? `onclick="openHospitalBookingModal('${schedule.date}', '${schedule.location}', '${schedule.hospitalName}', '${schedule.formatted}')"`
+                        : `disabled`;
+                    const inactiveNote = !isActive
+                        ? `<div style="font-size: 11px; color: #ff9800; margin-top: 5px;"><i class="fa fa-info-circle"></i> Jadwal tidak tersedia minggu ini</div>`
+                        : '';
+
+                    return `
                     <div class="hospital-schedule-card" style="
-                        background: rgba(255,255,255,0.05);
-                        border-left: 4px solid ${schedule.hospitalColor || '#607d8b'};
+                        ${cardStyle}
                         border-radius: 8px;
                         padding: 15px;
                         margin-bottom: 10px;
@@ -3862,11 +3883,11 @@
                         gap: 10px;
                     ">
                         <div style="flex: 1; min-width: 200px;">
-                            <div style="font-weight: 600; color: #fff; margin-bottom: 5px;">
-                                <i class="fa fa-${schedule.hospitalIcon || 'hospital-o'}" style="color: ${schedule.hospitalColor}; margin-right: 8px;"></i>
+                            <div style="font-weight: 600; color: ${isActive ? '#fff' : '#999'}; margin-bottom: 5px;">
+                                <i class="fa fa-${schedule.hospitalIcon || 'hospital-o'}" style="color: ${isActive ? schedule.hospitalColor : '#666'}; margin-right: 8px;"></i>
                                 ${schedule.hospitalName}
                             </div>
-                            <div style="font-size: 13px; color: #aaa;">
+                            <div style="font-size: 13px; color: ${isActive ? '#aaa' : '#777'};">
                                 <i class="fa fa-calendar" style="margin-right: 5px;"></i>
                                 ${schedule.dayName}, ${new Date(schedule.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'long' })}
                             </div>
@@ -3874,21 +3895,21 @@
                                 <i class="fa fa-clock-o" style="margin-right: 5px;"></i>
                                 ${schedule.startTime} - ${schedule.endTime} WIB
                             </div>
+                            ${inactiveNote}
                         </div>
-                        <button class="btn-hospital-book" onclick="openHospitalBookingModal('${schedule.date}', '${schedule.location}', '${schedule.hospitalName}', '${schedule.formatted}')" style="
-                            background: ${schedule.hospitalColor || '#607d8b'};
-                            color: white;
+                        <button class="btn-hospital-book" ${buttonOnclick} style="
+                            ${buttonStyle}
                             border: none;
                             padding: 8px 16px;
                             border-radius: 20px;
-                            cursor: pointer;
                             font-size: 13px;
                             transition: all 0.3s;
                         ">
-                            <i class="fa fa-calendar-plus-o"></i> Booking
+                            <i class="fa fa-${isActive ? 'calendar-plus-o' : 'ban'}"></i> ${isActive ? 'Booking' : 'Tidak Tersedia'}
                         </button>
                     </div>
-                `).join('');
+                `;
+                }).join('');
                 html += '</div>';
             }
 
@@ -6604,7 +6625,8 @@
 
             const html = patientNotifications.map(n => {
                 const timeAgo = formatNotifTimeAgo(n.created_at);
-                const isUnread = !n.is_read;
+                // For announcements, check localStorage; for notifications, use is_read from API
+                const isUnread = n.source === 'announcement' ? !isAnnouncementRead(n.id) : !n.is_read;
                 const iconClass = n.icon || 'fa fa-bell';
                 const iconColor = n.icon_color || 'text-primary';
 
@@ -6706,7 +6728,60 @@
                         }, 2000);
                     }
                 }, 300);
+            } else if (source === 'announcement') {
+                // Mark announcement as read in localStorage
+                markAnnouncementRead(id);
+
+                // Update UI - remove unread styling
+                const item = document.querySelector('.notification-item[data-id="' + id + '"][data-source="announcement"]');
+                if (item) {
+                    item.classList.remove('unread');
+                    const newBadge = item.querySelector('.badge-primary');
+                    if (newBadge) newBadge.remove();
+                }
+
+                // Close notifications modal (Bootstrap modal)
+                $('#notificationsModal').modal('hide');
+
+                setTimeout(() => {
+                    // Expand announcements section if collapsed
+                    const content = document.getElementById('announcements-content');
+                    if (content && content.classList.contains('collapsed')) {
+                        toggleAnnouncementsSection();
+                    }
+
+                    // Scroll to announcements section
+                    const section = document.getElementById('announcements-section');
+                    if (section) {
+                        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        section.style.boxShadow = '0 0 20px rgba(255, 193, 7, 0.5)';
+                        setTimeout(() => {
+                            section.style.boxShadow = '';
+                        }, 2000);
+                    }
+                }, 300);
             }
+        }
+
+        // Track read announcements in localStorage
+        function getReadAnnouncements() {
+            try {
+                return JSON.parse(localStorage.getItem('read_announcements') || '[]');
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function markAnnouncementRead(announcementId) {
+            const readAnnouncements = getReadAnnouncements();
+            if (!readAnnouncements.includes(announcementId)) {
+                readAnnouncements.push(announcementId);
+                localStorage.setItem('read_announcements', JSON.stringify(readAnnouncements));
+            }
+        }
+
+        function isAnnouncementRead(announcementId) {
+            return getReadAnnouncements().includes(announcementId);
         }
 
         // Mark all notifications as read

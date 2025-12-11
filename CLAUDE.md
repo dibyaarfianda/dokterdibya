@@ -296,35 +296,108 @@ res.redirect(signedUrl);             // ❌
 
 ### 11. Window Exports for Page Functions
 
-**When adding a new page function in `main.js`, you MUST also export it to `window`.**
+**When adding a new function used in `onclick` handlers, you MUST export it to `window`.**
 
-Functions used in `onclick` handlers in HTML must be globally accessible. In `main.js`, add the window export at the bottom of the file (around line 3540+):
+Functions used in `onclick` handlers in HTML must be globally accessible.
+
+**A. For `main.js`:**
+Add window export at the bottom of the file (around line 4300+):
 
 ```javascript
 // At the end of main.js, add:
 window.showYourNewPage = showYourNewPage;
 ```
 
-**Example - Adding a new page:**
+**B. For IIFE modules (kelola-jadwal.js, kelola-obat.js, etc.):**
+Add window export inside the IIFE, before the closing `})();`:
 
-1. Add page element in `initPages()`:
-   ```javascript
-   pages.yourNewPage = grab('your-new-page');
-   ```
+```javascript
+(function() {
+    // ... module code ...
 
-2. Create the function:
-   ```javascript
-   function showYourNewPage() {
-       hideAllPages();
-       pages.yourNewPage?.classList.remove('d-none');
-       setTitleAndActive('Your Page Title', 'nav-your-page', 'your-page');
-       // ... load module or content
-   }
-   ```
+    function saveSchedule() { ... }
+    function deleteSchedule() { ... }
 
-3. **CRITICAL: Export to window** (at bottom of file):
-   ```javascript
-   window.showYourNewPage = showYourNewPage;
-   ```
+    // CRITICAL: Export ALL functions used in onclick handlers
+    window.initKelolaJadwal = initKelolaJadwal;
+    window.saveSchedule = saveSchedule;      // ← Don't forget this!
+    window.deleteSchedule = deleteSchedule;
 
-Without step 3, clicking the menu will throw: `Uncaught ReferenceError: showYourNewPage is not defined`
+})(); // End IIFE
+```
+
+**Common mistake:** Creating a new function but forgetting to add `window.functionName = functionName;`
+
+**Error you'll see:**
+```
+Uncaught ReferenceError: saveSchedule is not defined
+    at HTMLButtonElement.onclick
+```
+
+**Fix:** Add the missing window export for that function.
+
+### 12. Cache Control for Patient Endpoints
+
+**Patient-facing API endpoints MUST send no-cache headers** to ensure fresh data is always displayed.
+
+**Backend (Express):**
+```javascript
+router.get('/api/patient/some-endpoint', verifyPatientToken, async (req, res) => {
+    // Prevent browser caching - always fetch fresh data
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
+    // ... endpoint logic
+});
+```
+
+**Frontend (JavaScript):**
+```javascript
+// Add cache-busting timestamp to fetch requests
+const response = await fetch('/api/patient/endpoint?_t=' + Date.now(), {
+    headers: {
+        'Authorization': 'Bearer ' + token,
+        'Cache-Control': 'no-cache'
+    }
+});
+```
+
+**Nginx (for HTML pages):**
+```nginx
+# In /etc/nginx/sites-enabled/dokterdibya.com
+location = /patient-dashboard.html {
+    add_header Cache-Control "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0";
+    add_header Pragma "no-cache";
+    add_header Expires "0";
+    try_files $uri =404;
+}
+```
+
+### 13. Patient Access Control (Staff Route Protection)
+
+**Patients MUST NOT access staff-only API routes.** This is enforced globally in `server.js`.
+
+**Whitelist location:** `/var/www/dokterdibya/staff/backend/server.js` (line ~162)
+
+```javascript
+const PATIENT_ALLOWED_ROUTES = [
+    '/api/patients',            // Patient auth & profile
+    '/api/patient/',            // Patient-specific endpoints
+    '/api/sunday-appointments', // Booking
+    '/api/hospital-appointments',
+    '/api/articles',
+    '/api/patient-notifications',
+    '/api/announcements',
+];
+```
+
+**When adding a new patient-accessible endpoint:**
+1. If path starts with `/api/patient/` → automatically allowed
+2. If path starts with `/api/patients/` → automatically allowed
+3. Otherwise → add to `PATIENT_ALLOWED_ROUTES` whitelist
+
+**Middleware available:**
+- `verifyToken` - Any authenticated user (staff or patient)
+- `verifyPatientToken` - Patient only (blocks staff)
+- `verifyStaffToken` - Staff only (blocks patients)

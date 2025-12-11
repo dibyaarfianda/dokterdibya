@@ -1412,6 +1412,10 @@ router.post('/reset-password', async (req, res) => {
  * Uses EDD from latest USG record
  */
 router.get('/pregnancy-tracker', verifyToken, async (req, res) => {
+    // Prevent browser caching
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.set('Pragma', 'no-cache');
+
     try {
         const patientId = req.user.id;
 
@@ -1465,6 +1469,17 @@ router.get('/pregnancy-tracker', verifyToken, async (req, res) => {
 
         // Days until EDD
         const daysUntilEdd = Math.floor((eddDate - today) / (1000 * 60 * 60 * 24));
+
+        // Auto-hide if HPL + 14 days (2 weeks) has passed
+        // This assumes patient has delivered
+        const GRACE_PERIOD_DAYS = 14;
+        if (daysUntilEdd < -GRACE_PERIOD_DAYS) {
+            return res.json({
+                success: true,
+                data: null,
+                message: 'Kehamilan sudah selesai (HPL + 2 minggu telah berlalu)'
+            });
+        }
 
         // Trimester calculation
         let trimester = 1;
