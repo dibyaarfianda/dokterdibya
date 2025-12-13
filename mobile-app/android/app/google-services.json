@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "738335602560-5napmglm15g8jr5c1j0ienc9v8ptnsnt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dokterdibya.patient",
+            "certificate_hash": "f1ea0f21cf95d6b4aa4b03f25a9128f5a6694ea0"
+          }
+        },
+        {
           "client_id": "738335602560-52as846lk2oo78fr38a86elu8888m7eh.apps.googleusercontent.com",
           "client_type": 3
         }
