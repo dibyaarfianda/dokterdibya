@@ -4,8 +4,17 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 const logger = require('../utils/logger');
-const { verifyToken } = require('../middleware/auth');
+const { verifyToken, requireSuperadmin } = require('../middleware/auth');
 const { findRecordByMrId } = require('../services/sundayClinicService');
+const { ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
+
+// Import realtime sync for broadcasting notifications
+let realtimeSync = null;
+try {
+    realtimeSync = require('../realtime-sync');
+} catch (error) {
+    logger.warn('realtime-sync not available, notifications will not be broadcasted');
+}
 
 // Ensure billing tables exist
 async function ensureBillingTables() {
@@ -296,6 +305,9 @@ function formatRecord(row) {
     return {
         id: row.id,
         mrId: row.mr_id,
+        mr_category: row.mr_category, // Include category for template selection
+        visit_location: row.visit_location || 'klinik_private', // Include visit location for UI context
+        import_source: row.import_source || null, // Import source: simrs_gambiran, simrs_melinda, etc.
         patientId: row.patient_id,
         appointmentId: row.appointment_id,
         folderPath: row.folder_path,
@@ -362,6 +374,7 @@ function formatMedicalRecordRow(row) {
         id: row.id,
         patientId: row.patient_id,
         visitId: row.visit_id,
+        mrId: row.mr_id, // Include mr_id for Sunday Clinic visit tracking
         doctorId: row.doctor_id,
         doctorName: row.doctor_name,
         recordType: row.record_type,
@@ -371,20 +384,32 @@ function formatMedicalRecordRow(row) {
     };
 }
 
-async function loadMedicalRecordsBundle(patientId) {
+async function loadMedicalRecordsBundle(patientId, mrId = null) {
     if (!patientId) {
         return null;
     }
 
-    const [rows] = await db.query(
-        `SELECT id, patient_id, visit_id, doctor_id, doctor_name, record_type, record_data,
+    // Build query with mr_id filter for visit-specific records ONLY
+    // Each visit should start fresh - don't load legacy records with null mr_id
+    let query = `SELECT id, patient_id, visit_id, mr_id, doctor_id, doctor_name, record_type, record_data,
                 created_at, updated_at
          FROM medical_records
-         WHERE patient_id = ?
-         ORDER BY created_at DESC
-         LIMIT 50`,
-        [patientId]
-    );
+         WHERE patient_id = ?`;
+    let params = [patientId];
+
+    // ONLY load records for this specific visit (mr_id must match)
+    // This ensures new consultations start with empty forms
+    if (mrId) {
+        query += ` AND mr_id = ?`;
+        params.push(mrId);
+    } else {
+        // No mr_id provided - don't load any records (shouldn't happen normally)
+        return null;
+    }
+
+    query += ` ORDER BY created_at DESC LIMIT 50`;
+
+    const [rows] = await db.query(query, params);
 
     if (!rows.length) {
         return null;
@@ -408,6 +433,7 @@ async function loadMedicalRecordsBundle(patientId) {
             latestComplete = formatted;
         }
 
+        // Only use records with matching mr_id (visit-specific)
         if (!byType[row.record_type]) {
             byType[row.record_type] = formatted;
         }
@@ -600,7 +626,7 @@ router.get('/records/:mrId', verifyToken, async (req, res, next) => {
 
         const [intakeRow, medicalRecords] = await Promise.all([
             findLatestIntake(record.patientId, phoneCandidates),
-            loadMedicalRecordsBundle(record.patientId)
+            loadMedicalRecordsBundle(record.patientId, record.mrId) // Pass mrId for visit-specific records
         ]);
         const intake = formatIntakeRow(intakeRow);
 
@@ -620,6 +646,153 @@ router.get('/records/:mrId', verifyToken, async (req, res, next) => {
     } catch (error) {
         logger.error('Failed to load Sunday clinic record', {
             mrId: normalizedMrId,
+            error: error.message
+        });
+        next(error);
+    }
+});
+
+// Save section data for a Sunday Clinic record
+router.post('/records/:mrId/:section', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+    const section = req.params.section;
+    const data = req.body;
+
+    if (!normalizedMrId) {
+        return res.status(400).json({
+            success: false,
+            message: 'MR ID tidak valid.'
+        });
+    }
+
+    const validSections = ['anamnesa', 'pemeriksaan_ginekologi', 'usg', 'diagnosis', 'planning', 'physical_exam', 'pemeriksaan_obstetri', 'resume_medis', 'penunjang'];
+    if (!validSections.includes(section)) {
+        return res.status(400).json({
+            success: false,
+            message: `Section tidak valid. Gunakan: ${validSections.join(', ')}`
+        });
+    }
+
+    try {
+        const recordRow = await findRecordByMrId(normalizedMrId);
+        if (!recordRow) {
+            return res.status(404).json({
+                success: false,
+                message: 'Rekam medis Sunday Clinic tidak ditemukan.'
+            });
+        }
+
+        // Check if record exists for this section and mr_id
+        const [existingRows] = await db.query(
+            `SELECT id FROM medical_records WHERE patient_id = ? AND mr_id = ? AND record_type = ?`,
+            [recordRow.patient_id, normalizedMrId, section]
+        );
+
+        if (existingRows.length > 0) {
+            // Update existing record - also update doctor_id and doctor_name to current user
+            await db.query(
+                `UPDATE medical_records SET record_data = ?, doctor_id = ?, doctor_name = ?, updated_at = NOW() WHERE id = ?`,
+                [JSON.stringify(data), req.user.id || null, req.user.name || null, existingRows[0].id]
+            );
+        } else {
+            // Insert new record with mr_id
+            await db.query(
+                `INSERT INTO medical_records (patient_id, mr_id, record_type, record_data, doctor_id, doctor_name, created_at, updated_at)
+                 VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+                [
+                    recordRow.patient_id,
+                    normalizedMrId,
+                    section,
+                    JSON.stringify(data),
+                    req.user.id || null,
+                    req.user.name || null
+                ]
+            );
+        }
+
+        // Update last_activity_at on the Sunday Clinic record
+        await db.query(
+            `UPDATE sunday_clinic_records SET last_activity_at = NOW() WHERE mr_id = ?`,
+            [normalizedMrId]
+        );
+
+        // Auto-complete hospital appointment when resume_medis is saved
+        // Only for RSIA Melinda, RSUD Gambiran, RS Bhayangkara (not Klinik Private or Sunday Clinic)
+        if (section === 'resume_medis') {
+            try {
+                // Check if this patient has a pending/confirmed appointment at the 3 hospitals
+                const [appointmentCheck] = await db.query(
+                    `SELECT id, hospital_location, appointment_date
+                     FROM appointments
+                     WHERE patient_id = ?
+                     AND hospital_location IN ('rsia_melinda', 'rsud_gambiran', 'rs_bhayangkara')
+                     AND status IN ('scheduled', 'confirmed')
+                     ORDER BY appointment_date DESC, created_at DESC
+                     LIMIT 1`,
+                    [recordRow.patient_id]
+                );
+
+                if (appointmentCheck.length > 0) {
+                    const appointmentScheduler = require('../services/appointmentScheduler');
+                    await appointmentScheduler.autoCompleteOnPayment(
+                        appointmentCheck[0].id,
+                        `Resume saved for MR ${normalizedMrId}`
+                    );
+                    logger.info('Auto-completed hospital appointment on resume save', {
+                        appointmentId: appointmentCheck[0].id,
+                        hospitalLocation: appointmentCheck[0].hospital_location,
+                        patientId: recordRow.patient_id
+                    });
+                }
+            } catch (appointmentError) {
+                logger.warn('Appointment auto-complete warning:', appointmentError);
+                // Don't fail the resume save, just log the error
+            }
+
+            // Auto-finalize for hospital records (no billing) when resume_medis is saved
+            // RSIA Melinda, RSUD Gambiran, RS Bhayangkara don't use billing system
+            try {
+                const [recordInfo] = await db.query(
+                    'SELECT visit_location, status FROM sunday_clinic_records WHERE mr_id = ?',
+                    [normalizedMrId]
+                );
+
+                if (recordInfo.length > 0 && recordInfo[0].status === 'draft') {
+                    const hospitalLocations = ['rsia_melinda', 'rsud_gambiran', 'rs_bhayangkara'];
+                    if (hospitalLocations.includes(recordInfo[0].visit_location)) {
+                        const userId = req.user.new_id || req.user.id || null;
+                        await db.query(
+                            `UPDATE sunday_clinic_records
+                             SET status = 'finalized',
+                                 finalized_at = NOW(),
+                                 finalized_by = ?
+                             WHERE mr_id = ?`,
+                            [userId, normalizedMrId]
+                        );
+                        logger.info(`Medical record ${normalizedMrId} auto-finalized after resume_medis saved (hospital: ${recordInfo[0].visit_location})`);
+                    }
+                }
+            } catch (finalizeError) {
+                logger.warn('Auto-finalize warning:', finalizeError);
+                // Don't fail the resume save
+            }
+        }
+
+        logger.info('Saved section data for Sunday Clinic', {
+            mrId: normalizedMrId,
+            section,
+            patientId: recordRow.patient_id,
+            userId: req.user.id
+        });
+
+        res.json({
+            success: true,
+            message: `Data ${section} berhasil disimpan`
+        });
+    } catch (error) {
+        logger.error('Failed to save section data', {
+            mrId: normalizedMrId,
+            section,
             error: error.message
         });
         next(error);
@@ -1045,11 +1218,34 @@ router.post('/billing/:mrId/obat', verifyToken, async (req, res, next) => {
     }
 });
 
-// Confirm billing (doctor action)
+// Confirm billing (doctor action only)
 router.post('/billing/:mrId/confirm', verifyToken, async (req, res, next) => {
     const normalizedMrId = normalizeMrId(req.params.mrId);
 
     try {
+        // Check if user is dokter or superadmin
+        const isDokter = req.user.role === ROLE_NAMES.DOKTER || req.user.is_superadmin || isSuperadminRole(req.user.role_id);
+
+        if (!isDokter) {
+            return res.status(403).json({
+                success: false,
+                message: 'Hanya dokter yang dapat mengkonfirmasi tagihan'
+            });
+        }
+
+        // Get billing ID first
+        const [[billing]] = await db.query(
+            `SELECT id, status FROM sunday_clinic_billings WHERE mr_id = ?`,
+            [normalizedMrId]
+        );
+
+        if (!billing) {
+            return res.status(404).json({
+                success: false,
+                message: 'Billing tidak ditemukan'
+            });
+        }
+
         const [result] = await db.query(
             `UPDATE sunday_clinic_billings
              SET status = 'confirmed', confirmed_at = NOW(), confirmed_by = ?
@@ -1057,19 +1253,439 @@ router.post('/billing/:mrId/confirm', verifyToken, async (req, res, next) => {
             [req.user.name || req.user.id || 'Staff', normalizedMrId]
         );
 
-        if (result.affectedRows === 0) {
+        // NOTE: Stock deduction moved to payment completion endpoint
+        // Stock will be deducted when billing is marked as 'paid'
+
+        // Get patient name for notification
+        const [[record]] = await db.query(
+            `SELECT r.mr_id, p.full_name as patient_name
+             FROM sunday_clinic_records r
+             JOIN patients p ON r.patient_id = p.id
+             WHERE r.mr_id = ?`,
+            [normalizedMrId]
+        );
+
+        const patientName = record?.patient_name || 'Pasien';
+        const doctorName = req.user.name || req.user.id || 'Dokter';
+
+        // Broadcast notification to all connected clients
+        if (realtimeSync && realtimeSync.broadcast) {
+            realtimeSync.broadcast({
+                type: 'billing_confirmed',
+                mrId: normalizedMrId,
+                patientName,
+                doctorName,
+                timestamp: new Date().toISOString()
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Billing berhasil dikonfirmasi',
+            patientName
+        });
+    } catch (error) {
+        logger.error('Failed to confirm billing', { error: error.message });
+        next(error);
+    }
+});
+
+// Mark billing as paid (payment complete)
+router.post('/billing/:mrId/mark-paid', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+    const { payment_method, notes } = req.body;
+
+    try {
+        // Get current billing
+        const [[billing]] = await db.query(
+            'SELECT * FROM sunday_clinic_billings WHERE mr_id = ?',
+            [normalizedMrId]
+        );
+
+        if (!billing) {
             return res.status(404).json({
                 success: false,
                 message: 'Billing tidak ditemukan'
             });
         }
 
+        if (billing.status !== 'confirmed') {
+            return res.status(400).json({
+                success: false,
+                message: 'Billing harus dikonfirmasi terlebih dahulu sebelum pembayaran'
+            });
+        }
+
+        if (billing.status === 'paid') {
+            return res.status(400).json({
+                success: false,
+                message: 'Billing sudah dibayar'
+            });
+        }
+
+        // Update status to paid
+        await db.query(
+            `UPDATE sunday_clinic_billings
+             SET status = 'paid',
+                 last_modified_by = ?,
+                 last_modified_at = NOW()
+             WHERE mr_id = ?`,
+            [req.user.name || req.user.id || 'Staff', normalizedMrId]
+        );
+
+        // Deduct stock for obat items using FIFO (only when marking as paid)
+        try {
+            const InventoryService = require('../services/InventoryService');
+
+            // Get obat items from billing (extract obatId from item_data JSON)
+            const [obatItems] = await db.query(
+                `SELECT bi.item_code, bi.item_name, bi.quantity,
+                        CAST(JSON_EXTRACT(bi.item_data, '$.obatId') AS UNSIGNED) as obat_id
+                 FROM sunday_clinic_billing_items bi
+                 WHERE bi.billing_id = ? AND bi.item_type = 'obat'
+                   AND JSON_EXTRACT(bi.item_data, '$.obatId') IS NOT NULL`,
+                [billing.id]
+            );
+
+            // Deduct stock for each obat using FIFO
+            for (const item of obatItems) {
+                try {
+                    await InventoryService.deductStockFIFO(
+                        item.obat_id,
+                        parseInt(item.quantity),
+                        'sunday_clinic_billing',
+                        billing.id,
+                        req.user?.name || 'system'
+                    );
+                    logger.info(`Stock deducted for ${item.item_name}: ${item.quantity} units`);
+                } catch (stockError) {
+                    logger.warn(`Stock deduction warning for obat ${item.obat_id} (${item.item_name}):`, stockError.message);
+                }
+            }
+        } catch (inventoryError) {
+            logger.error('Inventory deduction error:', inventoryError);
+            // Don't fail the payment, just log the error
+        }
+
+        // Auto-finalize the medical record when billing is paid
+        try {
+            const userId = req.user.new_id || req.user.id || null;
+            await db.query(
+                `UPDATE sunday_clinic_records
+                 SET status = 'finalized',
+                     finalized_at = NOW(),
+                     finalized_by = ?
+                 WHERE mr_id = ? AND status = 'draft'`,
+                [userId, normalizedMrId]
+            );
+            logger.info(`Medical record ${normalizedMrId} auto-finalized after payment by user ${userId}`);
+        } catch (finalizeError) {
+            logger.error('Auto-finalize error:', finalizeError);
+            // Don't fail the payment, just log the error
+        }
+
+        // Get patient name for notification
+        const [[record]] = await db.query(
+            `SELECT r.mr_id, p.full_name as patient_name
+             FROM sunday_clinic_records r
+             JOIN patients p ON r.patient_id = p.id
+             WHERE r.mr_id = ?`,
+            [normalizedMrId]
+        );
+
+        const patientName = record?.patient_name || 'Pasien';
+
+        // Broadcast notification
+        if (realtimeSync && realtimeSync.broadcast) {
+            realtimeSync.broadcast({
+                type: 'billing_paid',
+                mrId: normalizedMrId,
+                patientName,
+                paidBy: req.user.name || req.user.id || 'Staff',
+                timestamp: new Date().toISOString()
+            });
+        }
+
         res.json({
             success: true,
-            message: 'Billing berhasil dikonfirmasi'
+            message: 'Pembayaran berhasil dicatat. Stok obat telah dikurangi.',
+            patientName
         });
     } catch (error) {
-        logger.error('Failed to confirm billing', { error: error.message });
+        logger.error('Failed to mark billing as paid', { error: error.message });
+        next(error);
+    }
+});
+
+// Request revision (non-dokter action)
+router.post('/billing/:mrId/request-revision', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+    const { message, requestedBy } = req.body;
+
+    try {
+        // Insert revision request
+        const [result] = await db.query(
+            `INSERT INTO sunday_clinic_billing_revisions (mr_id, message, requested_by, created_at)
+             VALUES (?, ?, ?, NOW())`,
+            [normalizedMrId, message, requestedBy || req.user.name]
+        );
+
+        // Get patient name for notification
+        const [[record]] = await db.query(
+            `SELECT r.mr_id, p.full_name as patient_name
+             FROM sunday_clinic_records r
+             JOIN patients p ON r.patient_id = p.id
+             WHERE r.mr_id = ?`,
+            [normalizedMrId]
+        );
+
+        const patientName = record?.patient_name || 'Pasien';
+
+        // Broadcast notification to dokter
+        logger.info('About to broadcast revision_requested', {
+            hasRealtimeSync: !!realtimeSync,
+            hasBroadcast: !!(realtimeSync && realtimeSync.broadcast),
+            mrId: normalizedMrId,
+            revisionId: result.insertId
+        });
+        
+        if (realtimeSync && realtimeSync.broadcast) {
+            const broadcastResult = realtimeSync.broadcast({
+                type: 'revision_requested',
+                mrId: normalizedMrId,
+                patientName,
+                message,
+                requestedBy: requestedBy || req.user.name,
+                revisionId: result.insertId,
+                timestamp: new Date().toISOString()
+            });
+            logger.info('Broadcast result:', { success: broadcastResult });
+        } else {
+            logger.warn('realtimeSync not available for broadcasting');
+        }
+
+        res.json({
+            success: true,
+            message: 'Usulan revisi berhasil dikirim',
+            revisionId: result.insertId
+        });
+    } catch (error) {
+        logger.error('Failed to request revision', { error: error.message });
+        next(error);
+    }
+});
+
+// Get pending revisions for dokter
+router.get('/billing/revisions/pending', verifyToken, async (req, res, next) => {
+    try {
+        const [revisions] = await db.query(
+            `SELECT r.*, p.full_name as patient_name
+             FROM sunday_clinic_billing_revisions r
+             JOIN sunday_clinic_records rec ON r.mr_id = rec.mr_id
+             JOIN patients p ON rec.patient_id = p.id
+             WHERE r.status = 'pending'
+             ORDER BY r.created_at DESC`
+        );
+
+        res.json({
+            success: true,
+            data: revisions
+        });
+    } catch (error) {
+        logger.error('Failed to get revisions', { error: error.message });
+        next(error);
+    }
+});
+
+// Approve revision (dokter only)
+router.post('/billing/revisions/:id/approve', verifyToken, async (req, res, next) => {
+    const revisionId = req.params.id;
+
+    try {
+        const isDokter = req.user.role === ROLE_NAMES.DOKTER || req.user.is_superadmin || isSuperadminRole(req.user.role_id);
+
+        if (!isDokter) {
+            return res.status(403).json({
+                success: false,
+                message: 'Hanya dokter yang dapat menyetujui usulan'
+            });
+        }
+
+        // Get revision details
+        const [[revision]] = await db.query(
+            'SELECT * FROM sunday_clinic_billing_revisions WHERE id = ?',
+            [revisionId]
+        );
+
+        if (!revision) {
+            return res.status(404).json({
+                success: false,
+                message: 'Usulan tidak ditemukan'
+            });
+        }
+
+        // Update revision status and revert billing to draft
+        await db.query(
+            `UPDATE sunday_clinic_billing_revisions SET status = 'approved' WHERE id = ?`,
+            [revisionId]
+        );
+
+        await db.query(
+            `UPDATE sunday_clinic_billings
+             SET status = 'draft', confirmed_at = NULL, confirmed_by = NULL
+             WHERE mr_id = ?`,
+            [revision.mr_id]
+        );
+
+        res.json({
+            success: true,
+            message: 'Usulan disetujui. Billing dikembalikan ke draft',
+            mrId: revision.mr_id
+        });
+    } catch (error) {
+        logger.error('Failed to approve revision', { error: error.message });
+        next(error);
+    }
+});
+
+// Print etiket
+router.post('/billing/:mrId/print-etiket', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+
+    try {
+        const pdfGenerator = require('../utils/pdf-generator');
+
+        // Get billing data
+        const [[billing]] = await db.query(
+            'SELECT * FROM sunday_clinic_billings WHERE mr_id = ?',
+            [normalizedMrId]
+        );
+
+        if (!billing || !['confirmed', 'paid'].includes(billing.status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Billing belum dikonfirmasi atau dibayar'
+            });
+        }
+
+        // Get billing items from sunday_clinic_billing_items
+        const [items] = await db.query(
+            `SELECT * FROM sunday_clinic_billing_items WHERE billing_id = ?`,
+            [billing.id]
+        );
+
+        // Parse item_data JSON for each item
+        billing.items = items.map(item => ({
+            ...item,
+            item_data: typeof item.item_data === 'string' ? JSON.parse(item.item_data || '{}') : (item.item_data || {})
+        }));
+
+        // Get patient and record data
+        const [[record]] = await db.query(
+            `SELECT r.*, p.full_name, p.birth_date, p.phone
+             FROM sunday_clinic_records r
+             JOIN patients p ON r.patient_id = p.id
+             WHERE r.mr_id = ?`,
+            [normalizedMrId]
+        );
+
+        const result = await pdfGenerator.generateEtiket(
+            billing,
+            { fullName: record.full_name, birthDate: record.birth_date, phone: record.phone },
+            { mrId: normalizedMrId }
+        );
+
+        // Update printed status and store R2 key
+        await db.query(
+            `UPDATE sunday_clinic_billings
+             SET printed_at = NOW(), printed_by = ?, etiket_url = ?
+             WHERE mr_id = ?`,
+            [req.user.name || req.user.id, result.r2Key, normalizedMrId]
+        );
+
+        // Get signed URL for download (valid for 1 hour)
+        const r2Storage = require('../services/r2Storage');
+        const signedUrl = await r2Storage.getSignedDownloadUrl(result.r2Key, 3600);
+
+        // Return JSON with download URL (frontend will handle the download)
+        res.json({
+            success: true,
+            downloadUrl: signedUrl,
+            filename: result.filename
+        });
+    } catch (error) {
+        logger.error('Failed to print etiket', { error: error.message });
+        next(error);
+    }
+});
+
+// Print invoice
+router.post('/billing/:mrId/print-invoice', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+
+    try {
+        const pdfGenerator = require('../utils/pdf-generator');
+
+        // Get billing data
+        const [[billing]] = await db.query(
+            'SELECT * FROM sunday_clinic_billings WHERE mr_id = ?',
+            [normalizedMrId]
+        );
+
+        if (!billing || !['confirmed', 'paid'].includes(billing.status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Billing belum dikonfirmasi atau dibayar'
+            });
+        }
+
+        // Get billing items from sunday_clinic_billing_items
+        const [items] = await db.query(
+            `SELECT * FROM sunday_clinic_billing_items WHERE billing_id = ?`,
+            [billing.id]
+        );
+
+        // Parse item_data JSON for each item
+        billing.items = items.map(item => ({
+            ...item,
+            item_data: typeof item.item_data === 'string' ? JSON.parse(item.item_data || '{}') : (item.item_data || {})
+        }));
+
+        // Get patient and record data
+        const [[record]] = await db.query(
+            `SELECT r.*, p.full_name, p.birth_date, p.phone
+             FROM sunday_clinic_records r
+             JOIN patients p ON r.patient_id = p.id
+             WHERE r.mr_id = ?`,
+            [normalizedMrId]
+        );
+
+        const result = await pdfGenerator.generateInvoice(
+            billing,
+            { fullName: record.full_name, birthDate: record.birth_date, phone: record.phone },
+            { mrId: normalizedMrId }
+        );
+
+        // Update printed status and store R2 key
+        await db.query(
+            `UPDATE sunday_clinic_billings
+             SET printed_at = NOW(), printed_by = ?, invoice_url = ?
+             WHERE mr_id = ?`,
+            [req.user.name || req.user.id, result.r2Key, normalizedMrId]
+        );
+
+        // Get signed URL for download (valid for 1 hour)
+        const r2Storage = require('../services/r2Storage');
+        const signedUrl = await r2Storage.getSignedDownloadUrl(result.r2Key, 3600);
+
+        // Return JSON with download URL (frontend will handle the download)
+        res.json({
+            success: true,
+            downloadUrl: signedUrl,
+            filename: result.filename
+        });
+    } catch (error) {
+        logger.error('Failed to print invoice', { error: error.message });
         next(error);
     }
 });
@@ -1182,6 +1798,94 @@ router.delete('/billing/:mrId/items/:itemType', verifyToken, async (req, res, ne
         logger.error('Failed to delete billing items by type', {
             mrId: normalizedMrId,
             itemType,
+            error: error.message
+        });
+        next(error);
+    } finally {
+        if (connection) {
+            connection.release();
+        }
+    }
+});
+
+// Delete billing item by item_code
+router.delete('/billing/:mrId/items/code/:code', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+    const itemCode = req.params.code;
+
+    let connection;
+
+    try {
+        const recordRow = await findRecordByMrId(normalizedMrId);
+        if (!recordRow) {
+            return res.status(404).json({
+                success: false,
+                message: 'Rekam medis Sunday Clinic tidak ditemukan.'
+            });
+        }
+
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        // Get billing record
+        const [billingRows] = await connection.query(
+            `SELECT id FROM sunday_clinic_billings WHERE mr_id = ? FOR UPDATE`,
+            [normalizedMrId]
+        );
+
+        if (billingRows.length === 0) {
+            await connection.rollback();
+            return res.json({
+                success: true,
+                message: `Tidak ada billing ditemukan.`
+            });
+        }
+
+        const billingId = billingRows[0].id;
+
+        // Delete item by code
+        const [deleteResult] = await connection.query(
+            `DELETE FROM sunday_clinic_billing_items WHERE billing_id = ? AND item_code = ?`,
+            [billingId, itemCode]
+        );
+
+        // Recalculate billing totals
+        const [[totals]] = await connection.query(
+            `SELECT COALESCE(SUM(total), 0) AS subtotal FROM sunday_clinic_billing_items WHERE billing_id = ?`,
+            [billingId]
+        );
+
+        await connection.query(
+            `UPDATE sunday_clinic_billings
+             SET subtotal = ?, total = ?, updated_at = NOW()
+             WHERE id = ?`,
+            [totals.subtotal, totals.subtotal, billingId]
+        );
+
+        await connection.commit();
+
+        res.json({
+            success: true,
+            message: `Item dengan kode ${itemCode} berhasil dihapus`,
+            data: {
+                mrId: normalizedMrId,
+                billingId,
+                deletedCount: deleteResult.affectedRows,
+                newSubtotal: totals.subtotal
+            }
+        });
+    } catch (error) {
+        if (connection) {
+            try {
+                await connection.rollback();
+            } catch (rollbackError) {
+                logger.error('Failed to rollback item deletion by code', { error: rollbackError.message });
+            }
+        }
+
+        logger.error('Failed to delete billing item by code', {
+            mrId: normalizedMrId,
+            itemCode,
             error: error.message
         });
         next(error);
@@ -1564,4 +2268,561 @@ router.post('/generate-anamnesa/:mrId', verifyToken, async (req, res, next) => {
     }
 });
 
+// ==================== RESUME MEDIS PDF & WHATSAPP ====================
+
+/**
+ * Generate Resume Medis PDF
+ * POST /api/sunday-clinic/resume-medis/pdf
+ */
+router.post('/resume-medis/pdf', verifyToken, async (req, res, next) => {
+    try {
+        const { mrId } = req.body;
+
+        if (!mrId) {
+            return res.status(400).json({ success: false, message: 'MR ID is required' });
+        }
+
+        // Get record data
+        const [records] = await db.query(
+            `SELECT sc.*, p.full_name, p.age, p.phone
+             FROM sunday_clinic_records sc
+             LEFT JOIN patients p ON sc.patient_id = p.id
+             WHERE sc.mr_id = ?`,
+            [mrId]
+        );
+
+        if (!records.length) {
+            return res.status(404).json({ success: false, message: 'Record not found' });
+        }
+
+        const record = records[0];
+
+        // Get resume medis from medical_records
+        const [resumeRecords] = await db.query(
+            `SELECT record_data FROM medical_records
+             WHERE mr_id = ? AND record_type = 'resume_medis'
+             ORDER BY created_at DESC LIMIT 1`,
+            [mrId]
+        );
+
+        if (!resumeRecords.length) {
+            return res.status(404).json({ success: false, message: 'Resume medis tidak ditemukan. Silakan generate resume terlebih dahulu.' });
+        }
+
+        let resumeData = resumeRecords[0].record_data;
+        if (typeof resumeData === 'string') {
+            resumeData = JSON.parse(resumeData);
+        }
+
+        // Generate PDF
+        const pdfGenerator = require('../utils/pdf-generator');
+        const patientData = {
+            fullName: record.full_name,
+            age: record.age,
+            phone: record.phone
+        };
+        const recordData = { mrId };
+
+        const result = await pdfGenerator.generateResumeMedis(resumeData, patientData, recordData);
+
+        // Get signed URL for download (valid for 24 hours)
+        const r2Storage = require('../services/r2Storage');
+        const signedUrl = await r2Storage.getSignedDownloadUrl(result.r2Key, 86400);
+
+        res.json({
+            success: true,
+            message: 'PDF generated successfully',
+            data: {
+                filename: result.filename,
+                downloadUrl: signedUrl,
+                r2Key: result.r2Key
+            }
+        });
+
+    } catch (error) {
+        logger.error('Generate resume PDF error:', error);
+        next(error);
+    }
+});
+
+/**
+ * Download Resume Medis PDF
+ * GET /api/sunday-clinic/resume-medis/download/:filename
+ */
+router.get('/resume-medis/download/:filename', verifyToken, async (req, res, next) => {
+    try {
+        const { filename } = req.params;
+        const path = require('path');
+        const fs = require('fs');
+        const filepath = path.join(__dirname, '../../..', 'database/invoices', filename);
+
+        if (!fs.existsSync(filepath)) {
+            return res.status(404).json({ success: false, message: 'File not found' });
+        }
+
+        res.download(filepath, filename);
+
+    } catch (error) {
+        logger.error('Download resume PDF error:', error);
+        next(error);
+    }
+});
+
+/**
+ * Send Resume Medis via WhatsApp
+ * POST /api/sunday-clinic/resume-medis/send-whatsapp
+ */
+router.post('/resume-medis/send-whatsapp', verifyToken, async (req, res, next) => {
+    try {
+        const { mrId, phone } = req.body;
+
+        if (!mrId) {
+            return res.status(400).json({ success: false, message: 'MR ID is required' });
+        }
+
+        if (!phone) {
+            return res.status(400).json({ success: false, message: 'Phone number is required' });
+        }
+
+        // Get record data
+        const [records] = await db.query(
+            `SELECT sc.*, p.full_name, p.age, p.phone as patient_phone
+             FROM sunday_clinic_records sc
+             LEFT JOIN patients p ON sc.patient_id = p.id
+             WHERE sc.mr_id = ?`,
+            [mrId]
+        );
+
+        if (!records.length) {
+            return res.status(404).json({ success: false, message: 'Record not found' });
+        }
+
+        const record = records[0];
+
+        // Get resume medis from medical_records
+        const [resumeRecords] = await db.query(
+            `SELECT record_data FROM medical_records
+             WHERE mr_id = ? AND record_type = 'resume_medis'
+             ORDER BY created_at DESC LIMIT 1`,
+            [mrId]
+        );
+
+        if (!resumeRecords.length) {
+            return res.status(404).json({ success: false, message: 'Resume medis tidak ditemukan. Silakan generate resume terlebih dahulu.' });
+        }
+
+        let resumeData = resumeRecords[0].record_data;
+        if (typeof resumeData === 'string') {
+            resumeData = JSON.parse(resumeData);
+        }
+
+        // Generate PDF
+        const pdfGenerator = require('../utils/pdf-generator');
+        const patientData = {
+            fullName: record.full_name,
+            age: record.age,
+            phone: record.patient_phone
+        };
+        const recordData = { mrId };
+
+        const pdfResult = await pdfGenerator.generateResumeMedis(resumeData, patientData, recordData);
+
+        // Get signed URL for download (valid for 24 hours)
+        const r2Storage = require('../services/r2Storage');
+        const pdfUrl = await r2Storage.getSignedDownloadUrl(pdfResult.r2Key, 86400);
+
+        // Generate WhatsApp message
+        const whatsappService = require('../services/whatsappService');
+        const message = `Halo ${record.full_name || 'Pasien'},
+
+Berikut adalah Resume Medis Anda dari Klinik Privat Dr. Dibya:
+
+No. MR: ${mrId}
+Tanggal: ${new Date().toLocaleDateString('id-ID')}
+
+Resume medis Anda dapat diunduh melalui link berikut (berlaku 24 jam):
+${pdfUrl}
+
+Terima kasih telah mempercayakan kesehatan Anda kepada kami.
+
+Salam,
+Klinik Privat Dr. Dibya
+RSIA Melinda, Kediri`;
+
+        // Send via WhatsApp
+        const result = await whatsappService.sendViaFonnte(phone, message);
+
+        if (result.success) {
+            res.json({
+                success: true,
+                message: 'Resume medis berhasil dikirim via WhatsApp',
+                data: {
+                    method: result.method,
+                    phone: phone,
+                    pdfUrl: pdfUrl
+                }
+            });
+        } else {
+            // Fallback to wa.me link
+            const waLink = whatsappService.generateWaLink(phone, message);
+            res.json({
+                success: true,
+                message: 'Klik link untuk mengirim via WhatsApp',
+                data: {
+                    method: 'manual',
+                    waLink: waLink,
+                    pdfUrl: pdfUrl
+                }
+            });
+        }
+
+    } catch (error) {
+        logger.error('Send resume WhatsApp error:', error);
+        next(error);
+    }
+});
+
+// ==========================================
+// WALK-IN PATIENT VISIT
+// ==========================================
+
+/**
+ * POST /api/sunday-clinic/start-walk-in
+ * Start a new visit for a walk-in patient (without appointment)
+ * Used when staff manually adds a patient to the queue from patient detail modal
+ */
+router.post('/start-walk-in', verifyToken, async (req, res, next) => {
+    try {
+        const { patient_id, category, location, visit_date, is_retrospective, import_source } = req.body;
+
+        if (!patient_id) {
+            return res.status(400).json({
+                success: false,
+                message: 'patient_id wajib diisi'
+            });
+        }
+
+        // Validate category
+        const validCategories = ['obstetri', 'gyn_repro', 'gyn_special'];
+        const finalCategory = validCategories.includes(category) ? category : 'obstetri';
+
+        // Validate location
+        const validLocations = ['klinik_private', 'rsia_melinda', 'rsud_gambiran', 'rs_bhayangkara'];
+        const finalLocation = validLocations.includes(location) ? location : 'klinik_private';
+
+        // Parse visit date for retrospective imports
+        let visitDateTime = new Date();
+        if (visit_date && is_retrospective) {
+            visitDateTime = new Date(visit_date);
+            if (isNaN(visitDateTime.getTime())) {
+                visitDateTime = new Date(); // Fallback to now if invalid
+            }
+        }
+        const visitDateStr = visitDateTime.toISOString().split('T')[0]; // YYYY-MM-DD
+
+        // Check if patient exists
+        const [patients] = await db.query(
+            'SELECT id, full_name, whatsapp, phone, age, birth_date FROM patients WHERE id = ? LIMIT 1',
+            [patient_id]
+        );
+
+        if (patients.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Pasien tidak ditemukan'
+            });
+        }
+
+        const patient = patients[0];
+        const patientName = patient.full_name || 'Unknown';
+
+        // Get user ID from token
+        const userId = req.user?.id || null;
+
+        // Import service
+        const { generateCategoryBasedMrId } = require('../services/sundayClinicService');
+
+        // Get a connection for transaction
+        const conn = await db.getConnection();
+
+        try {
+            await conn.beginTransaction();
+
+            // Generate MR ID
+            const { mrId, sequence } = await generateCategoryBasedMrId(finalCategory, conn);
+            const folderPath = `sunday-clinic/${mrId.toLowerCase()}`;
+
+            // Create the record with visit_location, import_source, and retrospective date if provided
+            // import_source values: simrs_gambiran, simrs_melinda, simrs_bhayangkara, or NULL for manual
+            await conn.query(
+                `INSERT INTO sunday_clinic_records
+                 (mr_id, mr_category, mr_sequence, patient_id, appointment_id, visit_location, import_source, folder_path, status, created_by, created_at)
+                 VALUES (?, ?, ?, ?, NULL, ?, ?, ?, 'draft', ?, ?)`,
+                [mrId, finalCategory, sequence, patient_id, finalLocation, import_source || null, folderPath, userId, visitDateTime]
+            );
+
+            // Create patient_mr_history if not exists
+            const [existingHistory] = await conn.query(
+                'SELECT id FROM patient_mr_history WHERE patient_id = ? AND mr_category = ? LIMIT 1',
+                [patient_id, finalCategory]
+            );
+
+            if (existingHistory.length === 0) {
+                await conn.query(
+                    `INSERT INTO patient_mr_history
+                     (patient_id, mr_id, mr_category, first_visit_date, last_visit_date, visit_count)
+                     VALUES (?, ?, ?, ?, ?, 1)`,
+                    [patient_id, mrId, finalCategory, visitDateStr, visitDateStr]
+                );
+            } else {
+                // For retrospective imports, only update if the visit date is more recent than existing last_visit_date
+                await conn.query(
+                    `UPDATE patient_mr_history
+                     SET last_visit_date = GREATEST(last_visit_date, ?), visit_count = visit_count + 1, updated_at = NOW()
+                     WHERE patient_id = ? AND mr_category = ?`,
+                    [visitDateStr, patient_id, finalCategory]
+                );
+            }
+
+            await conn.commit();
+
+            logger.info('Created walk-in visit record', {
+                mrId,
+                patientId: patient_id,
+                patientName,
+                category: finalCategory,
+                location: finalLocation,
+                importSource: import_source || null,
+                visitDate: visitDateStr,
+                isRetrospective: !!is_retrospective,
+                createdBy: userId
+            });
+
+            res.json({
+                success: true,
+                message: is_retrospective ? 'Rekam medis retrospektif berhasil dibuat' : 'Kunjungan berhasil dibuat',
+                data: {
+                    mrId,
+                    category: finalCategory,
+                    location: finalLocation,
+                    importSource: import_source || null,
+                    patientId: patient_id,
+                    patientName,
+                    folderPath,
+                    status: 'draft',
+                    visitDate: visitDateStr,
+                    isRetrospective: !!is_retrospective
+                }
+            });
+
+        } catch (error) {
+            await conn.rollback();
+            throw error;
+        } finally {
+            conn.release();
+        }
+
+    } catch (error) {
+        logger.error('Start walk-in visit error:', error);
+        next(error);
+    }
+});
+
+// ==================== PATIENT VISIT HISTORY ====================
+
+/**
+ * GET /api/sunday-clinic/patient-visits/:patientId
+ * Get patient's visit history with location information
+ * Accessible by both patients and staff
+ */
+router.get('/patient-visits/:patientId', verifyToken, async (req, res, next) => {
+    try {
+        const patientId = req.params.patientId;
+        const isPatient = req.user?.user_type === 'patient' || req.user?.role === 'patient';
+
+        // Patients can only access their own data
+        if (isPatient && req.user.id !== patientId) {
+            return res.status(403).json({
+                success: false,
+                message: 'Akses ditolak'
+            });
+        }
+
+        const [visits] = await db.query(
+            `SELECT
+                scr.mr_id,
+                scr.mr_category,
+                scr.visit_location,
+                scr.status,
+                scr.created_at as visit_date,
+                scr.finalized_at,
+                p.full_name as patient_name
+             FROM sunday_clinic_records scr
+             JOIN patients p ON scr.patient_id = p.id
+             WHERE scr.patient_id = ?
+             ORDER BY scr.created_at DESC`,
+            [patientId]
+        );
+
+        // Location config for frontend display
+        const locationConfig = {
+            'klinik_private': {
+                name: 'Klinik Privat dr. Dibya',
+                shortName: 'Klinik Privat',
+                logo: '/images/dibyablacklogo.svg',
+                color: '#3c8dbc'
+            },
+            'rsia_melinda': {
+                name: 'RSIA Melinda',
+                shortName: 'RSIA Melinda',
+                logo: '/images/melinda-logo.png',
+                color: '#e91e63'
+            },
+            'rsud_gambiran': {
+                name: 'RSUD Gambiran',
+                shortName: 'RSUD Gambiran',
+                logo: '/images/gambiran-logo.png',
+                color: '#17a2b8'
+            },
+            'rs_bhayangkara': {
+                name: 'RS Bhayangkara',
+                shortName: 'RS Bhayangkara',
+                logo: '/images/bhayangkara-logo.png',
+                color: '#28a745'
+            }
+        };
+
+        // Enrich visits with location display info
+        const enrichedVisits = visits.map(visit => {
+            const locConfig = locationConfig[visit.visit_location] || locationConfig['klinik_private'];
+            return {
+                ...visit,
+                location_name: locConfig.name,
+                location_short: locConfig.shortName,
+                location_logo: locConfig.logo,
+                location_color: locConfig.color
+            };
+        });
+
+        res.json({
+            success: true,
+            count: enrichedVisits.length,
+            data: enrichedVisits,
+            locationConfig // Send config for frontend use
+        });
+
+    } catch (error) {
+        logger.error('Error fetching patient visits:', error);
+        next(error);
+    }
+});
+
+/**
+ * DELETE /api/sunday-clinic/records/:mrId
+ * Delete a medical record completely (Superadmin/Dokter only)
+ * Use with caution - this permanently removes all data for this MR
+ */
+router.delete('/records/:mrId', verifyToken, requireSuperadmin, async (req, res, next) => {
+    const { mrId } = req.params;
+
+    try {
+        logger.info(`[DELETE MR] Superadmin ${req.user.name} attempting to delete ${mrId}`);
+
+        // First verify the record exists
+        const [existing] = await db.query(
+            'SELECT mr_id, patient_id, status FROM sunday_clinic_records WHERE mr_id = ?',
+            [mrId]
+        );
+
+        if (existing.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: `Rekam medis ${mrId} tidak ditemukan`
+            });
+        }
+
+        const record = existing[0];
+
+        // Prevent deleting finalized/billed records unless forced
+        if (record.status === 'finalized' || record.status === 'billed') {
+            const forceDelete = req.query.force === 'true';
+            if (!forceDelete) {
+                return res.status(400).json({
+                    success: false,
+                    message: `Rekam medis ${mrId} sudah ${record.status}. Tambahkan ?force=true untuk tetap menghapus.`
+                });
+            }
+        }
+
+        // Start transaction for cleanup
+        const connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        try {
+            // Delete related billing items first (if any)
+            await connection.query(
+                'DELETE FROM sunday_clinic_billing_items WHERE billing_id IN (SELECT id FROM sunday_clinic_billings WHERE mr_id = ?)',
+                [mrId]
+            );
+
+            // Delete billing record
+            await connection.query(
+                'DELETE FROM sunday_clinic_billings WHERE mr_id = ?',
+                [mrId]
+            );
+
+            // Delete medical records (JSON data)
+            await connection.query(
+                'DELETE FROM medical_records WHERE mr_id = ?',
+                [mrId]
+            );
+
+            // Delete patient documents (optional - keep for audit?)
+            // await connection.query(
+            //     'DELETE FROM patient_documents WHERE mr_id = ?',
+            //     [mrId]
+            // );
+
+            // Finally delete the main record
+            await connection.query(
+                'DELETE FROM sunday_clinic_records WHERE mr_id = ?',
+                [mrId]
+            );
+
+            await connection.commit();
+
+            logger.info(`[DELETE MR] Successfully deleted ${mrId} by ${req.user.name}`, {
+                mrId,
+                patientId: record.patient_id,
+                deletedBy: req.user.id,
+                deletedByName: req.user.name
+            });
+
+            res.json({
+                success: true,
+                message: `Rekam medis ${mrId} berhasil dihapus`
+            });
+
+        } catch (txError) {
+            await connection.rollback();
+            throw txError;
+        } finally {
+            connection.release();
+        }
+
+    } catch (error) {
+        logger.error(`[DELETE MR] Error deleting ${mrId}:`, error);
+        next(error);
+    }
+});
+
+// Socket.io handler for real-time billing notifications
+function setupSocketHandlers(io) {
+    logger.info('Setting up Socket.io handlers for Sunday Clinic billing');
+
+    // No additional socket handlers needed - we're using broadcast from routes
+    // The realtime-sync module handles socket connections
+}
+
 module.exports = router;
+module.exports.setupSocketHandlers = setupSocketHandlers;

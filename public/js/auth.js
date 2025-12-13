@@ -128,9 +128,17 @@ async function handleGoogleSignIn(response) {
         }
 
         const data = await res.json();
-        
+
+        // Clear old data first to prevent cache issues when switching accounts
+        localStorage.removeItem('patient_token');
+        localStorage.removeItem('vps_auth_token');
+        sessionStorage.removeItem('vps_auth_token');
+        localStorage.removeItem('patient_user');
+        localStorage.removeItem('patient_intake_draft_v3'); // Clear intake draft from previous account
+
         // Store JWT token
         localStorage.setItem('patient_token', data.token);
+        localStorage.setItem('vps_auth_token', data.token); // Also set vps_auth_token for consistency
         localStorage.setItem('patient_user', JSON.stringify(data.user));
         localStorage.setItem('auth_provider', 'google'); // Set auth_provider to google
         
@@ -170,11 +178,19 @@ async function signUpWithEmail(fullname, email, phone, password) {
             throw new Error(data.message || 'Registrasi gagal');
         }
 
+        // Clear old data first to prevent cache issues when switching accounts
+        localStorage.removeItem('patient_token');
+        localStorage.removeItem('vps_auth_token');
+        sessionStorage.removeItem('vps_auth_token');
+        localStorage.removeItem('patient_user');
+        localStorage.removeItem('patient_intake_draft_v3'); // Clear intake draft from previous account
+
         // Store JWT token
         localStorage.setItem('patient_token', data.token);
+        localStorage.setItem('vps_auth_token', data.token); // Also set vps_auth_token for consistency
         localStorage.setItem('patient_user', JSON.stringify(data.user));
         localStorage.setItem('auth_provider', 'email'); // Set auth_provider to email
-        
+
         // Show success message
         showMessage('Registrasi berhasil! Silakan cek email Anda untuk verifikasi.', 'success');
         
@@ -210,14 +226,22 @@ async function signInWithEmail(email, password) {
             throw new Error(data.message || 'Login gagal');
         }
 
+        // Clear old data first to prevent cache issues when switching accounts
+        localStorage.removeItem('patient_token');
+        localStorage.removeItem('vps_auth_token');
+        sessionStorage.removeItem('vps_auth_token');
+        localStorage.removeItem('patient_user');
+        localStorage.removeItem('patient_intake_draft_v3'); // Clear intake draft from previous account
+
         // Store JWT token
         localStorage.setItem('patient_token', data.token);
+        localStorage.setItem('vps_auth_token', data.token); // Also set vps_auth_token for consistency
         localStorage.setItem('patient_user', JSON.stringify(data.user));
         localStorage.setItem('auth_provider', 'email'); // Set auth_provider to email
-        
+
         // Show success message
         showMessage('Login berhasil! Mengalihkan...', 'success');
-        
+
         // Check profile completion and redirect accordingly
         setTimeout(async () => {
             await checkProfileCompletionAndRedirect();
@@ -354,8 +378,11 @@ async function checkProfileCompletionAndRedirect() {
 // Logout function
 function logout() {
     localStorage.removeItem('patient_token');
+    localStorage.removeItem('vps_auth_token');
+    sessionStorage.removeItem('vps_auth_token');
     localStorage.removeItem('patient_user');
     localStorage.removeItem('auth_provider'); // Clear auth_provider on logout
+    localStorage.removeItem('patient_intake_draft_v3'); // Clear intake draft to prevent data leakage
     window.location.href = '/index.html';
 }
 

@@ -40,7 +40,7 @@ const logger = require('../utils/logger');
  *       200:
  *         description: Revenue analytics data
  */
-router.get('/revenue', verifyToken, requirePermission('dashboard.view'), async (req, res) => {
+router.get('/revenue', verifyToken, requirePermission('analytics.view'), async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
         
@@ -68,7 +68,7 @@ router.get('/revenue', verifyToken, requirePermission('dashboard.view'), async (
  *       200:
  *         description: Patient demographics data
  */
-router.get('/demographics', verifyToken, requirePermission('dashboard.view'), async (req, res) => {
+router.get('/demographics', verifyToken, requirePermission('analytics.view'), async (req, res) => {
     try {
         const data = await AnalyticsService.getPatientDemographics();
         res.json(success(data, 'Demografis pasien berhasil dimuat'));
@@ -103,7 +103,7 @@ router.get('/demographics', verifyToken, requirePermission('dashboard.view'), as
  *       200:
  *         description: Medication analytics data
  */
-router.get('/medications', verifyToken, requirePermission('dashboard.view'), async (req, res) => {
+router.get('/medications', verifyToken, requirePermission('analytics.view'), async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
         
@@ -144,7 +144,7 @@ router.get('/medications', verifyToken, requirePermission('dashboard.view'), asy
  *       200:
  *         description: Visit trends data
  */
-router.get('/visits', verifyToken, requirePermission('dashboard.view'), async (req, res) => {
+router.get('/visits', verifyToken, requirePermission('analytics.view'), async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
         
@@ -185,7 +185,7 @@ router.get('/visits', verifyToken, requirePermission('dashboard.view'), async (r
  *       200:
  *         description: Doctor performance data
  */
-router.get('/doctors', verifyToken, requirePermission('dashboard.view'), async (req, res) => {
+router.get('/doctors', verifyToken, requirePermission('analytics.view'), async (req, res) => {
     try {
         const { startDate, endDate } = req.query;
         
@@ -213,13 +213,208 @@ router.get('/doctors', verifyToken, requirePermission('dashboard.view'), async (
  *       200:
  *         description: Dashboard statistics
  */
-router.get('/dashboard', verifyToken, requirePermission('dashboard.view'), async (req, res) => {
+router.get('/dashboard', verifyToken, requirePermission('analytics.view'), async (req, res) => {
     try {
         const data = await AnalyticsService.getDashboardStats();
         res.json(success(data, 'Statistik dashboard berhasil dimuat'));
     } catch (err) {
         logger.error('Dashboard stats error:', err);
         res.status(500).json(error('Gagal memuat statistik dashboard'));
+    }
+});
+
+/**
+ * @swagger
+ * /api/analytics/private-clinic:
+ *   get:
+ *     summary: Get private clinic (Sunday Clinic) financial analysis
+ *     tags: [Analytics]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: month
+ *         schema:
+ *           type: string
+ *         description: Month in YYYY-MM format (defaults to current month)
+ *       - in: query
+ *         name: staffCount
+ *         schema:
+ *           type: integer
+ *         description: Number of staff (defaults to 3)
+ *       - in: query
+ *         name: attendancePerStaff
+ *         schema:
+ *           type: integer
+ *         description: Attendance days per staff (defaults to working days)
+ *     responses:
+ *       200:
+ *         description: Private clinic financial analysis
+ */
+router.get('/private-clinic', verifyToken, requirePermission('analytics.view'), async (req, res) => {
+    const pool = require('../db');
+
+    try {
+        const { month, staffCount = 3 } = req.query;
+
+        // Default to current month if not specified
+        const targetMonth = month || new Date().toISOString().slice(0, 7);
+        const startDate = `${targetMonth}-01`;
+        const endDate = new Date(targetMonth + '-01');
+        endDate.setMonth(endDate.getMonth() + 1);
+        endDate.setDate(0);
+        const endDateStr = endDate.toISOString().slice(0, 10);
+
+        // 1. Get summary data
+        const [summaryRows] = await pool.query(`
+            SELECT
+                COUNT(DISTINCT b.id) as total_kunjungan,
+                COUNT(DISTINCT DATE(b.created_at)) as total_hari_kerja,
+                COALESCE(SUM(bi.total), 0) as pendapatan_kotor,
+                COALESCE(SUM(CASE WHEN bi.item_type = 'tindakan' THEN bi.total ELSE 0 END), 0) as pendapatan_tindakan,
+                COALESCE(SUM(CASE WHEN bi.item_type = 'obat' THEN bi.total ELSE 0 END), 0) as pendapatan_obat
+            FROM sunday_clinic_billings b
+            LEFT JOIN sunday_clinic_billing_items bi ON b.id = bi.billing_id
+            WHERE b.status IN ('paid', 'confirmed')
+            AND DATE(b.created_at) BETWEEN ? AND ?
+        `, [startDate, endDateStr]);
+
+        // 2. Get HPP (Cost of Goods Sold) for medications
+        const [hppRows] = await pool.query(`
+            SELECT
+                COALESCE(SUM(COALESCE(o.default_cost_price, 0) * bi.quantity), 0) as total_hpp
+            FROM sunday_clinic_billing_items bi
+            JOIN sunday_clinic_billings b ON bi.billing_id = b.id
+            LEFT JOIN obat o ON bi.item_code = o.code
+            WHERE bi.item_type = 'obat'
+            AND b.status IN ('paid', 'confirmed')
+            AND DATE(b.created_at) BETWEEN ? AND ?
+        `, [startDate, endDateStr]);
+
+        // 3. Get tindakan breakdown by category
+        const [tindakanByCategory] = await pool.query(`
+            SELECT
+                COALESCE(t.category, 'LAINNYA') as category,
+                COUNT(DISTINCT bi.item_code) as jenis_tindakan,
+                COUNT(*) as jumlah_transaksi,
+                COALESCE(SUM(bi.total), 0) as total_pendapatan
+            FROM sunday_clinic_billing_items bi
+            JOIN sunday_clinic_billings b ON bi.billing_id = b.id
+            LEFT JOIN tindakan t ON bi.item_code = t.code
+            WHERE bi.item_type = 'tindakan'
+            AND b.status IN ('paid', 'confirmed')
+            AND DATE(b.created_at) BETWEEN ? AND ?
+            GROUP BY t.category
+            ORDER BY total_pendapatan DESC
+        `, [startDate, endDateStr]);
+
+        // 4. Get top tindakan
+        const [topTindakan] = await pool.query(`
+            SELECT
+                bi.item_name,
+                bi.item_code,
+                COALESCE(t.category, 'LAINNYA') as category,
+                COUNT(*) as jumlah_transaksi,
+                SUM(bi.quantity) as total_qty,
+                AVG(bi.price) as avg_harga,
+                SUM(bi.total) as total_pendapatan
+            FROM sunday_clinic_billing_items bi
+            JOIN sunday_clinic_billings b ON bi.billing_id = b.id
+            LEFT JOIN tindakan t ON bi.item_code = t.code
+            WHERE bi.item_type = 'tindakan'
+            AND b.status IN ('paid', 'confirmed')
+            AND DATE(b.created_at) BETWEEN ? AND ?
+            GROUP BY bi.item_code, bi.item_name, t.category
+            ORDER BY total_pendapatan DESC
+            LIMIT 10
+        `, [startDate, endDateStr]);
+
+        // 5. Get obat with profit analysis
+        const [obatAnalysis] = await pool.query(`
+            SELECT
+                bi.item_name,
+                bi.item_code,
+                SUM(bi.quantity) as total_qty,
+                AVG(bi.price) as harga_jual,
+                COALESCE(o.default_cost_price, 0) as hpp_per_unit,
+                SUM(bi.total) as pendapatan_kotor,
+                COALESCE(o.default_cost_price, 0) * SUM(bi.quantity) as total_hpp,
+                SUM(bi.total) - (COALESCE(o.default_cost_price, 0) * SUM(bi.quantity)) as keuntungan_kotor,
+                CASE
+                    WHEN SUM(bi.total) > 0
+                    THEN ROUND(((SUM(bi.total) - (COALESCE(o.default_cost_price, 0) * SUM(bi.quantity))) / SUM(bi.total)) * 100, 2)
+                    ELSE 0
+                END as margin_persen
+            FROM sunday_clinic_billing_items bi
+            JOIN sunday_clinic_billings b ON bi.billing_id = b.id
+            LEFT JOIN obat o ON bi.item_code = o.code
+            WHERE bi.item_type = 'obat'
+            AND b.status IN ('paid', 'confirmed')
+            AND DATE(b.created_at) BETWEEN ? AND ?
+            GROUP BY bi.item_code, bi.item_name, o.default_cost_price
+            ORDER BY pendapatan_kotor DESC
+        `, [startDate, endDateStr]);
+
+        // Calculate financial metrics
+        const summary = summaryRows[0];
+        const totalHPP = parseFloat(hppRows[0].total_hpp) || 0;
+        const pendapatanKotor = parseFloat(summary.pendapatan_kotor) || 0;
+        const pendapatanTindakan = parseFloat(summary.pendapatan_tindakan) || 0;
+        const pendapatanObat = parseFloat(summary.pendapatan_obat) || 0;
+        const labaKotor = pendapatanKotor - totalHPP;
+        const totalHariKerja = parseInt(summary.total_hari_kerja) || 0;
+        const totalKunjungan = parseInt(summary.total_kunjungan) || 0;
+
+        // Staff cost calculation: Rp 100,000 per attendance, minimum Rp 150,000/month
+        const numStaff = parseInt(staffCount) || 3;
+        const attendancePerStaff = totalHariKerja;
+        const gajiPerStaff = Math.max(150000, attendancePerStaff * 100000);
+        const totalGajiStaff = numStaff * gajiPerStaff;
+
+        // Net profit calculation
+        const labaBersih = labaKotor - totalGajiStaff;
+        const marginLabaBersih = pendapatanKotor > 0 ? (labaBersih / pendapatanKotor * 100) : 0;
+        const labaPerHari = totalHariKerja > 0 ? labaBersih / totalHariKerja : 0;
+        const labaPerKunjungan = totalKunjungan > 0 ? labaBersih / totalKunjungan : 0;
+
+        res.json(success({
+            period: {
+                month: targetMonth,
+                startDate,
+                endDate: endDateStr
+            },
+            summary: {
+                totalKunjungan,
+                totalHariKerja,
+                pendapatanKotor,
+                pendapatanTindakan,
+                pendapatanObat,
+                totalHPP,
+                labaKotor,
+                marginLabaKotor: pendapatanKotor > 0 ? (labaKotor / pendapatanKotor * 100) : 0
+            },
+            staffCost: {
+                jumlahStaff: numStaff,
+                kehadiranPerStaff: attendancePerStaff,
+                gajiPerStaff,
+                totalGaji: totalGajiStaff
+            },
+            netProfit: {
+                labaBersih,
+                marginLabaBersih,
+                labaPerHari,
+                labaPerKunjungan
+            },
+            breakdown: {
+                tindakanByCategory,
+                topTindakan,
+                obatAnalysis
+            }
+        }, 'Analisis keuangan klinik privat berhasil dimuat'));
+
+    } catch (err) {
+        logger.error('Private clinic analytics error:', err);
+        res.status(500).json(error('Gagal memuat analisis keuangan klinik privat'));
     }
 });
 

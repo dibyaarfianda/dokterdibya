@@ -3,7 +3,7 @@
 const API_BASE = (() => {
     // Check if running locally
     if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
-        return 'http://localhost:3001';
+        return 'http://localhost:3000';
     }
     // Default to the current origin so API calls stay same-host in production
     return window.location.origin.replace(/\/$/, '');
@@ -55,13 +55,13 @@ export async function fetchMe() {
 
 export async function signIn(email, password, remember = false) {
     try {
-        console.log('[AUTH] Attempting login for:', email);
-        const res = await fetch(`${API_BASE}/api/auth/login`, {
+        console.log('[AUTH] Attempting patient login for:', email);
+        const res = await fetch(`${API_BASE}/api/auth/patient-login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
         });
-        console.log('[AUTH] Login response status:', res.status);
+        console.log('[AUTH] Patient login response status:', res.status);
         
         if (!res.ok) {
             const err = await res.json().catch(()=>({message:'Login failed'}));

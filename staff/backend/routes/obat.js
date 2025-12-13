@@ -5,13 +5,13 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db'); // Your database connection
 const cache = require('../utils/cache');
-const { verifyToken, requirePermission } = require('../middleware/auth');
+const { verifyToken, requireMenuAccess, requireSuperadmin, requirePermission } = require('../middleware/auth');
 const { validateObat, validateObatUpdate } = require('../middleware/validation');
 
 // ==================== OBAT ENDPOINTS ====================
 
-// GET ALL OBAT (Protected - requires authentication and permission)
-router.get('/api/obat', verifyToken, requirePermission('medications.view'), async (req, res) => {
+// GET ALL OBAT
+router.get('/api/obat', verifyToken, requirePermission('obat_alkes.view'), async (req, res) => {
     try {
         const { category, active } = req.query;
         
@@ -24,26 +24,31 @@ router.get('/api/obat', verifyToken, requirePermission('medications.view'), asyn
             return res.json(cached);
         }
         
-        let query = 'SELECT * FROM obat WHERE 1=1';
+        let query = `
+            SELECT o.*, s.id as supplier_id, s.code as supplier_code, s.name as supplier_name
+            FROM obat o
+            LEFT JOIN suppliers s ON o.default_supplier_id = s.id
+            WHERE 1=1
+        `;
         const params = [];
-        
+
         if (category) {
-            query += ' AND category = ?';
+            query += ' AND o.category = ?';
             params.push(category);
         }
-        
+
         // Default to showing only active items unless explicitly requested
         if (active === 'false') {
-            query += ' AND is_active = 0';
+            query += ' AND o.is_active = 0';
         } else if (active === 'all') {
             // Show all items (active and inactive)
         } else {
             // Default: show only active items
-            query += ' AND is_active = 1';
+            query += ' AND o.is_active = 1';
         }
-        
-        query += ' ORDER BY category, name';
-        
+
+        query += ' ORDER BY o.category, o.name';
+
         const [rows] = await db.query(query, params);
         
         const response = {
@@ -67,7 +72,7 @@ router.get('/api/obat', verifyToken, requirePermission('medications.view'), asyn
 });
 
 // GET OBAT BY ID (Protected)
-router.get('/api/obat/:id', verifyToken, requirePermission('medications.view'), async (req, res) => {
+router.get('/api/obat/:id', verifyToken, requirePermission('obat_alkes.view'), async (req, res) => {
     try {
         const [rows] = await db.query('SELECT * FROM obat WHERE id = ?', [req.params.id]);
         if (rows.length === 0) {
@@ -84,72 +89,72 @@ router.get('/api/obat/:id', verifyToken, requirePermission('medications.view'), 
 // Note: Add authentication middleware here if needed
 
 // ADD NEW OBAT
-router.post('/api/obat', verifyToken, requirePermission('settings.medications_manage'), validateObat, async (req, res) => {
+router.post('/api/obat', verifyToken, requirePermission('obat_alkes.create'), validateObat, async (req, res) => {
     try {
-        const { code, name, category, price, stock, unit, min_stock } = req.body;
-        
+        const { code, name, category, price, stock, unit, min_stock, default_supplier_id } = req.body;
+
         if (!code || !name || !category || price === undefined) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Missing required fields: code, name, category, price' 
+            return res.status(400).json({
+                success: false,
+                message: 'Missing required fields: code, name, category, price'
             });
         }
-        
+
         const [result] = await db.query(
-            'INSERT INTO obat (code, name, category, price, stock, unit, min_stock) VALUES (?, ?, ?, ?, ?, ?, ?)',
-            [code, name, category, price, stock || 0, unit || 'tablet', min_stock || 10]
+            'INSERT INTO obat (code, name, category, price, stock, unit, min_stock, default_supplier_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [code, name, category, price, stock || 0, unit || 'tablet', min_stock || 10, default_supplier_id || null]
         );
-        
+
         // Invalidate obat cache
         cache.delPattern('obat:');
-        
-        res.status(201).json({ 
-            success: true, 
-            message: 'Obat added successfully', 
-            id: result.insertId 
+
+        res.status(201).json({
+            success: true,
+            message: 'Obat added successfully',
+            id: result.insertId
         });
     } catch (error) {
         console.error('Error adding obat:', error);
-        
+
         if (error.code === 'ER_DUP_ENTRY') {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Kode obat sudah digunakan' 
+            return res.status(400).json({
+                success: false,
+                message: 'Kode obat sudah digunakan'
             });
         }
-        
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to add obat', 
-            error: error.message 
+
+        res.status(500).json({
+            success: false,
+            message: 'Failed to add obat',
+            error: error.message
         });
     }
 });
 
 // UPDATE OBAT
-router.put('/api/obat/:id', verifyToken, requirePermission('settings.medications_manage'), validateObatUpdate, async (req, res) => {
+router.put('/api/obat/:id', verifyToken, requirePermission('obat_alkes.edit'), validateObatUpdate, async (req, res) => {
     try {
-        const { name, category, price, stock, unit, min_stock, is_active } = req.body;
-        
+        const { name, category, price, stock, unit, min_stock, is_active, default_supplier_id, default_cost_price, discount } = req.body;
+
         const [result] = await db.query(
-            'UPDATE obat SET name = ?, category = ?, price = ?, stock = ?, unit = ?, min_stock = ?, is_active = ? WHERE id = ?',
-            [name, category, price, stock, unit, min_stock, is_active, req.params.id]
+            `UPDATE obat SET name = ?, category = ?, price = ?, stock = ?, unit = ?, min_stock = ?, is_active = ?, default_supplier_id = ?, default_cost_price = ?, discount = ? WHERE id = ?`,
+            [name, category, price, stock, unit, min_stock, is_active, default_supplier_id || null, default_cost_price || 0, discount || null, req.params.id]
         );
-        
+
         if (result.affectedRows === 0) {
             return res.status(404).json({ success: false, message: 'Obat not found' });
         }
-        
+
         // Invalidate obat cache
         cache.delPattern('obat:');
-        
+
         res.json({ success: true, message: 'Obat updated successfully' });
     } catch (error) {
         console.error('Error updating obat:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to update obat', 
-            error: error.message 
+        res.status(500).json({
+            success: false,
+            message: 'Failed to update obat',
+            error: error.message
         });
     }
 });
@@ -218,8 +223,8 @@ router.patch('/api/obat/:id/stock', async (req, res) => {
     }
 });
 
-// DELETE OBAT
-router.delete('/api/obat/:id', verifyToken, requirePermission('settings.medications_manage'), async (req, res) => {
+// DELETE OBAT (Superadmin/Dokter only)
+router.delete('/api/obat/:id', verifyToken, requirePermission('obat_alkes.delete'), async (req, res) => {
     try {
         // Soft delete - set is_active to 0 instead of actually deleting
         const [result] = await db.query('UPDATE obat SET is_active = 0 WHERE id = ? AND is_active = 1', [req.params.id]);
@@ -248,7 +253,7 @@ router.get('/public/obat/low-stock', async (req, res) => {
         const [rows] = await db.query(
             'SELECT * FROM obat WHERE stock <= min_stock AND is_active = 1 ORDER BY stock ASC'
         );
-        
+
         res.json({
             success: true,
             data: rows,
@@ -259,6 +264,36 @@ router.get('/public/obat/low-stock', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to fetch low stock items',
+            error: error.message
+        });
+    }
+});
+
+// ==================== DOWNLOAD PRICE LIST PDF ====================
+const pdfGenerator = require('../utils/pdf-generator');
+
+router.get('/api/obat/download/price-list', verifyToken, requirePermission('obat_alkes.view'), async (req, res) => {
+    try {
+        // Fetch all active obat
+        const [rows] = await db.query(
+            'SELECT * FROM obat WHERE is_active = 1 ORDER BY category, name'
+        );
+
+        // Generate PDF
+        const pdfBuffer = await pdfGenerator.generateObatPriceList(rows);
+
+        // Send PDF
+        const filename = `Daftar_Harga_Obat_${new Date().toISOString().split('T')[0]}.pdf`;
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.setHeader('Content-Length', pdfBuffer.length);
+        res.send(pdfBuffer);
+
+    } catch (error) {
+        console.error('Error generating obat price list PDF:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to generate PDF',
             error: error.message
         });
     }

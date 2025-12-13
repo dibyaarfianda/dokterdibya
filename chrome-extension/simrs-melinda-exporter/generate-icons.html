@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Extension Icons</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .icon-container { display: flex; gap: 20px; margin: 20px 0; }
+        .icon-box { text-align: center; }
+        canvas { border: 1px solid #ddd; }
+        button { padding: 10px 20px; margin: 10px 5px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Generate Extension Icons</h1>
+    <p>Click "Generate" then right-click each icon to save as PNG.</p>
+
+    <button onclick="generateIcons()">Generate Icons</button>
+
+    <div class="icon-container">
+        <div class="icon-box">
+            <canvas id="icon16" width="16" height="16"></canvas>
+            <p>icon16.png</p>
+        </div>
+        <div class="icon-box">
+            <canvas id="icon48" width="48" height="48"></canvas>
+            <p>icon48.png</p>
+        </div>
+        <div class="icon-box">
+            <canvas id="icon128" width="128" height="128"></canvas>
+            <p>icon128.png</p>
+        </div>
+    </div>
+
+    <div id="download-links"></div>
+
+    <script>
+        function generateIcon(canvas) {
+            const size = canvas.width;
+            const ctx = canvas.getContext('2d');
+
+            // Background gradient
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#0d47a1');
+            gradient.addColorStop(1, '#1565c0');
+
+            // Rounded rect
+            const r = size * 0.15;
+            ctx.beginPath();
+            ctx.roundRect(0, 0, size, size, r);
+            ctx.fillStyle = gradient;
+            ctx.fill();
+
+            // Arrow icon (upload)
+            ctx.strokeStyle = 'white';
+            ctx.lineWidth = Math.max(1, size * 0.06);
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            const cx = size / 2;
+            const cy = size / 2;
+            const arrowSize = size * 0.25;
+
+            // Vertical line
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - arrowSize);
+            ctx.lineTo(cx, cy + arrowSize * 0.5);
+            ctx.stroke();
+
+            // Arrow head
+            ctx.beginPath();
+            ctx.moveTo(cx - arrowSize * 0.5, cy - arrowSize * 0.3);
+            ctx.lineTo(cx, cy - arrowSize);
+            ctx.lineTo(cx + arrowSize * 0.5, cy - arrowSize * 0.3);
+            ctx.stroke();
+
+            // Box bottom
+            ctx.beginPath();
+            ctx.moveTo(cx - arrowSize * 0.8, cy + arrowSize * 0.3);
+            ctx.lineTo(cx - arrowSize * 0.8, cy + arrowSize * 0.8);
+            ctx.lineTo(cx + arrowSize * 0.8, cy + arrowSize * 0.8);
+            ctx.lineTo(cx + arrowSize * 0.8, cy + arrowSize * 0.3);
+            ctx.stroke();
+
+            return canvas;
+        }
+
+        function generateIcons() {
+            const sizes = [16, 48, 128];
+            const linksContainer = document.getElementById('download-links');
+            linksContainer.innerHTML = '<h3>Download Links:</h3>';
+
+            sizes.forEach(size => {
+                const canvas = document.getElementById('icon' + size);
+                generateIcon(canvas);
+
+                // Create download link
+                const link = document.createElement('a');
+                link.download = `icon${size}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.textContent = `Download icon${size}.png`;
+                link.style.display = 'block';
+                link.style.margin = '5px 0';
+                linksContainer.appendChild(link);
+            });
+        }
+
+        // Auto-generate on load
+        generateIcons();
+    </script>
+</body>
+</html>

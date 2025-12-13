@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kelola Obat - Sistem Klinik</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .content-wrapper {
+            min-height: calc(100vh - 110px);
+        }
+        /* Konsistenkan font size dan weight table header */
+        table thead th {
+            font-size: 0.75rem;
+            font-weight: 60;
+            padding: 8px 12px;
+        }
+    </style>
+    <!-- Mobile Responsive CSS -->
+    <link rel="stylesheet" href="css/mobile-responsive.css">
+</head>
+<body class="hold-transition sidebar-mini">
+<div class="wrapper">
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="index-adminlte.html" class="nav-link">Dashboard</a>
+            </li>
+        </ul>
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <button class="btn btn-sm btn-outline-danger" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </li>
+        </ul>
+    </nav>
+
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+        <a href="index-adminlte.html" class="brand-link">
+            <span class="brand-text font-weight-light">Sistem Klinik</span>
+        </a>
+        <div class="sidebar">
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+                    <li class="nav-item">
+                        <a href="index-adminlte.html" class="nav-link">
+                            <i class="nav-icon fas fa-tachometer-alt"></i>
+                            <p>Dashboard</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="kelola-pasien.html" class="nav-link">
+                            <i class="nav-icon fas fa-users"></i>
+                            <p>Kelola Pasien</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="kelola-obat.html" class="nav-link active">
+                            <i class="nav-icon fas fa-pills"></i>
+                            <p>Kelola Obat</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="kelola-tindakan.html" class="nav-link">
+                            <i class="nav-icon fas fa-cogs"></i>
+                            <p>Kelola Tindakan</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="finance-analysis.html" class="nav-link">
+                            <i class="nav-icon fas fa-chart-line"></i>
+                            <p>Finance Analysis</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="role-management.html" class="nav-link">
+                            <i class="nav-icon fas fa-user-shield"></i>
+                            <p>Role Management</p>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </aside>
+
+    <div class="content-wrapper">
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1><i class="fas fa-pills mr-2"></i>Kelola Obat, Vial & Alkes</h1>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="content">
+            <div class="container-fluid">
+                <div class="alert alert-info">
+                    <h5><i class="icon fas fa-info"></i> Informasi</h5>
+                    Halaman ini akan menampilkan daftar obat, vial, dan alat kesehatan.
+                    <br>Fitur lengkap akan segera tersedia.
+                </div>
+                
+                <div class="card card-success">
+                    <div class="card-header">
+                        <h3 class="card-title"><i class="fas fa-pills mr-2"></i>Kelola Obat, Vial & Alkes</h3>
+                    </div>
+                    <div class="card-body">
+                        <!-- Form Tambah/Edit Obat -->
+                        <form id="kelola-obat-form" class="mb-4">
+                            <div class="row">
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>Nama Obat/Item</label>
+                                        <input type="text" id="kelola-obat-name" class="form-control" placeholder="Contoh: Paracetamol 500mg" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label>Kategori</label>
+                                        <select id="kelola-obat-category" class="form-control" required>
+                                            <option value="">Pilih Kategori</option>
+                                            <option value="Obat-obatan">Obat-obatan</option>
+                                            <option value="Ampul & Vial">Ampul & Vial</option>
+                                            <option value="Alkes">Alkes</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label>Harga (Rp)</label>
+                                        <input type="number" id="kelola-obat-price" class="form-control" placeholder="0" min="0" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-2">
+                                    <div class="form-group">
+                                        <label>Stok Awal</label>
+                                        <input type="number" id="kelola-obat-stock" class="form-control" placeholder="0" min="0" value="0">
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="form-group">
+                                        <label>&nbsp;</label>
+                                        <div class="btn-group btn-block">
+                                            <button type="submit" class="btn btn-success" style="width: 70%;">
+                                                <i class="fas fa-plus mr-1"></i><span id="kelola-obat-btn-text">Tambah</span>
+                                            </button>
+                                            <button type="button" class="btn btn-secondary" style="width: 30%;" onclick="resetObatForm()" id="kelola-obat-cancel-btn" style="display:none;">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+
+                        <!-- Search & Filter -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <input type="text" id="kelola-obat-search" class="form-control" placeholder="🔍 Cari obat...">
+                            </div>
+                            <div class="col-md-4">
+                                <select id="kelola-obat-filter-category" class="form-control">
+                                    <option value="">Semua Kategori</option>
+                                    <option value="Obat-obatan">Obat-obatan</option>
+                                    <option value="Ampul & Vial">Ampul & Vial</option>
+                                    <option value="Alkes">Alkes</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2 text-right">
+                                <span class="badge badge-success badge-lg p-2">
+                                    Total: <span id="kelola-obat-total-count">0</span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Table List Obat -->
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-striped table-hover table-sm">
+                                <thead class="bg-light">
+                                    <tr>
+                                        <th width="40">#</th>
+                                        <th>Nama Obat/Item</th>
+                                        <th width="120">Kategori</th>
+                                        <th width="100">Harga</th>
+                                        <th width="80">Stok</th>
+                                        <th width="150" class="text-center">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="kelola-obat-list-body">
+                                    <tr>
+                                        <td colspan="6" class="text-center text-muted py-4">
+                                            <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                                            <p class="mb-0">Memuat data...</p>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer class="main-footer">
+        <strong>Copyright &copy; 2024 Sistem Klinik</strong>
+        <div class="float-right d-none d-sm-inline-block">
+            <b>Version</b> 1.0.0
+        </div>
+    </footer>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+
+<script>
+    // Auth check dilakukan di backend via API middleware
+    const token = localStorage.getItem('vps_auth_token');
+    
+    let allObat = [];
+    let isEditMode = false;
+    let editingId = null;
+    
+    // Load obat data
+    async function loadObat() {
+        const tbody = document.getElementById('kelola-obat-list-body');
+        const totalCount = document.getElementById('kelola-obat-total-count');
+        
+        try {
+            const response = await fetch('/api/obat', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Cache-Control': 'no-cache'
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('Gagal memuat data obat');
+            }
+            
+            const data = await response.json();
+            allObat = data.data || [];
+            
+            if (totalCount) {
+                totalCount.textContent = allObat.length;
+            }
+            
+            renderObatList(allObat);
+            
+        } catch (error) {
+            tbody.innerHTML = `<tr><td colspan="6" class="text-center text-danger">Error: ${error.message}</td></tr>`;
+        }
+    }
+    
+    // Render obat list
+    function renderObatList(items) {
+        const tbody = document.getElementById('kelola-obat-list-body');
+        
+        if (!items || items.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">Tidak ada data obat</td></tr>';
+            return;
+        }
+        
+        tbody.innerHTML = items.map((item, index) => `
+            <tr>
+                <td>${index + 1}</td>
+                <td><strong>${item.name || '-'}</strong></td>
+                <td><span class="badge badge-info">${item.category || '-'}</span></td>
+                <td class="text-right">Rp ${(item.price || 0).toLocaleString('id-ID')}</td>
+                <td class="text-center">
+                    <span class="badge ${item.stock < 10 ? 'badge-danger' : 'badge-success'}">
+                        ${item.stock || 0}
+                    </span>
+                </td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-info" onclick="editObat(${item.id})" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteObat(${item.id}, '${(item.name || '').replace(/'/g, "\\'")}', event)" title="Hapus">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                    <button class="btn btn-sm btn-primary" onclick="adjustStock(${item.id}, '${(item.name || '').replace(/'/g, "\\'")}', ${item.stock || 0})" title="Sesuaikan Stok">
+                        <i class="fas fa-boxes"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+    
+    // Add/Edit obat form submit
+    document.getElementById('kelola-obat-form')?.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const name = document.getElementById('kelola-obat-name').value.trim();
+        const category = document.getElementById('kelola-obat-category').value.trim();
+        const price = parseFloat(document.getElementById('kelola-obat-price').value || 0);
+        const stock = parseInt(document.getElementById('kelola-obat-stock').value || 0);
+        
+        if (!name || !category || price < 0) {
+            alert('Mohon lengkapi semua field dengan benar');
+            return;
+        }
+        
+        try {
+            const url = isEditMode ? `/api/obat/${editingId}` : '/api/obat';
+            const method = isEditMode ? 'PUT' : 'POST';
+            
+            const response = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ 
+                    name, 
+                    category, 
+                    price, 
+                    stock, 
+                    unit: 'pcs',
+                    min_stock: 10,
+                    is_active: true 
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error('Gagal menyimpan obat');
+            }
+            
+            alert(isEditMode ? 'Obat berhasil diupdate' : 'Obat berhasil ditambahkan');
+            resetForm();
+            loadObat();
+            
+        } catch (error) {
+            alert('Error: ' + error.message);
+        }
+    });
+    
+    // Reset form
+    function resetForm() {
+        document.getElementById('kelola-obat-form').reset();
+        isEditMode = false;
+        editingId = null;
+        document.getElementById('kelola-obat-btn-text').innerHTML = 'Tambah';
+        document.querySelector('#kelola-obat-form button[type="submit"] i').className = 'fas fa-plus mr-1';
+        document.getElementById('kelola-obat-cancel-btn').style.display = 'none';
+    }
+    
+    // Reset form (window function for cancel button)
+    window.resetObatForm = resetForm;
+    
+    // Edit obat
+    window.editObat = async function(id) {
+        const item = allObat.find(o => o.id == id);
+        if (!item) return;
+        
+        document.getElementById('kelola-obat-name').value = item.name || '';
+        document.getElementById('kelola-obat-category').value = item.category || '';
+        document.getElementById('kelola-obat-price').value = item.price || 0;
+        document.getElementById('kelola-obat-stock').value = item.stock || 0;
+        
+        isEditMode = true;
+        editingId = id;
+        document.getElementById('kelola-obat-btn-text').innerHTML = 'Update';
+        document.querySelector('#kelola-obat-form button[type="submit"] i').className = 'fas fa-save mr-1';
+        document.getElementById('kelola-obat-cancel-btn').style.display = 'inline-block';
+        
+        // Scroll to form
+        document.getElementById('kelola-obat-form').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    
+    // Delete obat
+    window.deleteObat = async function(id, nama, event) {
+        if (event) event.preventDefault();
+        
+        if (!confirm(`Apakah Anda yakin ingin menghapus obat "${nama}"?`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/obat/${id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            if (!response.ok) {
+                throw new Error('Gagal menghapus obat');
+            }
+            
+            alert('Obat berhasil dihapus');
+            loadObat();
+            
+        } catch (error) {
+            alert('Error: ' + error.message);
+        }
+    };
+    
+    // Adjust stock
+    window.adjustStock = async function(id, nama, currentStock) {
+        const adjustment = prompt(`Sesuaikan stok untuk "${nama}"\nStok saat ini: ${currentStock}\n\nMasukkan jumlah perubahan:\n• Gunakan angka positif untuk menambah (contoh: 10)\n• Gunakan angka negatif untuk mengurangi (contoh: -5)`);
+        
+        if (adjustment === null) return;
+        
+        const change = parseInt(adjustment);
+        if (isNaN(change)) {
+            alert('Input tidak valid. Masukkan angka bulat.');
+            return;
+        }
+        
+        if (change === 0) {
+            alert('Tidak ada perubahan.');
+            return;
+        }
+        
+        const newStock = currentStock + change;
+        if (newStock < 0) {
+            alert(`Stok tidak boleh negatif!\nStok saat ini: ${currentStock}\nPerubahan: ${change}\nHasil: ${newStock}`);
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/obat/${id}/stock`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ adjustment: change })
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Gagal menyesuaikan stok');
+            }
+            
+            const result = await response.json();
+            
+            alert(`✅ Stok berhasil disesuaikan!\n\nObat: ${result.obatName || nama}\nStok lama: ${result.oldStock}\nPerubahan: ${result.change > 0 ? '+' : ''}${result.change}\nStok baru: ${result.newStock}`);
+            loadObat();
+            
+        } catch (error) {
+            alert('❌ Error: ' + error.message);
+        }
+    };
+    
+    // Search obat
+    document.getElementById('kelola-obat-search')?.addEventListener('input', function(e) {
+        filterObat();
+    });
+    
+    // Filter by category
+    document.getElementById('kelola-obat-filter-category')?.addEventListener('change', function(e) {
+        filterObat();
+    });
+    
+    // Filter obat
+    function filterObat() {
+        const searchTerm = document.getElementById('kelola-obat-search')?.value.toLowerCase() || '';
+        const categoryFilter = document.getElementById('kelola-obat-filter-category')?.value || '';
+        
+        const filtered = allObat.filter(item => {
+            const name = (item.name || '').toLowerCase();
+            const category = item.category || '';
+            
+            const matchSearch = name.includes(searchTerm);
+            const matchCategory = !categoryFilter || category === categoryFilter;
+            
+            return matchSearch && matchCategory;
+        });
+        
+        renderObatList(filtered);
+    }
+    
+    // Load on page ready
+    document.addEventListener('DOMContentLoaded', function() {
+        loadObat();
+    });
+    
+    // Logout function
+    function logout() {
+        if (confirm('Apakah Anda yakin ingin logout?')) {
+            localStorage.clear();
+            window.location.href = '../login.html';
+        }
+    }
+</script>
+
+<!-- Mobile Helper Script -->
+<script src="scripts/mobile-helper.js"></script>
+    <!-- Global Chat Loader -->
+    <script src="/staff/public/scripts/global-chat-loader.js"></script>
+</body>
+</html>

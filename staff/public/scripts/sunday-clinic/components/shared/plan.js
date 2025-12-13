@@ -15,6 +15,14 @@ export default {
      * Render the Plan form
      */
     async render(state) {
+        const record = state.recordData?.record || {};
+        const category = record?.mr_category || 'obstetri';
+
+        // Use obstetri format for all categories (as per user request)
+        // Planning is the same across obstetri, gyn_repro, gyn_special
+        return this.renderObstetriFormat(state);
+
+        /* Disabled: Use new detailed format for other categories
         const plan = state.recordData?.plan || {};
         const medications = plan.medications || [];
 
@@ -149,6 +157,98 @@ export default {
                     if (item) item.remove();
                 };
             </script>
+        `;
+    */
+    },
+
+    /**
+     * Render old Obstetri format (simple)
+     */
+    async renderObstetriFormat(state) {
+        // Get saved data from medicalRecords if available
+        let savedData = {};
+        let metaHtml = '';
+        try {
+            const { getMedicalRecordContext, renderRecordMeta } = await import('../../utils/helpers.js');
+            const context = getMedicalRecordContext(state, 'planning');
+            if (context) {
+                savedData = context.data || {};
+                metaHtml = renderRecordMeta(context, 'planning');
+            }
+        } catch (error) {
+            console.error('[Plan] Failed to load saved data:', error);
+        }
+
+        // Merge with state.recordData.planning (fallback to savedData from medicalRecords)
+        // Note: stateManager stores planning data under 'planning' key, not 'plan'
+        const statePlan = state.recordData?.planning || state.recordData?.plan || {};
+        console.log('[Plan] statePlan from stateManager:', statePlan);
+        console.log('[Plan] savedData from medicalRecords:', savedData);
+        const planData = {
+            tindakan: savedData.tindakan || statePlan.tindakan || '',
+            terapi: savedData.terapi || statePlan.terapi || '',
+            rencana: savedData.rencana || statePlan.rencana || ''
+        };
+        console.log('[Plan] Final planData:', planData);
+
+        const escapeHtml = (str) => {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        };
+
+        return `
+            <div class="sc-section">
+                <div class="sc-section-header">
+                    <h3>Planning</h3>
+                </div>
+                ${metaHtml}
+                <div class="sc-card">
+                    <div class="mb-3">
+                        <label class="font-weight-bold">Tindakan</label>
+                        <textarea class="form-control" id="planning-tindakan" rows="4"
+                                  placeholder="Klik tombol 'Input Tindakan' untuk memilih dari daftar...">${escapeHtml(planData.tindakan)}</textarea>
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary mr-2" id="btn-input-tindakan">
+                                <i class="fas fa-plus-circle mr-1"></i>Input Tindakan
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="btn-reset-tindakan">
+                                <i class="fas fa-trash mr-1"></i>Hapus Semua
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="font-weight-bold">Terapi</label>
+                        <textarea class="form-control" id="planning-terapi" rows="4"
+                                  placeholder="Klik tombol 'Input Terapi' untuk memilih obat...">${escapeHtml(planData.terapi)}</textarea>
+                        <div class="mt-2">
+                            <button type="button" class="btn btn-sm btn-outline-primary mr-2" id="btn-input-terapi">
+                                <i class="fas fa-plus-circle mr-1"></i>Input Terapi
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline-primary" id="btn-reset-terapi">
+                                <i class="fas fa-trash mr-1"></i>Hapus Semua
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="font-weight-bold">Rencana</label>
+                        <textarea class="form-control" id="planning-rencana" rows="4"
+                                  placeholder="Masukkan rencana tindak lanjut...">${escapeHtml(planData.rencana)}</textarea>
+                    </div>
+
+                    <div class="text-right mt-3">
+                        <button type="button" class="btn btn-primary" id="save-plan">
+                            <i class="fas fa-save mr-2"></i>Simpan Planning
+                        </button>
+                    </div>
+                </div>
+            </div>
         `;
     },
 

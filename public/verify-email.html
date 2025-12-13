@@ -15,11 +15,11 @@
         }
 
         :root {
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
+            --primary: #0066FF;
+            --primary-dark: #0052CC;
             --success: #10b981;
             --danger: #ef4444;
-            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --bg-gradient: linear-gradient(135deg, #1a1a1a 0%, #303030 100%);
         }
 
         body {
@@ -62,10 +62,13 @@
         }
 
         .card {
-            background: white;
-            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
             padding: 40px 35px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             animation: slideUp 0.6s ease-out;
             text-align: center;
         }
@@ -88,22 +91,16 @@
         .email-icon img {
             height: 100px;
             width: auto;
-            animation: bounce 2s ease-in-out infinite;
-        }
-
-        @keyframes bounce {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
         }
 
         h1 {
             font-size: 26px;
-            color: #1f2937;
+            color: #ffffff;
             margin-bottom: 10px;
         }
 
         .email-sent {
-            color: #6b7280;
+            color: rgba(255, 255, 255, 0.7);
             font-size: 15px;
             margin-bottom: 30px;
         }
@@ -131,21 +128,24 @@
             text-align: center;
             font-size: 24px;
             font-weight: 600;
-            border: 2px solid #e5e7eb;
+            border: 2px solid rgba(255, 255, 255, 0.2);
             border-radius: 12px;
             font-family: 'Poppins', sans-serif;
             transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.05);
+            color: #ffffff;
         }
 
         .otp-input:focus {
             outline: none;
             border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+            box-shadow: 0 0 0 4px rgba(0, 102, 255, 0.2);
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .otp-input.filled {
             border-color: var(--success);
-            background: #f0fdf4;
+            background: rgba(16, 185, 129, 0.15);
         }
 
         .otp-input.error {
@@ -173,7 +173,7 @@
         .btn-verify {
             width: 100%;
             padding: 16px;
-            background: var(--primary);
+            background: linear-gradient(135deg, #0066FF 0%, #0052CC 100%);
             color: white;
             border: none;
             border-radius: 12px;
@@ -188,7 +188,7 @@
         .btn-verify:hover {
             background: var(--primary-dark);
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+            box-shadow: 0 8px 20px rgba(0, 102, 255, 0.4);
         }
 
         .btn-verify:disabled {
@@ -200,11 +200,11 @@
         .resend-section {
             margin-top: 25px;
             padding-top: 25px;
-            border-top: 1px solid #e5e7eb;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .resend-text {
-            color: #6b7280;
+            color: rgba(255, 255, 255, 0.7);
             font-size: 14px;
             margin-bottom: 10px;
         }
@@ -228,29 +228,30 @@
         }
 
         .btn-resend:disabled {
-            color: #d1d5db;
+            color: rgba(255, 255, 255, 0.3);
             cursor: not-allowed;
             text-decoration: none;
         }
 
         .instructions {
-            background: #f9fafb;
+            background: rgba(255, 255, 255, 0.05);
             padding: 20px;
             border-radius: 12px;
             margin-top: 25px;
             text-align: left;
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .instructions h3 {
             font-size: 14px;
-            color: #374151;
+            color: #ffffff;
             margin-bottom: 12px;
         }
 
         .instructions ul {
             margin: 0;
             padding-left: 20px;
-            color: #6b7280;
+            color: rgba(255, 255, 255, 0.7);
             font-size: 13px;
         }
 
@@ -281,7 +282,7 @@
     <div class="container">
         <div class="card">
             <div class="email-icon">
-                <img src="images/DIBYA.svg" alt="Dibya Klinik">
+                <img src="images/logo-white.svg" alt="Dibya Klinik">
             </div>
             <h1>Cek Email Anda!</h1>
             <p class="email-sent">
@@ -356,6 +357,73 @@
         const verifyBtn = document.getElementById('verifyBtn');
         const otpError = document.getElementById('otpError');
 
+        // Debounce function for auto-save
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        // Auto-save OTP draft to localStorage
+        const saveDraft = debounce(() => {
+            const otpCode = Array.from(otpInputs).map(input => input.value).join('');
+            if (otpCode) {
+                const formData = {
+                    otp: otpCode,
+                    timestamp: new Date().toISOString()
+                };
+                localStorage.setItem('verify_otp_draft', JSON.stringify(formData));
+                showSaveIndicator();
+            }
+        }, 300);
+
+        // Restore draft from localStorage
+        function restoreDraft() {
+            const draft = localStorage.getItem('verify_otp_draft');
+            if (draft) {
+                try {
+                    const data = JSON.parse(draft);
+                    const otpDigits = data.otp.split('');
+                    otpDigits.forEach((digit, i) => {
+                        if (otpInputs[i]) {
+                            otpInputs[i].value = digit;
+                            otpInputs[i].classList.add('filled');
+                        }
+                    });
+                    checkOTPComplete();
+                    showRestoredIndicator();
+                } catch (e) {
+                    console.error('Error restoring draft:', e);
+                }
+            }
+        }
+
+        // Show save indicator
+        function showSaveIndicator() {
+            const existing = document.getElementById('save-indicator');
+            if (existing) {
+                existing.textContent = 'Draft tersimpan ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                return;
+            }
+
+            const indicator = document.createElement('div');
+            indicator.id = 'save-indicator';
+            indicator.style.cssText = 'background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.75rem; margin-bottom: 1rem; text-align: center; border: 1px solid rgba(16, 185, 129, 0.3);';
+            indicator.textContent = 'Draft tersimpan ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            document.querySelector('.otp-container').insertBefore(indicator, document.querySelector('.otp-inputs'));
+        }
+
+        // Show restored indicator
+        function showRestoredIndicator() {
+            const indicator = document.createElement('div');
+            indicator.style.cssText = 'background: rgba(0, 102, 255, 0.2); color: #0066FF; padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.75rem; margin-bottom: 1rem; text-align: center; border: 1px solid rgba(0, 102, 255, 0.3);';
+            indicator.textContent = 'Draft dipulihkan dari sesi sebelumnya';
+            document.querySelector('.otp-container').insertBefore(indicator, document.querySelector('.otp-inputs'));
+            setTimeout(() => indicator.remove(), 5000);
+        }
+
         otpInputs.forEach((input, index) => {
             input.addEventListener('input', (e) => {
                 const value = e.target.value;
@@ -383,6 +451,9 @@
                 } else {
                     input.classList.remove('filled');
                 }
+
+                // Auto-save draft
+                saveDraft();
             });
 
             // Handle backspace
@@ -443,11 +514,17 @@
                 });
 
                 if (response.success) {
-                    // Store verification token
+                    // Clear draft after successful verification
+                    localStorage.removeItem('verify_otp_draft');
+
+                    // Store verification token for later use
                     sessionStorage.setItem('verified_token', response.data.verified_token);
 
-                    // Redirect to password setup
-                    window.location.href = 'set-password.html';
+                    // Store email for profile completion
+                    sessionStorage.setItem('registration_email', email);
+
+                    // Redirect to complete profile (new flow)
+                    window.location.href = 'complete-profile.html';
                 } else {
                     // Show error
                     otpInputs.forEach(input => input.classList.add('error'));
@@ -517,6 +594,7 @@
 
         // Initialize
         createBubbles();
+        restoreDraft();
         otpInputs[0].focus();
     </script>
 </body>

@@ -1,187 +1,281 @@
 /**
- * DIBYA KLINIK - MOBILE RESPONSIVE STYLES
- * Optimized for mobile devices (phones & tablets)
+ * DIBYA KLINIK - MOBILE RESPONSIVE LAYOUT
+ * Mobile-only changes: no sidebar, top navigation, full-width
+ * Desktop remains unchanged with sidebar
  */
 
 /* ============================================
-   MOBILE BREAKPOINTS
+   MOBILE ONLY - HIDE SIDEBAR (< 992px)
    ============================================ */
 
-/* Small phones: 320px - 480px */
-/* Large phones: 481px - 767px */
-/* Tablets: 768px - 1024px */
-/* Desktop: 1025px+ */
+@media (max-width: 991.98px) {
+    /* Hide sidebar on mobile/tablet */
+    .main-sidebar,
+    .sidebar,
+    aside.main-sidebar {
+        display: none !important;
+        width: 0 !important;
+        min-width: 0 !important;
+        max-width: 0 !important;
+        visibility: hidden !important;
+        position: absolute !important;
+        left: -9999px !important;
+    }
+
+    /* Make content full width on mobile */
+    .content-wrapper,
+    body .content-wrapper,
+    body:not(.sidebar-collapse) .content-wrapper,
+    body.sidebar-collapse .content-wrapper,
+    body.sidebar-mini .content-wrapper {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+
+    /* Make header full width on mobile */
+    .main-header,
+    body .main-header,
+    body:not(.sidebar-collapse) .main-header,
+    body.sidebar-collapse .main-header {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+
+    /* Make footer full width on mobile */
+    .main-footer,
+    body .main-footer,
+    body:not(.sidebar-collapse) .main-footer,
+    body.sidebar-collapse .main-footer {
+        margin-left: 0 !important;
+        width: 100% !important;
+    }
+
+    /* Hide sidebar toggle button on mobile */
+    [data-widget="pushmenu"],
+    .nav-item [data-widget="pushmenu"] {
+        display: none !important;
+    }
+
+    /* Hide floating kelola pasien panel */
+    #floating-kelola-pasien {
+        display: none !important;
+    }
+}
 
 /* ============================================
-   BASE MOBILE STYLES
+   MOBILE TOP NAVIGATION BAR (< 992px)
    ============================================ */
 
-@media (max-width: 767px) {
-    /* Body & HTML */
+@media (max-width: 991.98px) {
+    /* Show mobile action bar at TOP */
+    #mobile-action-bar {
+        display: flex !important;
+        align-items: stretch;
+        justify-content: space-around;
+        position: fixed;
+        left: 0;
+        right: 0;
+        top: 0; /* At the very top */
+        bottom: auto !important;
+        padding: 0.35rem 0.4rem;
+        background: #ffffff;
+        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.1);
+        z-index: 1060; /* Higher than header */
+        border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+        border-top: none;
+        gap: 0.2rem;
+    }
+
+    #mobile-action-bar button {
+        flex: 1;
+        max-width: 80px;
+        border: none;
+        background: transparent;
+        color: #6b7280;
+        font-size: 0.6rem;
+        font-weight: 500;
+        padding: 0.25rem 0.1rem;
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.15rem;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        -webkit-tap-highlight-color: transparent;
+    }
+
+    #mobile-action-bar button .icon-wrapper {
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        background: rgba(13, 110, 253, 0.06);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.9rem;
+        color: inherit;
+        transition: all 0.2s ease;
+    }
+
+    #mobile-action-bar button:hover {
+        color: #0d6efd;
+    }
+
+    #mobile-action-bar button:hover .icon-wrapper {
+        background: rgba(13, 110, 253, 0.12);
+    }
+
+    #mobile-action-bar button.active {
+        color: #0d6efd;
+    }
+
+    #mobile-action-bar button.active .icon-wrapper {
+        background: #0d6efd;
+        color: #ffffff;
+        box-shadow: 0 3px 10px rgba(13, 110, 253, 0.3);
+    }
+
+    #mobile-action-bar button span:last-child {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+    }
+
+    /* Add padding to TOP for top navigation bar */
+    body .content-wrapper {
+        padding-top: 15px !important;
+        padding-bottom: 1rem !important;
+    }
+
+    /* Override d-md-none d-lg-none on mobile-action-bar */
+    #mobile-action-bar.d-md-none.d-lg-none {
+        display: flex !important;
+    }
+}
+
+/* ============================================
+   MOBILE CHAT POPUP - SMALLER (< 992px)
+   ============================================ */
+
+@media (max-width: 991.98px) {
+    /* Make chat popup smaller on mobile */
+    #chat-popup-container,
+    .chat-popup-container {
+        bottom: 10px !important;
+        right: 10px !important;
+    }
+
+    #chat-popup-container .chat-popup,
+    .chat-popup {
+        width: 280px !important;
+        max-width: calc(100vw - 20px) !important;
+        height: 280px !important;
+        max-height: 48vh !important;
+    }
+
+    #chat-popup-container .chat-popup .chat-header,
+    .chat-popup .chat-header {
+        padding: 8px 12px !important;
+        font-size: 0.9rem !important;
+    }
+
+    #chat-popup-container .chat-popup .chat-body,
+    .chat-popup .chat-body {
+        height: calc(100% - 100px) !important;
+        padding: 8px !important;
+    }
+
+    #chat-popup-container .chat-popup .chat-footer,
+    .chat-popup .chat-footer {
+        padding: 8px !important;
+    }
+
+    #chat-popup-container .chat-popup .chat-footer input,
+    .chat-popup .chat-footer input {
+        font-size: 14px !important;
+        padding: 6px 10px !important;
+    }
+
+    /* Chat toggle button smaller */
+    #chat-toggle-btn,
+    .chat-toggle-btn {
+        width: 45px !important;
+        height: 45px !important;
+        font-size: 1.1rem !important;
+    }
+
+    /* Chat slide panel */
+    #chat-slide-panel {
+        width: 100% !important;
+        max-width: 320px !important;
+    }
+
+    #chat-slide-panel.open {
+        right: 0 !important;
+    }
+
+    #chat-messages {
+        height: calc(100vh - 180px) !important;
+    }
+
+    .chat-message {
+        font-size: 0.85rem !important;
+        padding: 0.4rem !important;
+    }
+}
+
+/* ============================================
+   MOBILE CONTENT STYLES (< 992px)
+   ============================================ */
+
+@media (max-width: 991.98px) {
     body {
         font-size: 14px;
         overflow-x: hidden;
     }
 
-    /* Hide sidebar on mobile by default */
-/   .main-sidebar {
-//        position: fixed;
-//        left: -250px;
-//        transition: left 0.3s ease;
-//        z-index: 1050;
-//    }
-//
-    /.main-sidebar.sidebar-open {
-    /    left: 0;
-    }
-
-    /* Adjust content wrapper */
-    .content-wrapper {
-        margin-left: 0 !important;
-        padding: 0;
+    .main-header.navbar {
+        padding: 0 0.75rem;
+        min-height: 52px;
     }
 
     .content-wrapper .content,
     .content-header .container-fluid,
     .content-wrapper .content .container-fluid {
-        padding-left: 0;
-        padding-right: 0;
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
     }
 
-    .content-wrapper .content > .row,
-    .content-wrapper .content .container-fluid > .row {
-        margin-left: -270;
-        margin-right: 0;
+    /* Container fluid */
+    .container-fluid {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+        max-width: 100%;
     }
 
-    .main-header {
-        margin-left: -270 !important;
-    }
-
-    .main-footer {
-        margin-left: 0 !important;
-    }
-
-    /* Mobile overlay for sidebar */
-    .sidebar-overlay {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.5);
-        z-index: 1040;
-    }
-
-    .sidebar-overlay.active {
-        display: block;
-    }
-
-    /* ============================================
-       NAVBAR MOBILE
-       ============================================ */
-
-    .main-header .navbar {
-        padding: 0.5rem 1rem;
-    }
-
-    .navbar-nav .nav-link {
-        padding: 0.5rem;
-    }
-
-    /* Mobile menu toggle */
-    .navbar-toggler {
-        display: block !important;
-        border: none;
-        padding: 0.5rem;
-    }
-
-    /* Hide desktop elements */
-    .navbar .d-none.d-sm-inline-block {
-        display: none !important;
-    }
-
-    /* ============================================
-       CARDS & CONTENT
-       ============================================ */
-
+    /* Cards */
     .card {
-        margin-bottom: 1rem;
+        margin-bottom: 0.75rem;
+        border-radius: 10px;
     }
 
     .card-header {
         padding: 0.75rem 1rem;
-        font-size: 1rem;
+        font-size: 0.95rem;
     }
 
     .card-body {
         padding: 1rem;
     }
 
-    /* Reduce padding on dense cards */
-    #patient-page .card-body,
-    #anamnesa-page .card-body,
-    #tindakan-page .card-body,
-    #obat-page .card-body {
-        padding: 0.85rem 0.9rem;
-    }
-
-    /* Info boxes (KPI cards) */
-    .info-box {
-        margin-bottom: 1rem;
-        min-height: 80px;
-    }
-
-    .info-box-icon {
-        width: 70px;
-        font-size: 2rem;
-    }
-
-    .info-box-content {
-        padding: 5px 10px;
-    }
-
-    .info-box-text {
-        font-size: 0.875rem;
-    }
-
-    .info-box-number {
-        font-size: 1.25rem;
-    }
-
-    /* Small boxes */
-    .small-box {
-        margin-bottom: 1rem;
-    }
-
-    .small-box .inner h3 {
-        font-size: 1.5rem;
-    }
-
-    .small-box .inner p {
-        font-size: 0.875rem;
-    }
-
-    /* ============================================
-       FORMS
-       ============================================ */
-
-    .form-group {
-        margin-bottom: 1rem;
-    }
-
+    /* Forms */
     .form-control {
         font-size: 16px; /* Prevents zoom on iOS */
         padding: 0.5rem 0.75rem;
     }
 
-    .form-label {
-        font-size: 0.875rem;
-        margin-bottom: 0.25rem;
-    }
-
-    /* Select dropdowns */
     select.form-control {
         font-size: 16px;
         height: auto;
@@ -198,30 +292,9 @@
         padding: 0.75rem 1.5rem;
         font-size: 1rem;
         width: 100%;
-        margin-right: 0 !important;
-        margin-left: 0 !important;
     }
 
-    .btn-sm {
-        padding: 0.25rem 0.5rem;
-        font-size: 0.75rem;
-    }
-
-    /* Button groups */
-    .btn-group {
-        display: flex;
-        flex-wrap: wrap;
-    }
-
-    .btn-group .btn {
-        flex: 1 1 auto;
-        margin-bottom: 0.5rem;
-    }
-
-    /* ============================================
-       TABLES
-       ============================================ */
-
+    /* Tables */
     .table-responsive {
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
@@ -239,333 +312,207 @@
 
     .table tbody td {
         padding: 0.5rem;
-        font-size: 0.875rem;
     }
 
-    /* Hide less important columns on mobile */
-    .table .d-none-mobile {
-        display: none !important;
+    /* Info boxes */
+    .info-box {
+        margin-bottom: 0.75rem;
+        min-height: 80px;
     }
 
-    /* ============================================
-       PATIENT FORM
-       ============================================ */
-
-    #patient-form .row {
-        margin-left: 0;
-        margin-right: 0;
+    .info-box-icon {
+        width: 65px;
+        font-size: 1.75rem;
     }
 
-    #patient-form .col-md-6,
-    #patient-form .col-md-4,
-    #patient-form .col-md-3 {
-        padding-left: 0;
-        padding-right: 0;
-        width: 100%;
+    .info-box-content {
+        padding: 8px 10px;
     }
 
-    #patient-page .row > [class*='col-'] {
-        width: 100% !important;
-        max-width: 100% !important;
+    .info-box-text {
+        font-size: 0.8rem;
     }
 
-    #patient-list,
-    #patient-details-content {
-        max-height: none !important;
+    .info-box-number {
+        font-size: 1.25rem;
     }
 
-    #quick-add-patient {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    #quick-add-patient .form-group {
-        width: 100%;
-        margin-right: 0 !important;
-    }
-
-    #quick-add-patient .form-control {
-        width: 100%;
-    }
-
-    /* Obstetric data - stack vertically */
-    #obstetric-section .form-group {
-        width: 100%;
+    /* Small boxes */
+    .small-box {
         margin-bottom: 0.75rem;
     }
 
-    /* Riwayat Kehamilan table */
-    #pregnancy-history-table {
-        font-size: 0.75rem;
+    .small-box .inner h3 {
+        font-size: 1.5rem;
     }
 
-    #pregnancy-history-table input,
-    #pregnancy-history-table select {
-        font-size: 0.75rem;
-        padding: 0.25rem;
+    .small-box .inner p {
+        font-size: 0.8rem;
     }
 
-    /* ============================================
-       MEDICATION & SERVICE LISTS
-       ============================================ */
-
-    .obat-item,
-    .service-item {
-        padding: 0.75rem;
-        margin-bottom: 0.5rem;
+    /* Charts */
+    .chart-container {
+        height: 220px !important;
     }
 
-    .obat-item-name,
-    .service-item-name {
-        font-size: 0.875rem;
-        font-weight: 600;
+    /* Hide desktop nav elements */
+    .navbar .d-none.d-sm-inline-block {
+        display: none !important;
     }
 
-    .obat-item-category,
-    .service-item-category {
-        font-size: 0.75rem;
-    }
-
-    .obat-item-price,
-    .service-item-price {
-        font-size: 1rem;
-        font-weight: bold;
-    }
-
-    /* Selected items */
-    .selected-items-list {
-        max-height: 300px;
-        overflow-y: auto;
-    }
-
-    /* ============================================
-       BILLING / CASHIER
-       ============================================ */
-
-    #cashier-summary .card {
-        margin-bottom: 1rem;
-    }
-
-    #cashier-summary .list-group-item {
-        padding: 0.75rem;
-        font-size: 0.875rem;
-    }
-
-    .grand-total {
-        font-size: 1.5rem !important;
-    }
-
-    /* ============================================
-       CHAT BOX
-       ============================================ */
-
-    #chat-slide-panel {
-        width: 100% !important;
-        right: -100% !important;
-    }
-
-    #chat-slide-panel.open {
-        right: 0 !important;
-    }
-
-    #chat-messages {
-        height: calc(100vh - 200px);
-    }
-
-    .chat-message {
-        font-size: 0.875rem;
-        padding: 0.5rem;
-    }
-
-    /* ============================================
-       MODAL
-       ============================================ */
-
+    /* Modal adjustments */
     .modal-dialog {
         margin: 0.5rem;
         max-width: calc(100% - 1rem);
     }
 
-    .modal-content {
-        border-radius: 0.5rem;
-    }
-
-    .modal-header {
-        padding: 1rem;
-    }
-
-    .modal-body {
-        padding: 1rem;
-    }
-
-    .modal-footer {
-        padding: 0.75rem;
-    }
-
-    /* ============================================
-       DASHBOARD CHARTS
-       ============================================ */
-
-    .chart-container {
-        height: 250px !important;
-        margin-bottom: 1rem;
-    }
-
-    /* ============================================
-       LOGIN PAGE
-       ============================================ */
-
-    .login-box {
-        width: 100% !important;
-        margin: 1rem auto;
-        padding: 0 1rem;
-    }
-
-    .login-card-body {
-        padding: 1.5rem;
-    }
-
-    .login-logo {
-        font-size: 1.5rem;
-        margin-bottom: 1rem;
-    }
-
-    .login-logo img {
-        max-width: 150px;
-    }
-
-    /* ============================================
-       UTILITY CLASSES
-       ============================================ */
-
-    /* Hide on mobile */
-    .d-mobile-none {
-        display: none !important;
-    }
-
-    /* Show only on mobile */
-    .d-mobile-block {
-        display: block !important;
-    }
-
-    /* Full width on mobile */
-    .mobile-full-width {
-        width: 100% !important;
-    }
-
-    /* Smaller text on mobile */
-    .mobile-small-text {
-        font-size: 0.875rem !important;
-    }
-
-    /* Stack columns on mobile */
-    .mobile-stack > * {
-        width: 100% !important;
-        margin-bottom: 0.5rem;
-    }
-
-    /* ============================================
-       SPACING ADJUSTMENTS
-       ============================================ */
-
-    .content-header {
-        padding: 0.75rem 0;
-    }
-
-    .content-header h1 {
-        font-size: 1.5rem;
-    }
-
-    .breadcrumb {
-        font-size: 0.75rem;
-        padding: 0.5rem 0;
-    }
-
-    /* Reduce padding/margins */
-    .p-3 {
-        padding: 1rem !important;
-    }
-
-    .p-4 {
-        padding: 1.5rem !important;
-    }
-
-    .m-3 {
-        margin: 1rem !important;
-    }
-
-    .m-4 {
-        margin: 1.5rem !important;
+    /* Columns stack on mobile */
+    .row > .col-md-6,
+    .row > .col-md-4,
+    .row > .col-lg-4,
+    .row > .col-lg-6 {
+        flex: 0 0 100%;
+        max-width: 100%;
     }
 }
 
 /* ============================================
-   TABLET SPECIFIC (768px - 1024px)
+   VERY SMALL SCREENS (< 375px)
    ============================================ */
 
-@media (min-width: 768px) and (max-width: 1024px) {
-    .content-wrapper {
-        padding: 15px;
+@media (max-width: 374px) {
+    #mobile-action-bar button span:last-child {
+        font-size: 0.5rem;
     }
 
-    .info-box {
-        min-height: 90px;
+    #mobile-action-bar button .icon-wrapper {
+        width: 28px;
+        height: 28px;
+        font-size: 0.8rem;
+        border-radius: 8px;
+    }
+
+    .container-fluid {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
+    }
+
+    /* Even smaller chat on very small screens */
+    #chat-popup-container .chat-popup,
+    .chat-popup {
+        width: 260px !important;
+        height: 320px !important;
+    }
+}
+
+/* ============================================
+   PHONE LANDSCAPE (< 768px landscape)
+   ============================================ */
+
+@media (max-width: 767px) and (orientation: landscape) {
+    .content-wrapper {
+        padding: 5px;
+        padding-top: 55px !important;
+    }
+
+    .card-body {
+        padding: 0.75rem;
+    }
+
+    /* Compact top nav in landscape */
+    #mobile-action-bar {
+        padding: 0.2rem 0.4rem;
+        top: 0;
+    }
+
+    #mobile-action-bar button {
+        padding: 0.15rem;
+    }
+
+    #mobile-action-bar button .icon-wrapper {
+        width: 28px;
+        height: 28px;
+    }
+
+    #mobile-action-bar button span:last-child {
+        display: none;
+    }
+
+    body .content-wrapper {
+        padding-top: 50px !important;
+    }
+
+    /* Chat even more compact */
+    #chat-popup-container .chat-popup,
+    .chat-popup {
+        height: 250px !important;
+        max-height: 80vh !important;
+    }
+}
+
+/* ============================================
+   TABLET (768px - 991px)
+   ============================================ */
+
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .content-wrapper {
+        padding: 0.5rem;
     }
 
     .card-body {
         padding: 1.25rem;
     }
 
-    /* Sidebar can be visible on tablets */
-    .main-sidebar {
-        position: fixed;
-        left: 0;
+    /* Slightly larger nav on tablets */
+    #mobile-action-bar button {
+        max-width: 90px;
+        font-size: 0.65rem;
     }
 
-    .content-wrapper,
-    .main-header,
-    .main-footer {
-        margin-left: 250px !important;
+    #mobile-action-bar button .icon-wrapper {
+        width: 36px;
+        height: 36px;
+        font-size: 1rem;
     }
 
-    /* But allow collapsing */
-    body.sidebar-collapse .main-sidebar {
-        left: -250px;
+    /* Chat larger on tablets */
+    #chat-popup-container .chat-popup,
+    .chat-popup {
+        width: 320px !important;
+        height: 400px !important;
     }
 
-    body.sidebar-collapse .content-wrapper,
-    body.sidebar-collapse .main-header,
-    body.sidebar-collapse .main-footer {
-        margin-left: 0 !important;
+    /* 2 columns on tablet */
+    .row > .col-md-6 {
+        flex: 0 0 50%;
+        max-width: 50%;
     }
 }
 
 /* ============================================
-   LANDSCAPE ORIENTATION
+   DESKTOP (992px+) - KEEP SIDEBAR
    ============================================ */
 
-@media (max-width: 767px) and (orientation: landscape) {
-    .content-wrapper {
-        padding: 5px;
+@media (min-width: 992px) {
+    /* Hide mobile action bar on desktop - sidebar is shown */
+    #mobile-action-bar {
+        display: none !important;
     }
 
-    .card-body {
-        padding: 0.75rem;
-    }
-
-    #chat-messages {
-        height: calc(100vh - 150px);
-    }
+    /* Ensure normal desktop layout - do not override */
+    /* Sidebar and content use AdminLTE defaults */
 }
 
 /* ============================================
-   PRINT STYLES (for invoices)
+   PRINT STYLES
    ============================================ */
 
 @media print {
     .main-sidebar,
     .main-header,
     .main-footer,
+    #mobile-action-bar,
+    #chat-popup-container,
     .btn,
     .no-print {
         display: none !important;
@@ -587,7 +534,7 @@
 }
 
 /* ============================================
-   TOUCH IMPROVEMENTS
+   TOUCH IMPROVEMENTS (Mobile devices)
    ============================================ */
 
 @media (hover: none) and (pointer: coarse) {
@@ -596,98 +543,171 @@
     .nav-link,
     .list-group-item {
         min-height: 44px;
-        display: flex;
-        align-items: center;
+    }
+
+    #mobile-action-bar button {
+        min-height: 48px;
     }
 
     /* Remove hover effects on touch devices */
     .btn:hover,
-    .nav-link:hover,
-    .list-group-item:hover {
+    .card:hover {
         transform: none;
     }
 
     /* Add active/pressed state */
-    .btn:active,
-    .nav-link:active,
-    .list-group-item:active {
+    .btn:active {
         opacity: 0.7;
     }
+
+    #mobile-action-bar button:active .icon-wrapper {
+        transform: scale(0.95);
+    }
 }
 
-/* Mobile quick action bar */
-#mobile-action-bar {
-    display: none;
-}
+/* ============================================
+   MOBILE PROFILE AVATAR IN NAV BAR (< 992px)
+   ============================================ */
 
 @media (max-width: 991.98px) {
-    html {
-        scroll-padding-bottom: 110px;
+    #mobile-action-bar .mobile-profile-btn {
+        order: -1; /* Move to left */
     }
 
-    body.has-mobile-action-bar .content-wrapper {
-        padding-bottom: 96px;
+    #mobile-action-bar .mobile-profile-btn .icon-wrapper.profile-avatar {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        overflow: hidden;
     }
 
-    body.has-mobile-action-bar .content-wrapper .content {
-        padding-bottom: 1.25rem;
+    #mobile-action-bar .mobile-profile-btn .icon-wrapper.profile-avatar i {
+        font-size: 0.9rem;
+    }
+}
+
+/* ============================================
+   MOBILE MORE MENU OVERLAY (< 992px)
+   ============================================ */
+
+@media (max-width: 991.98px) {
+    /* Hidden state */
+    #mobile-more-menu.mobile-menu-hidden {
+        display: none !important;
     }
 
-    body.has-mobile-action-bar .main-footer {
-        padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+    /* Visible state */
+    #mobile-more-menu.mobile-menu-visible {
+        display: block !important;
     }
 
-    #mobile-action-bar {
-        display: flex;
-        align-items: stretch;
-        justify-content: space-between;
+    #mobile-more-menu {
         position: fixed;
+        top: 0;
         left: 0;
         right: 0;
         bottom: 0;
-        padding: 0.35rem 0.45rem calc(0.55rem + env(safe-area-inset-bottom));
+        z-index: 1100;
+    }
+
+    #mobile-more-menu .mobile-menu-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        animation: fadeIn 0.2s ease-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+
+    #mobile-more-menu .mobile-menu-content {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
         background: #ffffff;
-        box-shadow: 0 -6px 24px rgba(15, 23, 42, 0.15);
-        z-index: 1060;
-        border-top: 1px solid rgba(15, 23, 42, 0.08);
-        gap: 0.35rem;
+        border-top-left-radius: 20px;
+        border-top-right-radius: 20px;
+        max-height: 70vh;
+        overflow-y: auto;
+        animation: slideUp 0.25s ease-out;
+        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.15);
     }
 
-    #mobile-action-bar button {
-        flex: 1;
-        border: none;
-        background: transparent;
-        color: #6b7280;
-        font-size: 0.75rem;
+    @keyframes slideUp {
+        from {
+            transform: translateY(100%);
+        }
+        to {
+            transform: translateY(0);
+        }
+    }
+
+    #mobile-more-menu .mobile-menu-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 16px 20px;
+        border-bottom: 1px solid #eee;
         font-weight: 600;
-        padding: 0.35rem 0.2rem;
-        border-radius: 0.9rem;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        gap: 0.25rem;
-        transition: color 0.2s ease;
+        font-size: 1rem;
+        color: #333;
     }
 
-    #mobile-action-bar button .icon-wrapper {
-        width: 40px;
-        height: 40px;
-        border-radius: 14px;
-        background: rgba(13, 110, 253, 0.08);
+    #mobile-more-menu .mobile-menu-header button {
+        background: none;
+        border: none;
+        font-size: 1.2rem;
+        color: #666;
+        padding: 4px 8px;
+        cursor: pointer;
+    }
+
+    #mobile-more-menu .mobile-menu-items {
+        padding: 8px 0 16px 0;
+    }
+
+    #mobile-more-menu .mobile-menu-items a {
         display: flex;
         align-items: center;
-        justify-content: center;
+        gap: 14px;
+        padding: 14px 20px;
+        color: #333;
+        text-decoration: none;
         font-size: 0.95rem;
-        color: inherit;
-        transition: background 0.2s ease, color 0.2s ease;
+        transition: background 0.15s ease;
     }
 
-    #mobile-action-bar button.active {
+    #mobile-more-menu .mobile-menu-items a:hover,
+    #mobile-more-menu .mobile-menu-items a:active {
+        background: #f5f5f5;
+    }
+
+    #mobile-more-menu .mobile-menu-items a i {
+        width: 24px;
+        font-size: 1.1rem;
         color: #0d6efd;
+        text-align: center;
     }
 
-    #mobile-action-bar button.active .icon-wrapper {
-        background: rgba(13, 110, 253, 0.18);
+    #mobile-more-menu .mobile-menu-items a.text-danger i {
+        color: #dc3545;
+    }
+
+    #mobile-more-menu .mobile-menu-divider {
+        height: 1px;
+        background: #eee;
+        margin: 8px 20px;
     }
 }
 
+/* Hide mobile more menu on desktop */
+@media (min-width: 992px) {
+    #mobile-more-menu {
+        display: none !important;
+    }
+}

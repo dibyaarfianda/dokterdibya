@@ -1,14 +1,17 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
+const { isSuperadminRole } = require('../constants/roles');
+
+// JWT Secret - Required
+const jwt = require('jsonwebtoken');
+const JWT_SECRET = process.env.JWT_SECRET;
 
 // Optional middleware for auth (public can view, staff can edit)
 const optionalAuth = (req, res, next) => {
     const token = req.headers.authorization?.split(' ')[1];
-    if (token) {
+    if (token && JWT_SECRET) {
         try {
-            const jwt = require('jsonwebtoken');
-            const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
             const decoded = jwt.verify(token, JWT_SECRET);
             req.user = decoded;
         } catch (error) {
@@ -20,15 +23,17 @@ const optionalAuth = (req, res, next) => {
 
 // Middleware to verify JWT token for staff only
 const verifyStaffToken = (req, res, next) => {
+    if (!JWT_SECRET) {
+        return res.status(500).json({ message: 'Server configuration error' });
+    }
+
     const token = req.headers.authorization?.split(' ')[1];
-    
+
     if (!token) {
         return res.status(401).json({ message: 'Token tidak ditemukan' });
     }
-    
+
     try {
-        const jwt = require('jsonwebtoken');
-        const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
         const decoded = jwt.verify(token, JWT_SECRET);
         req.user = decoded;
         next();
@@ -158,12 +163,17 @@ router.put('/:id', verifyStaffToken, async (req, res) => {
 
 /**
  * DELETE /api/practice-schedules/:id
- * Delete practice schedule (staff only)
+ * Delete practice schedule (superadmin/dokter only)
  */
 router.delete('/:id', verifyStaffToken, async (req, res) => {
     try {
         const { id } = req.params;
-        
+
+        // Check superadmin permission
+        if (!req.user.is_superadmin && !isSuperadminRole(req.user.role_id)) {
+            return res.status(403).json({ message: 'Akses ditolak. Hanya superadmin/dokter yang dapat menghapus.' });
+        }
+
         const [result] = await db.query(
             'DELETE FROM practice_schedules WHERE id = ?',
             [id]
@@ -178,6 +188,132 @@ router.delete('/:id', verifyStaffToken, async (req, res) => {
     } catch (error) {
         console.error('Error deleting schedule:', error);
         res.status(500).json({ message: 'Terjadi kesalahan saat menghapus jadwal' });
+    }
+});
+
+// ==================== DISABLED PRACTICE DATES ====================
+
+/**
+ * GET /api/practice-schedules/disabled-dates
+ * Get all disabled practice dates (staff only)
+ */
+router.get('/disabled-dates', verifyStaffToken, async (req, res) => {
+    try {
+        const [dates] = await db.query(
+            `SELECT * FROM disabled_practice_dates
+             ORDER BY disabled_date DESC`
+        );
+
+        res.json({ success: true, data: dates });
+
+    } catch (error) {
+        console.error('Error getting disabled dates:', error);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan' });
+    }
+});
+
+/**
+ * POST /api/practice-schedules/disabled-dates
+ * Add a new disabled practice date (staff only)
+ */
+router.post('/disabled-dates', verifyStaffToken, async (req, res) => {
+    try {
+        const { disabled_date, location, reason } = req.body;
+
+        if (!disabled_date) {
+            return res.status(400).json({ success: false, message: 'Tanggal wajib diisi' });
+        }
+
+        // Validate location if provided
+        const validLocations = ['klinik_privat', 'rsud_gambiran', 'rsia_melinda', 'rs_bhayangkara'];
+        if (location && !validLocations.includes(location)) {
+            return res.status(400).json({ success: false, message: 'Lokasi tidak valid' });
+        }
+
+        const createdBy = req.user.name || req.user.email || 'Staff';
+
+        const [result] = await db.query(
+            `INSERT INTO disabled_practice_dates (disabled_date, location, reason, created_by)
+             VALUES (?, ?, ?, ?)`,
+            [disabled_date, location || null, reason || null, createdBy]
+        );
+
+        res.status(201).json({
+            success: true,
+            message: 'Tanggal berhasil dinonaktifkan',
+            id: result.insertId
+        });
+
+    } catch (error) {
+        if (error.code === 'ER_DUP_ENTRY') {
+            return res.status(400).json({
+                success: false,
+                message: 'Tanggal ini sudah dinonaktifkan untuk lokasi tersebut'
+            });
+        }
+        console.error('Error adding disabled date:', error);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan' });
+    }
+});
+
+/**
+ * DELETE /api/practice-schedules/disabled-dates/:id
+ * Remove a disabled practice date (staff only)
+ */
+router.delete('/disabled-dates/:id', verifyStaffToken, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        const [result] = await db.query(
+            'DELETE FROM disabled_practice_dates WHERE id = ?',
+            [id]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ success: false, message: 'Data tidak ditemukan' });
+        }
+
+        res.json({ success: true, message: 'Tanggal berhasil diaktifkan kembali' });
+
+    } catch (error) {
+        console.error('Error deleting disabled date:', error);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan' });
+    }
+});
+
+/**
+ * GET /api/practice-schedules/check-disabled
+ * Check if a specific date is disabled (public - for booking)
+ */
+router.get('/check-disabled', async (req, res) => {
+    try {
+        const { date, location } = req.query;
+
+        if (!date) {
+            return res.status(400).json({ success: false, message: 'Parameter date diperlukan' });
+        }
+
+        // Check if date is disabled for specific location or all locations
+        const [results] = await db.query(
+            `SELECT * FROM disabled_practice_dates
+             WHERE disabled_date = ?
+             AND (location IS NULL OR location = ?)`,
+            [date, location || null]
+        );
+
+        const isDisabled = results.length > 0;
+        const disabledInfo = isDisabled ? results[0] : null;
+
+        res.json({
+            success: true,
+            is_disabled: isDisabled,
+            reason: disabledInfo?.reason || null,
+            location: disabledInfo?.location || 'all'
+        });
+
+    } catch (error) {
+        console.error('Error checking disabled date:', error);
+        res.status(500).json({ success: false, message: 'Terjadi kesalahan' });
     }
 });
 

@@ -4,10 +4,10 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { verifyToken, requirePermission } = require('../middleware/auth');
+const { verifyToken } = require('../middleware/auth');
 
 // GET /api/status/online - Get all online users
-router.get('/api/status/online', verifyToken, requirePermission('dashboard.view'), async (req, res) => {
+router.get('/api/status/online', verifyToken, async (req, res) => {
     try {
         const [rows] = await db.query(
             'SELECT * FROM user_status WHERE is_online = TRUE ORDER BY last_seen DESC'
@@ -28,7 +28,7 @@ router.get('/api/status/online', verifyToken, requirePermission('dashboard.view'
 });
 
 // POST /api/status/heartbeat - Update user's online status
-router.post('/api/status/heartbeat', verifyToken, requirePermission('dashboard.view'), async (req, res) => {
+router.post('/api/status/heartbeat', verifyToken, async (req, res) => {
     try {
         const { user_id, user_name } = req.body;
         
@@ -73,7 +73,7 @@ router.post('/api/status/heartbeat', verifyToken, requirePermission('dashboard.v
 });
 
 // POST /api/status/offline - Set user offline
-router.post('/api/status/offline', verifyToken, requirePermission('dashboard.view'), async (req, res) => {
+router.post('/api/status/offline', verifyToken, async (req, res) => {
     try {
         const { user_id } = req.body;
         

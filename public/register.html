@@ -15,11 +15,11 @@
         }
 
         :root {
-            --primary: #6366f1;
-            --primary-dark: #4f46e5;
+            --primary: #47C6F8;
+            --primary-dark: #2ba3d0;
             --success: #10b981;
             --danger: #ef4444;
-            --bg-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --bg-gradient: linear-gradient(135deg, #1a1a1a 0%, #303030 100%);
         }
 
         body {
@@ -62,10 +62,13 @@
         }
 
         .card {
-            background: white;
-            border-radius: 25px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
             padding: 40px 35px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
             animation: slideUp 0.6s ease-out;
         }
 
@@ -90,25 +93,19 @@
         }
 
         .logo-icon img {
-            height: 80px;
+            height: 136.045px;
             width: auto;
-            animation: pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.1); }
         }
 
         .logo h1 {
             font-size: 26px;
-            color: #1f2937;
+            color: #ffffff;
             margin-bottom: 5px;
         }
 
         .logo p {
             font-size: 14px;
-            color: #6b7280;
+            color: #b0b0b0;
         }
 
         .form-group {
@@ -117,9 +114,9 @@
 
         .form-group label {
             display: block;
-            font-size: 14px;
-            font-weight: 500;
-            color: #374151;
+            font-size: 12px;
+            font-weight: 60;
+            color: #ffffff;
             margin-bottom: 8px;
         }
 
@@ -132,23 +129,38 @@
             left: 15px;
             top: 50%;
             transform: translateY(-50%);
-            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .input-icon svg {
+            width: 20px;
+            height: 20px;
         }
 
         .form-group input {
             width: 100%;
             padding: 15px 15px 15px 50px;
-            border: 2px solid #e5e7eb;
+            border: 2px solid rgba(255, 255, 255, 0.2);
             border-radius: 12px;
             font-size: 16px;
             font-family: 'Poppins', sans-serif;
             transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.1);
+            color: #ffffff;
+        }
+
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.6);
         }
 
         .form-group input:focus {
             outline: none;
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.1);
+            border-color: #0066FF;
+            box-shadow: 0 0 0 4px rgba(0, 102, 255, 0.2);
+            background: rgba(255, 255, 255, 0.15);
         }
 
         .form-group input.error {
@@ -168,8 +180,8 @@
 
         .btn-submit {
             width: 100%;
-            padding: 16px;
-            background: var(--primary);
+            padding: 16px 20px;
+            background: #0066FF;
             color: white;
             border: none;
             border-radius: 12px;
@@ -178,12 +190,15 @@
             cursor: pointer;
             transition: all 0.3s ease;
             font-family: 'Poppins', sans-serif;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
 
         .btn-submit:hover {
-            background: var(--primary-dark);
+            background: #0052CC;
             transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.4);
+            box-shadow: 0 8px 20px rgba(0, 102, 255, 0.4);
         }
 
         .btn-submit:disabled {
@@ -229,25 +244,25 @@
             left: 0;
             right: 0;
             height: 1px;
-            background: #e5e7eb;
+            background: rgba(255, 255, 255, 0.2);
         }
 
         .divider span {
-            background: white;
+            background: rgba(255, 255, 255, 0.1);
             padding: 0 15px;
-            color: #9ca3af;
-            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 12px;
             position: relative;
         }
 
         .login-link {
             text-align: center;
-            font-size: 14px;
-            color: #6b7280;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
         }
 
         .login-link a {
-            color: var(--primary);
+            color: #0066FF;
             text-decoration: none;
             font-weight: 600;
         }
@@ -259,7 +274,7 @@
         .benefits {
             margin-top: 30px;
             padding-top: 25px;
-            border-top: 1px solid #e5e7eb;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
         }
 
         .benefit-item {
@@ -267,8 +282,8 @@
             align-items: center;
             gap: 12px;
             margin-bottom: 15px;
-            font-size: 14px;
-            color: #4b5563;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
         }
 
         .benefit-item .icon {
@@ -278,11 +293,16 @@
 
         @media (max-width: 480px) {
             .card {
-                padding: 30px 25px;
+                padding: 30px 20px;
             }
 
             .logo h1 {
                 font-size: 22px;
+            }
+
+            .btn-submit {
+                font-size: 15px;
+                padding: 14px 16px;
             }
         }
     </style>
@@ -294,16 +314,21 @@
         <div class="card">
             <div class="logo">
                 <div class="logo-icon">
-                    <img src="images/DIBYA.svg" alt="Dibya Klinik">
+                    <img src="images/logo-white.svg" alt="Dibya Klinik">
                 </div>
-                <p>Daftar untuk memulai konsultasi</p>
+                <p>Masukkan email bunda dibawah ini</p>
             </div>
 
             <form id="registerForm">
                 <div class="form-group">
                     <label for="email">Email</label>
                     <div class="input-wrapper">
-                        <span class="input-icon">📧</span>
+                        <span class="input-icon">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <rect x="2" y="4" width="20" height="16" rx="2"/>
+                                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/>
+                            </svg>
+                        </span>
                         <input
                             type="email"
                             id="email"
@@ -333,15 +358,15 @@
             <div class="benefits">
                 <div class="benefit-item">
                     <span class="icon">✓</span>
-                    <span>Konsultasi dengan dokter ahli</span>
+                    <span>Janji temu dengan mudah</span>
                 </div>
                 <div class="benefit-item">
                     <span class="icon">✓</span>
-                    <span>Rekam medis digital aman</span>
+                    <span>Rekam medis private di tangan bunda</span>
                 </div>
                 <div class="benefit-item">
                     <span class="icon">✓</span>
-                    <span>Booking janji temu online</span>
+                    <span>Hasil USG dapat diakses kapan pun</span>
                 </div>
             </div>
         </div>
@@ -377,10 +402,68 @@
             return re.test(email);
         }
 
+        // Debounce function for auto-save
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        // Auto-save draft to localStorage
+        const saveDraft = debounce(() => {
+            const formData = {
+                email: emailInput.value,
+                timestamp: new Date().toISOString()
+            };
+            localStorage.setItem('register_draft_email', JSON.stringify(formData));
+            showSaveIndicator();
+        }, 300);
+
+        // Restore draft from localStorage
+        function restoreDraft() {
+            const draft = localStorage.getItem('register_draft_email');
+            if (draft) {
+                try {
+                    const data = JSON.parse(draft);
+                    emailInput.value = data.email;
+                    showRestoredIndicator();
+                } catch (e) {
+                    console.error('Error restoring draft:', e);
+                }
+            }
+        }
+
+        // Show save indicator
+        function showSaveIndicator() {
+            const existing = document.getElementById('save-indicator');
+            if (existing) {
+                existing.textContent = 'Draft tersimpan ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                return;
+            }
+
+            const indicator = document.createElement('div');
+            indicator.id = 'save-indicator';
+            indicator.style.cssText = 'background: rgba(16, 185, 129, 0.2); color: #10b981; padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.75rem; margin-bottom: 1rem; text-align: center; border: 1px solid rgba(16, 185, 129, 0.3);';
+            indicator.textContent = 'Draft tersimpan ' + new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            form.insertBefore(indicator, form.firstChild);
+        }
+
+        // Show restored indicator
+        function showRestoredIndicator() {
+            const indicator = document.createElement('div');
+            indicator.style.cssText = 'background: rgba(0, 102, 255, 0.2); color: #0066FF; padding: 0.5rem 0.75rem; border-radius: 8px; font-size: 0.75rem; margin-bottom: 1rem; text-align: center; border: 1px solid rgba(0, 102, 255, 0.3);';
+            indicator.textContent = 'Draft dipulihkan dari sesi sebelumnya';
+            form.insertBefore(indicator, form.firstChild);
+            setTimeout(() => indicator.remove(), 5000);
+        }
+
         // Clear error on input
         emailInput.addEventListener('input', () => {
             emailInput.classList.remove('error');
             emailError.classList.remove('show');
+            saveDraft();
         });
 
         // Form submission
@@ -405,6 +488,9 @@
                 const response = await apiService.post('/auth/register', { email });
 
                 if (response.success) {
+                    // Clear draft after successful registration
+                    localStorage.removeItem('register_draft_email');
+
                     // Store email temporarily
                     sessionStorage.setItem('registration_email', email);
                     sessionStorage.setItem('verification_token', response.data.verification_token);
@@ -429,6 +515,7 @@
 
         // Initialize
         createBubbles();
+        restoreDraft();
     </script>
 </body>
 </html>

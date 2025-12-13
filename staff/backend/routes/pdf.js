@@ -8,7 +8,7 @@ const router = express.Router();
 const PDFService = require('../utils/pdf');
 const PatientService = require('../services/PatientService');
 const VisitService = require('../services/VisitService');
-const { verifyToken, requirePermission } = require('../middleware/auth');
+const { verifyToken } = require('../middleware/auth');
 const { asyncHandler } = require('../middleware/errorHandler');
 const { sendSuccess } = require('../utils/response');
 const logger = require('../utils/logger');
@@ -36,7 +36,7 @@ const logger = require('../utils/logger');
  *               type: string
  *               format: binary
  */
-router.get('/receipt/:visitId', verifyToken, requirePermission('billing.view'), asyncHandler(async (req, res) => {
+router.get('/receipt/:visitId', verifyToken, asyncHandler(async (req, res) => {
     const { visitId } = req.params;
     
     // Get visit details
@@ -81,7 +81,7 @@ router.get('/receipt/:visitId', verifyToken, requirePermission('billing.view'), 
  *               type: string
  *               format: binary
  */
-router.get('/medical-report/:patientId', verifyToken, requirePermission('patients.view'), asyncHandler(async (req, res) => {
+router.get('/medical-report/:patientId', verifyToken, asyncHandler(async (req, res) => {
     const { patientId } = req.params;
     
     // Get patient and visit history
@@ -102,7 +102,7 @@ router.get('/medical-report/:patientId', verifyToken, requirePermission('patient
 /**
  * Cleanup old PDF files
  */
-router.post('/cleanup', verifyToken, requirePermission('settings.system'), asyncHandler(async (req, res) => {
+router.post('/cleanup', verifyToken, asyncHandler(async (req, res) => {
     const { daysOld } = req.body;
     const count = await PDFService.cleanupOldFiles(daysOld || 30);
     sendSuccess(res, { deletedCount: count }, `Deleted ${count} old PDF files`);

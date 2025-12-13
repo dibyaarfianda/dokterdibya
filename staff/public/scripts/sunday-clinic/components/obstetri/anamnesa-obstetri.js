@@ -8,6 +8,15 @@ export default {
      * Render Anamnesa form for Obstetri
      */
     async render(state) {
+        const record = state.recordData?.record || {};
+        const category = record.mr_category || 'obstetri';
+
+        // Use old simple format for obstetri category
+        if (category === 'obstetri') {
+            return this.renderObstetriFormat(state);
+        }
+
+        // Use new detailed format for other categories (if ever used)
         const intake = state.intakeData?.payload || {};
         const summary = state.intakeData?.summary || {};
         const metadata = intake.metadata || {};
@@ -34,6 +43,347 @@ export default {
                 </div>
             </div>
         `;
+    },
+
+    /**
+     * Render old Obstetri format (simple)
+     */
+    async renderObstetriFormat(state) {
+        const anamnesa = state.recordData?.anamnesa || {};
+        const intake = state.intakeData?.payload || {};
+        const derived = state.derived || {};
+
+        // Get metadata context for display
+        let metaHtml = '';
+        try {
+            const { getMedicalRecordContext, renderRecordMeta } = await import('../../utils/helpers.js');
+            const context = getMedicalRecordContext(state, 'anamnesa');
+            if (context) {
+                metaHtml = renderRecordMeta(context, 'anamnesa');
+            }
+        } catch (error) {
+            console.error('[Anamnesa] Failed to load metadata:', error);
+        }
+
+        const escapeHtml = (str) => {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        };
+
+        // Get saved data or defaults from derived state
+        const keluhanUtama = anamnesa.keluhan_utama ?? intake.chief_complaint ?? intake.keluhan_utama ?? '';
+        const riwayatKehamilan = anamnesa.riwayat_kehamilan_saat_ini ?? '';
+        const hpht = anamnesa.hpht ?? derived.pregnancyDetails?.lmp ?? '';
+        const hpl = anamnesa.hpl ?? derived.pregnancyDetails?.edd ?? '';
+        const usiaKehamilan = anamnesa.usia_kehamilan ?? '';
+        const detailRiwayat = anamnesa.detail_riwayat_penyakit ?? '';
+        const riwayatKeluarga = anamnesa.riwayat_keluarga ?? '';
+        const alergiObat = anamnesa.alergi_obat ?? derived.allergies?.medications ?? '';
+        const alergiMakanan = anamnesa.alergi_makanan ?? derived.allergies?.food ?? '';
+        const alergiLingkungan = anamnesa.alergi_lingkungan ?? derived.allergies?.environmental ?? '';
+        const gravida = anamnesa.gravida ?? derived.obstetricHistory?.gravida ?? '';
+        const para = anamnesa.para ?? derived.obstetricHistory?.para ?? '';
+        const abortus = anamnesa.abortus ?? derived.obstetricHistory?.abortus ?? '';
+        const anakHidup = anamnesa.anak_hidup ?? derived.obstetricHistory?.living ?? '';
+        const usiaMenarche = anamnesa.usia_menarche ?? '';
+        const lamaSiklus = anamnesa.lama_siklus ?? '';
+        const siklusTeratur = anamnesa.siklus_teratur ?? '';
+        const metodeKbTerakhir = anamnesa.metode_kb_terakhir ?? '';
+        const kegagalanKb = anamnesa.kegagalan_kb ?? '';
+        const jenisKbGagal = anamnesa.jenis_kb_gagal ?? '';
+
+        return `
+            <div class="sc-section">
+                <div class="sc-section-header">
+                    <h3>Anamnesa & Riwayat</h3>
+                    <button class="btn btn-primary btn-sm" id="btn-update-anamnesa" onclick="window.saveAnamnesa()">
+                        <i class="fas fa-save"></i> Simpan
+                    </button>
+                </div>
+                ${metaHtml}
+                <div class="sc-grid two">
+                    <div class="sc-card">
+                        <h4>Keluhan & Kehamilan Saat Ini</h4>
+                        <div class="form-group mb-3">
+                            <label class="font-weight-bold">Keluhan Utama</label>
+                            <textarea class="form-control anamnesa-field" id="anamnesa-keluhan-utama" rows="2">${escapeHtml(keluhanUtama)}</textarea>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="font-weight-bold">Riwayat Kehamilan Saat Ini</label>
+                            <textarea class="form-control anamnesa-field" id="anamnesa-riwayat-kehamilan" rows="3">${escapeHtml(riwayatKehamilan)}</textarea>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="font-weight-bold">HPHT (Hari Pertama Haid Terakhir)</label>
+                            <input type="date" class="form-control anamnesa-field" id="anamnesa-hpht" value="${escapeHtml(hpht)}">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="font-weight-bold">HPL (Hari Perkiraan Lahir) <small class="text-muted">- Auto-calculate dari HPHT</small></label>
+                            <input type="text" class="form-control" id="anamnesa-hpl-display" value="${escapeHtml(hpl)}" readonly style="background-color: #f8f9fa; cursor: not-allowed;">
+                            <input type="hidden" class="anamnesa-field" id="anamnesa-hpl" value="${escapeHtml(hpl)}">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="font-weight-bold">Perkiraan Usia Kehamilan Saat Ini</label>
+                            <input type="text" class="form-control" id="anamnesa-usia-kehamilan-display" value="${escapeHtml(usiaKehamilan)}" readonly style="background-color: #f8f9fa; cursor: not-allowed;" placeholder="Otomatis dari HPHT">
+                        </div>
+
+                        <h4>Riwayat Penyakit</h4>
+                        <div class="form-group mb-3">
+                            <label class="font-weight-bold">Detail Riwayat Penyakit</label>
+                            <textarea class="form-control anamnesa-field" id="anamnesa-detail-riwayat" rows="3">${escapeHtml(detailRiwayat)}</textarea>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="font-weight-bold">Riwayat Keluarga</label>
+                            <textarea class="form-control anamnesa-field" id="anamnesa-riwayat-keluarga" rows="2">${escapeHtml(riwayatKeluarga)}</textarea>
+                        </div>
+                    </div>
+
+                    <div class="sc-card">
+                        <h4>Alergi</h4>
+                        <div class="form-group mb-3">
+                            <label class="font-weight-bold">Alergi Obat</label>
+                            <input type="text" class="form-control anamnesa-field" id="anamnesa-alergi-obat" value="${escapeHtml(alergiObat)}">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="font-weight-bold">Alergi Makanan</label>
+                            <input type="text" class="form-control anamnesa-field" id="anamnesa-alergi-makanan" value="${escapeHtml(alergiMakanan)}">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="font-weight-bold">Alergi Lingkungan</label>
+                            <input type="text" class="form-control anamnesa-field" id="anamnesa-alergi-lingkungan" value="${escapeHtml(alergiLingkungan)}">
+                        </div>
+
+                        <h4>Riwayat Obstetri</h4>
+                        <div class="row">
+                            <div class="col-3">
+                                <div class="form-group mb-3">
+                                    <label class="font-weight-bold">Gravida</label>
+                                    <input type="number" class="form-control anamnesa-field" id="anamnesa-gravida" value="${escapeHtml(gravida)}">
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="form-group mb-3">
+                                    <label class="font-weight-bold">Para</label>
+                                    <input type="number" class="form-control anamnesa-field" id="anamnesa-para" value="${escapeHtml(para)}">
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="form-group mb-3">
+                                    <label class="font-weight-bold">Abortus</label>
+                                    <input type="number" class="form-control anamnesa-field" id="anamnesa-abortus" value="${escapeHtml(abortus)}">
+                                </div>
+                            </div>
+                            <div class="col-3">
+                                <div class="form-group mb-3">
+                                    <label class="font-weight-bold">Anak Hidup</label>
+                                    <input type="number" class="form-control anamnesa-field" id="anamnesa-anak-hidup" value="${escapeHtml(anakHidup)}">
+                                </div>
+                            </div>
+                        </div>
+
+                        <h4>Riwayat Menstruasi</h4>
+                        <div class="form-group mb-3">
+                            <label class="font-weight-bold">Usia Menarche</label>
+                            <input type="text" class="form-control anamnesa-field" id="anamnesa-usia-menarche" value="${escapeHtml(usiaMenarche)}" placeholder="Contoh: 12 tahun">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="font-weight-bold">Lama Siklus Haid</label>
+                            <input type="text" class="form-control anamnesa-field" id="anamnesa-lama-siklus" value="${escapeHtml(lamaSiklus)}" placeholder="Contoh: 28 hari">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="font-weight-bold">Siklus Teratur?</label>
+                            <select class="form-control anamnesa-field" id="anamnesa-siklus-teratur">
+                                <option value="">-- Pilih --</option>
+                                <option value="Ya" ${siklusTeratur === 'Ya' ? 'selected' : ''}>Ya</option>
+                                <option value="Tidak" ${siklusTeratur === 'Tidak' ? 'selected' : ''}>Tidak</option>
+                            </select>
+                        </div>
+
+                        <h4>Riwayat KB</h4>
+                        <div class="form-group mb-3">
+                            <label class="font-weight-bold">Metode KB Terakhir</label>
+                            <input type="text" class="form-control anamnesa-field" id="anamnesa-metode-kb" value="${escapeHtml(metodeKbTerakhir)}">
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="font-weight-bold">Pernah gagal KB?</label>
+                            <select class="form-control anamnesa-field" id="anamnesa-kegagalan-kb">
+                                <option value="">-- Pilih --</option>
+                                <option value="Ya" ${kegagalanKb === 'Ya' ? 'selected' : ''}>Ya</option>
+                                <option value="Tidak" ${kegagalanKb === 'Tidak' ? 'selected' : ''}>Tidak</option>
+                            </select>
+                        </div>
+                        <div class="form-group mb-3">
+                            <label class="font-weight-bold">Jenis KB saat gagal</label>
+                            <input type="text" class="form-control anamnesa-field" id="anamnesa-jenis-kb-gagal" value="${escapeHtml(jenisKbGagal)}">
+                        </div>
+                </div>
+            </div>
+
+
+        `;
+    },
+
+    /**
+     * Called after component is rendered
+     */
+    async afterRender(state) {
+        // Cleanup old listeners first
+        this.cleanup();
+        
+        // Setup HPHT calculator
+        setTimeout(() => {
+            this.setupHPHTCalculator();
+            this.setupSaveHandler();
+        }, 100);
+    },
+
+    /**
+     * Cleanup event listeners
+     */
+    cleanup() {
+        // Remove old listeners by replacing elements or using AbortController
+        // Store references for cleanup
+        if (this._abortController) {
+            this._abortController.abort();
+        }
+        this._abortController = new AbortController();
+    },
+
+    /**
+     * Setup HPHT to HPL and gestational age calculator
+     */
+    setupHPHTCalculator() {
+        const hphtInput = document.getElementById('anamnesa-hpht');
+        const hplHidden = document.getElementById('anamnesa-hpl');
+        const hplDisplay = document.getElementById('anamnesa-hpl-display');
+        const usiaKehamilanDisplay = document.getElementById('anamnesa-usia-kehamilan-display');
+
+        if (!hphtInput) return;
+
+        // Calculate on load if HPHT already has value
+        if (hphtInput.value) {
+            this.updateHPLAndGA(hphtInput.value, hplHidden, hplDisplay, usiaKehamilanDisplay);
+        }
+
+        const signal = this._abortController.signal;
+
+        // Calculate on change
+        hphtInput.addEventListener('change', () => {
+            this.updateHPLAndGA(hphtInput.value, hplHidden, hplDisplay, usiaKehamilanDisplay);
+            const updateBtn = document.getElementById('btn-update-anamnesa');
+            if (updateBtn) updateBtn.style.display = 'inline-block';
+        }, { signal });
+
+        // Also listen to input event for immediate feedback
+        hphtInput.addEventListener('input', () => {
+            if (hphtInput.value && hphtInput.value.length === 10) { // YYYY-MM-DD format
+                this.updateHPLAndGA(hphtInput.value, hplHidden, hplDisplay, usiaKehamilanDisplay);
+            }
+        }, { signal });
+    },
+
+    /**
+     * Update HPL and gestational age displays
+     */
+    updateHPLAndGA(lmpDate, hplHidden, hplDisplay, usiaKehamilanDisplay) {
+        const edd = this.calculateEDD(lmpDate);
+        const ga = this.calculateGestationalAge(lmpDate);
+
+        if (edd && hplHidden && hplDisplay) {
+            const eddFormatted = this.formatDate(edd);
+            hplHidden.value = eddFormatted;
+            hplDisplay.value = this.formatDateIndo(edd);
+        } else if (hplHidden && hplDisplay) {
+            hplHidden.value = '';
+            hplDisplay.value = '';
+        }
+
+        if (ga && usiaKehamilanDisplay) {
+            usiaKehamilanDisplay.value = `${ga.weeks} minggu ${ga.days} hari`;
+        } else if (usiaKehamilanDisplay) {
+            usiaKehamilanDisplay.value = '';
+        }
+    },
+
+    /**
+     * Calculate EDD (HPL) from LMP (HPHT) using Naegele's Rule
+     */
+    calculateEDD(lmpDate) {
+        if (!lmpDate) return null;
+        const lmp = new Date(lmpDate);
+        if (isNaN(lmp.getTime())) return null;
+
+        // Naegele's Rule: LMP + 280 days (40 weeks)
+        const edd = new Date(lmp);
+        edd.setDate(edd.getDate() + 280);
+
+        return edd;
+    },
+
+    /**
+     * Calculate gestational age from LMP
+     */
+    calculateGestationalAge(lmpDate) {
+        if (!lmpDate) return null;
+        const lmp = new Date(lmpDate);
+        if (isNaN(lmp.getTime())) return null;
+
+        const today = new Date();
+        const diffTime = today - lmp;
+        const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+        if (diffDays < 0) return null;
+
+        const weeks = Math.floor(diffDays / 7);
+        const days = diffDays % 7;
+
+        return { weeks, days, totalDays: diffDays };
+    },
+
+    /**
+     * Format date to YYYY-MM-DD
+     */
+    formatDate(date) {
+        if (!date) return '';
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    },
+
+    /**
+     * Format date to European format (DD/MM/YYYY)
+     */
+    formatDateIndo(date) {
+        if (!date) return '';
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+        return `${day}/${month}/${year}`;
+    },
+
+    /**
+     * Setup save button handler
+     */
+    setupSaveHandler() {
+        const fields = document.querySelectorAll('.anamnesa-field');
+        const updateBtn = document.getElementById('btn-update-anamnesa');
+        const signal = this._abortController.signal;
+
+        if (fields && updateBtn) {
+            fields.forEach(field => {
+                field.addEventListener('input', () => {
+                    updateBtn.style.display = 'inline-block';
+                }, { signal });
+            });
+
+            // NOTE: Button already has onclick="window.saveAnamnesa()" in HTML
+            // No need to add addEventListener here to prevent double save
+        }
     },
 
     /**
@@ -573,10 +923,24 @@ export default {
     },
 
     /**
-     * Save Anamnesa data
+     * Collect data - handles both old and new formats
      */
-    async save(state) {
-        try {
+    async collectData() {
+        // Check if we're using old format (simple textareas)
+        const keluhanUtama = document.querySelector('[name="keluhan_utama"]');
+
+        if (keluhanUtama) {
+            // Old format
+            return {
+                keluhan_utama: keluhanUtama.value || '',
+                riwayat_penyakit_sekarang: document.querySelector('[name="riwayat_penyakit_sekarang"]')?.value || '',
+                riwayat_penyakit_dahulu: document.querySelector('[name="riwayat_penyakit_dahulu"]')?.value || '',
+                riwayat_obstetri: document.querySelector('[name="riwayat_obstetri"]')?.value || '',
+                riwayat_kehamilan: document.querySelector('[name="riwayat_kehamilan"]')?.value || '',
+                riwayat_alergi: document.querySelector('[name="riwayat_alergi"]')?.value || ''
+            };
+        } else {
+            // New format
             const formData = {
                 chiefComplaint: document.querySelector('[name="chief_complaint"]')?.value,
                 pregnancy: this.collectPregnancyData(),
@@ -585,9 +949,25 @@ export default {
                 generalMedical: this.collectGeneralMedicalData(),
                 medications: this.collectMedications()
             };
+            return formData;
+        }
+    },
 
+    /**
+     * Validate form data
+     */
+    async validate() {
+        // Anamnesa is optional, no strict validation needed for old format
+        return { valid: true, errors: [] };
+    },
+
+    /**
+     * Save Anamnesa data
+     */
+    async save(state) {
+        try {
+            const formData = await this.collectData();
             console.log('[Anamnesa Obstetri] Saving data:', formData);
-
             return { success: true, data: formData };
         } catch (error) {
             console.error('[Anamnesa Obstetri] Save failed:', error);

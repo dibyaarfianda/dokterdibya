@@ -217,10 +217,10 @@
         // Set max date to today
         document.getElementById('birth_date').setAttribute('max', getGMT7Date());
         
-        // Check authentication
-        const token = localStorage.getItem('patient_token');
+        // Check authentication - consistent with patient-dashboard.html
+        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
         if (!token) {
-            window.location.href = '/index.html';
+            window.location.href = '/index.html#masuk';
         }
         
         // Handle form submission

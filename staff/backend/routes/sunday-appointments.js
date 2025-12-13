@@ -3,6 +3,8 @@ const router = express.Router();
 const db = require('../db');
 const { createSundayClinicRecord } = require('../services/sundayClinicService');
 const { getGMT7Date, getGMT7Timestamp } = require('../utils/idGenerator');
+const { createPatientNotification } = require('./patient-notifications');
+const realtimeSync = require('../realtime-sync');
 
 // Middleware to verify JWT token
 const verifyToken = (req, res, next) => {
@@ -14,7 +16,10 @@ const verifyToken = (req, res, next) => {
 
     try {
         const jwt = require('jsonwebtoken');
-        const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+        const JWT_SECRET = process.env.JWT_SECRET;
+        if (!JWT_SECRET) {
+            return res.status(500).json({ message: 'Server configuration error' });
+        }
         const decoded = jwt.verify(token, JWT_SECRET);
         req.user = decoded;
         next();
@@ -26,28 +31,100 @@ const verifyToken = (req, res, next) => {
 // Helper function to get next Sundays
 function getNextSundays(count = 8) {
     const sundays = [];
-    // Use GMT+7 (Jakarta/Indonesian time)
-    const today = getGMT7Date();
-    const year = today.getUTCFullYear();
-    const month = today.getUTCMonth();
-    const day = today.getUTCDate();
+    // Use GMT+7 (Jakarta/Indonesian time) - getGMT7Date returns a Date object
+    const now = getGMT7Date();
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const day = now.getDate();
+    const currentHour = now.getHours();
 
-    // Create date at midnight GMT+7
-    let current = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
-    current.setUTCDate(current.getUTCDate() + 1); // Start from tomorrow
+    // Create date at midnight for today
+    let current = new Date(year, month, day, 0, 0, 0, 0);
+
+    // Check if today is Sunday and it's before 9 PM (21:00)
+    const isTodaySunday = current.getDay() === 0;
+    const isBeforeCutoff = currentHour < 21; // Before 9 PM
+
+    // If today is Sunday and before 9 PM, include today
+    if (isTodaySunday && isBeforeCutoff) {
+        // Create UTC date for API response
+        const todayUtc = new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
+        sundays.push(todayUtc);
+    }
+
+    // Continue from tomorrow
+    current.setDate(current.getDate() + 1);
 
     while (sundays.length < count) {
-        if (current.getUTCDay() === 0) { // Sunday
-            sundays.push(new Date(current));
+        if (current.getDay() === 0) { // Sunday
+            const sundayUtc = new Date(Date.UTC(
+                current.getFullYear(),
+                current.getMonth(),
+                current.getDate(),
+                0, 0, 0, 0
+            ));
+            sundays.push(sundayUtc);
         }
-        current.setUTCDate(current.getUTCDate() + 1);
+        current.setDate(current.getDate() + 1);
     }
 
     return sundays;
 }
 
-// Helper function to get session time label
+// Cache for session settings
+let sessionSettingsCache = null;
+let sessionSettingsCacheTime = 0;
+const CACHE_TTL = 60000; // 1 minute cache
+
+// Helper function to get session settings from database
+async function getSessionSettings() {
+    const now = Date.now();
+    if (sessionSettingsCache && (now - sessionSettingsCacheTime) < CACHE_TTL) {
+        return sessionSettingsCache;
+    }
+
+    try {
+        const [settings] = await db.query(
+            `SELECT session_number, session_name, start_time, end_time, slot_duration, max_slots
+             FROM booking_settings WHERE is_active = 1 ORDER BY session_number ASC`
+        );
+
+        sessionSettingsCache = settings.map(s => ({
+            session: s.session_number,
+            name: s.session_name,
+            startTime: s.start_time.substring(0, 5),
+            endTime: s.end_time.substring(0, 5),
+            slotDuration: s.slot_duration,
+            maxSlots: s.max_slots,
+            label: `${s.start_time.substring(0, 5)} - ${s.end_time.substring(0, 5)} (${s.session_name})`
+        }));
+        sessionSettingsCacheTime = now;
+        return sessionSettingsCache;
+    } catch (error) {
+        console.error('Error fetching session settings:', error);
+        // Fallback to default if DB fails
+        return [
+            { session: 1, name: 'Pagi', startTime: '09:00', endTime: '11:30', slotDuration: 15, maxSlots: 10, label: '09:00 - 11:30 (Pagi)' },
+            { session: 2, name: 'Siang', startTime: '12:00', endTime: '14:30', slotDuration: 15, maxSlots: 10, label: '12:00 - 14:30 (Siang)' },
+            { session: 3, name: 'Sore', startTime: '15:00', endTime: '17:30', slotDuration: 15, maxSlots: 10, label: '15:00 - 17:30 (Sore)' }
+        ];
+    }
+}
+
+// Helper function to get session time label (async version with fallback)
+async function getSessionLabelAsync(session) {
+    const settings = await getSessionSettings();
+    const found = settings.find(s => s.session === parseInt(session));
+    return found ? found.label : 'Unknown';
+}
+
+// Sync version for backward compatibility (uses cache)
 function getSessionLabel(session) {
+    if (sessionSettingsCache) {
+        const found = sessionSettingsCache.find(s => s.session === parseInt(session));
+        return found ? found.label : 'Unknown';
+    }
+    // Fallback to hardcoded if cache not loaded
     const labels = {
         1: '09:00 - 11:30 (Pagi)',
         2: '12:00 - 14:30 (Siang)',
@@ -56,14 +133,57 @@ function getSessionLabel(session) {
     return labels[session] || 'Unknown';
 }
 
-// Helper function to calculate slot time
+// Helper function to calculate slot time (async version)
+async function getSlotTimeAsync(session, slotNumber) {
+    const settings = await getSessionSettings();
+    const found = settings.find(s => s.session === parseInt(session));
+
+    if (!found) {
+        // Fallback
+        const startHours = { 1: 9, 2: 12, 3: 15 };
+        const startHour = startHours[session] || 9;
+        const minutes = (slotNumber - 1) * 15;
+        const hour = startHour + Math.floor(minutes / 60);
+        const minute = minutes % 60;
+        return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    }
+
+    const [hours, mins] = found.startTime.split(':').map(Number);
+    const totalMinutes = (hours * 60 + mins) + (slotNumber - 1) * found.slotDuration;
+    const hour = Math.floor(totalMinutes / 60);
+    const minute = totalMinutes % 60;
+    return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
+// Sync version for backward compatibility
 function getSlotTime(session, slotNumber) {
+    if (sessionSettingsCache) {
+        const found = sessionSettingsCache.find(s => s.session === parseInt(session));
+        if (found) {
+            const [hours, mins] = found.startTime.split(':').map(Number);
+            const totalMinutes = (hours * 60 + mins) + (slotNumber - 1) * found.slotDuration;
+            const hour = Math.floor(totalMinutes / 60);
+            const minute = totalMinutes % 60;
+            return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+        }
+    }
+    // Fallback to hardcoded
     const startHours = { 1: 9, 2: 12, 3: 15 };
-    const startHour = startHours[session];
+    const startHour = startHours[session] || 9;
     const minutes = (slotNumber - 1) * 15;
     const hour = startHour + Math.floor(minutes / 60);
     const minute = minutes % 60;
     return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+}
+
+// Helper function to get category label
+function getCategoryLabel(category) {
+    const labels = {
+        'obstetri': 'Kehamilan (Obstetri)',
+        'gyn_repro': 'Program Hamil (Reproduksi)',
+        'gyn_special': 'Ginekologi Umum'
+    };
+    return labels[category] || category || '-';
 }
 
 function calculateAge(birthDate) {
@@ -107,30 +227,38 @@ router.get('/available', verifyToken, async (req, res) => {
         
         // Get booked slots for this date
         const [bookedSlots] = await db.query(
-            `SELECT session, slot_number FROM sunday_appointments 
+            `SELECT session, slot_number FROM sunday_appointments
              WHERE appointment_date = ? AND status NOT IN ('cancelled', 'no_show')`,
             [date]
         );
-        
-        // Build available slots structure
-        const sessions = [
-            { session: 1, label: '09:00 - 11:30 (Pagi)', slots: [] },
-            { session: 2, label: '12:00 - 14:30 (Siang)', slots: [] },
-            { session: 3, label: '15:00 - 17:30 (Sore)', slots: [] }
-        ];
-        
-        sessions.forEach(sessionObj => {
-            for (let slot = 1; slot <= 10; slot++) {
+
+        // Get dynamic session settings from database
+        const sessionSettings = await getSessionSettings();
+
+        // Build available slots structure from dynamic settings
+        const sessions = sessionSettings.map(setting => ({
+            session: setting.session,
+            label: setting.label,
+            slots: []
+        }));
+
+        // Populate slots for each session
+        for (const sessionObj of sessions) {
+            const setting = sessionSettings.find(s => s.session === sessionObj.session);
+            const maxSlots = setting ? setting.maxSlots : 10;
+
+            for (let slot = 1; slot <= maxSlots; slot++) {
                 const isBooked = bookedSlots.some(
                     b => b.session === sessionObj.session && b.slot_number === slot
                 );
+                const slotTime = await getSlotTimeAsync(sessionObj.session, slot);
                 sessionObj.slots.push({
                     number: slot,
-                    time: getSlotTime(sessionObj.session, slot),
+                    time: slotTime,
                     available: !isBooked
                 });
             }
-        });
+        }
         
         res.json({
             date,
@@ -146,25 +274,42 @@ router.get('/available', verifyToken, async (req, res) => {
 
 /**
  * GET /api/sunday-appointments/sundays
- * Get list of next available Sundays
+ * Get list of next available Sundays (excluding disabled dates)
  */
 router.get('/sundays', verifyToken, async (req, res) => {
     try {
         const sundays = getNextSundays(8);
         const formattedSundays = sundays.map(date => ({
             date: date.toISOString().split('T')[0],
-            formatted: date.toLocaleDateString('id-ID', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
+            formatted: date.toLocaleDateString('id-ID', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
                 day: 'numeric',
                 timeZone: 'UTC'
             }),
             dayOfWeek: date.getUTCDay() // Should be 0 for Sunday
         }));
-        
-        console.log('Sundays generated:', formattedSundays);
-        res.json({ sundays: formattedSundays });
+
+        // Check for disabled dates (klinik_privat or all locations)
+        const dateStrings = formattedSundays.map(s => s.date);
+        const [disabledDates] = await db.query(
+            `SELECT disabled_date, reason FROM disabled_practice_dates
+             WHERE disabled_date IN (?) AND (location IS NULL OR location = 'klinik_privat')`,
+            [dateStrings]
+        );
+
+        // Create a set of disabled date strings for fast lookup
+        const disabledSet = new Set(disabledDates.map(d => {
+            const dateObj = new Date(d.disabled_date);
+            return dateObj.toISOString().split('T')[0];
+        }));
+
+        // Filter out disabled Sundays
+        const availableSundays = formattedSundays.filter(s => !disabledSet.has(s.date));
+
+        console.log('Sundays generated:', formattedSundays.length, 'Available:', availableSundays.length);
+        res.json({ sundays: availableSundays });
     } catch (error) {
         console.error('Error getting sundays:', error);
         res.status(500).json({ message: 'Terjadi kesalahan' });
@@ -177,26 +322,45 @@ router.get('/sundays', verifyToken, async (req, res) => {
  */
 router.post('/book', verifyToken, async (req, res) => {
     try {
-        const { appointment_date, session, slot_number, chief_complaint } = req.body;
+        const { appointment_date, session, slot_number, chief_complaint, consultation_category } = req.body;
         
         // Validation
         if (!appointment_date || !session || !slot_number || !chief_complaint) {
             return res.status(400).json({ message: 'Semua field harus diisi' });
         }
-        
-        if (![1, 2, 3].includes(parseInt(session))) {
-            return res.status(400).json({ message: 'Sesi tidak valid (harus 1, 2, atau 3)' });
+
+        // Get dynamic session settings for validation
+        const sessionSettings = await getSessionSettings();
+        const validSessions = sessionSettings.map(s => s.session);
+        const sessionSetting = sessionSettings.find(s => s.session === parseInt(session));
+
+        if (!validSessions.includes(parseInt(session))) {
+            return res.status(400).json({ message: `Sesi tidak valid (pilihan: ${validSessions.join(', ')})` });
         }
-        
-        if (slot_number < 1 || slot_number > 10) {
-            return res.status(400).json({ message: 'Nomor slot harus antara 1-10' });
+
+        const maxSlots = sessionSetting ? sessionSetting.maxSlots : 10;
+        if (slot_number < 1 || slot_number > maxSlots) {
+            return res.status(400).json({ message: `Nomor slot harus antara 1-${maxSlots}` });
         }
         
         const appointmentDate = new Date(appointment_date);
         if (appointmentDate.getDay() !== 0) {
             return res.status(400).json({ message: 'Janji temu hanya tersedia di hari Minggu' });
         }
-        
+
+        // Check if date is disabled
+        const [disabledCheck] = await db.query(
+            `SELECT id, reason FROM disabled_practice_dates
+             WHERE disabled_date = ? AND (location IS NULL OR location = 'klinik_privat')`,
+            [appointment_date]
+        );
+        if (disabledCheck.length > 0) {
+            const reason = disabledCheck[0].reason || 'Jadwal tidak tersedia';
+            return res.status(400).json({
+                message: `Maaf, tanggal ini tidak tersedia untuk booking. ${reason}`
+            });
+        }
+
         // Get patient info
         const [patients] = await db.query(
             'SELECT id, full_name, phone FROM patients WHERE id = ?',
@@ -238,23 +402,39 @@ router.post('/book', verifyToken, async (req, res) => {
             });
         }
         
-        // Create appointment
+        // Validate consultation category
+        const validCategories = ['obstetri', 'gyn_repro', 'gyn_special'];
+        const category = validCategories.includes(consultation_category) ? consultation_category : 'obstetri';
+
+        // Create appointment with auto-confirmed status
         const [result] = await db.query(
-            `INSERT INTO sunday_appointments 
-             (patient_id, patient_name, patient_phone, appointment_date, session, slot_number, chief_complaint, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
-            [patient.id, patient.full_name, patient.phone, appointment_date, session, slot_number, chief_complaint]
+            `INSERT INTO sunday_appointments
+             (patient_id, patient_name, patient_phone, appointment_date, session, slot_number, chief_complaint, consultation_category, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'confirmed')`,
+            [patient.id, patient.full_name, patient.phone, appointment_date, session, slot_number, chief_complaint, category]
         );
-        
+
+        // Broadcast new booking to all connected staff
+        realtimeSync.broadcastNewBooking({
+            id: result.insertId,
+            patient_name: patient.full_name,
+            appointment_date: appointment_date,
+            session: session,
+            session_label: getSessionLabel(session),
+            slot_number: slot_number,
+            status: 'confirmed'
+        });
+
         res.status(201).json({
-            message: 'Janji temu berhasil dibuat',
+            message: 'Janji temu berhasil dibuat dan langsung terkonfirmasi!',
             appointmentId: result.insertId,
+            status: 'confirmed',
             details: {
-                date: appointmentDate.toLocaleDateString('id-ID', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
+                date: appointmentDate.toLocaleDateString('id-ID', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
                 }),
                 session: getSessionLabel(session),
                 time: getSlotTime(session, slot_number),
@@ -278,14 +458,14 @@ router.post('/book', verifyToken, async (req, res) => {
 router.get('/patient', verifyToken, async (req, res) => {
     try {
         const [appointments] = await db.query(
-            `SELECT id, appointment_date, session, slot_number, chief_complaint, status, notes,
+            `SELECT id, appointment_date, session, slot_number, chief_complaint, consultation_category, status, notes,
                     cancellation_reason, cancelled_by, cancelled_at, created_at
              FROM sunday_appointments
              WHERE patient_id = ?
              ORDER BY appointment_date DESC, session ASC, slot_number ASC`,
             [req.user.id]
         );
-        
+
         const formatted = appointments.map(apt => {
             const slotTime = getSlotTime(apt.session, apt.slot_number);
 
@@ -295,7 +475,12 @@ router.get('/patient', verifyToken, async (req, res) => {
             let isPast = new Date(apt.appointment_date) < new Date();
 
             if (slotTime && /^\d{2}:\d{2}$/.test(slotTime)) {
-                const start = new Date(`${apt.appointment_date}T${slotTime}:00`);
+                // MySQL DATE is returned as UTC midnight, but represents local date
+                // Add 7 hours to get correct GMT+7 date, then extract date part
+                const aptDate = new Date(apt.appointment_date);
+                const gmt7Offset = aptDate.getTime() + (7 * 60 * 60 * 1000);
+                const dateStr = new Date(gmt7Offset).toISOString().split('T')[0];
+                const start = new Date(`${dateStr}T${slotTime}:00+07:00`); // Create date in GMT+7
                 if (!isNaN(start.getTime())) {
                     startDateTime = start.toISOString();
                     const arrival = new Date(start.getTime() - (15 * 60 * 1000));
@@ -308,23 +493,24 @@ router.get('/patient', verifyToken, async (req, res) => {
                 
             return {
                 ...apt,
-                dateFormatted: new Date(apt.appointment_date).toLocaleDateString('id-ID', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
+                dateFormatted: new Date(apt.appointment_date).toLocaleDateString('id-ID', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
                 }),
                 sessionLabel: getSessionLabel(apt.session),
                 time: slotTime,
                 startDateTime,
                 arrivalTime,
                 arrivalTimeFormatted,
-                isPast
+                isPast,
+                categoryLabel: getCategoryLabel(apt.consultation_category)
             };
         });
-        
+
         res.json({ appointments: formatted });
-        
+
     } catch (error) {
         console.error('Error getting patient appointments:', error);
         res.status(500).json({ message: 'Terjadi kesalahan' });
@@ -384,7 +570,14 @@ router.put('/:id/cancel', verifyToken, async (req, res) => {
              WHERE id = ?`,
             [cancellationReason, id]
         );
-        
+
+        // Broadcast cancellation to staff
+        realtimeSync.broadcastBookingCancel({
+            id: id,
+            patient_name: appointment.patient_name,
+            appointment_date: appointment.appointment_date
+        });
+
         res.json({ message: 'Janji temu berhasil dibatalkan', reason: cancellationReason });
         
     } catch (error) {
@@ -400,9 +593,10 @@ router.put('/:id/cancel', verifyToken, async (req, res) => {
 router.post('/:id/start-clinic-record', verifyToken, async (req, res) => {
     try {
         const { id } = req.params;
+        const { category: requestCategory } = req.body || {};
 
         const [appointments] = await db.query(
-            `SELECT a.*, p.id AS patient_db_id, p.full_name
+            `SELECT a.*, a.consultation_category, p.id AS patient_db_id, p.full_name
              FROM sunday_appointments a
              LEFT JOIN patients p ON CAST(a.patient_id AS CHAR) = CAST(p.id AS CHAR)
              WHERE a.id = ?
@@ -442,9 +636,16 @@ router.post('/:id/start-clinic-record', verifyToken, async (req, res) => {
             console.error('Failed to fetch intake data, will use default category:', intakeError);
         }
 
+        // Priority: 1) Staff selection from modal, 2) Appointment category, 3) Intake data
+        const validCategories = ['obstetri', 'gyn_repro', 'gyn_special'];
+        const finalCategory = validCategories.includes(requestCategory)
+            ? requestCategory
+            : (appointment.consultation_category || null);
+
         const { record, created } = await createSundayClinicRecord({
             appointmentId: appointment.id,
             patientId: appointment.patient_db_id,
+            category: finalCategory,
             intakeData: intakeData,
             createdBy: userId
         });
@@ -518,17 +719,18 @@ router.get('/list', verifyToken, async (req, res) => {
                 ...apt,
                 patientAge,
                 patientBirthDate: birthIso,
-                dateFormatted: new Date(apt.appointment_date).toLocaleDateString('id-ID', { 
-                    weekday: 'long', 
-                    year: 'numeric', 
-                    month: 'long', 
-                    day: 'numeric' 
+                dateFormatted: new Date(apt.appointment_date).toLocaleDateString('id-ID', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
                 }),
                 sessionLabel: getSessionLabel(apt.session),
-                time: getSlotTime(apt.session, apt.slot_number)
+                time: getSlotTime(apt.session, apt.slot_number),
+                categoryLabel: getCategoryLabel(apt.consultation_category)
             };
         });
-        
+
         res.json({ appointments: formatted });
         
     } catch (error) {
@@ -561,18 +763,34 @@ router.get('/patient-by-id', verifyToken, async (req, res) => {
             [patientId]
         );
         
-        const formatted = appointments.map(apt => ({
-            ...apt,
-            dateFormatted: new Date(apt.appointment_date).toLocaleDateString('id-ID', { 
-                weekday: 'long', 
-                year: 'numeric', 
-                month: 'long', 
-                day: 'numeric' 
-            }),
-            sessionLabel: getSessionLabel(apt.session),
-            time: getSlotTime(apt.session, apt.slot_number),
-            isPast: new Date(apt.appointment_date) < new Date()
-        }));
+        const formatted = appointments.map(apt => {
+            const slotTime = getSlotTime(apt.session, apt.slot_number);
+
+            // Calculate isPast correctly with GMT+7 timezone
+            let isPast = new Date(apt.appointment_date) < new Date();
+            if (slotTime && /^\d{2}:\d{2}$/.test(slotTime)) {
+                const aptDate = new Date(apt.appointment_date);
+                const gmt7Offset = aptDate.getTime() + (7 * 60 * 60 * 1000);
+                const dateStr = new Date(gmt7Offset).toISOString().split('T')[0];
+                const start = new Date(`${dateStr}T${slotTime}:00+07:00`);
+                if (!isNaN(start.getTime())) {
+                    isPast = start < new Date();
+                }
+            }
+
+            return {
+                ...apt,
+                dateFormatted: new Date(apt.appointment_date).toLocaleDateString('id-ID', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                }),
+                sessionLabel: getSessionLabel(apt.session),
+                time: slotTime,
+                isPast
+            };
+        });
         
         res.json({ 
             success: true, 
@@ -617,6 +835,21 @@ router.put('/:id/status', verifyToken, async (req, res) => {
         const cancelledByValue = status === 'cancelled' ? 'staff' : null;
         const cancelledAtClause = status === 'cancelled' ? 'NOW()' : 'NULL';
 
+        // Get appointment details first for notification
+        const [appointments] = await db.query(
+            `SELECT sa.*, bs.session_name, bs.start_time
+             FROM sunday_appointments sa
+             LEFT JOIN booking_settings bs ON sa.session = bs.session_number
+             WHERE sa.id = ?`,
+            [id]
+        );
+
+        if (appointments.length === 0) {
+            return res.status(404).json({ message: 'Appointment tidak ditemukan' });
+        }
+
+        const appointment = appointments[0];
+
         await db.query(
             `UPDATE sunday_appointments
              SET status = ?,
@@ -628,9 +861,74 @@ router.put('/:id/status', verifyToken, async (req, res) => {
              WHERE id = ?`,
             [status, trimmedNotes, cancellationReasonToSave, cancelledByValue, id]
         );
-        
+
+        // Create patient notification based on status change
+        try {
+            const appointmentDate = new Date(appointment.appointment_date);
+            const formattedDate = appointmentDate.toLocaleDateString('id-ID', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+
+            // Calculate slot time
+            const startTime = appointment.start_time ? appointment.start_time.substring(0, 5) : '09:00';
+            const [hours, mins] = startTime.split(':').map(Number);
+            const totalMinutes = (hours * 60 + mins) + (appointment.slot_number - 1) * 15;
+            const slotHour = Math.floor(totalMinutes / 60);
+            const slotMinute = totalMinutes % 60;
+            const slotTime = `${String(slotHour).padStart(2, '0')}:${String(slotMinute).padStart(2, '0')}`;
+
+            const statusMessages = {
+                'confirmed': {
+                    title: 'Janji Temu Dikonfirmasi',
+                    message: `Janji temu Anda pada ${formattedDate} pukul ${slotTime} telah dikonfirmasi. Sampai jumpa di klinik!`,
+                    icon: 'fa fa-check-circle',
+                    icon_color: 'text-success'
+                },
+                'cancelled': {
+                    title: 'Janji Temu Dibatalkan',
+                    message: `Janji temu Anda pada ${formattedDate} pukul ${slotTime} telah dibatalkan.${cancellationReasonToSave ? ' Alasan: ' + cancellationReasonToSave : ''}`,
+                    icon: 'fa fa-times-circle',
+                    icon_color: 'text-danger'
+                },
+                'completed': {
+                    title: 'Kunjungan Selesai',
+                    message: `Terima kasih telah berkunjung pada ${formattedDate}. Semoga lekas sembuh!`,
+                    icon: 'fa fa-heart',
+                    icon_color: 'text-info'
+                },
+                'no_show': {
+                    title: 'Tidak Hadir',
+                    message: `Anda tidak hadir pada janji temu ${formattedDate} pukul ${slotTime}. Silakan booking ulang jika masih membutuhkan konsultasi.`,
+                    icon: 'fa fa-user-times',
+                    icon_color: 'text-warning'
+                }
+            };
+
+            if (statusMessages[status] && appointment.patient_id) {
+                await createPatientNotification({
+                    patient_id: appointment.patient_id,
+                    type: 'appointment',
+                    ...statusMessages[status]
+                });
+            }
+        } catch (notifError) {
+            console.error('Failed to create patient notification:', notifError);
+        }
+
+        // Broadcast status update to all staff
+        realtimeSync.broadcastBookingUpdate({
+            id: id,
+            patient_name: appointment.patient_name,
+            appointment_date: appointment.appointment_date,
+            session: appointment.session,
+            status: status
+        });
+
         res.json({ message: 'Status berhasil diupdate' });
-        
+
     } catch (error) {
         console.error('Error updating appointment status:', error);
         res.status(500).json({ message: 'Terjadi kesalahan' });

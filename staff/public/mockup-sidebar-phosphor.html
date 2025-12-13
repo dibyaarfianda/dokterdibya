@@ -1,0 +1,617 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mockup Sidebar - Phosphor Icons</title>
+
+    <!-- Google Fonts - Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #f0f2f5;
+            display: flex;
+            min-height: 100vh;
+        }
+
+        .comparison {
+            display: flex;
+            gap: 40px;
+            padding: 30px;
+            width: 100%;
+        }
+
+        .sidebar-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .sidebar-container h2 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        /* SIDEBAR STYLES */
+        .sidebar {
+            width: 280px;
+            background: linear-gradient(180deg, #1a1f2e 0%, #252b3d 100%);
+            min-height: 700px;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+        }
+
+        .sidebar-header {
+            padding: 24px 20px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sidebar-header .logo {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 20px;
+        }
+
+        .sidebar-header .brand {
+            color: #fff;
+            font-weight: 700;
+            font-size: 18px;
+            letter-spacing: -0.3px;
+        }
+
+        .sidebar-header .brand span {
+            color: #10b981;
+        }
+
+        .nav-section {
+            padding: 16px 12px 8px;
+        }
+
+        .nav-header {
+            color: #6b7280;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 0 12px;
+            margin-bottom: 8px;
+        }
+
+        .nav-item {
+            list-style: none;
+            margin-bottom: 2px;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 14px;
+            color: #9ca3af;
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .nav-link:hover {
+            background: rgba(255,255,255,0.06);
+            color: #fff;
+        }
+
+        .nav-link.active {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .nav-link i {
+            font-size: 20px;
+            width: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-link .badge {
+            margin-left: auto;
+            background: #ef4444;
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 10px;
+            min-width: 20px;
+            text-align: center;
+        }
+
+        .nav-link .badge.badge-warning {
+            background: #f59e0b;
+        }
+
+        /* Submenu */
+        .nav-treeview {
+            padding-left: 20px;
+            margin-top: 4px;
+        }
+
+        .nav-treeview .nav-link {
+            padding: 10px 14px;
+            font-size: 13px;
+        }
+
+        .nav-treeview .nav-link::before {
+            content: '';
+            width: 6px;
+            height: 6px;
+            background: #4b5563;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+
+        .nav-treeview .nav-link:hover::before,
+        .nav-treeview .nav-link.active::before {
+            background: #10b981;
+        }
+
+        /* Hospital colors */
+        .hospital-icon.klinik { color: #3b82f6; }
+        .hospital-icon.melinda { color: #ec4899; }
+        .hospital-icon.gambiran { color: #06b6d4; }
+        .hospital-icon.bhayangkara { color: #22c55e; }
+
+        /* Expand arrow */
+        .expand-arrow {
+            margin-left: auto;
+            transition: transform 0.2s;
+        }
+
+        .nav-item.open .expand-arrow {
+            transform: rotate(90deg);
+        }
+
+        /* Alternative style - Light sidebar */
+        .sidebar.light {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+        }
+
+        .sidebar.light .sidebar-header {
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .sidebar.light .sidebar-header .brand {
+            color: #1f2937;
+        }
+
+        .sidebar.light .nav-header {
+            color: #9ca3af;
+        }
+
+        .sidebar.light .nav-link {
+            color: #4b5563;
+        }
+
+        .sidebar.light .nav-link:hover {
+            background: #f3f4f6;
+            color: #1f2937;
+        }
+
+        .sidebar.light .nav-link.active {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: #fff;
+        }
+
+        /* Glass effect sidebar */
+        .sidebar.glass {
+            background: linear-gradient(135deg, rgba(26, 31, 46, 0.95) 0%, rgba(37, 43, 61, 0.95) 100%);
+            backdrop-filter: blur(10px);
+        }
+
+        /* Info panel */
+        .info-panel {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 400px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        }
+
+        .info-panel h3 {
+            color: #1f2937;
+            margin-bottom: 16px;
+            font-size: 18px;
+        }
+
+        .info-panel ul {
+            list-style: none;
+            margin-bottom: 20px;
+        }
+
+        .info-panel li {
+            padding: 8px 0;
+            color: #4b5563;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .info-panel li i {
+            color: #10b981;
+        }
+
+        .icon-samples {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 16px;
+        }
+
+        .icon-sample {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 12px;
+            background: #f9fafb;
+            border-radius: 8px;
+            min-width: 80px;
+        }
+
+        .icon-sample i {
+            font-size: 24px;
+            color: #1f2937;
+        }
+
+        .icon-sample span {
+            font-size: 11px;
+            color: #6b7280;
+        }
+
+        .weight-demo {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+            padding: 16px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+
+        .weight-demo div {
+            text-align: center;
+        }
+
+        .weight-demo i {
+            font-size: 28px;
+            color: #1f2937;
+            margin-bottom: 4px;
+        }
+
+        .weight-demo span {
+            font-size: 11px;
+            color: #6b7280;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="comparison">
+        <!-- Dark Sidebar -->
+        <div class="sidebar-container">
+            <h2>Dark Theme (Recommended)</h2>
+            <aside class="sidebar">
+                <div class="sidebar-header">
+                    <div class="logo">
+                        <i class="ph-bold ph-stethoscope"></i>
+                    </div>
+                    <div class="brand">Dokter<span>DIBYA</span></div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-header">Main</div>
+                    <ul>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link active">
+                                <i class="ph-bold ph-squares-four"></i>
+                                Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-users-three"></i>
+                                Kelola Pasien
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-megaphone"></i>
+                                Pengumuman
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-bell"></i>
+                                Notifikasi
+                                <span class="badge">3</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-calendar-blank"></i>
+                                Jadwal
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-book-open-text"></i>
+                                Ruang Membaca
+                                <span class="badge badge-warning">5</span>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-header">Klinik</div>
+                    <ul>
+                        <li class="nav-item open">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-first-aid-kit hospital-icon klinik"></i>
+                                Klinik Privat
+                                <i class="ph-bold ph-caret-right expand-arrow"></i>
+                            </a>
+                            <ul class="nav-treeview">
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link">
+                                        Janji Temu
+                                        <span class="badge badge-warning">2</span>
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link">Pasien</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link">Layanan</a>
+                                </li>
+                                <li class="nav-item">
+                                    <a href="#" class="nav-link">Obat/Alkes</a>
+                                </li>
+                            </ul>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-hospital hospital-icon melinda"></i>
+                                RSIA Melinda
+                                <i class="ph-bold ph-caret-right expand-arrow"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-hospital hospital-icon gambiran"></i>
+                                RSUD Gambiran
+                                <i class="ph-bold ph-caret-right expand-arrow"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-hospital hospital-icon bhayangkara"></i>
+                                RS Bhayangkara
+                                <i class="ph-bold ph-caret-right expand-arrow"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-header">Management</div>
+                    <ul>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-chart-line-up"></i>
+                                Finance Analysis
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-truck"></i>
+                                Supplier
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-clock-counter-clockwise"></i>
+                                Log Aktivitas
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-shield-check"></i>
+                                Roles Manajemen
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </aside>
+        </div>
+
+        <!-- Light Sidebar -->
+        <div class="sidebar-container">
+            <h2>Light Theme (Alternative)</h2>
+            <aside class="sidebar light">
+                <div class="sidebar-header">
+                    <div class="logo">
+                        <i class="ph-bold ph-stethoscope"></i>
+                    </div>
+                    <div class="brand">Dokter<span>DIBYA</span></div>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-header">Main</div>
+                    <ul>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link active">
+                                <i class="ph-bold ph-squares-four"></i>
+                                Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-users-three"></i>
+                                Kelola Pasien
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-megaphone"></i>
+                                Pengumuman
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-bell"></i>
+                                Notifikasi
+                                <span class="badge">3</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-calendar-blank"></i>
+                                Jadwal
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+
+                <div class="nav-section">
+                    <div class="nav-header">Klinik</div>
+                    <ul>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-first-aid-kit hospital-icon klinik"></i>
+                                Klinik Privat
+                                <i class="ph-bold ph-caret-right expand-arrow"></i>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link">
+                                <i class="ph-bold ph-hospital hospital-icon melinda"></i>
+                                RSIA Melinda
+                                <i class="ph-bold ph-caret-right expand-arrow"></i>
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </aside>
+        </div>
+
+        <!-- Info Panel -->
+        <div class="info-panel">
+            <h3>Phosphor Icons + Inter Font</h3>
+            <ul>
+                <li><i class="ph-bold ph-check-circle"></i> 7000+ icons tersedia</li>
+                <li><i class="ph-bold ph-check-circle"></i> 6 weight options (thin → bold)</li>
+                <li><i class="ph-bold ph-check-circle"></i> Konsisten & modern</li>
+                <li><i class="ph-bold ph-check-circle"></i> 100% gratis (MIT license)</li>
+                <li><i class="ph-bold ph-check-circle"></i> Support duotone style</li>
+            </ul>
+
+            <h4 style="margin-top: 20px; margin-bottom: 12px; font-size: 14px; color: #374151;">Icon Weights:</h4>
+            <div class="weight-demo">
+                <div>
+                    <i class="ph-thin ph-heart"></i>
+                    <span>Thin</span>
+                </div>
+                <div>
+                    <i class="ph-light ph-heart"></i>
+                    <span>Light</span>
+                </div>
+                <div>
+                    <i class="ph ph-heart"></i>
+                    <span>Regular</span>
+                </div>
+                <div>
+                    <i class="ph-bold ph-heart"></i>
+                    <span>Bold</span>
+                </div>
+                <div>
+                    <i class="ph-fill ph-heart"></i>
+                    <span>Fill</span>
+                </div>
+                <div>
+                    <i class="ph-duotone ph-heart"></i>
+                    <span>Duotone</span>
+                </div>
+            </div>
+
+            <h4 style="margin-top: 24px; margin-bottom: 12px; font-size: 14px; color: #374151;">Sample Medical Icons:</h4>
+            <div class="icon-samples">
+                <div class="icon-sample">
+                    <i class="ph-bold ph-stethoscope"></i>
+                    <span>Stethoscope</span>
+                </div>
+                <div class="icon-sample">
+                    <i class="ph-bold ph-heartbeat"></i>
+                    <span>Heartbeat</span>
+                </div>
+                <div class="icon-sample">
+                    <i class="ph-bold ph-pill"></i>
+                    <span>Pill</span>
+                </div>
+                <div class="icon-sample">
+                    <i class="ph-bold ph-syringe"></i>
+                    <span>Syringe</span>
+                </div>
+                <div class="icon-sample">
+                    <i class="ph-bold ph-first-aid-kit"></i>
+                    <span>First Aid</span>
+                </div>
+                <div class="icon-sample">
+                    <i class="ph-bold ph-baby"></i>
+                    <span>Baby</span>
+                </div>
+                <div class="icon-sample">
+                    <i class="ph-bold ph-bandaids"></i>
+                    <span>Bandaids</span>
+                </div>
+                <div class="icon-sample">
+                    <i class="ph-bold ph-thermometer"></i>
+                    <span>Thermo</span>
+                </div>
+            </div>
+
+            <div style="margin-top: 24px; padding: 16px; background: #ecfdf5; border-radius: 8px; border-left: 4px solid #10b981;">
+                <p style="font-size: 13px; color: #065f46; margin: 0;">
+                    <strong>Recommendation:</strong> Gunakan <code>ph-bold</code> untuk sidebar icons agar terlihat jelas dan konsisten.
+                </p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
