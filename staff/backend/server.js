@@ -54,10 +54,14 @@ app.use(metricsMiddleware);
 app.use(requestLogger);
 app.use(performanceLogger);
 
-// CORS - allow multiple origins including Chrome extension
+// CORS - allow multiple origins including Chrome extension and mobile apps
 const allowedOrigins = [
     process.env.CORS_ORIGIN,
-    'https://simrs.melinda.co.id'  // Chrome extension for SIMRS Melinda export
+    'https://simrs.melinda.co.id',  // Chrome extension for SIMRS Melinda export
+    'capacitor://localhost',        // Capacitor Android/iOS app
+    'http://localhost',             // Capacitor local dev
+    'ionic://localhost',            // Ionic apps
+    'https://localhost'             // Secure localhost
 ].filter(Boolean);
 
 app.use(cors({
