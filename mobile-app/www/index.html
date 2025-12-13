@@ -659,59 +659,17 @@
         const API_BASE = 'https://dokterdibya.com';
         const DASHBOARD_URL = 'https://dokterdibya.com/patient-dashboard.html';
 
-        // Make loginWithGoogle available globally
-        window.loginWithGoogle = async function() {
-            const btn = document.getElementById('btn-google');
-            const originalHtml = btn.innerHTML;
-            btn.disabled = true;
-            btn.innerHTML = '<div class="spinner"></div>';
-            document.getElementById('login-error').classList.remove('show');
+        // Google Sign-In via web OAuth (more reliable than native plugin)
+        const GOOGLE_CLIENT_ID = '738335602560-52as846lk2oo78fr38a86elu8888m7eh.apps.googleusercontent.com';
 
-            try {
-                // Use native Capacitor plugin via Capacitor bridge
-                const Capacitor = window.Capacitor;
-                if (!Capacitor || !Capacitor.Plugins || !Capacitor.Plugins.GoogleAuth) {
-                    throw new Error('GoogleAuth plugin not available');
-                }
+        window.loginWithGoogle = function() {
+            // Open Google OAuth in system browser (Capacitor will handle callback)
+            const redirectUri = encodeURIComponent('https://dokterdibya.com/mobile-google-callback.html');
+            const scope = encodeURIComponent('email profile');
+            const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent`;
 
-                const GoogleAuth = Capacitor.Plugins.GoogleAuth;
-                const googleUser = await GoogleAuth.signIn();
-                console.log('Google user:', googleUser);
-
-                // Send to backend for verification
-                const res = await fetch(`${API_BASE}/api/patients/google-auth`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        idToken: googleUser.authentication?.idToken || googleUser.idToken,
-                        email: googleUser.email,
-                        name: googleUser.name || googleUser.displayName,
-                        imageUrl: googleUser.imageUrl || googleUser.photoUrl
-                    })
-                });
-
-                const data = await res.json();
-
-                if (res.ok && data.success) {
-                    localStorage.setItem('vps_auth_token', data.token);
-                    if (data.user) {
-                        localStorage.setItem('patient_user', JSON.stringify(data.user));
-                    }
-                    window.location.href = DASHBOARD_URL;
-                } else {
-                    showError('login-error', data.message || 'Google login gagal');
-                }
-            } catch (err) {
-                console.error('Google Sign-In error:', err);
-                if (err.message && err.message.includes('not available')) {
-                    showError('login-error', 'Google Sign-In tidak tersedia di perangkat ini.');
-                } else if (err.error !== 'popup_closed_by_user' && err.message !== 'The user canceled the sign-in flow.') {
-                    showError('login-error', 'Google Sign-In gagal: ' + (err.message || 'Silakan coba lagi.'));
-                }
-            }
-
-            btn.disabled = false;
-            btn.innerHTML = originalHtml;
+            // Open in system browser
+            window.open(googleAuthUrl, '_system');
         };
 
         // Check if already logged in

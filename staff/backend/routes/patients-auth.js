@@ -502,6 +502,122 @@ router.post('/auth/google', async (req, res) => {
     }
 });
 
+// Google OAuth Code Exchange (for mobile app)
+router.post('/google-auth-code', async (req, res) => {
+    try {
+        const { code, redirectUri } = req.body;
+
+        if (!code) {
+            return res.status(400).json({ success: false, message: 'Kode otorisasi tidak ditemukan' });
+        }
+
+        // Exchange authorization code for tokens
+        const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({
+                code,
+                client_id: GOOGLE_CLIENT_ID,
+                client_secret: process.env.GOOGLE_CLIENT_SECRET,
+                redirect_uri: redirectUri,
+                grant_type: 'authorization_code'
+            })
+        });
+
+        const tokenData = await tokenResponse.json();
+
+        if (tokenData.error) {
+            console.error('Google token error:', tokenData);
+            return res.status(401).json({ success: false, message: 'Gagal mengambil token: ' + tokenData.error_description });
+        }
+
+        // Get user info using access token
+        const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+            headers: { 'Authorization': `Bearer ${tokenData.access_token}` }
+        });
+
+        const userInfo = await userInfoResponse.json();
+        const { email, name, id: googleId, picture } = userInfo;
+
+        if (!email) {
+            return res.status(401).json({ success: false, message: 'Tidak dapat mengambil email dari akun Google' });
+        }
+
+        // Check if patient exists
+        const [existingPatients] = await db.query(
+            'SELECT * FROM patients WHERE email = ?',
+            [email]
+        );
+
+        let patient;
+
+        if (existingPatients.length > 0) {
+            patient = existingPatients[0];
+            // Update Google ID and photo if needed
+            await db.query(
+                'UPDATE patients SET google_id = COALESCE(google_id, ?), photo_url = ?, email_verified = 1 WHERE id = ?',
+                [googleId, picture, patient.id]
+            );
+            patient.email_verified = 1;
+            patient.photo_url = picture;
+        } else {
+            // Create new patient
+            const medicalRecordId = await generateUniqueMedicalRecordId();
+
+            await db.query(
+                `INSERT INTO patients (id, full_name, email, google_id, photo_url, email_verified, registration_date, status)
+                 VALUES (?, ?, ?, ?, ?, 1, NOW(), 'active')`,
+                [medicalRecordId, name, email, googleId, picture]
+            );
+
+            patient = {
+                id: medicalRecordId,
+                full_name: name,
+                email,
+                phone: null,
+                google_id: googleId,
+                photo_url: picture
+            };
+        }
+
+        // Generate JWT token
+        const token = jwt.sign(
+            {
+                id: patient.id,
+                medicalRecordId: patient.id,
+                email: patient.email,
+                full_name: patient.full_name,
+                fullname: patient.full_name,
+                role: 'patient'
+            },
+            JWT_SECRET,
+            { expiresIn: JWT_EXPIRES_IN }
+        );
+
+        res.json({
+            success: true,
+            message: 'Login dengan Google berhasil',
+            token,
+            user: {
+                id: patient.id,
+                medicalRecordId: patient.id,
+                full_name: patient.full_name,
+                fullname: patient.full_name,
+                email: patient.email,
+                phone: patient.phone,
+                photo_url: patient.photo_url,
+                email_verified: 1,
+                google_id: patient.google_id || googleId,
+                role: 'patient'
+            }
+        });
+
+    } catch (error) {
+        console.error('Google auth code error:', error);
+        res.status(500).json({ success: false, message: 'Gagal memproses login Google' });
+    }
+});
+
 // Verify token endpoint
 router.get('/verify', verifyToken, (req, res) => {
     res.json({
