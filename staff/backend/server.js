@@ -162,6 +162,8 @@ app.get(/^\/sunday-clinic\/[\w-]+(?:\/.*)?$/, (req, res) => {
 const PATIENT_ALLOWED_ROUTES = [
     '/api/patients',           // Patient auth & profile
     '/api/patient/',           // Patient-specific endpoints (birth-congratulations, etc)
+    '/api/patient-intake',     // Patient intake form submission
+    '/api/patient-documents',  // Patient documents (USG, lab results, uploads)
     '/api/sunday-appointments', // Sunday clinic booking
     '/api/hospital-appointments', // Hospital booking
     '/api/articles',           // Public articles
@@ -189,6 +191,8 @@ app.use('/api', (req, res, next) => {
             const isAllowed = PATIENT_ALLOWED_ROUTES.some(route => fullPath.startsWith(route));
 
             if (!isAllowed) {
+                // Log blocked path for debugging
+                console.log('[BLOCKED]', fullPath);
                 logger.warn('Patient attempted staff route access', {
                     userId: payload.id,
                     email: payload.email,

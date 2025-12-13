@@ -482,6 +482,66 @@ router.get('/api/patients/search/advanced', verifyToken, async (req, res) => {
     }
 });
 
+// AUTO-FIX PATIENT NAMES - Title Case capitalization
+router.post('/api/patients/fix-names', verifyToken, async (req, res) => {
+    try {
+        // Only allow admin/dokter roles
+        if (!['dokter', 'admin', 'managerial'].includes(req.user.role)) {
+            return res.status(403).json({
+                success: false,
+                message: 'Only admin or dokter can perform this action'
+            });
+        }
+
+        // Get all patients with potentially incorrect name capitalization
+        const [patients] = await db.query('SELECT id, full_name FROM patients WHERE full_name IS NOT NULL');
+
+        let updatedCount = 0;
+        const changes = [];
+
+        for (const patient of patients) {
+            const originalName = patient.full_name;
+
+            // Convert to proper title case
+            // Handle: RAHAYU → Rahayu, perama indah hapsari → Perama Indah Hapsari
+            const fixedName = originalName
+                .toLowerCase()
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                .join(' ')
+                .trim();
+
+            // Only update if different
+            if (fixedName !== originalName) {
+                await db.query('UPDATE patients SET full_name = ? WHERE id = ?', [fixedName, patient.id]);
+                changes.push({
+                    id: patient.id,
+                    before: originalName,
+                    after: fixedName
+                });
+                updatedCount++;
+            }
+        }
+
+        // Invalidate patient cache
+        cache.delPattern('patients:');
+
+        res.json({
+            success: true,
+            message: `${updatedCount} nama pasien berhasil diperbaiki`,
+            updatedCount,
+            changes: changes.slice(0, 50) // Only return first 50 changes to avoid large response
+        });
+    } catch (error) {
+        console.error('Error fixing patient names:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fix patient names',
+            error: error.message
+        });
+    }
+});
+
 // GET PATIENT BY ID (Protected)
 router.get('/api/patients/:id', verifyToken, async (req, res) => {
     try {

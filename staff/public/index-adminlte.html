@@ -4969,6 +4969,9 @@ Contoh Markdown:
                                                 <i class="fas fa-file-upload mr-1"></i>Bulk
                                             </button>
                                         </div>
+                                        <button type="button" class="btn btn-warning btn-sm mr-2" onclick="fixPatientNames()" title="Perbaiki kapitalisasi nama pasien (RAHAYU → Rahayu)">
+                                            <i class="fas fa-magic mr-1"></i>Auto-Fix Nama
+                                        </button>
                                     </div>
                                 </div>
                                 <div class="card-body">
@@ -6592,6 +6595,90 @@ function mobileNavClick(btn, action) {
     window.openBulkImportModal = function() {
         resetBulkImportModal();
         $('#bulk-import-modal').modal('show');
+    };
+
+    // Auto-fix patient names to proper title case
+    window.fixPatientNames = async function() {
+        const confirmed = await Swal.fire({
+            title: 'Auto-Fix Nama Pasien?',
+            html: `
+                <p>Fungsi ini akan memperbaiki kapitalisasi nama pasien:</p>
+                <ul class="text-left" style="font-size: 0.9rem;">
+                    <li><strong>RAHAYU</strong> → <strong>Rahayu</strong></li>
+                    <li><strong>perama indah hapsari</strong> → <strong>Perama Indah Hapsari</strong></li>
+                    <li><strong>sITI AMINAH</strong> → <strong>Siti Aminah</strong></li>
+                </ul>
+                <p class="text-warning mt-2"><i class="fas fa-exclamation-triangle"></i> Proses ini tidak bisa dibatalkan!</p>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: '<i class="fas fa-magic mr-1"></i>Ya, Perbaiki',
+            cancelButtonText: 'Batal',
+            confirmButtonColor: '#f0ad4e'
+        });
+
+        if (!confirmed.isConfirmed) return;
+
+        // Show loading
+        Swal.fire({
+            title: 'Memproses...',
+            html: 'Memperbaiki nama pasien...',
+            allowOutsideClick: false,
+            showConfirmButton: false,
+            didOpen: () => Swal.showLoading()
+        });
+
+        try {
+            const token = getAuthToken();
+            const response = await fetch('/api/patients/fix-names', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const data = await response.json();
+
+            if (data.success) {
+                // Show results
+                let changesHtml = '';
+                if (data.changes && data.changes.length > 0) {
+                    changesHtml = `
+                        <div class="mt-3" style="max-height: 200px; overflow-y: auto; text-align: left; font-size: 0.85rem;">
+                            <table class="table table-sm table-bordered">
+                                <thead><tr><th>ID</th><th>Sebelum</th><th>Sesudah</th></tr></thead>
+                                <tbody>
+                                    ${data.changes.map(c => `<tr><td>${c.id}</td><td>${c.before}</td><td class="text-success">${c.after}</td></tr>`).join('')}
+                                </tbody>
+                            </table>
+                            ${data.updatedCount > 50 ? `<p class="text-muted">...dan ${data.updatedCount - 50} lainnya</p>` : ''}
+                        </div>
+                    `;
+                }
+
+                await Swal.fire({
+                    title: 'Berhasil!',
+                    html: `<p>${data.message}</p>${changesHtml}`,
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                });
+
+                // Reload patient list if function exists
+                if (typeof loadPatientsForManage === 'function') {
+                    loadPatientsForManage();
+                }
+            } else {
+                throw new Error(data.message || 'Failed to fix names');
+            }
+        } catch (error) {
+            console.error('Fix names error:', error);
+            Swal.fire({
+                title: 'Gagal!',
+                text: error.message || 'Terjadi kesalahan saat memperbaiki nama',
+                icon: 'error'
+            });
+        }
     };
 
     function resetImportModal() {

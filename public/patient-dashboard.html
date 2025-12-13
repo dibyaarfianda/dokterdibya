@@ -2226,10 +2226,10 @@
         async function loadUserProfile() {
             try {
                 // Add cache-busting timestamp to prevent browser caching
-                const response = await fetch('/api/patients/profile?_=' + Date.now(), {
+                const response = await fetch('/api/patients/profile?', {
                     headers: {
                         'Authorization': `Bearer ${token}`,
-                        'Cache-Control': 'no-cache'
+                        
                     }
                 });
 
@@ -2392,10 +2392,10 @@
             try {
                 const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
                 // Add cache-busting timestamp
-                const response = await fetch('/api/patient/birth-congratulations?_t=' + Date.now(), {
+                const response = await fetch('/api/patient/birth-congratulations?', {
                     headers: {
                         'Authorization': 'Bearer ' + token,
-                        'Cache-Control': 'no-cache'
+                        
                     }
                 });
 
@@ -2542,7 +2542,7 @@
                 const response = await fetch('/api/patients/pregnancy-tracker', {
                     headers: {
                         'Authorization': `Bearer ${token}`,
-                        'Cache-Control': 'no-cache'
+                        
                     }
                 });
 

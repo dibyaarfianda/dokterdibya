@@ -689,10 +689,10 @@ router.post('/records/:mrId/:section', verifyToken, async (req, res, next) => {
         );
 
         if (existingRows.length > 0) {
-            // Update existing record
+            // Update existing record - also update doctor_id and doctor_name to current user
             await db.query(
-                `UPDATE medical_records SET record_data = ?, updated_at = NOW() WHERE id = ?`,
-                [JSON.stringify(data), existingRows[0].id]
+                `UPDATE medical_records SET record_data = ?, doctor_id = ?, doctor_name = ?, updated_at = NOW() WHERE id = ?`,
+                [JSON.stringify(data), req.user.id || null, req.user.name || null, existingRows[0].id]
             );
         } else {
             // Insert new record with mr_id

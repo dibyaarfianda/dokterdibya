@@ -3458,86 +3458,72 @@ async function showPatientDetail(patientId) {
                             </h5>
                             <div class="row">
                                 <div class="col-md-6">
+                                    <h6 class="text-primary"><i class="fas fa-user"></i> Data Pribadi</h6>
                                     <table class="table table-sm table-bordered">
-                                        <tr>
-                                            <th width="40%">Nama Lengkap</th>
-                                            <td>${intake.payload.full_name || '-'}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Tanggal Lahir</th>
-                                            <td>${intake.payload.dob ? new Date(intake.payload.dob).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-'}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Usia</th>
-                                            <td>${intake.payload.age || '-'} tahun</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Telepon</th>
-                                            <td>${intake.payload.phone || '-'}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>NIK</th>
-                                            <td>${intake.payload.nik || '-'}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Alamat</th>
-                                            <td>${intake.payload.address || '-'}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Status Pernikahan</th>
-                                            <td>${intake.payload.marital_status || '-'}</td>
-                                        </tr>
+                                        <tr><th width="40%">Nama Lengkap</th><td>${intake.payload.full_name || '-'}</td></tr>
+                                        <tr><th>Tanggal Lahir</th><td>${intake.payload.dob ? new Date(intake.payload.dob).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-'}</td></tr>
+                                        <tr><th>Usia</th><td>${intake.payload.age || '-'} tahun</td></tr>
+                                        <tr><th>Tinggi Badan</th><td>${intake.payload.height ? intake.payload.height + ' cm' : '-'}</td></tr>
+                                        <tr><th>Telepon</th><td>${intake.payload.phone || '-'}</td></tr>
+                                        <tr><th>Kontak Darurat</th><td>${intake.payload.emergency_contact || '-'}</td></tr>
+                                        <tr><th>Alamat</th><td>${intake.payload.address || '-'}</td></tr>
+                                        <tr><th>Pekerjaan</th><td>${intake.payload.occupation || '-'}</td></tr>
+                                        <tr><th>Pendidikan</th><td>${intake.payload.education || '-'}</td></tr>
+                                        <tr><th>Status Pernikahan</th><td>${intake.payload.marital_status || '-'}</td></tr>
+                                        ${intake.payload.marital_status === 'Menikah' || intake.payload.marital_status === 'menikah' ? `
+                                        <tr><th>Nama Suami</th><td>${intake.payload.husband_name || '-'}</td></tr>
+                                        <tr><th>Usia Suami</th><td>${intake.payload.husband_age ? intake.payload.husband_age + ' tahun' : '-'}</td></tr>
+                                        <tr><th>Pekerjaan Suami</th><td>${intake.payload.husband_job || '-'}</td></tr>
+                                        ` : ''}
+                                        <tr><th>Metode Pembayaran</th><td>${Array.isArray(intake.payload.payment_method) ? intake.payload.payment_method.join(', ').toUpperCase() : (intake.payload.payment_method || '-').toUpperCase()}</td></tr>
+                                        ${intake.payload.insurance_name ? `<tr><th>Nama Asuransi</th><td>${intake.payload.insurance_name}</td></tr>` : ''}
                                     </table>
                                 </div>
                                 <div class="col-md-6">
+                                    <h6 class="text-primary"><i class="fas fa-heartbeat"></i> Data Medis</h6>
                                     <table class="table table-sm table-bordered">
-                                        <tr>
-                                            <th width="40%">Gravida</th>
-                                            <td>${intake.payload.gravida || '0'}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Para</th>
-                                            <td>${intake.payload.para || '0'}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Abortus</th>
-                                            <td>${intake.payload.abortus || '0'}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Anak Hidup</th>
-                                            <td>${intake.payload.living_children || '0'}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>HPHT</th>
-                                            <td>${intake.payload.lmp ? new Date(intake.payload.lmp).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-'}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>HPL</th>
-                                            <td>${intake.payload.edd || '-'}</td>
-                                        </tr>
-                                        <tr>
-                                            <th>Status</th>
-                                            <td><span class="badge badge-${intake.status === 'verified' ? 'success' : 'warning'}">${intake.status}</span></td>
-                                        </tr>
+                                        <tr><th width="40%">Golongan Darah</th><td>${intake.payload.blood_type || '-'}</td></tr>
+                                        <tr><th>Rhesus</th><td>${intake.payload.rhesus || '-'}</td></tr>
+                                        <tr><th>Alergi Obat</th><td>${intake.payload.allergy_drugs || intake.payload.drug_allergies || '-'}</td></tr>
+                                        <tr><th>Alergi Makanan</th><td>${intake.payload.allergy_food || intake.payload.food_allergies || '-'}</td></tr>
+                                        <tr><th>Alergi Lingkungan</th><td>${intake.payload.allergy_env || intake.payload.other_allergies || '-'}</td></tr>
+                                        <tr><th>Riwayat Penyakit</th><td>${intake.payload.past_conditions || '-'} ${intake.payload.past_conditions_detail ? '(' + intake.payload.past_conditions_detail + ')' : ''}</td></tr>
+                                        <tr><th>Riwayat Keluarga</th><td>${intake.payload.family_history || '-'} ${intake.payload.family_history_detail ? '(' + intake.payload.family_history_detail + ')' : ''}</td></tr>
                                     </table>
+
+                                    ${intake.payload.has_children === 'ya' ? `
+                                    <h6 class="text-primary mt-3"><i class="fas fa-baby"></i> Data Riwayat Kehamilan</h6>
+                                    <table class="table table-sm table-bordered">
+                                        <tr><th width="40%">Jumlah Anak Hidup</th><td>${intake.payload.living_children_count || '0'}</td></tr>
+                                        <tr><th>Usia Anak Terkecil</th><td>${intake.payload.youngest_child_age ? intake.payload.youngest_child_age + ' tahun' : '-'}</td></tr>
+                                        <tr><th>Jumlah Kehamilan</th><td>${intake.payload.total_pregnancies || intake.payload.gravida || '0'}</td></tr>
+                                        <tr><th>Persalinan Normal</th><td>${intake.payload.normal_delivery_count || '0'}x</td></tr>
+                                        <tr><th>Persalinan Sesar</th><td>${intake.payload.cesarean_delivery_count || '0'}x</td></tr>
+                                        <tr><th>Keguguran</th><td>${intake.payload.miscarriage_count || '0'}x</td></tr>
+                                        <tr><th>Hamil di Luar Kandungan</th><td>${intake.payload.had_ectopic === 'ya' ? '<span class="text-danger">Ya, pernah</span>' : 'Tidak pernah'}</td></tr>
+                                    </table>
+                                    ` : `
+                                    <h6 class="text-primary mt-3"><i class="fas fa-baby"></i> Data Obstetri</h6>
+                                    <table class="table table-sm table-bordered">
+                                        <tr><th width="40%">Status</th><td>${intake.payload.has_children === 'tidak' ? 'Belum punya anak' : (intake.payload.marital_status !== 'menikah' ? 'Belum menikah' : '-')}</td></tr>
+                                    </table>
+                                    `}
                                 </div>
                             </div>
-                            ${intake.payload.medications && intake.payload.medications.length > 0 ? `
+                            ${(intake.payload.med_name_1 || intake.payload.med_name_2 || intake.payload.med_name_3) ? `
                             <div class="mt-2">
-                                <strong>Obat-obatan:</strong>
+                                <strong><i class="fas fa-pills"></i> Obat yang Dikonsumsi:</strong>
                                 <ul class="mb-0">
-                                    ${intake.payload.medications.map(m => `<li>${m.name || m}</li>`).join('')}
+                                    ${intake.payload.med_name_1 ? `<li>${intake.payload.med_name_1} ${intake.payload.med_dose_1 ? '- ' + intake.payload.med_dose_1 : ''} ${intake.payload.med_freq_1 ? '(' + intake.payload.med_freq_1 + ')' : ''}</li>` : ''}
+                                    ${intake.payload.med_name_2 ? `<li>${intake.payload.med_name_2} ${intake.payload.med_dose_2 ? '- ' + intake.payload.med_dose_2 : ''} ${intake.payload.med_freq_2 ? '(' + intake.payload.med_freq_2 + ')' : ''}</li>` : ''}
+                                    ${intake.payload.med_name_3 ? `<li>${intake.payload.med_name_3} ${intake.payload.med_dose_3 ? '- ' + intake.payload.med_dose_3 : ''} ${intake.payload.med_freq_3 ? '(' + intake.payload.med_freq_3 + ')' : ''}</li>` : ''}
                                 </ul>
-                            </div>
-                            ` : ''}
-                            ${intake.payload.allergies ? `
-                            <div class="mt-2">
-                                <strong>Alergi:</strong> ${intake.payload.allergies}
                             </div>
                             ` : ''}
                             <div class="mt-2 text-muted small">
                                 <i class="far fa-clock"></i> Diisi: ${new Date(intake.createdAt).toLocaleString('id-ID')}
                                 ${intake.updatedAt ? ` | Diperbarui: ${new Date(intake.updatedAt).toLocaleString('id-ID')}` : ''}
+                                <span class="badge badge-${intake.status === 'verified' ? 'success' : 'warning'} ml-2">${intake.status}</span>
                             </div>
                             ` : '<div class="alert alert-info"><i class="fas fa-info-circle"></i> Belum ada formulir rekam medis awal</div>'}
 
