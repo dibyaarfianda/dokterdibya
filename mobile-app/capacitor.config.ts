@@ -53,6 +53,11 @@ const config: CapacitorConfig = {
     LocalNotifications: {
       smallIcon: 'ic_stat_icon',
       iconColor: '#0066FF'
+    },
+    GoogleAuth: {
+      scopes: ['profile', 'email'],
+      serverClientId: '738335602560-52as846lk2oo78fr38a86elu8888m7eh.apps.googleusercontent.com',
+      forceCodeForRefreshToken: true
     }
   }
 };
