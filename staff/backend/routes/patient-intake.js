@@ -468,30 +468,35 @@ router.post('/api/patient-intake', async (req, res, next) => {
 
         const intakeCategory = attachIntakeCategoryMetadata(payload);
 
-        // Check if patient already has a submission by phone number (prevent duplicate submissions)
+        // Check if patient already has a submission by phone + name (prevent duplicate submissions)
+        // Using both phone AND name because family members may share phone numbers
         const patientPhone = payload.phone;
-        if (patientPhone) {
+        const patientName = payload.full_name;
+        if (patientPhone && patientName) {
             const normalizedPhone = patientPhone.replace(/\D/g, '').slice(-10);
-            
+            const normalizedName = patientName.trim().toLowerCase();
+
             try {
                 const [existing] = await db.query(
-                    `SELECT submission_id, quick_id, status 
-                    FROM patient_intake_submissions 
-                    WHERE RIGHT(REPLACE(phone, '-', ''), 10) = ? 
+                    `SELECT submission_id, quick_id, status, full_name
+                    FROM patient_intake_submissions
+                    WHERE RIGHT(REPLACE(phone, '-', ''), 10) = ?
+                    AND LOWER(TRIM(full_name)) = ?
                     AND status IN ('verified', 'patient_reported', 'pending_review')
                     LIMIT 1`,
-                    [normalizedPhone]
+                    [normalizedPhone, normalizedName]
                 );
-                
+
                 if (existing.length > 0) {
                     logger.info('Patient already has intake submission, rejecting duplicate', {
                         phone: normalizedPhone,
+                        name: patientName,
                         quickId: existing[0].quick_id,
                         existingSubmissionId: existing[0].submission_id
                     });
-                    
-                    return res.status(409).json({ 
-                        success: false, 
+
+                    return res.status(409).json({
+                        success: false,
                         code: 'DUPLICATE_SUBMISSION',
                         message: 'Anda sudah memiliki formulir rekam medis. Silakan perbarui formulir yang ada.',
                         existingSubmissionId: existing[0].submission_id,

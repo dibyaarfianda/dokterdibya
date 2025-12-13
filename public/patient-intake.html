@@ -351,7 +351,7 @@
     <script>
         // Force clear form cache and start fresh
         (function() {
-            const FORM_VERSION = 'v3.0'; // Increment to force clear
+            const FORM_VERSION = 'v4.1'; // Increment to force clear - added obstetric fields
             const storedVersion = localStorage.getItem('intake_form_version');
 
             if (storedVersion !== FORM_VERSION) {
@@ -451,6 +451,58 @@
                                     <label for="husband_job">Pekerjaan Suami</label>
                                     <input type="text" id="husband_job" name="husband_job">
                                 </div>
+                                <div class="field husband-field">
+                                    <label>Apakah punya anak?</label>
+                                    <select name="has_children" id="has_children">
+                                        <option value="">Pilih</option>
+                                        <option value="ya">Ya</option>
+                                        <option value="tidak">Tidak (belum punya anak)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Obstetric Section - Only for married with children -->
+                            <div id="obstetric-section" style="display: none; margin-top: 1rem;">
+                                <div class="divider"></div>
+                                <h2 class="step-title" style="color: #f472b6;">🤰 Data Riwayat Kehamilan</h2>
+                                <p class="step-description">Data ini penting untuk menentukan risiko kehamilan Anda.</p>
+                                <div class="field-grid two">
+                                    <div class="field">
+                                        <label for="living_children_count">Jumlah anak hidup *</label>
+                                        <input type="number" id="living_children_count" name="living_children_count" min="0" max="20" placeholder="Contoh: 2">
+                                    </div>
+                                    <div class="field">
+                                        <label for="youngest_child_age">Anak terkecil usia berapa tahun?</label>
+                                        <input type="number" id="youngest_child_age" name="youngest_child_age" min="0" max="50" placeholder="Contoh: 3">
+                                        <p class="field-hint">Isi 0 jika masih bayi (kurang dari 1 tahun)</p>
+                                    </div>
+                                    <div class="field">
+                                        <label for="total_pregnancies">Berapa kali hamil (termasuk kehamilan saat ini)? *</label>
+                                        <input type="number" id="total_pregnancies" name="total_pregnancies" min="1" max="20" placeholder="Contoh: 3">
+                                    </div>
+                                    <div class="field">
+                                        <label for="normal_delivery_count">Berapa kali persalinan normal?</label>
+                                        <input type="number" id="normal_delivery_count" name="normal_delivery_count" min="0" max="20" placeholder="Contoh: 2">
+                                    </div>
+                                    <div class="field">
+                                        <label for="cesarean_delivery_count">Berapa kali persalinan sesar (SC)?</label>
+                                        <input type="number" id="cesarean_delivery_count" name="cesarean_delivery_count" min="0" max="10" placeholder="Contoh: 0">
+                                    </div>
+                                    <div class="field">
+                                        <label for="miscarriage_count">Berapa kali keguguran?</label>
+                                        <input type="number" id="miscarriage_count" name="miscarriage_count" min="0" max="10" placeholder="0 jika tidak pernah">
+                                    </div>
+                                    <div class="field">
+                                        <label>Pernah hamil di luar kandungan (ektopik)?</label>
+                                        <select name="had_ectopic" id="had_ectopic">
+                                            <option value="">Pilih</option>
+                                            <option value="tidak">Tidak pernah</option>
+                                            <option value="ya">Ya, pernah</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="field-grid two" style="margin-top: 1rem;">
                                 <div class="field">
                                     <label for="occupation">Pekerjaan Anda</label>
                                     <input type="text" id="occupation" name="occupation">
@@ -823,6 +875,28 @@
                     }
                 }
             }
+
+            // Show/hide conditional sections based on restored values
+            // Husband fields
+            const maritalStatus = document.getElementById('marital_status');
+            if (maritalStatus && maritalStatus.value === 'menikah') {
+                document.querySelectorAll('.husband-field').forEach(field => {
+                    field.style.display = 'flex';
+                });
+            }
+
+            // Obstetric section
+            const hasChildren = document.getElementById('has_children');
+            if (hasChildren && hasChildren.value === 'ya') {
+                document.getElementById('obstetric-section').style.display = 'block';
+            }
+
+            // Insurance name field
+            const paymentInsurance = document.getElementById('payment_insurance');
+            if (paymentInsurance && paymentInsurance.checked) {
+                document.getElementById('insurance_name').style.display = 'block';
+            }
+
             console.log('[Intake] Data restored from server');
         }
 
@@ -1214,6 +1288,19 @@
             husbandFields.forEach(field => {
                 field.style.display = showFields ? 'flex' : 'none';
             });
+
+            // Hide obstetric section if not married
+            if (!showFields) {
+                document.getElementById('obstetric-section').style.display = 'none';
+                document.getElementById('has_children').value = '';
+            }
+        });
+
+        // Show/hide obstetric section based on has_children
+        document.getElementById('has_children').addEventListener('change', function() {
+            const obstetricSection = document.getElementById('obstetric-section');
+            const showSection = this.value === 'ya';
+            obstetricSection.style.display = showSection ? 'block' : 'none';
         });
 
         // Initialize

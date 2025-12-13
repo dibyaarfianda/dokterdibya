@@ -1,0 +1,37 @@
+{
+  "name": "dokterdibya-patient",
+  "version": "1.0.0",
+  "description": "Dokter Dibya Patient Portal Mobile App",
+  "main": "index.js",
+  "scripts": {
+    "build": "echo 'No build needed - using static files'",
+    "cap:sync": "npx cap sync",
+    "cap:open:android": "npx cap open android",
+    "cap:open:ios": "npx cap open ios",
+    "cap:run:android": "npx cap run android",
+    "cap:build:android": "cd android && ./gradlew assembleDebug"
+  },
+  "keywords": [
+    "healthcare",
+    "clinic",
+    "patient-portal"
+  ],
+  "author": "Dokter Dibya",
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/app": "^6.0.0",
+    "@capacitor/camera": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/ios": "^6.0.0",
+    "@capacitor/local-notifications": "^6.0.0",
+    "@capacitor/push-notifications": "^6.0.0",
+    "@capacitor/splash-screen": "^6.0.0",
+    "@capacitor/status-bar": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0",
+    "typescript": "^5.9.3"
+  }
+}
