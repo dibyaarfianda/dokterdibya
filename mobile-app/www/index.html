@@ -591,22 +591,80 @@
         </div>
     </div>
 
-    <script type="module">
-        import { GoogleAuth } from 'https://esm.sh/@codetrix-studio/capacitor-google-auth@3.4.0';
+    <!-- Intro handler MUST run first, before any module imports -->
+    <script>
+        // Intro Video Handler - runs immediately, no dependencies
+        (function() {
+        const introOverlay = document.getElementById('intro-overlay');
+        const introVideo = document.getElementById('intro-video');
+        const skipBtn = document.getElementById('skip-btn');
 
+        function hideIntro() {
+            introOverlay.classList.add('hidden');
+            setTimeout(() => {
+                introOverlay.classList.add('removed');
+                // Mark intro as seen for this session
+                sessionStorage.setItem('intro_seen', 'true');
+            }, 500);
+        }
+
+        // Skip intro if already seen in this session
+        if (sessionStorage.getItem('intro_seen')) {
+            introOverlay.classList.add('removed');
+        } else {
+            // Video ended - hide intro
+            introVideo.addEventListener('ended', hideIntro);
+
+            // Skip button
+            skipBtn.addEventListener('click', () => {
+                introVideo.pause();
+                hideIntro();
+            });
+
+            // Fallback: hide after 10 seconds if video doesn't play
+            setTimeout(() => {
+                if (!introOverlay.classList.contains('hidden')) {
+                    hideIntro();
+                }
+            }, 10000);
+
+            // Extra fallback: hide after 3 seconds if video fails to load
+            introVideo.addEventListener('error', () => {
+                console.log('Video failed to load, hiding intro');
+                setTimeout(hideIntro, 500);
+            });
+        }
+        })();
+    </script>
+
+    <!-- Main app script - module with Google Auth -->
+    <script type="module">
         const API_BASE = 'https://dokterdibya.com';
         const DASHBOARD_URL = 'https://dokterdibya.com/patient-dashboard.html';
         const GOOGLE_CLIENT_ID = '738335602560-52as846lk2oo78fr38a86elu8888m7eh.apps.googleusercontent.com';
 
-        // Initialize Google Auth
-        GoogleAuth.initialize({
-            clientId: GOOGLE_CLIENT_ID,
-            scopes: ['profile', 'email'],
-            grantOfflineAccess: true
-        });
+        // Dynamic import for Google Auth (won't block if it fails)
+        let GoogleAuth = null;
+        try {
+            const module = await import('https://esm.sh/@codetrix-studio/capacitor-google-auth@3.4.0');
+            GoogleAuth = module.GoogleAuth;
+            GoogleAuth.initialize({
+                clientId: GOOGLE_CLIENT_ID,
+                scopes: ['profile', 'email'],
+                grantOfflineAccess: true
+            });
+            console.log('GoogleAuth initialized successfully');
+        } catch (err) {
+            console.error('Failed to load GoogleAuth:', err);
+        }
 
         // Make loginWithGoogle available globally
         window.loginWithGoogle = async function() {
+            if (!GoogleAuth) {
+                showError('login-error', 'Google Sign-In tidak tersedia. Gunakan email/password.');
+                return;
+            }
+
             const btn = document.getElementById('btn-google');
             const originalHtml = btn.innerHTML;
             btn.disabled = true;
@@ -650,41 +708,6 @@
             btn.disabled = false;
             btn.innerHTML = originalHtml;
         };
-
-        // Intro Video Handler
-        const introOverlay = document.getElementById('intro-overlay');
-        const introVideo = document.getElementById('intro-video');
-        const skipBtn = document.getElementById('skip-btn');
-
-        function hideIntro() {
-            introOverlay.classList.add('hidden');
-            setTimeout(() => {
-                introOverlay.classList.add('removed');
-                // Mark intro as seen for this session
-                sessionStorage.setItem('intro_seen', 'true');
-            }, 500);
-        }
-
-        // Skip intro if already seen in this session
-        if (sessionStorage.getItem('intro_seen')) {
-            introOverlay.classList.add('removed');
-        } else {
-            // Video ended - hide intro
-            introVideo.addEventListener('ended', hideIntro);
-
-            // Skip button
-            skipBtn.addEventListener('click', () => {
-                introVideo.pause();
-                hideIntro();
-            });
-
-            // Fallback: hide after 10 seconds if video doesn't play
-            setTimeout(() => {
-                if (!introOverlay.classList.contains('hidden')) {
-                    hideIntro();
-                }
-            }, 10000);
-        }
 
         // Check if already logged in
         document.addEventListener('DOMContentLoaded', () => {
