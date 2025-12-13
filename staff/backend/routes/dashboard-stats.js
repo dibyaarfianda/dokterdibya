@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { verifyToken, requirePermission } = require('../middleware/auth');
+const { verifyToken } = require('../middleware/auth');
 
 /**
  * GET /api/dashboard-stats
  * Get dashboard statistics for the staff interface
  */
-router.get('/', verifyToken, requirePermission('appointments.view'), async (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
     try {
         // 1. Total Patients Count
         const [totalPatientsResult] = await db.query(
@@ -31,8 +31,15 @@ router.get('/', verifyToken, requirePermission('appointments.view'), async (req,
         const now = new Date();
         const currentDay = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
 
-        // Calculate days until next Sunday (if today is Sunday, get next week's Sunday)
-        const daysUntilSunday = currentDay === 0 ? 7 : 7 - currentDay;
+        // Calculate days until next Sunday
+        // If today is Sunday and before 9 PM, show today. Otherwise show next Sunday
+        let daysUntilSunday;
+        if (currentDay === 0) {
+            const currentHour = now.getHours();
+            daysUntilSunday = currentHour >= 21 ? 7 : 0; // After 9 PM, show next Sunday
+        } else {
+            daysUntilSunday = 7 - currentDay;
+        }
 
         // Create next Sunday date
         const nextSunday = new Date(now);
@@ -49,7 +56,7 @@ router.get('/', verifyToken, requirePermission('appointments.view'), async (req,
             `SELECT COUNT(*) as total
              FROM sunday_appointments
              WHERE appointment_date = ?
-             AND status = 'confirmed'`,
+             AND status NOT IN ('cancelled', 'no_show')`,
             [nextSundayStr]
         );
         const nextSundayAppointments = nextSundayResult[0].total;
@@ -66,7 +73,7 @@ router.get('/', verifyToken, requirePermission('appointments.view'), async (req,
                 a.appointment_date
              FROM sunday_appointments a
              WHERE a.appointment_date = ?
-             AND a.status = 'confirmed'
+             AND a.status NOT IN ('cancelled', 'no_show')
              ORDER BY a.session ASC, a.slot_number ASC`,
             [nextSundayStr]
         );

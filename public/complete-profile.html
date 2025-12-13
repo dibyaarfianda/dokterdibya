@@ -1,223 +1,294 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    <title>Lengkapi Profil - Dokter Dibya</title>
-    
-    <!-- Bootstrap CSS -->
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-    
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Lengkapi Profil - dokterDIBYA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
+        :root {
+            --primary: #0066FF;
+            --primary-dark: #0052CC;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg-gradient: linear-gradient(135deg, #1a1a1a 0%, #303030 100%);
+        }
+
         body {
-            font-family: 'Open Sans', sans-serif;
-            background-color: #303030;
-            color: #e0e0e0;
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-gradient);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 20px;
         }
-        
-        .completion-container {
-            max-width: 600px;
+
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
             width: 100%;
-            background-color: #202020;
-            border-radius: 10px;
-            padding: 40px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
         }
-        
+
+        .bubble {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-100px) rotate(180deg); }
+        }
+
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 500px;
+            width: 100%;
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 40px 35px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
         .logo-section {
             text-align: center;
             margin-bottom: 30px;
         }
-        
-        .logo-section h1 {
-            font-family: 'Poppins', sans-serif;
-            color: #28a7e9;
-            font-size: 28px;
-            font-weight: 600;
+
+        .logo-section img {
+            height: 80px;
+            width: auto;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 26px;
+            color: #ffffff;
             margin-bottom: 10px;
+            text-align: center;
         }
-        
-        .logo-section p {
-            color: #b0b0b0;
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.7);
             font-size: 14px;
-        }
-        
-        .welcome-text {
-            background-color: #2a2a2a;
-            border-left: 4px solid #28a7e9;
-            padding: 20px;
             margin-bottom: 30px;
-            border-radius: 5px;
+            text-align: center;
         }
-        
-        .welcome-text h3 {
-            font-family: 'Poppins', sans-serif;
-            color: #28a7e9;
-            font-size: 18px;
-            margin-bottom: 10px;
+
+        .form-group {
+            margin-bottom: 20px;
         }
-        
-        .welcome-text p {
-            color: #c0c0c0;
-            font-size: 14px;
-            line-height: 1.6;
-            margin-bottom: 0;
-        }
-        
+
         .form-group label {
-            color: #e0e0e0;
+            display: block;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 14px;
             font-weight: 500;
             margin-bottom: 8px;
         }
-        
+
+        .form-group label .required {
+            color: var(--danger);
+        }
+
         .form-control {
-            background-color: #303030;
-            border: 1px solid #404040;
-            color: #e0e0e0;
-            height: 45px;
-            border-radius: 5px;
-            padding: 10px 15px;
-            font-size: 14px;
-        }
-        
-        .form-control:focus {
-            background-color: #353535;
-            border-color: #28a7e9;
-            color: #e0e0e0;
-            box-shadow: 0 0 0 0.2rem rgba(40, 167, 233, 0.25);
-        }
-        
-        .form-control::placeholder {
-            color: #707070;
-        }
-        
-        .required-field {
-            color: #ff6b6b;
-            margin-left: 3px;
-        }
-        
-        .btn-complete {
             width: 100%;
-            background-color: #28a7e9;
+            padding: 14px 16px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 15px;
+            font-family: 'Poppins', sans-serif;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(0, 102, 255, 0.2);
+            background: rgba(255, 255, 255, 0.12);
+        }
+
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        .form-control:disabled,
+        .form-control[readonly] {
+            background: rgba(255, 255, 255, 0.05);
+            cursor: not-allowed;
+            opacity: 0.6;
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 16px;
+            background: var(--primary);
             border: none;
-            color: white;
-            padding: 12px;
+            border-radius: 12px;
+            color: #ffffff;
             font-size: 16px;
             font-weight: 600;
-            border-radius: 5px;
             cursor: pointer;
             transition: all 0.3s ease;
-            margin-top: 20px;
+            font-family: 'Poppins', sans-serif;
+            margin-top: 10px;
         }
-        
-        .btn-complete:hover {
-            background-color: #1f8bc4;
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(40, 167, 233, 0.3);
+            box-shadow: 0 10px 25px rgba(0, 102, 255, 0.3);
         }
-        
-        .btn-complete:disabled {
-            background-color: #505050;
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-primary:disabled {
+            background: rgba(255, 255, 255, 0.2);
             cursor: not-allowed;
             transform: none;
         }
-        
-        .alert {
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        
-        .alert-danger {
-            background-color: #4a2020;
-            border-color: #ff6b6b;
-            color: #ffb3b3;
-        }
-        
+
         .help-text {
-            color: #909090;
             font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
             margin-top: 5px;
         }
-        
-        @media (max-width: 768px) {
-            .completion-container {
-                padding: 30px 20px;
+
+        /* Mobile responsive */
+        @media (max-width: 480px) {
+            .card {
+                padding: 30px 25px;
             }
-            
-            .logo-section h1 {
-                font-size: 24px;
+
+            h1 {
+                font-size: 22px;
+            }
+
+            .form-control {
+                padding: 12px 14px;
+                font-size: 14px;
+            }
+
+            .btn-primary {
+                padding: 14px;
+                font-size: 15px;
             }
         }
     </style>
 </head>
 <body>
-    <div class="completion-container">
-        <div class="logo-section">
-            <h1><i class="fa fa-user-md"></i> Dokter Dibya</h1>
-            <p>Lengkapi Profil Anda</p>
+    <div class="bg-animation" id="bgAnimation"></div>
+
+    <div class="container">
+        <div class="card">
+            <div class="logo-section">
+                <img src="images/logo-white.svg" alt="dokterDIBYA">
+            </div>
+
+            <h1>Lengkapi Profil Anda</h1>
+            <p class="subtitle">
+                Silakan isi informasi dasar Anda untuk melanjutkan pendaftaran
+            </p>
+
+            <form id="complete-profile-form">
+                <!-- Registration Code Field (shown only if required) -->
+                <div class="form-group" id="registration-code-group" style="display: none;">
+                    <label for="registration_code">Kode Registrasi <span class="required">*</span></label>
+                    <input type="text" class="form-control" id="registration_code" placeholder="Masukkan kode dari WhatsApp" style="text-transform: uppercase; letter-spacing: 2px; font-weight: 600;">
+                    <div class="help-text">Kode 6 karakter yang Anda terima dari klinik via WhatsApp</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="fullname">Nama Lengkap <span class="required">*</span></label>
+                    <input type="text" class="form-control" id="fullname" placeholder="Masukkan nama lengkap Anda" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Nomor Telepon <span class="required">*</span></label>
+                    <input type="tel" class="form-control" id="phone" placeholder="08123456789 atau 628123456789" required>
+                    <div class="help-text">Format: 08xx akan otomatis diubah ke 628xx</div>
+                </div>
+
+                <div class="form-group">
+                    <label for="birthdate">Tanggal Lahir <span class="required">*</span></label>
+                    <input type="date" class="form-control" id="birthdate" required>
+                </div>
+
+                <div class="form-group">
+                    <label for="age">Umur</label>
+                    <input type="number" class="form-control" id="age" placeholder="Akan terisi otomatis" readonly>
+                </div>
+
+                <button type="submit" class="btn-primary" id="submit-btn">
+                    Simpan & Lanjutkan
+                </button>
+            </form>
         </div>
-        
-        <div class="welcome-text">
-            <h3>Selamat Datang!</h3>
-            <p>Untuk melanjutkan, mohon lengkapi informasi profil Anda terlebih dahulu. Data ini diperlukan agar tim medis kami dapat memberikan pelayanan terbaik untuk Anda.</p>
-        </div>
-        
-        <div id="error-message" class="alert alert-danger" style="display: none;"></div>
-        
-        <form id="complete-profile-form">
-            <div class="form-group">
-                <label for="fullname">Nama Lengkap <span class="required-field">*</span></label>
-                <input type="text" class="form-control" id="fullname" placeholder="Masukkan nama lengkap Anda" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="phone">Nomor Telepon/WhatsApp <span class="required-field">*</span></label>
-                <input type="tel" class="form-control" id="phone" placeholder="Contoh: 628123456789" required pattern="628[0-9]{9,12}">
-                <p class="help-text">Format: 6281xxxxxxxxxx (gunakan kode negara 62, nomor aktif yang dapat dihubungi)</p>
-            </div>
-            
-            <div class="form-group">
-                <label for="birthdate">Tanggal Lahir <span class="required-field">*</span></label>
-                <input type="date" class="form-control" id="birthdate" required>
-            </div>
-            
-            <div class="form-group">
-                <label for="age">Usia</label>
-                <input type="number" class="form-control" id="age" placeholder="Akan terisi otomatis" readonly>
-            </div>
-            
-            <button type="submit" class="btn btn-complete" id="submit-btn">
-                <i class="fa fa-check-circle"></i> Simpan & Lanjutkan
-            </button>
-        </form>
     </div>
-    
-    <!-- jQuery -->
-    <script src="https://code.jquery.com/jquery-1.12.4.min.js"></script>
-    <!-- Bootstrap JS -->
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-    
-    <!-- Complete Profile Handler V3 -->
-    <script src="/js/complete-profile-v3.js?t=202511141007"></script>
+
+    <script>
+        // Create floating bubbles animation
+        function createBubbles() {
+            const bgAnimation = document.getElementById('bgAnimation');
+            const bubbleCount = 15;
+
+            for (let i = 0; i < bubbleCount; i++) {
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+
+                const size = Math.random() * 60 + 20;
+                bubble.style.width = size + 'px';
+                bubble.style.height = size + 'px';
+                bubble.style.left = Math.random() * 100 + '%';
+                bubble.style.top = Math.random() * 100 + '%';
+                bubble.style.animationDelay = Math.random() * 8 + 's';
+                bubble.style.animationDuration = (Math.random() * 4 + 6) + 's';
+
+                bgAnimation.appendChild(bubble);
+            }
+        }
+
+        createBubbles();
+    </script>
+
+    <!-- Complete Profile Handler V4 -->
+    <script src="/js/complete-profile-v3.js?t=202511220730"></script>
 </body>
 </html>

@@ -26,10 +26,13 @@ export const SECTIONS = {
     IDENTITY: 'identity',
     ANAMNESA: 'anamnesa',
     PHYSICAL_EXAM: 'physical-exam',
+    PEMERIKSAAN_OBSTETRI: 'pemeriksaan-obstetri',
+    PEMERIKSAAN_GINEKOLOGI: 'pemeriksaan-ginekologi',
     USG: 'usg',
-    PENUNJANG: 'penunjang',  // Renamed from laboratorium
+    PENUNJANG: 'penunjang',
     DIAGNOSIS: 'diagnosis',
     PLAN: 'plan',
+    RESUME_MEDIS: 'resume-medis',
     BILLING: 'billing'
 };
 
@@ -37,10 +40,13 @@ export const SECTION_LABELS = {
     [SECTIONS.IDENTITY]: 'Identitas Pasien',
     [SECTIONS.ANAMNESA]: 'Anamnesa',
     [SECTIONS.PHYSICAL_EXAM]: 'Pemeriksaan Fisik',
+    [SECTIONS.PEMERIKSAAN_OBSTETRI]: 'Pemeriksaan Obstetri',
+    [SECTIONS.PEMERIKSAAN_GINEKOLOGI]: 'Pemeriksaan Ginekologi',
     [SECTIONS.USG]: 'USG',
-    [SECTIONS.PENUNJANG]: 'Penunjang',  // Changed from "Laboratorium"
+    [SECTIONS.PENUNJANG]: 'Penunjang',
     [SECTIONS.DIAGNOSIS]: 'Diagnosis',
     [SECTIONS.PLAN]: 'Plan',
+    [SECTIONS.RESUME_MEDIS]: 'Resume Medis',
     [SECTIONS.BILLING]: 'Tagihan'
 };
 

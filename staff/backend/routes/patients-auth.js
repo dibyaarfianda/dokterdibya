@@ -4,12 +4,39 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
 const crypto = require('crypto');
+const multer = require('multer');
+const path = require('path');
 const db = require('../db');
 const cache = require('../utils/cache');
 const { deletePatientWithRelations } = require('../services/patientDeletion');
+const r2Storage = require('../services/r2Storage');
+const logger = require('../utils/logger');
+const { ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
 
-// JWT Secret - Should be in environment variable in production
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
+// Configure multer for profile photo upload (memory storage for R2)
+const photoUpload = multer({
+    storage: multer.memoryStorage(),
+    limits: {
+        fileSize: 2 * 1024 * 1024 // 2MB max for profile photos
+    },
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = /jpeg|jpg|png|webp/;
+        const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+        const mimetype = allowedTypes.test(file.mimetype);
+
+        if (mimetype && extname) {
+            return cb(null, true);
+        }
+        cb(new Error('Hanya file gambar (JPEG, PNG, WebP) yang diperbolehkan'));
+    }
+});
+
+// JWT Secret - Required in environment variable
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    console.error('FATAL: JWT_SECRET must be defined in environment variables');
+    process.exit(1);
+}
 const JWT_EXPIRES_IN = '7d';
 
 // Google OAuth Client
@@ -74,10 +101,71 @@ const verifyToken = (req, res, next) => {
     }
 };
 
+// Check if registration code is required
+async function isRegistrationCodeRequired() {
+    try {
+        const [settings] = await db.query(
+            "SELECT setting_value FROM settings WHERE setting_key = 'registration_code_required'"
+        );
+        return settings.length > 0 && settings[0].setting_value === 'true';
+    } catch (error) {
+        // Default to required if settings table doesn't exist
+        return true;
+    }
+}
+
+// Validate and consume registration code
+async function validateAndConsumeCode(code, patientId) {
+    if (!code) return { valid: false, message: 'Kode registrasi harus diisi' };
+
+    const normalizedCode = code.toUpperCase().trim();
+
+    // Check if code exists and is valid
+    const [codes] = await db.query(
+        `SELECT * FROM registration_codes
+         WHERE code = ? AND status = 'active' AND expires_at > NOW()`,
+        [normalizedCode]
+    );
+
+    if (codes.length === 0) {
+        // Check if code exists but expired
+        const [expiredCodes] = await db.query(
+            'SELECT * FROM registration_codes WHERE code = ?',
+            [normalizedCode]
+        );
+
+        if (expiredCodes.length > 0) {
+            const existingCode = expiredCodes[0];
+            // Only check 'used' status for private codes (is_public = 0)
+            if (existingCode.status === 'used' && existingCode.is_public === 0) {
+                return { valid: false, message: 'Kode registrasi sudah digunakan' };
+            } else if (existingCode.status === 'expired' || new Date(existingCode.expires_at) < new Date()) {
+                return { valid: false, message: 'Kode registrasi sudah kadaluarsa' };
+            }
+        }
+
+        return { valid: false, message: 'Kode registrasi tidak valid' };
+    }
+
+    const codeData = codes[0];
+
+    // Only mark non-public codes as used (public codes stay active for multiple registrations)
+    if (codeData.is_public === 0) {
+        await db.query(
+            `UPDATE registration_codes
+             SET status = 'used', used_at = NOW(), used_by_patient_id = ?
+             WHERE code = ? AND is_public = 0`,
+            [patientId, normalizedCode]
+        );
+    }
+
+    return { valid: true, codeData };
+}
+
 // Register with email
 async function handlePatientRegister(req, res) {
     try {
-        const { fullname, email, phone, password } = req.body;
+        const { fullname, email, phone, password, registration_code } = req.body;
 
         // Validation
         if (!fullname || !email || !phone || !password) {
@@ -86,6 +174,45 @@ async function handlePatientRegister(req, res) {
 
         if (password.length < 6) {
             return res.status(400).json({ message: 'Password minimal 6 karakter' });
+        }
+
+        // Check if registration code is required
+        const codeRequired = await isRegistrationCodeRequired();
+        if (codeRequired && !registration_code) {
+            return res.status(400).json({
+                message: 'Kode registrasi diperlukan. Hubungi klinik untuk mendapatkan kode.',
+                code_required: true
+            });
+        }
+
+        // Validate registration code (if required)
+        if (codeRequired) {
+            const normalizedCode = registration_code.toUpperCase().trim();
+            const [validCodes] = await db.query(
+                `SELECT * FROM registration_codes
+                 WHERE code = ? AND status = 'active' AND expires_at > NOW()`,
+                [normalizedCode]
+            );
+
+            if (validCodes.length === 0) {
+                // Check if code exists but expired or used
+                const [expiredCodes] = await db.query(
+                    'SELECT * FROM registration_codes WHERE code = ?',
+                    [normalizedCode]
+                );
+
+                if (expiredCodes.length > 0) {
+                    const existingCode = expiredCodes[0];
+                    // Only check 'used' for private codes (public codes can be reused)
+                    if (existingCode.status === 'used' && existingCode.is_public === 0) {
+                        return res.status(400).json({ message: 'Kode registrasi sudah digunakan' });
+                    } else if (existingCode.status === 'expired' || new Date(existingCode.expires_at) < new Date()) {
+                        return res.status(400).json({ message: 'Kode registrasi sudah kadaluarsa' });
+                    }
+                }
+
+                return res.status(400).json({ message: 'Kode registrasi tidak valid' });
+            }
         }
 
         // Check if email already exists
@@ -120,6 +247,19 @@ async function handlePatientRegister(req, res) {
 
         // For VARCHAR primary key, insertId is 0. Use medicalRecordId instead
         const patientId = medicalRecordId;
+
+        // Mark registration code as used (if code was required and NOT a public code)
+        if (codeRequired && registration_code) {
+            const normalizedCode = registration_code.toUpperCase().trim();
+            // Only mark non-public codes as used (public codes can be reused)
+            await db.query(
+                `UPDATE registration_codes
+                 SET status = 'used', used_at = NOW(), used_by_patient_id = ?
+                 WHERE code = ? AND is_public = 0`,
+                [patientId, normalizedCode]
+            );
+            console.log(`Registration code ${normalizedCode} used by patient ${patientId}`);
+        }
 
         // Send verification email
         try {
@@ -372,18 +512,28 @@ router.get('/verify', verifyToken, (req, res) => {
 
 // Get current user profile
 router.get('/profile', verifyToken, async (req, res) => {
+    // Prevent browser caching - critical for multi-account scenarios
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     try {
         const [patients] = await db.query(
-            'SELECT id, full_name, email, phone, photo_url, birth_date, age, registration_date, profile_completed, email_verified, google_id, intake_completed, password FROM patients WHERE id = ?',
+            `SELECT id, full_name, email, phone, photo_url,
+                    DATE_FORMAT(birth_date, '%Y-%m-%d') as birth_date,
+                    age, registration_date, profile_completed, email_verified, google_id, intake_completed, password
+             FROM patients WHERE id = ?`,
             [req.user.id]
         );
-        
+
         if (patients.length === 0) {
             return res.status(404).json({ message: 'Pasien tidak ditemukan' });
         }
-        
+
         // Map full_name to fullname and photo_url to profile_picture for frontend compatibility
         const patient = patients[0];
+
+        // birth_date is already formatted as YYYY-MM-DD string from SQL DATE_FORMAT
         const mappedPatient = {
             ...patient,
             fullname: patient.full_name,
@@ -469,6 +619,85 @@ router.put('/profile', verifyToken, async (req, res) => {
     } catch (error) {
         console.error('Update profile error:', error);
         res.status(500).json({ message: 'Terjadi kesalahan saat menyimpan profil' });
+    }
+});
+
+/**
+ * POST /api/patients/upload-photo
+ * Upload profile photo to Cloudflare R2
+ * Max size: 2MB, Allowed: JPEG, PNG, WebP
+ */
+router.post('/upload-photo', verifyToken, photoUpload.single('photo'), async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'Tidak ada file yang diupload'
+            });
+        }
+
+        const patientId = req.user.id;
+
+        // Check if R2 is configured
+        if (!r2Storage.isR2Configured()) {
+            return res.status(500).json({
+                success: false,
+                message: 'Storage tidak dikonfigurasi'
+            });
+        }
+
+        // Upload to R2
+        const result = await r2Storage.uploadFile(
+            req.file.buffer,
+            req.file.originalname,
+            req.file.mimetype,
+            'profile-photos'
+        );
+
+        // Use proxy URL instead of direct R2 URL (avoids CDN connectivity issues)
+        const proxyUrl = `/api/r2/${result.key}`;
+
+        // Update patient photo_url in database with proxy URL
+        await db.query(
+            'UPDATE patients SET photo_url = ?, updated_at = NOW() WHERE id = ?',
+            [proxyUrl, patientId]
+        );
+
+        logger.info('Profile photo uploaded', {
+            patientId,
+            fileKey: result.key,
+            proxyUrl,
+            size: req.file.size
+        });
+
+        res.json({
+            success: true,
+            message: 'Foto profil berhasil diupload',
+            photo_url: proxyUrl
+        });
+
+    } catch (error) {
+        logger.error('Upload photo error', { error: error.message });
+
+        // Handle multer errors
+        if (error.message.includes('File too large')) {
+            return res.status(400).json({
+                success: false,
+                message: 'Ukuran file melebihi batas maksimal 2 MB'
+            });
+        }
+
+        if (error.message.includes('Hanya file gambar')) {
+            return res.status(400).json({
+                success: false,
+                message: error.message
+            });
+        }
+
+        res.status(500).json({
+            success: false,
+            message: 'Gagal mengupload foto profil'
+        });
     }
 });
 
@@ -680,11 +909,11 @@ router.get('/all', verifyToken, async (req, res) => {
     }
 });
 
-// Delete web patient (Admin/Superadmin only)
+// Delete web patient (Superadmin/Dokter only)
 router.delete('/:id', verifyToken, async (req, res) => {
     try {
-        if (!['admin', 'superadmin'].includes(req.user.role)) {
-            return res.status(403).json({ message: 'Unauthorized. Admin access required.' });
+        if (!req.user.is_superadmin && !isSuperadminRole(req.user.role_id)) {
+            return res.status(403).json({ message: 'Unauthorized. Superadmin access required.' });
         }
 
         const patientId = req.params.id;
@@ -720,45 +949,45 @@ router.patch('/:id/status', verifyToken, async (req, res) => {
         
         // Validate status
         if (!status || !['active', 'inactive'].includes(status)) {
-            return res.status(400).json({ 
-                success: false, 
-                message: 'Invalid status. Must be "active" or "inactive"' 
+            return res.status(400).json({
+                success: false,
+                message: 'Status tidak valid. Harus "active" atau "inactive"'
             });
         }
-        
+
         // Check if user is admin/superadmin
-        if (!['admin', 'superadmin'].includes(req.user.role)) {
-            return res.status(403).json({ 
-                success: false, 
-                message: 'Unauthorized. Admin access required.' 
+        if (!req.user.is_superadmin && !isAdminRole(req.user.role_id)) {
+            return res.status(403).json({
+                success: false,
+                message: 'Akses ditolak. Hanya admin yang dapat melakukan ini.'
             });
         }
-        
+
         // Update patient status
         const [result] = await db.query(
             'UPDATE patients SET status = ?, updated_at = NOW() WHERE id = ?',
             [status, patientId]
         );
-        
+
         if (result.affectedRows === 0) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'Patient not found' 
+            return res.status(404).json({
+                success: false,
+                message: 'Pasien tidak ditemukan'
             });
         }
-        
-        res.json({ 
-            success: true, 
-            message: `Patient status updated to ${status}`,
+
+        res.json({
+            success: true,
+            message: `Status pasien berhasil diubah menjadi ${status}`,
             data: { id: patientId, status }
         });
-        
+
     } catch (error) {
         console.error('Error updating patient status:', error);
-        res.status(500).json({ 
-            success: false, 
-            message: 'Failed to update patient status', 
-            error: error.message 
+        res.status(500).json({
+            success: false,
+            message: 'Gagal mengubah status pasien',
+            error: error.message
         });
     }
 });
@@ -956,39 +1185,39 @@ router.post('/update-birthdate', async (req, res) => {
 router.post('/forgot-password', async (req, res) => {
     try {
         const { email } = req.body;
-        
+
         if (!email) {
-            return res.status(400).json({ 
+            return res.status(400).json({
                 success: false,
-                message: 'Email harus diisi' 
+                message: 'Email harus diisi'
             });
         }
-        
+
         // Check if email exists
         const [patients] = await db.query(
             'SELECT id, full_name, email FROM patients WHERE email = ?',
             [email]
         );
-        
+
         if (patients.length === 0) {
-            return res.status(404).json({ 
+            return res.status(404).json({
                 success: false,
-                message: 'Email tidak terdaftar dalam sistem kami' 
+                message: 'Email tidak terdaftar dalam sistem kami'
             });
         }
-        
+
         const patient = patients[0];
-        
+
         // Generate reset token (6 digit code)
         const resetToken = Math.floor(100000 + Math.random() * 900000).toString();
         const tokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-        
+
         // Save reset token to database
         await db.query(
             'UPDATE patients SET reset_token = ?, reset_token_expires = ? WHERE id = ?',
             [resetToken, tokenExpires, patient.id]
         );
-        
+
         // Send reset password email
         try {
             const emailResult = await getNotificationService().sendPasswordResetEmail(email, resetToken, {
@@ -1002,24 +1231,395 @@ router.post('/forgot-password', async (req, res) => {
                 console.log(`Password reset email sent to ${email} with token: ${resetToken}`);
             }
 
-            res.json({ 
+            res.json({
                 success: true,
                 message: 'Link reset password telah dikirim ke email Anda. Silakan cek inbox atau folder spam.'
             });
-            
+
         } catch (emailError) {
             console.error('Failed to send reset password email:', emailError);
-            res.status(500).json({ 
+            res.status(500).json({
                 success: false,
-                message: 'Gagal mengirim email reset password. Silakan coba lagi.' 
+                message: 'Gagal mengirim email reset password. Silakan coba lagi.'
             });
         }
-        
+
     } catch (error) {
         console.error('Forgot password error:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             success: false,
-            message: 'Terjadi kesalahan. Silakan coba lagi.' 
+            message: 'Terjadi kesalahan. Silakan coba lagi.'
+        });
+    }
+});
+
+// POST /api/patients/verify-reset-token - Verify reset token before showing password form
+router.post('/verify-reset-token', async (req, res) => {
+    try {
+        const { email, token } = req.body;
+
+        if (!email || !token) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email dan kode verifikasi harus diisi'
+            });
+        }
+
+        // Find patient with valid reset token
+        const [patients] = await db.query(
+            `SELECT id, full_name, email, reset_token, reset_token_expires
+             FROM patients
+             WHERE email = ?`,
+            [email]
+        );
+
+        if (patients.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Email tidak ditemukan'
+            });
+        }
+
+        const patient = patients[0];
+
+        // Check token
+        if (patient.reset_token !== token) {
+            return res.status(400).json({
+                success: false,
+                message: 'Kode verifikasi tidak valid'
+            });
+        }
+
+        // Check expiry
+        const now = new Date();
+        const expires = new Date(patient.reset_token_expires);
+        if (now > expires) {
+            return res.status(400).json({
+                success: false,
+                message: 'Kode verifikasi sudah kadaluarsa. Silakan minta kode baru.'
+            });
+        }
+
+        res.json({
+            success: true,
+            message: 'Kode valid. Silakan masukkan password baru.',
+            patientName: patient.full_name
+        });
+
+    } catch (error) {
+        console.error('Verify reset token error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan. Silakan coba lagi.'
+        });
+    }
+});
+
+// POST /api/patients/reset-password - Reset password with token
+router.post('/reset-password', async (req, res) => {
+    try {
+        const { email, token, password, confirm_password } = req.body;
+
+        // Validation
+        if (!email || !token || !password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email, kode verifikasi, dan password baru harus diisi'
+            });
+        }
+
+        if (password.length < 6) {
+            return res.status(400).json({
+                success: false,
+                message: 'Password minimal 6 karakter'
+            });
+        }
+
+        if (confirm_password && password !== confirm_password) {
+            return res.status(400).json({
+                success: false,
+                message: 'Password dan konfirmasi password tidak cocok'
+            });
+        }
+
+        // Find patient with valid reset token
+        const [patients] = await db.query(
+            `SELECT id, full_name, email, reset_token, reset_token_expires
+             FROM patients
+             WHERE email = ?`,
+            [email]
+        );
+
+        if (patients.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Email tidak ditemukan'
+            });
+        }
+
+        const patient = patients[0];
+
+        // Check token
+        if (patient.reset_token !== token) {
+            return res.status(400).json({
+                success: false,
+                message: 'Kode verifikasi tidak valid'
+            });
+        }
+
+        // Check expiry
+        const now = new Date();
+        const expires = new Date(patient.reset_token_expires);
+        if (now > expires) {
+            return res.status(400).json({
+                success: false,
+                message: 'Kode verifikasi sudah kadaluarsa. Silakan minta kode baru.'
+            });
+        }
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        // Update password and clear reset token
+        await db.query(
+            `UPDATE patients
+             SET password = ?, reset_token = NULL, reset_token_expires = NULL, updated_at = NOW()
+             WHERE id = ?`,
+            [hashedPassword, patient.id]
+        );
+
+        console.log(`Password reset successful for patient: ${patient.email} (ID: ${patient.id})`);
+
+        res.json({
+            success: true,
+            message: 'Password berhasil diubah! Silakan login dengan password baru Anda.'
+        });
+
+    } catch (error) {
+        console.error('Reset password error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Terjadi kesalahan. Silakan coba lagi.'
+        });
+    }
+});
+
+// ==================== PREGNANCY TRACKER ====================
+
+/**
+ * GET /pregnancy-tracker
+ * Get pregnancy tracker data for logged-in patient
+ * Uses EDD from latest USG record
+ */
+router.get('/pregnancy-tracker', verifyToken, async (req, res) => {
+    // Prevent browser caching
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.set('Pragma', 'no-cache');
+
+    try {
+        const patientId = req.user.id;
+
+        // Get latest USG record with EDD for this patient
+        const [usgRecords] = await db.query(`
+            SELECT
+                record_data,
+                created_at as record_date
+            FROM medical_records
+            WHERE patient_id = ?
+            AND record_type = 'usg'
+            AND JSON_EXTRACT(record_data, '$.edd') IS NOT NULL
+            AND JSON_EXTRACT(record_data, '$.edd') != ''
+            AND JSON_EXTRACT(record_data, '$.edd') != 'null'
+            ORDER BY created_at DESC
+            LIMIT 1
+        `, [patientId]);
+
+        if (!usgRecords || usgRecords.length === 0) {
+            return res.json({
+                success: true,
+                data: null,
+                message: 'Belum ada data USG dengan HPL'
+            });
+        }
+
+        const usgData = typeof usgRecords[0].record_data === 'string'
+            ? JSON.parse(usgRecords[0].record_data)
+            : usgRecords[0].record_data;
+
+        const edd = usgData.edd; // EDD = Estimated Delivery Date = HPL
+        if (!edd) {
+            return res.json({
+                success: true,
+                data: null,
+                message: 'HPL belum tersedia dari USG'
+            });
+        }
+
+        // Calculate pregnancy week from EDD
+        // Pregnancy is ~40 weeks, so HPHT = EDD - 280 days
+        const eddDate = new Date(edd);
+        const today = new Date();
+        const hphtEstimate = new Date(eddDate);
+        hphtEstimate.setDate(hphtEstimate.getDate() - 280);
+
+        // Calculate days pregnant
+        const daysPregnant = Math.floor((today - hphtEstimate) / (1000 * 60 * 60 * 24));
+        const weeksPregnant = Math.floor(daysPregnant / 7);
+        const daysExtra = daysPregnant % 7;
+
+        // Days until EDD
+        const daysUntilEdd = Math.floor((eddDate - today) / (1000 * 60 * 60 * 24));
+
+        // Auto-hide if HPL + 14 days (2 weeks) has passed
+        // This assumes patient has delivered
+        const GRACE_PERIOD_DAYS = 14;
+        if (daysUntilEdd < -GRACE_PERIOD_DAYS) {
+            return res.json({
+                success: true,
+                data: null,
+                message: 'Kehamilan sudah selesai (HPL + 2 minggu telah berlalu)'
+            });
+        }
+
+        // Trimester calculation
+        let trimester = 1;
+        if (weeksPregnant >= 28) trimester = 3;
+        else if (weeksPregnant >= 14) trimester = 2;
+
+        // Baby size comparison by week
+        const babySizes = {
+            4: { size: 'Biji Poppy', emoji: '🌱', length: '0.1 cm' },
+            5: { size: 'Biji Wijen', emoji: '🌱', length: '0.2 cm' },
+            6: { size: 'Biji Lentil', emoji: '🫘', length: '0.4 cm' },
+            7: { size: 'Blueberry', emoji: '🫐', length: '1 cm' },
+            8: { size: 'Raspberry', emoji: '🍇', length: '1.6 cm' },
+            9: { size: 'Anggur', emoji: '🍇', length: '2.3 cm' },
+            10: { size: 'Kurma', emoji: '🫒', length: '3.1 cm' },
+            11: { size: 'Jeruk Limau', emoji: '🍋', length: '4.1 cm' },
+            12: { size: 'Jeruk Nipis', emoji: '🍋', length: '5.4 cm' },
+            13: { size: 'Lemon', emoji: '🍋', length: '7.4 cm' },
+            14: { size: 'Jeruk', emoji: '🍊', length: '8.7 cm' },
+            15: { size: 'Apel', emoji: '🍎', length: '10.1 cm' },
+            16: { size: 'Alpukat', emoji: '🥑', length: '11.6 cm' },
+            17: { size: 'Pir', emoji: '🍐', length: '13 cm' },
+            18: { size: 'Paprika', emoji: '🫑', length: '14.2 cm' },
+            19: { size: 'Tomat Besar', emoji: '🍅', length: '15.3 cm' },
+            20: { size: 'Pisang', emoji: '🍌', length: '16.4 cm' },
+            21: { size: 'Wortel', emoji: '🥕', length: '26.7 cm' },
+            22: { size: 'Jagung', emoji: '🌽', length: '27.8 cm' },
+            23: { size: 'Mangga', emoji: '🥭', length: '28.9 cm' },
+            24: { size: 'Jagung Besar', emoji: '🌽', length: '30 cm' },
+            25: { size: 'Terong', emoji: '🍆', length: '34.6 cm' },
+            26: { size: 'Brokoli', emoji: '🥦', length: '35.6 cm' },
+            27: { size: 'Kembang Kol', emoji: '🥬', length: '36.6 cm' },
+            28: { size: 'Terong Besar', emoji: '🍆', length: '37.6 cm' },
+            29: { size: 'Labu Siam', emoji: '🎃', length: '38.6 cm' },
+            30: { size: 'Kubis', emoji: '🥬', length: '39.9 cm' },
+            31: { size: 'Kelapa', emoji: '🥥', length: '41.1 cm' },
+            32: { size: 'Nangka', emoji: '🍈', length: '42.4 cm' },
+            33: { size: 'Nanas', emoji: '🍍', length: '43.7 cm' },
+            34: { size: 'Melon', emoji: '🍈', length: '45 cm' },
+            35: { size: 'Melon Besar', emoji: '🍈', length: '46.2 cm' },
+            36: { size: 'Pepaya', emoji: '🍈', length: '47.4 cm' },
+            37: { size: 'Labu', emoji: '🎃', length: '48.6 cm' },
+            38: { size: 'Labu Besar', emoji: '🎃', length: '49.8 cm' },
+            39: { size: 'Semangka Mini', emoji: '🍉', length: '50.7 cm' },
+            40: { size: 'Semangka', emoji: '🍉', length: '51.2 cm' }
+        };
+
+        const weekClamped = Math.max(4, Math.min(40, weeksPregnant));
+        const babySize = babySizes[weekClamped] || babySizes[40];
+
+        // Weekly milestone tips
+        const weeklyTips = {
+            4: 'Embrio mulai berkembang. Istirahat cukup dan konsumsi asam folat.',
+            8: 'Jantung bayi mulai berdetak! Jaga pola makan sehat.',
+            12: 'Risiko keguguran menurun. Trimester pertama hampir selesai.',
+            16: 'Bayi mulai bergerak! Anda mungkin merasakan gerakan halus.',
+            20: 'USG tengah kehamilan. Bayi sudah bisa mendengar suara Anda.',
+            24: 'Bayi aktif bergerak. Jaga hidrasi dan istirahat cukup.',
+            28: 'Trimester ketiga dimulai! Persiapkan perlengkapan bayi.',
+            32: 'Bayi semakin besar. Kontrol rutin sangat penting.',
+            36: 'Hampir waktunya! Bayi sudah siap posisi lahir.',
+            40: 'Selamat! Waktu persalinan sudah dekat. Tetap tenang dan siap.'
+        };
+
+        // Get closest tip
+        const tipWeek = Object.keys(weeklyTips)
+            .map(Number)
+            .filter(w => w <= weeksPregnant)
+            .pop() || 4;
+        const tip = weeklyTips[tipWeek];
+
+        res.json({
+            success: true,
+            data: {
+                edd: edd,
+                eddFormatted: new Date(edd).toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                }),
+                weeksPregnant: weeksPregnant,
+                daysExtra: daysExtra,
+                daysUntilEdd: Math.max(0, daysUntilEdd),
+                trimester: trimester,
+                progressPercent: Math.min(100, Math.round((weeksPregnant / 40) * 100)),
+                babySize: babySize,
+                tip: tip,
+                usgDate: usgRecords[0].record_date
+            }
+        });
+
+    } catch (error) {
+        console.error('Pregnancy tracker error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal memuat data kehamilan'
+        });
+    }
+});
+
+/**
+ * GET /medications
+ * Get current medications/prescriptions for logged-in patient
+ */
+router.get('/medications', verifyToken, async (req, res) => {
+    try {
+        const patientId = req.user.id;
+
+        // Get planning records with terapi data from the last 90 days
+        const [medications] = await db.query(`
+            SELECT
+                mr.id,
+                mr.mr_id,
+                mr.created_at as visit_date,
+                JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.terapi')) as terapi,
+                CASE
+                    WHEN mr.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1
+                    ELSE 0
+                END as is_current
+            FROM medical_records mr
+            WHERE mr.patient_id = ?
+            AND mr.record_type = 'planning'
+            AND JSON_EXTRACT(mr.record_data, '$.terapi') IS NOT NULL
+            AND JSON_EXTRACT(mr.record_data, '$.terapi') != ''
+            AND JSON_EXTRACT(mr.record_data, '$.terapi') != 'null'
+            AND mr.created_at >= DATE_SUB(NOW(), INTERVAL 90 DAY)
+            ORDER BY mr.created_at DESC
+            LIMIT 10
+        `, [patientId]);
+
+        res.json({
+            success: true,
+            data: medications
+        });
+
+    } catch (error) {
+        console.error('Medications error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal memuat data obat'
         });
     }
 });

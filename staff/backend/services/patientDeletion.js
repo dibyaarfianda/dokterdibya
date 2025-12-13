@@ -2,6 +2,7 @@ const db = require('../db');
 
 /**
  * Delete a patient along with all related relational data inside a single transaction.
+ * Handles dual-table system (users + patients).
  * Returns an object containing the deleted patient metadata and per-table deletion counts.
  */
 async function deletePatientWithRelations(patientId) {
@@ -11,8 +12,12 @@ async function deletePatientWithRelations(patientId) {
     try {
         await connection.beginTransaction();
 
+        // Check both tables for patient info (dual-table system)
         const [patients] = await connection.query(
-            'SELECT id, full_name, email FROM patients WHERE id = ?',
+            `SELECT p.id, p.full_name, p.email, u.new_id as user_id
+             FROM patients p
+             LEFT JOIN users u ON u.new_id = p.id
+             WHERE p.id = ?`,
             [patientId]
         );
 
@@ -129,17 +134,107 @@ async function deletePatientWithRelations(patientId) {
         );
 
         await deleteOptionalChild(connection,
+            'DELETE FROM sunday_appointments_archive WHERE patient_id = ?',
+            [patientId],
+            deletedData,
+            'sunday_appointments_archive'
+        );
+
+        await deleteOptionalChild(connection,
+            'DELETE FROM usg_records WHERE patient_id = ?',
+            [patientId],
+            deletedData,
+            'usg_records'
+        );
+
+        await deleteOptionalChild(connection,
+            'DELETE FROM ai_detection_logs WHERE patient_id = ?',
+            [patientId],
+            deletedData,
+            'ai_detection_logs'
+        );
+
+        await deleteOptionalChild(connection,
+            'DELETE FROM ai_summary_logs WHERE patient_id = ?',
+            [patientId],
+            deletedData,
+            'ai_summary_logs'
+        );
+
+        // Clear registration code reference (don't delete the code, just clear patient reference)
+        await deleteOptionalChild(connection,
+            'UPDATE registration_codes SET used_by_patient_id = NULL WHERE used_by_patient_id = ?',
+            [patientId],
+            deletedData,
+            'registration_codes_cleared'
+        );
+
+        await deleteOptionalChild(connection,
             'DELETE FROM patient_password_reset_tokens WHERE patient_id = ?',
             [patientId],
             deletedData,
             'patient_password_reset_tokens'
         );
 
+        // Delete patient documents and related logs
+        await deleteOptionalChild(connection,
+            'DELETE FROM patient_document_access_logs WHERE document_id IN (SELECT id FROM patient_documents WHERE patient_id = ?)',
+            [patientId],
+            deletedData,
+            'patient_document_access_logs'
+        );
+
+        await deleteOptionalChild(connection,
+            'DELETE FROM patient_document_shares WHERE document_id IN (SELECT id FROM patient_documents WHERE patient_id = ?)',
+            [patientId],
+            deletedData,
+            'patient_document_shares'
+        );
+
+        await deleteOptionalChild(connection,
+            'DELETE FROM patient_documents WHERE patient_id = ?',
+            [patientId],
+            deletedData,
+            'patient_documents'
+        );
+
+        // Delete patient MR history
+        await deleteOptionalChild(connection,
+            'DELETE FROM patient_mr_history WHERE patient_id = ?',
+            [patientId],
+            deletedData,
+            'patient_mr_history'
+        );
+
+        // Delete patient notifications
+        await deleteOptionalChild(connection,
+            'DELETE FROM patient_notifications WHERE patient_id = ?',
+            [patientId],
+            deletedData,
+            'patient_notifications'
+        );
+
+        // Delete email verifications
+        await deleteOptionalChild(connection,
+            'DELETE FROM email_verifications WHERE email = (SELECT email FROM patients WHERE id = ?)',
+            [patientId],
+            deletedData,
+            'email_verifications'
+        );
+
+        // Delete from patients table (medical records)
         const [patientResult] = await connection.query(
             'DELETE FROM patients WHERE id = ?',
             [patientId]
         );
         deletedData.patient = patientResult.affectedRows;
+
+        // Delete from users table (authentication) - dual table system
+        const [userResult] = await connection.query(
+            'DELETE FROM users WHERE new_id = ?',
+            [patientId]
+        );
+        deletedData.users = userResult.affectedRows;
 
         await connection.commit();
 
@@ -169,6 +264,74 @@ async function deleteOptionalChild(connection, query, params, deletedData, key) 
     }
 }
 
+/**
+ * Delete patient by email from both users and patients tables.
+ * Useful for cleaning up incomplete registrations.
+ */
+async function deletePatientByEmail(email) {
+    const connection = await db.getConnection();
+    const deletedData = {};
+
+    try {
+        await connection.beginTransaction();
+
+        // Find patient ID from either table
+        const [patients] = await connection.query(
+            `SELECT p.id FROM patients p WHERE p.email = ?
+             UNION
+             SELECT u.new_id as id FROM users u WHERE u.email = ? AND u.user_type = 'patient'`,
+            [email, email]
+        );
+
+        if (patients.length === 0) {
+            await connection.rollback();
+            return { found: false, deletedData: null };
+        }
+
+        const patientId = patients[0].id;
+
+        // Delete from users table
+        const [userResult] = await connection.query(
+            'DELETE FROM users WHERE email = ? OR new_id = ?',
+            [email, patientId]
+        );
+        deletedData.users = userResult.affectedRows;
+
+        // Delete from patients table
+        const [patientResult] = await connection.query(
+            'DELETE FROM patients WHERE email = ? OR id = ?',
+            [email, patientId]
+        );
+        deletedData.patients = patientResult.affectedRows;
+
+        // Delete from email_verifications
+        await deleteOptionalChild(connection,
+            'DELETE FROM email_verifications WHERE email = ?',
+            [email],
+            deletedData,
+            'email_verifications'
+        );
+
+        // Delete password reset tokens
+        await deleteOptionalChild(connection,
+            'DELETE FROM patient_password_reset_tokens WHERE patient_id = ?',
+            [patientId],
+            deletedData,
+            'patient_password_reset_tokens'
+        );
+
+        await connection.commit();
+
+        return { found: true, email, patientId, deletedData };
+    } catch (error) {
+        await connection.rollback();
+        throw error;
+    } finally {
+        connection.release();
+    }
+}
+
 module.exports = {
-    deletePatientWithRelations
+    deletePatientWithRelations,
+    deletePatientByEmail
 };

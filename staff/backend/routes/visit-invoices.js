@@ -1,11 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { verifyToken, JWT_SECRET } = require('../middleware/auth');
+const { verifyToken, requireMenuAccess, JWT_SECRET } = require('../middleware/auth');
 const jwt = require('jsonwebtoken');
 
 // POST /api/visit-invoices - store invoice + etiket info after visit
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', verifyToken, requireMenuAccess('keuangan'), async (req, res) => {
     try {
         const {
             patient_id,
@@ -65,7 +65,7 @@ router.post('/', verifyToken, async (req, res) => {
 });
 
 // GET /api/visit-invoices/patient/:patientId - patient or staff access
-router.get('/patient/:patientId', verifyToken, async (req, res) => {
+router.get('/patient/:patientId', verifyToken, requireMenuAccess('keuangan'), async (req, res) => {
     try {
         const patientId = req.params.patientId;
         const requesterIsPatient = req.user?.role === 'patient';
@@ -101,7 +101,7 @@ router.get('/patient/:patientId', verifyToken, async (req, res) => {
 });
 
 // GET /api/visit-invoices/:id - detail view
-router.get('/:id', verifyToken, async (req, res) => {
+router.get('/:id', verifyToken, requireMenuAccess('keuangan'), async (req, res) => {
     try {
         const [rows] = await db.query('SELECT * FROM visit_invoices WHERE id = ?', [req.params.id]);
 

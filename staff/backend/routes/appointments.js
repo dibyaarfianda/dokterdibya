@@ -2,12 +2,12 @@
 const express = require('express');
 const router = express.Router();
 const pool = require('../db');
-const { verifyToken, requirePermission } = require('../middleware/auth');
+const { verifyToken, requireSuperadmin, requirePermission } = require('../middleware/auth');
 
 // ==================== PUBLIC ROUTES ====================
 
 // GET all appointments (with optional filters)
-router.get('/', verifyToken, requirePermission('appointments.view'), async (req, res) => {
+router.get('/', verifyToken, requirePermission('booking.view'), async (req, res) => {
     try {
         const { patient_id, start_date, end_date, status, today_only } = req.query;
         
@@ -56,6 +56,55 @@ router.get('/', verifyToken, requirePermission('appointments.view'), async (req,
     }
 });
 
+// GET appointments by hospital location
+router.get('/hospital/:location', verifyToken, requirePermission('booking.view'), async (req, res) => {
+    try {
+        const { location } = req.params;
+
+        // Get appointments for this hospital with patient age, upcoming first
+        const [rows] = await pool.query(`
+            SELECT
+                a.id, a.patient_id, a.patient_name, a.hospital_location, a.appointment_date,
+                a.appointment_time, a.appointment_type, a.location, a.notes, a.complaint,
+                a.detected_category, a.status, a.created_at,
+                p.age as patient_age,
+                p.birth_date as patient_birth_date
+            FROM appointments a
+            LEFT JOIN patients p ON a.patient_id = p.id
+            WHERE a.hospital_location = ?
+            AND a.appointment_date >= CURDATE()
+            ORDER BY a.appointment_date ASC, a.appointment_time ASC
+        `, [location]);
+
+        // Calculate age from birth_date if age is not available
+        const appointmentsWithAge = rows.map(apt => {
+            if (!apt.patient_age && apt.patient_birth_date) {
+                const today = new Date();
+                const birthDate = new Date(apt.patient_birth_date);
+                let age = today.getFullYear() - birthDate.getFullYear();
+                const monthDiff = today.getMonth() - birthDate.getMonth();
+                if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                    age--;
+                }
+                apt.patient_age = age >= 0 ? age : null;
+            }
+            return apt;
+        });
+
+        res.json({
+            success: true,
+            appointments: appointmentsWithAge
+        });
+    } catch (error) {
+        console.error('Error fetching hospital appointments:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch hospital appointments',
+            error: error.message
+        });
+    }
+});
+
 // GET single appointment by ID
 router.get('/:id', async (req, res) => {
     try {
@@ -86,7 +135,7 @@ router.get('/:id', async (req, res) => {
 });
 
 // GET latest appointment for a specific patient
-router.get('/patient/:patient_id/latest', verifyToken, requirePermission('appointments.view'), async (req, res) => {
+router.get('/patient/:patient_id/latest', verifyToken, requirePermission('booking.view'), async (req, res) => {
     try {
         const [rows] = await pool.query(
             `SELECT * FROM appointments 
@@ -120,7 +169,7 @@ router.get('/patient/:patient_id/latest', verifyToken, requirePermission('appoin
 // ==================== PROTECTED ROUTES (require auth) ====================
 
 // POST new appointment
-router.post('/', verifyToken, requirePermission('appointments.create'), async (req, res) => {
+router.post('/', verifyToken, requirePermission('booking.manage'), async (req, res) => {
     try {
         const {
             patient_id,
@@ -199,8 +248,56 @@ router.post('/', verifyToken, requirePermission('appointments.create'), async (r
     }
 });
 
+// PATCH update appointment status only
+router.patch('/:id/status', verifyToken, requirePermission('booking.manage'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        // Validate status
+        const validStatuses = ['scheduled', 'confirmed', 'completed', 'cancelled', 'no_show'];
+        if (!validStatuses.includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Status tidak valid'
+            });
+        }
+
+        // Check if appointment exists
+        const [existing] = await pool.query(
+            'SELECT * FROM appointments WHERE id = ?',
+            [id]
+        );
+
+        if (existing.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Appointment tidak ditemukan'
+            });
+        }
+
+        // Update status
+        await pool.query(
+            'UPDATE appointments SET status = ?, updated_at = NOW() WHERE id = ?',
+            [status, id]
+        );
+
+        res.json({
+            success: true,
+            message: 'Status appointment berhasil diupdate'
+        });
+    } catch (error) {
+        console.error('Error updating appointment status:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal mengupdate status appointment',
+            error: error.message
+        });
+    }
+});
+
 // PUT update appointment
-router.put('/:id', verifyToken, requirePermission('appointments.edit'), async (req, res) => {
+router.put('/:id', verifyToken, requirePermission('booking.manage'), async (req, res) => {
     try {
         const { id } = req.params;
         const {
@@ -293,8 +390,8 @@ router.put('/:id', verifyToken, requirePermission('appointments.edit'), async (r
     }
 });
 
-// DELETE appointment
-router.delete('/:id', verifyToken, requirePermission('appointments.delete'), async (req, res) => {
+// DELETE appointment (Superadmin/Dokter only)
+router.delete('/:id', verifyToken, requireSuperadmin, async (req, res) => {
     try {
         const { id } = req.params;
         
@@ -331,8 +428,8 @@ router.delete('/:id', verifyToken, requirePermission('appointments.delete'), asy
     }
 });
 
-// HARD DELETE - Permanently remove appointment from database
-router.delete('/:id/permanent', verifyToken, requirePermission('appointments.delete'), async (req, res) => {
+// HARD DELETE - Permanently remove appointment from database (Superadmin/Dokter only)
+router.delete('/:id/permanent', verifyToken, requireSuperadmin, async (req, res) => {
     try {
         const { id } = req.params;
         

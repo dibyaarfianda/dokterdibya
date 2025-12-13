@@ -305,9 +305,13 @@ async function handleProfileUpdate() {
         }
         
         // Update password via VPS API
+        console.log('[PASSWORD DEBUG] newPassword:', newPassword ? 'SET (length: ' + newPassword.length + ')' : 'EMPTY');
+        console.log('[PASSWORD DEBUG] currentPassword:', currentPassword ? 'SET' : 'EMPTY');
+
         if (newPassword) {
-            console.log('Updating password...');
-            
+            console.log('[PASSWORD DEBUG] Calling API...');
+            console.log('[PASSWORD DEBUG] URL:', `${VPS_API_BASE}/api/auth/change-password`);
+
             const response = await fetch(`${VPS_API_BASE}/api/auth/change-password`, {
                 method: 'POST',
                 headers: {
@@ -319,23 +323,30 @@ async function handleProfileUpdate() {
                     newPassword: newPassword
                 })
             });
-            
+
+            console.log('[PASSWORD DEBUG] Response status:', response.status);
+
             if (!response.ok) {
                 const error = await response.json();
+                console.log('[PASSWORD DEBUG] Error response:', error);
                 throw new Error(error.message || 'Failed to update password');
             }
-            
+
             const result = await response.json();
+            console.log('[PASSWORD DEBUG] Success response:', result);
+
             if (!result.success) {
                 throw new Error(result.message || 'Failed to update password');
             }
-            
-            console.log('✓ Password updated');
-            
+
+            console.log('✓ Password updated successfully');
+
             // Clear password fields
             document.getElementById('profile-current-password').value = '';
             document.getElementById('profile-new-password').value = '';
             document.getElementById('profile-confirm-password').value = '';
+        } else {
+            console.log('[PASSWORD DEBUG] Skipping password update - no new password provided');
         }
         
         // Reload auth user to get updated photo_url from server

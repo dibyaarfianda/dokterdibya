@@ -4,11 +4,13 @@ const express = require('express');
 const fs = require('fs/promises');
 const path = require('path');
 const crypto = require('crypto');
+const jwt = require('jsonwebtoken');
 const logger = require('../utils/logger');
 const PatientIntakeIntegrationService = require('../services/PatientIntakeIntegrationService');
-const { verifyToken } = require('../middleware/auth');
+const { verifyToken, requireSuperadmin } = require('../middleware/auth');
 const db = require('../db');
 const { getGMT7Timestamp } = require('../utils/idGenerator');
+const { ROLE_IDS, ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
 
 const router = express.Router();
 const STORAGE_DIR = path.join(__dirname, '..', 'logs', 'patient-intake');
@@ -16,6 +18,23 @@ const ENCRYPTION_KEY = process.env.INTAKE_ENCRYPTION_KEY || '';
 const ENCRYPTION_KEY_ID = process.env.INTAKE_ENCRYPTION_KEY_ID || 'default';
 let encryptionWarningLogged = false;
 const VALID_INTAKE_CATEGORIES = new Set(['obstetri', 'gyn_repro', 'gyn_special', 'admin_followup']);
+
+// Helper: Check if user can access patient intake data
+function canAccessPatientIntake(user, patientId) {
+    // Superadmin/dokter can access all records
+    if (user.is_superadmin || user.role === ROLE_NAMES.DOKTER || isSuperadminRole(user.role_id)) {
+        return true;
+    }
+    // Patient can only access their own records
+    if (user.user_type === 'patient' && (user.id === patientId || user.patientId === patientId)) {
+        return true;
+    }
+    // Staff with medical permissions (bidan) can access for clinical purposes
+    if (user.role === ROLE_NAMES.BIDAN || user.role_id === ROLE_IDS.BIDAN) {
+        return true;
+    }
+    return false;
+}
 
 function trimToNull(value) {
     if (value === null || value === undefined) {
@@ -449,30 +468,35 @@ router.post('/api/patient-intake', async (req, res, next) => {
 
         const intakeCategory = attachIntakeCategoryMetadata(payload);
 
-        // Check if patient already has a submission by phone number (prevent duplicate submissions)
+        // Check if patient already has a submission by phone + name (prevent duplicate submissions)
+        // Using both phone AND name because family members may share phone numbers
         const patientPhone = payload.phone;
-        if (patientPhone) {
+        const patientName = payload.full_name;
+        if (patientPhone && patientName) {
             const normalizedPhone = patientPhone.replace(/\D/g, '').slice(-10);
-            
+            const normalizedName = patientName.trim().toLowerCase();
+
             try {
                 const [existing] = await db.query(
-                    `SELECT submission_id, quick_id, status 
-                    FROM patient_intake_submissions 
-                    WHERE RIGHT(REPLACE(phone, '-', ''), 10) = ? 
+                    `SELECT submission_id, quick_id, status, full_name
+                    FROM patient_intake_submissions
+                    WHERE RIGHT(REPLACE(phone, '-', ''), 10) = ?
+                    AND LOWER(TRIM(full_name)) = ?
                     AND status IN ('verified', 'patient_reported', 'pending_review')
                     LIMIT 1`,
-                    [normalizedPhone]
+                    [normalizedPhone, normalizedName]
                 );
-                
+
                 if (existing.length > 0) {
                     logger.info('Patient already has intake submission, rejecting duplicate', {
                         phone: normalizedPhone,
+                        name: patientName,
                         quickId: existing[0].quick_id,
                         existingSubmissionId: existing[0].submission_id
                     });
-                    
-                    return res.status(409).json({ 
-                        success: false, 
+
+                    return res.status(409).json({
+                        success: false,
                         code: 'DUPLICATE_SUBMISSION',
                         message: 'Anda sudah memiliki formulir rekam medis. Silakan perbarui formulir yang ada.',
                         existingSubmissionId: existing[0].submission_id,
@@ -590,8 +614,36 @@ router.post('/api/patient-intake', async (req, res, next) => {
             // Don't fail the response, data is already integrated
         }
 
-        res.status(201).json({ 
-            success: true, 
+        // IMPORTANT: Update intake_completed and link submission to the LOGGED-IN patient directly
+        // This ensures the correct patient account is marked, regardless of phone number lookups
+        try {
+            const authHeader = req.headers.authorization;
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                const token = authHeader.substring(7);
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                if (decoded && decoded.id) {
+                    // Update the intake submission to be linked to the authenticated patient
+                    await db.query(
+                        'UPDATE patient_intake_submissions SET patient_id = ? WHERE submission_id = ?',
+                        [decoded.id, submissionId]
+                    );
+                    logger.info(`Linked intake submission ${submissionId} to authenticated patient: ${decoded.id}`);
+
+                    // Mark intake as completed for the patient
+                    await db.query(
+                        'UPDATE patients SET intake_completed = 1 WHERE id = ?',
+                        [decoded.id]
+                    );
+                    logger.info(`Marked intake_completed=1 for authenticated patient: ${decoded.id}`);
+                }
+            }
+        } catch (tokenError) {
+            // Token verification failed or not present - that's OK, not all submissions are authenticated
+            logger.debug('Could not mark intake_completed from token', { error: tokenError.message });
+        }
+
+        res.status(201).json({
+            success: true,
             submissionId,
             quickId,
             status,
@@ -676,29 +728,44 @@ router.get('/api/patient-intake', verifyToken, async (req, res, next) => {
  */
 router.get('/api/patient-intake/my-intake', verifyToken, async (req, res, next) => {
     try {
-        const patientPhone = req.user.phone || req.user.whatsapp;
+        const patientId = req.user.id; // P2025001 format
+        const patientEmail = req.user.email;
         
-        if (!patientPhone) {
+        logger.info('Loading intake for patient', { id: patientId, email: patientEmail });
+        
+        if (!patientId && !patientEmail) {
+            logger.warn('No id or email in token');
             return res.json({ success: true, data: null });
         }
         
-        const normalizedPatientPhone = patientPhone.replace(/\D/g, '').slice(-10);
-        
-        // Try to load from database first
+        // Try to load from database - query by patient_id or email
         try {
-            const [rows] = await db.query(
-                `SELECT submission_id, quick_id, payload, created_at as receivedAt, status 
+            // Build query to match by patient_id (primary) or email (fallback)
+            let query = `SELECT submission_id, quick_id, payload, created_at as receivedAt, status 
                 FROM patient_intake_submissions 
-                WHERE RIGHT(REPLACE(phone, '-', ''), 10) = ? 
-                AND status = 'verified'
-                ORDER BY created_at DESC
-                LIMIT 1`,
-                [normalizedPatientPhone]
-            );
+                WHERE status = 'verified' AND (`;
+            const params = [];
+            
+            if (patientId) {
+                query += `patient_id = ?`;
+                params.push(patientId);
+            }
+            
+            if (patientEmail) {
+                if (params.length > 0) query += ` OR `;
+                query += `JSON_EXTRACT(payload, '$.email') = ?`;
+                params.push(patientEmail);
+            }
+            
+            query += `) ORDER BY created_at DESC LIMIT 1`;
+            
+            const [rows] = await db.query(query, params);
             
             if (rows.length > 0) {
                 const row = rows[0];
                 const payload = typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload;
+                
+                logger.info('Found existing intake', { submissionId: row.submission_id, quickId: row.quick_id });
                 
                 return res.json({
                     success: true,
@@ -711,8 +778,10 @@ router.get('/api/patient-intake/my-intake', verifyToken, async (req, res, next) 
                     },
                 });
             }
+            
+            logger.info('No existing intake found');
         } catch (dbError) {
-            logger.error('Failed to load intake from database', { error: dbError.message });
+            logger.error('Failed to load intake from database', { error: dbError.message, stack: dbError.stack });
         }
 
         return res.json({ success: true, data: null });
@@ -738,26 +807,38 @@ router.put('/api/patient-intake/my-intake', verifyToken, async (req, res, next) 
 
         const intakeCategory = attachIntakeCategoryMetadata(payload);
 
-        const patientPhone = req.user.phone || req.user.whatsapp;
+        const patientEmail = req.user.email;
         
-        if (!patientPhone) {
-            return res.status(400).json({ success: false, message: 'Nomor telepon tidak ditemukan' });
+        logger.info('Updating intake for patient', { id: patientId, email: patientEmail });
+        
+        if (!patientId && !patientEmail) {
+            return res.status(400).json({ success: false, message: 'Patient ID atau email tidak ditemukan' });
         }
         
-        const normalizedPatientPhone = patientPhone.replace(/\D/g, '').slice(-10);
         let existingRecord = null;
         
-        // Load from database
+        // Load from database - query by patient_id or email
         try {
-            const [rows] = await db.query(
-                `SELECT submission_id, payload, created_at as receivedAt, status, patient_id
+            // Build query to match by patient_id (primary) or email (fallback)
+            let query = `SELECT submission_id, payload, created_at as receivedAt, status, patient_id
                 FROM patient_intake_submissions 
-                WHERE RIGHT(REPLACE(phone, '-', ''), 10) = ? 
-                AND status = 'verified'
-                ORDER BY created_at DESC
-                LIMIT 1`,
-                [normalizedPatientPhone]
-            );
+                WHERE status = 'verified' AND (`;
+            const params = [];
+            
+            if (patientId) {
+                query += `patient_id = ?`;
+                params.push(patientId);
+            }
+            
+            if (patientEmail) {
+                if (params.length > 0) query += ` OR `;
+                query += `JSON_EXTRACT(payload, '$.email') = ?`;
+                params.push(patientEmail);
+            }
+            
+            query += `) ORDER BY created_at DESC LIMIT 1`;
+            
+            const [rows] = await db.query(query, params);
             
             if (rows.length > 0) {
                 const row = rows[0];
@@ -770,6 +851,7 @@ router.put('/api/patient-intake/my-intake', verifyToken, async (req, res, next) 
                     integration: row.patient_id ? { patientId: row.patient_id } : null,
                     review: { history: [] }
                 };
+                logger.info('Found existing intake for update', { submissionId: row.submission_id });
             }
         } catch (dbError) {
             logger.error('Failed to load intake from database for update', { error: dbError.message });
@@ -896,6 +978,15 @@ router.get('/api/patient-intake/by-patient/:patientId', verifyToken, async (req,
         return res.status(400).json({ success: false, message: 'Patient ID tidak valid.' });
     }
 
+    // Access control check
+    if (!canAccessPatientIntake(req.user, patientId)) {
+        logger.warn(`Unauthorized patient intake access attempt: User ${req.user.id} tried to access patient ${patientId}`);
+        return res.status(403).json({
+            success: false,
+            message: 'Access denied: You do not have permission to view this patient\'s intake data'
+        });
+    }
+
     try {
         // Get all intake submissions for this patient
         let query = `
@@ -975,6 +1066,15 @@ router.get('/api/patient-intake/patient/:patientId/latest', verifyToken, async (
 
     if (!patientId || typeof patientId !== 'string') {
         return res.status(400).json({ success: false, message: 'Patient ID tidak valid.' });
+    }
+
+    // Access control check
+    if (!canAccessPatientIntake(req.user, patientId)) {
+        logger.warn(`Unauthorized patient intake latest access attempt: User ${req.user.id} tried to access patient ${patientId}`);
+        return res.status(403).json({
+            success: false,
+            message: 'Access denied: You do not have permission to view this patient\'s intake data'
+        });
     }
 
     try {
@@ -1127,7 +1227,7 @@ router.put('/api/patient-intake/:submissionId/review', verifyToken, async (req, 
     }
 });
 
-router.delete('/api/patient-intake/:submissionId', verifyToken, async (req, res, next) => {
+router.delete('/api/patient-intake/:submissionId', verifyToken, requireSuperadmin, async (req, res, next) => {
     const { submissionId } = req.params;
 
     if (!submissionId || typeof submissionId !== 'string') {

@@ -1,0 +1,2427 @@
+<!DOCTYPE html>
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Pasien - Dokter Dibya</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,300,600,700' rel='stylesheet' type='text/css'>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0066FF;
+            --primary-dark: #0052CC;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg-gradient: linear-gradient(135deg, #1a1a1a 0%, #303030 100%);
+        }
+
+        body {
+            background: var(--bg-gradient);
+            color: #ffffff;
+            font-family: 'Poppins', 'Open Sans', sans-serif;
+            font-weight: 300;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bubble {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-100px) rotate(180deg); }
+        }
+        
+        a {
+            color: #47C6F8;
+            text-decoration: none;
+        }
+        
+        a:hover {
+            color: #0FF;
+            text-decoration: none;
+        }
+
+        /* Main Content */
+        .dashboard-container {
+            padding: 30px 15px;
+            max-width: 1200px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Cards */
+        .dashboard-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 20px;
+            transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .dashboard-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(40, 167, 233, 0.3);
+            border-color: #28a7e9;
+        }
+        
+        .dashboard-card h3 {
+            color: #28a7e9;
+            font-size: 24px;
+            font-weight: 600;
+            margin-top: 0;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .dashboard-card h3 i {
+            margin-right: 10px;
+            width: 30px;
+        }
+        
+        .dashboard-card h3[onclick] {
+            transition: color 0.3s;
+        }
+        
+        .dashboard-card h3[onclick]:hover {
+            color: #47C6F8;
+        }
+        
+        #welcome-toggle-icon {
+            transition: transform 0.3s;
+        }
+        
+        /* Alert */
+        .alert-info-custom {
+            background: rgba(40, 167, 233, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(40, 167, 233, 0.3);
+            border-left: 4px solid #28a7e9;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            color: #ffffff;
+        }
+
+        .alert-info-custom i {
+            color: #28a7e9;
+            margin-right: 10px;
+        }
+
+        .alert-success-custom {
+            background: rgba(40, 233, 112, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(40, 233, 112, 0.3);
+            border-left: 4px solid #28e970;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            color: #ffffff;
+        }
+
+        .alert-success-custom i {
+            color: #28e970;
+            margin-right: 10px;
+        }
+
+        .appointment-info-box {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 10px;
+        }
+        
+        .appointment-info-box p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+        
+        .appointment-info-box strong {
+            color: #28e970;
+        }
+
+        .cancel-appointment-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 15px;
+            padding: 10px 16px;
+            background: #d9534f;
+            color: #ffffff;
+            border: none;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.2s ease;
+        }
+
+        .cancel-appointment-btn:hover {
+            background: #c9302c;
+            transform: translateY(-2px);
+        }
+
+        .cancel-appointment-btn:disabled {
+            background: #7f8c8d;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .dashboard-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+            z-index: 9999;
+        }
+
+        .dashboard-modal.active {
+            display: flex;
+        }
+
+        .dashboard-modal-content {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            width: 100%;
+            max-width: 500px;
+            padding: 25px;
+            color: #ffffff;
+            position: relative;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .dashboard-modal-content h4 {
+            margin-top: 0;
+            color: #28a7e9;
+            font-weight: 600;
+        }
+
+        .dashboard-modal-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: transparent;
+            border: none;
+            color: #bbbbbb;
+            font-size: 22px;
+            cursor: pointer;
+        }
+
+        .dashboard-modal-close:hover {
+            color: #ffffff;
+        }
+
+        .cancel-summary {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .cancel-summary strong {
+            color: #28a7e9;
+        }
+
+        .dashboard-modal textarea {
+            width: 100%;
+            min-height: 100px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            padding: 10px;
+            color: #ffffff;
+            resize: vertical;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-actions button {
+            padding: 10px 18px;
+            border: none;
+            border-radius: 5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s ease, transform 0.2s ease;
+        }
+
+        .modal-actions .btn-secondary {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #ffffff;
+        }
+
+        .modal-actions .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-1px);
+        }
+
+        .modal-actions .btn-danger {
+            background: #d9534f;
+            color: #ffffff;
+        }
+
+        .modal-actions .btn-danger:hover {
+            background: #c9302c;
+            transform: translateY(-1px);
+        }
+
+        .modal-error {
+            color: #ff6b6b;
+            margin-top: 10px;
+            font-size: 13px;
+        }
+
+        .dashboard-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #28a7e9;
+            color: #ffffff;
+            padding: 12px 18px;
+            border-radius: 6px;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+            z-index: 10000;
+        }
+
+        .dashboard-toast.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .dashboard-toast.error {
+            background: #d9534f;
+        }
+        
+        /* Quick Actions Grid */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .quick-action-btn {
+            padding: 25px 15px;
+            background: #303030;
+            border: 2px solid #28a7e9;
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            color: #28a7e9;
+            display: block;
+        }
+        
+        .quick-action-btn:hover {
+            background: #28a7e9;
+            color: #ffffff;
+            text-decoration: none;
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(40, 167, 233, 0.4);
+        }
+        
+        .quick-action-btn i {
+            font-size: 36px;
+            display: block;
+            margin-bottom: 10px;
+        }
+        
+        .quick-action-btn div {
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        /* Ultrasound Gallery */
+        #ultrasound-gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .ultrasound-item {
+            position: relative;
+            border-radius: 12px;
+            overflow: hidden;
+            aspect-ratio: 1;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .ultrasound-item:hover {
+            transform: scale(1.05);
+            border-color: #28a7e9;
+        }
+
+        .ultrasound-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .ultrasound-item .overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(0,0,0,0.8), transparent);
+            padding: 10px;
+            color: #ffffff;
+            font-size: 12px;
+        }
+
+        .ultrasound-item .delete-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: rgba(239, 68, 68, 0.9);
+            color: #ffffff;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .ultrasound-item:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .ultrasound-item .delete-btn:hover {
+            background: rgba(239, 68, 68, 1);
+        }
+
+        /* Profile Info */
+        .profile-info {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .profile-info li {
+            padding: 12px 0;
+            border-bottom: 1px solid #404040;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .profile-info li:last-child {
+            border-bottom: none;
+        }
+
+        .profile-info strong {
+            color: #28a7e9;
+            font-weight: 500;
+        }
+
+        .profile-info span {
+            color: #cccccc;
+            text-align: right;
+        }
+        
+        /* Buttons */
+        .action-btn {
+            display: inline-block;
+            padding: 12px 30px;
+            background: #28a7e9;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-top: 15px;
+            transition: all 0.3s;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            font-weight: 400;
+        }
+        
+        .action-btn:hover {
+            background: #0FF;
+            color: #303030;
+            text-decoration: none;
+            transform: translateY(-2px);
+        }
+        
+        .action-btn i {
+            margin-right: 8px;
+        }
+        
+        .action-btn-secondary {
+            background: #505050;
+        }
+        
+        .action-btn-secondary:hover {
+            background: #606060;
+            color: #ffffff;
+        }
+        
+        .logout-btn {
+            background: #d9534f;
+        }
+        
+        .logout-btn:hover {
+            background: #c9302c;
+            color: #ffffff;
+        }
+        
+        /* Empty State */
+        .empty-state {
+            color: #808080;
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .empty-state i {
+            font-size: 48px;
+            display: block;
+            margin-bottom: 15px;
+            opacity: 0.3;
+        }
+        
+        /* Navigation */
+        .nav-bar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-bar .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 40px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 5px;
+            margin-left: 15px;
+        }
+
+        .welcome-text {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .welcome-title {
+            color: #ffffff;
+            font-size: 20px;
+            font-weight: 600;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .welcome-title span {
+            color: #0066FF;
+        }
+
+        .welcome-subtitle {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            margin: 2px 0 0 0;
+            line-height: 1.2;
+        }
+
+        .nav-bar a {
+            color: #cccccc;
+            padding: 10px 15px;
+            display: inline-block;
+            transition: color 0.3s;
+        }
+
+        .nav-bar a:hover {
+            color: #28a7e9;
+        }
+
+        .nav-bar a i {
+            margin-right: 5px;
+        }
+
+        .user-avatar-nav {
+            position: relative;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            cursor: pointer;
+            padding: 8px 12px;
+            margin-right: 15px;
+            border-radius: 8px;
+            transition: background 0.3s;
+        }
+
+        .user-avatar-nav:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .avatar-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #0066FF 0%, #00D4FF 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 12px rgba(0, 102, 255, 0.3);
+        }
+
+        .user-info-nav {
+            display: flex;
+            flex-direction: column;
+            text-align: right;
+        }
+
+        .user-info-nav .user-name {
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 14px;
+            line-height: 1.2;
+        }
+
+        .user-info-nav .user-role {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 12px;
+            line-height: 1.2;
+        }
+
+        /* Dropdown Menu */
+        .dropdown-menu-custom {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 8px;
+            background: rgba(30, 30, 30, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            min-width: 200px;
+            padding: 8px 0;
+            z-index: 1000;
+            display: none;
+            animation: slideDown 0.2s ease-out;
+        }
+
+        .dropdown-menu-custom.show {
+            display: block;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dropdown-menu-custom a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 20px;
+            color: #ffffff;
+            text-decoration: none;
+            transition: background 0.2s;
+            font-size: 14px;
+        }
+
+        .dropdown-menu-custom a:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #28a7e9;
+        }
+
+        .dropdown-menu-custom a i {
+            width: 18px;
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .dropdown-menu-custom a.logout {
+            color: #ef4444;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 4px;
+        }
+
+        .dropdown-menu-custom a.logout:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 24px;
+                margin: 15px 0 5px;
+            }
+            
+            .dashboard-card {
+                padding: 20px;
+            }
+            
+            .dashboard-card h3 {
+                font-size: 20px;
+            }
+            
+            .quick-actions {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+            }
+            
+            .quick-action-btn {
+                padding: 20px 10px;
+            }
+            
+            .quick-action-btn i {
+                font-size: 28px;
+            }
+            
+            .quick-action-btn div {
+                font-size: 12px;
+            }
+            
+            .profile-info li {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 5px;
+            }
+            
+            .profile-info span {
+                text-align: left;
+            }
+            
+            .nav-bar {
+                text-align: center;
+            }
+
+            .nav-bar .container {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .nav-links {
+                margin-left: 0;
+                width: 100%;
+            }
+
+            .welcome-text {
+                text-align: center;
+            }
+
+            .welcome-title {
+                font-size: 16px;
+            }
+
+            .welcome-subtitle {
+                font-size: 12px;
+            }
+
+            .nav-bar a {
+                padding: 8px 12px;
+                font-size: 14px;
+            }
+
+            .user-info-nav {
+                display: none;
+            }
+
+            .user-avatar-nav {
+                margin-right: 0;
+            }
+
+            .avatar-circle {
+                width: 36px;
+                height: 36px;
+                font-size: 14px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .dashboard-container {
+                padding: 20px 10px;
+            }
+            
+            .quick-actions {
+                grid-template-columns: 1fr;
+            }
+            
+            .dashboard-card h3 {
+                font-size: 18px;
+            }
+            
+            .welcome-message p {
+                font-size: 14px !important;
+            }
+            
+            .welcome-message strong[style*="font-size: 20px"] {
+                font-size: 17px !important;
+            }
+            
+            .dashboard-card p {
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Animation -->
+    <div class="bg-animation" id="bgAnimation"></div>
+
+    <!-- Navigation -->
+    <nav class="nav-bar">
+        <div class="container">
+            <div class="nav-links">
+                <div class="welcome-text">
+                    <h2 class="welcome-title">dokter<span style="color: #0066FF;">DIBYA</span></h2>
+                    <p class="welcome-subtitle">Portal privat milik Anda</p>
+                </div>
+            </div>
+            <div class="user-avatar-nav" onclick="toggleDropdown(event)">
+                <div class="avatar-circle" id="user-avatar">P</div>
+                <div class="user-info-nav">
+                    <div class="user-name" id="user-name-nav">Pasien</div>
+                    <div class="user-role">Pasien</div>
+                </div>
+                <div class="dropdown-menu-custom" id="user-dropdown">
+                    <a href="#" onclick="openProfileViewModal(event)">
+                        <i class="fa fa-cog"></i>
+                        <span>Setting</span>
+                    </a>
+                    <a href="#" onclick="logout(event)" class="logout">
+                        <i class="fa fa-sign-out"></i>
+                        <span>Log out</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+
+    <!-- Main Content -->
+    <div class="dashboard-container">
+        <!-- Welcome Message -->
+        <div class="dashboard-card welcome-message" id="welcome-card" style="margin-bottom: 30px;">
+            <h3 style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="toggleWelcomeMessage()">
+                <span><i class="fa fa-heart"></i> Selamat Datang</span>
+                <i class="fa fa-chevron-down" id="welcome-toggle-icon"></i>
+            </h3>
+            <div id="welcome-content" style="line-height: 1.9; color: #e0e0e0; font-family: 'Poppins', sans-serif; font-size: 16px; font-weight: 400;">
+                <p style="font-size: 16px;">Halaman ini adalah ruang khusus bagi Anda — tempat saya membantu Anda, memantau kehamilan atau kesehatan kandungan Anda secara berkala dan privat. Semua catatan dan informasi di sini bersifat <strong style="color: #28a7e9; font-weight: 600;">rahasia</strong>. Mohon untuk tidak membagikan halaman rekam medis kepada orang selain keluarga inti/ keluarga yang dipercaya. Karena itulah keamanan sistem ini menjadi prioritas saya dengan menerapkan proteksi berlapis dan enkripsi untuk mencegah peretasan.</p>
+                                
+                <p style="font-size: 16px;">Adanya <strong style="color: #28a7e9; font-weight: 600;">dokterDIBYA</strong> berawal dari keinginan <i>sederhana</i> saya, yaitu agar setiap pasien bisa tetap terhubung dengan dokter pilihannya, tanpa batasan rumah sakit, tempat, atau waktu. Update selalu dengan perubahan jadwal dari saya, reminding jadwal kontrol, booking slot dengan mudah, dan bahkan kedepan bukan tidak mungkin konsultasi secara online dengan jadwal yang disepakati!</p>
+                
+                <p style="font-size: 16px;">Walaupun demikian saya paham, banyak tantangan dan kesulitan dalam memulai hal baru. Tapi saya percaya, langkah kecil ini bisa membawa perubahan besar menuju pelayanan berkesinambungan dari dokter favorit Anda. Sebelum kita memulai perjalanan ini, mohon mengisi data pribadi dan riwayat medis, data kehamilan, masalah kandungan, riwayat KB. Besar harapan saya, Anda mengisi dengan lengkap sehingga dapat menjadi modalitas bagi saya dalam pemilihan terapi dan layanan terbaik untuk Anda.</p>
+                
+                <p style="margin-top: 20px; font-size: 16px;">Terima kasih telah menjadi bagian dari <strong style="color: #28a7e9; font-weight: 600;">"modern therapy without boundary"</strong> — pendampingan dan terapi berkelanjutan, di mana pun dan kapan pun Anda membutuhkannya.</p>
+                
+                <p style="margin-top: 30px; text-align: right; color: #28a7e9; font-size: 17px;">
+                    <strong style="font-weight: 500;">Salam hangat,</strong><br>
+                    <strong style="font-size: 20px; font-weight: 600;">dokter Anda</strong>
+                </p>
+            </div>
+        </div>
+        
+        <!-- Alert for first-time users -->
+        <div class="alert-info-custom" id="first-time-alert" style="display: none;">
+            <i class="fa fa-info-circle"></i> <strong>Langkah Selanjutnya:</strong> 
+            Lengkapi formulir rekam medis awal Anda untuk memulai journey Anda.
+        </div>
+
+        <!-- Announcements Section -->
+        <div class="dashboard-card" id="announcements-section" style="margin-bottom: 30px;">
+            <h3 style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="toggleAnnouncementsSection()">
+                <span><i class="fa fa-bullhorn"></i> Pengumuman</span>
+                <i class="fa fa-chevron-down" id="announcements-toggle-icon"></i>
+            </h3>
+            <div id="announcements-content">
+                <div id="announcements-container">
+                    <!-- Announcements will be loaded here -->
+                    <div style="text-align: center; padding: 20px; color: #999;">
+                        <i class="fa fa-spinner fa-spin fa-2x"></i>
+                        <p style="margin-top: 10px;">Memuat pengumuman...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Two Column Layout: Appointments & Journey Book -->
+        <div class="row" style="margin-bottom: 30px;">
+            <!-- Left Column: Upcoming Appointments (Smaller) -->
+            <div class="col-md-5">
+                <!-- Janji Temu Mendatang -->
+                <div class="dashboard-card" id="appointments-section" style="margin-bottom: 20px;">
+                    <h3><i class="fa fa-calendar-check-o"></i> Janji Temu Mendatang</h3>
+                    <div id="booking-status-container">
+                        <p class="empty-state">
+                            <i class="fa fa-calendar-o"></i>
+                            Belum ada janji temu yang dijadwalkan
+                        </p>
+                    </div>
+                    <a href="/booking-appointment.html" class="action-btn" id="booking-create-btn">
+                        <i class="fa fa-plus"></i> Buat Janji Temu
+                    </a>
+                </div>
+
+                <!-- Galeri USG -->
+                <div class="dashboard-card" style="margin-bottom: 20px;">
+                    <h3><i class="fa fa-picture-o"></i> Galeri USG</h3>
+                    <div id="ultrasound-gallery-mini">
+                        <p class="empty-state">
+                            <i class="fa fa-image"></i>
+                            Belum ada foto USG
+                        </p>
+                    </div>
+                    <button class="action-btn" onclick="openUploadUltrasoundModal()" style="margin-top: 15px;">
+                        <i class="fa fa-upload"></i> Upload Foto USG
+                    </button>
+                </div>
+
+                <!-- Rekam Medis -->
+                <div class="dashboard-card" style="min-height: 400px; display: flex; flex-direction: column;">
+                    <h3 style="font-size: 19.2px;"><i class="fa fa-file-text"></i> REKAM MEDIS  <span id="medical-record-name" style="font-weight: 400; font-size: 18px;"></span></h3>
+                    <div style="padding: 15px 0; flex-grow: 1; display: flex; align-items: center; justify-content: center;">
+                        <a href="/patient-intake.html" class="action-btn" style="display: block; text-align: center;">
+                            <i class="fa fa-edit"></i> Lihat & Edit Rekam Medis
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column: Journey Book with Image (Larger) -->
+            <div class="col-md-7">
+                <div class="dashboard-card" style="cursor: pointer; position: relative; overflow: hidden; min-height: 400px; background: linear-gradient(135deg, rgba(0, 102, 255, 0.15) 0%, rgba(255, 255, 255, 0.1) 100%);" onclick="window.location.href='/perjalanan-ibu.html'">
+                    <!-- Background Image -->
+                    <div style="position: absolute; top: 0; right: 0; bottom: 0; left: 0; opacity: 0.3; background-image: url('/images/dokter-dibya-book/1.png'); background-size: cover; background-position: center; filter: blur(2px);"></div>
+
+                    <!-- Content Overlay -->
+                    <div style="position: relative; z-index: 1; padding: 40px; text-align: center;">
+                        <div style="background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); border-radius: 12px; padding: 30px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);">
+                            <i class="fa fa-book" style="font-size: 64px; color: var(--primary); margin-bottom: 20px; display: block;"></i>
+                            <h2 style="color: #333; font-size: 32px; font-weight: 700; margin-bottom: 10px;">Perjalanan menjadi Ibu</h2>
+                            <p style="color: #666; font-size: 14px; font-style: italic; margin-bottom: 25px;">by dokter<span style="color: var(--primary); font-weight: 600;">DIBYA</span></p>
+
+                            <!-- Preview Image -->
+                            <div style="margin: 25px 0;">
+                                <img src="/images/dokter-dibya-book/1.png" alt="Perjalanan menjadi Ibu" style="max-width: 100%; height: auto; border-radius: 8px; box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);">
+                            </div>
+
+                            <div style="margin-top: 25px; padding: 15px; background: rgba(0, 102, 255, 0.1); border-radius: 8px; border-left: 4px solid var(--primary);">
+                                <p style="color: #333; font-size: 15px; line-height: 1.6; margin: 0;">
+                                    <i class="fa fa-hand-pointer-o" style="color: var(--primary); margin-right: 8px;"></i>
+                                    <strong>Klik untuk membuka</strong> buku interaktif berisi momen indah perjalanan kehamilan Anda
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Quick Actions -->
+            <div class="col-md-12">
+                <div class="dashboard-card">
+                    <h3><i class="fa fa-bolt"></i> Aksi Cepat</h3>
+                    <div class="quick-actions">
+                        <a href="/patient-intake.html" class="quick-action-btn">
+                            <i class="fa fa-file-text"></i>
+                            <div>Formulir<br>Rekam Medis Awal</div>
+                        </a>
+                        <a href="/practice-locations.html" class="quick-action-btn">
+                            <i class="fa fa-calendar"></i>
+                            <div>Jadwal &<br>Janji Konsultasi</div>
+                        </a>
+                        <a href="#" class="quick-action-btn" onclick="alert('Jadwal USG segera hadir!'); return false;">
+                            <i class="fa fa-heartbeat"></i>
+                            <div>USG &amp;<br>Imaging</div>
+                        </a>
+                        <a href="#" class="quick-action-btn" onclick="alert('Layanan Lab segera hadir!'); return false;">
+                            <i class="fa fa-flask"></i>
+                            <div>Lab &amp;<br>Hasil Tes</div>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Profile Edit Modal -->
+    <div class="modal fade" id="profileModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); color: #ffffff; border: 1px solid rgba(255,255,255,0.2);">
+                <div class="modal-header" style="border-bottom: 1px solid #404040;">
+                    <button type="button" class="close" data-dismiss="modal" style="color: #ffffff; opacity: 0.8;">&times;</button>
+                    <h4 class="modal-title" style="color: #28a7e9;"><i class="fa fa-edit"></i> Edit Profil</h4>
+                </div>
+                <div class="modal-body">
+                    <form id="profile-form">
+                        <!-- Profile Picture Upload -->
+                        <div class="form-group">
+                            <label style="color: #28a7e9;">Foto Profil</label>
+                            <div style="text-align: center; margin-bottom: 15px;">
+                                <img id="edit-profile-picture-preview"
+                                     src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23404040'/%3E%3Ctext x='50%25' y='50%25' font-size='40' fill='%2328a7e9' text-anchor='middle' dy='.3em'%3E👤%3C/text%3E%3C/svg%3E"
+                                     alt="Preview"
+                                     style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid #28a7e9; margin-bottom: 10px;">
+                            </div>
+                            <input type="url" class="form-control" id="edit-profile-picture"
+                                   placeholder="Masukkan URL foto profil"
+                                   style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
+                            <small style="color: #999;">Masukkan URL gambar profil Anda (misalnya dari Imgur, Google Drive, dll)</small>
+                        </div>
+
+                        <div class="form-group">
+                            <label style="color: #28a7e9;">Nama Lengkap *</label>
+                            <input type="text" class="form-control" id="edit-fullname" required
+                                   style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="color: #28a7e9;">Email *</label>
+                            <input type="email" class="form-control" id="edit-email" required
+                                   style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="color: #28a7e9;">Nomor WhatsApp *</label>
+                            <input type="tel" class="form-control" id="edit-phone" required
+                                   placeholder="+62812345678"
+                                   style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="color: #28a7e9;">Tanggal Lahir</label>
+                            <input type="date" class="form-control" id="edit-birthdate"
+                                   style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="color: #28a7e9;">Umur</label>
+                            <input type="number" class="form-control" id="edit-age"
+                                   placeholder="Otomatis terisi dari tanggal lahir"
+                                   style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
+                        </div>
+                        <div class="alert" id="profile-error" style="display: none; background: rgba(217,83,79,0.15); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(217,83,79,0.3); color: #ffffff;"></div>
+                        <div class="alert" id="profile-success" style="display: none; background: rgba(40,167,233,0.15); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(40,167,233,0.3); color: #ffffff;"></div>
+                    </form>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #404040;">
+                    <button type="button" class="btn btn-default" data-dismiss="modal" 
+                            style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">Batal</button>
+                    <button type="button" class="btn btn-primary" onclick="saveProfile()" 
+                            style="background: #28a7e9; border: none;">
+                        <i class="fa fa-save"></i> Simpan Perubahan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Password Modal -->
+    <div class="modal fade" id="passwordModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); color: #ffffff; border: 1px solid rgba(255,255,255,0.2);">
+                <div class="modal-header" style="border-bottom: 1px solid #404040;">
+                    <button type="button" class="close" data-dismiss="modal" style="color: #ffffff; opacity: 0.8;">&times;</button>
+                    <h4 class="modal-title" style="color: #28a7e9;"><i class="fa fa-lock"></i> <span id="password-modal-title">Set Password</span></h4>
+                </div>
+                <div class="modal-body">
+                    <form id="password-form">
+                        <!-- Old Password (only for change password) -->
+                        <div class="form-group" id="old-password-group" style="display: none;">
+                            <label style="color: #28a7e9;">Password Lama *</label>
+                            <input type="password" class="form-control" id="old-password" name="current_password" autocomplete="current-password" 
+                                   style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
+                        </div>
+                        
+                        <!-- New Password -->
+                        <div class="form-group">
+                            <label style="color: #28a7e9;"><span id="new-pass-label">Password</span> *</label>
+                            <input type="password" class="form-control" id="new-password" name="new_password" autocomplete="new-password" required
+                                   placeholder="Minimal 6 karakter"
+                                   style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
+                            <small style="color: #999;">Minimal 6 karakter</small>
+                        </div>
+                        
+                        <!-- Confirm Password -->
+                        <div class="form-group">
+                            <label style="color: #28a7e9;">Konfirmasi Password *</label>
+                            <input type="password" class="form-control" id="confirm-password" name="confirm_password" autocomplete="new-password" required
+                                   placeholder="Ulangi password"
+                                   style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
+                        </div>
+
+                        <div class="alert" id="password-error" style="display: none; background: #3a1a1a; border: 1px solid #d9534f; color: #ffffff;"></div>
+                        <div class="alert" id="password-success" style="display: none; background: #1a3a2a; border: 1px solid #28a7e9; color: #ffffff;"></div>
+                        
+                        <div id="password-info" style="background: #1a2a3a; border: 1px solid #28a7e9; padding: 12px; border-radius: 4px; margin-top: 15px;">
+                            <p style="margin: 0; font-size: 0.9em; color: #28a7e9;">
+                                <i class="fa fa-info-circle"></i> 
+                                <span id="password-info-text">Setelah set password, Anda dapat login menggunakan email dan password.</span>
+                            </p>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #404040;">
+                    <button type="button" class="btn btn-default" data-dismiss="modal" 
+                            style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">Batal</button>
+                    <button type="button" class="btn btn-primary" onclick="savePassword()" 
+                            style="background: #28a7e9; border: none;">
+                        <i class="fa fa-save"></i> <span id="save-password-btn-text">Set Password</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile View Modal (Settings) -->
+    <div class="modal fade" id="profileViewModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); color: #ffffff; border: 1px solid rgba(255,255,255,0.2);">
+                <div class="modal-header" style="border-bottom: 1px solid #404040;">
+                    <button type="button" class="close" data-dismiss="modal" style="color: #ffffff; opacity: 0.8;">&times;</button>
+                    <h4 class="modal-title" style="color: #28a7e9;"><i class="fa fa-cog"></i> Setting</h4>
+                </div>
+                <div class="modal-body" id="profile-section">
+                    <!-- Profile Picture -->
+                    <div style="text-align: center; margin-bottom: 20px;">
+                        <div style="position: relative; display: inline-block;">
+                            <img id="profile-picture"
+                                 src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect width='120' height='120' fill='%23404040'/%3E%3Ctext x='50%25' y='50%25' font-size='48' fill='%2328a7e9' text-anchor='middle' dy='.3em'%3E👤%3C/text%3E%3C/svg%3E"
+                                 alt="Profile Picture"
+                                 style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 3px solid #28a7e9;">
+                        </div>
+                    </div>
+
+                    <ul class="profile-info">
+                        <li>
+                            <strong>Nama Lengkap</strong>
+                            <span id="profile-name">-</span>
+                        </li>
+                        <li>
+                            <strong>Email</strong>
+                            <span id="profile-email">-</span>
+                        </li>
+                        <li>
+                            <strong>Nomor Telepon</strong>
+                            <span id="profile-phone">-</span>
+                        </li>
+                        <li>
+                            <strong>Tanggal Lahir</strong>
+                            <span id="profile-birthdate">-</span>
+                        </li>
+                        <li>
+                            <strong>Terdaftar Sejak</strong>
+                            <span id="profile-registered">-</span>
+                        </li>
+                    </ul>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #404040; display: flex; gap: 10px; justify-content: center;">
+                    <button type="button" class="btn btn-default" onclick="openProfileModal()"
+                            style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
+                        <i class="fa fa-edit"></i> Edit Profil
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="openPasswordModal()" id="password-btn-modal"
+                            style="background: #28a7e9; border: none;">
+                        <i class="fa fa-lock"></i> <span id="password-btn-text-modal">Set Password</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Ultrasound Modal -->
+    <div class="modal fade" id="uploadUltrasoundModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); color: #ffffff; border: 1px solid rgba(255,255,255,0.2);">
+                <div class="modal-header" style="border-bottom: 1px solid #404040;">
+                    <button type="button" class="close" data-dismiss="modal" style="color: #ffffff; opacity: 0.8;">&times;</button>
+                    <h4 class="modal-title" style="color: #28a7e9;"><i class="fa fa-upload"></i> Upload Foto USG</h4>
+                </div>
+                <div class="modal-body">
+                    <form id="ultrasound-upload-form">
+                        <div class="form-group">
+                            <label style="color: #28a7e9;">URL Foto USG *</label>
+                            <input type="url" class="form-control" id="ultrasound-url" required
+                                   placeholder="Masukkan URL foto USG (misalnya dari Imgur, Google Drive, dll)"
+                                   style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
+                            <small style="color: #999;">Upload foto ke Imgur atau layanan hosting gambar lainnya, lalu paste URL-nya di sini</small>
+                        </div>
+                        <div class="form-group">
+                            <label style="color: #28a7e9;">Tanggal USG *</label>
+                            <input type="date" class="form-control" id="ultrasound-date" required
+                                   style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">
+                        </div>
+                        <div class="form-group">
+                            <label style="color: #28a7e9;">Keterangan (Opsional)</label>
+                            <textarea class="form-control" id="ultrasound-notes" rows="3"
+                                      placeholder="Tambahkan catatan atau keterangan foto USG"
+                                      style="background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;"></textarea>
+                        </div>
+                        <div class="alert" id="ultrasound-error" style="display: none; background: rgba(217,83,79,0.15); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(217,83,79,0.3); color: #ffffff;"></div>
+                        <div class="alert" id="ultrasound-success" style="display: none; background: rgba(40,167,233,0.15); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(40,167,233,0.3); color: #ffffff;"></div>
+                    </form>
+                </div>
+                <div class="modal-footer" style="border-top: 1px solid #404040;">
+                    <button type="button" class="btn btn-default" data-dismiss="modal"
+                            style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.2); color: #ffffff;">Batal</button>
+                    <button type="button" class="btn btn-primary" onclick="saveUltrasound()"
+                            style="background: #28a7e9; border: none;">
+                        <i class="fa fa-save"></i> Simpan
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dashboard-modal" id="cancel-appointment-modal" aria-hidden="true">
+        <div class="dashboard-modal-content" role="dialog" aria-modal="true" aria-labelledby="cancel-modal-title">
+            <button type="button" class="dashboard-modal-close" id="cancel-modal-close" aria-label="Tutup">&times;</button>
+            <h4 id="cancel-modal-title">Batalkan Janji Konsultasi</h4>
+            <div class="cancel-summary" id="cancel-modal-summary"></div>
+            <label for="cancel-reason-input" style="color: #28a7e9; font-weight: 600; display: block; margin-bottom: 8px;">Alasan Pembatalan *</label>
+            <textarea id="cancel-reason-input" placeholder="Tuliskan alasan pembatalan Anda (minimal 10 karakter)"></textarea>
+            <div id="cancel-modal-error" class="modal-error" style="display: none;"></div>
+            <div class="modal-actions">
+                <button type="button" class="btn-secondary" id="cancel-modal-cancel-btn">Batal</button>
+                <button type="button" class="btn-danger" id="cancel-modal-submit-btn">Ya, Batalkan</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <!-- Socket.io for real-time announcements -->
+    <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
+    <!-- Markdown and sanitization libraries for enhanced announcements -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
+    <script src="js/announcements-dashboard.js?v=20251120"></script>
+    <script>
+        // Check authentication
+        const token = localStorage.getItem('patient_token');
+        const user = JSON.parse(localStorage.getItem('patient_user') || '{}');
+
+        if (!token || !user.id) {
+            // Not authenticated, redirect to login
+            window.location.href = '/index.html#masuk';
+        } else {
+            // Load user profile
+            loadUserProfile();
+            // Load ultrasound images
+            loadUltrasoundImages();
+        }
+
+        async function loadUserProfile() {
+            try {
+                const response = await fetch('/api/patients/profile', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to load profile');
+                }
+
+                const data = await response.json();
+                const profile = data.user;
+
+                // Check if profile is completed, redirect if not
+                if (profile.profile_completed !== 1) {
+                    window.location.href = '/complete-profile.html';
+                    return;
+                }
+
+                // Update UI with profile data
+                document.getElementById('profile-name').textContent = profile.fullname;
+                document.getElementById('profile-email').textContent = profile.email;
+                document.getElementById('profile-phone').textContent = profile.phone || 'Belum diisi';
+
+                // Update medical record name
+                const medicalRecordName = document.getElementById('medical-record-name');
+                if (medicalRecordName && profile.fullname) {
+                    medicalRecordName.textContent = profile.fullname;
+                }
+
+                // Update navigation avatar
+                const userNameNav = document.getElementById('user-name-nav');
+                const userAvatar = document.getElementById('user-avatar');
+                if (userNameNav && profile.fullname) {
+                    userNameNav.textContent = profile.fullname;
+                }
+                if (userAvatar && profile.fullname) {
+                    // Get initials from fullname
+                    const nameParts = profile.fullname.trim().split(' ');
+                    let initials = '';
+                    if (nameParts.length === 1) {
+                        initials = nameParts[0].substring(0, 2).toUpperCase();
+                    } else {
+                        initials = (nameParts[0][0] + nameParts[nameParts.length - 1][0]).toUpperCase();
+                    }
+                    userAvatar.textContent = initials;
+                }
+
+                // Update profile picture
+                const profilePicture = document.getElementById('profile-picture');
+                if (profile.profile_picture) {
+                    profilePicture.src = profile.profile_picture;
+                    profilePicture.onerror = function() {
+                        // If image fails to load, use default
+                        this.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Crect width='120' height='120' fill='%23404040'/%3E%3Ctext x='50%25' y='50%25' font-size='48' fill='%2328a7e9' text-anchor='middle' dy='.3em'%3E👤%3C/text%3E%3C/svg%3E";
+                    };
+                }
+
+                // Format birth date
+                if (profile.birth_date) {
+                    const birthDate = new Date(profile.birth_date);
+                    document.getElementById('profile-birthdate').textContent = birthDate.toLocaleDateString('id-ID', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+                } else {
+                    document.getElementById('profile-birthdate').textContent = 'Belum diisi';
+                }
+                
+                // Format registration date
+                const regDate = new Date(profile.registration_date);
+                document.getElementById('profile-registered').textContent = regDate.toLocaleDateString('id-ID', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                // Store profile data for editing
+                window.currentProfile = profile;
+
+                // Check if user has password set
+                hasPassword = profile.has_password === 1 || profile.password !== null;
+                if (hasPassword) {
+                    const passwordBtnText = document.getElementById('password-btn-text-modal');
+                    if (passwordBtnText) {
+                        passwordBtnText.textContent = 'Ubah Password';
+                    }
+                } else {
+                    const passwordBtnText = document.getElementById('password-btn-text-modal');
+                    if (passwordBtnText) {
+                        passwordBtnText.textContent = 'Set Password';
+                    }
+                }
+
+                // Update intake button appearance and hide alert if completed
+                if (profile.intake_completed === 1) {
+                    updateIntakeButtonCompleted();
+                    // Hide "Langkah Selanjutnya" alert if intake is completed
+                    document.getElementById('first-time-alert').style.display = 'none';
+                    // Collapse welcome message
+                    document.getElementById('welcome-content').style.display = 'none';
+                    document.getElementById('welcome-toggle-icon').classList.remove('fa-chevron-down');
+                    document.getElementById('welcome-toggle-icon').classList.add('fa-chevron-up');
+                } else {
+                    // Check if first time user (registered within last 24 hours) and intake not completed
+                    const hoursSinceReg = (Date.now() - regDate.getTime()) / (1000 * 60 * 60);
+                    if (hoursSinceReg < 24) {
+                        document.getElementById('first-time-alert').style.display = 'block';
+                    }
+                }
+
+                // Load booking status and appointment alerts
+                loadBookingStatus();
+
+                loadVisitInvoices();
+
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                // Token might be invalid, logout
+                logout();
+            }
+        }
+        
+        async function loadBookingStatus() {
+            const container = document.getElementById('booking-status-container');
+
+            if (!container) return;
+
+            container.innerHTML = `
+                <p style="text-align: center; color: #999;">
+                    <i class="fa fa-spinner fa-spin"></i> Memuat status booking...
+                </p>
+            `;
+
+            try {
+                const response = await fetch('/api/sunday-appointments/patient', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Gagal memuat status booking');
+                }
+
+                const data = await response.json();
+                const appointments = Array.isArray(data.appointments) ? data.appointments : [];
+
+                renderBookingStatus(appointments);
+            } catch (error) {
+                console.error('Error loading appointments:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa fa-exclamation-triangle"></i>
+                        <p>Gagal memuat status booking. Silakan coba lagi.</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderBookingStatus(appointments) {
+            const container = document.getElementById('booking-status-container');
+            if (!container) return;
+
+            const upcoming = (appointments || [])
+                .filter(apt => !apt.isPast && apt.status !== 'cancelled' && apt.status !== 'no_show')
+                .sort((a, b) => {
+                    const dateDiff = new Date(a.appointment_date) - new Date(b.appointment_date);
+                    if (dateDiff !== 0) return dateDiff;
+                    const sessionDiff = (a.session || 0) - (b.session || 0);
+                    if (sessionDiff !== 0) return sessionDiff;
+                    return (a.slot_number || 0) - (b.slot_number || 0);
+                });
+
+            if (upcoming.length === 0) {
+                container.innerHTML = `
+                    <p class="empty-state">
+                        <i class="fa fa-calendar-o"></i>
+                        Belum ada janji temu yang dijadwalkan
+                    </p>
+                `;
+                return;
+            }
+
+            const nextAppointment = upcoming[0];
+            const statusInfo = getBookingStatusInfo(nextAppointment.status);
+            const notes = nextAppointment.notes ? `<p style="margin-top: 10px;"><strong>Catatan Klinik:</strong><br>${escapeText(nextAppointment.notes)}</p>` : '';
+
+            const startDateObj = nextAppointment.startDateTime ? new Date(nextAppointment.startDateTime) : null;
+            const arrivalTime = nextAppointment.arrivalTimeFormatted
+                || (startDateObj && !isNaN(startDateObj.getTime())
+                    ? new Date(startDateObj.getTime() - (15 * 60 * 1000)).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+                    : null);
+
+            const arrivalInfo = arrivalTime
+                ? `Mohon hadir sekitar pukul ${arrivalTime} WIB (15 menit sebelum jadwal).`
+                : 'Mohon hadir 15 menit sebelum waktu yang dipilih.';
+
+            const slotNumber = Number(nextAppointment.slot_number);
+            const slotInfo = Number.isFinite(slotNumber) && slotNumber > 0
+                ? `<p><strong>Nomor Antrian:</strong> ${slotNumber}</p>`
+                : '';
+
+            const timeLabel = nextAppointment.time ? `${nextAppointment.time} WIB` : '-';
+
+            const canCancel = !nextAppointment.isPast && ['pending', 'confirmed'].includes((nextAppointment.status || '').toLowerCase());
+            const actionButtons = canCancel
+                ? `<button type="button" class="cancel-appointment-btn" data-appointment-id="${nextAppointment.id}"><i class="fa fa-times-circle"></i> Batalkan Janji</button>`
+                : '';
+
+            container.innerHTML = `
+                <div class="appointment-info-box">
+                    <p><strong>Status:</strong> <span style="color: ${statusInfo.color}; font-weight: 600;">${statusInfo.label}</span></p>
+                    <p><strong>Tanggal:</strong> ${nextAppointment.dateFormatted}</p>
+                    <p><strong>Jam Konsultasi:</strong> ${timeLabel}</p>
+                    <p><strong>Sesi:</strong> ${nextAppointment.sessionLabel || '-'}</p>
+                    ${slotInfo}
+                    <p>${statusInfo.message}</p>
+                    <p>${arrivalInfo}</p>
+                    ${notes}
+                    ${actionButtons}
+                </div>
+            `;
+
+            if (canCancel) {
+                const cancelBtn = container.querySelector('.cancel-appointment-btn');
+                if (cancelBtn) {
+                    cancelBtn.addEventListener('click', () => openCancelModal(nextAppointment));
+                }
+            }
+        }
+
+        const cancellationState = {
+            appointmentId: null
+        };
+
+        function openCancelModal(appointment) {
+            if (!appointment || !appointment.id) return;
+
+            cancellationState.appointmentId = appointment.id;
+
+            const summary = document.getElementById('cancel-modal-summary');
+            if (summary) {
+                const timeLabel = appointment.time ? `${escapeText(appointment.time)} WIB` : '-';
+                summary.innerHTML = `
+                    <p style="margin-top: 0; margin-bottom: 8px;">Anda akan membatalkan janji konsultasi berikut:</p>
+                    <p style="margin: 4px 0;"><strong>Tanggal:</strong> ${escapeText(appointment.dateFormatted)}</p>
+                    <p style="margin: 4px 0;"><strong>Sesi:</strong> ${escapeText(appointment.sessionLabel || '-')}</p>
+                    <p style="margin: 4px 0;"><strong>Jam:</strong> ${timeLabel}</p>
+                `;
+            }
+
+            const reasonInput = document.getElementById('cancel-reason-input');
+            if (reasonInput) {
+                reasonInput.value = '';
+            }
+
+            const errorEl = document.getElementById('cancel-modal-error');
+            if (errorEl) {
+                errorEl.textContent = '';
+                errorEl.style.display = 'none';
+            }
+
+            setCancelModalLoading(false);
+
+            const modal = document.getElementById('cancel-appointment-modal');
+            if (modal) {
+                modal.classList.add('active');
+                modal.setAttribute('aria-hidden', 'false');
+            }
+
+            if (reasonInput) {
+                setTimeout(() => {
+                    reasonInput.focus();
+                }, 50);
+            }
+        }
+
+        function closeCancelModal() {
+            const modal = document.getElementById('cancel-appointment-modal');
+            if (modal) {
+                modal.classList.remove('active');
+                modal.setAttribute('aria-hidden', 'true');
+            }
+            const errorEl = document.getElementById('cancel-modal-error');
+            if (errorEl) {
+                errorEl.textContent = '';
+                errorEl.style.display = 'none';
+            }
+            setCancelModalLoading(false);
+            cancellationState.appointmentId = null;
+        }
+
+        function setCancelModalLoading(isLoading) {
+            const submitBtn = document.getElementById('cancel-modal-submit-btn');
+            const cancelBtn = document.getElementById('cancel-modal-cancel-btn');
+            const closeBtn = document.getElementById('cancel-modal-close');
+
+            if (submitBtn) {
+                submitBtn.disabled = !!isLoading;
+                submitBtn.textContent = isLoading ? 'Memproses...' : 'Ya, Batalkan';
+            }
+
+            if (cancelBtn) {
+                cancelBtn.disabled = !!isLoading;
+            }
+
+            if (closeBtn) {
+                closeBtn.disabled = !!isLoading;
+            }
+        }
+
+        async function submitCancellation() {
+            if (!cancellationState.appointmentId) return;
+
+            const reasonInput = document.getElementById('cancel-reason-input');
+            const errorEl = document.getElementById('cancel-modal-error');
+
+            const reasonValue = reasonInput ? reasonInput.value.trim() : '';
+
+            if (reasonValue.length < 10) {
+                if (errorEl) {
+                    errorEl.textContent = 'Alasan pembatalan minimal 10 karakter.';
+                    errorEl.style.display = 'block';
+                }
+                if (reasonInput) {
+                    reasonInput.focus();
+                }
+                return;
+            }
+
+            if (errorEl) {
+                errorEl.textContent = '';
+                errorEl.style.display = 'none';
+            }
+
+            setCancelModalLoading(true);
+
+            try {
+                const response = await fetch(`/api/sunday-appointments/${cancellationState.appointmentId}/cancel`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ reason: reasonValue })
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || 'Gagal membatalkan janji temu');
+                }
+
+                closeCancelModal();
+                showTemporaryAlert('Janji temu berhasil dibatalkan.');
+                loadBookingStatus();
+            } catch (error) {
+                if (errorEl) {
+                    errorEl.textContent = error.message || 'Terjadi kesalahan saat membatalkan janji temu.';
+                    errorEl.style.display = 'block';
+                }
+            } finally {
+                setCancelModalLoading(false);
+            }
+        }
+
+        function showTemporaryAlert(message, type = 'success') {
+            if (!message) return;
+
+            const existing = document.getElementById('dashboard-toast');
+            if (existing) {
+                existing.remove();
+            }
+
+            const toast = document.createElement('div');
+            toast.id = 'dashboard-toast';
+            toast.className = 'dashboard-toast';
+            if (type === 'error') {
+                toast.classList.add('error');
+            }
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.add('visible');
+            });
+
+            setTimeout(() => {
+                toast.classList.remove('visible');
+                toast.addEventListener('transitionend', () => {
+                    toast.remove();
+                }, { once: true });
+            }, 3200);
+        }
+
+        const cancelSubmitBtn = document.getElementById('cancel-modal-submit-btn');
+        if (cancelSubmitBtn) {
+            cancelSubmitBtn.addEventListener('click', submitCancellation);
+        }
+
+        const cancelCloseBtn = document.getElementById('cancel-modal-close');
+        if (cancelCloseBtn) {
+            cancelCloseBtn.addEventListener('click', closeCancelModal);
+        }
+
+        const cancelBackBtn = document.getElementById('cancel-modal-cancel-btn');
+        if (cancelBackBtn) {
+            cancelBackBtn.addEventListener('click', closeCancelModal);
+        }
+
+        const cancelModal = document.getElementById('cancel-appointment-modal');
+        if (cancelModal) {
+            cancelModal.addEventListener('click', (event) => {
+                if (event.target === cancelModal) {
+                    closeCancelModal();
+                }
+            });
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape') {
+                const modalElement = document.getElementById('cancel-appointment-modal');
+                if (modalElement && modalElement.classList.contains('active')) {
+                    event.preventDefault();
+                    closeCancelModal();
+                }
+            }
+        });
+
+        function getBookingStatusInfo(status) {
+            const normalizedStatus = (status || '').toLowerCase();
+            const statusMap = {
+                confirmed: {
+                    label: 'Dikonfirmasi',
+                    color: '#28e970',
+                    message: 'Janji temu Anda telah dikonfirmasi. Tim klinik menunggu kehadiran Anda.'
+                },
+                pending: {
+                    label: 'Menunggu Konfirmasi',
+                    color: '#ffd166',
+                    message: 'Permintaan booking Anda sudah kami terima dan sedang menunggu konfirmasi dari admin.'
+                },
+                completed: {
+                    label: 'Selesai',
+                    color: '#7f8c8d',
+                    message: 'Janji temu ini telah selesai.'
+                },
+                cancelled: {
+                    label: 'Dibatalkan',
+                    color: '#d9534f',
+                    message: 'Janji temu ini telah dibatalkan.'
+                },
+                no_show: {
+                    label: 'Tidak Hadir',
+                    color: '#d9534f',
+                    message: 'Anda tidak hadir pada janji temu sebelumnya.'
+                }
+            };
+
+            return statusMap[normalizedStatus] || {
+                label: normalizedStatus || 'Tidak diketahui',
+                color: '#cccccc',
+                message: 'Status janji temu belum tersedia.'
+            };
+        }
+        
+        function toggleWelcomeMessage() {
+            const content = document.getElementById('welcome-content');
+            const icon = document.getElementById('welcome-toggle-icon');
+            
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            } else {
+                content.style.display = 'none';
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+            }
+        }
+
+        function toggleAnnouncementsSection() {
+            const wrapper = document.getElementById('announcements-content');
+            const icon = document.getElementById('announcements-toggle-icon');
+            if (!wrapper || !icon) {
+                return;
+            }
+
+            if (wrapper.style.display === 'none') {
+                wrapper.style.display = 'block';
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            } else {
+                wrapper.style.display = 'none';
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+            }
+        }
+
+        async function loadVisitInvoices() {
+            const container = document.getElementById('visits-list-container');
+            if (!container) return;
+
+            const patientId = window.currentProfile?.id;
+            if (!patientId) {
+                container.innerHTML = `<div class="empty-state"><i class="fa fa-exclamation-circle"></i><p>Informasi pasien belum tersedia.</p></div>`;
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/visit-invoices/patient/${patientId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Gagal memuat kunjungan');
+                }
+
+                const { data } = await response.json();
+                renderVisitCards(data || []);
+            } catch (error) {
+                console.error('Error loading visit invoices:', error);
+                container.innerHTML = `<div class="empty-state"><i class="fa fa-exclamation-triangle"></i><p>Gagal memuat riwayat kunjungan.</p></div>`;
+            }
+        }
+
+        function renderVisitCards(visits) {
+            const container = document.getElementById('visits-list-container');
+            if (!container) return;
+
+            if (!visits || visits.length === 0) {
+                container.innerHTML = `<div class="empty-state"><i class="fa fa-info-circle"></i><p>Belum ada kunjungan atau invoice terkait.</p></div>`;
+                return;
+            }
+
+            const cardsHtml = visits.map(visit => {
+                const visitType = escapeText(visit.visit_type || 'Kunjungan Klinik');
+                const visitNotes = escapeText(visit.notes || '');
+                const invoiceNumber = escapeText(visit.invoice_number || '-');
+                const statusLabel = visit.invoice_status ? visit.invoice_status.charAt(0).toUpperCase() + visit.invoice_status.slice(1) : 'Pending';
+                const links = [];
+                if (visit.invoice_url) {
+                    links.push(`<a href="${visit.invoice_url}" target="_blank" rel="noreferrer">Lihat Invoice</a>`);
+                }
+                if (visit.etiket_url) {
+                    links.push(`<a href="${visit.etiket_url}" target="_blank" rel="noreferrer">Cetak Etiket</a>`);
+                }
+
+                const actionsHtml = links.length ? `<div class="visit-actions">${links.join(' ')}</div>` : '';
+
+                return `
+                    <div class="visit-card">
+                        <h4>${visitType}</h4>
+                        <p><strong>Tanggal:</strong> ${formatVisitDate(visit.visit_date)}</p>
+                        <p><strong>Nomor Invoice:</strong> ${invoiceNumber}</p>
+                        <p><strong>Total:</strong> ${formatCurrency(visit.total_amount)}</p>
+                        <p><strong>Status:</strong> ${statusLabel}</p>
+                        ${visitNotes ? `<p>${visitNotes}</p>` : ''}
+                        ${actionsHtml}
+                    </div>
+                `;
+            }).join('');
+
+            container.innerHTML = `<div class="visit-card-grid">${cardsHtml}</div>`;
+        }
+
+        function escapeText(value) {
+            if (!value) return '';
+            return value
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+
+        function formatCurrency(amount) {
+            if (typeof amount !== 'number') {
+                amount = parseFloat(amount) || 0;
+            }
+            return amount.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' });
+        }
+
+        function formatVisitDate(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            return date.toLocaleDateString('id-ID', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+
+        function openProfileModal() {
+            if (!window.currentProfile) return;
+
+            // Populate form with current data
+            document.getElementById('edit-fullname').value = window.currentProfile.fullname || '';
+            document.getElementById('edit-email').value = window.currentProfile.email || '';
+            document.getElementById('edit-phone').value = window.currentProfile.phone || '';
+            document.getElementById('edit-profile-picture').value = window.currentProfile.profile_picture || '';
+
+            // Update preview picture
+            const previewImg = document.getElementById('edit-profile-picture-preview');
+            if (window.currentProfile.profile_picture) {
+                previewImg.src = window.currentProfile.profile_picture;
+                previewImg.onerror = function() {
+                    this.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23404040'/%3E%3Ctext x='50%25' y='50%25' font-size='40' fill='%2328a7e9' text-anchor='middle' dy='.3em'%3E👤%3C/text%3E%3C/svg%3E";
+                };
+            }
+
+            if (window.currentProfile.birth_date) {
+                const birthDate = new Date(window.currentProfile.birth_date);
+                document.getElementById('edit-birthdate').value = birthDate.toISOString().split('T')[0];
+            }
+
+            document.getElementById('edit-age').value = window.currentProfile.age || '';
+
+            // Add listener for profile picture URL input to update preview
+            document.getElementById('edit-profile-picture').addEventListener('input', function(e) {
+                const url = e.target.value.trim();
+                const preview = document.getElementById('edit-profile-picture-preview');
+                if (url) {
+                    preview.src = url;
+                    preview.onerror = function() {
+                        this.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23404040'/%3E%3Ctext x='50%25' y='50%25' font-size='40' fill='%2328a7e9' text-anchor='middle' dy='.3em'%3E👤%3C/text%3E%3C/svg%3E";
+                    };
+                } else {
+                    preview.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Crect width='100' height='100' fill='%23404040'/%3E%3Ctext x='50%25' y='50%25' font-size='40' fill='%2328a7e9' text-anchor='middle' dy='.3em'%3E👤%3C/text%3E%3C/svg%3E";
+                }
+            });
+
+            // Show modal
+            $('#profileModal').modal('show');
+        }
+
+        async function saveProfile() {
+            // Hide previous messages
+            document.getElementById('profile-error').style.display = 'none';
+            document.getElementById('profile-success').style.display = 'none';
+
+            // Get current values from form
+            const fullnameInput = document.getElementById('edit-fullname').value.trim();
+            const emailInput = document.getElementById('edit-email').value.trim();
+            const phoneInput = document.getElementById('edit-phone').value.trim();
+            const birthdateInput = document.getElementById('edit-birthdate').value;
+            const ageInput = document.getElementById('edit-age').value;
+            const profilePictureInput = document.getElementById('edit-profile-picture').value.trim();
+
+            // Get current profile data
+            const currentFullname = window.currentProfile?.fullname || '';
+            const currentEmail = window.currentProfile?.email || '';
+            const currentPhone = window.currentProfile?.phone || '';
+            const currentBirthdate = window.currentProfile?.birth_date || '';
+            const currentAge = window.currentProfile?.age ? String(window.currentProfile.age) : '';
+            const currentProfilePicture = window.currentProfile?.profile_picture || '';
+
+            // Check if there are any changes
+            const hasChanges =
+                (fullnameInput !== currentFullname) ||
+                (emailInput !== currentEmail) ||
+                (phoneInput !== currentPhone) ||
+                (birthdateInput !== currentBirthdate) ||
+                (ageInput !== currentAge) ||
+                (profilePictureInput !== currentProfilePicture);
+
+            // If no changes, just close the modal
+            if (!hasChanges) {
+                console.log('No changes detected, closing modal');
+                $('#profileModal').modal('hide');
+                return;
+            }
+
+            // Use input values or fallback to current data
+            const fullname = fullnameInput || currentFullname;
+            const email = emailInput || currentEmail;
+            const phone = phoneInput || currentPhone;
+            const birthdate = birthdateInput || currentBirthdate || null;
+            const age = ageInput || currentAge || null;
+            const profilePicture = profilePictureInput || currentProfilePicture || null;
+
+            // Validation - require essential fields
+            if (!fullname || !email || !phone) {
+                document.getElementById('profile-error').textContent = 'Nama, email, dan nomor telepon harus diisi!';
+                document.getElementById('profile-error').style.display = 'block';
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/patients/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        fullname,
+                        email,
+                        phone,
+                        birth_date: birthdate || null,
+                        age: age ? parseInt(age) : null,
+                        profile_picture: profilePicture
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Gagal menyimpan profil');
+                }
+
+                // Show success message
+                document.getElementById('profile-success').textContent = 'Profil berhasil diperbarui!';
+                document.getElementById('profile-success').style.display = 'block';
+
+                // Reload profile data
+                setTimeout(() => {
+                    $('#profileModal').modal('hide');
+                    loadUserProfile();
+                }, 1500);
+
+            } catch (error) {
+                console.error('Error saving profile:', error);
+                document.getElementById('profile-error').textContent = error.message;
+                document.getElementById('profile-error').style.display = 'block';
+            }
+        }
+
+        // Auto-calculate age from birth date
+        document.addEventListener('DOMContentLoaded', function() {
+            const birthdateInput = document.getElementById('edit-birthdate');
+            const ageInput = document.getElementById('edit-age');
+            
+            if (birthdateInput && ageInput) {
+                birthdateInput.addEventListener('change', function() {
+                    const birthDate = new Date(this.value);
+                    const today = new Date();
+                    let age = today.getFullYear() - birthDate.getFullYear();
+                    const monthDiff = today.getMonth() - birthDate.getMonth();
+                    
+                    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                        age--;
+                    }
+                    
+                    ageInput.value = age >= 0 ? age : '';
+                });
+            }
+        });
+
+        function updateIntakeButtonCompleted() {
+            // Find all intake buttons (both in quick actions and full list)
+            const intakeButtons = document.querySelectorAll('a[href="/patient-intake.html"]');
+            
+            intakeButtons.forEach(btn => {
+                // Change background to green
+                btn.style.background = 'linear-gradient(135deg, #2ecc71 0%, #27ae60 100%)';
+                btn.style.borderColor = '#27ae60';
+                btn.style.color = '#ffffff';
+                
+                // Add checkmark icon with white color
+                const icon = btn.querySelector('i');
+                if (icon) {
+                    icon.className = 'fa fa-check-circle';
+                    icon.style.color = '#ffffff';
+                    icon.style.fontSize = '48px';
+                }
+                
+                // Update text with white color
+                const textDiv = btn.querySelector('div');
+                if (textDiv) {
+                    textDiv.innerHTML = 'Formulir Rekam Medis<br><small style="font-size: 11px; color: #ffffff; font-weight: 600;">✓ Sudah Diselesaikan</small>';
+                    textDiv.style.color = '#ffffff';
+                    textDiv.style.fontWeight = '600';
+                }
+                
+                // Make it clickable to view again (optional)
+                btn.title = 'Formulir sudah diselesaikan';
+            });
+        }
+
+        function logout(event) {
+            if (event) {
+                event.preventDefault();
+            }
+            localStorage.removeItem('patient_token');
+            localStorage.removeItem('patient_user');
+            window.location.href = '/index.html';
+        }
+
+        // Toggle dropdown menu
+        function toggleDropdown(event) {
+            event.stopPropagation();
+            const dropdown = document.getElementById('user-dropdown');
+            dropdown.classList.toggle('show');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('user-dropdown');
+            if (dropdown && dropdown.classList.contains('show')) {
+                dropdown.classList.remove('show');
+            }
+        });
+
+        // Open profile view modal (Settings)
+        function openProfileViewModal(event) {
+            if (event) {
+                event.preventDefault();
+            }
+            $('#profileViewModal').modal('show');
+            // Close dropdown
+            const dropdown = document.getElementById('user-dropdown');
+            if (dropdown) {
+                dropdown.classList.remove('show');
+            }
+        }
+
+        // Ultrasound Gallery Functions
+        let ultrasoundImages = [];
+
+        function openUploadUltrasoundModal() {
+            $('#uploadUltrasoundModal').modal('show');
+            // Clear form
+            document.getElementById('ultrasound-upload-form').reset();
+            document.getElementById('ultrasound-error').style.display = 'none';
+            document.getElementById('ultrasound-success').style.display = 'none';
+        }
+
+        async function saveUltrasound() {
+            const url = document.getElementById('ultrasound-url').value.trim();
+            const date = document.getElementById('ultrasound-date').value;
+            const notes = document.getElementById('ultrasound-notes').value.trim();
+
+            if (!url || !date) {
+                showUltrasoundError('URL dan tanggal USG harus diisi');
+                return;
+            }
+
+            try {
+                // Save to localStorage for now (can be changed to API call later)
+                const newImage = {
+                    id: Date.now(),
+                    url: url,
+                    date: date,
+                    notes: notes,
+                    created_at: new Date().toISOString()
+                };
+
+                ultrasoundImages.push(newImage);
+                localStorage.setItem('ultrasound_images', JSON.stringify(ultrasoundImages));
+
+                showUltrasoundSuccess('Foto USG berhasil disimpan');
+                setTimeout(() => {
+                    $('#uploadUltrasoundModal').modal('hide');
+                    renderUltrasoundGallery();
+                }, 1500);
+            } catch (error) {
+                showUltrasoundError('Gagal menyimpan foto USG');
+            }
+        }
+
+        function renderUltrasoundGallery() {
+            const gallery = document.getElementById('ultrasound-gallery');
+            const galleryMini = document.getElementById('ultrasound-gallery-mini');
+
+            if (ultrasoundImages.length === 0) {
+                const emptyState = `
+                    <p class="empty-state">
+                        <i class="fa fa-image"></i>
+                        Belum ada foto USG
+                    </p>
+                `;
+                if (gallery) gallery.innerHTML = emptyState;
+                if (galleryMini) galleryMini.innerHTML = emptyState;
+                return;
+            }
+
+            const galleryHTML = ultrasoundImages.map(img => {
+                const imgDate = new Date(img.date);
+                const formattedDate = imgDate.toLocaleDateString('id-ID', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+
+                return `
+                    <div class="ultrasound-item" onclick="viewUltrasoundImage('${img.url}', '${formattedDate}', '${img.notes || ''}')">
+                        <img src="${img.url}" alt="USG ${formattedDate}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27200%27 height=%27200%27%3E%3Crect width=%27200%27 height=%27200%27 fill=%27%23404040%27/%3E%3Ctext x=%2750%25%27 y=%2750%25%27 font-size=%2720%27 fill=%27%2328a7e9%27 text-anchor=%27middle%27 dy=%27.3em%27%3EGambar Error%3C/text%3E%3C/svg%3E'">
+                        <div class="overlay">
+                            ${formattedDate}
+                            ${img.notes ? '<br>' + img.notes : ''}
+                        </div>
+                        <button class="delete-btn" onclick="deleteUltrasound(event, ${img.id})">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+
+            if (gallery) gallery.innerHTML = galleryHTML;
+            if (galleryMini) galleryMini.innerHTML = galleryHTML;
+        }
+
+        function deleteUltrasound(event, id) {
+            event.stopPropagation();
+            if (confirm('Yakin ingin menghapus foto USG ini?')) {
+                ultrasoundImages = ultrasoundImages.filter(img => img.id !== id);
+                localStorage.setItem('ultrasound_images', JSON.stringify(ultrasoundImages));
+                renderUltrasoundGallery();
+            }
+        }
+
+        function viewUltrasoundImage(url, date, notes) {
+            // Create a simple image viewer modal
+            const modalContent = `
+                <div style="text-align: center;">
+                    <img src="${url}" style="max-width: 100%; max-height: 70vh; border-radius: 8px;">
+                    <h4 style="color: #28a7e9; margin-top: 20px;">${date}</h4>
+                    ${notes ? `<p style="color: #cccccc; margin-top: 10px;">${notes}</p>` : ''}
+                </div>
+            `;
+
+            // Show in a simple alert for now (can be improved with a custom modal)
+            const modal = document.createElement('div');
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; display: flex; align-items: center; justify-content: center; padding: 20px;';
+            modal.innerHTML = `
+                <div style="max-width: 800px; width: 100%;">
+                    ${modalContent}
+                    <button onclick="this.parentElement.parentElement.remove()" style="margin-top: 20px; padding: 10px 30px; background: #28a7e9; color: #ffffff; border: none; border-radius: 8px; cursor: pointer; font-size: 16px;">
+                        Tutup
+                    </button>
+                </div>
+            `;
+            modal.onclick = (e) => {
+                if (e.target === modal) modal.remove();
+            };
+            document.body.appendChild(modal);
+        }
+
+        function showUltrasoundError(message) {
+            const errorEl = document.getElementById('ultrasound-error');
+            errorEl.textContent = message;
+            errorEl.style.display = 'block';
+            document.getElementById('ultrasound-success').style.display = 'none';
+        }
+
+        function showUltrasoundSuccess(message) {
+            const successEl = document.getElementById('ultrasound-success');
+            successEl.textContent = message;
+            successEl.style.display = 'block';
+            document.getElementById('ultrasound-error').style.display = 'none';
+        }
+
+        // Load ultrasound images from localStorage
+        function loadUltrasoundImages() {
+            const stored = localStorage.getItem('ultrasound_images');
+            if (stored) {
+                ultrasoundImages = JSON.parse(stored);
+                renderUltrasoundGallery();
+            }
+        }
+
+        // Password Management Functions
+        let hasPassword = false; // Track if user has password set
+        
+        function openPasswordModal() {
+            // Clear form
+            document.getElementById('password-form').reset();
+            document.getElementById('password-error').style.display = 'none';
+            document.getElementById('password-success').style.display = 'none';
+            
+            // Check if user already has password
+            if (hasPassword) {
+                // Change Password mode
+                document.getElementById('password-modal-title').textContent = 'Ubah Password';
+                document.getElementById('old-password-group').style.display = 'block';
+                document.getElementById('new-pass-label').textContent = 'Password Baru';
+                document.getElementById('save-password-btn-text').textContent = 'Ubah Password';
+                document.getElementById('password-info-text').textContent = 'Masukkan password lama dan password baru untuk mengubah password Anda.';
+            } else {
+                // Set Password mode
+                document.getElementById('password-modal-title').textContent = 'Set Password';
+                document.getElementById('old-password-group').style.display = 'none';
+                document.getElementById('new-pass-label').textContent = 'Password';
+                document.getElementById('save-password-btn-text').textContent = 'Set Password';
+                document.getElementById('password-info-text').textContent = 'Setelah set password, Anda dapat login menggunakan email dan password.';
+            }
+            
+            $('#passwordModal').modal('show');
+        }
+        
+        async function savePassword() {
+            try {
+                // Hide previous messages
+                document.getElementById('password-error').style.display = 'none';
+                document.getElementById('password-success').style.display = 'none';
+                
+                const newPassword = document.getElementById('new-password').value;
+                const confirmPassword = document.getElementById('confirm-password').value;
+                
+                // Validation
+                if (!newPassword || !confirmPassword) {
+                    throw new Error('Semua field harus diisi');
+                }
+                
+                if (newPassword !== confirmPassword) {
+                    throw new Error('Password dan konfirmasi password tidak cocok');
+                }
+                
+                if (newPassword.length < 6) {
+                    throw new Error('Password minimal 6 karakter');
+                }
+                
+                let endpoint, body;
+                
+                if (hasPassword) {
+                    // Change Password
+                    const oldPassword = document.getElementById('old-password').value;
+                    if (!oldPassword) {
+                        throw new Error('Password lama harus diisi');
+                    }
+                    
+                    endpoint = '/api/patients/change-password';
+                    body = {
+                        old_password: oldPassword,
+                        new_password: newPassword,
+                        confirm_password: confirmPassword
+                    };
+                } else {
+                    // Set Password
+                    endpoint = '/api/patients/set-password';
+                    body = {
+                        password: newPassword,
+                        confirm_password: confirmPassword
+                    };
+                }
+                
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(body)
+                });
+                
+                const result = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(result.message || 'Gagal menyimpan password');
+                }
+                
+                // Show success message
+                document.getElementById('password-success').textContent = result.message;
+                document.getElementById('password-success').style.display = 'block';
+                
+                // Update button text to "Ubah Password" if this was first set
+                if (!hasPassword) {
+                    hasPassword = true;
+                    document.getElementById('password-btn-text').textContent = 'Ubah Password';
+                }
+                
+                // Close modal after delay
+                setTimeout(() => {
+                    $('#passwordModal').modal('hide');
+                }, 1500);
+                
+            } catch (error) {
+                console.error('Error saving password:', error);
+                document.getElementById('password-error').textContent = error.message;
+                document.getElementById('password-error').style.display = 'block';
+            }
+        }
+
+        // Auto-refresh token verification every 5 minutes
+        setInterval(async () => {
+            try {
+                const response = await fetch('/api/patients/verify', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!response.ok) {
+                    logout();
+                }
+            } catch (error) {
+                console.error('Token verification failed:', error);
+            }
+        }, 5 * 60 * 1000);
+
+        // Show "Atur Password" link for Google users
+        document.addEventListener('DOMContentLoaded', function() {
+            const googleUserPasswordSection = document.getElementById('google-user-password-section');
+            const emailInput = document.getElementById('edit-email');
+
+            if (googleUserPasswordSection && emailInput) {
+                const email = emailInput.value.trim();
+                
+                // Check if email is from Google (ends with @gmail.com or similar)
+                if (email && email.split('@')[1]) {
+                    const domain = email.split('@')[1].toLowerCase();
+                    const googleDomains = ['gmail.com', 'googlemail.com', 'yahoo.com', 'hotmail.com', 'live.com'];
+
+                    if (googleDomains.includes(domain)) {
+                        googleUserPasswordSection.style.display = 'block';
+                    }
+                }
+            }
+        });
+    </script>
+
+    <!-- Bubble Animation Script -->
+    <script>
+        function createBubbles() {
+            const bgAnimation = document.getElementById('bgAnimation');
+            const bubbleCount = 15;
+
+            for (let i = 0; i < bubbleCount; i++) {
+                const bubble = document.createElement('div');
+                bubble.className = 'bubble';
+
+                const size = Math.random() * 60 + 20;
+                bubble.style.width = size + 'px';
+                bubble.style.height = size + 'px';
+                bubble.style.left = Math.random() * 100 + '%';
+                bubble.style.top = Math.random() * 100 + '%';
+                bubble.style.animationDelay = Math.random() * 8 + 's';
+                bubble.style.animationDuration = (Math.random() * 4 + 6) + 's';
+
+                bgAnimation.appendChild(bubble);
+            }
+        }
+
+        createBubbles();
+    </script>
+</body>
+</html>

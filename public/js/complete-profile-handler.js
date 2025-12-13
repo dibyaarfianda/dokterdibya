@@ -5,12 +5,13 @@ console.log('=== COMPLETE PROFILE HANDLER v2.0 - ' + new Date().toISOString() + 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('DOM ready, initializing complete profile...');
     
-    const token = localStorage.getItem('patient_token');
-    
+    // Check for token in same way as patient-dashboard.html for consistency
+    const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+
     // Redirect if not logged in
     if (!token) {
         console.log('No token found, redirecting...');
-        window.location.href = '/index.html';
+        window.location.href = '/index.html#masuk';
         return;
     }
     

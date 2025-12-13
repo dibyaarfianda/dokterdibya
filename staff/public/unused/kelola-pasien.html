@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kelola Pasien - Sistem Klinik</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap4.min.css">
+    <style>
+        .table-responsive {
+            overflow-x: auto;
+        }
+        .badge-sm {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+        }
+        /* Kecilkan font dan weight table header */
+        #manage-patients-table thead th {
+            font-size: 0.75rem;
+            font-weight: 60;
+            padding: 8px 12px;
+        }
+    </style>
+    <!-- Mobile Responsive CSS -->
+    <link rel="stylesheet" href="css/mobile-responsive.css">
+</head>
+<body class="hold-transition sidebar-mini">
+<div class="wrapper">
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="index-adminlte.html" class="nav-link">Dashboard</a>
+            </li>
+        </ul>
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <button class="btn btn-sm btn-outline-danger" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </li>
+        </ul>
+    </nav>
+
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+        <a href="index-adminlte.html" class="brand-link">
+            <span class="brand-text font-weight-light">Sistem Klinik</span>
+        </a>
+        <div class="sidebar">
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+                    <li class="nav-item">
+                        <a href="index-adminlte.html" class="nav-link">
+                            <i class="nav-icon fas fa-tachometer-alt"></i>
+                            <p>Dashboard</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="kelola-pasien.html" class="nav-link active">
+                            <i class="nav-icon fas fa-users"></i>
+                            <p>Kelola Pasien</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="kelola-appointment.html" class="nav-link">
+                            <i class="nav-icon fas fa-calendar-check"></i>
+                            <p>Kelola Appointment</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="kelola-jadwal.html" class="nav-link">
+                            <i class="nav-icon fas fa-calendar-alt"></i>
+                            <p>Kelola Jadwal Praktik</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="kelola-obat.html" class="nav-link">
+                            <i class="nav-icon fas fa-pills"></i>
+                            <p>Kelola Obat</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="kelola-tindakan.html" class="nav-link">
+                            <i class="nav-icon fas fa-cogs"></i>
+                            <p>Kelola Tindakan</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="finance-analysis.html" class="nav-link">
+                            <i class="nav-icon fas fa-chart-line"></i>
+                            <p>Finance Analysis</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="role-management.html" class="nav-link">
+                            <i class="nav-icon fas fa-user-shield"></i>
+                            <p>Role Management</p>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </aside>
+
+    <div class="content-wrapper">
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1><i class="fas fa-users mr-2"></i>Kelola Pasien</h1>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="content">
+            <div class="container-fluid">
+                <!-- Registration Codes Section -->
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <div class="card card-warning">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-key mr-2"></i>Kode Registrasi Pasien
+                                </h3>
+                                <div class="card-tools">
+                                    <span class="badge badge-warning mr-2" id="active-codes-count">0 aktif</span>
+                                    <button type="button" class="btn btn-tool" data-card-widget="collapse">
+                                        <i class="fas fa-minus"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <div class="row mb-3">
+                                    <div class="col-md-6">
+                                        <p class="text-muted mb-2">
+                                            <i class="fas fa-info-circle"></i>
+                                            Generate kode untuk pasien yang akan mendaftar di portal.
+                                            Kode dikirim via WhatsApp.
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6 text-right">
+                                        <button class="btn btn-warning" onclick="openGenerateCodeModal()">
+                                            <i class="fas fa-plus-circle"></i> Generate Kode Baru
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="table-responsive">
+                                    <table id="registration-codes-table" class="table table-sm table-bordered">
+                                        <thead>
+                                            <tr>
+                                                <th>Kode</th>
+                                                <th>Nama Pasien</th>
+                                                <th>No. HP</th>
+                                                <th>Status</th>
+                                                <th>Dibuat</th>
+                                                <th>Kadaluarsa</th>
+                                                <th>Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="registration-codes-tbody">
+                                            <tr><td colspan="7" class="text-center">Memuat...</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Generate Code Modal -->
+                <div class="modal fade" id="generateCodeModal" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content">
+                            <div class="modal-header bg-warning">
+                                <h5 class="modal-title"><i class="fas fa-key"></i> Generate Kode Registrasi</h5>
+                                <button type="button" class="close" data-dismiss="modal">&times;</button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <label>Nama Pasien (opsional)</label>
+                                    <input type="text" class="form-control" id="gen-patient-name" placeholder="Masukkan nama pasien">
+                                </div>
+                                <div class="form-group">
+                                    <label>No. HP (WhatsApp) <span class="text-danger">*</span></label>
+                                    <input type="text" class="form-control" id="gen-phone" placeholder="08xxxxxxxxxx" required>
+                                    <small class="text-muted">Nomor WhatsApp pasien untuk menerima kode</small>
+                                </div>
+                                <div id="generated-code-result" style="display: none;">
+                                    <hr>
+                                    <div class="text-center">
+                                        <p class="mb-2">Kode Registrasi:</p>
+                                        <h2 class="text-warning font-weight-bold" id="generated-code-display"></h2>
+                                        <p class="text-muted">Berlaku 7 hari</p>
+                                        <button class="btn btn-success btn-lg" id="btn-send-whatsapp" onclick="sendCodeWhatsApp()">
+                                            <i class="fab fa-whatsapp"></i> Kirim via WhatsApp
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                                <button type="button" class="btn btn-warning" id="btn-generate-code" onclick="generateRegistrationCode()">
+                                    <i class="fas fa-key"></i> Generate Kode
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card card-primary">
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table id="manage-patients-table" class="table table-bordered table-striped">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Nama Lengkap</th>
+                                                <th>Email</th>
+                                                <th>Telepon</th>
+                                                <th>Tanggal Lahir</th>
+                                                <th>Usia</th>
+                                                <th>Kunjungan Terakhir</th>
+                                                <th>Tgl Registrasi</th>
+                                                <th>Status</th>
+                                                <th>Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="manage-patients-tbody">
+                                            <tr>
+                                                <td colspan="11" class="text-center">Memuat data...</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <footer class="main-footer">
+        <strong>Copyright &copy; 2024 Sistem Klinik</strong>
+        <div class="float-right d-none d-sm-inline-block">
+            <b>Version</b> 1.0.0
+        </div>
+    </footer>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap4.min.js"></script>
+
+<script>
+    // Auth check dilakukan di backend via API middleware
+    const token = localStorage.getItem('vps_auth_token');
+    
+    // Logout function
+    function logout() {
+        if (confirm('Apakah Anda yakin ingin logout?')) {
+            localStorage.clear();
+            window.location.href = '../login.html';
+        }
+    }
+    
+    // Load Patients
+    async function loadPatients() {
+        try {
+            const response = await fetch(`/api/patients?_=${Date.now()}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache'
+                }
+            });
+            
+            if (!response.ok) throw new Error('Failed to load patients');
+            
+            const data = await response.json();
+            const tbody = document.getElementById('manage-patients-tbody');
+            
+            if (!data.data || data.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" class="text-center">Tidak ada pasien</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = data.data.map(patient => {
+                const birthDate = patient.birth_date ? new Date(patient.birth_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
+                const regDate = patient.created_at ? new Date(patient.created_at).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
+                const lastVisit = patient.last_visit ? new Date(patient.last_visit).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : 'Belum ada';
+                const statusBadge = patient.status === 'active' ? 
+                    '<span class="badge badge-success">Aktif</span>' : 
+                    '<span class="badge badge-secondary">Nonaktif</span>';
+                
+                return `
+                    <tr>
+                        <td>${patient.id}</td>
+                        <td>${patient.full_name || '-'}</td>
+                        <td>${patient.email || '-'}</td>
+                        <td>${patient.whatsapp || patient.phone || '-'}</td>
+                        <td>${birthDate}</td>
+                        <td>${patient.age || '-'}</td>
+                        <td>${lastVisit}</td>
+                        <td>${regDate}</td>
+                        <td>${statusBadge}</td>
+                        <td class="text-nowrap">
+                            <button class="btn btn-sm btn-info" onclick="viewPatientDetail('${patient.id}')" title="Detail">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button class="btn btn-sm btn-${patient.status === 'active' ? 'warning' : 'success'}" 
+                                    onclick="togglePatientStatus('${patient.id}', '${patient.status}', '${patient.full_name}')" 
+                                    title="${patient.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}">
+                                <i class="fas fa-${patient.status === 'active' ? 'ban' : 'check'}"></i>
+                            </button>
+                            <button class="btn btn-sm btn-secondary" onclick="deletePatientAppointments('${patient.id}', '${patient.full_name}')" title="Hapus Appointment Pasien">
+                                <i class="fas fa-calendar-times"></i>
+                            </button>
+                            <button class="btn btn-sm btn-danger" onclick="deletePatient('${patient.id}', '${patient.full_name}')" title="Hapus">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            // Initialize DataTable
+            if ($.fn.DataTable.isDataTable('#manage-patients-table')) {
+                $('#manage-patients-table').DataTable().destroy();
+            }
+            $('#manage-patients-table').DataTable({
+                "pageLength": 25,
+                "order": [[8, 'desc']]
+            });
+            
+        } catch (error) {
+            document.getElementById('manage-patients-tbody').innerHTML = 
+                '<tr><td colspan="11" class="text-center text-danger">Gagal memuat data pasien</td></tr>';
+        }
+    }
+    
+    // Delete Patient
+    window.deletePatient = async function(patientId, patientName) {
+        const confirmMessage = `⚠️ PERINGATAN: Hapus Pasien dan Semua Data Terkait
+
+Anda akan menghapus pasien: "${patientName}"
+
+Data yang akan DIHAPUS PERMANEN:
+✗ Data pasien (profil, email, nomor telepon)
+✗ Riwayat billing dan invoice
+✗ Detail item billing
+✗ Transaksi pembayaran
+✗ Rekam medis (medical records)
+✗ Data pemeriksaan medis
+✗ Riwayat kunjungan
+✗ Janji temu (appointments)
+✗ Form patient intake
+
+⚠️ TINDAKAN INI TIDAK DAPAT DIBATALKAN!
+
+Apakah Anda yakin ingin melanjutkan?`;
+
+        if (!confirm(confirmMessage)) return;
+        
+        const secondConfirm = prompt('Ketik "HAPUS" (huruf besar) untuk konfirmasi penghapusan:');
+        if (secondConfirm !== 'HAPUS') {
+            alert('Penghapusan dibatalkan');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/patients/${patientId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            
+            const result = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(result.message || 'Failed to delete patient');
+            }
+            
+            let successMessage = `✅ Pasien "${patientName}" berhasil dihapus!\n\nData yang dihapus:`;
+            if (result.deleted_data) {
+                successMessage += `\n- Billing Items: ${result.deleted_data.billing_items || 0}`;
+                successMessage += `\n- Payment Transactions: ${result.deleted_data.payment_transactions || 0}`;
+                successMessage += `\n- Billings: ${result.deleted_data.billings || 0}`;
+                successMessage += `\n- Patient Records: ${result.deleted_data.patient_records || 0}`;
+                successMessage += `\n- Medical Records: ${result.deleted_data.medical_records || 0}`;
+                successMessage += `\n- Medical Exams: ${result.deleted_data.medical_exams || 0}`;
+                successMessage += `\n- Visits: ${result.deleted_data.visits || 0}`;
+                successMessage += `\n- Appointments: ${result.deleted_data.appointments || 0}`;
+                successMessage += `\n- Sunday Appointments: ${result.deleted_data.sunday_appointments || 0}`;
+            }
+            
+            alert(successMessage);
+
+            // Clear patient cache and reload
+            await loadPatients();
+
+            // Also reload patients in appointments if that module is loaded
+            if (typeof window.reloadAppointmentPatients === 'function') {
+                await window.reloadAppointmentPatients();
+            }
+
+            // Reload Klinik Private appointments if available
+            if (window.klinikPrivate && typeof window.klinikPrivate.reload === 'function') {
+                await window.klinikPrivate.reload();
+            }
+            
+        } catch (error) {
+            alert('❌ Gagal menghapus pasien:\n' + error.message);
+        }
+    };
+    
+    window.deletePatientAppointments = async function(patientId, patientName) {
+        const confirmMessage = `Anda akan menghapus SEMUA appointment yang terkait dengan pasien:\n\n"${patientName}" (ID: ${patientId})\n\nTindakan ini tidak menghapus data pasien, hanya jadwal appointment-nya. Lanjutkan?`;
+        if (!confirm(confirmMessage)) return;
+        try {
+            const response = await fetch(`/api/appointments/patient/${patientId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result.message || 'Gagal menghapus appointment');
+            }
+            alert(`✅ Appointment pasien berhasil dihapus. Total entri dihapus: ${result.deleted || 0}`);
+            if (typeof window.reloadAppointmentPatients === 'function') {
+                await window.reloadAppointmentPatients();
+            }
+        } catch (error) {
+            alert('❌ Gagal menghapus appointment pasien:\n' + error.message);
+        }
+    };
+    
+    // Toggle Patient Status
+    window.togglePatientStatus = async function(patientId, currentStatus, patientName) {
+        const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+        const action = newStatus === 'active' ? 'mengaktifkan' : 'menonaktifkan';
+        
+        if (!confirm(`Apakah Anda yakin ingin ${action} pasien "${patientName}"?`)) return;
+        
+        try {
+            const response = await fetch(`/api/patients/${patientId}/status`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ status: newStatus })
+            });
+            
+            if (!response.ok) throw new Error('Failed to update status');
+            
+            alert(`Status pasien berhasil diubah menjadi ${newStatus === 'active' ? 'aktif' : 'nonaktif'}`);
+            loadPatients();
+            
+        } catch (error) {
+            alert('Gagal mengubah status pasien');
+        }
+    };
+    
+    // View Patient Detail
+    window.viewPatientDetail = function(patientId) {
+        // Redirect to main dashboard with patient detail
+        window.location.href = `index-adminlte.html?patient=${patientId}`;
+    };
+    
+    // Load on page ready
+    $(document).ready(function() {
+        loadPatients();
+        loadRegistrationCodes();
+    });
+
+    // ============================================
+    // Registration Codes Functions
+    // ============================================
+
+    let currentGeneratedCode = null;
+    let currentGeneratedPhone = null;
+    let currentPatientName = null;
+
+    // Load Registration Codes
+    async function loadRegistrationCodes() {
+        try {
+            const response = await fetch('/api/registration-codes?limit=50', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error('Failed to load codes');
+
+            const data = await response.json();
+            const tbody = document.getElementById('registration-codes-tbody');
+
+            if (!data.data || data.data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Belum ada kode registrasi</td></tr>';
+                document.getElementById('active-codes-count').textContent = '0 aktif';
+                return;
+            }
+
+            // Count active codes
+            const activeCodes = data.data.filter(c => c.status === 'active' && new Date(c.expires_at) > new Date());
+            document.getElementById('active-codes-count').textContent = `${activeCodes.length} aktif`;
+
+            tbody.innerHTML = data.data.map(code => {
+                const createdDate = new Date(code.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+                const expiresDate = new Date(code.expires_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+                const isExpired = new Date(code.expires_at) < new Date();
+
+                let statusBadge = '';
+                if (code.status === 'used') {
+                    statusBadge = '<span class="badge badge-success">Terpakai</span>';
+                } else if (isExpired) {
+                    statusBadge = '<span class="badge badge-secondary">Kadaluarsa</span>';
+                } else {
+                    statusBadge = '<span class="badge badge-warning">Aktif</span>';
+                }
+
+                return `
+                    <tr>
+                        <td><code class="font-weight-bold">${code.code}</code></td>
+                        <td>${code.patient_name || '-'}</td>
+                        <td>${code.phone || '-'}</td>
+                        <td>${statusBadge}</td>
+                        <td>${createdDate}</td>
+                        <td>${expiresDate}</td>
+                        <td>
+                            ${code.status === 'active' && !isExpired ? `
+                                <button class="btn btn-xs btn-success" onclick="resendCodeWhatsApp('${code.code}', '${code.phone}', '${code.patient_name || ''}')" title="Kirim ulang via WhatsApp">
+                                    <i class="fab fa-whatsapp"></i>
+                                </button>
+                                <button class="btn btn-xs btn-danger" onclick="deleteCode(${code.id})" title="Hapus">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            ` : ''}
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+
+        } catch (error) {
+            console.error('Load registration codes error:', error);
+            document.getElementById('registration-codes-tbody').innerHTML =
+                '<tr><td colspan="7" class="text-center text-danger">Gagal memuat data</td></tr>';
+        }
+    }
+
+    // Open Generate Code Modal
+    function openGenerateCodeModal() {
+        // Reset form
+        document.getElementById('gen-patient-name').value = '';
+        document.getElementById('gen-phone').value = '';
+        document.getElementById('generated-code-result').style.display = 'none';
+        document.getElementById('btn-generate-code').style.display = 'inline-block';
+        currentGeneratedCode = null;
+        currentGeneratedPhone = null;
+        currentPatientName = null;
+
+        $('#generateCodeModal').modal('show');
+    }
+
+    // Generate Registration Code
+    async function generateRegistrationCode() {
+        const patientName = document.getElementById('gen-patient-name').value.trim();
+        const phone = document.getElementById('gen-phone').value.trim();
+
+        if (!phone) {
+            alert('Nomor HP harus diisi');
+            return;
+        }
+
+        const btn = document.getElementById('btn-generate-code');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+
+        try {
+            const response = await fetch('/api/registration-codes/generate', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    patient_name: patientName || null,
+                    phone: phone
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || 'Gagal generate kode');
+            }
+
+            // Show generated code
+            currentGeneratedCode = data.code;
+            currentGeneratedPhone = data.phone;
+            currentPatientName = patientName;
+
+            document.getElementById('generated-code-display').textContent = data.code;
+            document.getElementById('generated-code-result').style.display = 'block';
+            btn.style.display = 'none';
+
+            // Reload codes table
+            loadRegistrationCodes();
+
+        } catch (error) {
+            alert('Error: ' + error.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-key"></i> Generate Kode';
+        }
+    }
+
+    // Send Code via WhatsApp
+    async function sendCodeWhatsApp() {
+        if (!currentGeneratedCode || !currentGeneratedPhone) {
+            alert('Kode belum di-generate');
+            return;
+        }
+
+        const btn = document.getElementById('btn-send-whatsapp');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengirim...';
+
+        try {
+            const response = await fetch('/api/registration-codes/send-whatsapp', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    code: currentGeneratedCode,
+                    phone: currentGeneratedPhone,
+                    patient_name: currentPatientName
+                })
+            });
+
+            const data = await response.json();
+
+            if (data.method === 'fonnte') {
+                alert('Kode berhasil dikirim via WhatsApp!');
+                $('#generateCodeModal').modal('hide');
+            } else if (data.waLink) {
+                // Open WhatsApp link
+                window.open(data.waLink, '_blank');
+                alert('Link WhatsApp terbuka di tab baru. Klik kirim untuk mengirim pesan.');
+                $('#generateCodeModal').modal('hide');
+            } else {
+                throw new Error(data.message || 'Gagal mengirim');
+            }
+
+        } catch (error) {
+            alert('Error: ' + error.message);
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fab fa-whatsapp"></i> Kirim via WhatsApp';
+        }
+    }
+
+    // Resend Code WhatsApp (for existing codes)
+    async function resendCodeWhatsApp(code, phone, patientName) {
+        try {
+            const response = await fetch('/api/registration-codes/send-whatsapp', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ code, phone, patient_name: patientName })
+            });
+
+            const data = await response.json();
+
+            if (data.method === 'fonnte') {
+                alert('Kode berhasil dikirim ulang via WhatsApp!');
+            } else if (data.waLink) {
+                window.open(data.waLink, '_blank');
+                alert('Link WhatsApp terbuka di tab baru.');
+            }
+
+        } catch (error) {
+            alert('Error: ' + error.message);
+        }
+    }
+
+    // Delete Registration Code
+    async function deleteCode(codeId) {
+        if (!confirm('Hapus kode registrasi ini?')) return;
+
+        try {
+            const response = await fetch(`/api/registration-codes/${codeId}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error('Gagal menghapus');
+
+            loadRegistrationCodes();
+
+        } catch (error) {
+            alert('Error: ' + error.message);
+        }
+    }
+</script>
+
+<!-- Mobile Helper Script -->
+<script src="scripts/mobile-helper.js"></script>
+    <!-- Global Chat Loader -->
+    <script src="/staff/public/scripts/global-chat-loader.js"></script>
+</body>
+</html>

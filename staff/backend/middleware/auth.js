@@ -1,5 +1,6 @@
 const jwt = require('jsonwebtoken');
 const logger = require('../utils/logger');
+const { ROLE_IDS, ROLE_NAMES, isSuperadminRole, isAdminRole } = require('../constants/roles');
 
 // Ensure JWT_SECRET is set - fail fast if not
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -130,46 +131,217 @@ function verifyToken(req, res, next) {
 
 /**
  * Middleware to check if user has required role
- * Enhanced with audit logging
+ * Now uses role_id (INT) for consistency
+ * @param {...number} allowedRoleIds - Role IDs from ROLE_IDS constants
  */
-function requireRole(...allowedRoles) {
+function requireRole(...allowedRoleIds) {
     return (req, res, next) => {
         const requestId = req.context?.requestId || 'unknown';
-        
+
         if (!req.user) {
             logger.warn('Missing user in requireRole middleware', {
                 requestId,
                 ip: req.ip,
                 path: req.path
             });
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Authentication required' 
+            return res.status(401).json({
+                success: false,
+                message: 'Authentication required'
             });
         }
 
-        if (!allowedRoles.includes(req.user.role)) {
+        const userRoleId = req.user.role_id;
+
+        // Superadmin (dokter) always has access
+        if (req.user.is_superadmin || isSuperadminRole(userRoleId)) {
+            logger.debug('Superadmin access granted', {
+                requestId,
+                userId: req.user.id,
+                role_id: userRoleId
+            });
+            return next();
+        }
+
+        if (!allowedRoleIds.includes(userRoleId)) {
             logger.warn('Insufficient permissions', {
                 requestId,
                 userId: req.user.id,
-                userRole: req.user.role,
-                allowedRoles,
+                userRoleId,
+                allowedRoleIds,
                 path: req.path
             });
-            return res.status(403).json({ 
-                success: false, 
-                message: 'Insufficient permissions' 
+            return res.status(403).json({
+                success: false,
+                message: 'Insufficient permissions'
             });
         }
 
         logger.debug('Role authorization successful', {
             requestId,
             userId: req.user.id,
-            role: req.user.role
+            role_id: userRoleId
         });
-        
+
         next();
     };
+}
+
+/**
+ * Middleware to verify patient JWT token
+ * Similar to verifyToken but ensures user is a patient
+ */
+function verifyPatientToken(req, res, next) {
+    const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+    const requestId = req.context?.requestId || 'unknown';
+
+    if (!authHeader) {
+        logger.warn('Missing authorization header (patient)', {
+            requestId,
+            ip: req.ip,
+            path: req.path
+        });
+        return res.status(401).json({
+            success: false,
+            message: 'Missing authorization header'
+        });
+    }
+
+    const parts = authHeader.split(' ');
+
+    if (parts.length !== 2 || parts[0] !== 'Bearer') {
+        return res.status(401).json({
+            success: false,
+            message: 'Invalid authorization header format'
+        });
+    }
+
+    const token = parts[1];
+
+    try {
+        const payload = jwt.verify(token, JWT_SECRET);
+
+        // Ensure this is a patient token
+        if (payload.user_type !== 'patient' && payload.role !== 'patient') {
+            logger.warn('Non-patient token used on patient endpoint', {
+                requestId,
+                userId: payload.id,
+                userType: payload.user_type,
+                role: payload.role
+            });
+            return res.status(403).json({
+                success: false,
+                message: 'This endpoint is for patients only'
+            });
+        }
+
+        req.patient = payload;
+        req.user = payload; // Also set req.user for compatibility
+
+        logger.debug('Patient token verified', {
+            requestId,
+            patientId: payload.id,
+            email: payload.email
+        });
+
+        next();
+    } catch (err) {
+        logger.warn('Patient token verification failed', {
+            requestId,
+            errorName: err.name,
+            message: err.message,
+            ip: req.ip
+        });
+
+        if (err.name === 'TokenExpiredError') {
+            return res.status(401).json({
+                success: false,
+                message: 'Token has expired'
+            });
+        }
+        return res.status(401).json({
+            success: false,
+            message: 'Invalid token'
+        });
+    }
+}
+
+/**
+ * Middleware to verify staff JWT token
+ * Ensures user is NOT a patient - blocks patient tokens from accessing staff routes
+ */
+function verifyStaffToken(req, res, next) {
+    const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+    const requestId = req.context?.requestId || 'unknown';
+
+    if (!authHeader) {
+        logger.warn('Missing authorization header (staff)', {
+            requestId,
+            ip: req.ip,
+            path: req.path
+        });
+        return res.status(401).json({
+            success: false,
+            message: 'Missing authorization header'
+        });
+    }
+
+    const parts = authHeader.split(' ');
+
+    if (parts.length !== 2 || parts[0] !== 'Bearer') {
+        return res.status(401).json({
+            success: false,
+            message: 'Invalid authorization header format'
+        });
+    }
+
+    const token = parts[1];
+
+    try {
+        const payload = jwt.verify(token, JWT_SECRET);
+
+        // Block patient tokens from accessing staff routes
+        if (payload.user_type === 'patient' || payload.role === 'patient') {
+            logger.warn('Patient token used on staff endpoint', {
+                requestId,
+                userId: payload.id,
+                userType: payload.user_type,
+                role: payload.role,
+                path: req.path
+            });
+            return res.status(403).json({
+                success: false,
+                message: 'Akses ditolak. Endpoint ini hanya untuk staff.'
+            });
+        }
+
+        req.user = payload;
+
+        logger.debug('Staff token verified', {
+            requestId,
+            userId: payload.id,
+            role: payload.role
+        });
+
+        next();
+    } catch (err) {
+        logger.warn('Staff token verification failed', {
+            requestId,
+            errorName: err.name,
+            message: err.message,
+            ip: req.ip
+        });
+
+        if (err.name === 'TokenExpiredError') {
+            return res.status(401).json({
+                success: false,
+                message: 'Token has expired'
+            });
+        }
+        return res.status(401).json({
+            success: false,
+            message: 'Token tidak valid'
+        });
+    }
 }
 
 /**
@@ -201,81 +373,193 @@ function optionalAuth(req, res, next) {
 }
 
 /**
+ * Middleware to require superadmin access
+ * Only allows users with is_superadmin=true or role_id=1 (dokter)
+ */
+function requireSuperadmin(req, res, next) {
+    const requestId = req.context?.requestId || 'unknown';
+
+    if (!req.user) {
+        logger.warn('Missing user in requireSuperadmin middleware', {
+            requestId,
+            ip: req.ip,
+            path: req.path
+        });
+        return res.status(401).json({
+            success: false,
+            message: 'Authentication required'
+        });
+    }
+
+    if (req.user.is_superadmin || isSuperadminRole(req.user.role_id)) {
+        logger.debug('Superadmin access granted', {
+            requestId,
+            userId: req.user.id,
+            role_id: req.user.role_id,
+            is_superadmin: req.user.is_superadmin
+        });
+        return next();
+    }
+
+    logger.warn('Superadmin access denied', {
+        requestId,
+        userId: req.user.id,
+        role_id: req.user.role_id,
+        path: req.path
+    });
+    return res.status(403).json({
+        success: false,
+        message: 'Superadmin access required'
+    });
+}
+
+/**
+ * Simple role-based access control middleware
+ * Replaces the complex permission system with simple role checking
+ * @param {...string} allowedRoles - Role names that are allowed (e.g., 'dokter', 'bidan', 'administrasi')
+ *
+ * Usage: requireRoles('dokter', 'bidan', 'managerial')
+ * Superadmin/dokter always has access regardless of allowedRoles
+ */
+function requireRoles(...allowedRoles) {
+    return (req, res, next) => {
+        const requestId = req.context?.requestId || 'unknown';
+
+        if (!req.user) {
+            logger.warn('Missing user in requireRoles middleware', {
+                requestId,
+                ip: req.ip,
+                path: req.path
+            });
+            return res.status(401).json({
+                success: false,
+                message: 'Authentication required'
+            });
+        }
+
+        // Superadmin/dokter always has access
+        if (req.user.is_superadmin || req.user.role === ROLE_NAMES.DOKTER || isSuperadminRole(req.user.role_id)) {
+            logger.debug('Superadmin/dokter access granted', {
+                requestId,
+                userId: req.user.id,
+                role: req.user.role
+            });
+            return next();
+        }
+
+        // Check if user's role is in allowed roles
+        const userRole = req.user.role;
+        if (allowedRoles.includes(userRole)) {
+            logger.debug('Role access granted', {
+                requestId,
+                userId: req.user.id,
+                role: userRole,
+                allowedRoles
+            });
+            return next();
+        }
+
+        logger.warn('Access denied - role not allowed', {
+            requestId,
+            userId: req.user.id,
+            userRole,
+            allowedRoles,
+            path: req.path
+        });
+        return res.status(403).json({
+            success: false,
+            message: 'Access denied for your role'
+        });
+    };
+}
+
+/**
  * Middleware to check if user has required permissions
- * Enhanced with permission-based authorization
+ * Checks against role_permissions table
+ * @param {...string} requiredPermissions - Permission names (e.g., 'announcements.view', 'patients.edit')
+ *
+ * Usage: requirePermission('announcements.view')
+ *        requirePermission('patients.view', 'patients.edit') - requires ANY of these
  */
 function requirePermission(...requiredPermissions) {
+    // Lazy load db to avoid circular dependency
+    let db = null;
+
     return async (req, res, next) => {
         const requestId = req.context?.requestId || 'unknown';
-        
+
         if (!req.user) {
             logger.warn('Missing user in requirePermission middleware', {
                 requestId,
                 ip: req.ip,
                 path: req.path
             });
-            return res.status(401).json({ 
-                success: false, 
-                message: 'Authentication required' 
+            return res.status(401).json({
+                success: false,
+                message: 'Authentication required'
             });
         }
 
-        // Superadmin has all permissions
-        if (req.user.role === 'superadmin') {
-            logger.debug('Superadmin access granted', {
+        // Superadmin/dokter always has access
+        if (req.user.is_superadmin || req.user.role === ROLE_NAMES.DOKTER || isSuperadminRole(req.user.role_id)) {
+            logger.debug('Superadmin/dokter permission granted', {
                 requestId,
                 userId: req.user.id,
-                requiredPermissions
+                permissions: requiredPermissions
             });
             return next();
         }
 
         try {
-            // Get user's permissions from database
-            const db = require('../db');
+            // Lazy load database connection
+            if (!db) {
+                db = require('../db');
+            }
 
-            const [rows] = await db.query(`
-                SELECT DISTINCT p.name
-                FROM permissions p
-                INNER JOIN role_permissions rp ON p.id = rp.permission_id
-                INNER JOIN users u ON u.role_id = rp.role_id
-                WHERE u.new_id = ?
-            `, [req.user.id]);
-
-            const userPermissions = rows.map(row => row.name);
-
-            // Check if user has at least one of the required permissions
-            const hasPermission = requiredPermissions.some(permission => 
-                userPermissions.includes(permission)
-            );
-
-            if (!hasPermission) {
-                logger.warn('Insufficient permissions', {
+            const roleId = req.user.role_id;
+            if (!roleId) {
+                logger.warn('User has no role_id', {
                     requestId,
                     userId: req.user.id,
-                    userRole: req.user.role,
-                    userPermissions,
-                    requiredPermissions,
                     path: req.path
                 });
-                return res.status(403).json({ 
-                    success: false, 
-                    message: 'Insufficient permissions' 
+                return res.status(403).json({
+                    success: false,
+                    message: 'User role not configured'
                 });
             }
 
-            logger.debug('Permission authorization successful', {
+            // Check if user's role has ANY of the required permissions
+            const placeholders = requiredPermissions.map(() => '?').join(', ');
+            const [rows] = await db.query(
+                `SELECT p.name
+                 FROM role_permissions rp
+                 JOIN permissions p ON rp.permission_id = p.id
+                 WHERE rp.role_id = ? AND p.name IN (${placeholders})`,
+                [roleId, ...requiredPermissions]
+            );
+
+            if (rows.length === 0) {
+                logger.warn(`Permission denied: user=${req.user.id} role_id=${roleId} needs=[${requiredPermissions.join(',')}] path=${req.path}`);
+                return res.status(403).json({
+                    success: false,
+                    message: 'Anda tidak memiliki izin untuk aksi ini'
+                });
+            }
+
+            logger.debug('Permission granted', {
                 requestId,
                 userId: req.user.id,
-                grantedPermission: requiredPermissions.find(p => userPermissions.includes(p))
+                roleId,
+                grantedPermissions: rows.map(r => r.name)
             });
-            
+
             next();
         } catch (error) {
             logger.error('Error checking permissions', {
                 requestId,
-                userId: req.user.id,
-                error: error.message
+                error: error.message,
+                requiredPermissions
             });
             return res.status(500).json({
                 success: false,
@@ -285,13 +569,99 @@ function requirePermission(...requiredPermissions) {
     };
 }
 
-module.exports = { 
-    verifyToken, 
+/**
+ * Middleware to check menu access based on role_visibility table
+ * @param {string} menuKey - The menu key to check (e.g., 'obat_alkes', 'keuangan')
+ */
+function requireMenuAccess(menuKey) {
+    // Lazy load db to avoid circular dependency
+    let db = null;
+
+    return async (req, res, next) => {
+        const requestId = req.context?.requestId || 'unknown';
+
+        if (!req.user) {
+            return res.status(401).json({
+                success: false,
+                message: 'Authentication required'
+            });
+        }
+
+        // Superadmin/dokter always has access
+        if (req.user.is_superadmin || req.user.role === ROLE_NAMES.DOKTER || isSuperadminRole(req.user.role_id)) {
+            return next();
+        }
+
+        try {
+            // Lazy load database connection
+            if (!db) {
+                db = require('../db');
+            }
+
+            const userRole = req.user.role;
+            const [rows] = await db.query(
+                'SELECT is_visible FROM role_visibility WHERE role_name = ? AND menu_key = ?',
+                [userRole, menuKey]
+            );
+
+            // If no record found, default to no access
+            if (rows.length === 0) {
+                logger.warn('Menu access denied - no visibility record', {
+                    requestId,
+                    userId: req.user.id,
+                    userRole,
+                    menuKey,
+                    path: req.path
+                });
+                return res.status(403).json({
+                    success: false,
+                    message: 'Akses ditolak untuk role Anda'
+                });
+            }
+
+            if (!rows[0].is_visible) {
+                logger.warn('Menu access denied - not visible for role', {
+                    requestId,
+                    userId: req.user.id,
+                    userRole,
+                    menuKey,
+                    path: req.path
+                });
+                return res.status(403).json({
+                    success: false,
+                    message: 'Akses ditolak untuk role Anda'
+                });
+            }
+
+            // Access granted
+            next();
+        } catch (error) {
+            logger.error('Error checking menu access', {
+                requestId,
+                error: error.message,
+                menuKey
+            });
+            // On error, deny access for security
+            return res.status(500).json({
+                success: false,
+                message: 'Error checking access permissions'
+            });
+        }
+    };
+}
+
+module.exports = {
+    verifyToken,
+    verifyPatientToken,
+    verifyStaffToken,  // Block patients from staff routes
     requireRole,
-    requirePermission,
+    requireRoles,
+    requireSuperadmin,
+    requireMenuAccess,  // New: check menu visibility from database
+    requirePermission,  // Deprecated
     optionalAuth,
     recordFailedAttempt,
     isAccountLocked,
     clearFailedAttempts,
-    JWT_SECRET 
+    JWT_SECRET
 };

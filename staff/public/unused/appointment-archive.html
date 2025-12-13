@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arsip Appointment - Klinik Dibya</title>
+
+    <!-- AdminLTE CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- DataTables -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/dataTables.bootstrap4.min.css">
+
+    <style>
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+        .status-cancelled { background-color: #dc3545; color: white; }
+        .status-completed { background-color: #28a745; color: white; }
+        .status-no_show { background-color: #6c757d; color: white; }
+    </style>
+</head>
+<body class="hold-transition sidebar-mini">
+<div class="wrapper">
+    <!-- Navbar -->
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" data-widget="pushmenu" href="#" role="button"><i class="fas fa-bars"></i></a>
+            </li>
+        </ul>
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <button class="btn btn-sm btn-outline-danger" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Sidebar -->
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+        <a href="index-adminlte.html" class="brand-link">
+            <span class="brand-text font-weight-light">Klinik Dibya</span>
+        </a>
+        <div class="sidebar">
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column">
+                    <li class="nav-item">
+                        <a href="index-adminlte.html" class="nav-link">
+                            <i class="nav-icon fas fa-home"></i>
+                            <p>Dashboard</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="kelola-appointment.html" class="nav-link">
+                            <i class="nav-icon fas fa-calendar-alt"></i>
+                            <p>Kelola Appointment</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="appointment-archive.html" class="nav-link active">
+                            <i class="nav-icon fas fa-archive"></i>
+                            <p>Arsip Appointment</p>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Content Wrapper -->
+    <div class="content-wrapper">
+        <section class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1><i class="fas fa-archive"></i> Arsip Appointment</h1>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="content">
+            <div class="container-fluid">
+                <!-- Statistics Cards -->
+                <div class="row">
+                    <div class="col-lg-3 col-6">
+                        <div class="small-box bg-info">
+                            <div class="inner">
+                                <h3 id="stat-total">-</h3>
+                                <p>Total Arsip</p>
+                            </div>
+                            <div class="icon"><i class="fas fa-archive"></i></div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-6">
+                        <div class="small-box bg-danger">
+                            <div class="inner">
+                                <h3 id="stat-cancelled">-</h3>
+                                <p>Dibatalkan</p>
+                            </div>
+                            <div class="icon"><i class="fas fa-times-circle"></i></div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-6">
+                        <div class="small-box bg-success">
+                            <div class="inner">
+                                <h3 id="stat-completed">-</h3>
+                                <p>Selesai</p>
+                            </div>
+                            <div class="icon"><i class="fas fa-check-circle"></i></div>
+                        </div>
+                    </div>
+                    <div class="col-lg-3 col-6">
+                        <div class="small-box bg-secondary">
+                            <div class="inner">
+                                <h3 id="stat-noshow">-</h3>
+                                <p>Tidak Hadir</p>
+                            </div>
+                            <div class="icon"><i class="fas fa-user-slash"></i></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Main Card -->
+                <div class="card">
+                    <div class="card-header">
+                        <h3 class="card-title">Daftar Appointment yang Diarsipkan</h3>
+                        <div class="card-tools">
+                            <button class="btn btn-sm btn-primary" onclick="loadArchive()">
+                                <i class="fas fa-sync-alt"></i> Refresh
+                            </button>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <!-- Filters -->
+                        <div class="row mb-3">
+                            <div class="col-md-3">
+                                <label>Tanggal Mulai:</label>
+                                <input type="date" id="filter-start-date" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-3">
+                                <label>Tanggal Akhir:</label>
+                                <input type="date" id="filter-end-date" class="form-control form-control-sm">
+                            </div>
+                            <div class="col-md-2">
+                                <label>Status:</label>
+                                <select id="filter-status" class="form-control form-control-sm">
+                                    <option value="">Semua</option>
+                                    <option value="cancelled">Cancelled</option>
+                                    <option value="completed">Completed</option>
+                                    <option value="no_show">No Show</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <label>Nama Pasien:</label>
+                                <input type="text" id="filter-patient-name" class="form-control form-control-sm" placeholder="Cari nama...">
+                            </div>
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button class="btn btn-sm btn-primary" onclick="loadArchive()">
+                                    <i class="fas fa-filter"></i> Filter
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Table -->
+                        <table id="archive-table" class="table table-bordered table-striped">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Tanggal</th>
+                                    <th>Waktu</th>
+                                    <th>Pasien</th>
+                                    <th>Telepon</th>
+                                    <th>Keluhan</th>
+                                    <th>Status</th>
+                                    <th>Diarsipkan</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody id="archive-tbody">
+                                <tr>
+                                    <td colspan="9" class="text-center">Memuat data...</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- Footer -->
+    <footer class="main-footer">
+        <strong>Klinik Dibya</strong> - Sistem Manajemen Appointment
+    </footer>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal fade" id="detailModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Detail Appointment</h5>
+                <button type="button" class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body" id="detail-content">
+                <!-- Content loaded via JS -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scripts -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.4/js/dataTables.bootstrap4.min.js"></script>
+
+<script>
+    const API_BASE = '/api/appointment-archive';
+    const token = localStorage.getItem('vps_auth_token');
+    let dataTable;
+
+    function logout() {
+        if (confirm('Apakah Anda yakin ingin logout?')) {
+            localStorage.clear();
+            window.location.href = 'login.html';
+        }
+    }
+
+    async function loadStats() {
+        try {
+            const response = await fetch(`${API_BASE}/stats`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error('Failed to load stats');
+
+            const result = await response.json();
+            const stats = result.stats;
+
+            document.getElementById('stat-total').textContent = stats.total_archived || 0;
+            document.getElementById('stat-cancelled').textContent = stats.cancelled_count || 0;
+            document.getElementById('stat-completed').textContent = stats.completed_count || 0;
+            document.getElementById('stat-noshow').textContent = stats.no_show_count || 0;
+
+        } catch (error) {
+            console.error('Error loading stats:', error);
+        }
+    }
+
+    async function loadArchive() {
+        try {
+            const startDate = document.getElementById('filter-start-date').value;
+            const endDate = document.getElementById('filter-end-date').value;
+            const status = document.getElementById('filter-status').value;
+            const patientName = document.getElementById('filter-patient-name').value;
+
+            let url = `${API_BASE}?limit=1000`;
+            if (startDate) url += `&start_date=${startDate}`;
+            if (endDate) url += `&end_date=${endDate}`;
+            if (status) url += `&status=${status}`;
+            if (patientName) url += `&patient_name=${patientName}`;
+
+            const response = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error('Failed to load archive');
+
+            const result = await response.json();
+            renderArchive(result.data);
+
+        } catch (error) {
+            console.error('Error loading archive:', error);
+            alert('Gagal memuat arsip: ' + error.message);
+        }
+    }
+
+    function renderArchive(appointments) {
+        const tbody = document.getElementById('archive-tbody');
+
+        if (dataTable) {
+            dataTable.destroy();
+        }
+
+        if (!appointments || appointments.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="9" class="text-center">Tidak ada data arsip</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = appointments.map(apt => {
+            const date = new Date(apt.appointment_date);
+            const dateStr = date.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+            const sessions = {
+                1: '09:00 - 11:30 (Pagi)',
+                2: '12:00 - 14:30 (Siang)',
+                3: '15:00 - 17:30 (Sore)'
+            };
+
+            const sessionLabel = sessions[apt.session] || '-';
+            const slotTime = calculateSlotTime(apt.session, apt.slot_number);
+
+            const statusClass = `status-${apt.status}`;
+            const statusLabel = apt.status.charAt(0).toUpperCase() + apt.status.slice(1);
+
+            const archivedDate = new Date(apt.archived_at);
+            const archivedStr = archivedDate.toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+            return `
+                <tr>
+                    <td>${apt.id}</td>
+                    <td>${dateStr}</td>
+                    <td><strong>${slotTime}</strong><br><small>${sessionLabel}</small></td>
+                    <td><strong>${apt.patient_name}</strong><br><small>ID: ${apt.patient_id}</small></td>
+                    <td>${apt.patient_phone || '-'}</td>
+                    <td><small>${apt.chief_complaint || '-'}</small></td>
+                    <td><span class="status-badge ${statusClass}">${statusLabel}</span></td>
+                    <td><small>${archivedStr}</small></td>
+                    <td>
+                        <button class="btn btn-xs btn-info" onclick="showDetail(${apt.id})" title="Detail">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="btn btn-xs btn-success" onclick="restoreAppointment(${apt.id})" title="Kembalikan">
+                            <i class="fas fa-undo"></i>
+                        </button>
+                        <button class="btn btn-xs btn-danger" onclick="deleteArchive(${apt.id})" title="Hapus Permanen">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        dataTable = $('#archive-table').DataTable({
+            order: [[1, 'desc']],
+            pageLength: 25,
+            language: {
+                url: '//cdn.datatables.net/plug-ins/1.13.4/i18n/id.json'
+            }
+        });
+    }
+
+    function calculateSlotTime(session, slotNumber) {
+        const startTimes = { 1: 9, 2: 12, 3: 15 };
+        const startHour = startTimes[session] || 9;
+        const minutes = (slotNumber - 1) * 15;
+        const hour = startHour + Math.floor(minutes / 60);
+        const minute = minutes % 60;
+        return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
+    }
+
+    async function showDetail(id) {
+        try {
+            const response = await fetch(`${API_BASE}?limit=1`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error('Failed to load detail');
+
+            const result = await response.json();
+            const apt = result.data.find(a => a.id === id);
+
+            if (!apt) {
+                alert('Appointment tidak ditemukan');
+                return;
+            }
+
+            const content = `
+                <table class="table table-sm">
+                    <tr><th>ID:</th><td>${apt.id}</td></tr>
+                    <tr><th>Pasien:</th><td>${apt.patient_name} (ID: ${apt.patient_id})</td></tr>
+                    <tr><th>Telepon:</th><td>${apt.patient_phone || '-'}</td></tr>
+                    <tr><th>Tanggal:</th><td>${new Date(apt.appointment_date).toLocaleDateString('id-ID')}</td></tr>
+                    <tr><th>Keluhan:</th><td>${apt.chief_complaint || '-'}</td></tr>
+                    <tr><th>Status:</th><td>${apt.status}</td></tr>
+                    <tr><th>Catatan:</th><td>${apt.notes || '-'}</td></tr>
+                    <tr><th>Alasan Pembatalan:</th><td>${apt.cancellation_reason || '-'}</td></tr>
+                    <tr><th>Dibatalkan Oleh:</th><td>${apt.cancelled_by || '-'}</td></tr>
+                    <tr><th>Diarsipkan:</th><td>${new Date(apt.archived_at).toLocaleString('id-ID')}</td></tr>
+                    <tr><th>Alasan Arsip:</th><td>${apt.archived_reason || '-'}</td></tr>
+                </table>
+            `;
+
+            document.getElementById('detail-content').innerHTML = content;
+            $('#detailModal').modal('show');
+
+        } catch (error) {
+            console.error('Error showing detail:', error);
+            alert('Gagal menampilkan detail');
+        }
+    }
+
+    async function restoreAppointment(id) {
+        if (!confirm('Kembalikan appointment ini ke daftar aktif?\n\nAppointment akan dipindahkan dari arsip kembali ke daftar appointment aktif.')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE}/restore/${id}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.message || 'Failed to restore');
+            }
+
+            alert('✅ Appointment berhasil dikembalikan!\n\nAppointment sekarang tersedia kembali di daftar aktif.');
+            loadArchive();
+            loadStats();
+
+        } catch (error) {
+            console.error('Error restoring appointment:', error);
+            alert('❌ Gagal mengembalikan appointment:\n' + error.message);
+        }
+    }
+
+    async function deleteArchive(id) {
+        if (!confirm('Hapus permanen arsip ini? Tindakan ini tidak dapat dibatalkan!')) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE}/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error('Failed to delete');
+
+            alert('Arsip berhasil dihapus permanen');
+            loadArchive();
+            loadStats();
+
+        } catch (error) {
+            console.error('Error deleting archive:', error);
+            alert('Gagal menghapus arsip: ' + error.message);
+        }
+    }
+
+    // Initialize on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!token) {
+            window.location.href = 'login.html';
+            return;
+        }
+
+        loadStats();
+        loadArchive();
+    });
+</script>
+    <!-- Global Chat Loader -->
+    <script src="/staff/public/scripts/global-chat-loader.js"></script>
+</body>
+</html>

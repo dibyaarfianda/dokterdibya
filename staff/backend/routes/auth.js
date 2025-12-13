@@ -10,7 +10,8 @@ const { asyncHandler, AppError, handleDatabaseError } = require('../middleware/e
 const { sendSuccess, sendError } = require('../utils/response');
 const { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } = require('../config/constants');
 const logger = require('../utils/logger');
-const { deletePatientWithRelations } = require('../services/patientDeletion');
+const { deletePatientWithRelations, deletePatientByEmail } = require('../services/patientDeletion');
+const { ROLE_IDS, isSuperadminRole } = require('../constants/roles');
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
@@ -29,6 +30,8 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
             u.photo_url,
             u.user_type,
             u.is_superadmin,
+            u.profile_completed,
+            u.must_change_password,
             r.name AS resolved_role_name,
             r.display_name AS resolved_role_display
         FROM users u
@@ -49,8 +52,8 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
     const userId = user.new_id;
 
     // Set role based on user type and superadmin status
-    const resolvedRole = user.is_superadmin ? 'superadmin' :
-                         user.user_type === 'staff' ? 'staff' :
+    // Use actual role from DB (e.g., managerial, bidan, front_office) for role_visibility to work
+    const resolvedRole = user.is_superadmin ? 'dokter' :
                          user.role || user.resolved_role_name || 'viewer';
     const resolvedRoleDisplay = user.resolved_role_display || resolvedRole || null;
     const roleForToken = resolvedRole;
@@ -67,11 +70,18 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
         throw new AppError(ERROR_MESSAGES.INVALID_CREDENTIALS, HTTP_STATUS.UNAUTHORIZED);
     }
 
+    // Prevent patients from accessing admin panel
+    if (user.user_type === 'patient') {
+        logger.warn(`Patient attempted admin login: ${user.email}`);
+        throw new AppError('Akses ditolak. Pasien tidak dapat mengakses panel admin.', HTTP_STATUS.FORBIDDEN);
+    }
+
     const token = jwt.sign(
         {
             id: userId,
             name: user.name || 'Staff',
             role: roleForToken,
+            role_id: user.role_id || null,
             user_type: user.user_type || 'patient',
             is_superadmin: user.is_superadmin || false
         },
@@ -92,7 +102,82 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
             role_display_name: resolvedRoleDisplay || roleForToken,
             photo_url: user.photo_url,
             user_type: user.user_type || 'patient',
-            is_superadmin: user.is_superadmin || false
+            is_superadmin: user.is_superadmin || false,
+            profile_completed: user.profile_completed || false,
+            must_change_password: user.must_change_password || false
+        }
+    }, SUCCESS_MESSAGES.LOGIN_SUCCESS);
+}));
+
+// POST /api/auth/patient-login - Patient login endpoint
+router.post('/api/auth/patient-login', asyncHandler(async (req, res) => {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+        throw new AppError(ERROR_MESSAGES.MISSING_CREDENTIALS, HTTP_STATUS.BAD_REQUEST);
+    }
+
+    const [rows] = await db.query(
+        `SELECT
+            u.new_id,
+            u.name,
+            u.email,
+            u.password_hash,
+            u.role,
+            u.role_id,
+            u.user_type,
+            u.is_superadmin,
+            u.photo_url,
+            r.name AS resolved_role_name,
+            r.display_name AS resolved_role_display
+        FROM users u
+        LEFT JOIN roles r ON u.role_id = r.id
+        WHERE u.email = ?`,
+        [email]
+    );
+
+    if (rows.length === 0) {
+        throw new AppError(ERROR_MESSAGES.INVALID_CREDENTIALS, HTTP_STATUS.UNAUTHORIZED);
+    }
+
+    const user = rows[0];
+    const userId = user.new_id;
+    const isPasswordValid = await bcrypt.compare(password, user.password_hash);
+
+    if (!isPasswordValid) {
+        throw new AppError(ERROR_MESSAGES.INVALID_CREDENTIALS, HTTP_STATUS.UNAUTHORIZED);
+    }
+
+    // Only allow patients to login via this endpoint
+    if (user.user_type !== 'patient') {
+        logger.warn(`Non-patient attempted patient login: ${user.email}`);
+        throw new AppError('Akses ditolak. Silakan gunakan halaman login staff.', HTTP_STATUS.FORBIDDEN);
+    }
+
+    const token = jwt.sign(
+        {
+            id: userId,
+            email: user.email,
+            name: user.name || 'Patient',
+            role: 'patient',
+            user_type: 'patient',
+            is_superadmin: false
+        },
+        JWT_SECRET,
+        { expiresIn: JWT_EXPIRES_IN }
+    );
+
+    logger.info(`Patient logged in: ${user.email}`);
+
+    sendSuccess(res, {
+        token,
+        user: {
+            id: userId,
+            name: user.name,
+            email: user.email,
+            role: 'patient',
+            user_type: 'patient',
+            photo_url: user.photo_url
         }
     }, SUCCESS_MESSAGES.LOGIN_SUCCESS);
 }));
@@ -115,6 +200,7 @@ router.get('/api/auth/me', verifyToken, asyncHandler(async (req, res) => {
             u.photo_url,
             u.user_type,
             u.is_superadmin,
+            u.profile_completed,
             r.name AS resolved_role_name,
             r.display_name AS resolved_role_display
         FROM users u
@@ -132,6 +218,24 @@ router.get('/api/auth/me', verifyToken, asyncHandler(async (req, res) => {
     const resolvedRoleDisplay = user.resolved_role_display || resolvedRole || null;
     const roleForClient = resolvedRole || 'viewer';
 
+    // Get user permissions based on role_id
+    let permissions = [];
+    if (user.role_id) {
+        const [permRows] = await db.query(
+            `SELECT p.name FROM permissions p
+             JOIN role_permissions rp ON p.id = rp.permission_id
+             WHERE rp.role_id = ?`,
+            [user.role_id]
+        );
+        permissions = permRows.map(p => p.name);
+    }
+    
+    // Superadmin has all permissions
+    if (user.is_superadmin || user.role === 'dokter') {
+        const [allPerms] = await db.query('SELECT name FROM permissions');
+        permissions = allPerms.map(p => p.name);
+    }
+
     sendSuccess(res, {
         user: {
             id: user.new_id,
@@ -142,7 +246,9 @@ router.get('/api/auth/me', verifyToken, asyncHandler(async (req, res) => {
             role_display_name: resolvedRoleDisplay || roleForClient,
             photo_url: user.photo_url,
             user_type: user.user_type || 'patient',
-            is_superadmin: user.is_superadmin || false
+            is_superadmin: user.is_superadmin || false,
+            profile_completed: user.profile_completed || false,
+            permissions: permissions
         }
     });
 }));
@@ -234,35 +340,100 @@ router.put('/api/auth/profile', verifyToken, async (req, res) => {
     }
 });
 
-// POST /api/auth/change-password - Change user password
-router.post('/api/auth/change-password', verifyToken, validatePasswordChange, asyncHandler(async (req, res) => {
+// POST /api/auth/set-initial-password - Set password for first time (no current password required)
+router.post('/api/auth/set-initial-password', verifyToken, asyncHandler(async (req, res) => {
     const userId = req.user?.id;
-    
+
     if (!userId) {
         throw new AppError('Invalid token payload', HTTP_STATUS.BAD_REQUEST);
     }
 
-    const { currentPassword, newPassword } = req.body;
+    const { newPassword } = req.body;
 
-    // Verify current password
-    const [rows] = await db.query('SELECT password_hash FROM users WHERE new_id = ?', [userId]);
+    if (!newPassword || newPassword.length < 6) {
+        throw new AppError('Password minimal 6 karakter', HTTP_STATUS.BAD_REQUEST);
+    }
+
+    // Check if user exists and is eligible for initial password set
+    const [rows] = await db.query('SELECT profile_completed FROM users WHERE new_id = ?', [userId]);
 
     if (rows.length === 0) {
         throw new AppError(ERROR_MESSAGES.NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     }
 
-    const isPasswordValid = await bcrypt.compare(currentPassword, rows[0].password_hash);
-
-    if (!isPasswordValid) {
-        throw new AppError('Invalid current password', HTTP_STATUS.UNAUTHORIZED);
+    // Only allow if profile not yet completed
+    if (rows[0].profile_completed) {
+        throw new AppError('Profile sudah lengkap. Gunakan fitur ubah password.', HTTP_STATUS.BAD_REQUEST);
     }
 
     // Hash and update new password
     const newPasswordHash = await bcrypt.hash(newPassword, 10);
     await db.query('UPDATE users SET password_hash = ? WHERE new_id = ?', [newPasswordHash, userId]);
 
-    logger.info(`Password changed for user ID: ${userId}`);
+    logger.info(`Initial password set for user ID: ${userId}`);
 
+    sendSuccess(res, null, 'Password berhasil disimpan');
+}));
+
+// POST /api/auth/mark-profile-completed - Mark profile as completed
+router.post('/api/auth/mark-profile-completed', verifyToken, asyncHandler(async (req, res) => {
+    const userId = req.user?.id;
+
+    if (!userId) {
+        throw new AppError('Invalid token payload', HTTP_STATUS.BAD_REQUEST);
+    }
+
+    await db.query('UPDATE users SET profile_completed = 1 WHERE new_id = ?', [userId]);
+
+    logger.info(`Profile marked as completed for user ID: ${userId}`);
+
+    sendSuccess(res, null, 'Profile berhasil dilengkapi');
+}));
+
+// POST /api/auth/change-password - Change user password
+router.post('/api/auth/change-password', verifyToken, validatePasswordChange, asyncHandler(async (req, res) => {
+    const userId = req.user?.id;
+    logger.info(`[PASSWORD CHANGE] Attempt for user ID: ${userId}`);
+
+    if (!userId) {
+        logger.error('[PASSWORD CHANGE] No user ID in token');
+        throw new AppError('Token tidak valid', HTTP_STATUS.BAD_REQUEST);
+    }
+
+    const { currentPassword, newPassword } = req.body;
+    logger.info(`[PASSWORD CHANGE] Has currentPassword: ${!!currentPassword}, Has newPassword: ${!!newPassword}`);
+
+    // Verify current password
+    const [rows] = await db.query('SELECT password_hash FROM users WHERE new_id = ?', [userId]);
+    logger.info(`[PASSWORD CHANGE] Found ${rows.length} user(s) with new_id: ${userId}`);
+
+    if (rows.length === 0) {
+        logger.error(`[PASSWORD CHANGE] User not found with new_id: ${userId}`);
+        throw new AppError(ERROR_MESSAGES.NOT_FOUND, HTTP_STATUS.NOT_FOUND);
+    }
+
+    const isPasswordValid = await bcrypt.compare(currentPassword, rows[0].password_hash);
+    logger.info(`[PASSWORD CHANGE] Current password valid: ${isPasswordValid}`);
+
+    if (!isPasswordValid) {
+        logger.warn(`[PASSWORD CHANGE] Invalid current password for user: ${userId}`);
+        throw new AppError('Password saat ini salah', HTTP_STATUS.UNAUTHORIZED);
+    }
+
+    // Hash and update new password, also clear must_change_password flag
+    const newPasswordHash = await bcrypt.hash(newPassword, 10);
+    const [updateResult] = await db.query(
+        'UPDATE users SET password_hash = ?, must_change_password = 0 WHERE new_id = ?',
+        [newPasswordHash, userId]
+    );
+    logger.info(`[PASSWORD CHANGE] Update result - affected rows: ${updateResult.affectedRows}`);
+
+    if (updateResult.affectedRows === 0) {
+        logger.error(`[PASSWORD CHANGE] No rows updated for user: ${userId}`);
+        throw new AppError('Gagal mengubah password', HTTP_STATUS.INTERNAL_SERVER_ERROR);
+    }
+
+    logger.info(`[PASSWORD CHANGE] Password changed successfully for user ID: ${userId}`);
     sendSuccess(res, null, SUCCESS_MESSAGES.PASSWORD_CHANGED);
 }));
 
@@ -272,7 +443,7 @@ router.get('/api/admin/web-patients', verifyToken, asyncHandler(async (req, res)
     logger.info(`Web patients request from user: ${req.user.email} (${req.user.role})`);
     
     // Check if user is admin/superadmin
-    if (!['superadmin', 'admin'].includes(req.user.role)) {
+    if (!req.user.is_superadmin && !['dokter', 'admin'].includes(req.user.role)) {
         logger.warn(`Unauthorized web patients access attempt by ${req.user.email} (${req.user.role})`);
         throw new AppError('Unauthorized access - Admin role required', HTTP_STATUS.FORBIDDEN);
     }
@@ -291,7 +462,7 @@ router.get('/api/admin/web-patients', verifyToken, asyncHandler(async (req, res)
 // Get single web patient detail (Admin only)
 router.get('/api/admin/web-patients/:id', verifyToken, asyncHandler(async (req, res) => {
     // Check if user is admin/superadmin
-    if (!['superadmin', 'admin'].includes(req.user.role)) {
+    if (!req.user.is_superadmin && !['dokter', 'admin'].includes(req.user.role)) {
         logger.warn(`Unauthorized web patient detail access attempt by ${req.user.email} (${req.user.role})`);
         throw new AppError('Unauthorized access - Admin role required', HTTP_STATUS.FORBIDDEN);
     }
@@ -350,7 +521,7 @@ router.get('/api/admin/web-patients/:id', verifyToken, asyncHandler(async (req, 
 // Update web patient status (Admin only)
 router.patch('/api/admin/web-patients/:id/status', verifyToken, asyncHandler(async (req, res) => {
     // Check if user is admin/superadmin
-    if (!['superadmin', 'admin'].includes(req.user.role)) {
+    if (!req.user.is_superadmin && !['dokter', 'admin'].includes(req.user.role)) {
         logger.warn(`Unauthorized web patient status update attempt by ${req.user.email} (${req.user.role})`);
         throw new AppError('Unauthorized access - Admin role required', HTTP_STATUS.FORBIDDEN);
     }
@@ -387,8 +558,8 @@ router.patch('/api/admin/web-patients/:id/status', verifyToken, asyncHandler(asy
 // Clear all chat logs (Superadmin only)
 router.delete('/api/admin/clear-chat-logs', verifyToken, asyncHandler(async (req, res) => {
     // Check if user is superadmin
-    if (req.user.role !== 'superadmin') {
-        logger.warn(`Unauthorized chat logs deletion attempt by ${req.user.email} (${req.user.role})`);
+    if (!req.user.is_superadmin && !isSuperadminRole(req.user.role_id)) {
+        logger.warn(`Unauthorized chat logs deletion attempt by ${req.user.email} (role_id: ${req.user.role_id})`);
         throw new AppError('Unauthorized access - Superadmin role required', HTTP_STATUS.FORBIDDEN);
     }
     
@@ -407,8 +578,8 @@ router.delete('/api/admin/clear-chat-logs', verifyToken, asyncHandler(async (req
 // Sync all web patients to patients table (Superadmin only)
 router.post('/api/admin/sync-web-patients', verifyToken, asyncHandler(async (req, res) => {
     // Check if user is superadmin
-    if (req.user.role !== 'superadmin') {
-        logger.warn(`Unauthorized sync attempt by ${req.user.email} (${req.user.role})`);
+    if (!req.user.is_superadmin && !isSuperadminRole(req.user.role_id)) {
+        logger.warn(`Unauthorized sync attempt by ${req.user.email} (role_id: ${req.user.role_id})`);
         throw new AppError('Unauthorized access - Superadmin role required', HTTP_STATUS.FORBIDDEN);
     }
     
@@ -492,7 +663,7 @@ router.post('/api/admin/sync-web-patients', verifyToken, asyncHandler(async (req
 // Delete web patient (Admin only)
 router.delete('/api/admin/web-patients/:id', verifyToken, asyncHandler(async (req, res) => {
     // Check if user is admin/superadmin
-    if (!['superadmin', 'admin'].includes(req.user.role)) {
+    if (!req.user.is_superadmin && !['dokter', 'admin'].includes(req.user.role)) {
         throw new AppError('Unauthorized access', HTTP_STATUS.FORBIDDEN);
     }
     
@@ -668,7 +839,7 @@ router.post('/api/auth/register', asyncHandler(async (req, res) => {
     // Send verification email
     const notificationService = require('../utils/notification');
 
-    const subject = 'Kode Verifikasi Dibya Klinik';
+    const subject = 'Kode Verifikasi dokterDIBYA';
     const html = `
         <!DOCTYPE html>
         <html>
@@ -677,10 +848,10 @@ router.post('/api/auth/register', asyncHandler(async (req, res) => {
             <style>
                 body { font-family: 'Arial', sans-serif; background: #f3f4f6; margin: 0; padding: 20px; }
                 .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-                .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px; text-align: center; color: white; }
+                .header { background: linear-gradient(135deg, #0066FF 0%, #0052CC 100%); padding: 40px 20px; text-align: center; color: white; }
                 .header h1 { margin: 0; font-size: 28px; }
                 .content { padding: 40px 30px; text-align: center; }
-                .otp-code { font-size: 48px; font-weight: bold; letter-spacing: 8px; color: #6366f1; background: #f3f4f6; padding: 20px; border-radius: 12px; margin: 30px 0; }
+                .otp-code { font-size: 48px; font-weight: bold; letter-spacing: 8px; color: #0066FF; background: #f3f4f6; padding: 20px; border-radius: 12px; margin: 30px 0; }
                 .info { color: #6b7280; font-size: 14px; margin-top: 30px; }
                 .footer { background: #f9fafb; padding: 20px; text-align: center; color: #9ca3af; font-size: 12px; }
             </style>
@@ -688,7 +859,7 @@ router.post('/api/auth/register', asyncHandler(async (req, res) => {
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>🏥 Dibya Klinik</h1>
+                    <h1>dokterDIBYA</h1>
                 </div>
                 <div class="content">
                     <h2>Kode Verifikasi Email Anda</h2>
@@ -700,7 +871,7 @@ router.post('/api/auth/register', asyncHandler(async (req, res) => {
                     </p>
                 </div>
                 <div class="footer">
-                    © 2025 Dibya Klinik. All rights reserved.
+                    © 2025 dokterDIBYA. All rights reserved.
                 </div>
             </div>
         </body>
@@ -818,7 +989,7 @@ router.post('/api/auth/resend-verification', asyncHandler(async (req, res) => {
     // Send verification email
     const notificationService = require('../utils/notification');
 
-    const subject = 'Kode Verifikasi Dibya Klinik';
+    const subject = 'Kode Verifikasi dokterDIBYA';
     const html = `
         <!DOCTYPE html>
         <html>
@@ -827,10 +998,10 @@ router.post('/api/auth/resend-verification', asyncHandler(async (req, res) => {
             <style>
                 body { font-family: 'Arial', sans-serif; background: #f3f4f6; margin: 0; padding: 20px; }
                 .container { max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-                .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 40px 20px; text-align: center; color: white; }
+                .header { background: linear-gradient(135deg, #0066FF 0%, #0052CC 100%); padding: 40px 20px; text-align: center; color: white; }
                 .header h1 { margin: 0; font-size: 28px; }
                 .content { padding: 40px 30px; text-align: center; }
-                .otp-code { font-size: 48px; font-weight: bold; letter-spacing: 8px; color: #6366f1; background: #f3f4f6; padding: 20px; border-radius: 12px; margin: 30px 0; }
+                .otp-code { font-size: 48px; font-weight: bold; letter-spacing: 8px; color: #0066FF; background: #f3f4f6; padding: 20px; border-radius: 12px; margin: 30px 0; }
                 .info { color: #6b7280; font-size: 14px; margin-top: 30px; }
                 .footer { background: #f9fafb; padding: 20px; text-align: center; color: #9ca3af; font-size: 12px; }
             </style>
@@ -838,7 +1009,7 @@ router.post('/api/auth/resend-verification', asyncHandler(async (req, res) => {
         <body>
             <div class="container">
                 <div class="header">
-                    <h1>🏥 Dibya Klinik</h1>
+                    <h1>dokterDIBYA</h1>
                 </div>
                 <div class="content">
                     <h2>Kode Verifikasi Email Anda</h2>
@@ -850,7 +1021,7 @@ router.post('/api/auth/resend-verification', asyncHandler(async (req, res) => {
                     </p>
                 </div>
                 <div class="footer">
-                    © 2025 Dibya Klinik. All rights reserved.
+                    © 2025 dokterDIBYA. All rights reserved.
                 </div>
             </div>
         </body>
@@ -875,9 +1046,46 @@ router.post('/api/auth/resend-verification', asyncHandler(async (req, res) => {
     });
 }));
 
-// POST /api/auth/set-password - Set password after verification
+// DELETE /api/admin/cleanup-email - Clean up patient by email from dual-table system (Superadmin only)
+router.delete('/api/admin/cleanup-email/:email', verifyToken, asyncHandler(async (req, res) => {
+    // Check if user is superadmin
+    if (!req.user.is_superadmin && !isSuperadminRole(req.user.role_id)) {
+        logger.warn(`Unauthorized email cleanup attempt by ${req.user.email} (role_id: ${req.user.role_id})`);
+        throw new AppError('Unauthorized access - Superadmin role required', HTTP_STATUS.FORBIDDEN);
+    }
+
+    const email = req.params.email;
+    const result = await deletePatientByEmail(email);
+
+    if (!result.found) {
+        throw new AppError('Email not found in system', HTTP_STATUS.NOT_FOUND);
+    }
+
+    logger.info(`Email cleanup: ${email} (Patient ID: ${result.patientId}) by ${req.user.email}`, result.deletedData);
+
+    sendSuccess(res, {
+        email: result.email,
+        patient_id: result.patientId,
+        deleted_data: result.deletedData
+    }, `Email ${email} cleaned up from all tables successfully`);
+}));
+
+// Helper: Check if registration code is required
+async function isRegistrationCodeRequired() {
+    try {
+        const [settings] = await db.query(
+            "SELECT setting_value FROM settings WHERE setting_key = 'registration_code_required'"
+        );
+        return settings.length > 0 && settings[0].setting_value === 'true';
+    } catch (error) {
+        // Default to required if settings table doesn't exist
+        return true;
+    }
+}
+
+// POST /api/auth/set-password - Set password after verification (with profile data)
 router.post('/api/auth/set-password', asyncHandler(async (req, res) => {
-    const { email, password, verified_token } = req.body;
+    const { email, password, verified_token, fullname, phone, birth_date, age, registration_code } = req.body;
 
     if (!email || !password || !verified_token) {
         throw new AppError('Email, password, and verified token are required', HTTP_STATUS.BAD_REQUEST);
@@ -885,6 +1093,41 @@ router.post('/api/auth/set-password', asyncHandler(async (req, res) => {
 
     if (password.length < 8) {
         throw new AppError('Password harus minimal 8 karakter', HTTP_STATUS.BAD_REQUEST);
+    }
+
+    // Check if registration code is required
+    const codeRequired = await isRegistrationCodeRequired();
+    if (codeRequired) {
+        if (!registration_code) {
+            return sendError(res, 'Kode registrasi diperlukan. Hubungi klinik untuk mendapatkan kode.', HTTP_STATUS.BAD_REQUEST, { code_required: true });
+        }
+
+        const normalizedCode = registration_code.toUpperCase().trim();
+        const [validCodes] = await db.query(
+            `SELECT * FROM registration_codes
+             WHERE code = ? AND status = 'active' AND expires_at > NOW()`,
+            [normalizedCode]
+        );
+
+        if (validCodes.length === 0) {
+            // Check if code exists but expired or used
+            const [expiredCodes] = await db.query(
+                'SELECT * FROM registration_codes WHERE code = ?',
+                [normalizedCode]
+            );
+
+            if (expiredCodes.length > 0) {
+                const existingCode = expiredCodes[0];
+                // Only check 'used' for private codes (public codes can be reused)
+                if (existingCode.status === 'used' && existingCode.is_public === 0) {
+                    return sendError(res, 'Kode registrasi sudah digunakan', HTTP_STATUS.BAD_REQUEST);
+                } else if (existingCode.status === 'expired' || new Date(existingCode.expires_at) < new Date()) {
+                    return sendError(res, 'Kode registrasi sudah kadaluarsa', HTTP_STATUS.BAD_REQUEST);
+                }
+            }
+
+            return sendError(res, 'Kode registrasi tidak valid', HTTP_STATUS.BAD_REQUEST);
+        }
     }
 
     // Check if email already exists
@@ -922,12 +1165,29 @@ router.post('/api/auth/set-password', asyncHandler(async (req, res) => {
         [userId, email, passwordHash]
     );
 
-    // Create basic patient record
+    // Create patient record with profile data from complete-profile page
+    const patientName = fullname || 'New Patient';
+    const patientPhone = phone || null;
+    const patientBirthDate = birth_date || null;
+    const patientAge = age || null;
+
     await db.query(
-        `INSERT INTO patients (id, email, full_name, status, created_at)
-         VALUES (?, ?, ?, 'active', NOW())`,
-        [userId, email, 'New Patient']
+        `INSERT INTO patients (id, email, full_name, phone, whatsapp, birth_date, age, status, patient_type, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, 'active', 'web', NOW())`,
+        [userId, email, patientName, patientPhone, patientPhone, patientBirthDate, patientAge]
     );
+
+    // Mark registration code as used (only for private codes - public codes stay active)
+    if (codeRequired && registration_code) {
+        const normalizedCode = registration_code.toUpperCase().trim();
+        await db.query(
+            `UPDATE registration_codes
+             SET status = 'used', used_at = NOW(), used_by_patient_id = ?
+             WHERE code = ? AND is_public = 0`,
+            [userId, normalizedCode]
+        );
+        logger.info(`Registration code ${normalizedCode} used by patient ${userId}`);
+    }
 
     // Generate JWT token
     const token = jwt.sign(

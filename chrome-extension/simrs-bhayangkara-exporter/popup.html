@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>RS Bhayangkara Exporter</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            width: 320px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+        }
+        .header {
+            background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .header h1 { font-size: 16px; margin-bottom: 5px; }
+        .header p { font-size: 12px; opacity: 0.9; }
+        .content { padding: 20px; }
+        .login-form { display: flex; flex-direction: column; gap: 12px; }
+        .login-form input {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .login-form input:focus {
+            outline: none;
+            border-color: #17a2b8;
+        }
+        .btn {
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-primary {
+            background: #17a2b8;
+            color: white;
+        }
+        .btn-primary:hover { background: #138496; }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-danger:hover { background: #c82333; }
+        .status {
+            text-align: center;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+        }
+        .status-success { background: #d4edda; color: #155724; }
+        .status-error { background: #f8d7da; color: #721c24; }
+        .user-info {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .user-info strong { color: #17a2b8; }
+        .hidden { display: none; }
+        .instructions {
+            font-size: 12px;
+            color: #666;
+            margin-top: 15px;
+            padding: 10px;
+            background: #e9ecef;
+            border-radius: 8px;
+        }
+        .instructions ol { margin-left: 15px; }
+        .instructions li { margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>RS Bhayangkara Exporter</h1>
+        <p>Export ke Klinik Dibya</p>
+    </div>
+    
+    <div class="content">
+        <!-- Login Form -->
+        <div id="login-section">
+            <div class="login-form">
+                <input type="email" id="email" placeholder="Email Klinik Dibya">
+                <input type="password" id="password" placeholder="Password">
+                <button class="btn btn-primary" id="btn-login">Login</button>
+            </div>
+            <div id="login-status" class="status hidden"></div>
+        </div>
+        
+        <!-- Logged In Section -->
+        <div id="logged-section" class="hidden">
+            <div class="user-info">
+                <p>Logged in as:</p>
+                <p><strong id="user-email"></strong></p>
+            </div>
+            <button class="btn btn-danger" id="btn-logout" style="width:100%">Logout</button>
+        </div>
+        
+        <div class="instructions">
+            <strong>Cara pakai:</strong>
+            <ol>
+                <li>Login dengan akun Klinik Dibya</li>
+                <li>Buka halaman rekam medis pasien di SIMRS</li>
+                <li>Klik tombol "Export" di pojok kanan bawah</li>
+                <li>Data otomatis masuk ke Klinik Dibya</li>
+            </ol>
+        </div>
+    </div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

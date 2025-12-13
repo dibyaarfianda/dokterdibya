@@ -67,15 +67,62 @@ function initKelolaAppointment() {
     // Load appointments
     loadAppointments();
 
-    // Set filter date to today
-    const today = new Date().toISOString().split('T')[0];
-    $('#filter-date').val(today);
+    // Set filter date to upcoming Sunday (or today if it's Sunday)
+    function getNextSunday() {
+        const today = new Date();
+        const dayOfWeek = today.getDay(); // 0 = Sunday, 1 = Monday, etc.
+        const daysUntilSunday = dayOfWeek === 0 ? 0 : 7 - dayOfWeek;
+        const nextSunday = new Date(today);
+        nextSunday.setDate(today.getDate() + daysUntilSunday);
+        return nextSunday.toISOString().split('T')[0];
+    }
+    $('#filter-date').val(getNextSunday());
 
     $('#status-select').off('change.kelola').on('change.kelola', function() {
         toggleCancellationReasonField(this.value);
     });
 
     toggleCancellationReasonField($('#status-select').val());
+
+    // Setup real-time booking updates via Socket.IO
+    setupRealtimeBookingUpdates();
+}
+
+// Real-time booking updates
+function setupRealtimeBookingUpdates() {
+    // Use existing socket from realtime-sync.js
+    // DO NOT create our own socket - wait for realtime-sync to initialize it
+    if (!window.socket) {
+        console.warn('[KelolaAppointment] Socket not ready yet - realtime updates disabled');
+        return;
+    }
+
+    const socket = window.socket;
+    console.log('[KelolaAppointment] Using existing socket for real-time updates');
+
+    // Listen for new bookings
+    socket.on('booking:new', (data) => {
+        console.log('[KelolaAppointment] New booking received:', data);
+        showToast(`Booking baru: ${data.booking.patient_name}`, 'info');
+        // Reload appointments to show the new booking
+        loadAppointments();
+    });
+
+    // Listen for booking updates
+    socket.on('booking:update', (data) => {
+        console.log('[KelolaAppointment] Booking updated:', data);
+        showToast(`Booking diupdate: ${data.booking.patient_name} - ${data.booking.status}`, 'info');
+        loadAppointments();
+    });
+
+    // Listen for booking cancellations
+    socket.on('booking:cancel', (data) => {
+        console.log('[KelolaAppointment] Booking cancelled:', data);
+        showToast(`Booking dibatalkan: ${data.booking.patient_name}`, 'warning');
+        loadAppointments();
+    });
+
+    console.log('[KelolaAppointment] Real-time updates enabled');
 }
 
 async function loadAppointments() {
@@ -299,17 +346,18 @@ function resetFilters() {
 }
 
 function showToast(message, type) {
-    const bgColor = type === 'success' ? '#28a745' : '#dc3545';
+    const bgColor = type === 'success' ? '#28a745' : (type === 'info' ? '#17a2b8' : '#dc3545');
+    const toastId = 'toast-' + Date.now();
     const toast = `
-        <div style="position: fixed; top: 20px; right: 20px; z-index: 9999; 
-                    background: ${bgColor}; color: white; padding: 15px 20px; 
+        <div id="${toastId}" class="kelola-toast" style="position: fixed; top: 20px; right: 20px; z-index: 9999;
+                    background: ${bgColor}; color: white; padding: 15px 20px;
                     border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
             ${message}
         </div>
     `;
     $('body').append(toast);
     setTimeout(() => {
-        $('body').find('> div').last().fadeOut(500, function() { $(this).remove(); });
+        $('#' + toastId).fadeOut(500, function() { $(this).remove(); });
     }, 3000);
 }
 

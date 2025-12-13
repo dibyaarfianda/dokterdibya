@@ -5,11 +5,11 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db'); // Your database connection
 const cache = require('../utils/cache');
-const { verifyToken, requirePermission } = require('../middleware/auth');
+const { verifyToken, requireSuperadmin } = require('../middleware/auth');
 const { validateTindakan } = require('../middleware/validation');
 
 // ==================== GET ALL TINDAKAN ====================
-router.get('/api/tindakan', verifyToken, requirePermission('services.view'), async (req, res) => {
+router.get('/api/tindakan', verifyToken, async (req, res) => {
     try {
         const { category, active } = req.query;
         
@@ -85,7 +85,7 @@ router.get('/api/tindakan/:id', async (req, res) => {
 });
 
 // ==================== CREATE TINDAKAN ====================
-router.post('/api/tindakan', verifyToken, requirePermission('settings.services_manage'), validateTindakan, async (req, res) => {
+router.post('/api/tindakan', verifyToken, validateTindakan, async (req, res) => {
     try {
         let { code, name, category, price, created_by } = req.body;
         
@@ -157,7 +157,7 @@ router.post('/api/tindakan', verifyToken, requirePermission('settings.services_m
 });
 
 // ==================== UPDATE TINDAKAN ====================
-router.put('/api/tindakan/:id', verifyToken, requirePermission('settings.services_manage'), validateTindakan, async (req, res) => {
+router.put('/api/tindakan/:id', verifyToken, validateTindakan, async (req, res) => {
     try {
         const { id } = req.params;
         const { name, category, price, is_active, updated_by } = req.body;
@@ -223,7 +223,7 @@ router.put('/api/tindakan/:id', verifyToken, requirePermission('settings.service
 });
 
 // ==================== DELETE TINDAKAN ====================
-router.delete('/api/tindakan/:id', verifyToken, requirePermission('settings.services_manage'), async (req, res) => {
+router.delete('/api/tindakan/:id', verifyToken, requireSuperadmin, async (req, res) => {
     try {
         const { id } = req.params;
         
@@ -312,6 +312,44 @@ router.get('/api/tindakan/meta/categories', async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to fetch categories',
+            error: error.message
+        });
+    }
+});
+
+// ==================== DOWNLOAD PRICE LIST PDF ====================
+const pdfGenerator = require('../utils/pdf-generator');
+
+router.get('/api/tindakan/download/price-list', verifyToken, async (req, res) => {
+    try {
+        // Fetch all active tindakan
+        const [rows] = await db.query(
+            `SELECT * FROM tindakan WHERE is_active = 1
+             ORDER BY CASE category
+                WHEN 'ADMINISTRATIF' THEN 1
+                WHEN 'LAYANAN' THEN 2
+                WHEN 'TINDAKAN MEDIS' THEN 3
+                WHEN 'KONTRASEPSI' THEN 4
+                WHEN 'VAKSINASI' THEN 5
+                WHEN 'LABORATORIUM' THEN 6
+             END, name`
+        );
+
+        // Generate PDF
+        const pdfBuffer = await pdfGenerator.generateTindakanPriceList(rows);
+
+        // Send PDF
+        const filename = `Daftar_Harga_Tindakan_${new Date().toISOString().split('T')[0]}.pdf`;
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.setHeader('Content-Length', pdfBuffer.length);
+        res.send(pdfBuffer);
+
+    } catch (error) {
+        console.error('Error generating tindakan price list PDF:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to generate PDF',
             error: error.message
         });
     }

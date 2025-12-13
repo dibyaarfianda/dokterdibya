@@ -15,28 +15,33 @@ const HTTP_STATUS = {
     INTERNAL_SERVER_ERROR: 500
 };
 
-// Error Messages
+// Error Messages (Bahasa Indonesia for patient-facing)
 const ERROR_MESSAGES = {
-    INVALID_CREDENTIALS: 'Invalid credentials',
-    MISSING_FIELDS: 'Missing required fields',
-    UNAUTHORIZED: 'Authorization required',
-    FORBIDDEN: 'Insufficient permissions',
-    NOT_FOUND: 'Resource not found',
-    DUPLICATE_ENTRY: 'Resource already exists',
-    INTERNAL_ERROR: 'Something went wrong. Please try again later.',
-    TOKEN_EXPIRED: 'Token has expired',
-    INVALID_TOKEN: 'Invalid token',
-    MISSING_AUTH_HEADER: 'Missing authorization header'
+    INVALID_CREDENTIALS: 'Salah email/password. Mohon periksa kembali email atau password Anda',
+    MISSING_FIELDS: 'Data tidak lengkap. Mohon isi semua field yang diperlukan',
+    UNAUTHORIZED: 'Sesi telah berakhir. Silakan login kembali',
+    FORBIDDEN: 'Anda tidak memiliki akses untuk melakukan ini',
+    NOT_FOUND: 'Data tidak ditemukan',
+    DUPLICATE_ENTRY: 'Data sudah ada',
+    INTERNAL_ERROR: 'Terjadi kesalahan. Silakan coba lagi nanti',
+    TOKEN_EXPIRED: 'Sesi telah berakhir. Silakan login kembali',
+    INVALID_TOKEN: 'Token tidak valid. Silakan login kembali',
+    MISSING_AUTH_HEADER: 'Silakan login terlebih dahulu',
+    INVALID_CURRENT_PASSWORD: 'Password saat ini salah',
+    PASSWORD_MISMATCH: 'Konfirmasi password tidak cocok',
+    ACCOUNT_LOCKED: 'Akun terkunci sementara. Coba lagi dalam 15 menit',
+    EMAIL_NOT_FOUND: 'Email tidak terdaftar',
+    PHONE_NOT_FOUND: 'Nomor telepon tidak terdaftar'
 };
 
-// Success Messages
+// Success Messages (Bahasa Indonesia)
 const SUCCESS_MESSAGES = {
-    LOGIN_SUCCESS: 'Login successful',
-    LOGOUT_SUCCESS: 'Logout successful',
-    CREATED: 'Resource created successfully',
-    UPDATED: 'Resource updated successfully',
-    DELETED: 'Resource deleted successfully',
-    PASSWORD_CHANGED: 'Password changed successfully'
+    LOGIN_SUCCESS: 'Login berhasil',
+    LOGOUT_SUCCESS: 'Logout berhasil',
+    CREATED: 'Data berhasil disimpan',
+    UPDATED: 'Data berhasil diupdate',
+    DELETED: 'Data berhasil dihapus',
+    PASSWORD_CHANGED: 'Password berhasil diubah'
 };
 
 // Validation Rules

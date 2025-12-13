@@ -1,0 +1,15 @@
+new_id	name	email	role	role_id	is_superadmin	user_type
+AEPQEBDQBW	feby	feby_mail@gmail.com	managerial	21	0	staff
+FNHSLBTRXD	destri	destriapril014@gmail.com	managerial	21	0	staff
+GEJXDAZEZM	nor dwi	saputradwi598@gmail.com	managerial	19	0	staff
+JSZXSFSYAG	oriza	rizagood20@gmail.com	managerial	20	0	staff
+LCBRGLMAMX	nita	ernanita.007@gmail.com	managerial	20	0	staff
+LZGWMHEUCJ	liza	lizhaafirah@gmail.com	managerial	20	0	staff
+MHYLFYGIAS	mila	jimroatussolihah@gmail.com	managerial	19	0	staff
+NWCSQBSRCB	urfianita	urfianita@gmail.com	managerial	19	0	staff
+P2025001	NULL	konchelskydaf@gmail.com	user	NULL	0	patient
+P2025002	NULL	nanda.arfianda83@gmail.com	user	NULL	0	patient
+P2025003	NULL	dibyaarfianda83@gmail.com	user	NULL	0	patient
+QNUBHYASRR	nanda	konchelsky83@gmail.com	managerial	19	0	staff
+UDZAQUCQWZ	dr. Dibya	nanda.arfianda@gmail.com	dokter	1	1	staff
+WLDOEWZSRP	lala	lnur1862@gmail.com	managerial	19	0	staff
