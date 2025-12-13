@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'com.dokterdibya.patient',
-  appName: 'Dokter Dibya',
+  appName: 'dokterDIBYA',
   webDir: 'www',
 
   // Use local www folder for login page
