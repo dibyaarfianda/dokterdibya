@@ -82,17 +82,16 @@
                     document.getElementById('status').textContent = 'Login berhasil!';
                     document.getElementById('message').textContent = 'Kembali ke aplikasi...';
 
-                    // Store token and redirect to dashboard
-                    // The app will pick this up when user returns
-                    localStorage.setItem('vps_auth_token', data.token);
-                    if (data.user) {
-                        localStorage.setItem('patient_user', JSON.stringify(data.user));
-                    }
+                    // Redirect back to app using deep link
+                    const appUrl = `dokterdibya://login?token=${encodeURIComponent(data.token)}&user=${encodeURIComponent(JSON.stringify(data.user))}`;
 
-                    // Redirect to patient dashboard
+                    // Try deep link first
+                    window.location.href = appUrl;
+
+                    // Fallback: if deep link doesn't work after 2 seconds, show manual instructions
                     setTimeout(() => {
-                        window.location.href = '/patient-dashboard.html';
-                    }, 1000);
+                        document.getElementById('message').innerHTML = 'Jika aplikasi tidak terbuka otomatis:<br><br><a href="' + appUrl + '" style="color:#0066FF;font-size:18px;">Tap di sini untuk kembali ke aplikasi</a><br><br>atau buka aplikasi dokterDIBYA secara manual.';
+                    }, 2000);
                 } else {
                     showError(data.message || 'Login gagal. Silakan coba lagi.');
                 }
