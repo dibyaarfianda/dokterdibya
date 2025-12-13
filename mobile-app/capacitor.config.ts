@@ -5,15 +5,14 @@ const config: CapacitorConfig = {
   appName: 'Dokter Dibya',
   webDir: 'www',
 
-  // Server configuration - load from live URL
+  // Use local www folder for login page
+  // After login, redirects to live website
   server: {
-    // Use the live patient portal URL
-    url: 'https://dokterdibya.com/patient-dashboard.html',
-    cleartext: false,
-    // Allow navigation to these hosts
+    // Allow navigation to the live website after login
     allowNavigation: [
       'dokterdibya.com',
-      '*.dokterdibya.com'
+      '*.dokterdibya.com',
+      'https://dokterdibya.com/*'
     ]
   },
 
@@ -22,22 +21,22 @@ const config: CapacitorConfig = {
     allowMixedContent: false,
     captureInput: true,
     webContentsDebuggingEnabled: false, // Set to true for debugging
-    backgroundColor: '#1a1a2e'
+    backgroundColor: '#0f0f1a'
   },
 
   // iOS specific config
   ios: {
     contentInset: 'automatic',
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#0f0f1a',
     preferredContentMode: 'mobile'
   },
 
   // Plugins configuration
   plugins: {
     SplashScreen: {
-      launchShowDuration: 2000,
+      launchShowDuration: 1500,
       launchAutoHide: true,
-      backgroundColor: '#1a1a2e',
+      backgroundColor: '#0f0f1a',
       androidSplashResourceName: 'splash',
       androidScaleType: 'CENTER_CROP',
       showSpinner: false,
@@ -46,7 +45,7 @@ const config: CapacitorConfig = {
     },
     StatusBar: {
       style: 'DARK',
-      backgroundColor: '#1a1a2e'
+      backgroundColor: '#0f0f1a'
     },
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert']
