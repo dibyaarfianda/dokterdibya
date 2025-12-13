@@ -598,12 +598,15 @@
         const introOverlay = document.getElementById('intro-overlay');
         const introVideo = document.getElementById('intro-video');
         const skipBtn = document.getElementById('skip-btn');
+        let introHidden = false;
 
         function hideIntro() {
+            if (introHidden) return;
+            introHidden = true;
+            console.log('Hiding intro');
             introOverlay.classList.add('hidden');
             setTimeout(() => {
                 introOverlay.classList.add('removed');
-                // Mark intro as seen for this session
                 sessionStorage.setItem('intro_seen', 'true');
             }, 500);
         }
@@ -611,6 +614,7 @@
         // Skip intro if already seen in this session
         if (sessionStorage.getItem('intro_seen')) {
             introOverlay.classList.add('removed');
+            introHidden = true;
         } else {
             // Video ended - hide intro
             introVideo.addEventListener('ended', hideIntro);
@@ -621,18 +625,31 @@
                 hideIntro();
             });
 
-            // Fallback: hide after 10 seconds if video doesn't play
+            // Tap anywhere on overlay to skip
+            introOverlay.addEventListener('click', () => {
+                introVideo.pause();
+                hideIntro();
+            });
+
+            // Video error - hide immediately
+            introVideo.addEventListener('error', () => {
+                console.log('Video error, hiding intro');
+                hideIntro();
+            });
+
+            // Try to play video (might be blocked by autoplay policy)
+            introVideo.play().catch(() => {
+                console.log('Autoplay blocked, hiding intro');
+                hideIntro();
+            });
+
+            // Aggressive fallback: hide after 3 seconds no matter what
             setTimeout(() => {
-                if (!introOverlay.classList.contains('hidden')) {
+                if (!introHidden) {
+                    console.log('Timeout fallback, hiding intro');
                     hideIntro();
                 }
-            }, 10000);
-
-            // Extra fallback: hide after 3 seconds if video fails to load
-            introVideo.addEventListener('error', () => {
-                console.log('Video failed to load, hiding intro');
-                setTimeout(hideIntro, 500);
-            });
+            }, 3000);
         }
         })();
     </script>
