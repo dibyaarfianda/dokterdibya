@@ -672,8 +672,54 @@
             window.open(googleAuthUrl, '_system');
         };
 
-        // Check if already logged in
+        // Handle deep link from Google OAuth callback
+        function handleDeepLink(url) {
+            console.log('Deep link received:', url);
+            try {
+                const urlObj = new URL(url);
+                if (urlObj.protocol === 'dokterdibya:' && urlObj.host === 'login') {
+                    const params = new URLSearchParams(urlObj.search);
+                    const token = params.get('token');
+                    const userJson = params.get('user');
+
+                    if (token) {
+                        localStorage.setItem('vps_auth_token', token);
+                        if (userJson) {
+                            localStorage.setItem('patient_user', userJson);
+                        }
+                        console.log('Token saved from deep link, redirecting...');
+                        window.location.href = DASHBOARD_URL;
+                    }
+                }
+            } catch (e) {
+                console.error('Error handling deep link:', e);
+            }
+        }
+
+        // Listen for Capacitor app URL open events
         document.addEventListener('DOMContentLoaded', () => {
+            // Check for deep link on app start
+            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
+                const App = window.Capacitor.Plugins.App;
+
+                // Listen for deep links while app is running
+                App.addListener('appUrlOpen', (event) => {
+                    console.log('appUrlOpen event:', event);
+                    if (event.url) {
+                        handleDeepLink(event.url);
+                    }
+                });
+
+                // Check if app was opened via deep link
+                App.getLaunchUrl().then((result) => {
+                    if (result && result.url) {
+                        console.log('App launched with URL:', result.url);
+                        handleDeepLink(result.url);
+                    }
+                });
+            }
+
+            // Check if already logged in
             const token = localStorage.getItem('vps_auth_token');
             if (token) {
                 // Verify token is still valid
