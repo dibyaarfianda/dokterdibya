@@ -4,4 +4,5 @@
     <string name="title_activity_main">dokterDIBYA</string>
     <string name="package_name">com.dokterdibya.patient</string>
     <string name="custom_url_scheme">com.dokterdibya.patient</string>
+    <string name="server_client_id">738335602560-52as846lk2oo78fr38a86elu8888m7eh.apps.googleusercontent.com</string>
 </resources>
