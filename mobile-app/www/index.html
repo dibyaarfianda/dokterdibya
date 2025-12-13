@@ -471,6 +471,18 @@
                     </button>
                 </form>
 
+                <div class="divider"><span>atau</span></div>
+
+                <button type="button" class="btn btn-secondary" id="btn-google" onclick="loginWithGoogle()">
+                    <svg width="20" height="20" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    <span>Masuk dengan Google</span>
+                </button>
+
                 <div class="footer-links">
                     <p class="footer-text">Belum punya akun? <a href="#" onclick="showPage('page-register')">Daftar sekarang</a></p>
                 </div>
@@ -579,9 +591,65 @@
         </div>
     </div>
 
-    <script>
+    <script type="module">
+        import { GoogleAuth } from 'https://esm.sh/@codetrix-studio/capacitor-google-auth@3.4.0';
+
         const API_BASE = 'https://dokterdibya.com';
         const DASHBOARD_URL = 'https://dokterdibya.com/patient-dashboard.html';
+        const GOOGLE_CLIENT_ID = '738335602560-52as846lk2oo78fr38a86elu8888m7eh.apps.googleusercontent.com';
+
+        // Initialize Google Auth
+        GoogleAuth.initialize({
+            clientId: GOOGLE_CLIENT_ID,
+            scopes: ['profile', 'email'],
+            grantOfflineAccess: true
+        });
+
+        // Make loginWithGoogle available globally
+        window.loginWithGoogle = async function() {
+            const btn = document.getElementById('btn-google');
+            const originalHtml = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div>';
+            document.getElementById('login-error').classList.remove('show');
+
+            try {
+                const googleUser = await GoogleAuth.signIn();
+                console.log('Google user:', googleUser);
+
+                // Send to backend for verification
+                const res = await fetch(`${API_BASE}/api/patients/google-auth`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        idToken: googleUser.authentication.idToken,
+                        email: googleUser.email,
+                        name: googleUser.name,
+                        imageUrl: googleUser.imageUrl
+                    })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    localStorage.setItem('vps_auth_token', data.token);
+                    if (data.user) {
+                        localStorage.setItem('patient_user', JSON.stringify(data.user));
+                    }
+                    window.location.href = DASHBOARD_URL;
+                } else {
+                    showError('login-error', data.message || 'Google login gagal');
+                }
+            } catch (err) {
+                console.error('Google Sign-In error:', err);
+                if (err.error !== 'popup_closed_by_user') {
+                    showError('login-error', 'Google Sign-In gagal. Silakan coba lagi.');
+                }
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = originalHtml;
+        };
 
         // Intro Video Handler
         const introOverlay = document.getElementById('intro-overlay');
@@ -644,18 +712,18 @@
         }
 
         // Page Navigation
-        function showPage(pageId) {
+        window.showPage = function(pageId) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.getElementById(pageId).classList.add('active');
             // Clear errors
             document.querySelectorAll('.error-message').forEach(e => e.classList.remove('show'));
-        }
+        };
 
         // Toggle Password Visibility
-        function togglePassword(inputId) {
+        window.togglePassword = function(inputId) {
             const input = document.getElementById(inputId);
             input.type = input.type === 'password' ? 'text' : 'password';
-        }
+        };
 
         // Show Error
         function showError(elementId, message) {
@@ -664,6 +732,7 @@
             textEl.textContent = message;
             errorEl.classList.add('show');
         }
+        window.showError = showError;
 
         // Set Button Loading
         function setLoading(btnId, loading) {
