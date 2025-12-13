@@ -20,7 +20,7 @@ const config: CapacitorConfig = {
   android: {
     allowMixedContent: false,
     captureInput: true,
-    webContentsDebuggingEnabled: false, // Set to true for debugging
+    webContentsDebuggingEnabled: true, // Enable for debugging
     backgroundColor: '#0f0f1a'
   },
 
@@ -34,14 +34,10 @@ const config: CapacitorConfig = {
   // Plugins configuration
   plugins: {
     SplashScreen: {
-      launchShowDuration: 1500,
+      launchShowDuration: 0,
       launchAutoHide: true,
       backgroundColor: '#0f0f1a',
-      androidSplashResourceName: 'splash',
-      androidScaleType: 'CENTER_CROP',
-      showSpinner: false,
-      splashFullScreen: true,
-      splashImmersive: true
+      showSpinner: false
     },
     StatusBar: {
       style: 'DARK',
