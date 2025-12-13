@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Klinik Private Minggu</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="/staff/public/styles/sunday-clinic.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
+    <style>
+        /* Clinic header title font */
+        .clinic-header-title {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        /* Date and time styling - smaller size */
+        .navbar .datetime-display {
+            font-size: 0.85rem;
+        }
+        .navbar .datetime-display i {
+            font-size: 0.85rem;
+        }
+
+        /* Logo hover zoom effect */
+        #sidebar-logo {
+            transition: transform 0.5s ease;
+            position: relative;
+        }
+        #sidebar-logo:hover {
+            transform: scale(1.03);
+        }
+
+        /* Custom tooltip styling */
+        .custom-tooltip {
+            position: absolute;
+            background-color: rgba(0, 0, 0, 0.85);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+            white-space: nowrap;
+            z-index: 9999;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .custom-tooltip.show {
+            opacity: 1;
+        }
+
+        /* Sidebar color and width - light gray theme */
+        .main-sidebar {
+            background-color: #FAFAFA !important;
+        }
+
+        /* Sidebar width when expanded */
+        body:not(.sidebar-collapse) .main-sidebar {
+            width: 210px !important;
+        }
+
+        /* Sidebar width when collapsed */
+        body.sidebar-collapse .main-sidebar {
+            width: 4.6rem !important;
+        }
+
+        .main-sidebar .brand-link {
+            background-color: #FAFAFA !important;
+        }
+
+        .sidebar-logo {
+            background-color: #FAFAFA;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 130px;
+            padding: 0.5rem;
+        }
+
+        /* Logo sizing */
+        .sidebar-logo img {
+            max-height: 112px;
+            max-width: 100%;
+            width: auto;
+            height: auto;
+            transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-origin: center center;
+            display: block;
+        }
+
+        /* Logo when sidebar collapsed */
+        body.sidebar-collapse .sidebar-logo {
+            min-height: 95px;
+            padding: 0.25rem;
+        }
+
+        body.sidebar-collapse .sidebar-logo img {
+            max-height: 78px;
+            max-width: 78px;
+        }
+
+        /* Adjust content area to match sidebar width when expanded */
+        body:not(.sidebar-collapse) .content-wrapper,
+        body:not(.sidebar-collapse) .main-header {
+            margin-left: 210px !important;
+        }
+
+        /* Adjust content area when sidebar collapsed */
+        body.sidebar-collapse .content-wrapper,
+        body.sidebar-collapse .main-header {
+            margin-left: 4.6rem !important;
+        }
+
+        /* Default (not selected) link/icon color - black */
+        .sidebar .nav-sidebar .nav-link {
+            color: #000000 !important;
+        }
+        .sidebar .nav-sidebar .nav-link .nav-icon {
+            color: #000000 !important;
+        }
+
+        /* Hover */
+        .sidebar .nav-sidebar .nav-link:hover {
+            background-color: rgba(0,0,0,0.08) !important;
+            color: #000000 !important;
+        }
+        .sidebar .nav-sidebar .nav-link:hover .nav-icon {
+            color: #000000 !important;
+        }
+
+        /* Active (selected) */
+        .sidebar .nav-sidebar .nav-link.active {
+            background-color: #0d6efd !important;
+            color: #fff !important;
+        }
+        .sidebar .nav-sidebar .nav-link.active .nav-icon {
+            color: #fff !important;
+        }
+
+        /* Nav section headers */
+        .sidebar .nav-header {
+            color: rgba(0,0,0,0.6) !important;
+        }
+
+        /* Hide sidebar scrollbar */
+        .main-sidebar,
+        .main-sidebar .sidebar {
+            overflow-y: auto !important;
+            scrollbar-width: none !important;
+            -ms-overflow-style: none !important;
+        }
+        .main-sidebar::-webkit-scrollbar,
+        .main-sidebar .sidebar::-webkit-scrollbar {
+            width: 0 !important;
+            height: 0 !important;
+            display: none !important;
+        }
+
+        /* Modern card styling */
+        .card {
+            border-radius: .5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,.06);
+            transition: box-shadow 200ms ease, transform 200ms ease;
+        }
+        .card:hover {
+            box-shadow: 0 6px 18px rgba(0,0,0,.12);
+        }
+        .btn {
+            transition: transform 140ms ease, box-shadow 140ms ease;
+        }
+        .btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 14px rgba(0,0,0,.12);
+        }
+
+        /* Header summary cards */
+        #summary-cards-container {
+            gap: 1rem;
+        }
+        .sc-header-card {
+            padding: 0.5rem 1rem;
+            border-right: 1px solid rgba(0,0,0,0.1);
+        }
+        .sc-header-card:last-child {
+            border-right: none;
+        }
+        .sc-header-card h6 {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #6c757d;
+            margin-bottom: 0.25rem;
+            text-transform: uppercase;
+        }
+        .sc-header-card .value {
+            font-size: 1rem;
+            font-weight: 600;
+            color: #212529;
+            margin-bottom: 0.125rem;
+        }
+        .sc-header-card .meta {
+            font-size: 0.75rem;
+            color: #6c757d;
+        }
+        .sc-header-card .sc-pill {
+            font-size: 0.7rem;
+            padding: 0.15rem 0.5rem;
+            border-radius: 0.25rem;
+            font-weight: 600;
+        }
+        .sc-pill--danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        .sc-pill--info {
+            background-color: #17a2b8;
+            color: white;
+        }
+    </style>
+
+    <!-- Mobile Responsive CSS -->
+    <link rel="stylesheet" href="/staff/public/css/mobile-responsive.css">
+</head>
+<body class="hold-transition sidebar-mini">
+    <div class="wrapper">
+        <!-- Navbar -->
+        <nav class="main-header navbar navbar-expand navbar-white navbar-light shadow-sm">
+            <ul class="navbar-nav">
+                <li class="nav-item">
+                    <a class="nav-link" data-widget="pushmenu" href="#" role="button">
+                        <i class="fas fa-bars"></i>
+                    </a>
+                </li>
+                <li class="nav-item d-flex align-items-center">
+                    <span class="font-weight-bold text-dark clinic-header-title" id="staff-name-display">Loading...</span>
+                </li>
+            </ul>
+            <ul class="navbar-nav ml-auto align-items-center">
+                <li class="nav-item d-none d-sm-inline-block mr-2">
+                    <span class="nav-link datetime-display" style="
+    width: 212px;
+    padding-right: 0;
+    height: 31px;
+">
+                        <i class="far fa-calendar-alt mr-1"></i>
+                        <span id="date-display"></span>
+                    </span>
+                </li>
+                <li class="nav-item d-none d-sm-inline-block mr-3">
+                    <span class="nav-link datetime-display" style="
+    width: 132px;
+    padding-right: 0px;
+    padding-left: 0px;
+    height: 31px;
+">
+                        <i class="far fa-clock mr-1"></i>
+                        <span id="time-display"></span>
+                    </span>
+                </li>
+                <li class="nav-item mr-2">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-info btn-sm" onclick="window.openImportModal()" title="Import satu file">
+                            <i class="fas fa-file-import mr-1"></i>
+                            <span class="d-none d-md-inline">Import</span>
+                        </button>
+                        <button type="button" class="btn btn-outline-success btn-sm" onclick="window.openBulkImportModal()" title="Bulk import multiple file">
+                            <i class="fas fa-file-upload"></i>
+                            <span class="d-none d-lg-inline ml-1">Bulk</span>
+                        </button>
+                    </div>
+                </li>
+            </ul>
+        </nav>
+
+        <!-- Main Sidebar -->
+        <aside class="main-sidebar sidebar-dark-primary elevation-4">
+            <div class="sidebar">
+                <div class="p-3 text-center sidebar-logo">
+                    <img src="/staff/public/images/dibyablacklogo.svg" alt="Logo" class="sidebar-logo-img" id="sidebar-logo" data-tooltip="Keluar dari Klinik Privat" style="cursor: pointer;">
+                </div>
+                <nav class="mt-2">
+                    <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
+                        <li class="nav-header" style="font-size: 1.32rem; font-weight: 300;">REKAM MEDIS</li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link sc-nav-link" data-section="identitas">
+                                <i class="nav-icon fas fa-id-card"></i>
+                                <p>Identitas</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link sc-nav-link" data-section="anamnesa">
+                                <i class="nav-icon fas fa-clipboard-list"></i>
+                                <p>Anamnesa</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link sc-nav-link" data-section="pemeriksaan">
+                                <i class="nav-icon fas fa-stethoscope"></i>
+                                <p>Pemeriksaan Fisik</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" id="menu-pemeriksaan-obstetri" style="display: none;">
+                            <a href="#" class="nav-link sc-nav-link" data-section="pemeriksaan-obstetri">
+                                <i class="nav-icon fas fa-heartbeat"></i>
+                                <p>Pemeriksaan Obstetri</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" id="menu-pemeriksaan-ginekologi" style="display: none;">
+                            <a href="#" class="nav-link sc-nav-link" data-section="pemeriksaan-ginekologi">
+                                <i class="nav-icon fas fa-venus"></i>
+                                <p>Pemeriksaan Ginekologi</p>
+                            </a>
+                        </li>
+                        <li class="nav-item" id="menu-usg">
+                            <a href="#" class="nav-link sc-nav-link" data-section="usg">
+                                <i class="nav-icon fas fa-baby"></i>
+                                <p>USG</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link sc-nav-link" data-section="penunjang">
+                                <i class="nav-icon fas fa-flask"></i>
+                                <p>Penunjang</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link sc-nav-link" data-section="diagnosis">
+                                <i class="nav-icon fas fa-diagnoses"></i>
+                                <p>Diagnosis</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link sc-nav-link" data-section="planning">
+                                <i class="nav-icon fas fa-clipboard-check"></i>
+                                <p>Planning</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link sc-nav-link" data-section="resume-medis">
+                                <i class="nav-icon fas fa-file-medical-alt"></i>
+                                <p>Resume Medis</p>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a href="#" class="nav-link sc-nav-link" data-section="tagihan">
+                                <i class="nav-icon fas fa-file-invoice-dollar"></i>
+                                <p>Tagihan</p>
+                            </a>
+                        </li>
+                    </ul>
+                </nav>
+            </div>
+        </aside>
+
+        <div class="content-wrapper">
+            <section class="content pt-4 pb-5">
+                <div class="container-fluid">
+                    <div id="sunday-clinic-root" class="card card-outline card-primary">
+                        <div class="card-header d-flex justify-content-between align-items-center" id="sunday-clinic-header">
+                            <div id="summary-cards-container" class="d-flex flex-wrap flex-grow-1"></div>
+                        </div>
+                        <div class="card-body" id="sunday-clinic-content">
+                            <div class="loading-state" id="sunday-clinic-loading">
+                                <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
+                                <p class="mb-0">Memuat data rekam medis...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </div>
+
+    <div class="sc-directory-overlay" id="sc-directory-overlay" hidden aria-hidden="true">
+        <div class="sc-directory" role="dialog" aria-modal="true" aria-labelledby="sc-directory-title">
+            <div class="sc-directory-header">
+                <div>
+                    <h2 class="sc-directory-title" id="sc-directory-title">Pilih Pasien Klinik Private Minggu</h2>
+                    <p class="sc-directory-subtitle">Cari pasien, pilih kunjungan, lalu buka rekam medis Sunday Clinic.</p>
+                </div>
+                <button type="button" class="btn btn-tool" id="sc-directory-close" aria-label="Tutup">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="sc-directory-body">
+                <div class="sc-directory-column sc-directory-column--patients">
+                    <div class="sc-directory-search">
+                        <div class="input-group input-group-sm">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            </div>
+                            <input type="text" class="form-control" id="sc-directory-search" placeholder="Cari nama, MR, atau nomor telepon">
+                        </div>
+                    </div>
+                    <div class="sc-directory-patient-list" id="sc-directory-patient-list" role="listbox" aria-label="Daftar pasien"></div>
+                </div>
+                <div class="sc-directory-column sc-directory-column--visits">
+                    <div class="sc-directory-info" id="sc-directory-info"></div>
+                    <div class="sc-directory-visit-list" id="sc-directory-visit-list" role="listbox" aria-label="Daftar kunjungan"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Medical Record Import Modal -->
+    <div class="modal fade" id="import-medical-modal" tabindex="-1" role="dialog" aria-labelledby="importMedicalModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title" id="importMedicalModalLabel">
+                        <i class="fas fa-file-import mr-2"></i>Import Catatan Medis dari File Text
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <!-- Step 1: Input -->
+                    <div id="import-step-1">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label><i class="fas fa-tag mr-1"></i>Pilih Kategori <span class="text-danger">*</span></label>
+                                    <select class="form-control" id="import-category" required>
+                                        <option value="">-- Pilih Kategori --</option>
+                                        <option value="obstetri">Obstetri (Kehamilan)</option>
+                                        <option value="gyn_repro">Ginekologi Reproduksi (KB, Haid)</option>
+                                        <option value="gyn_special">Ginekologi Spesialis (Tumor, Kista)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label><i class="fas fa-upload mr-1"></i>Upload File (.txt)</label>
+                                    <div class="custom-file">
+                                        <input type="file" class="custom-file-input" id="import-file" accept=".txt">
+                                        <label class="custom-file-label" for="import-file">Pilih file...</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label><i class="fas fa-paste mr-1"></i>Atau Paste Text Catatan Medis</label>
+                            <textarea class="form-control" id="import-text" rows="12" placeholder="Paste isi file catatan medis disini...
+
+Contoh format:
+NAMA PASIEN: ...
+JENIS KELAMIN: ...
+USIA: ...
+
+SUBJECTIVE
+Keluhan Utama: ...
+
+OBJECTIVE
+k/u baik...
+
+ASSESSMENT
+...
+
+PLAN
+..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Preview (hidden initially) -->
+                    <div id="import-step-2" style="display: none;">
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            <strong>Preview Data:</strong> Periksa hasil parsing sebelum mengisi form. Centang field yang ingin diisi.
+                        </div>
+
+                        <!-- Patient Selection Section (shown when no active MR) -->
+                        <div class="card card-outline card-warning mb-3" id="import-patient-select-card" style="display: none;">
+                            <div class="card-header py-2 bg-warning">
+                                <h6 class="m-0"><i class="fas fa-user-plus mr-1"></i>Pilih Pasien untuk MR Baru</h6>
+                            </div>
+                            <div class="card-body p-2">
+                                <div class="row">
+                                    <div class="col-md-8">
+                                        <div class="form-group mb-0">
+                                            <label class="small font-weight-bold">
+                                                <i class="fas fa-user mr-1"></i>Pasien <span class="text-danger">*</span>
+                                            </label>
+                                            <select class="form-control form-control-sm" id="import-patient-select">
+                                                <option value="">-- Pilih Pasien --</option>
+                                            </select>
+                                            <small class="text-muted">Pilih pasien yang akan dibuatkan MR baru dengan data import ini</small>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="alert alert-warning mb-0 py-2 small">
+                                            <i class="fas fa-exclamation-triangle mr-1"></i>
+                                            Tidak ada MR aktif. Data akan disimpan ke MR baru.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Visit Info Section -->
+                        <div class="card card-outline card-secondary mb-3">
+                            <div class="card-header py-2">
+                                <h6 class="m-0"><i class="fas fa-calendar-check mr-1"></i>Info Kunjungan</h6>
+                            </div>
+                            <div class="card-body p-2" id="preview-visit-info">
+                                <!-- Dynamically filled by JS -->
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="card card-outline card-primary">
+                                    <div class="card-header">
+                                        <h6 class="m-0"><i class="fas fa-id-card mr-1"></i>Identitas</h6>
+                                    </div>
+                                    <div class="card-body p-2" id="preview-identitas"></div>
+                                </div>
+                                <div class="card card-outline card-info">
+                                    <div class="card-header">
+                                        <h6 class="m-0"><i class="fas fa-clipboard-list mr-1"></i>Anamnesa</h6>
+                                    </div>
+                                    <div class="card-body p-2" id="preview-anamnesa"></div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card card-outline card-success">
+                                    <div class="card-header">
+                                        <h6 class="m-0"><i class="fas fa-stethoscope mr-1"></i>Pemeriksaan Fisik</h6>
+                                    </div>
+                                    <div class="card-body p-2" id="preview-pemeriksaan"></div>
+                                </div>
+                                <div class="card card-outline card-warning">
+                                    <div class="card-header">
+                                        <h6 class="m-0"><i class="fas fa-diagnoses mr-1"></i>Diagnosis & Planning</h6>
+                                    </div>
+                                    <div class="card-body p-2" id="preview-diagnosis"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-2">
+                            <span class="badge badge-info" id="import-confidence"></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <div>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times mr-1"></i>Batal
+                        </button>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-outline-secondary" id="btn-import-back" style="display: none;" onclick="window.importMedicalBack()">
+                            <i class="fas fa-arrow-left mr-1"></i>Kembali
+                        </button>
+                        <button type="button" class="btn btn-info" id="btn-import-parse" onclick="window.importMedicalParse()">
+                            <i class="fas fa-search mr-1"></i>Parse & Preview
+                        </button>
+                        <button type="button" class="btn btn-success" id="btn-import-apply" style="display: none;" onclick="window.importMedicalApply()">
+                            <i class="fas fa-check mr-1"></i><span id="btn-import-apply-text">Terapkan ke Form</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bulk Import Modal -->
+    <div class="modal fade" id="bulk-import-modal" tabindex="-1" role="dialog" aria-labelledby="bulkImportModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="bulkImportModalLabel">
+                        <i class="fas fa-file-upload mr-2"></i>Bulk Import Catatan Medis
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Upload multiple file text (.txt) untuk parsing sekaligus. Maksimal 50 file.
+                    </div>
+
+                    <!-- Settings Row -->
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label class="small font-weight-bold">Kategori Default</label>
+                            <select class="form-control form-control-sm" id="bulk-import-category">
+                                <option value="obstetri">Obstetri</option>
+                                <option value="gyn_repro">Ginekologi Reproduksi</option>
+                                <option value="gyn_special">Ginekologi Khusus</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="small font-weight-bold">Lokasi Default</label>
+                            <select class="form-control form-control-sm" id="bulk-import-location">
+                                <option value="">-- Auto Detect --</option>
+                                <option value="klinik_private">Klinik Privat dr. Dibya</option>
+                                <option value="rsia_melinda">RSIA Melinda</option>
+                                <option value="rsud_gambiran">RSUD Gambiran</option>
+                                <option value="rs_bhayangkara">RS Bhayangkara</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="small font-weight-bold">Pilih File</label>
+                            <div class="custom-file">
+                                <input type="file" class="custom-file-input" id="bulk-import-files"
+                                       accept=".txt,.text" multiple onchange="handleBulkFilesSelect(event)">
+                                <label class="custom-file-label" for="bulk-import-files">Pilih file...</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div id="bulk-import-progress" style="display: none;" class="mb-3">
+                        <div class="progress" style="height: 20px;">
+                            <div class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                                 id="bulk-import-progress-bar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                        <small class="text-muted" id="bulk-import-progress-text">Memproses...</small>
+                    </div>
+
+                    <!-- Results Table -->
+                    <div id="bulk-import-results">
+                        <!-- Dynamically filled -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times mr-1"></i>Tutup
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tindakan Selection Modal -->
+    <div class="modal fade" id="tindakan-modal" tabindex="-1" role="dialog" aria-labelledby="tindakanModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="tindakanModalLabel">
+                        <i class="fas fa-stethoscope mr-2"></i>Pilih Tindakan
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Pilih tindakan yang akan dilakukan dengan mencentang checkbox, lalu klik "Konfirmasi"
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th width="5%">
+                                        <div class="custom-control custom-checkbox">
+                                            <input type="checkbox" class="custom-control-input" id="select-all-tindakan">
+                                            <label class="custom-control-label" for="select-all-tindakan"></label>
+                                        </div>
+                                    </th>
+                                    <th width="15%">Kode</th>
+                                    <th width="50%">Nama Tindakan</th>
+                                    <th width="30%">Kategori</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tindakan-modal-body">
+                                <tr>
+                                    <td colspan="4" class="text-center">
+                                        <i class="fas fa-spinner fa-spin"></i> Memuat data...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-between">
+                    <div id="selected-tindakan-count">
+                        <small>0 tindakan dipilih</small>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                            <i class="fas fa-times mr-1"></i>Tutup
+                        </button>
+                        <button type="button" class="btn btn-primary" onclick="window.addSelectedTindakan()">
+                            <i class="fas fa-check mr-1"></i>Konfirmasi
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terapi/Obat Selection Modal -->
+    <div class="modal fade" id="terapi-modal" tabindex="-1" role="dialog" aria-labelledby="terapiModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-success text-white">
+                    <h5 class="modal-title" id="terapiModalLabel">
+                        <i class="fas fa-pills mr-2"></i>Pilih Obat/Terapi
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Pilih obat yang akan diresepkan dengan mencentang checkbox, lalu klik "Lanjut"
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th width="5%">
+                                        <div class="custom-control custom-checkbox">
+                                            <input type="checkbox" class="custom-control-input" id="select-all-obat">
+                                            <label class="custom-control-label" for="select-all-obat"></label>
+                                        </div>
+                                    </th>
+                                    <th width="12%">Kode</th>
+                                    <th width="35%">Nama Obat</th>
+                                    <th width="23%">Kategori</th>
+                                    <th width="10%">Stok</th>
+                                </tr>
+                            </thead>
+                            <tbody id="terapi-modal-body">
+                                <tr>
+                                    <td colspan="5" class="text-center">
+                                        <i class="fas fa-spinner fa-spin"></i> Memuat data...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times mr-1"></i>Tutup
+                    </button>
+                    <button type="button" class="btn btn-primary" id="btn-next-terapi" onclick="proceedToCaraPakai()">
+                        <i class="fas fa-arrow-right mr-1"></i>Lanjut
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Batch Cara Pakai Modal -->
+    <div class="modal fade" id="cara-pakai-modal" tabindex="-1" role="dialog" aria-labelledby="caraPakaiModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title" id="caraPakaiModalLabel">
+                        <i class="fas fa-prescription mr-2"></i>Isi Detail Resep
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="batch-cara-pakai-body" style="max-height: 500px; overflow-y: auto;">
+                    <!-- Dynamic content will be inserted here -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="backToObatSelection()">
+                        <i class="fas fa-arrow-left mr-1"></i>Kembali
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="addBatchTerapi()">
+                        <i class="fas fa-check mr-1"></i>Selesai
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- Bootstrap 4 -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- AdminLTE App -->
+    <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+    <!-- Socket.IO for real-time updates -->
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <!-- Global Chat Loader (must be after Socket.IO) -->
+    <script src="/staff/public/scripts/global-chat-loader.js"></script>
+
+    <script type="module" src="/staff/public/scripts/sunday-clinic.js"></script>
+    <!-- Planning helpers for tindakan and terapi modals -->
+    <script src="/staff/public/scripts/sunday-clinic/utils/planning-helpers.js?v=2.0.1"></script>
+    <!-- Medical import from text files -->
+    <script type="module" src="/staff/public/scripts/sunday-clinic/utils/medical-import.js?v=1.0.0"></script>
+    <script>
+        // Add click handler for sidebar navigation
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebarNav = document.querySelector('.main-sidebar .nav-sidebar');
+            if (sidebarNav) {
+                sidebarNav.addEventListener('click', function(event) {
+                    const target = event.target.closest('.sc-nav-link');
+                    if (target && target.dataset.section) {
+                        event.preventDefault();
+                        // The global handleSectionChange function from sunday-clinic.js
+                        if (window.handleSectionChange) {
+                            window.handleSectionChange(target.dataset.section);
+                        }
+                        // Update active state in sidebar
+                        document.querySelectorAll('.sc-nav-link').forEach(link => {
+                            link.classList.remove('active');
+                        });
+                        target.classList.add('active');
+                    }
+                });
+            }
+        });
+    </script>
+
+    <!-- Mobile Helper Script -->
+    <script src="/staff/public/scripts/mobile-helper.js"></script>
+</body>
+</html>

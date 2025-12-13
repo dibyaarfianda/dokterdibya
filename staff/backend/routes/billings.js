@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { verifyToken } = require('../middleware/auth');
+const { verifyToken, requireMenuAccess } = require('../middleware/auth');
 
 // Helper function to generate billing number
 async function generateBillingNumber() {
@@ -34,7 +34,7 @@ async function generateBillingNumber() {
 }
 
 // POST /api/billings - Create new billing from patient record
-router.post('/', verifyToken, async (req, res) => {
+router.post('/', verifyToken, requireMenuAccess('keuangan'), async (req, res) => {
   const connection = await db.getConnection();
   
   try {
@@ -321,7 +321,7 @@ router.get('/:id/details', async (req, res) => {
 });
 
 // GET /api/billings/:id - Get billing by ID
-router.get('/:id', verifyToken, async (req, res) => {
+router.get('/:id', verifyToken, requireMenuAccess('keuangan'), async (req, res) => {
   try {
     const [billings] = await db.query(
       `SELECT b.*, p.full_name as patient_name, p.whatsapp, p.email,
@@ -364,7 +364,7 @@ router.get('/:id', verifyToken, async (req, res) => {
 });
 
 // GET /api/billings/patient/:patientId - Get all billings for a patient
-router.get('/patient/:patientId', verifyToken, async (req, res) => {
+router.get('/patient/:patientId', verifyToken, requireMenuAccess('keuangan'), async (req, res) => {
   try {
     const [billings] = await db.query(
       `SELECT b.*, p.full_name as patient_name
@@ -392,7 +392,7 @@ router.get('/patient/:patientId', verifyToken, async (req, res) => {
 });
 
 // POST /api/billings/:id/payment - Record payment for billing
-router.post('/:id/payment', verifyToken, async (req, res) => {
+router.post('/:id/payment', verifyToken, requireMenuAccess('keuangan'), async (req, res) => {
   const connection = await db.getConnection();
   
   try {
@@ -458,12 +458,70 @@ router.post('/:id/payment', verifyToken, async (req, res) => {
     
     // Update billing
     await connection.query(
-      `UPDATE billings 
+      `UPDATE billings
        SET paid_amount = ?, payment_status = ?, payment_method = ?, payment_date = NOW()
        WHERE id = ?`,
       [new_paid_amount, payment_status, payment_method, billing_id]
     );
-    
+
+    // Auto deduct stock when payment is complete (FIFO)
+    if (payment_status === 'paid' && billing.payment_status !== 'paid') {
+      try {
+        const InventoryService = require('../services/InventoryService');
+
+        // Get medication items from billing
+        const [medicationItems] = await connection.query(
+          `SELECT bi.item_code, bi.quantity, o.id as obat_id
+           FROM billing_items bi
+           LEFT JOIN obat o ON bi.item_code = o.code OR bi.item_code = o.id
+           WHERE bi.billing_id = ? AND bi.item_type = 'medication' AND o.id IS NOT NULL`,
+          [billing_id]
+        );
+
+        // Deduct stock for each medication using FIFO
+        for (const item of medicationItems) {
+          try {
+            await InventoryService.deductStockFIFO(
+              item.obat_id,
+              parseInt(item.quantity),
+              'billing',
+              billing_id,
+              req.user?.name || 'system'
+            );
+          } catch (stockError) {
+            console.warn(`Stock deduction warning for obat ${item.obat_id}:`, stockError.message);
+          }
+        }
+      } catch (inventoryError) {
+        console.error('Inventory deduction error:', inventoryError);
+        // Don't fail the payment, just log the error
+      }
+
+      // Auto-complete appointment when payment is marked as paid
+      // Only for Klinik Private (other hospitals auto-complete on resume save)
+      try {
+        const [appointmentCheck] = await connection.query(
+          `SELECT id, hospital_location FROM appointments
+           WHERE patient_id = ? AND appointment_date = ?
+           ORDER BY created_at DESC LIMIT 1`,
+          [billing.patient_id, billing.billing_date]
+        );
+
+        // Only auto-complete if appointment is for Klinik Private
+        if (appointmentCheck.length > 0 &&
+            appointmentCheck[0].hospital_location === 'klinik_private') {
+          const appointmentScheduler = require('../services/appointmentScheduler');
+          await appointmentScheduler.autoCompleteOnPayment(
+            appointmentCheck[0].id,
+            billing.billing_number
+          );
+        }
+      } catch (appointmentError) {
+        console.warn('Appointment auto-complete warning:', appointmentError.message);
+        // Don't fail the payment, just log the error
+      }
+    }
+
     await connection.commit();
     
     // Fetch updated billing

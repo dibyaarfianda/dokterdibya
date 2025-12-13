@@ -1,13 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../db');
-const { verifyToken, requirePermission } = require('../middleware/auth');
+const { verifyToken, requireSuperadmin } = require('../middleware/auth');
 
 /**
  * GET /api/appointment-archive
  * Get archived appointments with optional filters
  */
-router.get('/', verifyToken, requirePermission('appointments.view'), async (req, res) => {
+router.get('/', verifyToken, async (req, res) => {
     try {
         const {
             start_date,
@@ -107,7 +107,7 @@ router.get('/', verifyToken, requirePermission('appointments.view'), async (req,
  * POST /api/appointment-archive/archive-single/:id
  * Archive a single appointment by ID
  */
-router.post('/archive-single/:id', verifyToken, requirePermission('appointments.edit'), async (req, res) => {
+router.post('/archive-single/:id', verifyToken, async (req, res) => {
     try {
         const appointmentId = req.params.id;
         const { archived_reason = 'Manually archived by staff' } = req.body;
@@ -178,7 +178,7 @@ router.post('/archive-single/:id', verifyToken, requirePermission('appointments.
  * POST /api/appointment-archive/archive-old
  * Archive old appointments (cancelled/completed/no-show) older than specified days
  */
-router.post('/archive-old', verifyToken, requirePermission('appointments.delete'), async (req, res) => {
+router.post('/archive-old', verifyToken, async (req, res) => {
     try {
         const { days_old = 7, status = 'all' } = req.body;
 
@@ -210,7 +210,7 @@ router.post('/archive-old', verifyToken, requirePermission('appointments.delete'
  * POST /api/appointment-archive/restore/:id
  * Restore an archived appointment back to the main table
  */
-router.post('/restore/:id', verifyToken, requirePermission('appointments.create'), async (req, res) => {
+router.post('/restore/:id', verifyToken, async (req, res) => {
     try {
         const appointmentId = req.params.id;
 
@@ -282,9 +282,9 @@ router.post('/restore/:id', verifyToken, requirePermission('appointments.create'
 
 /**
  * DELETE /api/appointment-archive/:id
- * Permanently delete an archived appointment
+ * Permanently delete an archived appointment (Superadmin/Dokter only)
  */
-router.delete('/:id', verifyToken, requirePermission('appointments.delete'), async (req, res) => {
+router.delete('/:id', verifyToken, requireSuperadmin, async (req, res) => {
     try {
         const appointmentId = req.params.id;
 
@@ -319,7 +319,7 @@ router.delete('/:id', verifyToken, requirePermission('appointments.delete'), asy
  * GET /api/appointment-archive/stats
  * Get statistics about archived appointments
  */
-router.get('/stats', verifyToken, requirePermission('appointments.view'), async (req, res) => {
+router.get('/stats', verifyToken, async (req, res) => {
     try {
         const [stats] = await db.query(`
             SELECT

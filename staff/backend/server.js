@@ -14,6 +14,7 @@ const { requestLogger, performanceLogger } = require('./middleware/requestLogger
 const { metricsMiddleware, getMetrics, resetMetrics } = require('./middleware/metrics');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./config/swagger');
+const activityLogger = require('./services/activityLogger');
 
 const app = express();
 const server = http.createServer(app);
@@ -21,7 +22,14 @@ const io = new Server(server, {
     cors: {
         origin: process.env.CORS_ORIGIN || '*',
         methods: ['GET', 'POST']
-    }
+    },
+    pingTimeout: 60000,
+    pingInterval: 25000,
+    transports: ['polling'], // POLLING ONLY - mobile ISPs kill WebSocket connections
+    allowEIO3: true,
+    allowUpgrades: false, // Prevent upgrade to websocket
+    maxHttpBufferSize: 1e8, // 100MB - fix 413 errors for large polling payloads
+    httpCompression: true // Compress polling data
 });
 const PORT = process.env.PORT || 3000;
 
@@ -46,9 +54,23 @@ app.use(metricsMiddleware);
 app.use(requestLogger);
 app.use(performanceLogger);
 
-// Middleware
+// CORS - allow multiple origins including Chrome extension
+const allowedOrigins = [
+    process.env.CORS_ORIGIN,
+    'https://simrs.melinda.co.id'  // Chrome extension for SIMRS Melinda export
+].filter(Boolean);
+
 app.use(cors({
-    origin: process.env.CORS_ORIGIN,
+    origin: function(origin, callback) {
+        // Allow requests with no origin (mobile apps, Postman, etc)
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(null, false);
+        }
+    },
     credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -114,6 +136,7 @@ const medicalRecordsRoutes = require('./routes/medical-records');
 const patientRecordsRoutes = require('./routes/patient-records');
 const billingsRoutes = require('./routes/billings');
 const visitInvoicesRoutes = require('./routes/visit-invoices');
+const aiRoutes = require('./routes/ai');
 
 // Pass Socket.io to routes
 chatRoutes.setSocketIO(io);
@@ -123,12 +146,73 @@ statusRoutes.setSocketIO(io);
 // Serve static staff assets directly from the merged repo
 app.use(express.static(path.join(__dirname, '../public')));
 
+// Serve uploaded files (lab results, etc.)
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 // Sunday Clinic dynamic routes (e.g., /sunday-clinic/mr0001/identitas)
 app.get(/^\/sunday-clinic\/[\w-]+(?:\/.*)?$/, (req, res) => {
     res.sendFile(sundayClinicPagePath);
 });
 
 // Use routes
+
+// ==================== PATIENT ACCESS BLOCKER ====================
+// Block patients from accessing staff-only API routes
+// Whitelist: routes that patients CAN access
+const PATIENT_ALLOWED_ROUTES = [
+    '/api/patients',           // Patient auth & profile
+    '/api/patient/',           // Patient-specific endpoints (birth-congratulations, etc)
+    '/api/patient-intake',     // Patient intake form submission
+    '/api/patient-documents',  // Patient documents (USG, lab results, uploads)
+    '/api/sunday-appointments', // Sunday clinic booking
+    '/api/hospital-appointments', // Hospital booking
+    '/api/articles',           // Public articles
+    '/api/patient-notifications', // Patient notifications
+    '/api/announcements',      // Public announcements
+];
+
+app.use('/api', (req, res, next) => {
+    const authHeader = req.headers['authorization'] || req.headers['Authorization'];
+
+    // No auth header = let route handle it
+    if (!authHeader) return next();
+
+    const parts = authHeader.split(' ');
+    if (parts.length !== 2 || parts[0] !== 'Bearer') return next();
+
+    try {
+        const jwt = require('jsonwebtoken');
+        const payload = jwt.verify(parts[1], process.env.JWT_SECRET);
+
+        // Check if this is a patient token
+        if (payload.user_type === 'patient' || payload.role === 'patient') {
+            // Check if route is whitelisted for patients
+            const fullPath = req.originalUrl || req.url;
+            const isAllowed = PATIENT_ALLOWED_ROUTES.some(route => fullPath.startsWith(route));
+
+            if (!isAllowed) {
+                // Log blocked path for debugging
+                console.log('[BLOCKED]', fullPath);
+                logger.warn('Patient attempted staff route access', {
+                    userId: payload.id,
+                    email: payload.email,
+                    path: fullPath,
+                    ip: req.ip
+                });
+                return res.status(403).json({
+                    success: false,
+                    message: 'Akses ditolak. Anda tidak memiliki izin untuk mengakses halaman ini.'
+                });
+            }
+        }
+    } catch (err) {
+        // Invalid token - let route handle it
+    }
+
+    next();
+});
+// ==================== END PATIENT ACCESS BLOCKER ====================
+
 // API v1 (modern, service-based)
 app.use('/api/v1', v1Routes);
 
@@ -152,6 +236,10 @@ app.use('/api/appointments', appointmentsRoutes);
 const sundayAppointmentsRoutes = require('./routes/sunday-appointments');
 app.use('/api/sunday-appointments', sundayAppointmentsRoutes);
 
+// Hospital appointments routes
+const hospitalAppointmentsRoutes = require('./routes/hospital-appointments');
+app.use('/api/hospital-appointments', hospitalAppointmentsRoutes);
+
 // Appointment archive routes
 app.use('/api/appointment-archive', appointmentArchiveRoutes);
 
@@ -161,6 +249,31 @@ app.use('/api/dashboard-stats', dashboardStatsRoutes);
 // Sunday clinic record routes
 const sundayClinicRoutes = require('./routes/sunday-clinic');
 app.use('/api/sunday-clinic', sundayClinicRoutes);
+
+// Setup Socket.io handlers for Sunday Clinic
+if (sundayClinicRoutes.setupSocketHandlers) {
+    sundayClinicRoutes.setupSocketHandlers(io);
+}
+
+// Lab results routes (upload and AI interpretation)
+const labResultsRoutes = require('./routes/lab-results');
+app.use('/api/lab-results', labResultsRoutes);
+
+// USG photos routes (upload ultrasound images)
+const usgPhotosRoutes = require('./routes/usg-photos');
+app.use('/api/usg-photos', usgPhotosRoutes);
+
+// USG bulk upload routes (bulk upload from RSIA Melinda)
+const usgBulkUploadRoutes = require('./routes/usg-bulk-upload');
+app.use('/api/usg-bulk-upload', usgBulkUploadRoutes);
+
+// Patient documents routes (share documents with patients)
+const patientDocumentsRoutes = require('./routes/patient-documents');
+app.use('/api/patient-documents', patientDocumentsRoutes);
+
+// R2 storage proxy (for CDN connectivity issues)
+const r2ProxyRoutes = require('./routes/r2-proxy');
+app.use('/api/r2', r2ProxyRoutes);
 
 // Practice schedules routes
 const practiceSchedulesRoutes = require('./routes/practice-schedules');
@@ -187,6 +300,14 @@ app.use('/', patientIntakeRoutes);
 app.use('/', medicalRecordsRoutes);
 app.use('/', patientRecordsRoutes);
 
+// Medical Import routes (parse text files to fill medical records)
+const medicalImportRoutes = require('./routes/medical-import');
+app.use('/', medicalImportRoutes);
+
+// Import Field Configuration routes (manage field mappings and keywords)
+const importConfigRoutes = require('./routes/import-config');
+app.use('/api/import-config', importConfigRoutes);
+
 // Billing routes
 app.use('/api/billings', billingsRoutes);
 
@@ -194,12 +315,63 @@ app.use('/api/billings', billingsRoutes);
 const announcementsRoutes = require('./routes/announcements');
 app.use('/api/announcements', announcementsRoutes);
 
+// Staff Announcements routes (internal staff only)
+const staffAnnouncementsRoutes = require('./routes/staff-announcements');
+app.use('/api/staff-announcements', staffAnnouncementsRoutes);
+
 // Visit invoice routes for printing and tracking
 app.use('/api/visit-invoices', visitInvoicesRoutes);
+
+// AI routes (Smart Triage, Summary, Chatbot)
+app.use('/', aiRoutes);
 
 // Role Management routes
 const rolesRoutes = require('./routes/roles');
 app.use('/', rolesRoutes);
+
+// Role Visibility routes (menu visibility per role)
+const roleVisibilityRoutes = require('./routes/role-visibility');
+app.use('/api/role-visibility', roleVisibilityRoutes);
+
+// Booking Settings routes (admin control for patient booking sessions)
+const bookingSettingsRoutes = require('./routes/booking-settings');
+app.use('/api/booking-settings', bookingSettingsRoutes);
+
+// Staff Notifications routes
+const notificationsRoutes = require('./routes/notifications');
+app.use('/api/notifications', notificationsRoutes);
+
+// Patient Notifications routes (for patient portal)
+const patientNotificationsRoutes = require('./routes/patient-notifications');
+app.use('/api/patient-notifications', patientNotificationsRoutes);
+
+// Registration Codes routes (for patient registration control)
+const registrationCodesRoutes = require('./routes/registration-codes');
+app.use('/api/registration-codes', registrationCodesRoutes);
+
+// Subscriptions routes (Midtrans payment for premium features)
+const subscriptionsRoutes = require('./routes/subscriptions');
+app.use('/api/subscriptions', subscriptionsRoutes);
+
+// Suppliers routes (for inventory management)
+const suppliersRoutes = require('./routes/suppliers');
+app.use('/api/suppliers', suppliersRoutes);
+
+// Inventory routes (stock batches, movements, FIFO)
+const inventoryRoutes = require('./routes/inventory');
+app.use('/api/inventory', inventoryRoutes);
+
+// Obat Sales routes (medication sales for hospital patients)
+const obatSalesRoutes = require('./routes/obat-sales');
+app.use('/api/obat-sales', obatSalesRoutes);
+
+// Health articles routes (public + admin)
+const articlesRoutes = require('./routes/articles');
+app.use('/api/articles', articlesRoutes);
+
+// Invoice history routes
+const invoicesRoutes = require('./routes/invoices');
+app.use('/api/invoices', invoicesRoutes);
 
 // API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
@@ -269,20 +441,37 @@ app.use(errorHandler);
 // Global state for current selected patient
 let currentSelectedPatient = null;
 
+// Initialize real-time sync with Socket.IO
+const realtimeSync = require('./realtime-sync');
+realtimeSync.init(io);
+logger.info('Real-time sync initialized with Socket.IO');
+
+// Initialize appointment schedulers
+const appointmentScheduler = require('./services/appointmentScheduler');
+appointmentScheduler.initSchedulers();
+logger.info('Appointment schedulers initialized');
+
 // Socket.io connection handling
 io.on('connection', (socket) => {
-    logger.info(`Client connected: ${socket.id}`);
-    
+    const clientIp = socket.handshake.headers['x-forwarded-for'] || socket.handshake.address;
+    const transport = socket.conn.transport.name;
+    logger.info(`Client connected: ${socket.id} from ${clientIp} via ${transport}`);
+
     // User registration
     socket.on('user:register', (data) => {
+        if (!data || !data.userId || !data.name) {
+            logger.warn(`Invalid user:register data received: ${JSON.stringify(data)}`);
+            return;
+        }
+
         socket.userId = data.userId;
         socket.userName = data.name;
         socket.userRole = data.role;
         socket.userActivity = 'Baru bergabung';
         socket.userPhoto = data.photo || null;
         socket.activityTimestamp = new Date().toISOString();
-        
-        logger.info(`User registered on socket: ${data.name} (${data.role})`);
+
+        logger.info(`User registered on socket: ${data.name} (${data.role}) [ID: ${data.userId}]`);
         
         // Broadcast to others that a new user connected
         socket.broadcast.emit('user:connected', {
@@ -333,51 +522,120 @@ io.on('connection', (socket) => {
     });
     
     // Patient selection broadcast
-    socket.on('patient:select', (data) => {
+    socket.on('patient:select', async (data) => {
         logger.info(`Patient selected by ${data.userName}: ${data.patientName} (ID: ${data.patientId})`);
-        
+
+        // Log activity to database
+        await activityLogger.log(
+            data.userId,
+            data.userName,
+            activityLogger.ACTIONS.VIEW_PATIENT,
+            `Memilih pasien: ${data.patientName}`,
+            io
+        );
+
         // Store current selected patient globally
         currentSelectedPatient = data;
         logger.info(`Current selected patient stored: ${JSON.stringify(currentSelectedPatient)}`);
-        
+
         // Broadcast to all other clients (including future connections)
         socket.broadcast.emit('patient:selected', data);
         logger.info(`Broadcast patient:selected to all other clients`);
     });
     
     // Anamnesa update broadcast
-    socket.on('anamnesa:update', (data) => {
+    socket.on('anamnesa:update', async (data) => {
         logger.info(`Anamnesa updated by ${data.userName} for ${data.patientName}`);
+
+        // Log activity to database
+        await activityLogger.log(
+            data.userId,
+            data.userName,
+            activityLogger.ACTIONS.UPDATE_MR,
+            `Update anamnesa: ${data.patientName}`,
+            io
+        );
+
         socket.broadcast.emit('anamnesa:updated', data);
     });
-    
+
     // Physical exam update broadcast
-    socket.on('physical:update', (data) => {
+    socket.on('physical:update', async (data) => {
         logger.info(`Physical exam updated by ${data.userName} for ${data.patientName}`);
+
+        // Log activity to database
+        await activityLogger.log(
+            data.userId,
+            data.userName,
+            activityLogger.ACTIONS.UPDATE_MR,
+            `Update pemeriksaan fisik: ${data.patientName}`,
+            io
+        );
+
         socket.broadcast.emit('physical:updated', data);
     });
-    
+
     // USG exam update broadcast
-    socket.on('usg:update', (data) => {
+    socket.on('usg:update', async (data) => {
         logger.info(`USG exam updated by ${data.userName} for ${data.patientName}`);
+
+        // Log activity to database
+        await activityLogger.log(
+            data.userId,
+            data.userName,
+            activityLogger.ACTIONS.UPDATE_MR,
+            `Update USG: ${data.patientName}`,
+            io
+        );
+
         socket.broadcast.emit('usg:updated', data);
     });
-    
+
     // Lab exam update broadcast
-    socket.on('lab:update', (data) => {
+    socket.on('lab:update', async (data) => {
         logger.info(`Lab exam updated by ${data.userName} for ${data.patientName}`);
+
+        // Log activity to database
+        await activityLogger.log(
+            data.userId,
+            data.userName,
+            activityLogger.ACTIONS.UPDATE_MR,
+            `Update pemeriksaan penunjang: ${data.patientName}`,
+            io
+        );
+
         socket.broadcast.emit('lab:updated', data);
     });
     
     // Billing update broadcast
-    socket.on('billing:update', (data) => {
+    socket.on('billing:update', async (data) => {
         logger.info(`Billing updated by ${data.userName} for ${data.patientName}`);
+
+        // Log activity to database
+        await activityLogger.log(
+            data.userId,
+            data.userName,
+            activityLogger.ACTIONS.UPDATE_INVOICE,
+            `Update billing: ${data.patientName}`,
+            io
+        );
+
         socket.broadcast.emit('billing:updated', data);
     });
-    
+
     // Visit completion broadcast
-    socket.on('visit:complete', (data) => {
+    socket.on('visit:complete', async (data) => {
         logger.info(`Visit completed by ${data.userName} for ${data.patientName}`);
+
+        // Log activity to database
+        await activityLogger.log(
+            data.userId,
+            data.userName,
+            activityLogger.ACTIONS.FINALIZE_VISIT,
+            `Menyelesaikan kunjungan: ${data.patientName}`,
+            io
+        );
+
         socket.broadcast.emit('visit:completed', data);
     });
     
@@ -404,9 +662,9 @@ io.on('connection', (socket) => {
         socket.emit('users:list', onlineUsers);
     });
     
-    socket.on('disconnect', () => {
-        logger.info(`Client disconnected: ${socket.id} (${socket.userName || 'unknown'})`);
-        
+    socket.on('disconnect', (reason) => {
+        logger.info(`Client disconnected: ${socket.id} (${socket.userName || 'unknown'}) reason: ${reason}`);
+
         // Broadcast to others that user disconnected
         if (socket.userId) {
             socket.broadcast.emit('user:disconnected', {

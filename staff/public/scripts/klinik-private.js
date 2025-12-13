@@ -53,9 +53,17 @@ function getUpcomingSunday(reference = new Date()) {
     const base = new Date(reference.getTime());
     const day = base.getDay();
     let daysAhead = (7 - day) % 7;
+
+    // If today is Sunday and it's before 9 PM, show today's Sunday
     if (daysAhead === 0) {
-        daysAhead = 7;
+        const currentHour = base.getHours();
+        // If it's after 9 PM on Sunday, show next Sunday
+        if (currentHour >= 21) {
+            daysAhead = 7;
+        }
+        // Otherwise show today (daysAhead = 0)
     }
+
     base.setDate(base.getDate() + daysAhead);
     base.setHours(0, 0, 0, 0);
     return base;
@@ -184,31 +192,35 @@ function renderAppointments(appointments) {
 
     appointments.forEach(appointment => {
         const tr = document.createElement('tr');
-        const patientIdBadge = `<span class="badge badge-secondary">${formatPatientId(appointment.patient_id)}</span>`;
+        // Format slot time for first column
+        const time = appointment.time || '-';
+        const slotNumber = appointment.slot_number || '-';
+        const slotBadge = `<span class="badge badge-info">${escapeHtml(time)}</span><div class="small text-muted mt-1">Slot ${slotNumber}</div>`;
 
-        const infoParts = [];
-        if (appointment.time) {
-            infoParts.push(`${escapeHtml(appointment.time)} WIB`);
-        }
-        if (appointment.sessionLabel) {
-            infoParts.push(escapeHtml(appointment.sessionLabel));
-        }
-        if (Number.isFinite(Number(appointment.slot_number))) {
-            infoParts.push(`Slot ${appointment.slot_number}`);
-        }
-        const infoLine = infoParts.length ? `<div class="small text-muted">${infoParts.join(' · ')}</div>` : '';
+        // Format session info for name column
+        const sessionLabel = appointment.sessionLabel || '';
+        const infoLine = sessionLabel ? `<div class="small text-muted">${escapeHtml(sessionLabel)}</div>` : '';
+
+        // Category badge
+        const categoryBadges = {
+            'obstetri': '<span class="badge badge-info">Obstetri</span>',
+            'gyn_repro': '<span class="badge badge-success">Reproduksi</span>',
+            'gyn_special': '<span class="badge badge-warning">Ginekologi</span>'
+        };
+        const categoryBadge = categoryBadges[appointment.consultation_category] || '<span class="badge badge-secondary">-</span>';
 
         const complaint = appointment.chief_complaint ? escapeHtml(appointment.chief_complaint) : '-';
         const statusMeta = getStatusMeta(appointment.status);
         const statusBadge = `<span class="badge ${statusMeta.className}">${escapeHtml(statusMeta.label)}</span>`;
 
         tr.innerHTML = `
-            <td>${patientIdBadge}</td>
+            <td class="text-center">${slotBadge}</td>
             <td>
                 <div class="font-weight-bold">${escapeHtml(appointment.patient_name || '-')}</div>
                 ${infoLine}
             </td>
             <td>${formatAge(appointment.patientAge)}</td>
+            <td>${categoryBadge}</td>
             <td>${complaint}</td>
             <td>${statusBadge}</td>
             <td class="text-center">
@@ -232,6 +244,76 @@ async function handlePeriksa(appointment) {
         return;
     }
 
+    // Show category selection modal
+    showCategoryModal(appointment);
+}
+
+function showCategoryModal(appointment) {
+    // Remove existing modal if any
+    const existingModal = document.getElementById('category-select-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+
+    const defaultCategory = appointment.consultation_category || 'obstetri';
+
+    const modalHtml = `
+        <div class="modal fade" id="category-select-modal" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-dialog-centered" role="document">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            <i class="fas fa-stethoscope mr-2"></i>Pilih Kategori Konsultasi
+                        </h5>
+                        <button type="button" class="close text-white" data-dismiss="modal">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="mb-3">Pasien: <strong>${escapeHtml(appointment.patient_name || '-')}</strong></p>
+                        <div class="category-options">
+                            <label class="category-option d-block mb-2">
+                                <input type="radio" name="mr_category" value="obstetri" ${defaultCategory === 'obstetri' ? 'checked' : ''}>
+                                <span class="ml-2"><i class="fas fa-baby text-info mr-1"></i> <strong>Obstetri</strong> - Kehamilan & Persalinan</span>
+                            </label>
+                            <label class="category-option d-block mb-2">
+                                <input type="radio" name="mr_category" value="gyn_repro" ${defaultCategory === 'gyn_repro' ? 'checked' : ''}>
+                                <span class="ml-2"><i class="fas fa-venus text-success mr-1"></i> <strong>Ginekologi Reproduksi</strong> - Program Hamil, KB</span>
+                            </label>
+                            <label class="category-option d-block mb-2">
+                                <input type="radio" name="mr_category" value="gyn_special" ${defaultCategory === 'gyn_special' ? 'checked' : ''}>
+                                <span class="ml-2"><i class="fas fa-microscope text-warning mr-1"></i> <strong>Ginekologi Khusus</strong> - Kista, Miom, dll</span>
+                            </label>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                        <button type="button" class="btn btn-primary" id="btn-start-with-category">
+                            <i class="fas fa-check mr-1"></i>Mulai Konsultasi
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+    const modal = $('#category-select-modal');
+    modal.modal('show');
+
+    document.getElementById('btn-start-with-category').addEventListener('click', async () => {
+        const selectedCategory = document.querySelector('input[name="mr_category"]:checked').value;
+        modal.modal('hide');
+        await startClinicRecord(appointment, selectedCategory);
+    });
+
+    modal.on('hidden.bs.modal', function() {
+        this.remove();
+    });
+}
+
+async function startClinicRecord(appointment, category) {
     try {
         const token = getToken();
         if (!token) {
@@ -243,7 +325,8 @@ async function handlePeriksa(appointment) {
             headers: {
                 'Authorization': `Bearer ${token}`,
                 'Content-Type': 'application/json'
-            }
+            },
+            body: JSON.stringify({ category: category })
         });
 
         if (!response.ok) {
@@ -355,9 +438,82 @@ async function loadUpcomingAppointments({ force = false } = {}) {
     }
 }
 
+async function loadRecentPatients() {
+    const loadingEl = document.getElementById('sunday-clinic-patients-loading');
+    const listEl = document.getElementById('sunday-clinic-patients-list');
+    const errorEl = document.getElementById('sunday-clinic-patients-error');
+    const tbody = document.getElementById('sunday-clinic-patients-tbody');
+
+    if (!tbody) return;
+
+    try {
+        // Show loading
+        if (loadingEl) loadingEl.classList.remove('d-none');
+        if (listEl) listEl.classList.add('d-none');
+        if (errorEl) errorEl.classList.add('d-none');
+
+        const token = getToken();
+        const response = await fetch(`/api/sunday-clinic/directory?_=${Date.now()}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Cache-Control': 'no-cache'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to fetch Sunday Clinic patients');
+        }
+
+        const result = await response.json();
+        const patients = result.success && result.data && result.data.patients ? result.data.patients : [];
+
+        // Get last 10 patients with their most recent visit
+        const recentPatients = patients.slice(0, 10).map(patient => {
+            const latestVisit = patient.visits && patient.visits.length > 0 ? patient.visits[0] : null;
+            return {
+                mrId: latestVisit ? latestVisit.mrId : null,
+                fullName: patient.fullName,
+                appointmentDate: latestVisit ? latestVisit.appointmentDate : null
+            };
+        }).filter(p => p.mrId); // Only show patients with MR ID
+
+        // Render patients
+        tbody.innerHTML = recentPatients.map(patient => {
+            const lastVisit = patient.appointmentDate ? new Date(patient.appointmentDate).toLocaleDateString('id-ID', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            }) : '-';
+
+            return `
+                <tr>
+                    <td><strong>${patient.mrId}</strong></td>
+                    <td>${patient.fullName || '-'}</td>
+                    <td>${lastVisit}</td>
+                    <td>
+                        <button class="btn btn-sm btn-info" onclick="window.openSundayClinicWithMrId('${patient.mrId}')">
+                            <i class="fas fa-folder-open"></i> Buka
+                        </button>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+
+        // Show list
+        if (loadingEl) loadingEl.classList.add('d-none');
+        if (listEl) listEl.classList.remove('d-none');
+
+    } catch (error) {
+        console.error('Error loading recent patients:', error);
+        if (loadingEl) loadingEl.classList.add('d-none');
+        if (errorEl) errorEl.classList.remove('d-none');
+    }
+}
+
 export function initKlinikPrivatePage() {
     ensureElements();
     loadUpcomingAppointments();
+    loadRecentPatients();
 }
 
 window.klinikPrivate = {

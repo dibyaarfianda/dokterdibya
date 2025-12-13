@@ -154,17 +154,17 @@
 
     // Show toast message
     function showToast(message, type = 'success') {
-        const bgColor = type === 'success' ? 'bg-success' : type === 'error' ? 'bg-danger' : 'bg-warning';
+        const bgColor = type === 'success' ? '#28a745' : type === 'error' ? '#dc3545' : '#ffc107';
+        const textColor = type === 'warning' ? '#212529' : '#ffffff';
         const toast = $(`
-            <div class="toast ${bgColor}" role="alert" style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 250px;">
-                <div class="toast-body text-white">
-                    ${message}
-                </div>
+            <div style="position: fixed; top: 20px; right: 20px; z-index: 9999; min-width: 250px;
+                        background: ${bgColor}; color: ${textColor}; padding: 15px 20px;
+                        border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.3);">
+                ${message}
             </div>
         `);
         $('body').append(toast);
-        toast.toast({ delay: 3000 }).toast('show');
-        setTimeout(() => toast.remove(), 3500);
+        setTimeout(() => toast.fadeOut(500, function() { $(this).remove(); }), 3000);
     }
 
     // Load profile data
@@ -286,20 +286,17 @@
             }
         }
 
-        // Prepare update data
+        // Prepare update data for profile (name and photo only)
         const updateData = { name: newDisplayName };
 
         if (selectedProfilePicture !== null) {
             updateData.photo_url = selectedProfilePicture;
         }
 
-        if (newPassword) {
-            updateData.currentPassword = currentPassword;
-            updateData.newPassword = newPassword;
-        }
-
         try {
             const token = getToken();
+
+            // Update profile (name and photo)
             const response = await fetch('/api/auth/profile', {
                 method: 'PUT',
                 headers: {
@@ -311,20 +308,43 @@
 
             const data = await response.json();
 
-            if (response.ok) {
-                showToast('Profil berhasil diperbarui!', 'success');
-                selectedProfilePicture = null;
-
-                // Clear password fields
-                $('#profile-current-password').val('');
-                $('#profile-new-password').val('');
-                $('#profile-confirm-password').val('');
-
-                // Reload profile data
-                setTimeout(() => loadProfileData(), 1000);
-            } else {
+            if (!response.ok) {
                 showToast(data.message || 'Gagal memperbarui profil', 'error');
+                return;
             }
+
+            // If password change requested, call separate endpoint
+            if (newPassword) {
+                const passwordResponse = await fetch('/api/auth/change-password', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        currentPassword: currentPassword,
+                        newPassword: newPassword
+                    })
+                });
+
+                const passwordData = await passwordResponse.json();
+
+                if (!passwordResponse.ok) {
+                    showToast(passwordData.message || 'Gagal mengubah password', 'error');
+                    return;
+                }
+            }
+
+            showToast('Profil berhasil diperbarui!', 'success');
+            selectedProfilePicture = null;
+
+            // Clear password fields
+            $('#profile-current-password').val('');
+            $('#profile-new-password').val('');
+            $('#profile-confirm-password').val('');
+
+            // Reload profile data
+            setTimeout(() => loadProfileData(), 1000);
         } catch (error) {
             console.error('Error updating profile:', error);
             showToast('Error updating profile', 'error');
@@ -336,5 +356,7 @@
         loadProfileData();
     });
 </script>
+    <!-- Global Chat Loader -->
+    <script src="/staff/public/scripts/global-chat-loader.js"></script>
 </body>
 </html>

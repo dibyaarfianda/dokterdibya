@@ -10,6 +10,7 @@ body
 		font-family: 'Open Sans', sans-serif;
 		font-weight: 300;
 		overflow-x: hidden; /* prevent horizontal scrollbar from appearing */
+		min-height: 100vh;
 	}
 	
 a {
@@ -76,15 +77,15 @@ h2 span
   		text-align: center;
   		font-size: 10px; 
   	}
-.sk-spinner-wave div 
+.sk-spinner-wave div
 	{
-  		background-color: #333;
+  		background-color: #ffffff;
   		height: 100%;
   		width: 6px;
   		display: inline-block;
          -webkit-animation: sk-waveStretchDelay 1.2s infinite ease-in-out;
                  animation: sk-waveStretchDelay 1.2s infinite ease-in-out;
-         
+
     }
 .sk-spinner-wave .sk-rect2 
 	{
@@ -171,6 +172,9 @@ header .social-icon li a
 		border: none;
 		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 		margin: 0 !important;
+		position: sticky;
+		top: 0;
+		z-index: 1000;
 	}
 .navbar-default .navbar-brand
 	{
@@ -222,8 +226,9 @@ header .social-icon li a
 /* start home */
 #home
 	{
-		background: url('../images/home-bg.jpg') no-repeat;
+		background: url('../images/home-bg.jpg') no-repeat top center;
 		background-size: cover;
+		background-attachment: fixed;
 		padding-top: 160px;
 		padding-bottom: 100px;
 		min-height: 650px;
@@ -233,6 +238,7 @@ header .social-icon li a
 		font-weight: 300;
 		font-size: 70px;
 		padding-bottom: 10px;
+		color: #ffffff;
 	}
 #home h1 span
 	{
@@ -261,6 +267,7 @@ header .social-icon li a
 .element {
 	height: 60px;
 	font-size: 16px;
+	color: #ffffff;
 }
 /* end home */
 
@@ -570,6 +577,10 @@ header .social-icon li a
 			min-height: 300px;
 			padding-top: 80px;
 			padding-bottom: 60px;
+			background: linear-gradient(135deg, rgba(26, 42, 58, 0.7) 0%, rgba(22, 33, 62, 0.65) 50%, rgba(15, 52, 96, 0.6) 100%),
+			            url('../images/home-bg.jpg') no-repeat right center;
+			background-size: cover, cover;
+			background-attachment: scroll;
 		}
 	#home h1
 		{
@@ -635,6 +646,10 @@ header .social-icon li a
 			min-height: 200px;
 			padding-top: 60px;
 			padding-bottom: 40px;
+			background: linear-gradient(135deg, rgba(26, 42, 58, 0.7) 0%, rgba(22, 33, 62, 0.65) 50%, rgba(15, 52, 96, 0.6) 100%),
+			            url('../images/home-bg.jpg') no-repeat right center;
+			background-size: cover, cover;
+			background-attachment: scroll;
 		}
 	#home h1
 		{
@@ -645,14 +660,11 @@ header .social-icon li a
 /* end 360 media quires */
 /* Dropdown Login Styles */
 .login-dropdown {
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.15);
     border-radius: 4px;
     box-shadow: 0 6px 12px rgba(0,0,0,0.175);
     padding: 0;
-    min-width: 320px;
-    max-width: 400px;
+    min-width: 260px;
     right: 0;
     left: auto;
 }
@@ -665,17 +677,18 @@ header .social-icon li a
     border-radius: 4px;
     border: 1px solid #ddd;
     padding: 8px 12px;
-    color: #333;
-    font-size: 14px;
+    color: #000000;
+    background: #ffffff;
+    font-size: 12px;
 }
 
 .login-dropdown .form-control:focus {
     border-color: #47C6F8;
-    box-shadow: 0 0 8px rgba(71, 198, 248, 0.3);
+    outline: none;
 }
 
 .login-dropdown label {
-    color: #333;
+    color: #ffffff;
     font-weight: 600;
     margin-bottom: 5px;
     font-size: 13px;
@@ -703,60 +716,7 @@ header .social-icon li a
     text-decoration: underline;
 }
 
-/* Mobile Responsive for Login Dropdown */
-@media (max-width: 767px) {
-    .login-dropdown {
-        min-width: 280px;
-        max-width: 90vw;
-        right: 10px;
-        left: auto;
-    }
-    
-    .login-dropdown form {
-        padding: 12px !important;
-    }
-    
-    .login-dropdown .form-control {
-        font-size: 16px;
-        padding: 10px;
-    }
-    
-    .login-dropdown label {
-        font-size: 13px;
-    }
-    
-    .login-dropdown .btn-primary,
-    .login-dropdown button {
-        padding: 12px;
-        font-size: 14px;
-    }
-    
-    .login-dropdown p,
-    .login-dropdown small {
-        font-size: 12px;
-    }
-}
-
-@media (max-width: 480px) {
-    .login-dropdown {
-        min-width: 260px;
-        max-width: calc(100vw - 20px);
-        right: 10px;
-    }
-    
-    .login-dropdown form {
-        padding: 10px !important;
-        min-width: auto !important;
-    }
-    
-    .login-dropdown .form-control {
-        font-size: 16px;
-    }
-    
-    .login-dropdown .btn-primary,
-    .login-dropdown button {
-        padding: 10px;
-        font-size: 13px;
-    }
+.login-dropdown .form-group {
+    margin-bottom: 8px;
 }
 

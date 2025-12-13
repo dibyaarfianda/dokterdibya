@@ -1,11 +1,7 @@
-// Booking Appointment Script
-const token = localStorage.getItem('patient_token');
+// Booking Appointment Script v2.0
+// Auth check is done inline in HTML before this script loads
+const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
 const API_BASE = '/api/sunday-appointments';
-
-// Redirect if not authenticated
-if (!token) {
-    window.location.href = '/index.html';
-}
 
 // Booking state
 let currentStep = 1;
@@ -16,7 +12,16 @@ const bookingData = {
     sessionLabel: null,
     slot: null,
     slotTime: null,
+    consultationCategory: 'obstetri',
+    consultationCategoryLabel: 'Kehamilan (Obstetri)',
     chiefComplaint: null
+};
+
+// Category labels map
+const categoryLabels = {
+    'obstetri': 'Kehamilan (Obstetri)',
+    'gyn_repro': 'Program Hamil (Reproduksi)',
+    'gyn_special': 'Ginekologi Umum'
 };
 
 // Initialize
@@ -30,6 +35,13 @@ function setupEventListeners() {
     $('#btn-back').click(prevStep);
     $('#btn-submit').click(submitBooking);
     $('#chief-complaint').on('input', validateComplaint);
+
+    // Category selection
+    $('input[name="consultation_category"]').on('change', function() {
+        const value = $(this).val();
+        bookingData.consultationCategory = value;
+        bookingData.consultationCategoryLabel = categoryLabels[value] || value;
+    });
 }
 
 function showAlert(message, type = 'info') {
@@ -110,12 +122,13 @@ async function loadSlots() {
 function renderSessions(sessions) {
     $('#session-loading').hide();
     $('#session-container').show();
-    
+
     const html = sessions.map(session => {
+        const totalSlots = session.slots.length;
         const availableCount = session.slots.filter(s => s.available).length;
         let badgeClass = 'badge-available';
-        let badgeText = `${availableCount}/10 tersedia`;
-        
+        let badgeText = `${availableCount}/${totalSlots} tersedia`;
+
         if (availableCount === 0) {
             badgeClass = 'badge-full';
             badgeText = 'Penuh';
@@ -247,13 +260,14 @@ function showSummary() {
     $('#summary-date').text(bookingData.dateFormatted);
     $('#summary-session').text(bookingData.sessionLabel);
     $('#summary-time').text(bookingData.slotTime);
+    $('#summary-category').text(bookingData.consultationCategoryLabel);
     $('#summary-complaint').text(bookingData.chiefComplaint);
 }
 
 async function submitBooking() {
     try {
         $('#btn-submit').prop('disabled', true).html('<i class="fa fa-spinner fa-spin"></i> Memproses...');
-        
+
         const response = await fetch(`${API_BASE}/book`, {
             method: 'POST',
             headers: {
@@ -264,16 +278,39 @@ async function submitBooking() {
                 appointment_date: bookingData.date,
                 session: bookingData.session,
                 slot_number: bookingData.slot,
-                chief_complaint: bookingData.chiefComplaint
+                chief_complaint: bookingData.chiefComplaint,
+                consultation_category: bookingData.consultationCategory
             })
         });
-        
+
         const data = await response.json();
-        
+
         if (!response.ok) {
+            // Handle 409 Conflict (slot already booked by another patient)
+            if (response.status === 409) {
+                showAlert(`
+                    <strong><i class="fa fa-exclamation-triangle"></i> Slot Sudah Terisi</strong><br>
+                    ${data.message}<br><br>
+                    <small>Memuat ulang slot yang tersedia...</small>
+                `, 'warning');
+
+                // Reset slot selection
+                bookingData.session = null;
+                bookingData.sessionLabel = null;
+                bookingData.slot = null;
+                bookingData.slotTime = null;
+
+                // Go back to step 2 (slot selection) and refresh slots
+                currentStep = 2;
+                updateUI();
+                await loadSlots();
+
+                $('#btn-submit').prop('disabled', false).html('<i class="fa fa-check"></i> Konfirmasi Booking');
+                return;
+            }
             throw new Error(data.message || 'Gagal membuat janji temu');
         }
-        
+
         // Success
         showAlert(`
             <strong>Janji Temu Berhasil Dibuat!</strong><br>
@@ -286,11 +323,11 @@ async function submitBooking() {
             </div><br>
             Anda akan dialihkan ke dashboard...
         `, 'success');
-        
+
         setTimeout(() => {
             window.location.href = '/patient-dashboard.html';
         }, 3000);
-        
+
     } catch (error) {
         console.error('Error booking appointment:', error);
         showAlert(error.message, 'danger');

@@ -10,11 +10,25 @@
  * 4. Invoice Actions
  */
 
+// Format currency helper - no decimals, with thousands separator
+function formatRupiah(amount) {
+    const number = Math.round(amount || 0);
+    return 'Rp ' + number.toLocaleString('id-ID', { maximumFractionDigits: 0 });
+}
+
 export default {
     /**
      * Render the Billing form
      */
     async render(state) {
+        const record = state.recordData || {};
+        const category = record?.mrCategory || record?.mr_category || 'obstetri';
+
+        // Use obstetri format for all categories (as per user request)
+        // Tagihan is the same across obstetri, gyn_repro, gyn_special
+        return await this.renderObstetriFormat(state);
+
+        /* Disabled: Use new detailed format for other categories
         const billing = state.billingData || state.recordData?.billing || {};
         const items = billing.items || [];
 
@@ -117,14 +131,14 @@ export default {
                         // Update item subtotal display
                         const subtotalElement = row.querySelector('.item-subtotal');
                         if (subtotalElement) {
-                            subtotalElement.textContent = 'Rp ' + itemSubtotal.toLocaleString('id-ID');
+                            subtotalElement.textContent = 'Rp ' + Math.round(itemSubtotal).toLocaleString('id-ID', { maximumFractionDigits: 0 });
                         }
 
                         subtotal += itemSubtotal;
                     });
 
                     // Update subtotal
-                    document.getElementById('billing-subtotal').textContent = 'Rp ' + subtotal.toLocaleString('id-ID');
+                    document.getElementById('billing-subtotal').textContent = 'Rp ' + Math.round(subtotal).toLocaleString('id-ID', { maximumFractionDigits: 0 });
 
                     // Calculate discount
                     const discountType = document.querySelector('[name="discount_type"]')?.value || 'none';
@@ -137,18 +151,18 @@ export default {
                         discount = discountValue;
                     }
 
-                    document.getElementById('billing-discount').textContent = 'Rp ' + discount.toLocaleString('id-ID');
+                    document.getElementById('billing-discount').textContent = 'Rp ' + Math.round(discount).toLocaleString('id-ID', { maximumFractionDigits: 0 });
 
                     // Calculate tax (if applicable)
                     const taxRate = parseFloat(document.querySelector('[name="tax_rate"]')?.value) || 0;
                     const afterDiscount = subtotal - discount;
                     const tax = (afterDiscount * taxRate) / 100;
 
-                    document.getElementById('billing-tax').textContent = 'Rp ' + tax.toLocaleString('id-ID');
+                    document.getElementById('billing-tax').textContent = 'Rp ' + Math.round(tax).toLocaleString('id-ID', { maximumFractionDigits: 0 });
 
                     // Calculate grand total
                     const grandTotal = afterDiscount + tax;
-                    document.getElementById('billing-grand-total').textContent = 'Rp ' + grandTotal.toLocaleString('id-ID');
+                    document.getElementById('billing-grand-total').textContent = 'Rp ' + Math.round(grandTotal).toLocaleString('id-ID', { maximumFractionDigits: 0 });
 
                     // Update payment calculation
                     window.calculatePaymentBalance();
@@ -163,7 +177,7 @@ export default {
 
                     const balanceElement = document.getElementById('payment-balance');
                     if (balanceElement) {
-                        balanceElement.textContent = 'Rp ' + balance.toLocaleString('id-ID');
+                        balanceElement.textContent = 'Rp ' + Math.round(balance).toLocaleString('id-ID', { maximumFractionDigits: 0 });
                         if (balance > 0) {
                             balanceElement.className = 'text-danger font-weight-bold';
                         } else if (balance === 0) {
@@ -196,6 +210,7 @@ export default {
                 document.querySelector('[name="amount_paid"]')?.addEventListener('input', window.calculatePaymentBalance);
             </script>
         `;
+    */
     },
 
     /**
@@ -286,7 +301,7 @@ export default {
                                value="${price}" min="0" step="1000" onchange="window.calculateBillingTotal()">
                     </td>
                     <td class="text-right">
-                        <span class="item-subtotal">Rp ${subtotal.toLocaleString('id-ID')}</span>
+                        <span class="item-subtotal">Rp ${Math.round(subtotal).toLocaleString('id-ID', { maximumFractionDigits: 0 })}</span>
                     </td>
                     <td class="text-center">
                         <button type="button" class="btn btn-danger btn-sm"
@@ -366,7 +381,7 @@ export default {
                         <strong>Subtotal:</strong>
                     </div>
                     <div class="col-md-4 text-right">
-                        <span id="billing-subtotal" class="h6">Rp ${subtotal.toLocaleString('id-ID')}</span>
+                        <span id="billing-subtotal" class="h6">Rp ${Math.round(subtotal).toLocaleString('id-ID', { maximumFractionDigits: 0 })}</span>
                     </div>
                 </div>
 
@@ -375,7 +390,7 @@ export default {
                         <strong>Diskon:</strong>
                     </div>
                     <div class="col-md-4 text-right">
-                        <span id="billing-discount" class="text-danger">Rp ${discount.toLocaleString('id-ID')}</span>
+                        <span id="billing-discount" class="text-danger">Rp ${Math.round(discount).toLocaleString('id-ID', { maximumFractionDigits: 0 })}</span>
                     </div>
                 </div>
 
@@ -384,7 +399,7 @@ export default {
                         <strong>Pajak:</strong>
                     </div>
                     <div class="col-md-4 text-right">
-                        <span id="billing-tax">Rp ${tax.toLocaleString('id-ID')}</span>
+                        <span id="billing-tax">Rp ${Math.round(tax).toLocaleString('id-ID', { maximumFractionDigits: 0 })}</span>
                     </div>
                 </div>
 
@@ -396,7 +411,7 @@ export default {
                     </div>
                     <div class="col-md-4 text-right">
                         <span id="billing-grand-total" class="h4 text-primary font-weight-bold">
-                            Rp ${grandTotal.toLocaleString('id-ID')}
+                            Rp ${Math.round(grandTotal).toLocaleString('id-ID', { maximumFractionDigits: 0 })}
                         </span>
                     </div>
                 </div>
@@ -531,7 +546,7 @@ export default {
                         </div>
                         <div class="col-md-6 text-right">
                             <span id="payment-balance" class="${balanceClass} font-weight-bold h5">
-                                Rp ${balance.toLocaleString('id-ID')}
+                                Rp ${Math.round(balance).toLocaleString('id-ID', { maximumFractionDigits: 0 })}
                             </span>
                         </div>
                     </div>
@@ -687,5 +702,630 @@ export default {
         });
 
         return items;
+    },
+
+    /**
+     * Render old Obstetri format (read-only with confirmation)
+     */
+    async renderObstetriFormat(state) {
+        // Load billing data from API
+        let billing = { items: [], status: 'draft' };
+
+        try {
+            const mrId = state.recordData?.mrId || state.recordData?.mr_id || state.currentMrId;
+            if (mrId) {
+                const token = window.getToken?.();
+                if (token) {
+                    const response = await fetch(`/api/sunday-clinic/billing/${mrId}`, {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.success && result.data) {
+                            billing = result.data;
+                        }
+                    }
+                }
+            }
+        } catch (error) {
+            console.error('[Billing] Failed to load billing data:', error);
+        }
+
+        const items = billing.items || [];
+        const status = billing.status || 'draft';
+
+        const escapeHtml = (str) => {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        };
+
+        const formatRupiahLocal = (amount) => {
+            const number = Math.round(amount || 0);
+            return 'Rp ' + number.toLocaleString('id-ID', { maximumFractionDigits: 0 });
+        };
+
+        // Calculate total
+        let subtotal = 0;
+        const itemsHtml = items.map(item => {
+            const itemTotal = (item.quantity || 1) * (item.price || 0);
+            subtotal += itemTotal;
+            return `
+                <tr>
+                    <td>${escapeHtml(item.item_name)}</td>
+                    <td class="text-center">${item.quantity || 1}</td>
+                    <td class="text-right">${formatRupiahLocal(item.price)}</td>
+                    <td class="text-right font-weight-bold">${formatRupiahLocal(itemTotal)}</td>
+                </tr>
+            `;
+        }).join('');
+
+        // Status badge
+        let statusBadge = '<span class="badge badge-warning">Draft</span>';
+        if (status === 'confirmed') {
+            statusBadge = '<span class="badge badge-success">Dikonfirmasi</span>';
+        } else if (status === 'paid') {
+            statusBadge = '<span class="badge badge-primary">Lunas</span>';
+        }
+
+        // Check user role - only dokter can confirm billing
+        const userRole = window.currentStaffIdentity?.role || '';
+        const isDokter = userRole === 'dokter' || userRole === 'superadmin';
+
+        // Action buttons
+        let actionsHtml = '';
+        if (status === 'draft') {
+            // DRAFT: Only dokter can confirm, all others wait
+            if (isDokter) {
+                actionsHtml = `
+                    <button type="button" class="btn btn-primary" id="btn-confirm-billing">
+                        <i class="fas fa-check mr-2"></i>Konfirmasi Tagihan
+                    </button>
+                    <button type="button" class="btn btn-secondary mr-2" id="btn-print-etiket" disabled>
+                        <i class="fas fa-tag mr-2"></i>Cetak Etiket
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="btn-print-invoice" disabled>
+                        <i class="fas fa-receipt mr-2"></i>Cetak Invoice
+                    </button>`;
+            } else {
+                // Non-dokter: All buttons disabled until confirmed
+                actionsHtml = `
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Menunggu konfirmasi dokter
+                    </div>
+                    <button type="button" class="btn btn-secondary mr-2" id="btn-request-revision" disabled>
+                        <i class="fas fa-edit mr-2"></i>Ajukan Perubahan
+                    </button>
+                    <button type="button" class="btn btn-secondary mr-2" id="btn-print-etiket" disabled>
+                        <i class="fas fa-tag mr-2"></i>Cetak Etiket
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="btn-print-invoice" disabled>
+                        <i class="fas fa-receipt mr-2"></i>Cetak Invoice
+                    </button>`;
+            }
+        } else if (status === 'confirmed') {
+            // CONFIRMED: Show print buttons + Mark as Paid button
+            const markPaidBtn = `
+                <button type="button" class="btn btn-primary mr-2" id="btn-mark-paid">
+                    <i class="fas fa-money-bill-wave mr-2"></i>Tandai Lunas
+                </button>`;
+
+            if (isDokter) {
+                actionsHtml = `
+                    ${markPaidBtn}
+                    <button type="button" class="btn btn-success mr-2" id="btn-print-etiket">
+                        <i class="fas fa-tag mr-2"></i>Cetak Etiket
+                    </button>
+                    <button type="button" class="btn btn-success" id="btn-print-invoice">
+                        <i class="fas fa-receipt mr-2"></i>Cetak Invoice
+                    </button>
+                    ${billing.printed_at ? '<small class="text-muted ml-2">Telah dicetak</small>' : ''}`;
+            } else {
+                // Non-dokter: Print + Ajukan Perubahan + Mark as Paid
+                actionsHtml = `
+                    ${markPaidBtn}
+                    <button type="button" class="btn btn-warning mr-2" id="btn-request-revision">
+                        <i class="fas fa-edit mr-2"></i>Ajukan Perubahan
+                    </button>
+                    <button type="button" class="btn btn-success mr-2" id="btn-print-etiket">
+                        <i class="fas fa-tag mr-2"></i>Cetak Etiket
+                    </button>
+                    <button type="button" class="btn btn-success" id="btn-print-invoice">
+                        <i class="fas fa-receipt mr-2"></i>Cetak Invoice
+                    </button>
+                    ${billing.printed_at ? '<small class="text-muted ml-2">Telah dicetak</small>' : ''}`;
+            }
+        } else if (status === 'paid') {
+            // PAID: Show print buttons + paid indicator (no more mark as paid)
+            const paidBadge = `
+                <span class="badge badge-lg badge-primary mr-3" style="font-size: 1rem; padding: 0.5rem 1rem;">
+                    <i class="fas fa-check-circle mr-1"></i>Sudah Lunas
+                </span>`;
+
+            if (isDokter) {
+                actionsHtml = `
+                    ${paidBadge}
+                    <button type="button" class="btn btn-success mr-2" id="btn-print-etiket">
+                        <i class="fas fa-tag mr-2"></i>Cetak Etiket
+                    </button>
+                    <button type="button" class="btn btn-success" id="btn-print-invoice">
+                        <i class="fas fa-receipt mr-2"></i>Cetak Invoice
+                    </button>
+                    ${billing.printed_at ? '<small class="text-muted ml-2">Telah dicetak</small>' : ''}`;
+            } else {
+                actionsHtml = `
+                    ${paidBadge}
+                    <button type="button" class="btn btn-success mr-2" id="btn-print-etiket">
+                        <i class="fas fa-tag mr-2"></i>Cetak Etiket
+                    </button>
+                    <button type="button" class="btn btn-success" id="btn-print-invoice">
+                        <i class="fas fa-receipt mr-2"></i>Cetak Invoice
+                    </button>
+                    ${billing.printed_at ? '<small class="text-muted ml-2">Telah dicetak</small>' : ''}`;
+            }
+        }
+
+        // Check which admin items are already in billing
+        const existingAdminCodes = items
+            .filter(item => item.item_type === 'tindakan' && item.item_code && item.item_code.startsWith('S0'))
+            .map(item => item.item_code);
+
+        // Admin items with their codes and prices
+        const adminItems = [
+            { code: 'S01', name: 'Biaya Admin', price: 5000 },
+            { code: 'S03', name: 'Buku Kontrol', price: 25000 },
+            { code: 'S04', name: 'Buku Panduan Lengkap & ANC', price: 50000 },
+            { code: 'S02', name: 'Surat Keterangan SpOG', price: 20000 }
+        ];
+
+        const adminCheckboxesHtml = adminItems.map(item => {
+            const isChecked = existingAdminCodes.includes(item.code);
+            return `
+                <div class="col-md-6 col-lg-3 mb-2">
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input admin-item-checkbox"
+                               id="admin-${item.code}"
+                               data-code="${item.code}"
+                               data-name="${escapeHtml(item.name)}"
+                               data-price="${item.price}"
+                               ${isChecked ? 'checked' : ''}
+                               ${status === 'confirmed' ? 'disabled' : ''}>
+                        <label class="custom-control-label" for="admin-${item.code}">
+                            ${escapeHtml(item.name)}
+                            <small class="text-muted d-block">${formatRupiahLocal(item.price)}</small>
+                        </label>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        return `
+            <div class="sc-section">
+                <div class="sc-section-header">
+                    <h3>Tagihan & Pembayaran</h3>
+                </div>
+                <div class="sc-card">
+                    <!-- Admin Items Section -->
+                    <div class="mb-4">
+                        <h6 class="text-primary mb-3">
+                            <i class="fas fa-clipboard-list mr-2"></i>Biaya Administratif
+                        </h6>
+                        <div class="row">
+                            ${adminCheckboxesHtml}
+                        </div>
+                        ${status === 'confirmed' ? '<small class="text-muted"><i class="fas fa-lock mr-1"></i>Tagihan sudah dikonfirmasi, tidak dapat diubah.</small>' : ''}
+                    </div>
+
+                    <hr>
+
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">Rincian Tagihan</h5>
+                        ${statusBadge}
+                    </div>
+
+                    <table class="table table-bordered">
+                        <thead class="thead-light">
+                            <tr>
+                                <th>Item</th>
+                                <th width="10%" class="text-center">Qty</th>
+                                <th width="20%" class="text-right">Harga</th>
+                                <th width="20%" class="text-right">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${itemsHtml || '<tr><td colspan="4" class="text-center text-muted">Belum ada item tagihan. Item akan muncul setelah Planning disimpan.</td></tr>'}
+                            ${itemsHtml ? `
+                            <tr class="table-active font-weight-bold">
+                                <td colspan="3" class="text-right">GRAND TOTAL</td>
+                                <td class="text-right">${formatRupiahLocal(subtotal)}</td>
+                            </tr>
+                            ` : ''}
+                        </tbody>
+                    </table>
+
+                    <div class="text-right mt-3">
+                        ${actionsHtml}
+                    </div>
+                </div>
+            </div>
+        `;
+    },
+
+    /**
+     * Setup event handlers after render
+     */
+    async afterRender(state) {
+        // Setup billing button handlers
+        setTimeout(() => {
+            // 0. Admin item checkboxes
+            const adminCheckboxes = document.querySelectorAll('.admin-item-checkbox');
+            adminCheckboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', async function() {
+                    const code = this.dataset.code;
+                    const name = this.dataset.name;
+                    const price = parseFloat(this.dataset.price);
+                    const isChecked = this.checked;
+
+                    try {
+                        const token = window.getToken?.();
+                        if (!token) return;
+
+                        const mrId = window.routeMrSlug;
+                        if (!mrId) {
+                            alert('MR ID tidak ditemukan');
+                            return;
+                        }
+
+                        // Disable checkbox during request
+                        this.disabled = true;
+
+                        if (isChecked) {
+                            // Add admin item to billing
+                            // First fetch existing items
+                            let existingItems = [];
+                            const fetchResponse = await fetch(`/api/sunday-clinic/billing/${mrId}`, {
+                                method: 'GET',
+                                headers: { 'Authorization': `Bearer ${token}` }
+                            });
+
+                            if (fetchResponse.ok) {
+                                const billingData = await fetchResponse.json();
+                                if (billingData.data && billingData.data.items) {
+                                    existingItems = billingData.data.items.map(item => ({
+                                        item_type: item.item_type,
+                                        item_code: item.item_code,
+                                        item_name: item.item_name,
+                                        quantity: item.quantity,
+                                        item_data: item.item_data
+                                    }));
+                                }
+                            }
+
+                            // Add new admin item
+                            existingItems.push({
+                                item_type: 'tindakan',
+                                item_code: code,
+                                item_name: name,
+                                quantity: 1
+                            });
+
+                            // Save all items
+                            const response = await fetch(`/api/sunday-clinic/billing/${mrId}`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Authorization': `Bearer ${token}`
+                                },
+                                body: JSON.stringify({ items: existingItems })
+                            });
+
+                            if (!response.ok) {
+                                throw new Error('Gagal menambahkan item');
+                            }
+
+                            if (window.showSuccess) {
+                                window.showSuccess(`${name} ditambahkan ke tagihan`);
+                            }
+                        } else {
+                            // Remove admin item from billing
+                            const response = await fetch(`/api/sunday-clinic/billing/${mrId}/items/code/${code}`, {
+                                method: 'DELETE',
+                                headers: {
+                                    'Authorization': `Bearer ${token}`,
+                                    'Content-Type': 'application/json'
+                                }
+                            });
+
+                            if (!response.ok) {
+                                throw new Error('Gagal menghapus item');
+                            }
+
+                            if (window.showSuccess) {
+                                window.showSuccess(`${name} dihapus dari tagihan`);
+                            }
+                        }
+
+                        // Reload billing section to show updated items
+                        if (window.handleSectionChange) {
+                            window.handleSectionChange('billing', { pushHistory: false });
+                        }
+
+                    } catch (error) {
+                        console.error('Error updating admin item:', error);
+                        // Revert checkbox state
+                        this.checked = !isChecked;
+                        this.disabled = false;
+                        if (window.showError) {
+                            window.showError(error.message || 'Gagal mengubah item');
+                        }
+                    }
+                });
+            });
+
+            // 1. Confirm billing button (dokter only)
+                    const confirmBtn = document.getElementById('btn-confirm-billing');
+                    if (confirmBtn) {
+                        confirmBtn.addEventListener('click', async function() {
+                            const userRole = window.currentStaffIdentity?.role || '';
+                            const isDokter = userRole === 'dokter' || userRole === 'superadmin';
+                            
+                            if (!isDokter) {
+                                alert('Hanya dokter yang dapat mengkonfirmasi tagihan');
+                                return;
+                            }
+
+                            if (!confirm('Konfirmasi tagihan ini? Setelah dikonfirmasi, tagihan tidak dapat diubah.')) {
+                                return;
+                            }
+
+                            try {
+                                const token = window.getToken?.();
+                                if (!token) return;
+
+                                const mrId = window.routeMrSlug;
+                                if (!mrId) {
+                                    alert('MR ID tidak ditemukan');
+                                    return;
+                                }
+
+                                const response = await fetch(`/api/sunday-clinic/billing/${mrId}/confirm`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Authorization': `Bearer ${token}`,
+                                        'Content-Type': 'application/json'
+                                    }
+                                });
+
+                                if (!response.ok) {
+                                    const error = await response.json();
+                                    throw new Error(error.message || 'Gagal mengkonfirmasi tagihan');
+                                }
+
+                                const result = await response.json();
+
+                                if (window.showSuccess) {
+                                    window.showSuccess('Tagihan berhasil dikonfirmasi!');
+                                }
+
+                                // Backend will broadcast via Socket.IO
+                                console.log('[Billing] Billing confirmed, server will broadcast to all users');
+
+                                // Reload billing section
+                                if (window.handleSectionChange) {
+                                    window.handleSectionChange('billing', { pushHistory: false });
+                                }
+                            } catch (error) {
+                                console.error('Error confirming billing:', error);
+                                if (window.showError) {
+                                    window.showError(error.message || 'Gagal mengkonfirmasi tagihan');
+                                } else {
+                                    alert(error.message || 'Gagal mengkonfirmasi tagihan');
+                                }
+                            }
+                        });
+                    }
+
+                    // 2. Print etiket button
+                    const etiketBtn = document.getElementById('btn-print-etiket');
+                    if (etiketBtn) {
+                        etiketBtn.addEventListener('click', async function() {
+                            if (this.disabled) return;
+                            try {
+                                const token = window.getToken?.();
+                                const mrId = window.routeMrSlug;
+
+                                const response = await fetch(`/api/sunday-clinic/billing/${mrId}/print-etiket`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Authorization': `Bearer ${token}`,
+                                        'Content-Type': 'application/json'
+                                    }
+                                });
+
+                                if (!response.ok) throw new Error('Gagal mencetak etiket');
+
+                                const data = await response.json();
+                                if (data.success && data.downloadUrl) {
+                                    // Open download URL in new tab
+                                    window.open(data.downloadUrl, '_blank');
+                                } else {
+                                    throw new Error(data.message || 'Gagal mencetak etiket');
+                                }
+
+                                if (window.showSuccess) {
+                                    window.showSuccess('Etiket berhasil dicetak!');
+                                }
+
+                                // Reload to update printed status
+                                setTimeout(() => {
+                                    if (window.handleSectionChange) {
+                                        window.handleSectionChange('billing', { pushHistory: false });
+                                    }
+                                }, 1000);
+                            } catch (error) {
+                                console.error('Error printing etiket:', error);
+                                if (window.showError) {
+                                    window.showError(error.message);
+                                }
+                            }
+                        });
+                    }
+
+                    // 3. Print invoice button
+                    const invoiceBtn = document.getElementById('btn-print-invoice');
+                    if (invoiceBtn) {
+                        invoiceBtn.addEventListener('click', async function() {
+                            if (this.disabled) return;
+
+                            try {
+                                const token = window.getToken?.();
+                                const mrId = window.routeMrSlug;
+
+                                const response = await fetch(`/api/sunday-clinic/billing/${mrId}/print-invoice`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Authorization': `Bearer ${token}`,
+                                        'Content-Type': 'application/json'
+                                    }
+                                });
+
+                                if (!response.ok) throw new Error('Gagal mencetak invoice');
+
+                                const data = await response.json();
+                                if (data.success && data.downloadUrl) {
+                                    // Open download URL in new tab
+                                    window.open(data.downloadUrl, '_blank');
+                                } else {
+                                    throw new Error(data.message || 'Gagal mencetak invoice');
+                                }
+
+                                if (window.showSuccess) {
+                                    window.showSuccess('Invoice berhasil dicetak!');
+                                }
+
+                                // Reload to update printed status
+                                setTimeout(() => {
+                                    if (window.handleSectionChange) {
+                                        window.handleSectionChange('billing', { pushHistory: false });
+                                    }
+                                }, 1000);
+                            } catch (error) {
+                                console.error('Error printing invoice:', error);
+                                if (window.showError) {
+                                    window.showError(error.message);
+                                }
+                            }
+                        });
+                    }
+
+                    // 4. Request revision button (non-dokter only)
+                    const revisionBtn = document.getElementById('btn-request-revision');
+                    if (revisionBtn) {
+                        revisionBtn.addEventListener('click', async function() {
+                            const message = prompt('Masukkan usulan revisi untuk dokter:');
+                            if (!message || message.trim() === '') return;
+
+                            try {
+                                const token = window.getToken?.();
+                                const mrId = window.routeMrSlug;
+                                const userName = window.currentStaffIdentity?.name || 'Staff';
+
+                                const response = await fetch(`/api/sunday-clinic/billing/${mrId}/request-revision`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Authorization': `Bearer ${token}`,
+                                        'Content-Type': 'application/json'
+                                    },
+                                    body: JSON.stringify({
+                                        message: message.trim(),
+                                        requestedBy: userName
+                                    })
+                                });
+
+                                if (!response.ok) throw new Error('Gagal mengirim usulan');
+
+                                const result = await response.json();
+
+                                if (window.showSuccess) {
+                                    window.showSuccess('Usulan berhasil dikirim ke dokter!');
+                                }
+
+                                // Backend will broadcast via Socket.IO
+                                console.log('[Billing] Revision request sent, server will broadcast to dokter');
+                            } catch (error) {
+                                console.error('Error requesting revision:', error);
+                                if (window.showError) {
+                                    window.showError(error.message);
+                                }
+                            }
+                        });
+                    }
+
+                    // 5. Mark as Paid button - deducts stock from inventory
+                    const markPaidBtn = document.getElementById('btn-mark-paid');
+                    if (markPaidBtn) {
+                        markPaidBtn.addEventListener('click', async function() {
+                            if (!confirm('Tandai tagihan ini sebagai LUNAS?\n\nStok obat akan otomatis dikurangi dari inventory.')) {
+                                return;
+                            }
+
+                            try {
+                                const token = window.getToken?.();
+                                if (!token) return;
+
+                                const mrId = window.routeMrSlug;
+                                if (!mrId) {
+                                    alert('MR ID tidak ditemukan');
+                                    return;
+                                }
+
+                                // Disable button during request
+                                this.disabled = true;
+                                this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Memproses...';
+
+                                const response = await fetch(`/api/sunday-clinic/billing/${mrId}/mark-paid`, {
+                                    method: 'POST',
+                                    headers: {
+                                        'Authorization': `Bearer ${token}`,
+                                        'Content-Type': 'application/json'
+                                    }
+                                });
+
+                                if (!response.ok) {
+                                    const error = await response.json();
+                                    throw new Error(error.message || 'Gagal menandai pembayaran');
+                                }
+
+                                const result = await response.json();
+
+                                if (window.showSuccess) {
+                                    window.showSuccess('Pembayaran berhasil dicatat! Stok obat telah dikurangi.');
+                                }
+
+                                // Reload billing section to show updated status
+                                if (window.handleSectionChange) {
+                                    window.handleSectionChange('billing', { pushHistory: false });
+                                }
+                            } catch (error) {
+                                console.error('Error marking payment:', error);
+                                // Re-enable button on error
+                                this.disabled = false;
+                                this.innerHTML = '<i class="fas fa-money-bill-wave mr-2"></i>Tandai Lunas';
+
+                                if (window.showError) {
+                                    window.showError(error.message || 'Gagal menandai pembayaran');
+                                } else {
+                                    alert(error.message || 'Gagal menandai pembayaran');
+                                }
+                            }
+                        });
+                    }
+                }, 100);
     }
 };

@@ -6,7 +6,7 @@
 const express = require('express');
 const router = express.Router();
 const ObatService = require('../../services/ObatService');
-const { verifyToken } = require('../../middleware/auth');
+const { verifyToken, requireSuperadmin } = require('../../middleware/auth');
 const { validateObat } = require('../../middleware/validation');
 const { asyncHandler } = require('../../middleware/errorHandler');
 const { sendSuccess, sendCreated } = require('../../utils/response');
@@ -56,8 +56,8 @@ router.patch('/obat/:id/stock', verifyToken, asyncHandler(async (req, res) => {
     sendSuccess(res, result, 'Stock updated successfully');
 }));
 
-// DELETE OBAT
-router.delete('/obat/:id', verifyToken, asyncHandler(async (req, res) => {
+// DELETE OBAT (superadmin/dokter only)
+router.delete('/obat/:id', verifyToken, requireSuperadmin, asyncHandler(async (req, res) => {
     await ObatService.deleteObat(req.params.id);
     sendSuccess(res, null, 'Obat deleted successfully');
 }));

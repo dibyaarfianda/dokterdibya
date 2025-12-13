@@ -1,0 +1,13 @@
+id	name	display_name	description	is_system	created_at	updated_at
+1	dokter	Dokter	Medical doctor with full clinical and administrative access	1	2025-11-05 01:33:13	2025-11-23 02:55:46
+2	admin	Administrator	Administrative access to most system features	1	2025-11-05 01:33:13	2025-11-05 01:33:13
+3	doctor	Dokter	Medical staff with patient care and clinical permissions	1	2025-11-05 01:33:13	2025-11-05 01:33:13
+4	nurse	Perawat	Nursing staff with limited clinical permissions	1	2025-11-05 01:33:13	2025-11-05 01:33:13
+5	receptionist	Resepsionis	Front desk staff for appointments and registration	1	2025-11-05 01:33:13	2025-11-05 01:33:13
+6	pharmacist	Apoteker	Pharmacy staff for medication management	1	2025-11-05 01:33:13	2025-11-05 01:33:13
+7	managerial	Managerial	Managerial staff for administrative and operational tasks	1	2025-11-05 01:33:13	2025-11-23 02:55:58
+8	viewer	Viewer	Read-only access to system data	1	2025-11-05 01:33:13	2025-11-05 01:33:13
+19	manager	Front Manager	Jobdesc:\n- Penjadwalan pasien\n- Stok awal, penjualan, stok pulang\n- Isi data awal pasien\n- Terima resep dan menyiapkan obat\n- Kasir	0	2025-11-06 00:49:58	2025-11-06 00:49:58
+20	doctorassistant	Asisten Dokter	Jobdesc:\n- Memilah obstetri/ginekologi\n- Anamnesa\n- Pemeriksaan fisik umum\n- Mempersiapkan kebutuhan tindakan medis (USG, VT, Stripping, Pap smear, dll)\n- Membantu mencatat hasil USG, surat keterangan, dll	0	2025-11-06 00:54:43	2025-11-06 04:35:27
+21	observer	Observer	NULL	0	2025-11-06 01:03:39	2025-11-06 01:03:39
+22	bidan	Bidan	Midwife with obstetric care and patient support responsibilities	1	2025-11-23 02:56:12	2025-11-23 02:56:12

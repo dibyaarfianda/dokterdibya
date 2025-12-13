@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Langganan Berhasil - Klinik Dr. Dibya</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 50%, #fbcfe8 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated Background */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .floating-shape {
+            position: absolute;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(236, 72, 153, 0.15), rgba(219, 39, 119, 0.1));
+            filter: blur(1px);
+            animation: floatShape 20s ease-in-out infinite;
+        }
+
+        .floating-shape:nth-child(1) { width: 80px; height: 80px; top: 10%; left: 10%; animation-delay: 0s; animation-duration: 25s; }
+        .floating-shape:nth-child(2) { width: 120px; height: 120px; top: 60%; left: 80%; animation-delay: -5s; animation-duration: 30s; }
+        .floating-shape:nth-child(3) { width: 60px; height: 60px; top: 30%; left: 70%; animation-delay: -10s; animation-duration: 22s; }
+        .floating-shape:nth-child(4) { width: 100px; height: 100px; top: 80%; left: 20%; animation-delay: -7s; animation-duration: 28s; }
+        .floating-shape:nth-child(5) { width: 50px; height: 50px; top: 45%; left: 5%; animation-delay: -3s; animation-duration: 20s; }
+        .floating-shape:nth-child(6) { width: 70px; height: 70px; top: 15%; left: 85%; animation-delay: -12s; animation-duration: 26s; }
+
+        .floating-heart {
+            position: absolute;
+            font-size: 20px;
+            opacity: 0.2;
+            animation: floatHeart 15s ease-in-out infinite;
+        }
+
+        .floating-heart:nth-child(7) { top: 20%; left: 30%; animation-delay: 0s; }
+        .floating-heart:nth-child(8) { top: 70%; left: 60%; animation-delay: -3s; }
+        .floating-heart:nth-child(9) { top: 40%; left: 90%; animation-delay: -6s; }
+        .floating-heart:nth-child(10) { top: 85%; left: 40%; animation-delay: -9s; }
+
+        @keyframes floatShape {
+            0%, 100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+            25% { transform: translate(30px, -50px) rotate(90deg) scale(1.1); }
+            50% { transform: translate(-20px, -100px) rotate(180deg) scale(0.9); }
+            75% { transform: translate(50px, -50px) rotate(270deg) scale(1.05); }
+        }
+
+        @keyframes floatHeart {
+            0%, 100% { transform: translateY(0) rotate(-10deg); opacity: 0.2; }
+            50% { transform: translateY(-30px) rotate(10deg); opacity: 0.35; }
+        }
+
+        .container {
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Success State */
+        .success-card {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 40px 32px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        .success-icon {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            animation: pop 0.5s ease;
+        }
+
+        @keyframes pop {
+            0% { transform: scale(0); }
+            50% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        .success-icon svg {
+            width: 50px;
+            height: 50px;
+            color: white;
+        }
+
+        .success-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            color: #059669;
+            margin-bottom: 12px;
+        }
+
+        .success-message {
+            color: #6b7280;
+            font-size: 1rem;
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .subscription-details {
+            background: #f0fdf4;
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 24px;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 0;
+        }
+
+        .detail-row:not(:last-child) {
+            border-bottom: 1px solid #dcfce7;
+        }
+
+        .detail-label {
+            color: #6b7280;
+            font-size: 0.9rem;
+        }
+
+        .detail-value {
+            color: #1f2937;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        /* Pending State */
+        .pending-icon {
+            width: 100px;
+            height: 100px;
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.9; }
+        }
+
+        .pending-icon svg {
+            width: 50px;
+            height: 50px;
+            color: white;
+        }
+
+        .pending-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            color: #f59e0b;
+            margin-bottom: 12px;
+        }
+
+        /* Action Buttons */
+        .action-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 16px 32px;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s;
+            cursor: pointer;
+            border: none;
+            width: 100%;
+            margin-bottom: 12px;
+        }
+
+        .primary-btn {
+            background: linear-gradient(135deg, #ec4899, #db2777);
+            color: white;
+            box-shadow: 0 8px 24px rgba(236, 72, 153, 0.3);
+        }
+
+        .primary-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(236, 72, 153, 0.4);
+        }
+
+        .secondary-btn {
+            background: #f3f4f6;
+            color: #4b5563;
+        }
+
+        .secondary-btn:hover {
+            background: #e5e7eb;
+        }
+
+        .action-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* Loading State */
+        .loading-card {
+            background: white;
+            border-radius: 24px;
+            padding: 60px 32px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+        }
+
+        .spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid #fce7f3;
+            border-top-color: #ec4899;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: #6b7280;
+            font-size: 1rem;
+        }
+
+        /* Confetti Animation */
+        .confetti {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 100;
+        }
+
+        .confetti-piece {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #ec4899;
+            animation: confetti-fall 3s ease-out forwards;
+        }
+
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        /* Footer */
+        .footer {
+            color: #9ca3af;
+            font-size: 0.85rem;
+            margin-top: 20px;
+        }
+
+        .footer a {
+            color: #ec4899;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="bg-animation">
+        <div class="floating-shape"></div>
+        <div class="floating-shape"></div>
+        <div class="floating-shape"></div>
+        <div class="floating-shape"></div>
+        <div class="floating-shape"></div>
+        <div class="floating-shape"></div>
+        <div class="floating-heart">💕</div>
+        <div class="floating-heart">💗</div>
+        <div class="floating-heart">💖</div>
+        <div class="floating-heart">💝</div>
+    </div>
+
+    <div class="container">
+        <!-- Loading State -->
+        <div id="loading-state" class="loading-card">
+            <div class="spinner"></div>
+            <p class="loading-text">Memeriksa status pembayaran...</p>
+        </div>
+
+        <!-- Success State (hidden by default) -->
+        <div id="success-state" class="success-card" style="display: none;">
+            <div class="success-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+            </div>
+            <h1 class="success-title">Pembayaran Berhasil!</h1>
+            <p class="success-message">Selamat! Langganan Gallery Kenangan Premium Anda sudah aktif. Nikmati momen indah kehamilan Anda.</p>
+
+            <div class="subscription-details">
+                <div class="detail-row">
+                    <span class="detail-label">Paket</span>
+                    <span class="detail-value">Gallery Kenangan - Bulanan</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Harga</span>
+                    <span class="detail-value">Rp 10.000</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Berlaku Sampai</span>
+                    <span class="detail-value" id="valid-until">-</span>
+                </div>
+            </div>
+
+            <a href="gallery-kenangan.html" class="action-btn primary-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                    <circle cx="8.5" cy="8.5" r="1.5"/>
+                    <polyline points="21 15 16 10 5 21"/>
+                </svg>
+                Buka Gallery Kenangan
+            </a>
+
+            <a href="patient-dashboard.html" class="action-btn secondary-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+                Kembali ke Dashboard
+            </a>
+        </div>
+
+        <!-- Pending State (hidden by default) -->
+        <div id="pending-state" class="success-card" style="display: none;">
+            <div class="pending-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <polyline points="12 6 12 12 16 14"/>
+                </svg>
+            </div>
+            <h1 class="pending-title">Menunggu Pembayaran</h1>
+            <p class="success-message">Pembayaran Anda sedang diproses. Silakan selesaikan pembayaran melalui aplikasi e-wallet Anda.</p>
+
+            <div class="subscription-details">
+                <div class="detail-row">
+                    <span class="detail-label">Order ID</span>
+                    <span class="detail-value" id="pending-order-id">-</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Status</span>
+                    <span class="detail-value" style="color: #f59e0b;">Menunggu Pembayaran</span>
+                </div>
+            </div>
+
+            <button onclick="checkPaymentStatus()" class="action-btn primary-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="23 4 23 10 17 10"/>
+                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                </svg>
+                Cek Status Pembayaran
+            </button>
+
+            <a href="patient-dashboard.html" class="action-btn secondary-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+                Kembali ke Dashboard
+            </a>
+        </div>
+    </div>
+
+    <!-- Confetti -->
+    <div id="confetti" class="confetti"></div>
+
+    <footer class="footer">
+        <p>dokterDIBYA - Gallery Kenangan Anda</p>
+    </footer>
+
+    <script>
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderId = urlParams.get('order_id');
+        const status = urlParams.get('status');
+
+        // Get auth token (same keys as patient-dashboard.html)
+        function getAuthToken() {
+            return localStorage.getItem('vps_auth_token') ||
+                   sessionStorage.getItem('vps_auth_token') ||
+                   localStorage.getItem('patient_token');
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async () => {
+            if (!orderId) {
+                // No order ID, redirect to subscription page
+                window.location.href = 'subscription.html';
+                return;
+            }
+
+            if (status === 'pending') {
+                showPendingState();
+            } else {
+                await checkPaymentStatus();
+            }
+        });
+
+        // Check payment status
+        async function checkPaymentStatus() {
+            const token = getAuthToken();
+            if (!token) {
+                window.location.href = 'patient-dashboard.html';
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/subscriptions/check/${orderId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    if (data.status === 'active' || data.midtransStatus === 'settlement' || data.midtransStatus === 'capture') {
+                        showSuccessState(data.subscription);
+                    } else if (data.status === 'pending' || data.midtransStatus === 'pending') {
+                        showPendingState();
+                    } else {
+                        // Cancelled or failed
+                        alert('Pembayaran dibatalkan atau gagal. Silakan coba lagi.');
+                        window.location.href = 'subscription.html';
+                    }
+                } else {
+                    console.error('Failed to check status:', data);
+                    showPendingState();
+                }
+
+            } catch (error) {
+                console.error('Error checking payment:', error);
+                showPendingState();
+            }
+        }
+
+        // Show success state
+        function showSuccessState(subscription) {
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('pending-state').style.display = 'none';
+            document.getElementById('success-state').style.display = 'block';
+
+            // Show valid until date
+            if (subscription && subscription.end_date) {
+                const endDate = new Date(subscription.end_date);
+                document.getElementById('valid-until').textContent = endDate.toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                });
+            }
+
+            // Show confetti
+            createConfetti();
+        }
+
+        // Show pending state
+        function showPendingState() {
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('success-state').style.display = 'none';
+            document.getElementById('pending-state').style.display = 'block';
+            document.getElementById('pending-order-id').textContent = orderId;
+        }
+
+        // Create confetti animation
+        function createConfetti() {
+            const container = document.getElementById('confetti');
+            const colors = ['#ec4899', '#db2777', '#f472b6', '#c026d3', '#a855f7', '#10b981', '#fbbf24'];
+
+            for (let i = 0; i < 50; i++) {
+                const piece = document.createElement('div');
+                piece.className = 'confetti-piece';
+                piece.style.left = Math.random() * 100 + 'vw';
+                piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+                piece.style.animationDelay = Math.random() * 2 + 's';
+                piece.style.animationDuration = (Math.random() * 2 + 2) + 's';
+
+                // Random shapes
+                if (Math.random() > 0.5) {
+                    piece.style.borderRadius = '50%';
+                } else if (Math.random() > 0.5) {
+                    piece.style.width = '6px';
+                    piece.style.height = '14px';
+                }
+
+                container.appendChild(piece);
+            }
+
+            // Remove confetti after animation
+            setTimeout(() => {
+                container.innerHTML = '';
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

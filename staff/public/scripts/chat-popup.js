@@ -6,12 +6,29 @@
 (function () {
   'use strict';
 
-  // ---------- UTIL: color per name + avatar ----------
+  // ---------- UTIL: color per role + avatar ----------
+  // Role ID constants (match backend constants/roles.js)
+  const ROLE_IDS = {
+    DOKTER: 1,
+    MANAGERIAL: 7,
+    BIDAN: 22,
+    ADMIN: 24,
+    FRONT_OFFICE: 25
+  };
+
+  // Badge colors for chat name (matching auth.js badge colors)
+  function colorFromRoleId(roleId) {
+    if (roleId === ROLE_IDS.DOKTER) return '#ff6b6b';      // lighter red for dokter (badge-danger)
+    if (roleId === ROLE_IDS.ADMIN) return '#ffc107';       // yellow/gold for admin (badge-warning)
+    if (roleId === ROLE_IDS.MANAGERIAL) return '#17a2b8'; // cyan for managerial (badge-info)
+    return '#adb5bd'; // lighter gray for others (badge-secondary)
+  }
+
   const namePalette = [
-    "#ffd6a5", "#b5ead7", "#a0c4ff", "#fdffb6", 
+    "#ffd6a5", "#b5ead7", "#a0c4ff", "#fdffb6",
     "#cdb4db", "#fbc4ab", "#d0f4de", "#ffc6ff"
   ];
-  
+
   function colorFromName(name = '') {
     let h = 0;
     for (let i = 0; i < name.length; i++) h = (h * 31 + name.charCodeAt(i)) >>> 0;
@@ -35,9 +52,7 @@
   const chatHTML = `
     <div id="chat-popup-container">
       <!-- Floating Chat Button -->
-      <div id="chat-toggle-btn" class="chat-toggle-btn" style="
-    top: 50px;
-" aria-label="Buka Chat Tim" title="Buka Chat Tim">
+      <div id="chat-toggle-btn" class="chat-toggle-btn" aria-label="Buka Chat Tim" title="Buka Chat Tim">
         <i class="fas fa-comments"></i>
         <span class="chat-badge" style="display:none;">0</span>
       </div>
@@ -197,9 +212,9 @@
         box-shadow: 0 1px 2px rgba(0,0,0,.1);
       }
 
-      /* Incoming: #737373, teks putih; Outgoing: biru */
+      /* Incoming: biru gelap, teks putih; Outgoing: biru terang */
       .chat-message.received .chat-message-content {
-        background: #737373; color: #fff; text-align: left;
+        background: #0056b3; color: #fff; text-align: left;
       }
       .chat-message.sent .chat-message-content {
         background: #007bff; color: #fff; text-align: right;
@@ -249,14 +264,20 @@
 
     // Initialize chat popup
     async function initChatPopup() {
+        console.log('[ChatPopup] initChatPopup called, readyState:', document.readyState);
+        console.log('[ChatPopup] window.auth:', window.auth);
+        
         // Wait for auth to be ready
         let user = window.auth?.currentUser;
+        console.log('[ChatPopup] Initial user:', user);
         
         // If auth not ready, wait for it
         if (!user) {
+            console.log('[ChatPopup] User not ready, waiting...');
             await new Promise((resolve) => {
                 const checkAuth = setInterval(() => {
                     if (window.auth?.currentUser) {
+                        console.log('[ChatPopup] Auth ready!');
                         clearInterval(checkAuth);
                         resolve();
                     }
@@ -264,32 +285,38 @@
                 
                 // Timeout after 10 seconds
                 setTimeout(() => {
+                    console.warn('[ChatPopup] Auth wait timeout');
                     clearInterval(checkAuth);
                     resolve();
                 }, 10000);
             });
             
             user = window.auth?.currentUser;
+            console.log('[ChatPopup] User after wait:', user);
         }
         
         // Check if user has chat permission (all roles have permission by default)
         if (!user || !user.role) {
-            console.warn('Chat not initialized: User not authenticated');
+            console.warn('[ChatPopup] Chat not initialized: User not authenticated', user);
             return;
         }
 
-        // All roles have chat permission
-        const allowedRoles = ['superadmin', 'admin', 'doctor', 'doctorassistant', 'manager'];
-        if (!allowedRoles.includes(user.role)) {
-            console.warn('Chat not initialized: User role not allowed');
-            return;
-        }
+        // All users have chat access
+        console.log('[ChatPopup] ✅ Initializing chat for user:', user.role, user);
 
         // Inject CSS
+        console.log('[ChatPopup] Injecting CSS...');
         document.head.insertAdjacentHTML('beforeend', chatCSS);
 
         // Inject HTML
         document.body.insertAdjacentHTML('beforeend', chatHTML);
+
+        // Check if Socket.IO is available (should be created by global-chat-loader)
+        if (!window.socket) {
+            console.error('[ChatPopup] window.socket not available, real-time chat will not work');
+        } else {
+            console.log('[ChatPopup] Using global Socket.IO connection:', window.socket.id || 'connecting...');
+        }
 
         // Ensure chat audio elements exist
         if (!document.getElementById('chat-send-sound')) {
@@ -324,6 +351,17 @@
   let isHistoryLoading = false;
   let lastSender = null; // Track last message sender for avatar grouping
   const userPhotoCache = new Map();
+  const userRoleCache = new Map(); // Cache role_id for badge colors
+
+  // Track last read message timestamp in localStorage
+  const LAST_READ_KEY = `chat_last_read_${user.id}`;
+  let lastReadTimestamp = localStorage.getItem(LAST_READ_KEY) || '1970-01-01T00:00:00.000Z';
+
+  // Save last read timestamp when chat is opened or messages are viewed
+  function markMessagesAsRead() {
+    lastReadTimestamp = new Date().toISOString();
+    localStorage.setItem(LAST_READ_KEY, lastReadTimestamp);
+  }
   
         // Show clear button only for superadmin
         function checkClearButtonVisibility() {
@@ -335,14 +373,10 @@
             const role = currentUser.role || authData.role || '';
             
             console.log('Checking clear button visibility - Role:', role);
-            
-            if (role === 'superadmin') {
-                clearBtn.style.display = 'flex';
-                console.log('Clear button shown for superadmin');
-            } else {
-                clearBtn.style.display = 'none';
-                console.log('Clear button hidden for role:', role);
-            }
+
+            // Show clear button for all users
+            clearBtn.style.display = 'flex';
+            console.log('Clear button shown for all users');
         }
 
         // Function to update online users
@@ -413,6 +447,12 @@
         chatInput.focus();
         chatBadge.style.display = 'none';
         chatBadge.textContent = '0';
+        // Mark all messages as read
+        markMessagesAsRead();
+        // Scroll to bottom to show recent messages
+        setTimeout(() => {
+          messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }, 50);
         // Check clear button visibility when chat opens
         checkClearButtonVisibility();
       }
@@ -433,9 +473,10 @@
       if (!curUser) { console.error('User not authenticated'); return; }
 
       const userPhoto = curUser.photo_url || curUser.photoURL || null;
+      const userRoleId = curUser.role_id || null;
 
       // Show immediately
-      addMessage(message, 'sent', null, curUser.name || curUser.email, userPhoto, curUser.id);
+      addMessage(message, 'sent', null, curUser.name || curUser.email, userPhoto, curUser.id, userRoleId);
       if (sendAudio && typeof sendAudio.play === 'function') {
         try {
           sendAudio.currentTime = 0;
@@ -447,19 +488,29 @@
       // Send to backend
       try {
         const token = await window.getIdToken();
-  const response = await fetch(`${API_ORIGIN}/api/chat/send`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({
+        const payload = {
             message,
-            user_id: curUser.id,
+            user_id: curUser.id || curUser.uid,
             user_name: curUser.name || curUser.email,
             user_photo: userPhoto
-          })
+        };
+        console.log('[ChatPopup] Sending message:', payload);
+        
+        const response = await fetch(`${API_ORIGIN}/api/chat/send`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify(payload)
         });
-        if (!response.ok) console.error('Failed to send chat message');
+        
+        if (response.ok) {
+            const result = await response.json();
+            console.log('[ChatPopup] Message sent successfully:', result);
+        } else {
+            const error = await response.json().catch(() => ({}));
+            console.error('[ChatPopup] Failed to send chat message:', response.status, error);
+        }
       } catch (err) {
-        console.error('Error sending chat message:', err);
+        console.error('[ChatPopup] Error sending chat message:', err);
       }
     }
     sendBtn.addEventListener('click', sendMessage);
@@ -483,7 +534,7 @@
                         resetChatState(); // Reset block tracking
             result.data.forEach(msg => {
               const type = msg.user_id === user.id ? 'sent' : 'received';
-              addMessage(msg.message, type, msg.created_at, msg.user_name, msg.user_photo, msg.user_id);
+              addMessage(msg.message, type, msg.created_at, msg.user_name, msg.user_photo, msg.user_id, msg.role_id);
                         });
           }
         }
@@ -496,7 +547,7 @@
         }
 
     // Add message with avatar support
-    function addMessage(text, type, timestamp = null, userName = null, userPhoto = null, userId = null) {
+    function addMessage(text, type, timestamp = null, userName = null, userPhoto = null, userId = null, roleId = null) {
       const time = timestamp
         ? new Date(timestamp).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' })
         : new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' });
@@ -508,9 +559,13 @@
       if (userId && userPhoto) {
         userPhotoCache.set(userId, userPhoto);
       }
+      if (userId && roleId) {
+        userRoleCache.set(userId, roleId);
+      }
 
-      // Color for name and avatar
-      const nameColor = isSelf ? '#dbeafe' : colorFromName(userName || '');
+      // Color for name based on role (badge colors), avatar based on name
+      const cachedRoleId = roleId || (userId ? userRoleCache.get(userId) : null);
+      const nameColor = isSelf ? '#dbeafe' : colorFromRoleId(cachedRoleId);
       const avatarBg = isSelf ? '#111827' : colorFromName(userName || '');
 
       let messageHTML = `<div class="chat-message ${type}">`;
@@ -547,11 +602,17 @@
       messagesContainer.insertAdjacentHTML('beforeend', messageHTML);
       messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
-      // Badge if closed + received
-      if (!isChatOpen && type === 'received') {
-        const currentCount = parseInt(chatBadge.textContent) || 0;
-        chatBadge.textContent = currentCount + 1;
-        chatBadge.style.display = 'block';
+      // Badge ONLY for new real-time messages, NOT history
+      // Skip ALL badge updates during history loading
+      if (!isHistoryLoading && !isChatOpen && type === 'received') {
+        const msgTime = timestamp ? new Date(timestamp).toISOString() : new Date().toISOString();
+        const isUnread = msgTime > lastReadTimestamp;
+
+        if (isUnread) {
+          const currentCount = parseInt(chatBadge.textContent) || 0;
+          chatBadge.textContent = currentCount + 1;
+          chatBadge.style.display = 'block';
+        }
       }
 
       if (!isHistoryLoading && type === 'received' && incomingAudio && typeof incomingAudio.play === 'function') {
@@ -576,11 +637,19 @@
 
         // Listen for real-time chat messages via Socket.IO
         if (window.socket) {
-      window.socket.on('chat:message', (data) => {
-        if (data.user_id !== user.id) {
-          addMessage(data.message, 'received', data.created_at, data.user_name, data.user_photo, data.user_id);
+            console.log('[ChatPopup] Setting up chat:message listener, current user:', user.id);
+            window.socket.on('chat:message', (data) => {
+                console.log('[ChatPopup] 📨 Received chat:message:', data);
+                console.log('[ChatPopup] My user.id:', user.id, 'Message user_id:', data.user_id);
+                if (data.user_id !== user.id && data.user_id !== user.uid) {
+                    console.log('[ChatPopup] Adding received message');
+                    addMessage(data.message, 'received', data.created_at, data.user_name, data.user_photo, data.user_id, data.role_id);
+                } else {
+                    console.log('[ChatPopup] Skipping own message');
                 }
             });
+        } else {
+            console.error('[ChatPopup] window.socket not available, real-time chat disabled');
         }
         
         // Clear chat button handler

@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#1a1a2e">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Dokter Dibya</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0066FF;
+            --primary-dark: #0052CC;
+            --bg-dark: #0f0f1a;
+            --bg-card: #1a1a2e;
+            --text: #ffffff;
+            --text-muted: rgba(255,255,255,0.6);
+            --border: rgba(255,255,255,0.1);
+            --success: #10b981;
+            --error: #ef4444;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            min-height: 100dvh;
+            padding-top: var(--safe-top);
+            padding-bottom: var(--safe-bottom);
+            overflow-x: hidden;
+        }
+
+        /* Intro Video Overlay */
+        .intro-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #000;
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease;
+        }
+        .intro-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .intro-overlay.removed {
+            display: none;
+        }
+        .intro-video {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            background: #000;
+        }
+        .skip-btn {
+            position: absolute;
+            bottom: calc(var(--safe-bottom) + 40px);
+            right: 24px;
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.15);
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 20px;
+            color: rgba(255,255,255,0.8);
+            font-size: 14px;
+            font-family: inherit;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            transition: all 0.2s;
+        }
+        .skip-btn:active {
+            background: rgba(255,255,255,0.25);
+            transform: scale(0.95);
+        }
+
+        /* Animated Background */
+        .bg-gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background:
+                radial-gradient(ellipse at 20% 20%, rgba(0, 102, 255, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.1) 0%, transparent 50%),
+                var(--bg-dark);
+            z-index: 0;
+        }
+
+        /* Container */
+        .container {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            padding: 24px 20px;
+        }
+
+        /* Logo Section */
+        .logo-section {
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 0 32px;
+        }
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 20px 40px rgba(0, 102, 255, 0.3);
+            margin-bottom: 20px;
+        }
+        .logo svg {
+            width: 44px;
+            height: 44px;
+            fill: white;
+        }
+        .app-name {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        .app-tagline {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        /* Form Section */
+        .form-section {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .form-title {
+            font-size: 24px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .form-subtitle {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 28px;
+        }
+
+        /* Input Group */
+        .input-group {
+            margin-bottom: 16px;
+        }
+        .input-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        .input-wrapper {
+            position: relative;
+        }
+        .input-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            fill: var(--text-muted);
+            transition: fill 0.2s;
+        }
+        input[type="email"],
+        input[type="password"],
+        input[type="text"],
+        input[type="tel"] {
+            width: 100%;
+            padding: 16px 16px 16px 48px;
+            font-size: 16px;
+            font-family: inherit;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 14px;
+            color: var(--text);
+            outline: none;
+            transition: all 0.2s;
+        }
+        input:focus {
+            border-color: var(--primary);
+            background: rgba(0, 102, 255, 0.05);
+        }
+        input:focus + .input-icon,
+        input:focus ~ .input-icon {
+            fill: var(--primary);
+        }
+        input::placeholder {
+            color: var(--text-muted);
+        }
+        .toggle-password {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            padding: 4px;
+            cursor: pointer;
+        }
+        .toggle-password svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--text-muted);
+        }
+
+        /* Error Message */
+        .error-message {
+            display: none;
+            padding: 12px 16px;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 12px;
+            color: #fca5a5;
+            font-size: 14px;
+            margin-bottom: 16px;
+            align-items: center;
+            gap: 10px;
+        }
+        .error-message.show {
+            display: flex;
+        }
+        .error-message svg {
+            width: 18px;
+            height: 18px;
+            fill: #fca5a5;
+            flex-shrink: 0;
+        }
+
+        /* Button */
+        .btn {
+            width: 100%;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            font-family: inherit;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: 0 8px 24px rgba(0, 102, 255, 0.3);
+        }
+        .btn-primary:active {
+            transform: scale(0.98);
+            box-shadow: 0 4px 12px rgba(0, 102, 255, 0.3);
+        }
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text);
+            border: 2px solid var(--border);
+        }
+        .btn-secondary:active {
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* Spinner */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Divider */
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 24px 0;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+        .divider::before,
+        .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+        .divider span {
+            padding: 0 16px;
+        }
+
+        /* Footer Links */
+        .footer-links {
+            margin-top: auto;
+            padding-top: 24px;
+            text-align: center;
+        }
+        .footer-links a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        .footer-text {
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+
+        /* Page Transitions */
+        .page {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .page.active {
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Back Button */
+        .back-btn {
+            position: absolute;
+            top: calc(var(--safe-top) + 16px);
+            left: 16px;
+            width: 40px;
+            height: 40px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--text);
+        }
+
+        /* Remember Me */
+        .remember-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+        }
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--text-muted);
+            cursor: pointer;
+        }
+        .checkbox-label input {
+            width: 18px;
+            height: 18px;
+            accent-color: var(--primary);
+        }
+        .forgot-link {
+            font-size: 14px;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <!-- Intro Video Overlay -->
+    <div class="intro-overlay" id="intro-overlay">
+        <video class="intro-video" id="intro-video" autoplay muted playsinline>
+            <source src="logo_dd.mp4" type="video/mp4">
+        </video>
+        <button class="skip-btn" id="skip-btn">Lewati</button>
+    </div>
+
+    <div class="bg-gradient"></div>
+
+    <div class="container">
+        <!-- LOGIN PAGE -->
+        <div class="page active" id="page-login">
+            <div class="logo-section">
+                <div class="logo">
+                    <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
+                </div>
+                <div class="app-name">Dokter Dibya</div>
+                <div class="app-tagline">Patient Portal</div>
+            </div>
+
+            <div class="form-section">
+                <h1 class="form-title">Selamat Datang</h1>
+                <p class="form-subtitle">Masuk untuk mengakses portal pasien</p>
+
+                <div class="error-message" id="login-error">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                    <span id="login-error-text">Email atau password salah</span>
+                </div>
+
+                <form id="login-form">
+                    <div class="input-group">
+                        <label class="input-label">Email</label>
+                        <div class="input-wrapper">
+                            <input type="email" id="login-email" placeholder="nama@email.com" required autocomplete="email">
+                            <svg class="input-icon" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label">Password</label>
+                        <div class="input-wrapper">
+                            <input type="password" id="login-password" placeholder="Masukkan password" required autocomplete="current-password">
+                            <svg class="input-icon" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+                            <button type="button" class="toggle-password" onclick="togglePassword('login-password')">
+                                <svg viewBox="0 0 24 24" id="eye-login"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="remember-row">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="remember-me" checked>
+                            Ingat saya
+                        </label>
+                        <a href="#" class="forgot-link" onclick="showPage('page-forgot')">Lupa password?</a>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="btn-login">
+                        <span>Masuk</span>
+                    </button>
+                </form>
+
+                <div class="footer-links">
+                    <p class="footer-text">Belum punya akun? <a href="#" onclick="showPage('page-register')">Daftar sekarang</a></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- REGISTER PAGE -->
+        <div class="page" id="page-register">
+            <button class="back-btn" onclick="showPage('page-login')">
+                <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            </button>
+
+            <div class="logo-section" style="padding-top: 60px;">
+                <div class="app-name">Buat Akun</div>
+                <div class="app-tagline">Daftar untuk mengakses layanan kami</div>
+            </div>
+
+            <div class="form-section">
+                <div class="error-message" id="register-error">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                    <span id="register-error-text">Terjadi kesalahan</span>
+                </div>
+
+                <form id="register-form">
+                    <div class="input-group">
+                        <label class="input-label">Nama Lengkap</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="register-name" placeholder="Nama lengkap Anda" required>
+                            <svg class="input-icon" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label">Email</label>
+                        <div class="input-wrapper">
+                            <input type="email" id="register-email" placeholder="nama@email.com" required>
+                            <svg class="input-icon" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label">No. HP (WhatsApp)</label>
+                        <div class="input-wrapper">
+                            <input type="tel" id="register-phone" placeholder="628xxxxxxxxxx" required pattern="628[0-9]{9,12}">
+                            <svg class="input-icon" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label class="input-label">Password</label>
+                        <div class="input-wrapper">
+                            <input type="password" id="register-password" placeholder="Minimal 6 karakter" required minlength="6">
+                            <svg class="input-icon" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+                            <button type="button" class="toggle-password" onclick="togglePassword('register-password')">
+                                <svg viewBox="0 0 24 24"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="btn-register" style="margin-top: 8px;">
+                        <span>Daftar</span>
+                    </button>
+                </form>
+
+                <div class="footer-links">
+                    <p class="footer-text">Sudah punya akun? <a href="#" onclick="showPage('page-login')">Masuk</a></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- FORGOT PASSWORD PAGE -->
+        <div class="page" id="page-forgot">
+            <button class="back-btn" onclick="showPage('page-login')">
+                <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+            </button>
+
+            <div class="logo-section" style="padding-top: 60px;">
+                <div class="app-name">Lupa Password</div>
+                <div class="app-tagline">Kami akan mengirim link reset ke email Anda</div>
+            </div>
+
+            <div class="form-section">
+                <div class="error-message" id="forgot-error">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                    <span id="forgot-error-text">Email tidak ditemukan</span>
+                </div>
+
+                <form id="forgot-form">
+                    <div class="input-group">
+                        <label class="input-label">Email</label>
+                        <div class="input-wrapper">
+                            <input type="email" id="forgot-email" placeholder="nama@email.com" required>
+                            <svg class="input-icon" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="btn-forgot" style="margin-top: 8px;">
+                        <span>Kirim Link Reset</span>
+                    </button>
+                </form>
+
+                <div class="footer-links">
+                    <p class="footer-text">Ingat password? <a href="#" onclick="showPage('page-login')">Kembali ke Login</a></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'https://dokterdibya.com';
+        const DASHBOARD_URL = 'https://dokterdibya.com/patient-dashboard.html';
+
+        // Intro Video Handler
+        const introOverlay = document.getElementById('intro-overlay');
+        const introVideo = document.getElementById('intro-video');
+        const skipBtn = document.getElementById('skip-btn');
+
+        function hideIntro() {
+            introOverlay.classList.add('hidden');
+            setTimeout(() => {
+                introOverlay.classList.add('removed');
+                // Mark intro as seen for this session
+                sessionStorage.setItem('intro_seen', 'true');
+            }, 500);
+        }
+
+        // Skip intro if already seen in this session
+        if (sessionStorage.getItem('intro_seen')) {
+            introOverlay.classList.add('removed');
+        } else {
+            // Video ended - hide intro
+            introVideo.addEventListener('ended', hideIntro);
+
+            // Skip button
+            skipBtn.addEventListener('click', () => {
+                introVideo.pause();
+                hideIntro();
+            });
+
+            // Fallback: hide after 10 seconds if video doesn't play
+            setTimeout(() => {
+                if (!introOverlay.classList.contains('hidden')) {
+                    hideIntro();
+                }
+            }, 10000);
+        }
+
+        // Check if already logged in
+        document.addEventListener('DOMContentLoaded', () => {
+            const token = localStorage.getItem('vps_auth_token');
+            if (token) {
+                // Verify token is still valid
+                verifyAndRedirect(token);
+            }
+        });
+
+        async function verifyAndRedirect(token) {
+            try {
+                const res = await fetch(`${API_BASE}/api/patients/profile`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                    window.location.href = DASHBOARD_URL;
+                } else {
+                    localStorage.removeItem('vps_auth_token');
+                    localStorage.removeItem('patient_user');
+                }
+            } catch (e) {
+                console.log('Token verification failed, staying on login');
+            }
+        }
+
+        // Page Navigation
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(pageId).classList.add('active');
+            // Clear errors
+            document.querySelectorAll('.error-message').forEach(e => e.classList.remove('show'));
+        }
+
+        // Toggle Password Visibility
+        function togglePassword(inputId) {
+            const input = document.getElementById(inputId);
+            input.type = input.type === 'password' ? 'text' : 'password';
+        }
+
+        // Show Error
+        function showError(elementId, message) {
+            const errorEl = document.getElementById(elementId);
+            const textEl = document.getElementById(elementId + '-text');
+            textEl.textContent = message;
+            errorEl.classList.add('show');
+        }
+
+        // Set Button Loading
+        function setLoading(btnId, loading) {
+            const btn = document.getElementById(btnId);
+            if (loading) {
+                btn.disabled = true;
+                btn.innerHTML = '<div class="spinner"></div>';
+            } else {
+                btn.disabled = false;
+                btn.innerHTML = '<span>' + (btnId === 'btn-login' ? 'Masuk' : btnId === 'btn-register' ? 'Daftar' : 'Kirim Link Reset') + '</span>';
+            }
+        }
+
+        // LOGIN
+        document.getElementById('login-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            document.getElementById('login-error').classList.remove('show');
+
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            const remember = document.getElementById('remember-me').checked;
+
+            setLoading('btn-login', true);
+
+            try {
+                const res = await fetch(`${API_BASE}/api/patients/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    // Store token
+                    if (remember) {
+                        localStorage.setItem('vps_auth_token', data.token);
+                    } else {
+                        sessionStorage.setItem('vps_auth_token', data.token);
+                    }
+
+                    // Store user info
+                    if (data.user) {
+                        localStorage.setItem('patient_user', JSON.stringify(data.user));
+                    }
+
+                    // Redirect to dashboard
+                    window.location.href = DASHBOARD_URL;
+                } else {
+                    showError('login-error', data.message || 'Email atau password salah');
+                }
+            } catch (err) {
+                showError('login-error', 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.');
+            }
+
+            setLoading('btn-login', false);
+        });
+
+        // REGISTER
+        document.getElementById('register-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            document.getElementById('register-error').classList.remove('show');
+
+            const name = document.getElementById('register-name').value.trim();
+            const email = document.getElementById('register-email').value.trim();
+            const phone = document.getElementById('register-phone').value.trim();
+            const password = document.getElementById('register-password').value;
+
+            // Validate phone format
+            if (!phone.match(/^628[0-9]{9,12}$/)) {
+                showError('register-error', 'Format nomor HP harus 628xxxxxxxxxx');
+                return;
+            }
+
+            setLoading('btn-register', true);
+
+            try {
+                const res = await fetch(`${API_BASE}/api/patients/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        fullname: name,
+                        email,
+                        phone,
+                        password
+                    })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    // Auto login after register
+                    localStorage.setItem('vps_auth_token', data.token);
+                    if (data.user) {
+                        localStorage.setItem('patient_user', JSON.stringify(data.user));
+                    }
+                    window.location.href = DASHBOARD_URL;
+                } else {
+                    showError('register-error', data.message || 'Gagal mendaftar. Silakan coba lagi.');
+                }
+            } catch (err) {
+                showError('register-error', 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.');
+            }
+
+            setLoading('btn-register', false);
+        });
+
+        // FORGOT PASSWORD
+        document.getElementById('forgot-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            document.getElementById('forgot-error').classList.remove('show');
+
+            const email = document.getElementById('forgot-email').value.trim();
+
+            setLoading('btn-forgot', true);
+
+            try {
+                const res = await fetch(`${API_BASE}/api/patients/forgot-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await res.json();
+
+                if (res.ok && data.success) {
+                    alert('Link reset password telah dikirim ke email Anda.');
+                    showPage('page-login');
+                } else {
+                    showError('forgot-error', data.message || 'Email tidak ditemukan');
+                }
+            } catch (err) {
+                showError('forgot-error', 'Tidak dapat terhubung ke server. Periksa koneksi internet Anda.');
+            }
+
+            setLoading('btn-forgot', false);
+        });
+    </script>
+</body>
+</html>

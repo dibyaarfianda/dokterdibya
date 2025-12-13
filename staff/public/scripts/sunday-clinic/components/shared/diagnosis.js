@@ -16,7 +16,14 @@ export default {
     async render(state) {
         const diagnosis = state.recordData?.diagnosis || {};
         const diagnoses = diagnosis.diagnoses || [];
+        const record = state.recordData?.record || {};
+        const category = record?.mr_category || 'obstetri';
 
+        // Use obstetri format for all categories (as per user request)
+        // Diagnosis is the same across obstetri, gyn_repro, gyn_special
+        return this.renderObstetriFormat(diagnosis, state);
+
+        /* Disabled: Use new detailed format for other categories
         return `
             <div class="card mb-3">
                 <div class="card-header bg-warning text-dark">
@@ -108,6 +115,71 @@ export default {
                     if (item) item.remove();
                 };
             </script>
+        `;
+    */
+    },
+
+    /**
+     * Render old Obstetri format (simple)
+     */
+    async renderObstetriFormat(diagnosis, state) {
+        // Get metadata context for display AND saved data
+        let metaHtml = '';
+        let savedData = {};
+        try {
+            const { getMedicalRecordContext, renderRecordMeta } = await import('../../utils/helpers.js');
+            const context = getMedicalRecordContext(state, 'diagnosis');
+            if (context) {
+                metaHtml = renderRecordMeta(context, 'diagnosis');
+                // Use saved data from medicalRecords if available
+                savedData = context.data || {};
+            }
+        } catch (error) {
+            console.error('[Diagnosis] Failed to load metadata:', error);
+        }
+
+        // Merge with passed diagnosis parameter (fallback to savedData from medicalRecords)
+        const diagnosisData = {
+            diagnosis_utama: savedData.diagnosis_utama || diagnosis.diagnosis_utama || '',
+            diagnosis_sekunder: savedData.diagnosis_sekunder || diagnosis.diagnosis_sekunder || ''
+        };
+
+        const escapeHtml = (str) => {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        };
+
+        return `
+            <div class="sc-section">
+                <div class="sc-section-header">
+                    <h3>Diagnosis</h3>
+                </div>
+                ${metaHtml}
+                <div class="sc-card">
+                    <div class="mb-3">
+                        <label class="font-weight-bold">Diagnosis Utama</label>
+                        <textarea class="form-control" id="diagnosis-utama" name="diagnosis_utama" rows="1"
+                                  placeholder="Masukkan diagnosis utama">${escapeHtml(diagnosisData.diagnosis_utama)}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="font-weight-bold">Diagnosis Sekunder (jika ada)</label>
+                        <textarea class="form-control" id="diagnosis-sekunder" name="diagnosis_sekunder" rows="1"
+                                  placeholder="Masukkan diagnosis sekunder jika ada">${escapeHtml(diagnosisData.diagnosis_sekunder)}</textarea>
+                    </div>
+                    <div class="text-right mt-3">
+                        <button type="button" class="btn btn-primary" id="save-diagnosis" onclick="window.saveDiagnosis()">
+                            <i class="fas fa-save mr-2"></i>Simpan Diagnosis
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+
         `;
     },
 

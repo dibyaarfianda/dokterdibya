@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rekam Medis Pasien - Sistem Klinik</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .section-card {
+            margin-bottom: 20px;
+        }
+        .patient-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .form-section {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        .intake-data-section {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196f3;
+        }
+        .intake-data-section h6 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+        .nav-tabs .nav-link.active {
+            background-color: #667eea;
+            color: white;
+        }
+    </style>
+</head>
+<body class="hold-transition sidebar-mini">
+<div class="wrapper">
+    <!-- Navbar -->
+    <nav class="main-header navbar navbar-expand navbar-white navbar-light">
+        <ul class="navbar-nav">
+            <li class="nav-item">
+                <a class="nav-link" data-widget="pushmenu" href="#"><i class="fas fa-bars"></i></a>
+            </li>
+            <li class="nav-item d-none d-sm-inline-block">
+                <a href="index-adminlte.html" class="nav-link">Dashboard</a>
+            </li>
+        </ul>
+        <ul class="navbar-nav ml-auto">
+            <li class="nav-item">
+                <button class="btn btn-sm btn-outline-danger" id="btn-logout">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </li>
+        </ul>
+    </nav>
+
+    <!-- Sidebar -->
+    <aside class="main-sidebar sidebar-dark-primary elevation-4">
+        <a href="index-adminlte.html" class="brand-link">
+            <span class="brand-text font-weight-light">Sistem Klinik</span>
+        </a>
+        <div class="sidebar">
+            <nav class="mt-2">
+                <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu">
+                    <li class="nav-item">
+                        <a href="index-adminlte.html" class="nav-link">
+                            <i class="nav-icon fas fa-tachometer-alt"></i>
+                            <p>Dashboard</p>
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="javascript:history.back()" class="nav-link">
+                            <i class="nav-icon fas fa-arrow-left"></i>
+                            <p>Kembali ke Data Pasien</p>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+        </div>
+    </aside>
+
+    <!-- Content Wrapper -->
+    <div class="content-wrapper">
+        <div class="content-header">
+            <div class="container-fluid">
+                <div class="row mb-2">
+                    <div class="col-sm-6">
+                        <h1 class="m-0">Rekam Medis Pasien</h1>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main content -->
+        <section class="content">
+            <div class="container-fluid">
+                <!-- Patient Header -->
+                <div class="patient-header" id="patient-header">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h3 id="patient-name-header">Loading...</h3>
+                            <p class="mb-0">
+                                <span id="patient-id-header"></span> | 
+                                <span id="patient-age-header"></span> | 
+                                <span id="patient-phone-header"></span>
+                            </p>
+                        </div>
+                        <div class="col-md-4 text-right">
+                            <button class="btn btn-light btn-sm" onclick="window.print()">
+                                <i class="fas fa-print"></i> Cetak
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loading Indicator -->
+                <div id="loading-indicator" class="text-center py-5">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="sr-only">Loading...</span>
+                    </div>
+                    <p class="mt-2">Memuat data pasien...</p>
+                </div>
+
+                <!-- Main Content -->
+                <div id="main-content" class="d-none">
+                    <!-- Data Intake Pasien (Read-only) -->
+                    <div class="card section-card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-file-medical"></i> Data Intake Pasien (Terverifikasi)</h3>
+                        </div>
+                        <div class="card-body" id="intake-data-container">
+                            <!-- Will be populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Tabs for Medical Records -->
+                    <div class="card section-card">
+                        <div class="card-header p-0 pt-1">
+                            <ul class="nav nav-tabs" id="medical-tabs" role="tablist">
+                                <li class="nav-item">
+                                    <a class="nav-link active" id="anamnesa-tab" data-toggle="pill" href="#anamnesa" role="tab">
+                                        <i class="fas fa-clipboard-list"></i> Patient Intake
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="physical-tab" data-toggle="pill" href="#physical" role="tab">
+                                        <i class="fas fa-stethoscope"></i> Pemeriksaan Fisik
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="usg-tab" data-toggle="pill" href="#usg" role="tab">
+                                        <i class="fas fa-baby"></i> USG
+                                    </a>
+                                </li>
+                                <li class="nav-item">
+                                    <a class="nav-link" id="lab-tab" data-toggle="pill" href="#lab" role="tab">
+                                        <i class="fas fa-vial"></i> Pemeriksaan Penunjang
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                        <div class="card-body">
+                            <div class="tab-content" id="medical-tabs-content">
+                                <!-- Anamnesa Tab -->
+                                <div class="tab-pane fade show active" id="anamnesa" role="tabpanel">
+                                    <h5>Patient Intake</h5>
+                                    <form id="anamnesa-form">
+                                        
+                                        <!-- Data Pasien Section -->
+                                        <h6 class="text-primary"><i class="fas fa-user"></i> Data Pasien 
+                                            <small class="text-muted">(Data dari intake pasien - dapat diedit jika ada kesalahan)</small>
+                                        </h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label>Nama Lengkap</label>
+                                                    <input type="text" class="form-control" id="patient_name" placeholder="Masukkan nama lengkap pasien">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label>Tanggal Lahir</label>
+                                                    <input type="date" class="form-control" id="patient_dob" placeholder="yyyy-mm-dd">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label>Usia</label>
+                                                    <input type="text" class="form-control" id="patient_age" placeholder="Contoh: 30 tahun">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label>Alamat</label>
+                                                    <textarea class="form-control" id="patient_address" rows="2" placeholder="Masukkan alamat lengkap pasien"></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label>Telepon</label>
+                                                    <input type="tel" class="form-control" id="patient_phone" placeholder="Contoh: +6281234567890">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label>Status Pernikahan</label>
+                                                    <select class="form-control" id="patient_marital_status">
+                                                        <option value="">Pilih Status</option>
+                                                        <option value="Belum Menikah">Belum Menikah</option>
+                                                        <option value="Menikah">Menikah</option>
+                                                        <option value="Janda">Janda</option>
+                                                        <option value="Cerai">Cerai</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label>Pekerjaan</label>
+                                                    <input type="text" class="form-control" id="patient_occupation" placeholder="Contoh: Guru, Dokter, Ibu Rumah Tangga">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label>Pendidikan</label>
+                                                    <select class="form-control" id="patient_education">
+                                                        <option value="">Pilih Tingkat Pendidikan</option>
+                                                        <option value="SD">SD</option>
+                                                        <option value="SMP">SMP</option>
+                                                        <option value="SMA/SMK">SMA/SMK</option>
+                                                        <option value="Diploma">Diploma</option>
+                                                        <option value="S1">S1</option>
+                                                        <option value="S2">S2</option>
+                                                        <option value="S3">S3</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label>Nama Suami</label>
+                                                    <input type="text" class="form-control" id="patient_husband_name" placeholder="Masukkan nama suami (jika menikah)">
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <hr class="my-4">
+
+                                        <!-- Keluhan Utama Section -->
+                                        <h6 class="text-primary"><i class="fas fa-stethoscope"></i> Keluhan Utama</h6>
+                                        <div class="form-group">
+                                            <label>Keluhan Utama (dari appointment)</label>
+                                            <textarea class="form-control" id="keluhan_utama" rows="3" placeholder="Keluhan pasien saat ini..."></textarea>
+                                        </div>
+
+                                        <!-- Riwayat Medis Section -->
+                                        <h6 class="text-primary"><i class="fas fa-notes-medical"></i> Riwayat Medis 
+                                            <small class="text-muted">(Data dari intake pasien - dapat diedit)</small>
+                                        </h6>
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label>Tes Hamil Positif</label>
+                                                    <input type="date" class="form-control" id="pregnancy_test_date">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label>Golongan Darah</label>
+                                                    <select class="form-control" id="blood_type">
+                                                        <option value="">Pilih Golongan Darah</option>
+                                                        <option value="A">A</option>
+                                                        <option value="B">B</option>
+                                                        <option value="AB">AB</option>
+                                                        <option value="O">O</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                    <label>Rhesus</label>
+                                                    <select class="form-control" id="rhesus_factor">
+                                                        <option value="">Pilih Rhesus</option>
+                                                        <option value="Positif">Positif (+)</option>
+                                                        <option value="Negatif">Negatif (-)</option>
+                                                            <option value="Tidak tahu">Tidak tahu</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label>Kondisi Medis Sekarang</label>
+                                            <textarea class="form-control" id="current_medical_conditions" rows="3" placeholder="Masukkan kondisi medis yang sedang dialami pasien"></textarea>
+                                        </div>
+
+                                        <div class="row">
+                                            <div class="col-md-4">
+                                                    <div class="form-group">
+                                                        <label>Alergi obat</label>
+                                                    <textarea class="form-control" id="drug_allergies" rows="2" placeholder="Contoh: Penisilin, Sulfa"></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                        <label>alergi makanan</label>
+                                                    <textarea class="form-control" id="food_allergies" rows="2" placeholder="Contoh: Udang, Kacang"></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <div class="form-group">
+                                                        <label>Alergi Lingkungan: Debu</label>
+                                                    <textarea class="form-control" id="other_allergies" rows="2" placeholder="Contoh: Debu, Bulu kucing"></textarea>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label>Obat-obatan yang Sedang Diminum</label>
+                                            <textarea class="form-control" id="current_medications" rows="3" placeholder="Masukkan obat-obatan yang sedang dikonsumsi pasien beserta dosisnya"></textarea>
+                                        </div>
+
+                                        <!-- Riwayat Penyakit Sebelumnya Section -->
+                                        <h6 class="text-primary"><i class="fas fa-history"></i> Riwayat Penyakit Sebelumnya 
+                                            <small class="text-muted">(Dapat diedit)</small>
+                                        </h6>
+                                        <div class="form-group">
+                                            <textarea class="form-control" id="past_medical_history" rows="3" placeholder="Masukkan riwayat penyakit yang pernah dialami sebelumnya"></textarea>
+                                        </div>
+
+                                        <!-- Riwayat Penyakit Keluarga Section -->
+                                        <h6 class="text-primary"><i class="fas fa-users"></i> Riwayat Penyakit Keluarga 
+                                            <small class="text-muted">(Dapat diedit)</small>
+                                        </h6>
+                                        <div class="form-group">
+                                            <textarea class="form-control" id="family_medical_history" rows="3" placeholder="Masukkan riwayat penyakit keluarga (orangtua, kakek/nenek, saudara)"></textarea>
+                                        </div>
+
+                                        <!-- Status Obstetri Section -->
+                                        <h6 class="text-primary"><i class="fas fa-baby"></i> Status Obstetri 
+                                            <small class="text-muted">(Data dari intake - dapat diedit dan ditambahkan)</small>
+                                        </h6>
+                                        
+                                        <!-- Riwayat Menstruasi -->
+                                        <div class="card mb-3">
+                                            <div class="card-header bg-light">
+                                                <h7><strong>Riwayat Menstruasi</strong></h7>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="row">
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label>Riwayat haid "Menarche"</label>
+                                                            <input type="number" class="form-control" id="menarche_age" placeholder="Contoh: 13" min="8" max="20">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label>Siklus (hari)</label>
+                                                            <input type="number" class="form-control" id="cycle_length" placeholder="Contoh: 28" min="21" max="35">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label>Siklus Teratur</label>
+                                                            <select class="form-control" id="cycle_regular">
+                                                                <option value="">Pilih</option>
+                                                                <option value="Ya">Ya</option>
+                                                                <option value="Tidak">Tidak</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label>HPHT</label>
+                                                            <input type="date" class="form-control" id="lmp_date">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Kehamilan Sebelumnya -->
+                                        <div class="card mb-3">
+                                            <div class="card-header bg-light">
+                                                <h7><strong>Kehamilan Sebelumnya</strong></h7>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="table-responsive">
+                                                    <table class="table table-bordered table-sm">
+                                                        <thead class="thead-light">
+                                                            <tr>
+                                                                <th>No</th>
+                                                                <th>Tahun</th>
+                                                                <th>Mode Persalinan</th>
+                                                                <th>Komplikasi</th>
+                                                                <th>Berat Bayi (gr)</th>
+                                                                <th>Anak Hidup</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody id="pregnancy-history-table">
+                                                            <!-- Pregnancy history will be populated here -->
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                                <div class="row mt-3">
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label>Gravida</label>
+                                                            <input type="number" class="form-control" id="gravida_count" placeholder="0" min="0" max="20">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label>Para</label>
+                                                            <input type="number" class="form-control" id="para_count" placeholder="0" min="0" max="20">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label>Abortus</label>
+                                                            <input type="number" class="form-control" id="abortus_count" placeholder="0" min="0" max="20">
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <div class="form-group">
+                                                            <label>Anak Hidup</label>
+                                                            <input type="number" class="form-control" id="living_children_count" placeholder="0" min="0" max="20">
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Riwayat Kontrasepsi -->
+                                        <div class="card mb-3">
+                                            <div class="card-header bg-light">
+                                                <h7><strong>Riwayat Kontrasepsi</strong></h7>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="row">
+                                                    <div class="col-md-4">
+                                                        <div class="form-group">
+                                                            <label>Metode Sebelumnya</label>
+                                                            <select class="form-control" id="previous_contraception">
+                                                                <option value="">Pilih Metode</option>
+                                                                <option value="Pil">Pil</option>
+                                                                <option value="Suntik 3 bulan">Suntik 3 bulan</option>
+                                                                <option value="Implan">Implan</option>
+                                                                <option value="IUD">IUD</option>
+                                                                <option value="Steril">Steril</option>
+                                                                <option value="Kondom">Kondom</option>
+                                                                <option value="KB Kalender">KB Kalender</option>
+                                                                <option value="Senggama terputus">Senggama terputus</option>
+                                                                <option value="Vasektomi">Vasektomi</option>
+                                                                <option value="Tidak pernah">Tidak pernah</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-group">
+                                                            <label>Kehamilan Karena Kegagalan KB</label>
+                                                            <select class="form-control" id="contraception_failure">
+                                                                <option value="">Pilih</option>
+                                                                <option value="Ya">Ya</option>
+                                                                <option value="Tidak">Tidak</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <div class="form-group">
+                                                            <label>Jenis Kontrasepsi (jika ya)</label>
+                                                            <select class="form-control" id="failed_contraception_type">
+                                                                <option value="">Pilih Metode</option>
+                                                                <option value="Pil">Pil</option>
+                                                                <option value="Suntik 3 bulan">Suntik 3 bulan</option>
+                                                                <option value="Implan">Implan</option>
+                                                                <option value="IUD">IUD</option>
+                                                                <option value="Steril">Steril</option>
+                                                                <option value="Kondom">Kondom</option>
+                                                                <option value="KB Kalender">KB Kalender</option>
+                                                                <option value="Senggama terputus">Senggama terputus</option>
+                                                                <option value="Vasektomi">Vasektomi</option>
+                                                            </select>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <hr class="my-4">
+                                        
+                                        <!-- Riwayat Prenatal Section -->
+                                        <h6 class="text-primary"><i class="fas fa-calendar-check"></i> Riwayat Prenatal Care (ANC)</h6>
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-sm" id="prenatal-table">
+                                                <thead class="thead-light">
+                                                    <tr>
+                                                        <th style="width: 5%;">Visit</th>
+                                                        <th style="width: 12%;">Tanggal</th>
+                                                        <th style="width: 10%;">Usia Kehamilan (minggu)</th>
+                                                        <th style="width: 10%;">Berat Badan (kg)</th>
+                                                        <th style="width: 12%;">Tekanan Darah</th>
+                                                        <th style="width: 10%;">Detak Janin (bpm)</th>
+                                                        <th style="width: 36%;">Keterangan</th>
+                                                        <th style="width: 5%;">Aksi</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="prenatal-body">
+                                                    <!-- Dynamic rows will be added here -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-success" id="add-prenatal-row">
+                                            <i class="fas fa-plus"></i> Tambah Kunjungan ANC
+                                        </button>
+                                        
+                                        <div class="mt-3">
+                                            <button type="button" class="btn btn-primary" onclick="saveAnamnesa()">
+                                                <i class="fas fa-save"></i> Simpan Patient Intake & Riwayat Prenatal
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+
+                                <!-- Physical Examination Tab -->
+                                <div class="tab-pane fade" id="physical" role="tabpanel">
+                                    <h5>Pemeriksaan Fisik</h5>
+                                    <form id="physical-form">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                    <div class="form-group">
+                                                        <label>Tekanan Darah</label>
+                                                        <input type="text" class="form-control" id="tekanan_darah" placeholder="120/80 mmHg" value="120/80">
+                                                    </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label>Nadi</label>
+                                                    <input type="text" class="form-control" id="nadi" placeholder="80 x/menit" value="88">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label>Suhu</label>
+                                                    <input type="text" class="form-control" id="suhu" placeholder="36.5 °C" value="36,8">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="form-group">
+                                                    <label>Respirasi</label>
+                                                    <input type="text" class="form-control" id="respirasi" placeholder="20 x/menit" value="18">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Pemeriksaan Kepala & Leher</label>
+                                            <textarea class="form-control" id="kepala_leher" rows="2">Anemia/Icterus/Cyanosis/Dyspneu (-)</textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Pemeriksaan Thorax</label>
+                                            <textarea class="form-control" id="thorax" rows="2">Simetris. Vesiculer/vesicular. Rhonki/Wheezing (-)
+S1 S2 tunggal, murmur (-), gallop (-)</textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Pemeriksaan Abdomen</label>
+                                            <textarea class="form-control" id="abdomen" rows="2">BU (+), Soepel
+Gravida tampak sesuai usia kehamilan / Massa abdomen</textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Pemeriksaan Ekstremitas</label>
+                                            <textarea class="form-control" id="ekstremitas" rows="2">Akral hangat, kering. CRT < 2 detik</textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Pemeriksaan Obstetri</label>
+                                            <textarea class="form-control" id="pemeriksaan_obstetri" rows="3">TFU:
+DJJ:
+VT: (tidak dilakukan)</textarea>
+                                        </div>
+                                        <button type="button" class="btn btn-primary" onclick="savePhysical()">
+                                            <i class="fas fa-save"></i> Simpan Pemeriksaan Fisik
+                                        </button>
+                                    </form>
+                                </div>
+
+                                <!-- USG Tab -->
+                                <div class="tab-pane fade" id="usg" role="tabpanel">
+                                    <h5>Pemeriksaan USG</h5>
+                                    <form id="usg-form">
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label>Tanggal USG</label>
+                                                    <input type="date" class="form-control" id="usg_date">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="form-group">
+                                                    <label>Usia Kehamilan</label>
+                                                    <input type="text" class="form-control" id="usia_kehamilan" placeholder="20 minggu 3 hari">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Biometri Janin</label>
+                                            <textarea class="form-control" id="biometri" rows="3" placeholder="BPD, HC, AC, FL, EFW"></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Anatomi Janin</label>
+                                            <textarea class="form-control" id="anatomi_janin" rows="3"></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Plasenta & Air Ketuban</label>
+                                            <textarea class="form-control" id="plasenta_air_ketuban" rows="2"></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Kesimpulan USG</label>
+                                            <textarea class="form-control" id="kesimpulan_usg" rows="3"></textarea>
+                                        </div>
+                                        <button type="button" class="btn btn-primary" onclick="saveUSG()">
+                                            <i class="fas fa-save"></i> Simpan Data USG
+                                        </button>
+                                    </form>
+                                </div>
+
+                                <!-- Lab/Supporting Examination Tab -->
+                                <div class="tab-pane fade" id="lab" role="tabpanel">
+                                    <h5>Pemeriksaan Penunjang</h5>
+                                    <form id="lab-form">
+                                        <!-- Laboratorium Section -->
+                                        <h6 class="text-primary"><i class="fas fa-flask"></i> Riwayat Pemeriksaan Laboratorium</h6>
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-sm" id="lab-tests-table">
+                                                <thead class="thead-light">
+                                                    <tr>
+                                                        <th style="width: 5%;">No</th>
+                                                        <th style="width: 20%;">Jenis Tes</th>
+                                                        <th style="width: 12%;">Trimester</th>
+                                                        <th style="width: 12%;">Tanggal Tes</th>
+                                                        <th style="width: 38%;">Hasil</th>
+                                                        <th style="width: 8%;">Tindak Lanjut</th>
+                                                        <th style="width: 5%;">Aksi</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="lab-tests-body">
+                                                    <!-- Dynamic rows will be added here -->
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-success" id="add-lab-row">
+                                            <i class="fas fa-plus"></i> Tambah Tes Laboratorium
+                                        </button>
+                                        
+                                        <hr class="my-4">
+                                        
+                                        <div class="form-group">
+                                            <label>Pemeriksaan Laboratorium (Catatan Umum)</label>
+                                            <textarea class="form-control" id="lab_results" rows="4" placeholder="Hb, Leukosit, Trombosit, Golongan Darah, dll"></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Pemeriksaan Radiologi</label>
+                                            <textarea class="form-control" id="radiologi" rows="3"></textarea>
+                                        </div>
+                                        <div class="form-group">
+                                            <label>Pemeriksaan Lainnya</label>
+                                            <textarea class="form-control" id="pemeriksaan_lain" rows="3"></textarea>
+                                        </div>
+                                        <button type="button" class="btn btn-primary" onclick="saveLab()">
+                                            <i class="fas fa-save"></i> Simpan Pemeriksaan Penunjang
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Diagnosis & Plan -->
+                    <div class="card section-card">
+                        <div class="card-header">
+                            <h3 class="card-title"><i class="fas fa-notes-medical"></i> Diagnosis & Rencana Tindakan</h3>
+                        </div>
+                        <div class="card-body">
+                            <form id="diagnosis-form">
+                                <div class="form-group">
+                                    <label>Diagnosis Utama</label>
+                                    <textarea class="form-control" id="diagnosis_utama" rows="1" style="height: 40px;" placeholder="Masukkan diagnosis utama"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label>Diagnosis Sekunder (jika ada)</label>
+                                    <textarea class="form-control" id="diagnosis_sekunder" rows="1" style="height: 40px;" placeholder="Masukkan diagnosis sekunder jika ada"></textarea>
+                                </div>
+                                <div class="form-group mt-4">
+                                    <p class="mb-0"><strong>dr. Dibya Arfianda, SpOG, M.Ked.Klin.</strong></p>
+                                    <p class="text-muted">Obstetrician Gynaecologist</p>
+                                </div>
+                                <div class="form-group">
+                                    <label>Rencana Tindakan</label>
+                                    <textarea class="form-control" id="rencana_tindakan" rows="3"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label>Resep/Terapi</label>
+                                    <textarea class="form-control" id="resep" rows="4"></textarea>
+                                </div>
+                                <div class="form-group">
+                                    <label>Catatan</label>
+                                    <textarea class="form-control" id="catatan" rows="2"></textarea>
+                                </div>
+                                <button type="button" class="btn btn-success btn-lg" onclick="saveAllMedicalRecords()">
+                                    <i class="fas fa-save"></i> Simpan Semua Data Rekam Medis
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
+<script type="module" src="./scripts/medical-record.js"></script>
+    <!-- Global Chat Loader -->
+    <script src="/staff/public/scripts/global-chat-loader.js"></script>
+</body>
+</html>

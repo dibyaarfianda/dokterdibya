@@ -17,7 +17,14 @@ export default {
     async render(state) {
         const exam = state.recordData?.physical_exam || {};
         const intake = state.intakeData?.payload || {};
+        const record = state.recordData || {};
+        const category = record?.mrCategory || record?.mr_category || 'obstetri';
 
+        // Use obstetri format for all categories (as per user request)
+        // Pemeriksaan Fisik is the same across obstetri, gyn_repro, gyn_special
+        return await this.renderObstetriFormat(state, exam);
+
+        /* Disabled: Use new detailed format for other categories
         return `
             <div class="card mb-3">
                 <div class="card-header bg-primary text-white">
@@ -89,6 +96,122 @@ export default {
                 // Calculate on load
                 window.calculateBMI();
             </script>
+        `;
+    */
+    },
+
+    /**
+     * Render old Obstetri format (simple) - EXACT copy from backup
+     */
+    async renderObstetriFormat(state, exam) {
+        // Load saved physical exam data and metadata using getMedicalRecordContext
+        const { getMedicalRecordContext, renderRecordMeta } = await import('../../utils/helpers.js');
+        const context = getMedicalRecordContext(state, 'physical_exam');
+
+        // Use saved data if available, otherwise use passed exam data
+        const savedData = context?.data || exam || {};
+        exam = savedData;
+
+        // Get metadata for display
+        const metaHtml = context ? renderRecordMeta(context, 'physical_exam') : '';
+        const escapeHtml = (str) => {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        };
+
+        return `
+            <div class="sc-section">
+                <div class="sc-section-header">
+                    <h3>Pemeriksaan Fisik</h3>
+                </div>
+                ${metaHtml}
+                <div class="sc-card">
+                    <!-- Vital Signs in one row -->
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label class="font-weight-bold">Tekanan Darah</label>
+                            <input type="text" class="form-control" id="pe-tekanan-darah"
+                                   value="${escapeHtml(exam.tekanan_darah || '120/80')}"
+                                   placeholder="120/80">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="font-weight-bold">Nadi</label>
+                            <input type="text" class="form-control" id="pe-nadi"
+                                   value="${escapeHtml(exam.nadi || '88')}"
+                                   placeholder="88">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="font-weight-bold">Suhu</label>
+                            <input type="text" class="form-control" id="pe-suhu"
+                                   value="${escapeHtml(exam.suhu || '36.8')}"
+                                   placeholder="36.8">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="font-weight-bold">Respirasi</label>
+                            <input type="text" class="form-control" id="pe-respirasi"
+                                   value="${escapeHtml(exam.respirasi || '18')}"
+                                   placeholder="18">
+                        </div>
+                    </div>
+
+                    <!-- Anthropometry (Height, Weight, BMI) -->
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label class="font-weight-bold">Tinggi Badan (cm)</label>
+                            <input type="number" step="0.1" class="form-control" id="pe-tinggi-badan"
+                                   value="${escapeHtml(exam.tinggi_badan || '')}"
+                                   placeholder="160">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="font-weight-bold">Berat Badan (kg)</label>
+                            <input type="number" step="0.1" class="form-control" id="pe-berat-badan"
+                                   value="${escapeHtml(exam.berat_badan || '')}"
+                                   placeholder="55">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="font-weight-bold">IMT (kg/m²)</label>
+                            <input type="text" class="form-control" id="pe-imt" readonly
+                                   value="${escapeHtml(exam.imt || '')}"
+                                   placeholder="Auto">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="font-weight-bold">Kategori IMT</label>
+                            <input type="text" class="form-control" id="pe-kategori-imt" readonly
+                                   value="${escapeHtml(exam.kategori_imt || '')}"
+                                   placeholder="Auto">
+                        </div>
+                    </div>
+
+                    <!-- Examination Findings -->
+                    <div class="mb-3">
+                        <label class="font-weight-bold">Pemeriksaan Kepala & Leher</label>
+                        <textarea class="form-control" id="pe-kepala-leher" rows="2">${escapeHtml(exam.kepala_leher || 'Anemia/Icterus/Cyanosis/Dyspneu (-)')}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="font-weight-bold">Pemeriksaan Thorax</label>
+                        <textarea class="form-control" id="pe-thorax" rows="3">${escapeHtml(exam.thorax || 'Simetris. Vesiculer/vesicular. Rhonki/Wheezing (-)\nS1 S2 tunggal, murmur (-), gallop (-)')}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="font-weight-bold">Pemeriksaan Abdomen</label>
+                        <textarea class="form-control" id="pe-abdomen" rows="3">${escapeHtml(exam.abdomen || 'BU (+) normal')}</textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="font-weight-bold">Pemeriksaan Ekstremitas</label>
+                        <textarea class="form-control" id="pe-ekstremitas" rows="2">${escapeHtml(exam.ekstremitas || 'Akral hangat, kering. CRT < 2 detik')}</textarea>
+                    </div>
+
+                    <div class="text-right mt-3">
+                        <button type="button" class="btn btn-primary" id="save-physical-exam" onclick="window.savePhysicalExam()">
+                            <i class="fas fa-save mr-2"></i>Simpan Pemeriksaan Fisik
+                        </button>
+                    </div>
+                </div>
+            </div>
         `;
     },
 
@@ -568,5 +691,77 @@ export default {
             extremities: document.querySelector('[name="extremities"]')?.value || '',
             additional_findings: document.querySelector('[name="additional_findings"]')?.value || ''
         };
+    },
+
+    /**
+     * After render hook - called after HTML is injected into DOM
+     */
+    afterRender() {
+        // Setup BMI calculator for Obstetri format
+        this.setupBMICalculator();
+    },
+
+    /**
+     * Setup BMI auto-calculator
+     */
+    setupBMICalculator() {
+        const tinggiEl = document.getElementById('pe-tinggi-badan');
+        const beratEl = document.getElementById('pe-berat-badan');
+        
+        if (!tinggiEl || !beratEl) {
+            return; // Not in Obstetri format
+        }
+
+        // Define calculator function
+        const calculateBMI = () => {
+            const imtEl = document.getElementById('pe-imt');
+            const kategoriEl = document.getElementById('pe-kategori-imt');
+            
+            if (!imtEl || !kategoriEl) return;
+
+            const tinggi = parseFloat(tinggiEl.value);
+            const berat = parseFloat(beratEl.value);
+
+            if (tinggi && berat && tinggi > 0) {
+                const tinggiMeter = tinggi / 100;
+                const imt = (berat / (tinggiMeter * tinggiMeter)).toFixed(1);
+                
+                imtEl.value = imt;
+
+                // Kategorikan IMT
+                let kategori = '';
+                const imtNum = parseFloat(imt);
+                
+                if (imtNum < 17.0) {
+                    kategori = 'Kurang Energi Kronis';
+                } else if (imtNum >= 17.0 && imtNum < 18.5) {
+                    kategori = 'Kurang Energi Kronis';
+                } else if (imtNum >= 18.5 && imtNum < 25.0) {
+                    kategori = 'Normal';
+                } else if (imtNum >= 25.0 && imtNum < 30.0) {
+                    kategori = 'Kelebihan Berat Badan';
+                } else if (imtNum >= 30.0 && imtNum < 35.0) {
+                    kategori = 'Obesitas Grade 1';
+                } else if (imtNum >= 35.0 && imtNum < 40.0) {
+                    kategori = 'Obesitas Grade 2';
+                } else {
+                    kategori = 'Obesitas Grade 3';
+                }
+
+                kategoriEl.value = kategori;
+            } else {
+                imtEl.value = '';
+                kategoriEl.value = '';
+            }
+        };
+
+        // Attach event listeners
+        tinggiEl.addEventListener('input', calculateBMI);
+        tinggiEl.addEventListener('change', calculateBMI);
+        beratEl.addEventListener('input', calculateBMI);
+        beratEl.addEventListener('change', calculateBMI);
+        
+        // Calculate immediately if values exist
+        calculateBMI();
     }
 };

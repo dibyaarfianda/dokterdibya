@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Ruang Membaca - dokterDIBYA</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <style>
+        :root {
+            --primary: #28a7e9;
+            --dark-bg: #0a0a1a;
+            --card-bg: #1a1a2e;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(180deg, #0a0a1a 0%, #1a1a2e 50%, #16213e 100%);
+            min-height: 100vh;
+            color: #fff;
+        }
+
+        .header {
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(20px);
+            padding: 15px 20px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .header-content {
+            max-width: 600px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .back-btn {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .header-title {
+            flex: 1;
+        }
+
+        .header-title h1 {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .header-title p {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .intro-card {
+            background: linear-gradient(135deg, var(--primary), #1e88e5);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 25px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .intro-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        }
+
+        .intro-card h2 {
+            font-size: 20px;
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .intro-card p {
+            font-size: 14px;
+            opacity: 0.9;
+            line-height: 1.5;
+            position: relative;
+        }
+
+        .category-filters {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+
+        .category-btn {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #aaa;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .category-btn:hover {
+            background: rgba(255,255,255,0.15);
+            color: #fff;
+        }
+
+        .category-btn.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .articles-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .article-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 20px;
+            padding: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .article-card:hover {
+            background: rgba(255,255,255,0.08);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        .article-header {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 12px;
+        }
+
+        .article-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .article-icon i {
+            font-size: 24px;
+            color: white;
+        }
+
+        .article-meta {
+            flex: 1;
+        }
+
+        .article-category {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 10px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+
+        .article-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+            line-height: 1.3;
+            margin-bottom: 4px;
+        }
+
+        .article-date {
+            font-size: 11px;
+            color: #666;
+        }
+
+        .article-summary {
+            font-size: 13px;
+            color: #999;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+
+        .article-source {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+            color: #666;
+        }
+
+        .article-source i {
+            color: var(--primary);
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            z-index: 1000;
+            display: none;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+            border-radius: 24px;
+            max-width: 500px;
+            width: 100%;
+            margin: 20px 0;
+            border: 1px solid rgba(255,255,255,0.1);
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .modal-header {
+            padding: 30px 24px;
+            border-radius: 24px 24px 0 0;
+            position: relative;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255,255,255,0.2);
+            border: none;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-close:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .modal-icon {
+            width: 70px;
+            height: 70px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        .modal-icon i {
+            font-size: 32px;
+            color: white;
+        }
+
+        .modal-category {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            font-size: 11px;
+            font-weight: 600;
+            padding: 4px 14px;
+            border-radius: 12px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .modal-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: white;
+            line-height: 1.3;
+        }
+
+        .modal-body {
+            padding: 24px;
+        }
+
+        .modal-body p {
+            color: #ccc;
+            font-size: 15px;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+
+        .modal-info {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 20px;
+        }
+
+        .modal-info-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #888;
+            font-size: 13px;
+        }
+
+        .modal-info-row:not(:last-child) {
+            margin-bottom: 10px;
+        }
+
+        .modal-info-row i {
+            width: 20px;
+            color: var(--primary);
+        }
+
+        .modal-info-row strong {
+            color: #aaa;
+        }
+
+        .modal-disclaimer {
+            background: linear-gradient(135deg, rgba(40,167,69,0.1), rgba(32,201,151,0.1));
+            border: 1px solid rgba(40,167,69,0.2);
+            border-radius: 16px;
+            padding: 18px;
+        }
+
+        .modal-disclaimer p {
+            color: #28a745;
+            font-size: 13px;
+            margin: 0;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .modal-disclaimer i {
+            margin-top: 3px;
+            flex-shrink: 0;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .footer-note {
+            text-align: center;
+            padding: 30px 20px;
+            color: #555;
+            font-size: 12px;
+        }
+
+        .footer-note strong {
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <button class="back-btn" onclick="history.back()">
+                <i class="fa fa-arrow-left"></i>
+            </button>
+            <div class="header-title">
+                <h1>Ruang Membaca</h1>
+                <p>dari <strong style="color: var(--primary);">dokterDIBYA</strong></p>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="intro-card">
+            <h2><i class="fa fa-stethoscope"></i> Edukasi untuk Bunda</h2>
+            <p>Artikel pilihan berdasarkan jurnal dan panduan medis terkini tentang kehamilan dan kesehatan kandungan.</p>
+        </div>
+
+        <div class="category-filters">
+            <button class="category-btn active" onclick="filterArticles('all')">Semua</button>
+            <button class="category-btn" onclick="filterArticles('kehamilan')">Kehamilan</button>
+            <button class="category-btn" onclick="filterArticles('program_hamil')">Program Hamil</button>
+            <button class="category-btn" onclick="filterArticles('gangguan_kandungan')">Gangguan Kandungan</button>
+        </div>
+
+        <div class="articles-grid" id="articles-grid">
+            <!-- Articles will be loaded here -->
+        </div>
+
+        <div class="footer-note">
+            <p>Artikel diperbarui secara berkala berdasarkan<br>evidence-based medicine oleh <strong>dokterDIBYA</strong></p>
+        </div>
+    </div>
+
+    <!-- Article Modal -->
+    <div class="modal-overlay" id="article-modal" onclick="if(event.target.id === 'article-modal') closeModal()">
+        <div class="modal-content">
+            <div class="modal-header" id="modal-header">
+                <button class="modal-close" onclick="closeModal()">
+                    <i class="fa fa-times"></i>
+                </button>
+                <div class="modal-icon" id="modal-icon">
+                    <i class="fa fa-leaf"></i>
+                </div>
+                <span class="modal-category" id="modal-category">Nutrisi</span>
+                <h2 class="modal-title" id="modal-title">Article Title</h2>
+            </div>
+            <div class="modal-body">
+                <p id="modal-content-text">Article content goes here...</p>
+
+                <div class="modal-info">
+                    <div class="modal-info-row">
+                        <i class="fa fa-book"></i>
+                        <span>Sumber: <strong id="modal-source">-</strong></span>
+                    </div>
+                    <div class="modal-info-row">
+                        <i class="fa fa-calendar"></i>
+                        <span>Diperbarui: <strong id="modal-date">-</strong></span>
+                    </div>
+                </div>
+
+                <div class="modal-disclaimer">
+                    <p>
+                        <i class="fa fa-info-circle"></i>
+                        <span>Artikel ini disusun oleh <strong>dokterDIBYA</strong> berdasarkan jurnal dan panduan medis terkini. Untuk kondisi spesifik, konsultasikan langsung dengan dokter Anda.</span>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Articles loaded from API
+        let articles = [];
+        let currentFilter = 'all';
+
+        // Load articles from API
+        async function loadArticles() {
+            const grid = document.getElementById('articles-grid');
+            grid.innerHTML = `
+                <div style="text-align: center; padding: 40px; color: #888;">
+                    <i class="fa fa-spinner fa-spin" style="font-size: 32px;"></i>
+                    <p style="margin-top: 15px;">Memuat artikel...</p>
+                </div>
+            `;
+
+            try {
+                const params = new URLSearchParams({ limit: 50 });
+                if (currentFilter !== 'all') {
+                    params.append('category', currentFilter);
+                }
+
+                const response = await fetch(`/api/articles?${params}`);
+                const result = await response.json();
+
+                if (!result.success || !result.data) {
+                    throw new Error('Failed to load articles');
+                }
+
+                articles = result.data;
+                renderArticles();
+
+            } catch (error) {
+                console.error('Error loading articles:', error);
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa fa-exclamation-circle"></i>
+                        <p>Gagal memuat artikel. Silakan coba lagi.</p>
+                        <button onclick="loadArticles()" style="
+                            margin-top: 15px;
+                            background: var(--primary);
+                            color: white;
+                            border: none;
+                            padding: 10px 20px;
+                            border-radius: 20px;
+                            cursor: pointer;
+                        ">
+                            <i class="fa fa-refresh"></i> Coba Lagi
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        function formatDate(dateStr) {
+            if (!dateStr) return '';
+            const date = new Date(dateStr);
+            const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+                           'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+            return `${months[date.getMonth()]} ${date.getFullYear()}`;
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function renderArticles() {
+            const grid = document.getElementById('articles-grid');
+
+            if (articles.length === 0) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa fa-newspaper-o"></i>
+                        <p>Belum ada artikel dalam kategori ini</p>
+                    </div>
+                `;
+                return;
+            }
+
+            grid.innerHTML = articles.map(article => {
+                const color = article.color || '#28a7e9';
+                const icon = article.icon || 'fa-book-reader';
+                const dateStr = formatDate(article.created_at);
+                const source = article.source || 'dokterDIBYA';
+
+                return `
+                    <div class="article-card" onclick="openArticle(${article.id})">
+                        <div class="article-header">
+                            <div class="article-icon" style="background: ${color}">
+                                <i class="fa ${icon}"></i>
+                            </div>
+                            <div class="article-meta">
+                                <span class="article-category" style="background: ${color}">${escapeHtml(article.category || 'Kehamilan')}</span>
+                                <h3 class="article-title">${escapeHtml(article.title)}</h3>
+                                <span class="article-date">${dateStr}</span>
+                            </div>
+                        </div>
+                        <p class="article-summary">${escapeHtml(article.summary || '')}</p>
+                        <div class="article-source">
+                            <i class="fa fa-book"></i>
+                            <span>${escapeHtml(source)}</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function filterArticles(category) {
+            currentFilter = category;
+
+            // Update button states
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Reload articles with new filter
+            loadArticles();
+        }
+
+        async function openArticle(id) {
+            // Show loading state in modal
+            const modal = document.getElementById('article-modal');
+            document.getElementById('modal-header').style.background = '#28a7e9';
+            document.getElementById('modal-icon').innerHTML = '<i class="fa fa-spinner fa-spin"></i>';
+            document.getElementById('modal-category').textContent = 'Memuat...';
+            document.getElementById('modal-title').textContent = '';
+            document.getElementById('modal-content-text').innerHTML = '<p style="text-align: center; padding: 20px;"><i class="fa fa-spinner fa-spin"></i> Memuat artikel...</p>';
+            document.getElementById('modal-source').textContent = '-';
+            document.getElementById('modal-date').textContent = '-';
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            try {
+                const response = await fetch(`/api/articles/${id}`);
+                const result = await response.json();
+
+                if (!result.success || !result.data) {
+                    throw new Error('Article not found');
+                }
+
+                const article = result.data;
+                const color = article.color || '#28a7e9';
+                const icon = article.icon || 'fa-book-reader';
+                const dateStr = formatDate(article.updated_at || article.created_at);
+
+                // Update modal content
+                document.getElementById('modal-header').style.background = color;
+                document.getElementById('modal-icon').innerHTML = `<i class="fa ${icon}"></i>`;
+                document.getElementById('modal-category').textContent = article.category || 'Kehamilan';
+                document.getElementById('modal-title').textContent = article.title;
+
+                // Show content or summary
+                if (article.content) {
+                    document.getElementById('modal-content-text').innerHTML = article.content;
+                } else {
+                    document.getElementById('modal-content-text').textContent = article.summary || '';
+                }
+
+                document.getElementById('modal-source').textContent = article.source || 'dokterDIBYA';
+                document.getElementById('modal-date').textContent = dateStr;
+
+            } catch (error) {
+                console.error('Error loading article:', error);
+                document.getElementById('modal-content-text').innerHTML = `
+                    <p style="text-align: center; color: #dc3545; padding: 20px;">
+                        <i class="fa fa-exclamation-circle"></i> Gagal memuat artikel
+                    </p>
+                `;
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('article-modal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeModal();
+        });
+
+        // Initialize - load articles from API
+        loadArticles();
+    </script>
+</body>
+</html>

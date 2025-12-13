@@ -19,7 +19,15 @@ export default {
         const patient = state.patientData || {};
         const record = state.recordData?.record || {};
         const appointment = state.appointmentData || {};
+        const intake = state.intakeData || {};
+        const category = record.mr_category || 'obstetri';
 
+        // Use old simple format for obstetri category
+        if (category === 'obstetri') {
+            return this.renderObstetriFormat(state);
+        }
+
+        // Use new detailed format for other categories
         return `
             <div class="card mb-3">
                 <div class="card-header bg-secondary text-white">
@@ -34,7 +42,7 @@ export default {
                     <hr>
 
                     <!-- Patient Demographics -->
-                    ${this.renderDemographics(patient)}
+                    ${this.renderDemographics(patient, intake)}
 
                     <hr>
 
@@ -53,6 +61,104 @@ export default {
                 </div>
             </div>
         `;
+    },
+
+    /**
+     * Render old Obstetri format (simple)
+     */
+    renderObstetriFormat(state) {
+        const patient = state.patientData || {};
+        const record = state.recordData?.record || {};
+        const intake = state.intakeData || {};
+        const intakePayload = intake.payload || {};
+
+        const formatValue = (val) => val || '-';
+        const formatPhone = (phone) => phone ? phone.replace(/(\d{4})(\d{4})(\d{4})/, '$1-$2-$3') : '-';
+
+        // Get data from patient or intake payload
+        const fullName = patient.fullName || patient.full_name || intakePayload.full_name || patient.name;
+        const patientId = patient.id || patient.patient_id;
+        const dateOfBirth = patient.birthDate || patient.date_of_birth || intakePayload.dob;
+        const phone = patient.phone || patient.phone_number || patient.whatsapp;
+        const email = patient.email || intakePayload.email;
+        const address = patient.address || intakePayload.address;
+        const maritalStatus = patient.marital_status || intakePayload.marital_status;
+        const husbandName = patient.husband_name || intakePayload.husband_name;
+        const husbandAge = patient.husband_age || intakePayload.husband_age;
+        const husbandOccupation = patient.husband_occupation || intakePayload.husband_occupation;
+        const occupation = patient.occupation || intakePayload.occupation;
+        const education = patient.education || intakePayload.education;
+        const insurance = patient.insurance || intakePayload.insurance;
+        const emergencyPhone = patient.emergency_contact_phone || intakePayload.emergency_contact_phone;
+
+        const height = patient.height || intakePayload.height;
+
+        const primaryRows = [
+            ['Nama Lengkap', formatValue(fullName)],
+            ['ID Pasien', formatValue(patientId)],
+            ['Usia', formatValue(dateOfBirth ? this.calculateAge(dateOfBirth) + ' tahun' : '')],
+            ['Tinggi Badan', formatValue(height ? height + ' cm' : '')],
+            ['Telepon', formatPhone(phone)],
+            ['Kontak Darurat', formatPhone(emergencyPhone)],
+            ['Email', formatValue(email)],
+            ['Alamat', formatValue(address)],
+            ['Status Pernikahan', formatValue(this.getMaritalStatusLabel(maritalStatus))],
+            ['Nama Suami', formatValue(husbandName)],
+            ['Umur Suami', formatValue(husbandAge ? husbandAge + ' tahun' : '')],
+            ['Pekerjaan Suami', formatValue(husbandOccupation)],
+            ['Pekerjaan Ibu', formatValue(occupation)],
+            ['Pendidikan', formatValue(education)],
+            ['Asuransi', formatValue(insurance || 'Tidak ada')]
+        ];
+
+        const intakeRows = [
+            ['Status Intake', formatValue(intake.status ? this.getIntakeStatusLabel(intake.status) : '')],
+            ['Diterima', formatValue(intake.created_at ? this.formatDate(intake.created_at) : '')],
+            ['Diverifikasi', formatValue(intake.reviewed_at ? this.formatDate(intake.reviewed_at) : '')],
+            ['Direview Oleh', formatValue(intake.reviewed_by_name)],
+            ['Catatan Review', formatValue(intake.review_notes)]
+        ];
+
+        return `
+            <div class="sc-section">
+                <div class="sc-section-header">
+                    <h3>Identitas Pasien</h3>
+                </div>
+                <div class="sc-card">
+                    <h4>Data Utama</h4>
+                    <table class="table table-sm table-bordered">
+                        <tbody>
+                            ${primaryRows.map(([label, value]) => `
+                                <tr>
+                                    <th style="width: 30%;">${label}</th>
+                                    <td>${value}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+    },
+
+    getMaritalStatusLabel(status) {
+        const labels = {
+            'single': 'Belum Menikah',
+            'married': 'Menikah',
+            'divorced': 'Bercerai',
+            'widowed': 'Janda/Duda',
+            'unknown': 'Tidak Diketahui'
+        };
+        return labels[status] || status;
+    },
+
+    getIntakeStatusLabel(status) {
+        const labels = {
+            'pending': 'Menunggu Review',
+            'approved': 'Disetujui',
+            'rejected': 'Ditolak'
+        };
+        return labels[status] || status;
     },
 
     /**
@@ -137,11 +243,13 @@ export default {
     /**
      * Render Patient Demographics
      */
-    renderDemographics(patient) {
+    renderDemographics(patient, intake = {}) {
+        const intakePayload = intake.payload || {};
         const fullName = patient.full_name || patient.name || 'N/A';
         const dob = patient.date_of_birth || patient.dob || '';
         const dobFormatted = dob ? this.formatDate(dob) : 'N/A';
         const age = dob ? this.calculateAge(dob) : 'N/A';
+        const height = patient.height || intakePayload.height || '';
         const gender = patient.gender || 'female';
         const genderLabel = gender === 'male' ? 'Laki-laki' : 'Perempuan';
         const genderIcon = gender === 'male' ? 'mars' : 'venus';
@@ -194,7 +302,7 @@ export default {
                 </div>
 
                 <div class="row">
-                    <div class="col-md-4">
+                    <div class="col-md-3">
                         <div class="info-group mb-3">
                             <label class="text-muted mb-1">Tanggal Lahir:</label>
                             <div class="info-value">
@@ -212,7 +320,16 @@ export default {
                         </div>
                     </div>
 
-                    <div class="col-md-3">
+                    <div class="col-md-2">
+                        <div class="info-group mb-3">
+                            <label class="text-muted mb-1">Tinggi Badan:</label>
+                            <div class="info-value">
+                                ${height ? `<strong>${height}</strong> cm` : 'N/A'}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-md-2">
                         <div class="info-group mb-3">
                             <label class="text-muted mb-1">Agama:</label>
                             <div class="info-value">
@@ -468,19 +585,19 @@ export default {
     },
 
     /**
-     * Format date to readable format
+     * Format date to European format (DD/MM/YYYY)
      */
     formatDate(dateString) {
         if (!dateString) return 'N/A';
 
         const date = new Date(dateString);
-        const options = {
-            year: 'numeric',
-            month: 'long',
-            day: 'numeric'
-        };
+        if (isNaN(date.getTime())) return 'N/A';
 
-        return date.toLocaleDateString('id-ID', options);
+        const day = String(date.getDate()).padStart(2, '0');
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear();
+
+        return `${day}/${month}/${year}`;
     },
 
     /**

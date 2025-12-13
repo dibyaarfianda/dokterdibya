@@ -555,14 +555,19 @@ function serializeFields() {
 
 // Load existing intake data from server
 async function loadExistingIntake() {
+    console.log('[Patient Intake] === loadExistingIntake START ===');
     try {
-        const token = localStorage.getItem('patient_token');
+        const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+        console.log('[Patient Intake] Token check:', token ? 'TOKEN EXISTS' : 'NO TOKEN');
+        
         if (!token) {
             console.log('[Patient Intake] No patient token, skipping server load');
             return null;
         }
         
         console.log('[Patient Intake] Attempting to load existing intake from server...');
+        console.log('[Patient Intake] Request URL: /api/patient-intake/my-intake');
+        
         const response = await fetch('/api/patient-intake/my-intake', {
             headers: {
                 'Authorization': `Bearer ${token}`,
@@ -571,6 +576,7 @@ async function loadExistingIntake() {
         });
         
         console.log('[Patient Intake] Server response status:', response.status);
+        console.log('[Patient Intake] Server response ok:', response.ok);
         
         if (!response.ok) {
             console.error('[Patient Intake] Failed to load intake from server, status:', response.status);
@@ -597,6 +603,8 @@ async function loadExistingIntake() {
 function restoreIntakeData(payload, intakeData = null) {
     if (!payload) return;
     
+    console.log('[Restore] Starting data restoration with payload:', payload);
+    
     try {
         // Restore all fields from payload
         Object.entries(payload).forEach(([name, value]) => {
@@ -611,10 +619,13 @@ function restoreIntakeData(payload, intakeData = null) {
                 if (control.type === 'checkbox') {
                     if (name === 'consent' || name === 'final_ack') {
                         control.checked = Boolean(value);
+                        console.log(`[Restore] Checkbox ${name}:`, control.checked);
                     } else if (Array.isArray(value)) {
                         control.checked = value.includes(control.value);
+                        console.log(`[Restore] Checkbox array ${name} [${control.value}]:`, control.checked, 'from', value);
                     } else {
                         control.checked = false;
+                        console.log(`[Restore] Checkbox ${name} unchecked (not array)`);
                     }
                     return;
                 }
@@ -1180,7 +1191,7 @@ form.addEventListener('submit', async (event) => {
     submitBtn.textContent = existingIntakeId ? 'Memperbarui...' : 'Mengirim...';
     
     const payload = buildPayload();
-    const token = localStorage.getItem('patient_token');
+    const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
     
     try {
         // Use PUT if updating existing intake, POST if creating new
@@ -1218,7 +1229,18 @@ form.addEventListener('submit', async (event) => {
         }
         
         if (!response.ok) {
-            throw new Error(`Server responded with ${response.status}`);
+            // Try to get detailed error from response
+            const errorData = await response.json().catch(() => null);
+            console.error('Submit error details:', errorData);
+
+            if (response.status === 422 && errorData?.errors) {
+                // Validation errors - show them to user
+                const errorList = errorData.errors.join('\n');
+                showToast(`Validasi gagal:\n${errorList}`, 'error');
+                throw new Error(`Validation failed: ${errorList}`);
+            }
+
+            throw new Error(`Server responded with ${response.status}: ${errorData?.message || 'Unknown error'}`);
         }
         const result = await response.json().catch(() => null);
         const quickId = result && typeof result === 'object' ? result.quickId : undefined;
@@ -1241,7 +1263,7 @@ form.addEventListener('submit', async (event) => {
         
         // Redirect to dashboard after 2 seconds
         setTimeout(() => {
-            window.location.href = '/patient-dashboard.html';
+            window.location.href = '/patient-dashboard.html?_=' + Date.now();
         }, 2000);
     } catch (error) {
         console.error('Submit intake gagal', error);
