@@ -654,34 +654,13 @@
         })();
     </script>
 
-    <!-- Main app script - module with Google Auth -->
-    <script type="module">
+    <!-- Main app script -->
+    <script>
         const API_BASE = 'https://dokterdibya.com';
         const DASHBOARD_URL = 'https://dokterdibya.com/patient-dashboard.html';
-        const GOOGLE_CLIENT_ID = '738335602560-52as846lk2oo78fr38a86elu8888m7eh.apps.googleusercontent.com';
-
-        // Dynamic import for Google Auth (won't block if it fails)
-        let GoogleAuth = null;
-        try {
-            const module = await import('https://esm.sh/@codetrix-studio/capacitor-google-auth@3.4.0');
-            GoogleAuth = module.GoogleAuth;
-            GoogleAuth.initialize({
-                clientId: GOOGLE_CLIENT_ID,
-                scopes: ['profile', 'email'],
-                grantOfflineAccess: true
-            });
-            console.log('GoogleAuth initialized successfully');
-        } catch (err) {
-            console.error('Failed to load GoogleAuth:', err);
-        }
 
         // Make loginWithGoogle available globally
         window.loginWithGoogle = async function() {
-            if (!GoogleAuth) {
-                showError('login-error', 'Google Sign-In tidak tersedia. Gunakan email/password.');
-                return;
-            }
-
             const btn = document.getElementById('btn-google');
             const originalHtml = btn.innerHTML;
             btn.disabled = true;
@@ -689,6 +668,13 @@
             document.getElementById('login-error').classList.remove('show');
 
             try {
+                // Use native Capacitor plugin via Capacitor bridge
+                const Capacitor = window.Capacitor;
+                if (!Capacitor || !Capacitor.Plugins || !Capacitor.Plugins.GoogleAuth) {
+                    throw new Error('GoogleAuth plugin not available');
+                }
+
+                const GoogleAuth = Capacitor.Plugins.GoogleAuth;
                 const googleUser = await GoogleAuth.signIn();
                 console.log('Google user:', googleUser);
 
@@ -697,10 +683,10 @@
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        idToken: googleUser.authentication.idToken,
+                        idToken: googleUser.authentication?.idToken || googleUser.idToken,
                         email: googleUser.email,
-                        name: googleUser.name,
-                        imageUrl: googleUser.imageUrl
+                        name: googleUser.name || googleUser.displayName,
+                        imageUrl: googleUser.imageUrl || googleUser.photoUrl
                     })
                 });
 
@@ -717,8 +703,10 @@
                 }
             } catch (err) {
                 console.error('Google Sign-In error:', err);
-                if (err.error !== 'popup_closed_by_user') {
-                    showError('login-error', 'Google Sign-In gagal. Silakan coba lagi.');
+                if (err.message && err.message.includes('not available')) {
+                    showError('login-error', 'Google Sign-In tidak tersedia di perangkat ini.');
+                } else if (err.error !== 'popup_closed_by_user' && err.message !== 'The user canceled the sign-in flow.') {
+                    showError('login-error', 'Google Sign-In gagal: ' + (err.message || 'Silakan coba lagi.'));
                 }
             }
 
