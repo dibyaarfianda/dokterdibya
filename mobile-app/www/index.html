@@ -98,6 +98,22 @@
             height: 100%;
             object-fit: contain;
             background: #000;
+            /* Hide video until ready to play - prevents play button flash */
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        .intro-video.ready {
+            opacity: 1;
+        }
+        /* Hide any browser default video controls/poster */
+        .intro-video::-webkit-media-controls {
+            display: none !important;
+        }
+        .intro-video::-webkit-media-controls-enclosure {
+            display: none !important;
+        }
+        .intro-video::-webkit-media-controls-panel {
+            display: none !important;
         }
         .skip-btn {
             position: absolute;
@@ -641,7 +657,6 @@
         function hideIntro() {
             if (introHidden) return;
             introHidden = true;
-            console.log('Hiding intro');
             introOverlay.classList.add('hidden');
             setTimeout(() => {
                 introOverlay.classList.add('removed');
@@ -654,11 +669,22 @@
             introOverlay.classList.add('removed');
             introHidden = true;
         } else {
+            // Show video only when it starts playing (prevents play button flash)
+            introVideo.addEventListener('playing', () => {
+                introVideo.classList.add('ready');
+            });
+
+            // Also show on canplay in case playing doesn't fire
+            introVideo.addEventListener('canplay', () => {
+                introVideo.classList.add('ready');
+            });
+
             // Video ended - hide intro
             introVideo.addEventListener('ended', hideIntro);
 
             // Skip button
-            skipBtn.addEventListener('click', () => {
+            skipBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 introVideo.pause();
                 hideIntro();
             });
@@ -671,20 +697,17 @@
 
             // Video error - hide immediately
             introVideo.addEventListener('error', () => {
-                console.log('Video error, hiding intro');
                 hideIntro();
             });
 
             // Try to play video (might be blocked by autoplay policy)
             introVideo.play().catch(() => {
-                console.log('Autoplay blocked, hiding intro');
                 hideIntro();
             });
 
             // Faster fallback: hide after 1.5 seconds
             setTimeout(() => {
                 if (!introHidden) {
-                    console.log('Timeout fallback, hiding intro');
                     hideIntro();
                 }
             }, 1500);
@@ -724,11 +747,30 @@
             }
         }
 
-        // Handle deep link from Google OAuth callback
+        // Handle deep link from Google OAuth callback or logout
         function handleDeepLink(url) {
             console.log('Deep link received:', url);
             try {
                 const urlObj = new URL(url);
+
+                // Handle logout deep link
+                if (urlObj.protocol === 'dokterdibya:' && urlObj.host === 'logout') {
+                    console.log('Logout deep link received');
+                    // Clear all auth data
+                    localStorage.removeItem('vps_auth_token');
+                    sessionStorage.removeItem('vps_auth_token');
+                    localStorage.removeItem('patient_user');
+                    localStorage.removeItem('patient_token');
+                    localStorage.removeItem('auth_provider');
+                    localStorage.removeItem('patient_intake_draft_v3');
+                    // Hide loading if visible, show login page
+                    const loadingOverlay = document.getElementById('loading-overlay');
+                    if (loadingOverlay) loadingOverlay.classList.add('hidden');
+                    showPage('page-login');
+                    return;
+                }
+
+                // Handle login deep link (from Google OAuth)
                 if (urlObj.protocol === 'dokterdibya:' && urlObj.host === 'login') {
                     // Immediately show loading, hide everything else
                     showLoading();
@@ -807,13 +849,26 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
-                    window.location.href = DASHBOARD_URL;
+                    // Pass token in URL - dashboard is different origin, can't access our localStorage
+                    const user = localStorage.getItem('patient_user');
+                    let url = `${DASHBOARD_URL}?token=${encodeURIComponent(token)}`;
+                    if (user) {
+                        url += `&user=${encodeURIComponent(user)}`;
+                    }
+                    window.location.href = url;
                 } else {
+                    // Token invalid, clear and show login
                     localStorage.removeItem('vps_auth_token');
                     localStorage.removeItem('patient_user');
+                    const loadingOverlay = document.getElementById('loading-overlay');
+                    if (loadingOverlay) loadingOverlay.classList.add('hidden');
+                    showPage('page-login');
                 }
             } catch (e) {
                 console.log('Token verification failed, staying on login');
+                const loadingOverlay = document.getElementById('loading-overlay');
+                if (loadingOverlay) loadingOverlay.classList.add('hidden');
+                showPage('page-login');
             }
         }
 
