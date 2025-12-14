@@ -1,0 +1,54 @@
+{
+	"appId": "com.dokterdibya.patient",
+	"appName": "dokterDIBYA",
+	"webDir": "www",
+	"server": {
+		"allowNavigation": [
+			"dokterdibya.com",
+			"*.dokterdibya.com",
+			"https://dokterdibya.com/*"
+		]
+	},
+	"android": {
+		"allowMixedContent": false,
+		"captureInput": true,
+		"webContentsDebuggingEnabled": true,
+		"backgroundColor": "#0f0f1a"
+	},
+	"ios": {
+		"contentInset": "automatic",
+		"backgroundColor": "#0f0f1a",
+		"preferredContentMode": "mobile"
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 0,
+			"launchAutoHide": true,
+			"backgroundColor": "#0f0f1a",
+			"showSpinner": false
+		},
+		"StatusBar": {
+			"style": "DARK",
+			"backgroundColor": "#0f0f1a"
+		},
+		"PushNotifications": {
+			"presentationOptions": [
+				"badge",
+				"sound",
+				"alert"
+			]
+		},
+		"LocalNotifications": {
+			"smallIcon": "ic_stat_icon",
+			"iconColor": "#0066FF"
+		},
+		"GoogleAuth": {
+			"scopes": [
+				"profile",
+				"email"
+			],
+			"serverClientId": "738335602560-52as846lk2oo78fr38a86elu8888m7eh.apps.googleusercontent.com",
+			"forceCodeForRefreshToken": true
+		}
+	}
+}
