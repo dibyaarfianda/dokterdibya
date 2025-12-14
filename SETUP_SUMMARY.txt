@@ -1,0 +1,126 @@
+📋 Dokter Dibya Project - Connection Setup Summary
+=================================================
+
+✅ What has been created:
+
+1. CONNECTION_GUIDE.md (669 lines)
+   - Complete setup and installation guide
+   - System requirements and prerequisites
+   - Database configuration steps
+   - Backend server setup
+   - Environment variable configuration
+   - Frontend access instructions
+   - Comprehensive troubleshooting section
+   - Security checklist
+   - Essential commands reference
+
+2. QUICKSTART.md (107 lines)
+   - Fast 5-minute setup guide
+   - Essential commands only
+   - Quick troubleshooting
+   - Links to detailed documentation
+
+3. Updated README.md
+   - Added prominent link to CONNECTION_GUIDE.md
+   - Better organization of getting started section
+
+📍 How to Connect to the Project
+================================
+
+FOR FIRST-TIME SETUP:
+--------------------
+Read: QUICKSTART.md (if you want to get running quickly)
+   or CONNECTION_GUIDE.md (for complete instructions)
+
+ESSENTIAL STEPS:
+1. Install Node.js v16+ and MySQL v8.0+
+2. Clone: git clone https://github.com/dibyaarfianda/dokterdibya.git
+3. Install: cd staff/backend && npm install
+4. Database: mysql -u root -p -e "CREATE DATABASE dibyaklinik"
+5. Config: cp staff/backend/.env.example staff/backend/.env
+          (Edit .env with your database credentials)
+6. Start: node staff/backend/server.js
+7. Access: http://localhost:3000/staff/public/index-adminlte.html
+
+🔑 Key URLs
+===========
+- Staff Portal: http://localhost:3000/staff/public/index-adminlte.html
+- Patient Portal: http://localhost:3000/index.html
+- API Health: http://localhost:3000/api/health
+- API Docs: http://localhost:3000/api-docs
+
+📂 Project Structure
+====================
+dokterdibya/
+├── CONNECTION_GUIDE.md    ← Complete setup guide (START HERE)
+├── QUICKSTART.md          ← 5-minute setup
+├── README.md              ← Project overview
+├── public/                ← Patient-facing website
+├── staff/
+│   ├── backend/           ← Node.js API server (server.js)
+│   │   ├── .env.example   ← Configuration template
+│   │   ├── migrations/    ← Database schemas
+│   │   └── server.js      ← Main entry point
+│   └── public/            ← Staff admin dashboard (AdminLTE)
+├── chrome-extension/      ← SIMRS exporters
+└── android-app/           ← Mobile app (future)
+
+🔧 Required Configuration
+==========================
+Minimum .env settings:
+- PORT=3000
+- DB_HOST=localhost
+- DB_USER=root
+- DB_PASSWORD=your_password
+- DB_NAME=dibyaklinik
+- JWT_SECRET=<generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))">
+- CORS_ORIGIN=http://localhost:3000
+
+🆘 Common Issues & Solutions
+============================
+Issue: "Cannot connect to MySQL"
+→ sudo systemctl start mysql (Linux)
+→ brew services start mysql (Mac)
+
+Issue: "Port 3000 already in use"
+→ lsof -i :3000 && kill -9 <PID>
+→ Or change PORT in .env
+
+Issue: "No users exist / Can't login"
+→ cd staff/backend && node reset-superadmin-password.js
+
+Issue: "Blank page"
+→ Check server is running
+→ Hard refresh: Ctrl+Shift+R or Cmd+Shift+R
+→ Check console (F12) for errors
+
+📚 Additional Documentation
+===========================
+- DEPLOYMENT_GUIDE.md - Production deployment procedures
+- CLAUDE.md - Code conventions and project rules
+- staff/README.md - Staff portal architecture details
+- PHASE*.md - Feature implementation documentation
+
+✨ Success Indicators
+=====================
+You've successfully connected if you can:
+✓ Start backend: node staff/backend/server.js (no errors)
+✓ See: "[INFO] Backend server running on port 3000"
+✓ Access: http://localhost:3000/staff/public/index-adminlte.html
+✓ Login with credentials
+✓ See dashboard and menus
+
+🎉 Next Steps
+=============
+1. Change default admin password
+2. Explore the staff portal features
+3. Review CLAUDE.md for development conventions
+4. Check DEPLOYMENT_GUIDE.md if deploying to production
+5. Review project documentation files (PHASE*.md)
+
+For questions or issues:
+→ Check troubleshooting in CONNECTION_GUIDE.md
+→ Review backend logs: tail -f staff/backend/logs/combined.log
+→ Open GitHub issue
+
+Last Updated: December 11, 2025
