@@ -92,21 +92,16 @@
                     // Simple deep link as fallback
                     const simpleUrl = `dokterdibya://login?token=${tokenData}&user=${userData}`;
 
-                    // Show buttons immediately
+                    // Show buttons - NO auto redirect (it doesn't work)
+                    document.getElementById('spinner').style.display = 'none';
                     document.getElementById('message').innerHTML = `
-                        <a href="${simpleUrl}" style="display:inline-block;padding:15px 30px;background:#0066FF;color:white;border-radius:10px;text-decoration:none;font-size:16px;margin-bottom:10px;">
-                            Buka Aplikasi
-                        </a>
-                        <br>
-                        <a href="${intentUrl}" style="display:inline-block;padding:10px 20px;background:#333;color:white;border-radius:8px;text-decoration:none;font-size:14px;margin-top:10px;">
-                            Opsi 2: Intent URL
+                        <p style="margin-bottom:20px;color:#10b981;">Login Google berhasil!</p>
+                        <a href="${intentUrl}" style="display:inline-block;padding:15px 30px;background:#0066FF;color:white;border-radius:10px;text-decoration:none;font-size:16px;margin-bottom:15px;">
+                            Buka Aplikasi dokterDIBYA
                         </a>
                         <br><br>
                         <small style="color:rgba(255,255,255,0.6);">Tap tombol di atas untuk kembali ke aplikasi</small>
                     `;
-
-                    // Try simple deep link first
-                    window.location.href = simpleUrl;
                 } else {
                     showError(data.message || 'Login gagal. Silakan coba lagi.');
                 }
