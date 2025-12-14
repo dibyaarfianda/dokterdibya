@@ -2201,8 +2201,10 @@
             const urlToken = urlParams.get('token');
             const urlUser = urlParams.get('user');
             if (urlToken) {
-                console.log('[DASHBOARD] Token received from URL, saving...');
+                console.log('[DASHBOARD] Token received from URL (from mobile app), saving...');
                 localStorage.setItem('vps_auth_token', urlToken);
+                // Mark that user came from mobile app
+                localStorage.setItem('from_mobile_app', 'true');
                 if (urlUser) {
                     try {
                         localStorage.setItem('patient_user', decodeURIComponent(urlUser));
@@ -2224,7 +2226,7 @@
         if (!token || !user.id) {
             // Not authenticated, redirect to login
             console.log('[DASHBOARD] Not authenticated, redirecting to login');
-            window.location.href = '/index.html#masuk';
+            window.location.href = '/patient-login.html';
         } else {
             console.log('[DASHBOARD] Authenticated, loading profile...');
             // Load user profile
@@ -4959,13 +4961,18 @@
             if (event) {
                 event.preventDefault();
             }
+
+            // Clear all auth data
             localStorage.removeItem('vps_auth_token');
             sessionStorage.removeItem('vps_auth_token');
             localStorage.removeItem('patient_user');
             localStorage.removeItem('patient_token');
             localStorage.removeItem('auth_provider');
-            localStorage.removeItem('patient_intake_draft_v3'); // Clear intake draft to prevent data leakage
-            window.location.href = '/index.html';
+            localStorage.removeItem('patient_intake_draft_v3');
+            localStorage.removeItem('from_mobile_app');
+
+            // Always redirect to patient login page
+            window.location.href = '/patient-login.html';
         }
 
         // Toggle dropdown menu

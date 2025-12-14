@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Logout - dokterDIBYA</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #0f0f1a;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+        .container {
+            padding: 20px;
+        }
+        .checkmark {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #10b981;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+        }
+        .checkmark svg {
+            width: 30px;
+            height: 30px;
+            fill: white;
+        }
+        h2 {
+            margin-bottom: 10px;
+        }
+        p {
+            color: rgba(255,255,255,0.6);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="checkmark">
+            <svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+        </div>
+        <h2>Logout Berhasil</h2>
+        <p>Mengalihkan ke halaman login...</p>
+    </div>
+
+    <script>
+        // Clear all auth data
+        localStorage.removeItem('vps_auth_token');
+        sessionStorage.removeItem('vps_auth_token');
+        localStorage.removeItem('patient_user');
+        localStorage.removeItem('from_mobile_app');
+        localStorage.removeItem('patient_token');
+        localStorage.removeItem('auth_provider');
+
+        // Redirect to login page after brief delay
+        setTimeout(function() {
+            window.location.href = '/patient-login.html';
+        }, 1500);
+    </script>
+</body>
+</html>
