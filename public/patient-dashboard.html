@@ -2195,6 +2195,24 @@
     <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
     <script src="js/announcements-dashboard.js?v=20251120"></script>
     <script>
+        // Handle token from URL (for mobile app deep link)
+        (function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlToken = urlParams.get('token');
+            const urlUser = urlParams.get('user');
+            if (urlToken) {
+                console.log('[DASHBOARD] Token received from URL, saving...');
+                localStorage.setItem('vps_auth_token', urlToken);
+                if (urlUser) {
+                    try {
+                        localStorage.setItem('patient_user', decodeURIComponent(urlUser));
+                    } catch(e) {}
+                }
+                // Remove token from URL for security
+                window.history.replaceState({}, document.title, window.location.pathname);
+            }
+        })();
+
         // Check authentication
         const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
         const user = JSON.parse(localStorage.getItem('patient_user') || '{}');
