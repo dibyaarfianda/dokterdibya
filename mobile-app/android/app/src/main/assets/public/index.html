@@ -41,6 +41,38 @@
         }
 
         /* Intro Video Overlay */
+        /* Loading overlay for deep link processing */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-dark);
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.3s ease;
+        }
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .loading-overlay .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255,255,255,0.2);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        .loading-overlay p {
+            margin-top: 16px;
+            color: var(--text-muted);
+        }
+
         .intro-overlay {
             position: fixed;
             top: 0;
@@ -408,6 +440,12 @@
     </style>
 </head>
 <body>
+    <!-- Loading overlay for deep link/auth processing -->
+    <div class="loading-overlay hidden" id="loading-overlay">
+        <div class="spinner"></div>
+        <p>Memproses login...</p>
+    </div>
+
     <!-- Intro Video Overlay -->
     <div class="intro-overlay" id="intro-overlay">
         <video class="intro-video" id="intro-video" autoplay muted playsinline>
@@ -643,13 +681,13 @@
                 hideIntro();
             });
 
-            // Aggressive fallback: hide after 3 seconds no matter what
+            // Faster fallback: hide after 1.5 seconds
             setTimeout(() => {
                 if (!introHidden) {
                     console.log('Timeout fallback, hiding intro');
                     hideIntro();
                 }
-            }, 3000);
+            }, 1500);
         }
         })();
     </script>
@@ -675,12 +713,26 @@
             window.open(googleAuthUrl, '_system');
         };
 
+        // Show loading overlay and hide intro
+        function showLoading() {
+            const loadingOverlay = document.getElementById('loading-overlay');
+            const introOverlay = document.getElementById('intro-overlay');
+            if (loadingOverlay) loadingOverlay.classList.remove('hidden');
+            if (introOverlay) {
+                introOverlay.classList.add('hidden');
+                introOverlay.classList.add('removed');
+            }
+        }
+
         // Handle deep link from Google OAuth callback
         function handleDeepLink(url) {
             console.log('Deep link received:', url);
             try {
                 const urlObj = new URL(url);
                 if (urlObj.protocol === 'dokterdibya:' && urlObj.host === 'login') {
+                    // Immediately show loading, hide everything else
+                    showLoading();
+
                     const params = new URLSearchParams(urlObj.search);
                     const token = params.get('token');
                     const userJson = params.get('user');
@@ -714,30 +766,40 @@
                 App.addListener('appUrlOpen', (event) => {
                     console.log('appUrlOpen event:', event);
                     if (event.url) {
+                        showLoading(); // Show loading immediately
                         handleDeepLink(event.url);
                     }
                 });
 
-                // Check if app was opened via deep link
+                // Check if app was opened via deep link FIRST
                 App.getLaunchUrl().then((result) => {
                     if (result && result.url) {
                         console.log('App launched with URL:', result.url);
+                        showLoading(); // Show loading immediately
                         handleDeepLink(result.url);
+                        return; // Don't check token, deep link will handle it
                     }
-                });
-            }
 
-            // Check if already logged in
+                    // Only check token if NO deep link
+                    checkExistingToken();
+                });
+            } else {
+                // No Capacitor, just check token
+                checkExistingToken();
+            }
+        });
+
+        function checkExistingToken() {
             const token = localStorage.getItem('vps_auth_token');
             console.log('App loaded - token exists:', !!token);
             if (token) {
-                // Verify token is still valid
-                console.log('Token found, verifying...');
+                // Show loading while verifying
+                showLoading();
                 verifyAndRedirect(token);
             } else {
                 console.log('No token, showing login page');
             }
-        });
+        }
 
         async function verifyAndRedirect(token) {
             try {
