@@ -80,7 +80,7 @@
 
                 if (res.ok && data.success) {
                     document.getElementById('status').textContent = 'Login berhasil!';
-                    document.getElementById('message').textContent = 'Kembali ke aplikasi...';
+                    document.getElementById('message').textContent = 'Membuka aplikasi...';
 
                     // Use Android intent URL format (more reliable than custom scheme)
                     const tokenData = encodeURIComponent(data.token);
@@ -92,19 +92,21 @@
                     // Simple deep link as fallback
                     const simpleUrl = `dokterdibya://login?token=${tokenData}&user=${userData}`;
 
-                    // Try intent URL first (works better on Android Chrome)
-                    window.location.href = intentUrl;
+                    // Show buttons immediately
+                    document.getElementById('message').innerHTML = `
+                        <a href="${simpleUrl}" style="display:inline-block;padding:15px 30px;background:#0066FF;color:white;border-radius:10px;text-decoration:none;font-size:16px;margin-bottom:10px;">
+                            Buka Aplikasi
+                        </a>
+                        <br>
+                        <a href="${intentUrl}" style="display:inline-block;padding:10px 20px;background:#333;color:white;border-radius:8px;text-decoration:none;font-size:14px;margin-top:10px;">
+                            Opsi 2: Intent URL
+                        </a>
+                        <br><br>
+                        <small style="color:rgba(255,255,255,0.6);">Tap tombol di atas untuk kembali ke aplikasi</small>
+                    `;
 
-                    // Fallback after 1.5 seconds
-                    setTimeout(() => {
-                        document.getElementById('message').innerHTML = `
-                            <a href="${intentUrl}" style="display:inline-block;padding:15px 30px;background:#0066FF;color:white;border-radius:10px;text-decoration:none;font-size:16px;margin-bottom:15px;">
-                                Buka Aplikasi dokterDIBYA
-                            </a>
-                            <br><br>
-                            <small style="color:rgba(255,255,255,0.6);">Tap tombol di atas untuk kembali ke aplikasi</small>
-                        `;
-                    }, 1500);
+                    // Try simple deep link first
+                    window.location.href = simpleUrl;
                 } else {
                     showError(data.message || 'Login gagal. Silakan coba lagi.');
                 }
