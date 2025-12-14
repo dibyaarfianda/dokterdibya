@@ -235,6 +235,14 @@
     </div>
 
     <script>
+        // If accessed from mobile app context, redirect to app
+        const urlParams = new URLSearchParams(window.location.search);
+        const referrer = document.referrer;
+        // Check if referrer was dashboard with token (means came from app)
+        if (referrer && referrer.includes('patient-dashboard.html') && referrer.includes('token=')) {
+            window.location.href = 'dokterdibya://logout';
+        }
+
         const API_BASE = 'https://dokterdibya.com';
         const GOOGLE_CLIENT_ID = '738335602560-52as846lk2oo78fr38a86elu8888m7eh.apps.googleusercontent.com';
 

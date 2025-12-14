@@ -464,7 +464,7 @@
 
     <!-- Intro Video Overlay -->
     <div class="intro-overlay" id="intro-overlay">
-        <video class="intro-video" id="intro-video" autoplay muted playsinline>
+        <video class="intro-video" id="intro-video" autoplay playsinline>
             <source src="logo_dd.mp4" type="video/mp4">
         </video>
         <button class="skip-btn" id="skip-btn">Lewati</button>
@@ -476,70 +476,35 @@
         <!-- LOGIN PAGE -->
         <div class="page active" id="page-login">
             <div class="logo-section">
-                <div class="logo">
-                    <svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-2 10h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"/></svg>
-                </div>
-                <div class="app-name">Dokter Dibya</div>
-                <div class="app-tagline">Patient Portal</div>
+                <img src="android-chrome-512x512.png" alt="Logo" style="width: 120px; height: 120px; margin-bottom: 16px; border-radius: 24px; background: white; padding: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);">
+                <div class="app-tagline" style="font-size: 18px; color: rgba(255,255,255,0.8);">Portal Privat Anda</div>
             </div>
 
-            <div class="form-section">
+            <div class="form-section" style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 200px;">
                 <h1 class="form-title">Selamat Datang</h1>
-                <p class="form-subtitle">Masuk untuk mengakses portal pasien</p>
+                <p class="form-subtitle" style="margin-bottom: 30px;">Masuk untuk mengakses portal pasien</p>
 
                 <div class="error-message" id="login-error">
                     <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-                    <span id="login-error-text">Email atau password salah</span>
+                    <span id="login-error-text">Login gagal</span>
                 </div>
 
-                <form id="login-form">
-                    <div class="input-group">
-                        <label class="input-label">Email</label>
-                        <div class="input-wrapper">
-                            <input type="email" id="login-email" placeholder="nama@email.com" required autocomplete="email">
-                            <svg class="input-icon" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-                        </div>
-                    </div>
-
-                    <div class="input-group">
-                        <label class="input-label">Password</label>
-                        <div class="input-wrapper">
-                            <input type="password" id="login-password" placeholder="Masukkan password" required autocomplete="current-password">
-                            <svg class="input-icon" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
-                            <button type="button" class="toggle-password" onclick="togglePassword('login-password')">
-                                <svg viewBox="0 0 24 24" id="eye-login"><path d="M12 4.5C7 4.5 2.73 7.61 1 12c1.73 4.39 6 7.5 11 7.5s9.27-3.11 11-7.5c-1.73-4.39-6-7.5-11-7.5zM12 17c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5zm0-8c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3z"/></svg>
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="remember-row">
-                        <label class="checkbox-label">
-                            <input type="checkbox" id="remember-me" checked>
-                            Ingat saya
-                        </label>
-                        <a href="#" class="forgot-link" onclick="showPage('page-forgot')">Lupa password?</a>
-                    </div>
-
-                    <button type="submit" class="btn btn-primary" id="btn-login">
-                        <span>Masuk</span>
-                    </button>
-                </form>
-
-                <div class="divider"><span>atau</span></div>
-
-                <button type="button" class="btn btn-secondary" id="btn-google" onclick="loginWithGoogle()">
-                    <svg width="20" height="20" viewBox="0 0 24 24">
+                <button type="button" class="btn btn-google-large" id="btn-google" onclick="loginWithGoogle()" style="width: 100%; max-width: 320px; padding: 16px 24px; font-size: 16px; border-radius: 12px; background: white; color: #333; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; transition: all 0.2s;">
+                    <svg width="24" height="24" viewBox="0 0 24 24">
                         <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
                         <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
                         <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
                         <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
                     </svg>
-                    <span>Masuk dengan Google</span>
+                    <span style="font-weight: 500;">Masuk dengan Google</span>
                 </button>
 
-                <div class="footer-links">
-                    <p class="footer-text">Belum punya akun? <a href="#" onclick="showPage('page-register')">Daftar sekarang</a></p>
-                </div>
+                <!-- Hidden form for fallback compatibility -->
+                <form id="login-form" style="display: none;">
+                    <input type="email" id="login-email">
+                    <input type="password" id="login-password">
+                    <input type="checkbox" id="remember-me" checked>
+                </form>
             </div>
         </div>
 
@@ -705,12 +670,12 @@
                 hideIntro();
             });
 
-            // Faster fallback: hide after 1.5 seconds
+            // Fallback: hide after 6 seconds (video is 5 seconds)
             setTimeout(() => {
                 if (!introHidden) {
                     hideIntro();
                 }
-            }, 1500);
+            }, 6000);
         }
         })();
     </script>
@@ -718,21 +683,86 @@
     <!-- Main app script -->
     <script>
         console.log('=== DOKTERDIBYA MOBILE APP LOADED ===');
-        console.log('Version: 1.0.1 - Debug build');
+        console.log('Version: 1.0.2 - Debug build');
 
         const API_BASE = 'https://dokterdibya.com';
         const DASHBOARD_URL = 'https://dokterdibya.com/patient-dashboard.html';
 
-        // Google Sign-In via web OAuth (more reliable than native plugin)
-        const GOOGLE_CLIENT_ID = '738335602560-52as846lk2oo78fr38a86elu8888m7eh.apps.googleusercontent.com';
+        // Check for logout flag - clear all auth data
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('logout') === 'true') {
+            console.log('Logout flag detected - clearing auth data');
+            localStorage.removeItem('vps_auth_token');
+            sessionStorage.removeItem('vps_auth_token');
+            localStorage.removeItem('patient_user');
+            localStorage.removeItem('patient_token');
+            localStorage.removeItem('auth_provider');
+            localStorage.removeItem('patient_intake_draft_v3');
+            // Clear the URL params to prevent re-clearing on refresh
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
 
-        window.loginWithGoogle = function() {
-            // Open Google OAuth in system browser (Capacitor will handle callback)
+        // Google Sign-In - Native (fast) with web fallback
+        const GOOGLE_CLIENT_ID = '738335602560-52as846lk2oo78fr38a86elu8888m7eh.apps.googleusercontent.com';
+        let googleAuthReady = false;
+
+        // Initialize GoogleAuth on app start
+        (async function initGoogleAuth() {
+            try {
+                if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.GoogleAuth) {
+                    await window.Capacitor.Plugins.GoogleAuth.initialize({
+                        clientId: GOOGLE_CLIENT_ID,
+                        scopes: ['profile', 'email'],
+                        grantOfflineAccess: true
+                    });
+                    googleAuthReady = true;
+                    console.log('Native GoogleAuth ready');
+                }
+            } catch (e) {
+                console.log('GoogleAuth init error:', e);
+            }
+        })();
+
+        window.loginWithGoogle = async function() {
+            // Try native Google Sign-In first (fast, single tap)
+            if (googleAuthReady) {
+                try {
+                    console.log('Using native Google Sign-In...');
+                    const result = await window.Capacitor.Plugins.GoogleAuth.signIn();
+
+                    if (result && result.authentication && result.authentication.idToken) {
+                        showLoading();
+                        const res = await fetch(`${API_BASE}/api/patients/auth/google`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ idToken: result.authentication.idToken })
+                        });
+                        const data = await res.json();
+
+                        if (res.ok && data.success) {
+                            localStorage.setItem('vps_auth_token', data.token);
+                            if (data.user) localStorage.setItem('patient_user', JSON.stringify(data.user));
+                            localStorage.setItem('auth_provider', 'google');
+                            let url = `${DASHBOARD_URL}?token=${encodeURIComponent(data.token)}`;
+                            const user = localStorage.getItem('patient_user');
+                            if (user) url += `&user=${encodeURIComponent(user)}`;
+                            window.location.href = url;
+                            return;
+                        }
+                        document.getElementById('loading-overlay').classList.add('hidden');
+                        showError('login-error', data.message || 'Login gagal');
+                        return;
+                    }
+                } catch (e) {
+                    console.log('Native failed, using web:', e.message);
+                }
+            }
+
+            // Fallback to web OAuth
+            console.log('Using web OAuth...');
             const redirectUri = encodeURIComponent('https://dokterdibya.com/mobile-google-callback.html');
             const scope = encodeURIComponent('email profile');
             const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent`;
-
-            // Open in system browser
             window.open(googleAuthUrl, '_system');
         };
 

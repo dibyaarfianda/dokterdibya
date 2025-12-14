@@ -2226,7 +2226,13 @@
         if (!token || !user.id) {
             // Not authenticated, redirect to login
             console.log('[DASHBOARD] Not authenticated, redirecting to login');
-            window.location.href = '/patient-login.html';
+            // Check if from mobile app
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.has('token')) {
+                window.location.href = 'dokterdibya://logout';
+            } else {
+                window.location.href = '/patient-login.html';
+            }
         } else {
             console.log('[DASHBOARD] Authenticated, loading profile...');
             // Load user profile
@@ -4971,8 +4977,18 @@
             localStorage.removeItem('patient_intake_draft_v3');
             localStorage.removeItem('from_mobile_app');
 
-            // Always redirect to patient login page
-            window.location.href = '/patient-login.html';
+            // Check if opened from mobile app (via URL token param or Capacitor)
+            const urlParams = new URLSearchParams(window.location.search);
+            const hasTokenParam = urlParams.has('token');
+            const isCapacitor = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+
+            if (hasTokenParam || isCapacitor) {
+                // Return to mobile app login
+                window.location.href = 'dokterdibya://logout';
+            } else {
+                // Web browser - go to web login
+                window.location.href = '/patient-login.html';
+            }
         }
 
         // Toggle dropdown menu
