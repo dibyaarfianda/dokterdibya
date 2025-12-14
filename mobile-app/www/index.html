@@ -656,6 +656,9 @@
 
     <!-- Main app script -->
     <script>
+        console.log('=== DOKTERDIBYA MOBILE APP LOADED ===');
+        console.log('Version: 1.0.1 - Debug build');
+
         const API_BASE = 'https://dokterdibya.com';
         const DASHBOARD_URL = 'https://dokterdibya.com/patient-dashboard.html';
 
@@ -721,9 +724,13 @@
 
             // Check if already logged in
             const token = localStorage.getItem('vps_auth_token');
+            console.log('App loaded - token exists:', !!token);
             if (token) {
                 // Verify token is still valid
+                console.log('Token found, verifying...');
                 verifyAndRedirect(token);
+            } else {
+                console.log('No token, showing login page');
             }
         });
 

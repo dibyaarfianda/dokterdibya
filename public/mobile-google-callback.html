@@ -82,16 +82,29 @@
                     document.getElementById('status').textContent = 'Login berhasil!';
                     document.getElementById('message').textContent = 'Kembali ke aplikasi...';
 
-                    // Redirect back to app using deep link
-                    const appUrl = `dokterdibya://login?token=${encodeURIComponent(data.token)}&user=${encodeURIComponent(JSON.stringify(data.user))}`;
+                    // Use Android intent URL format (more reliable than custom scheme)
+                    const tokenData = encodeURIComponent(data.token);
+                    const userData = encodeURIComponent(JSON.stringify(data.user));
 
-                    // Try deep link first
-                    window.location.href = appUrl;
+                    // Intent URL for Android Chrome
+                    const intentUrl = `intent://login?token=${tokenData}&user=${userData}#Intent;scheme=dokterdibya;package=com.dokterdibya.patient;end`;
 
-                    // Fallback: if deep link doesn't work after 2 seconds, show manual instructions
+                    // Simple deep link as fallback
+                    const simpleUrl = `dokterdibya://login?token=${tokenData}&user=${userData}`;
+
+                    // Try intent URL first (works better on Android Chrome)
+                    window.location.href = intentUrl;
+
+                    // Fallback after 1.5 seconds
                     setTimeout(() => {
-                        document.getElementById('message').innerHTML = 'Jika aplikasi tidak terbuka otomatis:<br><br><a href="' + appUrl + '" style="color:#0066FF;font-size:18px;">Tap di sini untuk kembali ke aplikasi</a><br><br>atau buka aplikasi dokterDIBYA secara manual.';
-                    }, 2000);
+                        document.getElementById('message').innerHTML = `
+                            <a href="${intentUrl}" style="display:inline-block;padding:15px 30px;background:#0066FF;color:white;border-radius:10px;text-decoration:none;font-size:16px;margin-bottom:15px;">
+                                Buka Aplikasi dokterDIBYA
+                            </a>
+                            <br><br>
+                            <small style="color:rgba(255,255,255,0.6);">Tap tombol di atas untuk kembali ke aplikasi</small>
+                        `;
+                    }, 1500);
                 } else {
                     showError(data.message || 'Login gagal. Silakan coba lagi.');
                 }
