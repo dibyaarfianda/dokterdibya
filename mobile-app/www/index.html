@@ -703,20 +703,30 @@
         }
 
         // Google Sign-In - Native (fast) with web fallback
-        const GOOGLE_CLIENT_ID = '738335602560-52as846lk2oo78fr38a86elu8888m7eh.apps.googleusercontent.com';
+        const GOOGLE_WEB_CLIENT_ID = '738335602560-52as846lk2oo78fr38a86elu8888m7eh.apps.googleusercontent.com';
         let googleAuthReady = false;
 
         // Initialize GoogleAuth on app start
         (async function initGoogleAuth() {
             try {
                 if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.GoogleAuth) {
-                    await window.Capacitor.Plugins.GoogleAuth.initialize({
-                        clientId: GOOGLE_CLIENT_ID,
+                    const isAndroid = window.Capacitor.getPlatform && window.Capacitor.getPlatform() === 'android';
+
+                    // Android uses google-services.json, iOS needs clientId
+                    const initOptions = {
                         scopes: ['profile', 'email'],
-                        grantOfflineAccess: true
-                    });
+                        grantOfflineAccess: true,
+                        serverClientId: GOOGLE_WEB_CLIENT_ID
+                    };
+
+                    // Only set clientId for iOS (Android reads from google-services.json)
+                    if (!isAndroid) {
+                        initOptions.clientId = GOOGLE_WEB_CLIENT_ID;
+                    }
+
+                    await window.Capacitor.Plugins.GoogleAuth.initialize(initOptions);
                     googleAuthReady = true;
-                    console.log('Native GoogleAuth ready');
+                    console.log('Native GoogleAuth ready, platform:', isAndroid ? 'android' : 'ios/web');
                 }
             } catch (e) {
                 console.log('GoogleAuth init error:', e);
@@ -739,7 +749,7 @@
                         });
                         const data = await res.json();
 
-                        if (res.ok && data.success) {
+                        if (res.ok && data.token) {
                             localStorage.setItem('vps_auth_token', data.token);
                             if (data.user) localStorage.setItem('patient_user', JSON.stringify(data.user));
                             localStorage.setItem('auth_provider', 'google');
@@ -762,7 +772,7 @@
             console.log('Using web OAuth...');
             const redirectUri = encodeURIComponent('https://dokterdibya.com/mobile-google-callback.html');
             const scope = encodeURIComponent('email profile');
-            const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent`;
+            const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_WEB_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent`;
             window.open(googleAuthUrl, '_system');
         };
 
@@ -830,6 +840,9 @@
 
         // Listen for Capacitor app URL open events
         document.addEventListener('DOMContentLoaded', () => {
+            // Clear any error messages on page load
+            document.querySelectorAll('.error-message').forEach(e => e.classList.remove('show'));
+
             // Check for deep link on app start
             if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
                 const App = window.Capacitor.Plugins.App;

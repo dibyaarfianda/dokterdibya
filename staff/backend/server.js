@@ -173,6 +173,7 @@ const PATIENT_ALLOWED_ROUTES = [
     '/api/articles',           // Public articles
     '/api/patient-notifications', // Patient notifications
     '/api/announcements',      // Public announcements
+    '/api/fertility-calendar', // Fertility cycle tracking
 ];
 
 app.use('/api', (req, res, next) => {
@@ -376,6 +377,10 @@ app.use('/api/articles', articlesRoutes);
 // Invoice history routes
 const invoicesRoutes = require('./routes/invoices');
 app.use('/api/invoices', invoicesRoutes);
+
+// Fertility Calendar routes (patient)
+const fertilityCalendarRoutes = require('./routes/fertility-calendar');
+app.use('/api/fertility-calendar', fertilityCalendarRoutes);
 
 // API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
