@@ -1,0 +1,1675 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kalender Kesuburan - dokterDIBYA</title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0066FF;
+            --primary-dark: #0052CC;
+            --accent: #28a7e9;
+            --success: #10b981;
+            --danger: #ef4444;
+            --bg-gradient: linear-gradient(135deg, #1a1a1a 0%, #303030 100%);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-gradient);
+            min-height: 100vh;
+            color: #fff;
+            font-weight: 300;
+        }
+
+        /* Background Animation */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .bubble {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-100px) rotate(180deg); }
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 30px 15px;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            padding: 16px 0;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .header-logo {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            background: #ffffff;
+            padding: 6px;
+            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+        }
+
+        .header-logo img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .btn-back {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #47C6F8;
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+
+        .btn-back:hover {
+            color: #0FF;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 16px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(40, 167, 233, 0.3);
+            border-color: var(--accent);
+        }
+
+        .stat-card.fertile {
+            border-color: rgba(76, 175, 80, 0.4);
+        }
+
+        .stat-card.period {
+            border-color: rgba(244, 67, 54, 0.4);
+        }
+
+        .stat-card.ovulation {
+            border-color: rgba(255, 193, 7, 0.4);
+        }
+
+        .stat-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .stat-card.fertile .stat-icon { color: #4caf50; }
+        .stat-card.period .stat-icon { color: #f44336; }
+        .stat-card.ovulation .stat-icon { color: #ffc107; }
+
+        .stat-label {
+            font-size: 12px;
+            color: #fff;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        /* Calendar */
+        .calendar-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .calendar-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+
+        .calendar-nav {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .calendar-nav button {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .calendar-nav button:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .calendar-month {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+
+        .calendar-day-header {
+            text-align: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: #fff;
+            padding: 8px 0;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            font-size: 14px;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .calendar-day:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .calendar-day.empty {
+            cursor: default;
+        }
+
+        .calendar-day.today {
+            border: 2px solid #fff;
+        }
+
+        .calendar-day.period {
+            background: rgba(244, 67, 54, 0.3);
+            color: #ff8a80;
+            position: relative;
+        }
+
+        .period-day-badge {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: rgba(244, 67, 54, 0.8);
+            color: #fff;
+            font-size: 9px;
+            font-weight: 600;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .cycle-day-badge {
+            position: absolute;
+            top: 2px;
+            right: 2px;
+            background: rgba(59, 130, 246, 0.85);
+            color: #fff;
+            font-size: 9px;
+            font-weight: 600;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+
+        .intercourse-badge {
+            position: absolute;
+            bottom: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: #e91e63;
+            font-size: 10px;
+            text-shadow: 0 0 3px rgba(233, 30, 99, 0.5);
+        }
+
+        .calendar-day.fertile {
+            background: rgba(76, 175, 80, 0.2);
+            color: #a5d6a7;
+        }
+
+        .calendar-day.peak_fertile {
+            background: rgba(76, 175, 80, 0.4);
+            color: #81c784;
+        }
+
+        .calendar-day.ovulation {
+            background: rgba(255, 193, 7, 0.3);
+            color: #ffd54f;
+        }
+
+        .calendar-day.predicted_period {
+            background: repeating-linear-gradient(
+                45deg,
+                rgba(244, 67, 54, 0.1),
+                rgba(244, 67, 54, 0.1) 2px,
+                transparent 2px,
+                transparent 4px
+            );
+            color: #ff8a80;
+        }
+
+        /* Selection mode styles */
+        .calendar-day.selecting-start {
+            background: rgba(40, 167, 233, 0.4) !important;
+            border: 2px solid var(--accent) !important;
+            color: #fff !important;
+        }
+
+        .calendar-day.selecting-end {
+            background: rgba(40, 167, 233, 0.3) !important;
+            border: 2px dashed var(--accent) !important;
+            color: #fff !important;
+        }
+
+        .calendar-day.selecting-range {
+            background: rgba(40, 167, 233, 0.2) !important;
+            color: #87ceeb !important;
+        }
+
+        .day-indicator {
+            position: absolute;
+            bottom: 4px;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        /* Selection hint */
+        .selection-hint {
+            background: rgba(40, 167, 233, 0.15);
+            border: 1px solid rgba(40, 167, 233, 0.3);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+            color: var(--accent);
+        }
+
+        .selection-hint i {
+            font-size: 18px;
+        }
+
+        .selection-hint .hint-text {
+            flex: 1;
+        }
+
+        .selection-hint .btn-clear {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 8px;
+            padding: 6px 12px;
+            color: #fff;
+            font-size: 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .selection-hint .btn-clear:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Legend */
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            justify-content: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #fff;
+        }
+
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            border-radius: 4px;
+        }
+
+        .legend-color.period { background: rgba(244, 67, 54, 0.4); }
+        .legend-color.fertile { background: rgba(76, 175, 80, 0.3); }
+        .legend-color.peak { background: rgba(76, 175, 80, 0.5); }
+        .legend-color.ovulation { background: rgba(255, 193, 7, 0.4); }
+        .legend-color.predicted {
+            background: repeating-linear-gradient(
+                45deg,
+                rgba(244, 67, 54, 0.2),
+                rgba(244, 67, 54, 0.2) 2px,
+                transparent 2px,
+                transparent 4px
+            );
+        }
+
+        .legend-color.intercourse {
+            background: rgba(233, 30, 99, 0.3);
+        }
+
+        /* Mode toggle buttons */
+        .mode-toggle {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .mode-btn {
+            flex: 1;
+            padding: 12px 16px;
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            color: #fff;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .mode-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .mode-btn.active {
+            border-color: var(--accent);
+            background: rgba(40, 167, 233, 0.15);
+            color: var(--accent);
+        }
+
+        .mode-btn.intercourse-mode.active {
+            border-color: #e91e63;
+            background: rgba(233, 30, 99, 0.15);
+            color: #e91e63;
+        }
+
+        .calendar-day.intercourse-mode-active {
+            cursor: pointer;
+        }
+
+        .calendar-day.intercourse-mode-active:hover {
+            background: rgba(233, 30, 99, 0.2) !important;
+        }
+
+        /* Add Period Form */
+        .add-period-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            transition: box-shadow 0.5s ease;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--accent);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title i {
+            color: var(--accent);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .form-group label {
+            font-size: 13px;
+            color: #fff;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 12px 14px;
+            color: #fff;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        .form-group select option {
+            background: #1a1a2e;
+            color: #fff;
+        }
+
+        .symptoms-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .symptom-tag {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 8px 14px;
+            font-size: 13px;
+            color: #fff;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .symptom-tag.active {
+            background: rgba(40, 167, 233, 0.2);
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--primary) 100%);
+            border: none;
+            border-radius: 10px;
+            padding: 14px 28px;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 20px rgba(40, 167, 233, 0.4);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Cycle History */
+        .history-section {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .cycle-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .cycle-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            padding: 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: border-color 0.2s;
+        }
+
+        .cycle-item:hover {
+            border-color: var(--accent);
+        }
+
+        .cycle-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .cycle-date {
+            font-weight: 600;
+            color: #fff;
+        }
+
+        .cycle-details {
+            font-size: 13px;
+            color: #fff;
+        }
+
+        .cycle-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-icon {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            color: #fff;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .btn-icon:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-icon.delete:hover {
+            background: rgba(244, 67, 54, 0.2);
+            color: #f44336;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #fff;
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            color: #fff;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #fff;
+        }
+
+        .loading i {
+            font-size: 32px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #333;
+            color: #fff;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 14px;
+            z-index: 1000;
+            transition: transform 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .toast.success {
+            background: #4caf50;
+        }
+
+        .toast.error {
+            background: #f44336;
+        }
+
+        /* Modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal {
+            background: rgba(30, 30, 30, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 24px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 16px;
+        }
+
+        .modal-body {
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 24px;
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 10px;
+            padding: 12px 20px;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn-danger {
+            background: #f44336;
+            border: none;
+            border-radius: 10px;
+            padding: 12px 20px;
+            color: #fff;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-danger:hover {
+            background: #d32f2f;
+        }
+
+        /* Disclaimer */
+        .disclaimer {
+            background: rgba(255, 152, 0, 0.1);
+            border: 1px solid rgba(255, 152, 0, 0.3);
+            border-radius: 16px;
+            padding: 16px 20px;
+            margin-bottom: 24px;
+        }
+
+        .disclaimer-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            color: #ffb74d;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .disclaimer-header i {
+            font-size: 18px;
+        }
+
+        .disclaimer-content {
+            font-size: 13px;
+            line-height: 1.6;
+            color: #fff;
+        }
+
+        .disclaimer-content p {
+            margin-bottom: 10px;
+        }
+
+        .disclaimer-content p:last-child {
+            margin-bottom: 0;
+        }
+
+        .disclaimer-content strong {
+            color: #ffb74d;
+        }
+
+        .disclaimer-content ul {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+
+        .disclaimer-content li {
+            margin-bottom: 4px;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .container {
+                padding: 16px;
+            }
+
+            .header h1 {
+                font-size: 1.2rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .calendar-day {
+                font-size: 12px;
+            }
+
+            .legend {
+                gap: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Background Animation -->
+    <div class="bg-animation">
+        <div class="bubble" style="width: 80px; height: 80px; left: 10%; top: 20%; animation-delay: 0s;"></div>
+        <div class="bubble" style="width: 40px; height: 40px; left: 30%; top: 60%; animation-delay: 2s;"></div>
+        <div class="bubble" style="width: 60px; height: 60px; left: 70%; top: 30%; animation-delay: 4s;"></div>
+        <div class="bubble" style="width: 50px; height: 50px; left: 80%; top: 70%; animation-delay: 1s;"></div>
+        <div class="bubble" style="width: 30px; height: 30px; left: 50%; top: 80%; animation-delay: 3s;"></div>
+    </div>
+
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1><div class="header-logo"><img src="/db-logo.png" alt="Logo"></div> Kalender Kesuburan</h1>
+            <a href="/patient-dashboard.html" class="btn-back">
+                <i class="fas fa-arrow-left"></i> Kembali
+            </a>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-grid" id="stats-grid">
+            <div class="stat-card period">
+                <div class="stat-icon"><i class="fas fa-tint"></i></div>
+                <div class="stat-label">Siklus Rata-rata</div>
+                <div class="stat-value" id="avg-cycle">-- hari</div>
+            </div>
+            <div class="stat-card ovulation">
+                <div class="stat-icon"><i class="fas fa-egg"></i></div>
+                <div class="stat-label">Ovulasi Berikutnya</div>
+                <div class="stat-value" id="next-ovulation">--</div>
+            </div>
+            <div class="stat-card fertile">
+                <div class="stat-icon"><i class="fas fa-heart"></i></div>
+                <div class="stat-label">Masa Subur</div>
+                <div class="stat-value" id="fertile-window">--</div>
+            </div>
+            <div class="stat-card period">
+                <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
+                <div class="stat-label">Prediksi Menstruasi</div>
+                <div class="stat-value" id="next-period">--</div>
+            </div>
+        </div>
+
+        <!-- Disclaimer -->
+        <div class="disclaimer">
+            <div class="disclaimer-header">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>Penting untuk Diketahui</span>
+            </div>
+            <div class="disclaimer-content">
+                <p><strong>Kalender kesuburan ini hanya sebagai estimasi</strong> dan tidak menjamin akurasi 100%. Untuk hasil yang lebih akurat, kombinasikan dengan metode lain:</p>
+                <ul>
+                    <li><strong>Observasi lendir serviks (mukus)</strong> - perubahan konsistensi lendir vagina</li>
+                    <li><strong>Pencatatan Suhu Basal Tubuh (BBT)</strong> - suhu tubuh saat bangun tidur</li>
+                    <li><strong>OPK (Ovulation Predictor Kit)</strong> - alat tes prediksi ovulasi</li>
+                </ul>
+                <p><strong>Peringatan KB:</strong> Metode KB Kalender dan <em>Coitus Interruptus</em> memiliki <strong>tingkat kegagalan tertinggi</strong> dibanding metode kontrasepsi lainnya. Kalender ini tidak menjamin terhindar dari kehamilan.</p>
+            </div>
+        </div>
+
+        <!-- Calendar -->
+        <div class="calendar-container">
+            <div class="calendar-header">
+                <div class="calendar-nav">
+                    <button onclick="prevMonth()"><i class="fas fa-chevron-left"></i></button>
+                    <span class="calendar-month" id="calendar-month">Desember 2025</span>
+                    <button onclick="nextMonth()"><i class="fas fa-chevron-right"></i></button>
+                </div>
+                <button onclick="goToToday()" class="btn-secondary" style="padding: 8px 16px; font-size: 13px;">
+                    Hari Ini
+                </button>
+            </div>
+
+            <!-- Mode Toggle -->
+            <div class="mode-toggle">
+                <button class="mode-btn active" id="mode-period" onclick="setCalendarMode('period')">
+                    <i class="fas fa-tint"></i> Catat Haid
+                </button>
+                <button class="mode-btn intercourse-mode" id="mode-intercourse" onclick="setCalendarMode('intercourse')">
+                    <i class="fas fa-heart"></i> Catat Hubungan Intim
+                </button>
+            </div>
+
+            <!-- Selection Hint -->
+            <div class="selection-hint" id="selection-hint" style="display: none;">
+                <i class="fas fa-hand-pointer"></i>
+                <span class="hint-text" id="hint-text">Klik tanggal untuk pilih hari pertama menstruasi</span>
+                <button class="btn-clear" onclick="clearSelection()">
+                    <i class="fas fa-times"></i> Reset
+                </button>
+            </div>
+
+            <div class="calendar-grid" id="calendar-grid">
+                <!-- Calendar will be rendered here -->
+            </div>
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color period"></div>
+                    <span>Menstruasi</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color fertile"></div>
+                    <span>Masa Subur</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color peak"></div>
+                    <span>Sangat Subur</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color ovulation"></div>
+                    <span>Prediksi Ovulasi</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color predicted"></div>
+                    <span>Prediksi Haid</span>
+                </div>
+                <div class="legend-item">
+                    <span class="cycle-day-badge" style="position: static; transform: none; margin-right: 4px;">H5</span>
+                    <span>Hari menstruasi ke-</span>
+                </div>
+                <div class="legend-item">
+                    <i class="fas fa-heart" style="color: #e91e63; font-size: 12px;"></i>
+                    <span>Hubungan Intim</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Add Period Form -->
+        <div class="add-period-section" id="add-period-section">
+            <div class="section-title">
+                <i class="fas fa-plus-circle"></i>
+                Catat Menstruasi Baru
+            </div>
+            <p style="font-size: 13px; color: rgba(255,255,255,0.7); margin-bottom: 16px;">
+                <i class="fas fa-info-circle" style="color: var(--accent);"></i>
+                Klik langsung pada kalender di atas untuk memilih tanggal, atau isi manual di bawah
+            </p>
+            <form id="add-period-form">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Tanggal Mulai Haid * <small style="color: #888;">(klik kalender)</small></label>
+                        <input type="date" id="period-start" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Tanggal Selesai <small style="color: #888;">(klik kalender)</small></label>
+                        <input type="date" id="period-end">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Jumlah Darah</label>
+                        <select id="flow-intensity">
+                            <option value="light">Sedikit</option>
+                            <option value="medium" selected>Sedang</option>
+                            <option value="heavy">Banyak</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Intensitas Nyeri</label>
+                        <select id="pain-intensity">
+                            <option value="none">Tidak Nyeri</option>
+                            <option value="light">Ringan</option>
+                            <option value="medium" selected>Sedang</option>
+                            <option value="heavy">Berat</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label>Gejala</label>
+                    <div class="symptoms-grid" id="symptoms-grid">
+                        <span class="symptom-tag" data-symptom="cramps">Kram</span>
+                        <span class="symptom-tag" data-symptom="headache">Sakit Kepala</span>
+                        <span class="symptom-tag" data-symptom="bloating">Kembung</span>
+                        <span class="symptom-tag" data-symptom="mood_swings">Mood Swing</span>
+                        <span class="symptom-tag" data-symptom="fatigue">Lelah</span>
+                        <span class="symptom-tag" data-symptom="breast_tenderness">Payudara Nyeri</span>
+                        <span class="symptom-tag" data-symptom="acne">Jerawat</span>
+                        <span class="symptom-tag" data-symptom="backache">Sakit Punggung</span>
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom: 16px;">
+                    <label>Catatan</label>
+                    <textarea id="notes" rows="2" placeholder="Catatan tambahan..."></textarea>
+                </div>
+                <button type="submit" class="btn-primary" id="btn-submit">
+                    <i class="fas fa-save"></i>
+                    Simpan Data
+                </button>
+            </form>
+        </div>
+
+        <!-- Cycle History -->
+        <div class="history-section">
+            <div class="section-title">
+                <i class="fas fa-history"></i>
+                Riwayat Siklus
+            </div>
+            <div id="cycle-list" class="cycle-list">
+                <div class="loading">
+                    <i class="fas fa-spinner"></i>
+                    <p>Memuat data...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="delete-modal">
+        <div class="modal">
+            <div class="modal-title">Hapus Data Siklus?</div>
+            <div class="modal-body">
+                Apakah Anda yakin ingin menghapus data siklus ini? Tindakan ini tidak dapat dibatalkan.
+            </div>
+            <div class="modal-actions">
+                <button class="btn-secondary" onclick="closeDeleteModal()">Batal</button>
+                <button class="btn-danger" id="btn-confirm-delete">Hapus</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const API_BASE = 'https://dokterdibya.com';
+        let currentYear = new Date().getFullYear();
+        let currentMonth = new Date().getMonth() + 1;
+        let calendarEvents = [];
+        let cyclesData = [];
+        let deleteTargetId = null;
+
+        // Selection state
+        let selectionMode = 'start'; // 'start', 'end', or 'done'
+        let selectedStartDate = null;
+        let selectedEndDate = null;
+
+        // Calendar mode: 'period' or 'intercourse'
+        let calendarMode = 'period';
+
+        // Get auth token
+        function getToken() {
+            return localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+        }
+
+        // Check authentication
+        function checkAuth() {
+            const token = getToken();
+            if (!token) {
+                window.location.href = '/patient-login.html?redirect=' + encodeURIComponent(window.location.pathname);
+                return false;
+            }
+            return true;
+        }
+
+        // Show toast message
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.innerHTML = `<i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i> ${message}`;
+            toast.className = `toast ${type} show`;
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        // Format date
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+
+        function formatDateShort(dateStr) {
+            const date = new Date(dateStr);
+            return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+        }
+
+        // Month names
+        const monthNames = [
+            'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+        ];
+
+        // Render calendar
+        function renderCalendar() {
+            const grid = document.getElementById('calendar-grid');
+            const monthLabel = document.getElementById('calendar-month');
+
+            monthLabel.textContent = `${monthNames[currentMonth - 1]} ${currentYear}`;
+
+            // Day headers
+            const dayHeaders = ['Min', 'Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab'];
+            let html = dayHeaders.map(d => `<div class="calendar-day-header">${d}</div>`).join('');
+
+            // First day of month
+            const firstDay = new Date(currentYear, currentMonth - 1, 1).getDay();
+            const daysInMonth = new Date(currentYear, currentMonth, 0).getDate();
+
+            // Empty cells before first day
+            for (let i = 0; i < firstDay; i++) {
+                html += '<div class="calendar-day empty"></div>';
+            }
+
+            // Days of month
+            const today = new Date();
+            const todayStr = today.toISOString().split('T')[0];
+
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const isToday = dateStr === todayStr;
+
+                // Find events for this day
+                const dayEvents = calendarEvents.filter(e => e.date === dateStr);
+                let classes = ['calendar-day'];
+
+                if (isToday) classes.push('today');
+
+                // Check if this date is in the selection range
+                const isStart = selectedStartDate === dateStr;
+                const isEnd = selectedEndDate === dateStr;
+                const isInRange = selectedStartDate && selectedEndDate &&
+                    dateStr > selectedStartDate && dateStr < selectedEndDate;
+
+                if (isStart) {
+                    classes.push('selecting-start');
+                } else if (isEnd) {
+                    classes.push('selecting-end');
+                } else if (isInRange) {
+                    classes.push('selecting-range');
+                } else {
+                    // Priority: period > ovulation > peak_fertile > fertile > predicted_period
+                    const eventTypes = dayEvents.map(e => e.type);
+                    if (eventTypes.includes('period')) {
+                        classes.push('period');
+                    } else if (eventTypes.includes('ovulation')) {
+                        classes.push('ovulation');
+                    } else if (eventTypes.includes('peak_fertile')) {
+                        classes.push('peak_fertile');
+                    } else if (eventTypes.includes('fertile')) {
+                        classes.push('fertile');
+                    } else if (eventTypes.includes('predicted_period')) {
+                        classes.push('predicted_period');
+                    }
+                }
+
+                // Calculate cycle day (H1, H2, H3... until next period)
+                let badges = '';
+                if (cyclesData.length > 0) {
+                    const lastCycle = cyclesData[0];
+                    const cycleStart = new Date(lastCycle.period_start_date);
+                    const currentDate = new Date(dateStr);
+                    const cycleDay = Math.floor((currentDate - cycleStart) / (1000 * 60 * 60 * 24)) + 1;
+                    const cycleLen = lastCycle.cycle_length || 28;
+
+                    // Show H1, H2, H3... for all days within the cycle (blue badge)
+                    if (cycleDay > 0 && cycleDay <= cycleLen) {
+                        badges += `<span class="cycle-day-badge">H${cycleDay}</span>`;
+                    }
+                }
+
+                // Check for intercourse event
+                const hasIntercourse = dayEvents.some(e => e.type === 'intercourse');
+                if (hasIntercourse) {
+                    badges += `<span class="intercourse-badge"><i class="fas fa-heart"></i></span>`;
+                }
+
+                // Add intercourse mode class if active
+                if (calendarMode === 'intercourse') {
+                    classes.push('intercourse-mode-active');
+                }
+
+                html += `<div class="${classes.join(' ')}" data-date="${dateStr}" onclick="handleDayClick('${dateStr}')">${day}${badges}</div>`;
+            }
+
+            grid.innerHTML = html;
+            updateSelectionHint();
+        }
+
+        // Navigation
+        function prevMonth() {
+            currentMonth--;
+            if (currentMonth < 1) {
+                currentMonth = 12;
+                currentYear--;
+            }
+            loadCalendarData();
+        }
+
+        function nextMonth() {
+            currentMonth++;
+            if (currentMonth > 12) {
+                currentMonth = 1;
+                currentYear++;
+            }
+            loadCalendarData();
+        }
+
+        function goToToday() {
+            currentYear = new Date().getFullYear();
+            currentMonth = new Date().getMonth() + 1;
+            loadCalendarData();
+        }
+
+        // Select date (for adding period)
+        function selectDate(dateStr) {
+            if (selectionMode === 'start') {
+                // First click: set start date
+                selectedStartDate = dateStr;
+                selectedEndDate = null;
+                document.getElementById('period-start').value = dateStr;
+                document.getElementById('period-end').value = '';
+                selectionMode = 'end';
+                showToast('Tanggal mulai dipilih. Klik tanggal selesai menstruasi.', 'success');
+            } else if (selectionMode === 'end') {
+                // Second click: set end date
+                if (dateStr < selectedStartDate) {
+                    // If clicked date is before start, swap them
+                    selectedEndDate = selectedStartDate;
+                    selectedStartDate = dateStr;
+                    document.getElementById('period-start').value = dateStr;
+                    document.getElementById('period-end').value = selectedEndDate;
+                } else if (dateStr === selectedStartDate) {
+                    // Same date clicked, just set as 1 day period
+                    selectedEndDate = dateStr;
+                    document.getElementById('period-end').value = dateStr;
+                } else {
+                    selectedEndDate = dateStr;
+                    document.getElementById('period-end').value = dateStr;
+                }
+                selectionMode = 'done';
+                showToast('Rentang tanggal dipilih! Lengkapi form lalu simpan.', 'success');
+
+                // Auto-scroll to form section
+                setTimeout(() => {
+                    const formSection = document.getElementById('add-period-section');
+                    if (formSection) {
+                        formSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        // Highlight the form briefly
+                        formSection.style.boxShadow = '0 0 20px rgba(40, 167, 233, 0.5)';
+                        setTimeout(() => {
+                            formSection.style.boxShadow = '';
+                        }, 2000);
+                    }
+                }, 300);
+            } else {
+                // Already done, start over with new selection
+                selectedStartDate = dateStr;
+                selectedEndDate = null;
+                document.getElementById('period-start').value = dateStr;
+                document.getElementById('period-end').value = '';
+                selectionMode = 'end';
+                showToast('Tanggal mulai baru dipilih. Klik tanggal selesai.', 'success');
+            }
+            renderCalendar();
+        }
+
+        // Clear selection
+        function clearSelection(silent = false) {
+            selectedStartDate = null;
+            selectedEndDate = null;
+            selectionMode = 'start';
+            document.getElementById('period-start').value = '';
+            document.getElementById('period-end').value = '';
+            renderCalendar();
+            if (!silent) {
+                showToast('Pilihan tanggal direset', 'success');
+            }
+        }
+
+        // Set calendar mode
+        function setCalendarMode(mode) {
+            calendarMode = mode;
+
+            // Update button states
+            document.getElementById('mode-period').classList.toggle('active', mode === 'period');
+            document.getElementById('mode-intercourse').classList.toggle('active', mode === 'intercourse');
+
+            // Update hint
+            const hintEl = document.getElementById('selection-hint');
+            const hintText = document.getElementById('hint-text');
+
+            if (mode === 'intercourse') {
+                hintEl.style.display = 'flex';
+                hintText.innerHTML = '<strong>Mode Hubungan Intim:</strong> Klik tanggal untuk menandai/hapus';
+                // Clear period selection silently
+                clearSelection(true);
+            } else {
+                updateSelectionHint();
+            }
+
+            renderCalendar();
+        }
+
+        // Handle day click based on mode
+        function handleDayClick(dateStr) {
+            if (calendarMode === 'intercourse') {
+                toggleIntercourse(dateStr);
+            } else {
+                selectDate(dateStr);
+            }
+        }
+
+        // Toggle intercourse for a date
+        async function toggleIntercourse(dateStr) {
+            try {
+                const res = await fetch(`${API_BASE}/api/fertility-calendar/intercourse`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + getToken()
+                    },
+                    body: JSON.stringify({ date: dateStr })
+                });
+
+                const result = await res.json();
+
+                if (result.success) {
+                    if (result.action === 'added') {
+                        showToast('Hubungan intim dicatat', 'success');
+                    } else {
+                        showToast('Catatan hubungan intim dihapus', 'success');
+                    }
+                    // Reload calendar data
+                    await loadCalendarData();
+                } else {
+                    showToast(result.message || 'Gagal menyimpan', 'error');
+                }
+            } catch (err) {
+                console.error('Error toggling intercourse:', err);
+                showToast('Terjadi kesalahan', 'error');
+            }
+        }
+
+        // Update selection hint display
+        function updateSelectionHint() {
+            const hintEl = document.getElementById('selection-hint');
+            const hintText = document.getElementById('hint-text');
+
+            if (selectionMode === 'start' && !selectedStartDate) {
+                hintEl.style.display = 'none';
+            } else {
+                hintEl.style.display = 'flex';
+                if (selectionMode === 'start') {
+                    hintText.innerHTML = '<strong>Langkah 1:</strong> Klik tanggal hari pertama menstruasi';
+                } else if (selectionMode === 'end') {
+                    hintText.innerHTML = `<strong>Mulai:</strong> ${formatDateShort(selectedStartDate)} — <strong>Langkah 2:</strong> Klik tanggal terakhir menstruasi`;
+                } else {
+                    hintText.innerHTML = `<strong>Mulai:</strong> ${formatDateShort(selectedStartDate)} — <strong>Selesai:</strong> ${formatDateShort(selectedEndDate)} ✓`;
+                }
+            }
+        }
+
+        // Load calendar data
+        async function loadCalendarData() {
+            try {
+                const res = await fetch(`${API_BASE}/api/fertility-calendar/calendar-data?year=${currentYear}&month=${currentMonth}`, {
+                    headers: { 'Authorization': 'Bearer ' + getToken() }
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    calendarEvents = data.events || [];
+                }
+            } catch (e) {
+                console.error('Error loading calendar:', e);
+            }
+            renderCalendar();
+        }
+
+        // Load all cycles
+        async function loadCycles() {
+            try {
+                const res = await fetch(`${API_BASE}/api/fertility-calendar`, {
+                    headers: { 'Authorization': 'Bearer ' + getToken() }
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    cyclesData = data.cycles || [];
+                    updateStats(data);
+                    renderCycleList();
+                }
+            } catch (e) {
+                console.error('Error loading cycles:', e);
+                showToast('Gagal memuat data siklus', 'error');
+            }
+        }
+
+        // Update stats display
+        function updateStats(data) {
+            document.getElementById('avg-cycle').textContent = data.averageCycleLength + ' hari';
+
+            if (data.currentFertility) {
+                const f = data.currentFertility;
+                document.getElementById('next-ovulation').textContent = formatDateShort(f.ovulationDate);
+                document.getElementById('fertile-window').textContent = `${formatDateShort(f.fertileWindowStart)} - ${formatDateShort(f.fertileWindowEnd)}`;
+                document.getElementById('next-period').textContent = formatDateShort(f.nextPeriodDate);
+            } else {
+                document.getElementById('next-ovulation').textContent = '--';
+                document.getElementById('fertile-window').textContent = '--';
+                document.getElementById('next-period').textContent = '--';
+            }
+        }
+
+        // Render cycle history list
+        function renderCycleList() {
+            const container = document.getElementById('cycle-list');
+
+            if (cyclesData.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-calendar-plus"></i>
+                        <p>Belum ada data siklus.<br>Tambahkan data menstruasi pertama Anda di atas.</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = cyclesData.map(cycle => {
+                const symptoms = cycle.symptoms ? JSON.parse(cycle.symptoms) : [];
+                const symptomLabels = {
+                    cramps: 'Kram', headache: 'Sakit Kepala', bloating: 'Kembung',
+                    mood_swings: 'Mood Swing', fatigue: 'Lelah', breast_tenderness: 'Payudara Nyeri',
+                    acne: 'Jerawat', backache: 'Sakit Punggung'
+                };
+                const symptomText = symptoms.map(s => symptomLabels[s] || s).join(', ');
+
+                const flowLabels = { light: 'Sedikit', medium: 'Sedang', heavy: 'Banyak' };
+                const painLabels = { none: 'Tidak Nyeri', light: 'Ringan', medium: 'Sedang', heavy: 'Berat' };
+
+                return `
+                    <div class="cycle-item">
+                        <div class="cycle-info">
+                            <div class="cycle-date">${formatDate(cycle.period_start_date)}</div>
+                            <div class="cycle-details">
+                                Darah: ${flowLabels[cycle.flow_intensity] || 'Sedang'}
+                                | Nyeri: ${painLabels[cycle.pain_intensity] || 'Tidak Nyeri'}
+                                ${cycle.cycle_length ? ` | Siklus: ${cycle.cycle_length} hari` : ''}
+                                ${symptomText ? `<br>${symptomText}` : ''}
+                            </div>
+                        </div>
+                        <div class="cycle-actions">
+                            <button class="btn-icon delete" onclick="confirmDelete(${cycle.id})" title="Hapus">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // Sync date inputs with selection state
+        document.getElementById('period-start').addEventListener('change', (e) => {
+            selectedStartDate = e.target.value || null;
+            if (selectedStartDate && !selectedEndDate) {
+                selectionMode = 'end';
+            } else if (selectedStartDate && selectedEndDate) {
+                selectionMode = 'done';
+            } else {
+                selectionMode = 'start';
+            }
+            renderCalendar();
+        });
+
+        document.getElementById('period-end').addEventListener('change', (e) => {
+            selectedEndDate = e.target.value || null;
+            if (selectedStartDate && selectedEndDate) {
+                selectionMode = 'done';
+            } else if (selectedStartDate) {
+                selectionMode = 'end';
+            }
+            renderCalendar();
+        });
+
+        // Symptom tag toggle
+        document.querySelectorAll('.symptom-tag').forEach(tag => {
+            tag.addEventListener('click', () => tag.classList.toggle('active'));
+        });
+
+        // Add period form submit
+        document.getElementById('add-period-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const btn = document.getElementById('btn-submit');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+
+            const symptoms = Array.from(document.querySelectorAll('.symptom-tag.active'))
+                .map(tag => tag.dataset.symptom);
+
+            const data = {
+                period_start_date: document.getElementById('period-start').value,
+                period_end_date: document.getElementById('period-end').value || null,
+                flow_intensity: document.getElementById('flow-intensity').value,
+                pain_intensity: document.getElementById('pain-intensity').value,
+                symptoms: symptoms.length > 0 ? symptoms : null,
+                notes: document.getElementById('notes').value || null
+            };
+
+            try {
+                const res = await fetch(`${API_BASE}/api/fertility-calendar`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + getToken()
+                    },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    showToast('Data siklus berhasil disimpan');
+                    // Reset form
+                    document.getElementById('add-period-form').reset();
+                    document.querySelectorAll('.symptom-tag.active').forEach(t => t.classList.remove('active'));
+                    // Reset selection state
+                    selectedStartDate = null;
+                    selectedEndDate = null;
+                    selectionMode = 'start';
+                    // Reload data
+                    await loadCycles();
+                    await loadCalendarData();
+                } else {
+                    showToast(result.message || 'Gagal menyimpan data', 'error');
+                }
+            } catch (err) {
+                console.error('Error saving:', err);
+                showToast('Terjadi kesalahan', 'error');
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-save"></i> Simpan Data';
+        });
+
+        // Delete cycle
+        function confirmDelete(id) {
+            deleteTargetId = id;
+            document.getElementById('delete-modal').classList.add('show');
+        }
+
+        function closeDeleteModal() {
+            document.getElementById('delete-modal').classList.remove('show');
+            deleteTargetId = null;
+        }
+
+        document.getElementById('btn-confirm-delete').addEventListener('click', async () => {
+            if (!deleteTargetId) return;
+
+            try {
+                const res = await fetch(`${API_BASE}/api/fertility-calendar/${deleteTargetId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + getToken() }
+                });
+                const result = await res.json();
+
+                if (result.success) {
+                    showToast('Data siklus berhasil dihapus');
+                    await loadCycles();
+                    await loadCalendarData();
+                } else {
+                    showToast(result.message || 'Gagal menghapus', 'error');
+                }
+            } catch (err) {
+                showToast('Terjadi kesalahan', 'error');
+            }
+
+            closeDeleteModal();
+        });
+
+        // Initialize
+        if (checkAuth()) {
+            loadCycles();
+            loadCalendarData();
+        }
+    </script>
+</body>
+</html>

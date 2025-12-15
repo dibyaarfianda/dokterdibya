@@ -400,12 +400,20 @@ router.post('/login', async (req, res) => {
 // Google OAuth Login/Register
 router.post('/auth/google', async (req, res) => {
     try {
-        const { credential } = req.body;
-        
-        // Verify Google token
+        // Accept both 'credential' (web) and 'idToken' (mobile native) field names
+        const idToken = req.body.credential || req.body.idToken;
+
+        if (!idToken) {
+            return res.status(400).json({ message: 'Token tidak ditemukan' });
+        }
+
+        // Android client ID for native sign-in
+        const ANDROID_CLIENT_ID = '738335602560-5napmglm15g8jr5c1j0ienc9v8ptnsnt.apps.googleusercontent.com';
+
+        // Verify Google token - accept both Web and Android client IDs
         const ticket = await googleClient.verifyIdToken({
-            idToken: credential,
-            audience: GOOGLE_CLIENT_ID
+            idToken: idToken,
+            audience: [GOOGLE_CLIENT_ID, ANDROID_CLIENT_ID]
         });
         
         const payload = ticket.getPayload();

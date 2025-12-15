@@ -401,3 +401,36 @@ const PATIENT_ALLOWED_ROUTES = [
 - `verifyToken` - Any authenticated user (staff or patient)
 - `verifyPatientToken` - Patient only (blocks staff)
 - `verifyStaffToken` - Staff only (blocks patients)
+
+### 14. Timezone Handling (GMT+7 Indonesia)
+
+**Server timezone is GMT+7 (WIB - Waktu Indonesia Barat).** Always handle dates carefully to avoid off-by-one day errors.
+
+**NEVER use `toISOString()` for date-only fields:**
+```javascript
+// WRONG - will shift date by -7 hours (previous day in UTC)
+const dateStr = record.some_date.toISOString().split('T')[0]; // ❌
+
+// CORRECT - use local date components
+const d = new Date(record.some_date);
+const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; // ✅
+```
+
+**Why this happens:**
+- MySQL DATE field: `2025-12-15`
+- JavaScript interprets as: `2025-12-15 00:00:00 GMT+7`
+- `toISOString()` converts to UTC: `2025-12-14T17:00:00.000Z`
+- Result: **Wrong date (previous day)**
+
+**Helper function (recommended):**
+```javascript
+function formatDateLocal(date) {
+    const d = new Date(date);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+```
+
+**When to be careful:**
+- Fetching DATE columns from MySQL
+- Displaying dates on calendar/UI
+- Comparing dates between frontend and backend
