@@ -753,6 +753,7 @@
                             localStorage.setItem('vps_auth_token', data.token);
                             if (data.user) localStorage.setItem('patient_user', JSON.stringify(data.user));
                             localStorage.setItem('auth_provider', 'google');
+                            localStorage.setItem('from_mobile_app', 'true');
                             let url = `${DASHBOARD_URL}?token=${encodeURIComponent(data.token)}`;
                             const user = localStorage.getItem('patient_user');
                             if (user) url += `&user=${encodeURIComponent(user)}`;
@@ -825,6 +826,7 @@
                             localStorage.setItem('patient_user', userJson);
                         }
                         console.log('Token saved from deep link, redirecting...');
+                        localStorage.setItem('from_mobile_app', 'true');
                         // Pass token and user in URL so web dashboard can access it
                         let dashboardUrl = `${DASHBOARD_URL}?token=${encodeURIComponent(token)}`;
                         if (userJson) {
@@ -893,6 +895,7 @@
                 });
                 if (res.ok) {
                     // Pass token in URL - dashboard is different origin, can't access our localStorage
+                    localStorage.setItem('from_mobile_app', 'true');
                     const user = localStorage.getItem('patient_user');
                     let url = `${DASHBOARD_URL}?token=${encodeURIComponent(token)}`;
                     if (user) {
@@ -984,6 +987,7 @@
                     }
 
                     // Redirect to dashboard
+                    localStorage.setItem('from_mobile_app', 'true');
                     window.location.href = DASHBOARD_URL;
                 } else {
                     showError('login-error', data.message || 'Email atau password salah');
@@ -1033,6 +1037,7 @@
                     if (data.user) {
                         localStorage.setItem('patient_user', JSON.stringify(data.user));
                     }
+                    localStorage.setItem('from_mobile_app', 'true');
                     window.location.href = DASHBOARD_URL;
                 } else {
                     showError('register-error', data.message || 'Gagal mendaftar. Silakan coba lagi.');

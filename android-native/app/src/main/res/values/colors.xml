@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Primary Brand Colors -->
+    <color name="primary">#0066FF</color>
+    <color name="primary_dark">#0052CC</color>
+    <color name="accent">#0091FF</color>
+
+    <!-- Semantic Colors -->
+    <color name="success">#10B981</color>
+    <color name="danger">#EF4444</color>
+    <color name="warning">#F59E0B</color>
+
+    <!-- Feature Colors -->
+    <color name="fertility">#FF6B9D</color>
+    <color name="purple">#A855F7</color>
+    <color name="gold">#D4AF37</color>
+
+    <!-- Dark Theme Colors -->
+    <color name="bg_dark">#0F0F1A</color>
+    <color name="bg_dark_secondary">#1A1A2E</color>
+    <color name="surface_dark">#252536</color>
+    <color name="card_dark">#1E1E2E</color>
+
+    <!-- Light Theme Colors -->
+    <color name="bg_light">#F8FBFF</color>
+    <color name="bg_light_secondary">#FFFFFF</color>
+    <color name="surface_light">#FFFFFF</color>
+    <color name="card_light">#FFFFFF</color>
+
+    <!-- Text Colors -->
+    <color name="text_primary_dark">#FFFFFF</color>
+    <color name="text_secondary_dark">#99FFFFFF</color>
+    <color name="text_primary_light">#1A1A2E</color>
+    <color name="text_secondary_light">#80000000</color>
+
+    <!-- Status Bar -->
+    <color name="status_bar_dark">#0A0A12</color>
+    <color name="status_bar_light">#E8F4FC</color>
+</resources>

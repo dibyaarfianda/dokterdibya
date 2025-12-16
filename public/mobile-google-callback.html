@@ -80,28 +80,47 @@
 
                 if (res.ok && data.success) {
                     document.getElementById('status').textContent = 'Login berhasil!';
-                    document.getElementById('message').textContent = 'Membuka aplikasi...';
+                    document.getElementById('message').textContent = 'Mengalihkan...';
 
-                    // Use Android intent URL format (more reliable than custom scheme)
-                    const tokenData = encodeURIComponent(data.token);
-                    const userData = encodeURIComponent(JSON.stringify(data.user));
+                    // Check if coming from mobile app
+                    // Mobile app sets this flag before opening Google OAuth
+                    const fromMobileApp = localStorage.getItem('from_mobile_app') === 'true';
 
-                    // Intent URL for Android Chrome
-                    const intentUrl = `intent://login?token=${tokenData}&user=${userData}#Intent;scheme=dokterdibya;package=com.dokterdibya.patient;end`;
+                    // Also check if Capacitor is available (means we're in app webview)
+                    const isCapacitor = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
 
-                    // Simple deep link as fallback
-                    const simpleUrl = `dokterdibya://login?token=${tokenData}&user=${userData}`;
+                    if (fromMobileApp || isCapacitor) {
+                        // Mobile app flow - show button to open app
+                        const tokenData = encodeURIComponent(data.token);
+                        const userData = encodeURIComponent(JSON.stringify(data.user));
 
-                    // Show buttons - NO auto redirect (it doesn't work)
-                    document.getElementById('spinner').style.display = 'none';
-                    document.getElementById('message').innerHTML = `
-                        <p style="margin-bottom:20px;color:#10b981;">Login Google berhasil!</p>
-                        <a href="${intentUrl}" style="display:inline-block;padding:15px 30px;background:#0066FF;color:white;border-radius:10px;text-decoration:none;font-size:16px;margin-bottom:15px;">
-                            Buka Aplikasi dokterDIBYA
-                        </a>
-                        <br><br>
-                        <small style="color:rgba(255,255,255,0.6);">Tap tombol di atas untuk kembali ke aplikasi</small>
-                    `;
+                        // Intent URL for Android Chrome
+                        const intentUrl = `intent://login?token=${tokenData}&user=${userData}#Intent;scheme=dokterdibya;package=com.dokterdibya.patient;end`;
+
+                        // Show buttons - NO auto redirect (it doesn't work)
+                        document.getElementById('spinner').style.display = 'none';
+                        document.getElementById('message').innerHTML = `
+                            <p style="margin-bottom:20px;color:#10b981;">Login Google berhasil!</p>
+                            <a href="${intentUrl}" style="display:inline-block;padding:15px 30px;background:#0066FF;color:white;border-radius:10px;text-decoration:none;font-size:16px;margin-bottom:15px;">
+                                Buka Aplikasi dokterDIBYA
+                            </a>
+                            <br><br>
+                            <small style="color:rgba(255,255,255,0.6);">Tap tombol di atas untuk kembali ke aplikasi</small>
+                        `;
+
+                        // Clear the flag
+                        localStorage.removeItem('from_mobile_app');
+                    } else {
+                        // Web browser flow - store token and redirect to dashboard
+                        localStorage.setItem('vps_auth_token', data.token);
+                        if (data.user) {
+                            localStorage.setItem('patient_user', JSON.stringify(data.user));
+                        }
+                        localStorage.setItem('auth_provider', 'google');
+
+                        // Redirect to patient dashboard
+                        window.location.href = '/patient-dashboard.html';
+                    }
                 } else {
                     showError(data.message || 'Login gagal. Silakan coba lagi.');
                 }
