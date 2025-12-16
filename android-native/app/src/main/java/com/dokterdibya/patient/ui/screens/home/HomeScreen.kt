@@ -37,6 +37,10 @@ fun HomeScreen(
     onNavigateToBooking: () -> Unit,
     onNavigateToUsg: () -> Unit,
     onNavigateToDocuments: () -> Unit,
+    onNavigateToProfile: () -> Unit,
+    onNavigateToArticles: () -> Unit,
+    onNavigateToSchedule: () -> Unit,
+    onNavigateToVisitHistory: () -> Unit,
     onLogout: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -205,6 +209,23 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(100.dp))
         }
 
+        // Menu button (visible indicator)
+        if (!isMenuOpen) {
+            FloatingActionButton(
+                onClick = { isMenuOpen = true },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp),
+                containerColor = CardDark,
+                contentColor = Accent
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Menu,
+                    contentDescription = "Menu"
+                )
+            }
+        }
+
         // Slide Menu
         SlideMenu(
             isOpen = isMenuOpen,
@@ -212,19 +233,15 @@ fun HomeScreen(
             onNavigateToBooking = onNavigateToBooking,
             onNavigateToUsg = onNavigateToUsg,
             onNavigateToFertility = onNavigateToFertility,
+            onNavigateToDocuments = onNavigateToDocuments,
+            onNavigateToProfile = onNavigateToProfile,
+            onNavigateToArticles = onNavigateToArticles,
+            onNavigateToSchedule = onNavigateToSchedule,
+            onNavigateToVisitHistory = onNavigateToVisitHistory,
             onLogout = {
                 viewModel.logout()
                 onLogout()
             }
-        )
-
-        // Swipe edge for opening menu
-        Box(
-            modifier = Modifier
-                .align(Alignment.CenterEnd)
-                .width(25.dp)
-                .fillMaxHeight()
-                .clickable { isMenuOpen = true }
         )
     }
 }

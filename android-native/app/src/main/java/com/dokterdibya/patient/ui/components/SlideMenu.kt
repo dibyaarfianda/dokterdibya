@@ -33,12 +33,22 @@ fun SlideMenu(
     onNavigateToBooking: () -> Unit,
     onNavigateToUsg: () -> Unit,
     onNavigateToFertility: () -> Unit,
+    onNavigateToDocuments: () -> Unit,
+    onNavigateToProfile: () -> Unit,
+    onNavigateToArticles: () -> Unit,
+    onNavigateToSchedule: () -> Unit,
+    onNavigateToVisitHistory: () -> Unit,
     onLogout: () -> Unit
 ) {
     val menuItems = listOf(
         MenuItem(Icons.Default.CalendarMonth, "Booking", Accent) { onNavigateToBooking(); onClose() },
+        MenuItem(Icons.Default.Schedule, "Jadwal", Info) { onNavigateToSchedule(); onClose() },
         MenuItem(Icons.Default.ChildCare, "USG", Purple) { onNavigateToUsg(); onClose() },
         MenuItem(Icons.Default.Favorite, "Kesuburan", Fertility) { onNavigateToFertility(); onClose() },
+        MenuItem(Icons.Default.History, "Riwayat", Warning) { onNavigateToVisitHistory(); onClose() },
+        MenuItem(Icons.Default.Description, "Dokumen", Success) { onNavigateToDocuments(); onClose() },
+        MenuItem(Icons.Default.Article, "Artikel", Accent) { onNavigateToArticles(); onClose() },
+        MenuItem(Icons.Default.Person, "Profil", Purple) { onNavigateToProfile(); onClose() },
         MenuItem(Icons.Default.Logout, "Keluar", Danger, isLogout = true) { onLogout() }
     )
 
@@ -93,9 +103,9 @@ fun SlideMenu(
             Column(
                 modifier = Modifier
                     .padding(end = 15.dp)
-                    .width(85.dp),
+                    .width(70.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 menuItems.forEachIndexed { index, item ->
                     AnimatedMenuItem(
@@ -119,10 +129,10 @@ fun AnimatedMenuItem(
 
     LaunchedEffect(isVisible) {
         if (isVisible) {
-            delay(50L + (index * 70L)) // Staggered animation
+            delay(30L + (index * 40L)) // Staggered animation
             visible = true
         } else {
-            delay(((3 - index) * 50L).coerceAtLeast(0L)) // Reverse stagger
+            delay(((8 - index) * 30L).coerceAtLeast(0L)) // Reverse stagger
             visible = false
         }
     }
@@ -160,7 +170,7 @@ fun MenuItemButton(item: MenuItem) {
 
     Box(
         modifier = Modifier
-            .size(52.dp)
+            .size(46.dp)
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
@@ -194,7 +204,7 @@ fun MenuItemButton(item: MenuItem) {
             imageVector = item.icon,
             contentDescription = item.label,
             tint = item.color,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(20.dp)
         )
     }
 }

@@ -70,9 +70,9 @@ class FertilityViewModel @Inject constructor(
             repository.getFertilityPrediction(month, year)
                 .onSuccess { prediction ->
                     val predictionInfo = PredictionInfo(
-                        nextPeriodStart = prediction.nextPeriodDate ?: "",
-                        fertileStart = prediction.fertileDates.firstOrNull() ?: "",
-                        fertileEnd = prediction.fertileDates.lastOrNull() ?: "",
+                        nextPeriodStart = prediction.periodStart ?: prediction.nextPeriodDate ?: "",
+                        fertileStart = prediction.fertileStart ?: prediction.fertileDates?.firstOrNull() ?: "",
+                        fertileEnd = prediction.fertileEnd ?: prediction.fertileDates?.lastOrNull() ?: "",
                         ovulationDate = prediction.ovulationDate ?: ""
                     )
                     _uiState.value = _uiState.value.copy(

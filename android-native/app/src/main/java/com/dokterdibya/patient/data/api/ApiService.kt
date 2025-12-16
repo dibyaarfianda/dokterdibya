@@ -39,32 +39,22 @@ interface ApiService {
 
     // ==================== Medical Records ====================
 
-    @GET("api/patient/usg-results")
-    suspend fun getUsgResults(): Response<UsgListResponse>
-
-    @GET("api/patient/lab-results")
-    suspend fun getLabResults(): Response<LabListResponse>
-
-    @GET("api/patient/documents")
+    @GET("api/patient-documents/my-documents")
     suspend fun getDocuments(
         @Query("type") type: String? = null
     ): Response<DocumentListResponse>
 
-    @GET("api/patient/visits")
-    suspend fun getVisitHistory(): Response<VisitListResponse>
-
     // ==================== Fertility Calendar ====================
 
-    @GET("api/fertility-calendar/cycles")
+    @GET("api/fertility-calendar")
     suspend fun getFertilityCycles(): Response<FertilityCycleResponse>
 
-    @GET("api/fertility-calendar/prediction")
-    suspend fun getFertilityPrediction(
-        @Query("month") month: Int,
-        @Query("year") year: Int
+    @GET("api/fertility-calendar/predictions")
+    suspend fun getFertilityPredictions(
+        @Query("months") months: Int = 3
     ): Response<FertilityPredictionResponse>
 
-    @POST("api/fertility-calendar/cycle")
+    @POST("api/fertility-calendar")
     suspend fun createFertilityCycle(@Body request: CreateCycleRequest): Response<FertilityCycleResponse>
 
     // ==================== Articles ====================
@@ -78,11 +68,41 @@ interface ApiService {
     @GET("api/articles/{id}")
     suspend fun getArticleDetail(@Path("id") id: Int): Response<ArticleResponse>
 
+    // ==================== Practice Schedules ====================
+
+    @GET("api/practice-schedules")
+    suspend fun getPracticeSchedules(
+        @Query("location") location: String
+    ): Response<PracticeScheduleResponse>
+
+    // ==================== Visit History / Billings ====================
+
+    @GET("api/billings/my-billings")
+    suspend fun getMyBillings(): Response<BillingListResponse>
+
+    @GET("api/billings/{id}/details")
+    suspend fun getBillingDetails(@Path("id") id: Int): Response<BillingDetailResponse>
+
     // ==================== App Updates ====================
 
     @GET("api/app/version")
     suspend fun checkAppVersion(): Response<AppVersionResponse>
 }
+
+// Practice Schedule models
+data class PracticeSchedule(
+    val id: Int,
+    val location: String,
+    val day_of_week: Int,
+    val start_time: String,
+    val end_time: String,
+    val notes: String?,
+    val is_active: Int
+)
+
+data class PracticeScheduleResponse(
+    val schedules: List<PracticeSchedule>
+)
 
 // Additional response models
 data class Article(
@@ -106,4 +126,64 @@ data class ArticleListResponse(
 data class ArticleResponse(
     val success: Boolean,
     val article: Article?
+)
+
+// Billing models for visit history
+data class Billing(
+    val id: Int,
+    val billing_number: String?,
+    val billing_date: String?,
+    val patient_id: Int,
+    val patient_name: String?,
+    val total_amount: Double,
+    val paid_amount: Double?,
+    val payment_status: String?,
+    val subtotal: Double?,
+    val discount_amount: Double?,
+    val discount_percent: Double?,
+    val tax_amount: Double?,
+    val tax_percent: Double?,
+    val notes: String?,
+    val patient_record_id: Int?
+)
+
+data class BillingItem(
+    val id: Int,
+    val billing_id: Int,
+    val item_type: String?,
+    val item_name: String?,
+    val description: String?,
+    val quantity: Double,
+    val unit_price: Double,
+    val total_amount: Double
+)
+
+data class BillingDetail(
+    val id: Int,
+    val billing_number: String?,
+    val billing_date: String?,
+    val patient_id: Int,
+    val patient_name: String?,
+    val total_amount: Double,
+    val paid_amount: Double?,
+    val payment_status: String?,
+    val subtotal: Double?,
+    val discount_amount: Double?,
+    val discount_percent: Double?,
+    val tax_amount: Double?,
+    val tax_percent: Double?,
+    val notes: String?,
+    val patient_record_id: Int?,
+    val items: List<BillingItem>
+)
+
+data class BillingListResponse(
+    val success: Boolean,
+    val count: Int?,
+    val data: List<Billing>
+)
+
+data class BillingDetailResponse(
+    val success: Boolean,
+    val data: BillingDetail?
 )

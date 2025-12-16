@@ -4,11 +4,15 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.dokterdibya.patient.ui.screens.articles.ArticlesScreen
 import com.dokterdibya.patient.ui.screens.booking.BookingScreen
 import com.dokterdibya.patient.ui.screens.documents.DocumentsScreen
 import com.dokterdibya.patient.ui.screens.fertility.FertilityCalendarScreen
+import com.dokterdibya.patient.ui.screens.history.VisitHistoryScreen
 import com.dokterdibya.patient.ui.screens.home.HomeScreen
 import com.dokterdibya.patient.ui.screens.login.LoginScreen
+import com.dokterdibya.patient.ui.screens.profile.ProfileScreen
+import com.dokterdibya.patient.ui.screens.schedule.ScheduleScreen
 import com.dokterdibya.patient.ui.screens.usg.UsgGalleryScreen
 
 sealed class Screen(val route: String) {
@@ -18,6 +22,7 @@ sealed class Screen(val route: String) {
     object Health : Screen("health")
     object Records : Screen("records")
     object Profile : Screen("profile")
+    object Articles : Screen("articles")
     object FertilityCalendar : Screen("fertility_calendar")
     object UsgGallery : Screen("usg_gallery")
     object LabResults : Screen("lab_results")
@@ -61,6 +66,18 @@ fun NavGraph(
                 onNavigateToDocuments = {
                     navController.navigate(Screen.Documents.route)
                 },
+                onNavigateToProfile = {
+                    navController.navigate(Screen.Profile.route)
+                },
+                onNavigateToArticles = {
+                    navController.navigate(Screen.Articles.route)
+                },
+                onNavigateToSchedule = {
+                    navController.navigate(Screen.Schedule.route)
+                },
+                onNavigateToVisitHistory = {
+                    navController.navigate(Screen.VisitHistory.route)
+                },
                 onLogout = {
                     navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Home.route) { inclusive = true }
@@ -89,6 +106,38 @@ fun NavGraph(
 
         composable(Screen.Documents.route) {
             DocumentsScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.Profile.route) {
+            ProfileScreen(
+                onBack = { navController.popBackStack() },
+                onLogout = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(Screen.Articles.route) {
+            ArticlesScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.Schedule.route) {
+            ScheduleScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToBooking = {
+                    navController.navigate(Screen.Booking.route)
+                }
+            )
+        }
+
+        composable(Screen.VisitHistory.route) {
+            VisitHistoryScreen(
                 onBack = { navController.popBackStack() }
             )
         }

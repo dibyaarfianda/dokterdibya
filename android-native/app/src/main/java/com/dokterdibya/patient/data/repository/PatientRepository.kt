@@ -12,9 +12,8 @@ import com.dokterdibya.patient.data.model.SlotsForDateResponse
 import com.dokterdibya.patient.data.model.FertilityCycle
 import com.dokterdibya.patient.data.model.FertilityPrediction
 import com.dokterdibya.patient.data.model.PatientDocument
-import com.dokterdibya.patient.data.model.LabResult
-import com.dokterdibya.patient.data.model.UsgResult
-import com.dokterdibya.patient.data.model.VisitHistory
+import com.dokterdibya.patient.data.model.FertilityInfo
+import com.dokterdibya.patient.data.model.FertilityCycleResponse
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -105,15 +104,33 @@ class PatientRepository @Inject constructor(
         }
     }
 
-    suspend fun bookAppointment(date: String, timeSlot: String, notes: String?): Result<Appointment> {
+    suspend fun bookAppointment(
+        date: String,
+        session: Int,
+        slotNumber: Int,
+        chiefComplaint: String,
+        category: String = "obstetri"
+    ): Result<String> {
         return try {
             val response = apiService.bookAppointment(
-                BookingRequest(date, timeSlot, notes)
+                BookingRequest(
+                    appointmentDate = date,
+                    session = session,
+                    slotNumber = slotNumber,
+                    chiefComplaint = chiefComplaint,
+                    consultationCategory = category
+                )
             )
-            if (response.isSuccessful && response.body()?.appointment != null) {
-                Result.success(response.body()!!.appointment!!)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!.message ?: "Booking berhasil")
             } else {
-                Result.failure(Exception(response.body()?.message ?: "Booking failed"))
+                val errorBody = response.errorBody()?.string()
+                val errorMsg = try {
+                    org.json.JSONObject(errorBody ?: "").optString("message", "Booking gagal")
+                } catch (e: Exception) {
+                    "Booking gagal"
+                }
+                Result.failure(Exception(errorMsg))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -121,32 +138,6 @@ class PatientRepository @Inject constructor(
     }
 
     // ==================== Medical Records ====================
-
-    suspend fun getUsgResults(): Result<List<UsgResult>> {
-        return try {
-            val response = apiService.getUsgResults()
-            if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!.results)
-            } else {
-                Result.failure(Exception("Failed to get USG results"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
-
-    suspend fun getLabResults(): Result<List<LabResult>> {
-        return try {
-            val response = apiService.getLabResults()
-            if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!.results)
-            } else {
-                Result.failure(Exception("Failed to get lab results"))
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-    }
 
     suspend fun getDocuments(type: String? = null): Result<List<PatientDocument>> {
         return try {
@@ -161,13 +152,17 @@ class PatientRepository @Inject constructor(
         }
     }
 
-    suspend fun getVisitHistory(): Result<List<VisitHistory>> {
+    // Get USG documents (filter by usg types)
+    suspend fun getUsgDocuments(): Result<List<PatientDocument>> {
         return try {
-            val response = apiService.getVisitHistory()
+            val response = apiService.getDocuments(null)
             if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!.visits)
+                val usgDocs = response.body()!!.documents.filter {
+                    it.documentType in listOf("usg_2d", "usg_4d", "patient_usg")
+                }
+                Result.success(usgDocs)
             } else {
-                Result.failure(Exception("Failed to get visit history"))
+                Result.failure(Exception("Failed to get USG documents"))
             }
         } catch (e: Exception) {
             Result.failure(e)
@@ -175,6 +170,19 @@ class PatientRepository @Inject constructor(
     }
 
     // ==================== Fertility Calendar ====================
+
+    suspend fun getFertilityCyclesData(): Result<FertilityCycleResponse> {
+        return try {
+            val response = apiService.getFertilityCycles()
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to get fertility cycles"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 
     suspend fun getFertilityCycles(): Result<List<FertilityCycle>> {
         return try {
@@ -191,9 +199,14 @@ class PatientRepository @Inject constructor(
 
     suspend fun getFertilityPrediction(month: Int, year: Int): Result<FertilityPrediction> {
         return try {
-            val response = apiService.getFertilityPrediction(month, year)
-            if (response.isSuccessful && response.body()?.prediction != null) {
-                Result.success(response.body()!!.prediction!!)
+            val response = apiService.getFertilityPredictions(3)
+            if (response.isSuccessful && response.body() != null) {
+                val predictions = response.body()!!.predictions
+                if (!predictions.isNullOrEmpty()) {
+                    Result.success(predictions.first())
+                } else {
+                    Result.failure(Exception("No predictions available"))
+                }
             } else {
                 Result.failure(Exception("Failed to get fertility prediction"))
             }
@@ -207,10 +220,73 @@ class PatientRepository @Inject constructor(
             val response = apiService.createFertilityCycle(
                 CreateCycleRequest(startDate, cycleLength, periodLength)
             )
-            if (response.isSuccessful && response.body()?.cycle != null) {
-                Result.success(response.body()!!.cycle!!)
+            if (response.isSuccessful && response.body() != null) {
+                val cycles = response.body()!!.cycles
+                if (!cycles.isNullOrEmpty()) {
+                    Result.success(cycles.first())
+                } else {
+                    Result.failure(Exception("Failed to create fertility cycle"))
+                }
             } else {
                 Result.failure(Exception("Failed to create fertility cycle"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // ==================== Articles ====================
+
+    suspend fun getArticles(category: String? = null, limit: Int = 20): Result<List<com.dokterdibya.patient.data.api.Article>> {
+        return try {
+            val response = apiService.getArticles(category, limit)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!.articles)
+            } else {
+                Result.failure(Exception("Failed to get articles"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // ==================== Practice Schedules ====================
+
+    suspend fun getPracticeSchedules(location: String): Result<List<com.dokterdibya.patient.data.api.PracticeSchedule>> {
+        return try {
+            val response = apiService.getPracticeSchedules(location)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!.schedules)
+            } else {
+                Result.failure(Exception("Failed to get practice schedules"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // ==================== Visit History / Billings ====================
+
+    suspend fun getVisitHistory(): Result<List<com.dokterdibya.patient.data.api.Billing>> {
+        return try {
+            val response = apiService.getMyBillings()
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!.data)
+            } else {
+                Result.failure(Exception("Failed to get visit history"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getVisitDetails(billingId: Int): Result<com.dokterdibya.patient.data.api.BillingDetail> {
+        return try {
+            val response = apiService.getBillingDetails(billingId)
+            if (response.isSuccessful && response.body()?.data != null) {
+                Result.success(response.body()!!.data!!)
+            } else {
+                Result.failure(Exception("Failed to get visit details"))
             }
         } catch (e: Exception) {
             Result.failure(e)

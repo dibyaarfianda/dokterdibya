@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.dokterdibya.patient.data.model.SessionSlots
 import com.dokterdibya.patient.data.model.SundayDate
@@ -25,6 +26,7 @@ import com.dokterdibya.patient.data.model.TimeSlot
 import com.dokterdibya.patient.ui.theme.*
 import com.dokterdibya.patient.viewmodel.AppointmentInfo
 import com.dokterdibya.patient.viewmodel.BookingViewModel
+import com.dokterdibya.patient.viewmodel.SelectedSlot
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,6 +35,15 @@ fun BookingScreen(
     viewModel: BookingViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+
+    // Show success snackbar
+    LaunchedEffect(uiState.bookingSuccess) {
+        uiState.bookingSuccess?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            viewModel.dismissSuccessMessage()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -55,6 +66,7 @@ fun BookingScreen(
                 )
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = BgDark
     ) { paddingValues ->
         Column(
@@ -119,7 +131,7 @@ fun BookingScreen(
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text(
-                                    "Klinik Minggu dibuka setiap hari Minggu",
+                                    "Pilih tanggal dan slot waktu untuk booking",
                                     fontSize = 13.sp,
                                     color = TextPrimaryDark
                                 )
@@ -166,7 +178,7 @@ fun BookingScreen(
                         item {
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                "Sesi & Slot - ${uiState.selectedSunday?.formatted ?: ""}",
+                                "Pilih Sesi & Waktu",
                                 fontSize = 16.sp,
                                 fontWeight = FontWeight.SemiBold,
                                 color = TextPrimaryDark
@@ -216,7 +228,10 @@ fun BookingScreen(
                             }
                         } else {
                             items(uiState.sessions) { session ->
-                                SessionCard(session = session)
+                                SessionCard(
+                                    session = session,
+                                    onSlotClick = { slot -> viewModel.onSlotClick(session, slot) }
+                                )
                             }
                         }
                     }
@@ -238,9 +253,213 @@ fun BookingScreen(
                         }
                     }
 
-                    // Bottom spacing
                     item {
                         Spacer(modifier = Modifier.height(32.dp))
+                    }
+                }
+            }
+        }
+    }
+
+    // Booking Dialog
+    if (uiState.showBookingDialog && uiState.selectedSlot != null) {
+        BookingDialog(
+            slot = uiState.selectedSlot!!,
+            isLoading = uiState.isBooking,
+            error = uiState.bookingError,
+            onDismiss = { viewModel.dismissBookingDialog() },
+            onConfirm = { complaint, category -> viewModel.confirmBooking(complaint, category) }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BookingDialog(
+    slot: SelectedSlot,
+    isLoading: Boolean,
+    error: String?,
+    onDismiss: () -> Unit,
+    onConfirm: (String, String) -> Unit
+) {
+    var chiefComplaint by remember { mutableStateOf("") }
+    var selectedCategory by remember { mutableStateOf("obstetri") }
+    var expanded by remember { mutableStateOf(false) }
+
+    val categories = listOf(
+        "obstetri" to "Kehamilan (Obstetri)",
+        "gyn_repro" to "Program Hamil (Reproduksi)",
+        "gyn_special" to "Ginekologi Umum"
+    )
+
+    Dialog(onDismissRequest = { if (!isLoading) onDismiss() }) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = CardDark)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp)
+            ) {
+                Text(
+                    "Konfirmasi Booking",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimaryDark
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Slot info
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = CardDefaults.cardColors(containerColor = BgDark)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.CalendarToday,
+                                contentDescription = null,
+                                tint = Accent,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                slot.dateFormatted,
+                                fontSize = 14.sp,
+                                color = TextPrimaryDark
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Schedule,
+                                contentDescription = null,
+                                tint = Accent,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "${slot.time} - ${slot.sessionLabel}",
+                                fontSize = 14.sp,
+                                color = TextPrimaryDark
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Category dropdown
+                Text(
+                    "Kategori Konsultasi",
+                    fontSize = 14.sp,
+                    color = TextSecondaryDark
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+
+                ExposedDropdownMenuBox(
+                    expanded = expanded,
+                    onExpandedChange = { expanded = !expanded }
+                ) {
+                    OutlinedTextField(
+                        value = categories.find { it.first == selectedCategory }?.second ?: "",
+                        onValueChange = {},
+                        readOnly = true,
+                        trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .menuAnchor(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = TextPrimaryDark,
+                            unfocusedTextColor = TextPrimaryDark,
+                            focusedBorderColor = Accent,
+                            unfocusedBorderColor = TextSecondaryDark.copy(alpha = 0.5f)
+                        )
+                    )
+                    ExposedDropdownMenu(
+                        expanded = expanded,
+                        onDismissRequest = { expanded = false }
+                    ) {
+                        categories.forEach { (value, label) ->
+                            DropdownMenuItem(
+                                text = { Text(label) },
+                                onClick = {
+                                    selectedCategory = value
+                                    expanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Chief complaint
+                Text(
+                    "Keluhan Utama *",
+                    fontSize = 14.sp,
+                    color = TextSecondaryDark
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+
+                OutlinedTextField(
+                    value = chiefComplaint,
+                    onValueChange = { chiefComplaint = it },
+                    placeholder = { Text("Tuliskan keluhan Anda...", color = TextSecondaryDark.copy(alpha = 0.5f)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 3,
+                    maxLines = 5,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = TextPrimaryDark,
+                        unfocusedTextColor = TextPrimaryDark,
+                        focusedBorderColor = Accent,
+                        unfocusedBorderColor = TextSecondaryDark.copy(alpha = 0.5f)
+                    )
+                )
+
+                // Error message
+                if (error != null) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        error,
+                        color = Danger,
+                        fontSize = 13.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        enabled = !isLoading
+                    ) {
+                        Text("Batal")
+                    }
+                    Button(
+                        onClick = { onConfirm(chiefComplaint, selectedCategory) },
+                        modifier = Modifier.weight(1f),
+                        enabled = !isLoading,
+                        colors = ButtonDefaults.buttonColors(containerColor = Accent)
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                color = BgDark,
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text("Booking")
+                        }
                     }
                 }
             }
@@ -254,7 +473,6 @@ fun DateChip(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
-    // Extract day and month from formatted date
     val parts = sunday.formatted.split(",").getOrNull(1)?.trim()?.split(" ") ?: listOf()
     val day = parts.getOrNull(0) ?: ""
     val month = parts.getOrNull(1)?.take(3) ?: ""
@@ -290,7 +508,10 @@ fun DateChip(
 }
 
 @Composable
-fun SessionCard(session: SessionSlots) {
+fun SessionCard(
+    session: SessionSlots,
+    onSlotClick: (TimeSlot) -> Unit
+) {
     val availableCount = session.slots.count { it.available }
 
     Card(
@@ -314,7 +535,7 @@ fun SessionCard(session: SessionSlots) {
                     color = TextPrimaryDark
                 )
                 Text(
-                    text = "$availableCount slot tersedia",
+                    text = "$availableCount tersedia",
                     fontSize = 12.sp,
                     color = if (availableCount > 0) Success else Danger
                 )
@@ -322,27 +543,31 @@ fun SessionCard(session: SessionSlots) {
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Slots grid
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                session.slots.chunked(5).forEach { rowSlots ->
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
-                    ) {
-                        rowSlots.forEach { slot ->
-                            SlotChip(slot = slot)
-                        }
+            // Slots as flow layout
+            val chunkedSlots = session.slots.chunked(5)
+            chunkedSlots.forEach { rowSlots ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    rowSlots.forEach { slot ->
+                        SlotChip(
+                            slot = slot,
+                            onClick = { onSlotClick(slot) }
+                        )
                     }
                 }
+                Spacer(modifier = Modifier.height(6.dp))
             }
         }
     }
 }
 
 @Composable
-fun SlotChip(slot: TimeSlot) {
+fun SlotChip(
+    slot: TimeSlot,
+    onClick: () -> Unit
+) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(6.dp))
@@ -350,9 +575,7 @@ fun SlotChip(slot: TimeSlot) {
                 if (slot.available) Success.copy(alpha = 0.2f)
                 else Danger.copy(alpha = 0.1f)
             )
-            .clickable(enabled = slot.available) {
-                // TODO: Show booking dialog
-            }
+            .clickable(enabled = slot.available, onClick = onClick)
             .padding(horizontal = 10.dp, vertical = 6.dp)
     ) {
         Text(

@@ -6,44 +6,56 @@ data class FertilityCycle(
     val id: Int,
     @SerializedName("patient_id")
     val patientId: Int,
-    @SerializedName("cycle_start_date")
+    @SerializedName("period_start_date")
     val cycleStartDate: String,
     @SerializedName("cycle_length")
     val cycleLength: Int = 28,
     @SerializedName("period_length")
     val periodLength: Int = 5,
-    @SerializedName("ovulation_date")
+    val fertility: FertilityInfo? = null
+)
+
+data class FertilityInfo(
+    @SerializedName("ovulationDate")
     val ovulationDate: String?,
-    @SerializedName("fertile_window_start")
-    val fertileWindowStart: String?,
-    @SerializedName("fertile_window_end")
-    val fertileWindowEnd: String?,
-    @SerializedName("next_period_date")
-    val nextPeriodDate: String?,
-    @SerializedName("created_at")
-    val createdAt: String?
+    @SerializedName("fertileStart")
+    val fertileStart: String?,
+    @SerializedName("fertileEnd")
+    val fertileEnd: String?,
+    @SerializedName("nextPeriod")
+    val nextPeriod: String?
 )
 
 data class FertilityCycleResponse(
     val success: Boolean,
-    val cycle: FertilityCycle?,
-    val cycles: List<FertilityCycle>?
+    val cycles: List<FertilityCycle>?,
+    val currentFertility: FertilityInfo?,
+    val averageCycleLength: Int?,
+    val totalCycles: Int?
 )
 
 data class FertilityPrediction(
-    @SerializedName("menstruation_dates")
-    val menstruationDates: List<String>,
-    @SerializedName("fertile_dates")
-    val fertileDates: List<String>,
-    @SerializedName("ovulation_date")
+    val cycleNumber: Int?,
+    val periodStart: String?,
+    @SerializedName("ovulationDate")
     val ovulationDate: String?,
+    @SerializedName("fertileStart")
+    val fertileStart: String?,
+    @SerializedName("fertileEnd")
+    val fertileEnd: String?,
+    // Legacy fields for backward compatibility
+    @SerializedName("menstruation_dates")
+    val menstruationDates: List<String>? = null,
+    @SerializedName("fertile_dates")
+    val fertileDates: List<String>? = null,
     @SerializedName("next_period_date")
-    val nextPeriodDate: String?
+    val nextPeriodDate: String? = null
 )
 
 data class FertilityPredictionResponse(
     val success: Boolean,
-    val prediction: FertilityPrediction?
+    val predictions: List<FertilityPrediction>?,
+    val message: String?
 )
 
 data class CreateCycleRequest(
