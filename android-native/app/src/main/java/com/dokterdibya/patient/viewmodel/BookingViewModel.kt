@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dokterdibya.patient.data.model.SessionSlots
 import com.dokterdibya.patient.data.model.SundayDate
+import com.dokterdibya.patient.data.model.TimeSlot
 import com.dokterdibya.patient.data.repository.PatientRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,6 +23,15 @@ data class AppointmentInfo(
     val isPast: Boolean
 )
 
+data class SelectedSlot(
+    val date: String,
+    val dateFormatted: String,
+    val session: Int,
+    val sessionLabel: String,
+    val slotNumber: Int,
+    val time: String
+)
+
 data class BookingUiState(
     val isLoading: Boolean = true,
     val error: String? = null,
@@ -29,7 +39,13 @@ data class BookingUiState(
     val selectedSunday: SundayDate? = null,
     val sessions: List<SessionSlots> = emptyList(),
     val isLoadingSlots: Boolean = false,
-    val appointments: List<AppointmentInfo> = emptyList()
+    val appointments: List<AppointmentInfo> = emptyList(),
+    // Dialog state
+    val showBookingDialog: Boolean = false,
+    val selectedSlot: SelectedSlot? = null,
+    val isBooking: Boolean = false,
+    val bookingSuccess: String? = null,
+    val bookingError: String? = null
 )
 
 @HiltViewModel
@@ -54,10 +70,8 @@ class BookingViewModel @Inject constructor(
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         sundays = sundays,
-                        // Auto-select first Sunday if available
                         selectedSunday = sundays.firstOrNull()
                     )
-                    // Load slots for first Sunday
                     sundays.firstOrNull()?.let { selectSunday(it) }
                 }
                 .onFailure { e ->
@@ -91,6 +105,76 @@ class BookingViewModel @Inject constructor(
                     )
                 }
         }
+    }
+
+    fun onSlotClick(session: SessionSlots, slot: TimeSlot) {
+        val sunday = _uiState.value.selectedSunday ?: return
+        if (!slot.available) return
+
+        _uiState.value = _uiState.value.copy(
+            showBookingDialog = true,
+            selectedSlot = SelectedSlot(
+                date = sunday.date,
+                dateFormatted = sunday.formatted,
+                session = session.session,
+                sessionLabel = session.label,
+                slotNumber = slot.number,
+                time = slot.time
+            ),
+            bookingError = null
+        )
+    }
+
+    fun dismissBookingDialog() {
+        _uiState.value = _uiState.value.copy(
+            showBookingDialog = false,
+            selectedSlot = null,
+            bookingError = null
+        )
+    }
+
+    fun confirmBooking(chiefComplaint: String, category: String) {
+        val slot = _uiState.value.selectedSlot ?: return
+
+        if (chiefComplaint.isBlank()) {
+            _uiState.value = _uiState.value.copy(
+                bookingError = "Mohon isi keluhan utama"
+            )
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isBooking = true, bookingError = null)
+
+            repository.bookAppointment(
+                date = slot.date,
+                session = slot.session,
+                slotNumber = slot.slotNumber,
+                chiefComplaint = chiefComplaint,
+                category = category
+            )
+                .onSuccess { message ->
+                    _uiState.value = _uiState.value.copy(
+                        isBooking = false,
+                        showBookingDialog = false,
+                        selectedSlot = null,
+                        bookingSuccess = message
+                    )
+                    // Refresh data
+                    loadAppointments()
+                    _uiState.value.selectedSunday?.let { selectSunday(it) }
+                }
+                .onFailure { e ->
+                    _uiState.value = _uiState.value.copy(
+                        isBooking = false,
+                        bookingError = e.message ?: "Booking gagal"
+                    )
+                }
+        }
+    }
+
+    fun dismissSuccessMessage() {
+        _uiState.value = _uiState.value.copy(bookingSuccess = null)
     }
 
     private fun loadAppointments() {

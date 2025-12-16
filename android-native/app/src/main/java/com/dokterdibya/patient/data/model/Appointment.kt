@@ -70,9 +70,13 @@ data class AvailableSlotsResponse(
 data class BookingRequest(
     @SerializedName("appointment_date")
     val appointmentDate: String,
-    @SerializedName("time_slot")
-    val timeSlot: String,
-    val notes: String?
+    val session: Int,
+    @SerializedName("slot_number")
+    val slotNumber: Int,
+    @SerializedName("chief_complaint")
+    val chiefComplaint: String,
+    @SerializedName("consultation_category")
+    val consultationCategory: String = "obstetri"
 )
 
 data class BookingResponse(

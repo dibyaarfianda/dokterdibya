@@ -41,15 +41,15 @@ class UsgViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
-            repository.getUsgResults()
-                .onSuccess { results ->
-                    val usgInfos = results.map { usg ->
+            repository.getUsgDocuments()
+                .onSuccess { documents ->
+                    val usgInfos = documents.map { doc ->
                         UsgInfo(
-                            id = usg.id,
-                            imageUrl = usg.imageUrl,
-                            date = usg.examDate,
-                            gestationalAge = usg.gestationalAge,
-                            notes = usg.notes
+                            id = doc.id,
+                            imageUrl = doc.documentUrl,
+                            date = doc.publishedAt ?: doc.createdAt ?: "",
+                            gestationalAge = doc.description,
+                            notes = doc.title
                         )
                     }
                     _uiState.value = _uiState.value.copy(

@@ -65,10 +65,10 @@ class HomeViewModel @Inject constructor(
             )
 
             // Load USG count
-            patientRepository.getUsgResults().fold(
-                onSuccess = { usgList ->
+            patientRepository.getUsgDocuments().fold(
+                onSuccess = { usgDocs ->
                     _uiState.value = _uiState.value.copy(
-                        usgCount = usgList.size
+                        usgCount = usgDocs.size
                     )
                 },
                 onFailure = { /* Ignore */ }

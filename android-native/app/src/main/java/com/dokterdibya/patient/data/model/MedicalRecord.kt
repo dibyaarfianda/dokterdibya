@@ -51,17 +51,28 @@ data class LabListResponse(
 
 data class PatientDocument(
     val id: Int,
-    @SerializedName("patient_id")
-    val patientId: Int,
     @SerializedName("document_type")
-    val documentType: String, // invoice, etiket, resume_medis
-    @SerializedName("document_url")
+    val documentType: String, // invoice, etiket, resume_medis, usg_2d, usg_4d
+    val title: String?,
+    val description: String?,
+    @SerializedName("file_url")
     val documentUrl: String,
+    @SerializedName("file_name")
     val filename: String?,
-    @SerializedName("visit_date")
-    val visitDate: String?,
+    @SerializedName("file_type")
+    val fileType: String?,
+    @SerializedName("file_size")
+    val fileSize: Long?,
+    @SerializedName("published_at")
+    val publishedAt: String?,
+    @SerializedName("mr_id")
+    val mrId: String?,
     @SerializedName("created_at")
-    val createdAt: String?
+    val createdAt: String?,
+    @SerializedName("location_name")
+    val locationName: String?,
+    @SerializedName("visit_date")
+    val visitDate: String?
 )
 
 data class DocumentListResponse(
