@@ -1,0 +1,1405 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Preview UI - dokterDIBYA Native App</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* ===== LIGHT THEME (Default) ===== */
+        :root {
+            --primary: #0066FF;
+            --accent: #0091ff;
+            --success: #10b981;
+            --danger: #ef4444;
+            --fertility: #ff6b9d;
+            --purple: #a855f7;
+            --gold: #d4af37;
+
+            /* Light mode colors */
+            --bg-page: linear-gradient(135deg, #e8f4fc 0%, #f5f0ff 50%, #fff5f8 100%);
+            --bg-phone: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+            --bg-card: rgba(255,255,255,0.75);
+            --bg-card-alt: rgba(0,0,0,0.03);
+            --text: #1a1a2e;
+            --text-muted: rgba(0,0,0,0.5);
+            --text-light: #ffffff;
+            --glass-bg: rgba(255,255,255,0.65);
+            --glass-border: rgba(255,255,255,0.9);
+            --menu-item-bg: linear-gradient(145deg, rgba(255,255,255,0.9), rgba(240,245,250,0.95));
+            --menu-item-shadow: rgba(0,80,150,0.15);
+            --bubble-color: rgba(0,145,255,0.12);
+            --phone-border: #e0e8f0;
+            --phone-shadow: rgba(0,100,200,0.15);
+            --overlay-bg: rgba(0,0,0,0.2);
+        }
+
+        /* ===== DARK THEME ===== */
+        [data-theme="dark"] {
+            --bg-page: linear-gradient(135deg, #0a0a12 0%, #1a1a2e 100%);
+            --bg-phone: #0f0f1a;
+            --bg-card: rgba(255,255,255,0.08);
+            --bg-card-alt: rgba(255,255,255,0.05);
+            --text: #ffffff;
+            --text-muted: rgba(255,255,255,0.6);
+            --text-light: #ffffff;
+            --glass-bg: rgba(40,45,70,0.9);
+            --glass-border: rgba(255,255,255,0.08);
+            --menu-item-bg: linear-gradient(145deg, rgba(40, 45, 70, 0.9), rgba(25, 28, 45, 0.95));
+            --menu-item-shadow: rgba(0,0,0,0.4);
+            --bubble-color: rgba(40,167,233,0.15);
+            --phone-border: #2a2a3a;
+            --phone-shadow: rgba(0,0,0,0.6);
+            --overlay-bg: rgba(0,0,0,0.5);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: var(--bg-page);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+            transition: background 0.4s ease;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: var(--accent);
+            font-size: 28px;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: var(--bg-card);
+            backdrop-filter: blur(15px);
+            padding: 8px 16px;
+            border-radius: 30px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 4px 20px var(--menu-item-shadow);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            transform: scale(1.05);
+        }
+
+        .theme-toggle i {
+            font-size: 18px;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle .fa-sun {
+            color: #f59e0b;
+        }
+
+        .theme-toggle .fa-moon {
+            color: #6366f1;
+        }
+
+        .theme-toggle span {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        .instruction {
+            text-align: center;
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            padding: 12px 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            color: var(--accent);
+            transition: all 0.3s ease;
+        }
+
+        .preview-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 30px;
+            justify-content: center;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .phone-wrapper {
+            position: relative;
+        }
+
+        .phone-frame {
+            width: 320px;
+            height: 660px;
+            background: var(--bg-phone);
+            border-radius: 40px;
+            border: 4px solid var(--phone-border);
+            overflow: hidden;
+            position: relative;
+            box-shadow:
+                0 25px 80px var(--phone-shadow),
+                0 10px 40px rgba(0,0,0,0.08);
+            transition: all 0.4s ease;
+        }
+
+        .phone-notch {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 28px;
+            background: #1a1a2e;
+            border-radius: 0 0 20px 20px;
+            z-index: 100;
+        }
+
+        .phone-notch::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 8px;
+            height: 8px;
+            background: #2a2a3a;
+            border-radius: 50%;
+        }
+
+        .phone-screen {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .screen-label {
+            text-align: center;
+            font-size: 13px;
+            color: var(--accent);
+            margin-top: 12px;
+            font-weight: 600;
+        }
+
+        /* Animated Background */
+        .bg-animation {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            overflow: hidden;
+            z-index: 0;
+        }
+
+        .bubble {
+            position: absolute;
+            background: radial-gradient(circle, var(--bubble-color) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: float 8s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) scale(1); opacity: 0.6; }
+            50% { transform: translateY(-30px) scale(1.1); opacity: 1; }
+        }
+
+        /* Slide Menu - Floating Icons Only */
+        .slide-menu {
+            position: absolute;
+            top: 0;
+            right: -85px;
+            width: 85px;
+            height: 100%;
+            background: transparent;
+            z-index: 200;
+            transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 15px;
+        }
+
+        .slide-menu.open {
+            transform: translateX(-85px);
+        }
+
+        .menu-header {
+            display: none;
+        }
+
+        .menu-avatar {
+            width: 52px;
+            height: 52px;
+            background: linear-gradient(135deg, var(--accent), var(--purple));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            font-weight: 600;
+            box-shadow:
+                0 4px 20px rgba(40,167,233,0.5),
+                0 0 30px rgba(168, 85, 247, 0.3);
+            border: 2px solid rgba(255,255,255,0.3);
+            animation: avatarPulse 3s ease-in-out infinite, menuItemAppear 0.3s ease-out;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .menu-avatar:hover {
+            transform: scale(1.1);
+            box-shadow:
+                0 6px 30px rgba(40,167,233,0.6),
+                0 0 40px rgba(168, 85, 247, 0.4);
+        }
+
+        @keyframes avatarPulse {
+            0%, 100% {
+                box-shadow:
+                    0 4px 20px rgba(40,167,233,0.5),
+                    0 0 30px rgba(168, 85, 247, 0.3);
+            }
+            50% {
+                box-shadow:
+                    0 4px 25px rgba(40,167,233,0.7),
+                    0 0 40px rgba(168, 85, 247, 0.5);
+            }
+        }
+
+        .menu-name, .menu-email, .menu-section-title {
+            display: none;
+        }
+
+        .menu-items {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            width: 100%;
+        }
+
+        .menu-items::-webkit-scrollbar {
+            display: none;
+        }
+
+        .menu-section {
+            display: none;
+        }
+
+        .menu-item {
+            width: 52px;
+            height: 52px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text);
+            background: var(--menu-item-bg);
+            backdrop-filter: blur(15px);
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border-radius: 16px;
+            cursor: pointer;
+            box-shadow:
+                0 4px 15px var(--menu-item-shadow),
+                inset 0 1px 0 rgba(255,255,255,0.2);
+            border: 1px solid var(--glass-border);
+            font-size: 0;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateX(30px) scale(0.7);
+        }
+
+        /* Opening animation */
+        .slide-menu.open:not(.closing) .menu-item {
+            animation: menuItemSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+        }
+
+        .slide-menu.open:not(.closing) .menu-item:nth-child(1) { animation-delay: 0.05s; }
+        .slide-menu.open:not(.closing) .menu-item:nth-child(2) { animation-delay: 0.12s; }
+        .slide-menu.open:not(.closing) .menu-item:nth-child(3) { animation-delay: 0.19s; }
+        .slide-menu.open:not(.closing) .menu-item:nth-child(4) { animation-delay: 0.26s; }
+
+        @keyframes menuItemSlideIn {
+            0% {
+                opacity: 0;
+                transform: translateX(30px) scale(0.7);
+            }
+            60% {
+                opacity: 1;
+                transform: translateX(-5px) scale(1.05);
+            }
+            100% {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+        }
+
+        /* Closing animation - reverse order (bottom first) */
+        .slide-menu.closing .menu-item {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+            animation: menuItemSlideOut 0.2s ease-out forwards !important;
+        }
+
+        .slide-menu.closing .menu-item:nth-child(4) { animation-delay: 0s !important; }
+        .slide-menu.closing .menu-item:nth-child(3) { animation-delay: 0.05s !important; }
+        .slide-menu.closing .menu-item:nth-child(2) { animation-delay: 0.1s !important; }
+        .slide-menu.closing .menu-item:nth-child(1) { animation-delay: 0.15s !important; }
+
+        @keyframes menuItemSlideOut {
+            0% {
+                opacity: 1;
+                transform: translateX(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateX(25px) scale(0.8);
+            }
+        }
+
+        .menu-item:hover {
+            background: linear-gradient(145deg, rgba(40, 167, 233, 0.4), rgba(168, 85, 247, 0.3));
+            color: #fff;
+            transform: scale(1.2) translateX(-5px);
+            box-shadow:
+                0 8px 30px rgba(40, 167, 233, 0.4),
+                0 0 20px rgba(40, 167, 233, 0.2),
+                inset 0 1px 0 rgba(255,255,255,0.2);
+            border-color: rgba(40, 167, 233, 0.5);
+        }
+
+        .menu-item:active {
+            transform: scale(1.1) translateX(-3px);
+        }
+
+        .menu-item i {
+            font-size: 24px;
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+            transition: all 0.3s ease;
+        }
+
+        .menu-item:hover i {
+            transform: scale(1.1);
+            filter: drop-shadow(0 0 8px rgba(40, 167, 233, 0.6));
+        }
+
+        .menu-item.active {
+            background: linear-gradient(145deg, rgba(40, 167, 233, 0.4), rgba(40, 167, 233, 0.2));
+            color: var(--accent);
+            border-color: rgba(40,167,233,0.5);
+            box-shadow:
+                0 4px 20px rgba(40, 167, 233, 0.3),
+                inset 0 1px 0 rgba(255,255,255,0.15);
+        }
+
+        .menu-item.logout {
+            color: #ef4444;
+            background: linear-gradient(145deg, rgba(255, 240, 240, 0.95), rgba(255, 230, 230, 0.9));
+        }
+
+        [data-theme="dark"] .menu-item.logout {
+            color: #ff6b6b;
+            background: linear-gradient(145deg, rgba(60, 30, 35, 0.9), rgba(40, 20, 25, 0.95));
+        }
+
+        .menu-item.logout:hover {
+            background: linear-gradient(145deg, rgba(239, 68, 68, 0.4), rgba(180, 50, 50, 0.3));
+            color: #fff;
+            transform: scale(1.2) translateX(-5px);
+            box-shadow:
+                0 8px 30px rgba(239, 68, 68, 0.4),
+                0 0 20px rgba(239, 68, 68, 0.3),
+                inset 0 1px 0 rgba(255,255,255,0.1);
+            border-color: rgba(239, 68, 68, 0.5);
+        }
+
+        .menu-item.logout:hover i {
+            filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.8));
+        }
+
+        .menu-close {
+            display: none;
+        }
+
+        /* Swipe Edge Indicator */
+        .swipe-edge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 25px;
+            height: 100%;
+            z-index: 50;
+            cursor: grab;
+        }
+
+        .swipe-edge::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: 8px;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 50px;
+            background: rgba(0,100,200,0.2);
+            border-radius: 2px;
+            transition: all 0.3s;
+        }
+
+        [data-theme="dark"] .swipe-edge::after {
+            background: rgba(255,255,255,0.2);
+        }
+
+        .swipe-edge:hover::after {
+            background: rgba(40,167,233,0.5);
+            height: 70px;
+            box-shadow: 0 0 15px rgba(40,167,233,0.4);
+        }
+
+        /* Overlay */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--overlay-bg);
+            z-index: 150;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* Login Screen */
+        .login-screen {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .login-logo {
+            width: 110px;
+            height: 110px;
+            background: white;
+            border-radius: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            box-shadow:
+                0 15px 40px rgba(0,0,0,0.4),
+                0 0 60px rgba(40,167,233,0.2);
+            animation: pulse 3s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { box-shadow: 0 15px 40px rgba(0,0,0,0.4), 0 0 60px rgba(40,167,233,0.2); }
+            50% { box-shadow: 0 15px 40px rgba(0,0,0,0.4), 0 0 80px rgba(40,167,233,0.4); }
+        }
+
+        .login-logo img {
+            width: 80%;
+            height: 80%;
+            object-fit: contain;
+        }
+
+        .login-title {
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 5px;
+            color: var(--text);
+        }
+
+        .login-title span {
+            color: var(--primary);
+        }
+
+        [data-theme="dark"] .login-title {
+            color: #ffffff;
+        }
+
+        .login-subtitle {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin-bottom: 50px;
+        }
+
+        .btn-google {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: white;
+            color: #333;
+            padding: 16px 32px;
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 500;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+            transition: all 0.2s;
+        }
+
+        .btn-google:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+        }
+
+        /* Home Screen */
+        .home-screen {
+            flex: 1;
+            overflow-y: auto;
+            padding: 45px 15px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .home-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .home-logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .home-logo img {
+            width: 38px;
+            height: 38px;
+            background: white;
+            border-radius: 10px;
+            padding: 5px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+
+        .home-logo span {
+            font-weight: 600;
+            font-size: 18px;
+            background: linear-gradient(90deg, var(--primary), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        [data-theme="dark"] .home-logo span {
+            background: linear-gradient(90deg, var(--accent), var(--purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .welcome-card {
+            background: linear-gradient(135deg, rgba(40,167,233,0.2) 0%, rgba(168,85,247,0.2) 100%);
+            border: 1px solid rgba(40,167,233,0.3);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .welcome-card::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 60%);
+        }
+
+        .welcome-card h2 {
+            font-size: 16px;
+            font-weight: 400;
+            position: relative;
+        }
+
+        .welcome-card h2 strong {
+            font-size: 22px;
+            font-weight: 600;
+            display: block;
+            margin-top: 5px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        [data-theme="dark"] .welcome-card h2 strong {
+            background: linear-gradient(90deg, #fff, var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 18px;
+            padding: 18px;
+            margin-bottom: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            border-color: rgba(0,145,255,0.3);
+            box-shadow: 0 5px 25px rgba(0,145,255,0.15);
+        }
+
+        .pregnancy-card {
+            background: linear-gradient(135deg, rgba(168,85,247,0.1) 0%, rgba(236,72,153,0.1) 100%);
+            border-color: rgba(168,85,247,0.3);
+        }
+
+        [data-theme="dark"] .pregnancy-card {
+            background: linear-gradient(135deg, #1a1a2e 0%, #2d1b4e 100%);
+        }
+
+        .pregnancy-card h3 {
+            color: #a855f7;
+            font-size: 13px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .pregnancy-weeks {
+            font-size: 26px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(90deg, #a855f7, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .progress-bar {
+            height: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #a855f7, #ec4899);
+            border-radius: 5px;
+            width: 81%;
+            position: relative;
+        }
+
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .hpl-text {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .quick-menu {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .quick-menu-item {
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 16px;
+            padding: 18px 15px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .quick-menu-item:hover {
+            background: rgba(0,145,255,0.1);
+            border-color: rgba(0,145,255,0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,145,255,0.15);
+        }
+
+        .quick-menu-icon {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .quick-menu-icon.blue { background: rgba(40,167,233,0.2); color: var(--accent); }
+        .quick-menu-icon.purple { background: rgba(168,85,247,0.2); color: var(--purple); }
+        .quick-menu-icon.pink { background: rgba(255,107,157,0.2); color: var(--fertility); }
+        .quick-menu-icon.green { background: rgba(16,185,129,0.2); color: var(--success); }
+        .quick-menu-icon.gold { background: rgba(212,175,55,0.2); color: var(--gold); }
+
+        .quick-menu-text h4 {
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .quick-menu-text span {
+            font-size: 10px;
+            color: var(--text-muted);
+        }
+
+        /* Swipe Indicator */
+        .swipe-indicator {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--text-muted);
+            font-size: 11px;
+            animation: swipeHint 2s ease-in-out infinite;
+            z-index: 10;
+        }
+
+        @keyframes swipeHint {
+            0%, 100% { opacity: 0.5; transform: translateX(-50%) translateX(0); }
+            50% { opacity: 1; transform: translateX(-50%) translateX(-10px); }
+        }
+
+        /* Fertility Calendar */
+        .fertility-screen {
+            flex: 1;
+            overflow-y: auto;
+            padding: 45px 15px 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .screen-title {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .screen-title i {
+            color: var(--text-muted);
+        }
+
+        .screen-title h1 {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .calendar-card {
+            background: linear-gradient(135deg, rgba(255,107,157,0.08) 0%, rgba(168,85,247,0.08) 100%);
+            border: 1px solid rgba(255,107,157,0.2);
+            border-radius: 20px;
+            padding: 20px;
+            margin-bottom: 15px;
+            backdrop-filter: blur(10px);
+        }
+
+        [data-theme="dark"] .calendar-card {
+            background: linear-gradient(135deg, #1a1a2e 0%, #2e1a3d 100%);
+        }
+
+        .calendar-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .calendar-nav h2 {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--fertility);
+        }
+
+        .calendar-nav-btn {
+            width: 32px;
+            height: 32px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 3px;
+        }
+
+        .calendar-day-header {
+            text-align: center;
+            font-size: 10px;
+            color: var(--text-muted);
+            padding: 8px 0;
+            font-weight: 500;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            border-radius: 10px;
+            color: var(--text-muted);
+            transition: all 0.2s;
+        }
+
+        .calendar-day.mens {
+            background: rgba(239,68,68,0.25);
+            color: #fca5a5;
+        }
+
+        .calendar-day.fertile {
+            background: rgba(16,185,129,0.25);
+            color: #6ee7b7;
+        }
+
+        .calendar-day.ovulation {
+            background: linear-gradient(135deg, var(--success), #059669);
+            color: white;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(16,185,129,0.4);
+        }
+
+        .calendar-legend {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 15px;
+            font-size: 11px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        .legend-dot.mens { background: rgba(239,68,68,0.6); }
+        .legend-dot.fertile { background: rgba(16,185,129,0.6); }
+        .legend-dot.ovulation { background: var(--success); }
+
+        .input-section {
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            border-radius: 16px;
+            padding: 18px;
+            border: 1px solid var(--glass-border);
+        }
+
+        .input-section h3 {
+            font-size: 14px;
+            margin-bottom: 12px;
+            color: var(--fertility);
+        }
+
+        .input-field {
+            background: var(--bg-card-alt);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 14px;
+            color: var(--text);
+            font-size: 13px;
+            width: 100%;
+            margin-bottom: 12px;
+        }
+
+        [data-theme="dark"] .input-field {
+            background: rgba(0,0,0,0.3);
+            border-color: rgba(255,255,255,0.1);
+        }
+
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--fertility), #ec4899);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 4px 20px rgba(255,107,157,0.4);
+        }
+
+        /* Interactive Demo */
+        .demo-note {
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            border-radius: 12px;
+            padding: 15px;
+            margin-top: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .demo-note h3 {
+            color: var(--accent);
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+
+        .demo-note p {
+            color: var(--text-muted);
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Theme Toggle Button -->
+    <div class="theme-toggle" onclick="toggleTheme()">
+        <i class="fas fa-sun"></i>
+        <span>Light</span>
+    </div>
+
+    <h1>Preview UI Native Android App</h1>
+    <p class="subtitle">dokterDIBYA - Kotlin + Jetpack Compose</p>
+    <div class="instruction">
+        <i class="fas fa-hand-pointer"></i> Drag garis vertikal di sisi kanan ke kiri untuk membuka menu
+    </div>
+
+    <div class="preview-container">
+        <!-- Login Screen -->
+        <div class="phone-wrapper">
+            <div class="phone-frame">
+                <div class="phone-notch"></div>
+                <div class="phone-screen">
+                    <div class="bg-animation">
+                        <div class="bubble" style="width: 150px; height: 150px; top: 10%; left: -20%;"></div>
+                        <div class="bubble" style="width: 100px; height: 100px; bottom: 20%; right: -10%; animation-delay: 2s;"></div>
+                        <div class="bubble" style="width: 80px; height: 80px; top: 50%; right: 20%; animation-delay: 4s;"></div>
+                    </div>
+                    <div class="login-screen">
+                        <div class="login-logo">
+                            <img src="/db-logo.png" alt="Logo">
+                        </div>
+                        <div class="login-title">dokter<span>DIBYA</span></div>
+                        <div class="login-subtitle">Portal Privat Anda</div>
+                        <div class="btn-google">
+                            <svg width="20" height="20" viewBox="0 0 24 24">
+                                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                            </svg>
+                            Masuk dengan Google
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="screen-label">Login Screen</div>
+        </div>
+
+        <!-- Home Screen with Slide Menu -->
+        <div class="phone-wrapper">
+            <div class="phone-frame" id="home-phone">
+                <div class="phone-notch"></div>
+                <div class="phone-screen">
+                    <div class="bg-animation">
+                        <div class="bubble" style="width: 120px; height: 120px; top: 5%; left: -15%;"></div>
+                        <div class="bubble" style="width: 80px; height: 80px; bottom: 30%; right: -5%; animation-delay: 3s;"></div>
+                    </div>
+
+                    <div class="overlay" id="home-overlay" onclick="closeMenu('home')"></div>
+
+                    <div class="home-screen">
+                        <div class="home-header">
+                            <div class="home-logo">
+                                <img src="/db-logo.png" alt="Logo">
+                                <span>dokterDIBYA</span>
+                            </div>
+                        </div>
+
+                        <div class="welcome-card">
+                            <h2>Selamat Datang,<strong>Ibu Sarah!</strong></h2>
+                        </div>
+
+                        <div class="card pregnancy-card">
+                            <h3><i class="fas fa-baby"></i> Usia Kehamilan</h3>
+                            <div class="pregnancy-weeks">32 Minggu 4 Hari</div>
+                            <div class="progress-bar">
+                                <div class="progress-fill"></div>
+                            </div>
+                            <div class="hpl-text">HPL: 15 Februari 2026</div>
+                        </div>
+
+                        <div class="quick-menu">
+                            <div class="quick-menu-item">
+                                <div class="quick-menu-icon blue">
+                                    <i class="fas fa-calendar-check"></i>
+                                </div>
+                                <div class="quick-menu-text">
+                                    <h4>Booking</h4>
+                                    <span>Pesan jadwal</span>
+                                </div>
+                            </div>
+                            <div class="quick-menu-item">
+                                <div class="quick-menu-icon purple">
+                                    <i class="fas fa-baby"></i>
+                                </div>
+                                <div class="quick-menu-text">
+                                    <h4>Hasil USG</h4>
+                                    <span>12 foto</span>
+                                </div>
+                            </div>
+                            <div class="quick-menu-item">
+                                <div class="quick-menu-icon pink">
+                                    <i class="fas fa-heart"></i>
+                                </div>
+                                <div class="quick-menu-text">
+                                    <h4>Kesuburan</h4>
+                                    <span>Kalender</span>
+                                </div>
+                            </div>
+                            <div class="quick-menu-item">
+                                <div class="quick-menu-icon green">
+                                    <i class="fas fa-file-medical"></i>
+                                </div>
+                                <div class="quick-menu-text">
+                                    <h4>Dokumen</h4>
+                                    <span>Invoice, dll</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="swipe-indicator">
+                            <i class="fas fa-chevron-left"></i>
+                            Swipe dari kanan
+                        </div>
+                    </div>
+
+                    <div class="swipe-edge" id="home-swipe"></div>
+
+                    <!-- Slide Menu - 4 Icons Only -->
+                    <div class="slide-menu" id="home-menu">
+                        <div class="menu-close" onclick="toggleMenu('home')">
+                            <i class="fas fa-times"></i>
+                        </div>
+                        <div class="menu-header">
+                            <div class="menu-avatar">S</div>
+                        </div>
+                        <div class="menu-items">
+                            <div class="menu-item"><i class="fas fa-calendar-check"></i></div>
+                            <div class="menu-item"><i class="fas fa-baby"></i></div>
+                            <div class="menu-item"><i class="fas fa-heart"></i></div>
+                            <div class="menu-item logout"><i class="fas fa-sign-out-alt"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="screen-label">Home + Slide Menu</div>
+        </div>
+
+        <!-- Fertility Calendar -->
+        <div class="phone-wrapper">
+            <div class="phone-frame" id="fertility-phone">
+                <div class="phone-notch"></div>
+                <div class="phone-screen">
+                    <div class="bg-animation">
+                        <div class="bubble" style="width: 100px; height: 100px; top: 10%; right: -10%; background: radial-gradient(circle, rgba(255,107,157,0.15) 0%, transparent 70%);"></div>
+                    </div>
+
+                    <div class="overlay" id="fertility-overlay" onclick="closeMenu('fertility')"></div>
+
+                    <div class="fertility-screen">
+                        <div class="screen-title">
+                            <i class="fas fa-arrow-left"></i>
+                            <h1 style="color: var(--fertility);">Kalender Kesuburan</h1>
+                        </div>
+
+                        <div class="calendar-card">
+                            <div class="calendar-nav">
+                                <div class="calendar-nav-btn"><i class="fas fa-chevron-left"></i></div>
+                                <h2>Desember 2025</h2>
+                                <div class="calendar-nav-btn"><i class="fas fa-chevron-right"></i></div>
+                            </div>
+                            <div class="calendar-grid">
+                                <div class="calendar-day-header">Sen</div>
+                                <div class="calendar-day-header">Sel</div>
+                                <div class="calendar-day-header">Rab</div>
+                                <div class="calendar-day-header">Kam</div>
+                                <div class="calendar-day-header">Jum</div>
+                                <div class="calendar-day-header">Sab</div>
+                                <div class="calendar-day-header">Min</div>
+
+                                <div class="calendar-day">1</div>
+                                <div class="calendar-day">2</div>
+                                <div class="calendar-day">3</div>
+                                <div class="calendar-day">4</div>
+                                <div class="calendar-day">5</div>
+                                <div class="calendar-day">6</div>
+                                <div class="calendar-day">7</div>
+
+                                <div class="calendar-day mens">8</div>
+                                <div class="calendar-day mens">9</div>
+                                <div class="calendar-day mens">10</div>
+                                <div class="calendar-day mens">11</div>
+                                <div class="calendar-day mens">12</div>
+                                <div class="calendar-day">13</div>
+                                <div class="calendar-day">14</div>
+
+                                <div class="calendar-day">15</div>
+                                <div class="calendar-day">16</div>
+                                <div class="calendar-day">17</div>
+                                <div class="calendar-day">18</div>
+                                <div class="calendar-day fertile">19</div>
+                                <div class="calendar-day fertile">20</div>
+                                <div class="calendar-day fertile">21</div>
+
+                                <div class="calendar-day ovulation">22</div>
+                                <div class="calendar-day fertile">23</div>
+                                <div class="calendar-day fertile">24</div>
+                                <div class="calendar-day">25</div>
+                                <div class="calendar-day">26</div>
+                                <div class="calendar-day">27</div>
+                                <div class="calendar-day">28</div>
+
+                                <div class="calendar-day">29</div>
+                                <div class="calendar-day">30</div>
+                                <div class="calendar-day">31</div>
+                            </div>
+                            <div class="calendar-legend">
+                                <div class="legend-item">
+                                    <div class="legend-dot mens"></div>
+                                    <span>Mens</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-dot fertile"></div>
+                                    <span>Subur</span>
+                                </div>
+                                <div class="legend-item">
+                                    <div class="legend-dot ovulation"></div>
+                                    <span>Ovulasi</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="input-section">
+                            <h3><i class="fas fa-calendar-plus"></i> Catat Siklus Baru</h3>
+                            <input type="text" class="input-field" placeholder="Hari pertama mens..." readonly>
+                            <button class="btn-primary">Simpan Siklus</button>
+                        </div>
+                    </div>
+
+                    <div class="swipe-edge" id="fertility-swipe"></div>
+
+                    <!-- Slide Menu - 4 Icons Only -->
+                    <div class="slide-menu" id="fertility-menu">
+                        <div class="menu-close" onclick="toggleMenu('fertility')">
+                            <i class="fas fa-times"></i>
+                        </div>
+                        <div class="menu-header">
+                            <div class="menu-avatar">S</div>
+                        </div>
+                        <div class="menu-items">
+                            <div class="menu-item"><i class="fas fa-home"></i></div>
+                            <div class="menu-item active"><i class="fas fa-heart"></i></div>
+                            <div class="menu-item"><i class="fas fa-baby"></i></div>
+                            <div class="menu-item logout"><i class="fas fa-sign-out-alt"></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="screen-label">Kalender Kesuburan</div>
+        </div>
+    </div>
+
+    <div class="demo-note">
+        <h3><i class="fas fa-info-circle"></i> Catatan</h3>
+        <p>Swipe dari kanan ke kiri (atau drag garis vertikal) untuk membuka menu. Tap di luar menu untuk menutup.</p>
+    </div>
+
+    <script>
+        // Theme toggle
+        function toggleTheme() {
+            const html = document.documentElement;
+            const toggle = document.querySelector('.theme-toggle');
+            const icon = toggle.querySelector('i');
+            const text = toggle.querySelector('span');
+
+            if (html.getAttribute('data-theme') === 'dark') {
+                html.removeAttribute('data-theme');
+                icon.className = 'fas fa-sun';
+                text.textContent = 'Light';
+                localStorage.setItem('theme', 'light');
+            } else {
+                html.setAttribute('data-theme', 'dark');
+                icon.className = 'fas fa-moon';
+                text.textContent = 'Dark';
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        // Load saved theme on page load
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                const toggle = document.querySelector('.theme-toggle');
+                if (toggle) {
+                    toggle.querySelector('i').className = 'fas fa-moon';
+                    toggle.querySelector('span').textContent = 'Dark';
+                }
+            }
+        })();
+
+        function toggleMenu(screen) {
+            const menu = document.getElementById(screen + '-menu');
+            if (menu.classList.contains('open')) {
+                closeMenu(screen);
+            } else {
+                openMenu(screen);
+            }
+        }
+
+        function openMenu(screen) {
+            const menu = document.getElementById(screen + '-menu');
+            const overlay = document.getElementById(screen + '-overlay');
+            menu.classList.remove('closing');
+            menu.classList.add('open');
+            overlay.classList.add('show');
+        }
+
+        function closeMenu(screen) {
+            const menu = document.getElementById(screen + '-menu');
+            const overlay = document.getElementById(screen + '-overlay');
+
+            if (!menu.classList.contains('open')) return;
+
+            // Start closing animation
+            menu.classList.add('closing');
+            overlay.classList.remove('show');
+
+            // Wait for icon animations to complete, then slide menu back
+            setTimeout(() => {
+                menu.classList.remove('open');
+                menu.classList.remove('closing');
+            }, 300);
+        }
+
+        // Swipe detection for each screen
+        ['home', 'fertility'].forEach(screen => {
+            const swipeEdge = document.getElementById(screen + '-swipe');
+            const phoneFrame = document.getElementById(screen + '-phone');
+
+            if (!swipeEdge || !phoneFrame) return;
+
+            let startX = 0;
+            let startY = 0;
+            let isDragging = false;
+
+            // Touch events for swipe edge
+            swipeEdge.addEventListener('touchstart', (e) => {
+                startX = e.touches[0].clientX;
+                startY = e.touches[0].clientY;
+                isDragging = true;
+            });
+
+            swipeEdge.addEventListener('touchmove', (e) => {
+                if (!isDragging) return;
+                const diffX = startX - e.touches[0].clientX;
+                const diffY = Math.abs(startY - e.touches[0].clientY);
+
+                // Swipe left detected (from right edge)
+                if (diffX > 30 && diffY < 50) {
+                    openMenu(screen);
+                    isDragging = false;
+                }
+            });
+
+            swipeEdge.addEventListener('touchend', () => {
+                isDragging = false;
+            });
+
+            // Mouse events for desktop demo
+            swipeEdge.addEventListener('mousedown', (e) => {
+                startX = e.clientX;
+                isDragging = true;
+                swipeEdge.style.cursor = 'grabbing';
+            });
+
+            document.addEventListener('mousemove', (e) => {
+                if (!isDragging) return;
+                const diffX = startX - e.clientX;
+
+                if (diffX > 30) {
+                    openMenu(screen);
+                    isDragging = false;
+                    swipeEdge.style.cursor = 'grab';
+                }
+            });
+
+            document.addEventListener('mouseup', () => {
+                isDragging = false;
+                if (swipeEdge) swipeEdge.style.cursor = 'grab';
+            });
+        });
+    </script>
+</body>
+</html>

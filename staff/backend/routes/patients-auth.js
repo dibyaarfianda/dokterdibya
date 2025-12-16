@@ -519,17 +519,25 @@ router.post('/google-auth-code', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Kode otorisasi tidak ditemukan' });
         }
 
+        // Build token request params
+        // For Android app, redirect_uri should be empty string
+        const tokenParams = {
+            code,
+            client_id: GOOGLE_CLIENT_ID,
+            client_secret: process.env.GOOGLE_CLIENT_SECRET,
+            grant_type: 'authorization_code'
+        };
+
+        // Only add redirect_uri if it's not empty (web uses URL, Android uses empty)
+        if (redirectUri) {
+            tokenParams.redirect_uri = redirectUri;
+        }
+
         // Exchange authorization code for tokens
         const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-                code,
-                client_id: GOOGLE_CLIENT_ID,
-                client_secret: process.env.GOOGLE_CLIENT_SECRET,
-                redirect_uri: redirectUri,
-                grant_type: 'authorization_code'
-            })
+            body: new URLSearchParams(tokenParams)
         });
 
         const tokenData = await tokenResponse.json();
