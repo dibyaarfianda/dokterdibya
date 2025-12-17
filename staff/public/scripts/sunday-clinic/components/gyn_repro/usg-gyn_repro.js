@@ -45,7 +45,7 @@ async function handlePhotoUpload(event) {
     const maxSize = 10 * 1024 * 1024;
     for (const file of files) {
         if (file.size > maxSize) {
-            alert(`File ${file.name} terlalu besar. Maksimal 10MB.`);
+            window.showToast('error', `File ${file.name} terlalu besar. Maksimal 10MB.`);
             return;
         }
     }
@@ -97,10 +97,10 @@ async function handlePhotoUpload(event) {
 
         event.target.value = '';
         label.textContent = originalLabel;
-        alert(`${result.files.length} foto berhasil diupload!`);
+        window.showToast('success', `${result.files.length} foto berhasil diupload!`);
     } catch (error) {
         console.error('Upload error:', error);
-        alert('Gagal upload foto.');
+        window.showToast('error', 'Gagal upload foto.');
         label.textContent = originalLabel;
     }
 }

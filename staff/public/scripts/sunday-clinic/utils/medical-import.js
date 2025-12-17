@@ -51,12 +51,12 @@ async function importMedicalParse() {
     const text = document.getElementById('import-text').value.trim();
 
     if (!category) {
-        alert('Silakan pilih kategori terlebih dahulu');
+        window.showToast('warning', 'Silakan pilih kategori terlebih dahulu');
         return;
     }
 
     if (!text) {
-        alert('Silakan masukkan teks catatan medis atau upload file');
+        window.showToast('warning', 'Silakan masukkan teks catatan medis atau upload file');
         return;
     }
 
@@ -84,7 +84,7 @@ async function importMedicalParse() {
         parseBtn.disabled = false;
 
         if (!result.success) {
-            alert('Gagal parsing: ' + result.message);
+            window.showToast('error', 'Gagal parsing: ' + result.message);
             return;
         }
 
@@ -96,7 +96,7 @@ async function importMedicalParse() {
 
     } catch (error) {
         console.error('Import error:', error);
-        alert('Error: ' + error.message);
+        window.showToast('error', 'Error: ' + error.message);
         document.getElementById('btn-import-parse').innerHTML = '<i class="fas fa-search mr-1"></i>Parse & Preview';
         document.getElementById('btn-import-parse').disabled = false;
     }
@@ -451,7 +451,7 @@ async function createNewMRAndNavigate(patientId, category, location, visitDate, 
  */
 async function importMedicalApply() {
     if (!parsedImportData) {
-        alert('Tidak ada data untuk diterapkan');
+        window.showToast('warning', 'Tidak ada data untuk diterapkan');
         return;
     }
 
@@ -482,7 +482,7 @@ async function importMedicalApply() {
             const patientId = patientSelect?.value;
 
             if (!patientId) {
-                alert('Silakan pilih pasien terlebih dahulu');
+                window.showToast('warning', 'Silakan pilih pasien terlebih dahulu');
                 patientSelect?.focus();
                 return;
             }
@@ -628,12 +628,12 @@ async function importMedicalApply() {
                 showConfirmButton: false
             });
         } else {
-            alert('Data berhasil diterapkan ke form');
+            window.showToast('success', 'Data berhasil diterapkan ke form');
         }
 
     } catch (error) {
         console.error('Apply error:', error);
-        alert('Error menerapkan data: ' + error.message);
+        window.showToast('error', 'Error menerapkan data: ' + error.message);
     }
 }
 
@@ -1305,7 +1305,7 @@ async function handleBulkFilesSelect(event) {
     if (files.length === 0) return;
 
     if (files.length > 50) {
-        alert('Maksimal 50 file per bulk import');
+        window.showToast('warning', 'Maksimal 50 file per bulk import');
         return;
     }
 
@@ -1359,7 +1359,7 @@ async function handleBulkFilesSelect(event) {
         if (progressText) progressText.textContent = 'Selesai!';
 
         if (!result.success) {
-            alert('Gagal memproses: ' + result.message);
+            window.showToast('error', 'Gagal memproses: ' + result.message);
             return;
         }
 
@@ -1369,7 +1369,7 @@ async function handleBulkFilesSelect(event) {
 
     } catch (error) {
         console.error('Bulk import error:', error);
-        alert('Error: ' + error.message);
+        window.showToast('error', 'Error: ' + error.message);
     }
 }
 
@@ -1493,7 +1493,7 @@ function toggleBulkSelectAll(checkbox) {
  */
 async function applyBulkImport() {
     if (!window.bulkImportResults) {
-        alert('Tidak ada data untuk diterapkan');
+        window.showToast('warning', 'Tidak ada data untuk diterapkan');
         return;
     }
 
@@ -1515,7 +1515,7 @@ async function applyBulkImport() {
     });
 
     if (selectedItems.length === 0) {
-        alert('Pilih minimal 1 item untuk diterapkan');
+        window.showToast('warning', 'Pilih minimal 1 item untuk diterapkan');
         return;
     }
 
@@ -1601,7 +1601,7 @@ async function saveBulkRecords(items) {
             text: message
         });
     } else {
-        alert(message);
+        window.showToast(errorCount === 0 ? 'success' : 'warning', message);
     }
 
     $('#bulk-import-modal').modal('hide');

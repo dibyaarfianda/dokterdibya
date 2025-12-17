@@ -676,7 +676,7 @@ export default {
 
         if (!mrId) {
             console.error('[USGGinekologi] MR ID not found in state:', state);
-            alert('Error: MR ID tidak ditemukan');
+            window.showToast('error', 'Error: MR ID tidak ditemukan');
             return { success: false };
         }
 
@@ -716,7 +716,7 @@ export default {
             return response;
         } catch (error) {
             console.error('Error saving USG ginekologi:', error);
-            alert('Gagal menyimpan: ' + error.message);
+            window.showToast('error', 'Gagal menyimpan: ' + error.message);
 
             if (saveBtn) {
                 saveBtn.innerHTML = '<i class="fas fa-save"></i> Simpan';
@@ -775,7 +775,7 @@ export default {
         const maxSize = 10 * 1024 * 1024;
         for (const file of files) {
             if (file.size > maxSize) {
-                alert(`File ${file.name} terlalu besar. Maksimal 10MB.`);
+                window.showToast('error', `File ${file.name} terlalu besar. Maksimal 10MB.`);
                 return;
             }
         }
@@ -841,10 +841,10 @@ export default {
             event.target.value = '';
             label.textContent = originalLabel;
 
-            alert(`${result.files.length} foto berhasil diupload!`);
+            window.showToast('success', `${result.files.length} foto berhasil diupload!`);
         } catch (error) {
             console.error('Upload error:', error);
-            alert('Gagal upload foto. Silakan coba lagi.');
+            window.showToast('error', 'Gagal upload foto. Silakan coba lagi.');
             label.textContent = originalLabel;
         }
     },

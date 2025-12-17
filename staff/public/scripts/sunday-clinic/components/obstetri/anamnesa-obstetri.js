@@ -1039,7 +1039,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const bmi = (weight / (heightM * heightM)).toFixed(1);
             document.querySelector('[name="bmi"]').value = bmi;
         } else {
-            alert('Masukkan tinggi dan berat badan untuk menghitung BMI');
+            window.showToast('warning', 'Masukkan tinggi dan berat badan untuk menghitung BMI');
         }
     };
 
@@ -1075,7 +1075,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const lmpDate = new Date(lmpValue);
             if (isNaN(lmpDate.getTime())) {
-                alert('Tanggal HPHT tidak valid');
+                window.showToast('error', 'Tanggal HPHT tidak valid');
                 return;
             }
 
@@ -1095,7 +1095,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // LMP is in the future
                 gaWeeksInput.value = '0';
                 gaDaysInput.value = '0';
-                alert('Perhatian: HPHT yang dipilih adalah tanggal yang akan datang.');
+                window.showToast('warning', 'Perhatian: HPHT yang dipilih adalah tanggal yang akan datang.');
             } else {
                 const totalDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
                 const weeks = Math.floor(totalDays / 7);
@@ -1126,21 +1126,21 @@ document.addEventListener('DOMContentLoaded', () => {
     // Dynamic list handlers
     window.addPreviousPregnancy = function() {
         // TODO: Add new pregnancy entry
-        alert('Add pregnancy functionality to be implemented');
+        window.showToast('info', 'Fitur akan segera tersedia');
     };
 
     window.removePreviousPregnancy = function(index) {
         // TODO: Remove pregnancy entry
-        alert('Remove pregnancy functionality to be implemented');
+        window.showToast('info', 'Fitur akan segera tersedia');
     };
 
     window.addMedication = function() {
         // TODO: Add new medication entry
-        alert('Add medication functionality to be implemented');
+        window.showToast('info', 'Fitur akan segera tersedia');
     };
 
     window.removeMedication = function(index) {
         // TODO: Remove medication entry
-        alert('Remove medication functionality to be implemented');
+        window.showToast('info', 'Fitur akan segera tersedia');
     };
 });

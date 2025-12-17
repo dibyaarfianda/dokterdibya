@@ -10,9 +10,64 @@ import { getGMT7Timestamp } from './utils/helpers.js';
 import BillingNotifications from './utils/billing-notifications.js';
 import SendToPatient from './components/shared/send-to-patient.js';
 import { applyPendingImportData } from './utils/medical-import.js';
+import patientSidebar from './components/patient-history-sidebar.js';
 
 // Expose stateManager to window for cross-module access (used by medical-import.js)
 window.stateManager = stateManager;
+
+/**
+ * Global Toast Notification System
+ * Used by showSuccess/showError and all components
+ */
+window.showToast = function(type, message) {
+    // Create toast container if not exists
+    let container = document.getElementById('sc-toast-container');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'sc-toast-container';
+        container.style.cssText = 'position: fixed; top: 70px; right: 20px; z-index: 9999; max-width: 350px;';
+        document.body.appendChild(container);
+    }
+
+    // Color mapping
+    const colors = {
+        success: { bg: '#28a745', icon: 'fa-check-circle' },
+        error: { bg: '#dc3545', icon: 'fa-times-circle' },
+        warning: { bg: '#ffc107', icon: 'fa-exclamation-triangle', text: '#000' },
+        info: { bg: '#17a2b8', icon: 'fa-info-circle' }
+    };
+    const color = colors[type] || colors.info;
+
+    // Create toast element
+    const toast = document.createElement('div');
+    toast.className = 'sc-toast-notification';
+    toast.style.cssText = `
+        background: ${color.bg}; color: ${color.text || '#fff'}; padding: 12px 16px;
+        border-radius: 6px; margin-bottom: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        display: flex; align-items: center; gap: 10px; animation: scToastSlideIn 0.3s ease;
+        font-size: 14px;
+    `;
+    toast.innerHTML = `<i class="fas ${color.icon}"></i><span>${message}</span>`;
+
+    // Add animation style if not exists
+    if (!document.getElementById('sc-toast-animation-style')) {
+        const style = document.createElement('style');
+        style.id = 'sc-toast-animation-style';
+        style.textContent = `
+            @keyframes scToastSlideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+            @keyframes scToastFadeOut { from { opacity: 1; } to { opacity: 0; transform: translateY(-10px); } }
+        `;
+        document.head.appendChild(style);
+    }
+
+    container.appendChild(toast);
+
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+        toast.style.animation = 'scToastFadeOut 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+};
 
 class SundayClinicApp {
     constructor() {
@@ -76,6 +131,9 @@ class SundayClinicApp {
 
             // Initialize send to patient modal
             this.initializeSendToPatientModal();
+
+            // Initialize patient history sidebar
+            await patientSidebar.init();
 
             this.initialized = true;
 
@@ -1905,7 +1963,7 @@ window.downloadResumePDF = async () => {
     const mrId = state.currentMrId || state.recordData?.mrId || state.recordData?.mr_id;
 
     if (!mrId) {
-        alert('MR ID tidak ditemukan');
+        window.showToast('error', 'MR ID tidak ditemukan');
         return;
     }
 
@@ -1931,7 +1989,7 @@ window.downloadResumePDF = async () => {
         const genResult = await genResponse.json();
 
         if (!genResult.success) {
-            alert(genResult.message || 'Gagal generate PDF');
+            window.showToast('error', genResult.message || 'Gagal generate PDF');
             return;
         }
 
@@ -1960,7 +2018,7 @@ window.downloadResumePDF = async () => {
 
     } catch (error) {
         console.error('Download PDF error:', error);
-        alert('Gagal generate PDF: ' + error.message);
+        window.showToast('error', 'Gagal generate PDF: ' + error.message);
     } finally {
         if (btn) {
             btn.disabled = false;
@@ -1991,12 +2049,12 @@ window.sendResumeWhatsApp = async () => {
     const phone = document.getElementById('whatsapp-resume-phone')?.value?.trim();
 
     if (!mrId) {
-        alert('MR ID tidak ditemukan');
+        window.showToast('error', 'MR ID tidak ditemukan');
         return;
     }
 
     if (!phone) {
-        alert('Masukkan nomor WhatsApp tujuan');
+        window.showToast('warning', 'Masukkan nomor WhatsApp tujuan');
         return;
     }
 
@@ -2023,17 +2081,17 @@ window.sendResumeWhatsApp = async () => {
             if (result.data.method === 'manual') {
                 // Open wa.me link in new tab
                 window.open(result.data.waLink, '_blank');
-                alert('Link WhatsApp dibuka. Silakan kirim pesan.');
+                window.showToast('info', 'Link WhatsApp dibuka. Silakan kirim pesan.');
             } else {
-                alert('Resume medis berhasil dikirim via WhatsApp!');
+                window.showToast('success', 'Resume medis berhasil dikirim via WhatsApp!');
             }
             $('#whatsappResumeModal').modal('hide');
         } else {
-            alert(result.message || 'Gagal mengirim WhatsApp');
+            window.showToast('error', result.message || 'Gagal mengirim WhatsApp');
         }
     } catch (error) {
         console.error('Send WhatsApp error:', error);
-        alert('Gagal mengirim: ' + error.message);
+        window.showToast('error', 'Gagal mengirim: ' + error.message);
     } finally {
         if (btn) {
             btn.disabled = false;

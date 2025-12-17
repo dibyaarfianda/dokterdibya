@@ -241,7 +241,7 @@ ${interpretation}
         const maxSize = 10 * 1024 * 1024;
         for (const file of files) {
             if (file.size > maxSize) {
-                alert(`File ${file.name} terlalu besar. Maksimal 10MB.`);
+                window.showToast('error', `File ${file.name} terlalu besar. Maksimal 10MB.`);
                 return;
             }
         }
@@ -288,10 +288,10 @@ ${interpretation}
             // Re-render component with updated state
             await this.refresh(stateManager.getState());
 
-            alert('File berhasil diupload!');
+            window.showToast('error', 'File berhasil diupload!');
         } catch (error) {
             console.error('Upload error:', error);
-            alert('Gagal upload file. Silakan coba lagi.');
+            window.showToast('error', 'Gagal upload file. Silakan coba lagi.');
         }
     },
 
@@ -369,7 +369,7 @@ ${interpretation}
             const files = penunjang.files || [];
 
             if (files.length === 0) {
-                alert('Tidak ada file untuk diinterpretasi');
+                window.showToast('warning', 'Tidak ada file untuk diinterpretasi');
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-robot"></i> Interpretasi dengan AI';
                 return;
@@ -408,7 +408,7 @@ ${interpretation}
 
         } catch (error) {
             console.error('Interpretation error:', error);
-            alert('Gagal menginterpretasi hasil lab. Silakan coba lagi.');
+            window.showToast('error', 'Gagal menginterpretasi hasil lab. Silakan coba lagi.');
             btn.disabled = false;
             btn.innerHTML = '<i class="fas fa-robot"></i> Interpretasi dengan AI';
         }

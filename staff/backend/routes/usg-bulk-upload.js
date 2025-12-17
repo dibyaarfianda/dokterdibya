@@ -65,6 +65,7 @@ function extractDateFromFolder(folderName) {
 
 /**
  * Fuzzy match patient names
+ * Handles cases like "ULVIATUL, NY_" matching "Ulviatul Fitriani"
  */
 function fuzzyMatch(inputName, dbName) {
     if (!inputName || !dbName) return false;
@@ -77,7 +78,21 @@ function fuzzyMatch(inputName, dbName) {
     if (input === dbNorm) return true;
 
     // Check if one contains the other (partial match)
-    return dbNorm.includes(input) || input.includes(dbNorm);
+    if (dbNorm.includes(input) || input.includes(dbNorm)) return true;
+
+    // Check first name match (extract first word from both)
+    const inputWords = inputName.toLowerCase().replace(/[^a-z\s]/g, '').trim().split(/\s+/);
+    const dbWords = dbName.toLowerCase().replace(/[^a-z\s]/g, '').trim().split(/\s+/);
+
+    // First name must match
+    if (inputWords[0] && dbWords[0] && inputWords[0].length >= 3) {
+        // First name exact match
+        if (inputWords[0] === dbWords[0]) return true;
+        // First name contains
+        if (dbWords[0].includes(inputWords[0]) || inputWords[0].includes(dbWords[0])) return true;
+    }
+
+    return false;
 }
 
 /**
@@ -92,46 +107,76 @@ const HOSPITAL_LOCATIONS = {
 
 /**
  * Get patients with medical records on a specific date at specified hospital
- * Uses sunday_clinic_records (visit date) as primary source, fallback to appointments
+ * Also includes patients who moved from other hospitals (have appointment at this hospital)
+ * Returns only the LATEST MR for each patient
  */
 async function getPatientsForDate(date, hospital) {
-    // First, try to find patients from sunday_clinic_records (actual visits)
-    const [recordRows] = await db.query(`
-        SELECT DISTINCT
-            scr.patient_id,
+    // Get patients from:
+    // 1. sunday_clinic_records at this hospital on this date
+    // 2. appointments at this hospital on this date (even if their records are from other hospitals)
+    const [rows] = await db.query(`
+        SELECT
+            p.id as patient_id,
             p.full_name,
             scr.mr_id,
             scr.mr_category,
             scr.id as scr_id
-        FROM sunday_clinic_records scr
-        LEFT JOIN patients p ON scr.patient_id = p.id
-        WHERE DATE(scr.created_at) = ?
-        AND scr.visit_location = ?
+        FROM patients p
+        LEFT JOIN sunday_clinic_records scr ON p.id = scr.patient_id
+            AND scr.id = (
+                SELECT id FROM sunday_clinic_records
+                WHERE patient_id = p.id
+                ORDER BY created_at DESC
+                LIMIT 1
+            )
+        WHERE p.id IN (
+            -- Patients with records at this hospital on this date
+            SELECT DISTINCT patient_id FROM sunday_clinic_records
+            WHERE DATE(created_at) = ? AND visit_location = ?
+            UNION
+            -- Patients with appointments at this hospital on this date
+            SELECT DISTINCT patient_id FROM appointments
+            WHERE appointment_date = ? AND hospital_location = ?
+            AND status IN ('confirmed', 'completed')
+        )
         ORDER BY p.full_name
-    `, [date, hospital]);
+    `, [date, hospital, date, hospital]);
 
-    if (recordRows.length > 0) {
-        return recordRows;
-    }
+    return rows;
+}
 
-    // Fallback: try appointments if no records found
-    const [appointmentRows] = await db.query(`
-        SELECT DISTINCT
-            a.patient_id,
+/**
+ * Search all patients by name for fuzzy matching (when patient moved hospitals)
+ * Returns only the LATEST MR for each patient
+ */
+async function searchAllPatientsByName(searchName) {
+    if (!searchName || searchName.length < 3) return [];
+
+    // Normalize search name - extract first word
+    const firstWord = searchName.toLowerCase().replace(/[^a-z\s]/g, '').trim().split(/\s+/)[0];
+    if (!firstWord || firstWord.length < 3) return [];
+
+    const [rows] = await db.query(`
+        SELECT
+            p.id as patient_id,
             p.full_name,
             scr.mr_id,
             scr.mr_category,
             scr.id as scr_id
-        FROM appointments a
-        LEFT JOIN patients p ON a.patient_id = p.id
-        LEFT JOIN sunday_clinic_records scr ON a.patient_id = scr.patient_id
-        WHERE a.appointment_date = ?
-        AND a.hospital_location = ?
-        AND a.status IN ('confirmed', 'completed')
+        FROM patients p
+        LEFT JOIN sunday_clinic_records scr ON p.id = scr.patient_id
+            AND scr.id = (
+                SELECT id FROM sunday_clinic_records
+                WHERE patient_id = p.id
+                ORDER BY created_at DESC
+                LIMIT 1
+            )
+        WHERE LOWER(p.full_name) LIKE ?
         ORDER BY p.full_name
-    `, [date, hospital]);
+        LIMIT 10
+    `, [`${firstWord}%`]);
 
-    return appointmentRows;
+    return rows;
 }
 
 /**
@@ -163,27 +208,33 @@ router.post('/preview', verifyToken, requirePermission('medical_records.edit'), 
             const entryPath = entry.entryName;
             const parts = entryPath.split('/').filter(p => p);
 
-            if (parts.length < 2) continue; // Need at least date_folder/patient_folder/file
-
-            // Detect date from first folder
-            if (!detectedDate) {
-                detectedDate = extractDateFromFolder(parts[0]);
-            }
-
-            // Get patient folder name (could be parts[0] or parts[1] depending on structure)
-            let patientFolder = parts.length >= 2 ? parts[1] : parts[0];
-
-            // If first part is just date, patient folder is second part
-            if (parts[0].match(/^\d{8}$/) && parts.length >= 2) {
-                patientFolder = parts[1];
-            } else if (parts[0].match(/^\d{8}-/)) {
-                // Patient folder is first part (flat structure)
-                patientFolder = parts[0];
-            }
+            // Need at least folder/file structure
+            if (parts.length < 2) continue;
 
             // Only include image files
             const ext = path.extname(entry.entryName).toLowerCase();
             if (!['.jpg', '.jpeg', '.png', '.gif', '.bmp'].includes(ext)) continue;
+
+            // Detect date from first folder if it looks like a date
+            if (!detectedDate) {
+                detectedDate = extractDateFromFolder(parts[0]);
+            }
+
+            // Determine patient folder based on structure
+            let patientFolder;
+
+            // Case 1: DDMMYYYY/PatientName/file.jpg (date folder at root)
+            if (parts[0].match(/^\d{8}$/) && parts.length >= 3) {
+                patientFolder = parts[1];
+            }
+            // Case 2: DDMMYYYY-PatientName/file.jpg (date prefix in folder name)
+            else if (parts[0].match(/^\d{8}-/)) {
+                patientFolder = parts[0];
+            }
+            // Case 3: PatientName/file.jpg (simple structure, no date)
+            else {
+                patientFolder = parts[0];
+            }
 
             if (!folderMap.has(patientFolder)) {
                 folderMap.set(patientFolder, {
@@ -207,7 +258,7 @@ router.post('/preview', verifyToken, requirePermission('medical_records.edit'), 
         if (!targetDate) {
             return res.status(400).json({
                 success: false,
-                message: 'Tidak dapat mendeteksi tanggal dari folder. Pastikan nama folder mengikuti format DDMMYYYY'
+                message: 'Tanggal USG harus dipilih'
             });
         }
 
@@ -243,8 +294,14 @@ router.post('/preview', verifyToken, requirePermission('medical_records.edit'), 
                 continue;
             }
 
-            // Find matching patients
-            const matchedPatients = patients.filter(p => fuzzyMatch(extractedName, p.full_name));
+            // Find matching patients from hospital-specific list first
+            let matchedPatients = patients.filter(p => fuzzyMatch(extractedName, p.full_name));
+
+            // If no match found, search ALL patients by name (for patients who moved hospitals)
+            if (matchedPatients.length === 0) {
+                const globalSearch = await searchAllPatientsByName(extractedName);
+                matchedPatients = globalSearch.filter(p => fuzzyMatch(extractedName, p.full_name));
+            }
 
             if (matchedPatients.length > 0) {
                 folders.push({
@@ -359,7 +416,7 @@ router.post('/execute', verifyToken, requirePermission('medical_records.edit'), 
         for (const mapping of mappingsData) {
             const { folderName, patient_id, mr_id, files } = mapping;
 
-            if (!patient_id || !mr_id) {
+            if (!patient_id) {
                 results.push({
                     folder: folderName,
                     status: 'skipped',
@@ -370,6 +427,55 @@ router.post('/execute', verifyToken, requirePermission('medical_records.edit'), 
             }
 
             try {
+                // Check if patient has kunjungan at THIS hospital
+                const [existingKunjungan] = await db.query(`
+                    SELECT id, mr_id FROM sunday_clinic_records
+                    WHERE patient_id = ? AND visit_location = ?
+                    ORDER BY created_at DESC
+                    LIMIT 1
+                `, [patient_id, hospital]);
+
+                let effectiveMrId;
+                let targetRecordId;
+
+                if (existingKunjungan.length > 0) {
+                    // Use existing kunjungan at this hospital
+                    effectiveMrId = existingKunjungan[0].mr_id;
+                    targetRecordId = existingKunjungan[0].id;
+                    logger.info('[BulkUSG] Using existing kunjungan at hospital', {
+                        patient_id,
+                        mr_id: effectiveMrId,
+                        hospital,
+                        record_id: targetRecordId
+                    });
+                } else {
+                    // Create NEW kunjungan with NEW DRD (DRD selalu berbeda untuk setiap kunjungan baru)
+                    const [maxSeq] = await db.query(`
+                        SELECT MAX(mr_sequence) as max_seq FROM sunday_clinic_records
+                    `);
+                    const nextSeq = (maxSeq[0].max_seq || 0) + 1;
+                    effectiveMrId = `DRD${String(nextSeq).padStart(4, '0')}`;
+
+                    const [patientInfo] = await db.query(`SELECT full_name FROM patients WHERE id = ?`, [patient_id]);
+                    const patientName = patientInfo[0]?.full_name || 'Unknown';
+                    const folderPath = `${effectiveMrId}_${patientName.replace(/[^a-zA-Z0-9]/g, '_')}`;
+
+                    const [insertResult] = await db.query(`
+                        INSERT INTO sunday_clinic_records
+                        (mr_id, mr_sequence, patient_id, visit_location, folder_path, mr_category, status, created_at, updated_at)
+                        VALUES (?, ?, ?, ?, ?, 'obstetri', 'draft', NOW(), NOW())
+                    `, [effectiveMrId, nextSeq, patient_id, hospital, folderPath]);
+
+                    targetRecordId = insertResult.insertId;
+
+                    logger.info('[BulkUSG] Created new kunjungan with NEW DRD', {
+                        patient_id,
+                        mr_id: effectiveMrId,
+                        hospital,
+                        record_id: targetRecordId
+                    });
+                }
+
                 const uploadedPhotos = [];
 
                 // Upload each file in the folder
@@ -426,7 +532,7 @@ router.post('/execute', verifyToken, requirePermission('medical_records.edit'), 
                     WHERE patient_id = ? AND mr_id = ? AND record_type = 'usg'
                     ORDER BY created_at DESC
                     LIMIT 1
-                `, [patient_id, mr_id]);
+                `, [patient_id, effectiveMrId]);
 
                 if (existingRecords.length > 0) {
                     // Append to existing record
@@ -449,7 +555,7 @@ router.post('/execute', verifyToken, requirePermission('medical_records.edit'), 
 
                     logger.info('[BulkUSG] Updated existing USG record', {
                         patient_id,
-                        mr_id,
+                        mr_id: effectiveMrId,
                         record_id: existingRecords[0].id,
                         photosAdded: uploadedPhotos.length
                     });
@@ -464,11 +570,11 @@ router.post('/execute', verifyToken, requirePermission('medical_records.edit'), 
                     await db.query(`
                         INSERT INTO medical_records (patient_id, mr_id, record_type, record_data, created_at, updated_at)
                         VALUES (?, ?, 'usg', ?, NOW(), NOW())
-                    `, [patient_id, mr_id, JSON.stringify(recordData)]);
+                    `, [patient_id, effectiveMrId, JSON.stringify(recordData)]);
 
                     logger.info('[BulkUSG] Created new USG record', {
                         patient_id,
-                        mr_id,
+                        mr_id: effectiveMrId,
                         photosAdded: uploadedPhotos.length
                     });
                 }
@@ -478,7 +584,7 @@ router.post('/execute', verifyToken, requirePermission('medical_records.edit'), 
                     status: 'success',
                     photosUploaded: uploadedPhotos.length,
                     patient_id,
-                    mr_id
+                    mr_id: effectiveMrId
                 });
                 successCount++;
 

@@ -276,6 +276,12 @@
                         </button>
                     </div>
                 </li>
+                <li class="nav-item">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-toggle-patient-sidebar" title="Riwayat Pasien & Antrian">
+                        <i class="fas fa-history"></i>
+                        <span class="d-none d-lg-inline ml-1">Riwayat</span>
+                    </button>
+                </li>
             </ul>
         </nav>
 
@@ -375,6 +381,139 @@
                     </div>
                 </div>
             </section>
+        </div>
+    </div>
+    <!-- End of AdminLTE wrapper -->
+
+    <!-- Patient History Sidebar (outside wrapper for proper fixed positioning) -->
+    <aside class="patient-history-sidebar" id="patient-history-sidebar">
+            <!-- Sidebar Header -->
+            <div class="patient-sidebar-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-history mr-2"></i>Riwayat Pasien
+                </h5>
+                <button type="button" class="btn btn-sm btn-tool text-white" id="btn-close-patient-sidebar">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="patient-sidebar-body">
+                <!-- Today's Queue Section -->
+                <div class="patient-sidebar-section">
+                    <div class="section-header" data-toggle="collapse" data-target="#queue-content" aria-expanded="true">
+                        <i class="fas fa-list-ol mr-2"></i>
+                        <span>Antrian Hari Ini</span>
+                        <span class="badge badge-primary ml-auto" id="queue-count">0</span>
+                        <i class="fas fa-chevron-down toggle-icon ml-2"></i>
+                    </div>
+                    <div class="collapse show" id="queue-content">
+                        <div class="queue-list" id="today-queue-list">
+                            <div class="text-center text-muted p-3">
+                                <i class="fas fa-spinner fa-spin"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Patient Search Section -->
+                <div class="patient-sidebar-section">
+                    <div class="section-header" data-toggle="collapse" data-target="#search-content" aria-expanded="false">
+                        <i class="fas fa-search mr-2"></i>
+                        <span>Cari Pasien</span>
+                        <i class="fas fa-chevron-down toggle-icon ml-auto"></i>
+                    </div>
+                    <div class="collapse" id="search-content">
+                        <div class="search-box p-2">
+                            <div class="input-group input-group-sm">
+                                <input type="text" class="form-control" id="sidebar-patient-search"
+                                       placeholder="Nama, MR, atau telepon...">
+                                <div class="input-group-append">
+                                    <button class="btn btn-outline-secondary" type="button" id="btn-sidebar-search">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="search-results" id="sidebar-search-results"></div>
+                    </div>
+                </div>
+
+                <!-- Current Patient Section -->
+                <div class="patient-sidebar-section">
+                    <div class="section-header bg-primary text-white">
+                        <i class="fas fa-user mr-2"></i>
+                        <span>Pasien Aktif</span>
+                    </div>
+                    <div class="current-patient-info p-2" id="current-patient-info">
+                        <div class="text-muted text-center small py-2">
+                            <i class="fas fa-user-slash mr-1"></i>Belum ada pasien aktif
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Visit History Section -->
+                <div class="patient-sidebar-section flex-grow-1 d-flex flex-column">
+                    <div class="section-header" data-toggle="collapse" data-target="#history-content" aria-expanded="true">
+                        <i class="fas fa-file-medical mr-2"></i>
+                        <span>Riwayat Kunjungan</span>
+                        <span class="badge badge-secondary ml-auto" id="visit-count">0</span>
+                        <i class="fas fa-chevron-down toggle-icon ml-2"></i>
+                    </div>
+                    <div class="collapse show flex-grow-1" id="history-content">
+                        <div class="visit-history-list" id="visit-history-list">
+                            <div class="text-center text-muted p-3">
+                                <i class="fas fa-folder-open fa-2x mb-2"></i>
+                                <p class="mb-0 small">Pilih pasien untuk melihat riwayat</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sidebar Footer - Copy Data Button -->
+            <div class="patient-sidebar-footer">
+                <button type="button" class="btn btn-warning btn-block btn-sm" id="btn-copy-history-data" disabled>
+                    <i class="fas fa-copy mr-2"></i>Salin Data Stabil
+                </button>
+                <small class="text-muted d-block text-center mt-1">
+                    Alergi, golongan darah, riwayat penyakit
+                </small>
+            </div>
+        </aside>
+
+    <!-- Copy Data Confirmation Modal -->
+    <div class="modal fade" id="copyDataModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title">
+                        <i class="fas fa-copy mr-2"></i>Salin Data dari Kunjungan Sebelumnya
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Tutup">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-info mb-3">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        Pilih data yang akan disalin ke form saat ini. Data ini adalah informasi yang biasanya tidak berubah dalam waktu singkat.
+                    </div>
+                    <div id="copy-data-preview">
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                            <p class="mb-0">Memuat data...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                        <i class="fas fa-times mr-1"></i>Batal
+                    </button>
+                    <button type="button" class="btn btn-warning" id="btn-confirm-copy" disabled>
+                        <i class="fas fa-copy mr-1"></i>Salin Data Terpilih
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 

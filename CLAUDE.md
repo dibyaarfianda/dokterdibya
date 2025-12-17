@@ -434,3 +434,64 @@ function formatDateLocal(date) {
 - Fetching DATE columns from MySQL
 - Displaying dates on calendar/UI
 - Comparing dates between frontend and backend
+
+### 15. Medical Record (DRD) System
+
+**CRITICAL: DRD = Kunjungan (Visit), NOT Patient ID**
+
+```
+DRD0001 = Kunjungan 1 (Pasien A di RS X)
+DRD0002 = Kunjungan 2 (Pasien B di RS Y)
+DRD0003 = Kunjungan 3 (Pasien A di RS Y) ← PASIEN SAMA, DRD BARU!
+```
+
+**Rules:**
+- Setiap kunjungan baru = DRD baru (sequence terus bertambah)
+- 1 pasien bisa punya BANYAK DRD (1 per kunjungan)
+- DRD TIDAK sama untuk semua kunjungan pasien yang sama
+- `mr_id` di `sunday_clinic_records` TIDAK lagi UNIQUE (sudah di-drop)
+
+**Database:**
+- `sunday_clinic_records.mr_id` - bisa duplikat (1 pasien banyak DRD)
+- `sunday_clinic_records.visit_location` - lokasi RS kunjungan tersebut
+- `sunday_clinic_records.mr_sequence` - sequence global untuk generate DRD berikutnya
+
+**Bulk Upload USG Logic:**
+1. Cek apakah pasien sudah punya kunjungan di RS target
+2. Jika SUDAH → gunakan DRD yang ada di RS tersebut
+3. Jika BELUM → buat DRD BARU (next sequence)
+
+### 16. Anamnesa Field Naming Convention
+
+**Anamnesa form menggunakan snake_case untuk field names:**
+
+```javascript
+// CORRECT field names in anamnesa record_data:
+{
+    "gravida": "2",
+    "para": "0",
+    "abortus": "1",
+    "anak_hidup": "0",           // snake_case, NOT anakHidup
+    "alergi_obat": "-",          // snake_case, NOT alergiObat
+    "alergi_makanan": "-",       // snake_case
+    "alergi_lingkungan": "-",    // snake_case
+    "usia_menarche": "-",        // snake_case
+    "lama_siklus": "-",          // snake_case
+    "siklus_teratur": "",        // snake_case
+    "metode_kb_terakhir": "",    // snake_case
+    "riwayat_keluarga": "-",     // snake_case
+    "detail_riwayat_penyakit": "-"
+}
+```
+
+**JANGAN gunakan camelCase untuk field anamnesa baru!**
+
+### 17. Hospital Locations
+
+**Valid visit_location values:**
+- `klinik_private` - Klinik Privat (has billing)
+- `rsia_melinda` - RSIA Melinda
+- `rsud_gambiran` - RSUD Gambiran
+- `rs_bhayangkara` - RS Bhayangkara
+
+**Only `klinik_private` has billing system.** RS lain tidak ada tagihan.
