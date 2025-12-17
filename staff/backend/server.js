@@ -387,6 +387,10 @@ app.use('/api/fertility-calendar', fertilityCalendarRoutes);
 const appRoutes = require('./routes/app');
 app.use('/api/app', appRoutes);
 
+// USG Image Reader (AI Vision)
+const usgReaderRoutes = require('./routes/usg-reader');
+app.use('/api/usg-reader', usgReaderRoutes);
+
 // API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {
     customSiteTitle: 'Dibya Klinik API Documentation',

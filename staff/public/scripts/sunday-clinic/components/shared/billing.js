@@ -612,7 +612,7 @@ export default {
             <script>
                 window.printInvoice = function() {
                     // In production, this would call the print invoice API
-                    alert('Fungsi cetak invoice akan diimplementasikan pada integrasi backend');
+                    window.showToast('error', 'Fungsi cetak invoice akan diimplementasikan pada integrasi backend');
                 };
             </script>
         `;
@@ -978,7 +978,7 @@ export default {
 
                         const mrId = window.routeMrSlug;
                         if (!mrId) {
-                            alert('MR ID tidak ditemukan');
+                            window.showToast('error', 'MR ID tidak ditemukan');
                             return;
                         }
 
@@ -1076,7 +1076,7 @@ export default {
                             const isDokter = userRole === 'dokter' || userRole === 'superadmin';
                             
                             if (!isDokter) {
-                                alert('Hanya dokter yang dapat mengkonfirmasi tagihan');
+                                window.showToast('error', 'Hanya dokter yang dapat mengkonfirmasi tagihan');
                                 return;
                             }
 
@@ -1090,7 +1090,7 @@ export default {
 
                                 const mrId = window.routeMrSlug;
                                 if (!mrId) {
-                                    alert('MR ID tidak ditemukan');
+                                    window.showToast('error', 'MR ID tidak ditemukan');
                                     return;
                                 }
 
@@ -1125,7 +1125,7 @@ export default {
                                 if (window.showError) {
                                     window.showError(error.message || 'Gagal mengkonfirmasi tagihan');
                                 } else {
-                                    alert(error.message || 'Gagal mengkonfirmasi tagihan');
+                                    window.showToast('error', error.message || 'Gagal mengkonfirmasi tagihan');
                                 }
                             }
                         });
@@ -1281,7 +1281,7 @@ export default {
 
                                 const mrId = window.routeMrSlug;
                                 if (!mrId) {
-                                    alert('MR ID tidak ditemukan');
+                                    window.showToast('error', 'MR ID tidak ditemukan');
                                     return;
                                 }
 
@@ -1321,7 +1321,7 @@ export default {
                                 if (window.showError) {
                                     window.showError(error.message || 'Gagal menandai pembayaran');
                                 } else {
-                                    alert(error.message || 'Gagal menandai pembayaran');
+                                    window.showToast('error', error.message || 'Gagal menandai pembayaran');
                                 }
                             }
                         });

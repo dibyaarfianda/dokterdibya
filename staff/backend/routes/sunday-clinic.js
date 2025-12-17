@@ -465,6 +465,79 @@ function buildAggregateSummary(record, patient, appointment, intake) {
     };
 }
 
+// ==================== TODAY'S QUEUE ====================
+
+/**
+ * GET /api/sunday-clinic/queue/today
+ * Get today's confirmed appointments queue for patient navigation
+ */
+router.get('/queue/today', verifyToken, async (req, res, next) => {
+    try {
+        // Get today's date in GMT+7
+        const now = new Date();
+        const gmt7Offset = 7 * 60 * 60 * 1000;
+        const todayGMT7 = new Date(now.getTime() + gmt7Offset);
+        const todayStr = todayGMT7.toISOString().split('T')[0];
+
+        const [appointments] = await db.query(
+            `SELECT
+                sa.id,
+                sa.patient_id,
+                sa.patient_name,
+                sa.patient_phone,
+                sa.appointment_date,
+                sa.session,
+                sa.slot_number,
+                sa.chief_complaint,
+                sa.consultation_category,
+                sa.status,
+                scr.mr_id,
+                scr.mr_category,
+                scr.status as record_status
+             FROM sunday_appointments sa
+             LEFT JOIN sunday_clinic_records scr
+                ON scr.appointment_id = sa.id
+             WHERE sa.appointment_date = ?
+               AND sa.status IN ('confirmed', 'completed')
+             ORDER BY sa.session ASC, sa.slot_number ASC`,
+            [todayStr]
+        );
+
+        // Enrich with session labels and slot times
+        const enriched = appointments.map(apt => ({
+            id: apt.id,
+            patient_id: apt.patient_id,
+            patient_name: apt.patient_name,
+            patient_phone: apt.patient_phone,
+            appointment_date: apt.appointment_date,
+            session: apt.session,
+            session_label: getSessionLabel(apt.session),
+            slot_number: apt.slot_number,
+            slot_time: getSlotTime(apt.session, apt.slot_number),
+            chief_complaint: apt.chief_complaint,
+            consultation_category: apt.consultation_category,
+            status: apt.status,
+            mr_id: apt.mr_id || null,
+            mr_category: apt.mr_category || null,
+            record_status: apt.record_status || null,
+            has_record: !!apt.mr_id
+        }));
+
+        res.json({
+            success: true,
+            date: todayStr,
+            count: enriched.length,
+            data: enriched
+        });
+
+    } catch (error) {
+        logger.error('Error fetching today queue:', error);
+        next(error);
+    }
+});
+
+// ==================== DIRECTORY ====================
+
 router.get('/directory', verifyToken, async (req, res, next) => {
     const search = (req.query.search || '').trim();
     const conditions = [];

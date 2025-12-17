@@ -45,7 +45,7 @@ async function openTindakanModal() {
         if (typeof showError === 'function') {
             showError('Gagal memuat data tindakan: ' + error.message);
         } else {
-            alert('Gagal memuat data tindakan: ' + error.message);
+            window.showToast('error', 'Gagal memuat data tindakan: ' + error.message);
         }
     }
 }
@@ -126,7 +126,7 @@ async function addSelectedTindakan() {
         if (typeof showError === 'function') {
             showError('Silakan pilih minimal satu tindakan');
         } else {
-            alert('Silakan pilih minimal satu tindakan');
+            window.showToast('warning', 'Silakan pilih minimal satu tindakan');
         }
         return;
     }
@@ -224,7 +224,7 @@ async function addSelectedTindakan() {
         if (typeof showError === 'function') {
             showError('Gagal menambahkan tindakan: ' + error.message);
         } else {
-            alert('Gagal menambahkan tindakan: ' + error.message);
+            window.showToast('error', 'Gagal menambahkan tindakan: ' + error.message);
         }
     }
 }
@@ -313,7 +313,7 @@ async function addTindakan(tindakanName, tindakanCode, tindakanId) {
         if (typeof showError === 'function') {
             showError('Gagal menambahkan tindakan: ' + error.message);
         } else {
-            alert('Gagal menambahkan tindakan: ' + error.message);
+            window.showToast('error', 'Gagal menambahkan tindakan: ' + error.message);
         }
     }
 }
@@ -363,7 +363,7 @@ async function resetTindakan() {
         if (typeof showError === 'function') {
             showError('Error: ' + error.message);
         } else {
-            alert('Error: ' + error.message);
+            window.showToast('error', 'Error: ' + error.message);
         }
     }
 }
@@ -396,7 +396,7 @@ async function openTerapiModal() {
         if (typeof showError === 'function') {
             showError('Gagal memuat data obat: ' + error.message);
         } else {
-            alert('Gagal memuat data obat: ' + error.message);
+            window.showToast('error', 'Gagal memuat data obat: ' + error.message);
         }
     }
 }
@@ -450,7 +450,7 @@ function proceedToCaraPakai() {
         if (typeof showError === 'function') {
             showError('Silakan pilih minimal satu obat');
         } else {
-            alert('Silakan pilih minimal satu obat');
+            window.showToast('warning', 'Silakan pilih minimal satu obat');
         }
         return;
     }
@@ -633,7 +633,7 @@ async function saveStructuredTerapi(prescriptions) {
         if (typeof showToastNotification === 'function') {
             showToastNotification('Terapi', 'Gagal menyimpan terapi: ' + error.message, 'warning');
         } else {
-            alert('Gagal menyimpan terapi: ' + error.message);
+            window.showToast('error', 'Gagal menyimpan terapi: ' + error.message);
         }
         return false;
     }
@@ -687,7 +687,7 @@ async function resetTerapi() {
         if (typeof showError === 'function') {
             showError('Error: ' + error.message);
         } else {
-            alert('Error: ' + error.message);
+            window.showToast('error', 'Error: ' + error.message);
         }
     }
 }

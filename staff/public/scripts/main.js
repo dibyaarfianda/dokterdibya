@@ -2680,17 +2680,20 @@ async function initializeApp(user) {
  */
 async function applyMenuVisibility(user) {
     // Menu key to DOM element ID mapping
+    // Each menu_key from role_visibility table maps to one or more DOM elements
     const menuMapping = {
         'dashboard': null, // Dashboard always visible
-        'kelola_pasien': 'nav-kelola-pasien', // Includes Pasien Baru
-        'klinik_privat': 'nav-klinik-privat',
-        'rsia_melinda': 'nav-rsia-melinda',
-        'rsud_gambiran': 'nav-rsud-gambiran',
-        'rs_bhayangkara': 'nav-rs-bhayangkara',
-        'obat_alkes': 'management-nav-kelola-obat',
-        'keuangan': 'finance-analysis-nav',
-        'kelola_roles': 'management-nav-kelola-roles',
-        'penjualan-obat': 'nav-penjualan-obat'
+        'kelola_pasien': ['nav-kelola-pasien'],
+        'pasien_baru': ['nav-kelola-pasien'], // Same as kelola_pasien
+        'klinik_privat': ['nav-section-klinik-privat', 'nav-klinik-private', 'nav-klinik-private-pasien'],
+        'rsia_melinda': ['nav-section-rsia-melinda', 'nav-rsia-melinda', 'nav-rsia-melinda-pasien'],
+        'rsud_gambiran': ['nav-section-rsud-gambiran', 'nav-rsud-gambiran', 'nav-rsud-gambiran-pasien'],
+        'rs_bhayangkara': ['nav-section-rs-bhayangkara', 'nav-rs-bhayangkara', 'nav-rs-bhayangkara-pasien'],
+        'obat_alkes': ['management-nav-kelola-obat', 'management-nav-kelola-tindakan', 'management-nav-kelola-supplier'],
+        'keuangan': ['nav-invoice-history'],
+        'kelola_roles': ['management-nav-kelola-roles'],
+        'penjualan-obat': ['nav-penjualan-obat', 'nav-estimasi-biaya'],
+        'ucapan_kelahiran': ['nav-birth-congrats']
     };
 
     // Superadmin/dokter sees everything - show all hidden menus
@@ -2700,6 +2703,9 @@ async function applyMenuVisibility(user) {
         document.querySelectorAll('.dokter-only').forEach(el => el.classList.remove('d-none'));
         // Show superadmin-exclusive elements
         document.querySelectorAll('.superadmin-exclusive').forEach(el => el.classList.remove('d-none'));
+        // Show invoice history for dokter
+        const invoiceNav = document.getElementById('nav-invoice-history');
+        if (invoiceNav) invoiceNav.classList.remove('d-none');
         return; // All menus visible
     }
 
@@ -2723,25 +2729,29 @@ async function applyMenuVisibility(user) {
         const visibility = result.data;
 
         // Apply visibility to each menu
-        for (const [menuKey, elementId] of Object.entries(menuMapping)) {
-            if (!elementId) continue; // Skip dashboard
+        for (const [menuKey, elementIds] of Object.entries(menuMapping)) {
+            if (!elementIds) continue; // Skip dashboard
 
-            const element = document.getElementById(elementId);
-            if (element) {
-                if (visibility[menuKey] === false) {
-                    element.style.display = 'none';
-                } else {
-                    element.style.display = ''; // Show
+            const isVisible = visibility[menuKey] !== false;
+
+            for (const elementId of elementIds) {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    if (!isVisible) {
+                        element.style.display = 'none';
+                    } else {
+                        element.style.display = '';
+                        // Also remove d-none class if present
+                        element.classList.remove('d-none');
+                    }
                 }
             }
         }
 
-        // Hide management header if no management menus are visible
-        const managementMenus = ['obat_alkes', 'keuangan', 'kelola_pasien', 'kelola_roles'];
-        const anyManagementVisible = managementMenus.some(key => visibility[key] === true);
-        const managementHeader = document.getElementById('management-header');
-        if (managementHeader && !anyManagementVisible) {
-            managementHeader.style.display = 'none';
+        // Hide klinik privat section header if all sub-items are hidden
+        const klinikPrivatSection = document.getElementById('nav-section-klinik-privat');
+        if (klinikPrivatSection && visibility['klinik_privat'] === false) {
+            klinikPrivatSection.style.display = 'none';
         }
 
     } catch (error) {

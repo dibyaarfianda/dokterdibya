@@ -1328,6 +1328,7 @@ router.post('/api/medical-import/bulk', verifyToken, async (req, res) => {
 /**
  * POST /api/medical-import/save
  * Save imported medical record to database
+ * Uses visit_date and visit_time from exported data (Chrome extension)
  */
 router.post('/api/medical-import/save', verifyToken, async (req, res) => {
     try {
@@ -1336,6 +1337,7 @@ router.post('/api/medical-import/save', verifyToken, async (req, res) => {
             mr_id,
             category,
             visit_date,
+            visit_time,
             visit_location,
             record_data
         } = req.body;
@@ -1356,8 +1358,27 @@ router.post('/api/medical-import/save', verifyToken, async (req, res) => {
             });
         }
 
-        const now = new Date();
-        const visitDateTime = visit_date ? new Date(visit_date) : now;
+        // Build visitDateTime from exported data (date + time from Chrome extension)
+        let visitDateTime;
+        if (visit_date) {
+            // Combine visit_date and visit_time if both provided
+            // visit_date format: "2025-12-04", visit_time format: "21:20"
+            if (visit_time) {
+                visitDateTime = new Date(`${visit_date}T${visit_time}:00`);
+            } else {
+                // Default to noon if no time provided (avoids timezone shift issues)
+                visitDateTime = new Date(`${visit_date}T12:00:00`);
+            }
+        } else {
+            // Fallback to current time only if no visit_date from export
+            visitDateTime = new Date();
+        }
+
+        logger.info('[Medical Import] Using visit datetime from export', {
+            visit_date,
+            visit_time,
+            visitDateTime: visitDateTime.toISOString()
+        });
 
         // Check if MR record exists
         const [existingMR] = await db.query(

@@ -88,6 +88,9 @@ export default {
             <div class="sc-section">
                 <div class="sc-section-header">
                     <h3>USG Obstetri</h3>
+                    <button type="button" class="btn btn-outline-info btn-sm ml-auto" id="btn-read-usg-photo" onclick="window.showUSGReaderModal()">
+                        <i class="fas fa-magic mr-1"></i>Baca dari Foto
+                    </button>
                 </div>
                 <div class="sc-card">
                     <!-- Trimester Selector -->
@@ -986,13 +989,71 @@ export default {
                     </a>
                     <div class="card-body p-2">
                         <small class="text-truncate d-block">${photo.name}</small>
-                        <button type="button" class="btn btn-xs btn-danger mt-1 usg-remove-photo" data-index="${index}">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                        <div class="btn-group btn-group-sm mt-1">
+                            <button type="button" class="btn btn-info btn-xs usg-read-photo" data-url="${photo.url}" title="Baca data dari foto ini">
+                                <i class="fas fa-magic"></i>
+                            </button>
+                            <button type="button" class="btn btn-danger btn-xs usg-remove-photo" data-index="${index}" title="Hapus foto">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         `).join('');
+    },
+
+    /**
+     * Show toast notification (non-blocking)
+     */
+    showToast(message, type = 'info') {
+        // Create toast container if not exists
+        let container = document.getElementById('usg-toast-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'usg-toast-container';
+            container.style.cssText = 'position: fixed; top: 70px; right: 20px; z-index: 9999; max-width: 350px;';
+            document.body.appendChild(container);
+        }
+
+        // Color mapping
+        const colors = {
+            success: { bg: '#28a745', icon: 'fa-check-circle' },
+            error: { bg: '#dc3545', icon: 'fa-times-circle' },
+            warning: { bg: '#ffc107', icon: 'fa-exclamation-triangle', text: '#000' },
+            info: { bg: '#17a2b8', icon: 'fa-info-circle' }
+        };
+        const color = colors[type] || colors.info;
+
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.className = 'toast-notification';
+        toast.style.cssText = `
+            background: ${color.bg}; color: ${color.text || '#fff'}; padding: 12px 16px;
+            border-radius: 6px; margin-bottom: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex; align-items: center; gap: 10px; animation: slideIn 0.3s ease;
+            font-size: 14px;
+        `;
+        toast.innerHTML = `<i class="fas ${color.icon}"></i><span>${message}</span>`;
+
+        // Add animation style if not exists
+        if (!document.getElementById('toast-animation-style')) {
+            const style = document.createElement('style');
+            style.id = 'toast-animation-style';
+            style.textContent = `
+                @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+                @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; transform: translateY(-10px); } }
+            `;
+            document.head.appendChild(style);
+        }
+
+        container.appendChild(toast);
+
+        // Auto-remove after 3 seconds
+        setTimeout(() => {
+            toast.style.animation = 'fadeOut 0.3s ease';
+            setTimeout(() => toast.remove(), 300);
+        }, 3000);
     },
 
     async handlePhotoUpload(event) {
@@ -1002,7 +1063,7 @@ export default {
         const maxSize = 10 * 1024 * 1024;
         for (const file of files) {
             if (file.size > maxSize) {
-                alert(`File ${file.name} terlalu besar. Maksimal 10MB.`);
+                this.showToast(`File ${file.name} terlalu besar. Maksimal 10MB.`, 'error');
                 return;
             }
         }
@@ -1044,10 +1105,10 @@ export default {
 
             event.target.value = '';
             label.textContent = originalLabel;
-            alert(`${result.files.length} foto berhasil diupload!`);
+            this.showToast(`${result.files.length} foto berhasil diupload!`, 'success');
         } catch (error) {
             console.error('Upload error:', error);
-            alert('Gagal upload foto.');
+            this.showToast('Gagal upload foto.', 'error');
             label.textContent = originalLabel;
         }
     },
@@ -1079,6 +1140,57 @@ export default {
             btn.addEventListener('click', (e) => {
                 const index = parseInt(e.currentTarget.dataset.index);
                 self.removePhoto(index);
+            });
+        });
+
+        // Add handler for "Baca Data" buttons
+        document.querySelectorAll('.usg-read-photo').forEach(btn => {
+            btn.addEventListener('click', async (e) => {
+                // Store button reference BEFORE async operations (e.currentTarget becomes null after await)
+                const button = e.currentTarget;
+                const url = button.dataset.url;
+                if (!url) return;
+
+                // Get current trimester
+                const activeTab = document.querySelector('.trimester-selector .btn.active input');
+                const trimester = activeTab?.value || 'second';
+
+                // Show loading on button
+                const originalHtml = button.innerHTML;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                button.disabled = true;
+
+                try {
+                    const token = window.getToken?.() || localStorage.getItem('vps_auth_token');
+                    const response = await fetch('/api/usg-reader/analyze-url', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${token}`
+                        },
+                        body: JSON.stringify({
+                            imageUrl: url,
+                            trimester: trimester,
+                            type: 'obstetri'
+                        })
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // Store and apply result
+                        window._usgReaderResult = result.data;
+                        window.applyUSGData();
+                    } else {
+                        self.showToast('Gagal membaca foto: ' + result.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('USG Reader error:', error);
+                    self.showToast('Error: ' + error.message, 'error');
+                } finally {
+                    button.innerHTML = originalHtml;
+                    button.disabled = false;
+                }
             });
         });
     },
@@ -1126,6 +1238,263 @@ export default {
     afterRender() {
         console.log('[USG Obstetri] afterRender called');
         const self = this; // Preserve reference
+
+        // Setup global toast function for window functions to use
+        if (!window.showUSGToast) {
+            window.showUSGToast = (message, type) => self.showToast(message, type);
+        }
+
+        // Setup USG Reader Modal function
+        if (!window.showUSGReaderModal) {
+            window.showUSGReaderModal = function() {
+                // Get current trimester from active tab
+                const activeTab = document.querySelector('.trimester-selector .btn.active input');
+                const currentTrimester = activeTab?.value || 'second';
+
+                // Create modal if not exists
+                let modal = document.getElementById('usgReaderModal');
+                if (!modal) {
+                    modal = document.createElement('div');
+                    modal.id = 'usgReaderModal';
+                    modal.className = 'modal fade';
+                    modal.innerHTML = `
+                        <div class="modal-dialog modal-lg">
+                            <div class="modal-content">
+                                <div class="modal-header bg-info text-white">
+                                    <h5 class="modal-title"><i class="fas fa-magic mr-2"></i>Baca Data dari Foto USG</h5>
+                                    <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle mr-2"></i>
+                                        Upload foto USG dan AI akan membaca data pengukuran secara otomatis.
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">Trimester</label>
+                                        <select class="form-control" id="usg-reader-trimester">
+                                            <option value="first">Trimester 1 (1-13 minggu)</option>
+                                            <option value="second">Trimester 2 (14-27 minggu)</option>
+                                            <option value="screening">Skrining Kongenital (18-23 minggu)</option>
+                                            <option value="third">Trimester 3 (28+ minggu)</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label class="font-weight-bold">Upload Foto USG</label>
+                                        <div class="custom-file">
+                                            <input type="file" class="custom-file-input" id="usg-reader-file" accept="image/*">
+                                            <label class="custom-file-label" for="usg-reader-file">Pilih foto...</label>
+                                        </div>
+                                    </div>
+
+                                    <div id="usg-reader-preview" class="text-center mb-3" style="display:none;">
+                                        <img id="usg-reader-preview-img" src="" class="img-fluid rounded" style="max-height: 300px;">
+                                    </div>
+
+                                    <div id="usg-reader-result" style="display:none;">
+                                        <hr>
+                                        <h6 class="font-weight-bold text-success"><i class="fas fa-check-circle mr-2"></i>Data Ditemukan:</h6>
+                                        <div id="usg-reader-data" class="bg-light p-3 rounded"></div>
+                                    </div>
+
+                                    <div id="usg-reader-loading" style="display:none;" class="text-center py-4">
+                                        <div class="spinner-border text-info" role="status"></div>
+                                        <p class="mt-2 text-muted">AI sedang membaca foto...</p>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                                    <button type="button" class="btn btn-info" id="btn-analyze-usg" onclick="window.analyzeUSGPhoto()" disabled>
+                                        <i class="fas fa-search mr-1"></i>Analisis Foto
+                                    </button>
+                                    <button type="button" class="btn btn-success" id="btn-apply-usg" onclick="window.applyUSGData()" style="display:none;">
+                                        <i class="fas fa-check mr-1"></i>Terapkan ke Form
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                    document.body.appendChild(modal);
+
+                    // Setup file input change handler
+                    document.getElementById('usg-reader-file').addEventListener('change', function(e) {
+                        const file = e.target.files[0];
+                        if (file) {
+                            e.target.nextElementSibling.textContent = file.name;
+                            document.getElementById('btn-analyze-usg').disabled = false;
+
+                            // Show preview
+                            const reader = new FileReader();
+                            reader.onload = function(ev) {
+                                document.getElementById('usg-reader-preview-img').src = ev.target.result;
+                                document.getElementById('usg-reader-preview').style.display = 'block';
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    });
+                }
+
+                // Set current trimester in modal
+                document.getElementById('usg-reader-trimester').value = currentTrimester;
+
+                // Reset state
+                document.getElementById('usg-reader-result').style.display = 'none';
+                document.getElementById('usg-reader-loading').style.display = 'none';
+                document.getElementById('btn-apply-usg').style.display = 'none';
+
+                $(modal).modal('show');
+            };
+        }
+
+        // Analyze USG photo function
+        if (!window.analyzeUSGPhoto) {
+            window.analyzeUSGPhoto = async function() {
+                const fileInput = document.getElementById('usg-reader-file');
+                const trimester = document.getElementById('usg-reader-trimester').value;
+
+                if (!fileInput.files[0]) {
+                    window.showUSGToast('Pilih foto terlebih dahulu', 'warning');
+                    return;
+                }
+
+                // Show loading
+                document.getElementById('usg-reader-loading').style.display = 'block';
+                document.getElementById('usg-reader-result').style.display = 'none';
+                document.getElementById('btn-analyze-usg').disabled = true;
+
+                try {
+                    const formData = new FormData();
+                    formData.append('image', fileInput.files[0]);
+                    formData.append('trimester', trimester);
+                    formData.append('type', 'obstetri');
+
+                    const token = window.getToken?.() || localStorage.getItem('vps_auth_token');
+                    const response = await fetch('/api/usg-reader/analyze', {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${token}` },
+                        body: formData
+                    });
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        // Store result for apply
+                        window._usgReaderResult = result.data;
+
+                        // Display result
+                        const dataDiv = document.getElementById('usg-reader-data');
+                        dataDiv.innerHTML = formatUSGResult(result.data);
+
+                        document.getElementById('usg-reader-result').style.display = 'block';
+                        document.getElementById('btn-apply-usg').style.display = 'inline-block';
+                    } else {
+                        window.showUSGToast('Gagal menganalisis foto: ' + result.message, 'error');
+                    }
+                } catch (error) {
+                    console.error('USG Reader error:', error);
+                    window.showUSGToast('Error: ' + error.message, 'error');
+                } finally {
+                    document.getElementById('usg-reader-loading').style.display = 'none';
+                    document.getElementById('btn-analyze-usg').disabled = false;
+                }
+            };
+        }
+
+        // Apply USG data to form
+        if (!window.applyUSGData) {
+            window.applyUSGData = function() {
+                const data = window._usgReaderResult;
+                if (!data || !data.formData) return;
+
+                const formData = data.formData;
+                const trimester = data.trimester;
+
+                // Switch to correct trimester tab
+                const trimesterBtn = document.querySelector(`.trimester-selector .btn input[value="${trimester}"]`);
+                if (trimesterBtn) {
+                    trimesterBtn.closest('.btn').click();
+                }
+
+                // Wait for tab switch, then fill form
+                setTimeout(() => {
+                    for (const [key, value] of Object.entries(formData)) {
+                        if (!value || key === 'type' || key === 'trimester') continue;
+
+                        // Find the input field
+                        const input = document.querySelector(`[name="${key}"]`);
+                        if (input) {
+                            if (input.type === 'radio') {
+                                const radio = document.querySelector(`[name="${key}"][value="${value}"]`);
+                                if (radio) radio.checked = true;
+                            } else if (input.type === 'checkbox') {
+                                input.checked = !!value;
+                            } else {
+                                input.value = value;
+                            }
+                        }
+                    }
+
+                    // Close modal
+                    $('#usgReaderModal').modal('hide');
+
+                    // Show save button
+                    const saveBtn = document.getElementById('btn-save-usg');
+                    if (saveBtn) saveBtn.style.display = 'inline-block';
+
+                    window.showUSGToast('Data USG berhasil diterapkan. Silakan review dan simpan.', 'success');
+                }, 300);
+            };
+        }
+
+        // Format USG result for display
+        function formatUSGResult(data) {
+            if (!data || !data.formData) return '<p class="text-muted">Tidak ada data</p>';
+
+            const formData = data.formData;
+            const labels = {
+                t1_gs: 'Gestational Sac (GS)',
+                t1_crl: 'Crown Rump Length (CRL)',
+                t1_ga_weeks: 'Usia Kehamilan',
+                t1_heart_rate: 'Detak Jantung',
+                t1_edd: 'HPL/EDD',
+                t1_nt: 'Nuchal Translucency (NT)',
+                t2_bpd: 'BPD',
+                t2_ac: 'AC',
+                t2_fl: 'FL',
+                t2_heart_rate: 'Detak Jantung',
+                t2_efw: 'Taksiran Berat (EFW)',
+                t2_afi: 'AFI',
+                t2_edd: 'HPL/EDD',
+                t2_presentation: 'Presentasi',
+                t2_placenta: 'Plasenta',
+                t2_gender: 'Jenis Kelamin',
+                t3_bpd: 'BPD',
+                t3_ac: 'AC',
+                t3_fl: 'FL',
+                t3_heart_rate: 'Detak Jantung',
+                t3_efw: 'Taksiran Berat (EFW)',
+                t3_afi: 'AFI',
+                t3_edd: 'HPL/EDD',
+                t3_presentation: 'Presentasi',
+                t3_placenta: 'Plasenta',
+                t3_gender: 'Jenis Kelamin'
+            };
+
+            let html = '<table class="table table-sm table-bordered mb-0">';
+            for (const [key, value] of Object.entries(formData)) {
+                if (!value || key === 'type' || key === 'trimester' || key.endsWith('_date')) continue;
+                const label = labels[key] || key;
+                html += `<tr><td class="font-weight-bold">${label}</td><td>${value}</td></tr>`;
+            }
+            html += '</table>';
+
+            if (data.confidence) {
+                html += `<p class="text-muted mt-2 mb-0"><small>Confidence: ${data.confidence.percentage}%</small></p>`;
+            }
+
+            return html;
+        }
 
         const photoInput = document.getElementById('usg-photo-upload');
         if (photoInput) {

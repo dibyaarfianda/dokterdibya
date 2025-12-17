@@ -326,6 +326,146 @@ router.get('/api/medical-records/:patientId/latest', verifyToken, requirePermiss
     }
 });
 
+// ==================== PATIENT HISTORY SIDEBAR ENDPOINTS ====================
+
+/**
+ * GET /api/medical-records/copyable-data/:mrId
+ * Get stable/copyable data from a previous visit's anamnesa
+ * Used by sidebar to copy data to current form
+ */
+router.get('/api/medical-records/copyable-data/:mrId', verifyToken, async (req, res) => {
+    try {
+        const { mrId } = req.params;
+        const normalizedMrId = mrId.trim().toUpperCase();
+
+        // Get anamnesa record for this MR
+        const [records] = await db.query(
+            `SELECT record_data FROM medical_records
+             WHERE mr_id = ? AND record_type = 'anamnesa'
+             ORDER BY created_at DESC LIMIT 1`,
+            [normalizedMrId]
+        );
+
+        if (records.length === 0) {
+            return res.json({
+                success: true,
+                mrId: normalizedMrId,
+                data: {}
+            });
+        }
+
+        const recordData = typeof records[0].record_data === 'string'
+            ? JSON.parse(records[0].record_data)
+            : records[0].record_data;
+
+        // Extract only stable/copyable fields (data that typically doesn't change within 1 month)
+        // Include all variations: snake_case, camelCase, and English names
+        const copyableFields = [
+            // English names
+            'blood_type', 'rhesus_factor',
+            'drug_allergies', 'food_allergies', 'other_allergies',
+            'past_medical_history', 'family_medical_history',
+            'gravida_count', 'para_count', 'abortus_count', 'living_children_count',
+            'previous_contraception', 'pregnancy_history',
+            'menarche_age', 'cycle_length', 'cycle_regular',
+            // camelCase Indonesian
+            'golonganDarah', 'rhesus', 'alergiObat', 'alergiMakanan', 'alergiLain',
+            'riwayatPenyakitDahulu', 'riwayatPenyakitKeluarga',
+            'gravida', 'para', 'abortus', 'anakHidup',
+            'riwayatKB', 'riwayatKehamilan',
+            'menarche', 'siklusHaid', 'siklusTeratur',
+            // snake_case Indonesian (actual field names from anamnesa form)
+            'golongan_darah', 'anak_hidup',
+            'alergi_obat', 'alergi_makanan', 'alergi_lingkungan',
+            'riwayat_penyakit_dahulu', 'riwayat_keluarga', 'detail_riwayat_penyakit',
+            'usia_menarche', 'lama_siklus', 'siklus_teratur',
+            'metode_kb_terakhir', 'riwayat_kehamilan_saat_ini'
+        ];
+
+        const copyableData = {};
+        copyableFields.forEach(field => {
+            if (recordData[field] !== undefined && recordData[field] !== null && recordData[field] !== '') {
+                copyableData[field] = recordData[field];
+            }
+        });
+
+        // Also check nested anamnesa structure
+        if (recordData.anamnesa) {
+            copyableFields.forEach(field => {
+                if (recordData.anamnesa[field] !== undefined && recordData.anamnesa[field] !== null && recordData.anamnesa[field] !== '') {
+                    copyableData[field] = recordData.anamnesa[field];
+                }
+            });
+        }
+
+        logger.info(`[CopyableData] Fetched copyable data for MR ${normalizedMrId}, fields: ${Object.keys(copyableData).length}`);
+
+        res.json({
+            success: true,
+            mrId: normalizedMrId,
+            data: copyableData
+        });
+
+    } catch (error) {
+        logger.error('Error fetching copyable data:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch copyable data',
+            error: error.message
+        });
+    }
+});
+
+/**
+ * GET /api/medical-records/resume/:mrId
+ * Get resume medis text for preview in sidebar
+ */
+router.get('/api/medical-records/resume/:mrId', verifyToken, async (req, res) => {
+    try {
+        const { mrId } = req.params;
+        const normalizedMrId = mrId.trim().toUpperCase();
+
+        const [records] = await db.query(
+            `SELECT record_data FROM medical_records
+             WHERE mr_id = ? AND record_type = 'resume_medis'
+             ORDER BY created_at DESC LIMIT 1`,
+            [normalizedMrId]
+        );
+
+        if (records.length === 0) {
+            return res.json({
+                success: true,
+                mrId: normalizedMrId,
+                data: null
+            });
+        }
+
+        const recordData = typeof records[0].record_data === 'string'
+            ? JSON.parse(records[0].record_data)
+            : records[0].record_data;
+
+        res.json({
+            success: true,
+            mrId: normalizedMrId,
+            data: {
+                resume: recordData.resume || recordData.resumeMedis || null,
+                diagnosis: recordData.diagnosis || null,
+                planning: recordData.planning || null
+            }
+        });
+
+    } catch (error) {
+        logger.error('Error fetching resume:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch resume',
+            error: error.message
+        });
+    }
+});
+
+// ==================== CRUD OPERATIONS ====================
+
 // Update medical record
 router.put('/api/medical-records/:id', verifyToken, requirePermission('medical_records.edit'), async (req, res) => {
     try {

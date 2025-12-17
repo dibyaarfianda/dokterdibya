@@ -9,18 +9,20 @@ const db = require('../db');
 const { verifyToken, requireSuperadmin } = require('../middleware/auth');
 const { ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
 
-// Menu definitions
+// Menu definitions - must match menu_key in role_visibility table
 const MENUS = [
     { key: 'dashboard', label: 'Dashboard', icon: 'fa-tachometer-alt' },
+    { key: 'kelola_pasien', label: 'Kelola Pasien', icon: 'fa-users-cog' },
     { key: 'pasien_baru', label: 'Pasien Baru', icon: 'fa-user-plus' },
+    { key: 'penjualan-obat', label: 'Penjualan Obat', icon: 'fa-shopping-cart' },
     { key: 'klinik_privat', label: 'Klinik Privat', icon: 'fa-clinic-medical' },
     { key: 'rsia_melinda', label: 'RSIA Melinda', icon: 'fa-hospital' },
     { key: 'rsud_gambiran', label: 'RSUD Gambiran', icon: 'fa-hospital-alt' },
     { key: 'rs_bhayangkara', label: 'RS Bhayangkara', icon: 'fa-hospital-user' },
     { key: 'obat_alkes', label: 'Obat/Alkes', icon: 'fa-pills' },
     { key: 'keuangan', label: 'Keuangan', icon: 'fa-money-bill-wave' },
-    { key: 'kelola_pasien', label: 'Kelola Pasien', icon: 'fa-users-cog' },
-    { key: 'kelola_roles', label: 'Kelola Roles', icon: 'fa-user-shield' }
+    { key: 'kelola_roles', label: 'Kelola Roles', icon: 'fa-user-shield' },
+    { key: 'ucapan_kelahiran', label: 'Ucapan Kelahiran', icon: 'fa-baby' }
 ];
 
 /**

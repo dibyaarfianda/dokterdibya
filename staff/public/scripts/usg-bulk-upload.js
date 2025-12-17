@@ -70,22 +70,33 @@ function renderPage() {
                 </div>
             </div>
             <div class="card-body">
-                <!-- Hospital Selector -->
-                <div class="form-group mb-4">
-                    <label for="hospital-select"><strong><i class="fas fa-hospital mr-2"></i>Lokasi Rumah Sakit</strong></label>
-                    <select class="form-control" id="hospital-select" style="max-width: 400px;">
-                        <option value="">-- Pilih Lokasi --</option>
-                        ${hospitalOptions}
-                    </select>
+                <!-- Hospital & Date Selector -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="form-group mb-0">
+                            <label for="hospital-select"><strong><i class="fas fa-hospital mr-2"></i>Lokasi Rumah Sakit</strong></label>
+                            <select class="form-control" id="hospital-select">
+                                <option value="">-- Pilih Lokasi --</option>
+                                ${hospitalOptions}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group mb-0">
+                            <label for="upload-date"><strong><i class="fas fa-calendar-alt mr-2"></i>Tanggal USG</strong></label>
+                            <input type="date" class="form-control" id="upload-date" value="${new Date().toISOString().split('T')[0]}">
+                            <small class="text-muted">Tanggal pemeriksaan pasien</small>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Instructions -->
                 <div class="alert alert-info">
                     <h5><i class="fas fa-info-circle mr-2"></i>Petunjuk:</h5>
                     <ol class="mb-0">
-                        <li>Pilih lokasi rumah sakit terlebih dahulu</li>
-                        <li>Compress folder tanggal (contoh: <code>07122025</code>) menjadi file ZIP</li>
-                        <li>Upload file ZIP tersebut</li>
+                        <li>Pilih lokasi rumah sakit dan tanggal USG</li>
+                        <li>Buat file ZIP berisi folder dengan nama pasien</li>
+                        <li>Struktur: <code>NamaPasien1/file.jpg</code>, <code>NamaPasien2/file.jpg</code>, dst</li>
                         <li>Sistem akan otomatis mencocokkan nama folder dengan pasien</li>
                         <li>Review dan konfirmasi sebelum upload</li>
                     </ol>
@@ -366,9 +377,19 @@ async function previewUpload() {
 
     try {
         const token = await getIdToken();
+        const uploadDate = document.getElementById('upload-date').value;
+
+        if (!uploadDate) {
+            window.showError('Pilih tanggal USG terlebih dahulu');
+            loadingEl.classList.add('d-none');
+            previewBtnEl.classList.remove('d-none');
+            return;
+        }
+
         const formData = new FormData();
         formData.append('zipFile', currentZipFile);
         formData.append('hospital', selectedHospital);
+        formData.append('date', uploadDate);
 
         const response = await fetch(`${API_URL}/usg-bulk-upload/preview`, {
             method: 'POST',

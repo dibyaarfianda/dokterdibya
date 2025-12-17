@@ -409,7 +409,7 @@ export default {
 
         if (!mrId) {
             console.error('[AnamnesaGynSpecial] MR ID not found in state:', state);
-            alert('Error: MR ID tidak ditemukan');
+            window.showToast('error', 'Error: MR ID tidak ditemukan');
             return { success: false };
         }
 
@@ -449,7 +449,7 @@ export default {
             return response;
         } catch (error) {
             console.error('Error saving anamnesa:', error);
-            alert('Gagal menyimpan: ' + error.message);
+            window.showToast('error', 'Gagal menyimpan: ' + error.message);
 
             if (saveBtn) {
                 saveBtn.innerHTML = '<i class="fas fa-save"></i> Simpan';

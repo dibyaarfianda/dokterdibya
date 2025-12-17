@@ -30,3 +30,4 @@ node_modules/
 # OS files
 .DS_Store
 Thumbs.db
+android-native/gradle/wrapper/gradle-8.2-bin.zip
