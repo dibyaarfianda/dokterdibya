@@ -1382,45 +1382,26 @@ router.post('/api/medical-import/save', verifyToken, async (req, res) => {
             visitDateTime: visitDateTime.toISOString()
         });
 
-        // IMPORTANT: Check if patient already has a record at this hospital FIRST
-        // This prevents creating duplicate DRDs for the same patient at same location
-        const finalLocation = visit_location || 'klinik_private';
-        const [existingAtLocation] = await db.query(
-            `SELECT id, mr_id FROM sunday_clinic_records
-             WHERE patient_id = ? AND visit_location = ?
-             ORDER BY created_at DESC LIMIT 1`,
-            [patient_id, finalLocation]
+        // Check if MR record exists (by mr_id)
+        const [existingMR] = await db.query(
+            'SELECT id FROM sunday_clinic_records WHERE mr_id = ?',
+            [mr_id]
         );
 
-        let finalMrId = mr_id;
-
-        if (existingAtLocation.length > 0) {
-            // Patient already has a record at this hospital - REUSE IT
-            finalMrId = existingAtLocation[0].mr_id;
-            logger.info('[Medical Import] Reusing existing MR for patient at location', {
-                patient_id,
-                visit_location: finalLocation,
-                existingMrId: finalMrId,
-                passedMrId: mr_id
-            });
-
-            // Update last activity time
-            await db.query(
-                `UPDATE sunday_clinic_records SET last_activity_at = ? WHERE mr_id = ?`,
-                [visitDateTime, finalMrId]
-            );
-        } else {
-            // No existing record at this location - create new one
-            logger.info('[Medical Import] Creating new MR for patient at location', {
-                patient_id,
-                visit_location: finalLocation,
-                mr_id: finalMrId
-            });
-
+        if (existingMR.length === 0) {
+            // Create new sunday_clinic_record - ALWAYS new DRD for each visit
             await db.query(
                 `INSERT INTO sunday_clinic_records (mr_id, patient_id, visit_location, created_at, last_activity_at)
                  VALUES (?, ?, ?, ?, ?)`,
-                [finalMrId, patient_id, finalLocation, visitDateTime, visitDateTime]
+                [mr_id, patient_id, visit_location || 'klinik_private', visitDateTime, visitDateTime]
+            );
+        } else if (visit_location) {
+            // Update existing record's location and activity time
+            await db.query(
+                `UPDATE sunday_clinic_records
+                 SET visit_location = ?, last_activity_at = ?
+                 WHERE mr_id = ?`,
+                [visit_location, visitDateTime, mr_id]
             );
         }
 
@@ -1432,18 +1413,17 @@ router.post('/api/medical-import/save', verifyToken, async (req, res) => {
         await db.query(
             `INSERT INTO medical_records (mr_id, record_type, record_data, created_at, created_by)
              VALUES (?, ?, ?, ?, ?)`,
-            [finalMrId, recordType, JSON.stringify(record_data), visitDateTime, req.user.id]
+            [mr_id, recordType, JSON.stringify(record_data), visitDateTime, req.user.id]
         );
 
         res.json({
             success: true,
             message: 'Medical record saved successfully',
             data: {
-                mr_id: finalMrId,
+                mr_id: mr_id,
                 patient_id: patient_id,
-                visit_location: finalLocation,
-                visit_date: visitDateTime.toISOString(),
-                reused_existing: existingAtLocation.length > 0
+                visit_location: visit_location || 'klinik_private',
+                visit_date: visitDateTime.toISOString()
             }
         });
 

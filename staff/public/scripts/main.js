@@ -2973,7 +2973,8 @@ async function checkExtensionImportData() {
 
         if (!mrResult.success) throw new Error(mrResult.message || 'Gagal membuat MR');
 
-        const mrId = mrResult.data.mrId || mrResult.data.mr_id;
+        // mrId can be at top level or nested in data
+        const mrId = mrResult.mrId || mrResult.mr_id || mrResult.data?.mrId || mrResult.data?.mr_id;
         sessionStorage.setItem('simrs_import_data', JSON.stringify(data));
         sessionStorage.setItem('simrs_import_mr_id', mrId);
 
