@@ -2612,6 +2612,43 @@ router.post('/start-walk-in', verifyToken, async (req, res, next) => {
         // Get user ID from token
         const userId = req.user?.id || null;
 
+        // Check if patient already has an existing record at this hospital
+        const [existingRecords] = await db.query(`
+            SELECT id, mr_id, folder_path, status, mr_category
+            FROM sunday_clinic_records
+            WHERE patient_id = ? AND visit_location = ?
+            ORDER BY created_at DESC
+            LIMIT 1
+        `, [patient_id, finalLocation]);
+
+        // If existing record found, return it instead of creating new one
+        if (existingRecords.length > 0) {
+            const existing = existingRecords[0];
+            logger.info('Using existing record for patient at hospital', {
+                patientId: patient_id,
+                patientName,
+                location: finalLocation,
+                mrId: existing.mr_id,
+                recordId: existing.id
+            });
+
+            return res.json({
+                success: true,
+                message: 'Menggunakan rekam medis yang sudah ada',
+                mrId: existing.mr_id,
+                recordId: existing.id,
+                patient: {
+                    id: patient_id,
+                    name: patientName,
+                    whatsapp: patient.whatsapp,
+                    phone: patient.phone,
+                    age: patient.age,
+                    birth_date: patient.birth_date
+                },
+                isExisting: true
+            });
+        }
+
         // Import service
         const { generateCategoryBasedMrId } = require('../services/sundayClinicService');
 
@@ -2621,7 +2658,7 @@ router.post('/start-walk-in', verifyToken, async (req, res, next) => {
         try {
             await conn.beginTransaction();
 
-            // Generate MR ID
+            // Generate MR ID (only if no existing record)
             const { mrId, sequence } = await generateCategoryBasedMrId(finalCategory, conn);
             const folderPath = `sunday-clinic/${mrId.toLowerCase()}`;
 

@@ -703,6 +703,28 @@ async function applyPendingImportData() {
             const parsed = importData.raw_parsed || importData;
             const template = importData.template || {};
 
+            // Extract riwayat_kehamilan_saat_ini from subjective section
+            // For Gambiran: capture raw subjective text or concatenate all subjective fields
+            let riwayatKehamilanSaatIni = parsed.subjective?.riwayat_kehamilan_saat_ini
+                || parsed.subjective?.raw
+                || parsed.subjective?.subjective_text
+                || parsed.subjective?.full_text;
+
+            // If still empty, concatenate all subjective fields for Gambiran
+            if (!riwayatKehamilanSaatIni && parsed.subjective) {
+                const subjectiveParts = [];
+                if (parsed.subjective.keluhan_utama) subjectiveParts.push('Keluhan: ' + parsed.subjective.keluhan_utama);
+                if (parsed.subjective.rps) subjectiveParts.push('RPS: ' + parsed.subjective.rps);
+                if (parsed.subjective.rpd) subjectiveParts.push('RPD: ' + parsed.subjective.rpd);
+                if (parsed.subjective.anamnesis) subjectiveParts.push(parsed.subjective.anamnesis);
+                if (parsed.subjective.text) subjectiveParts.push(parsed.subjective.text);
+                if (subjectiveParts.length > 0) {
+                    riwayatKehamilanSaatIni = subjectiveParts.join('\n\n');
+                }
+            }
+
+            console.log('[Import] riwayatKehamilanSaatIni extracted:', riwayatKehamilanSaatIni?.substring(0, 200));
+
             // Map SIMRS data to our template format
             const mappedTemplate = {
                 identitas: parsed.identity || template.identitas || {},
@@ -711,6 +733,7 @@ async function applyPendingImportData() {
                     riwayat_penyakit_sekarang: parsed.subjective?.rps,
                     riwayat_penyakit_dahulu: parsed.subjective?.rpd,
                     riwayat_penyakit_keluarga: parsed.subjective?.rpk,
+                    riwayat_kehamilan_saat_ini: riwayatKehamilanSaatIni,
                     ...template.anamnesa
                 },
                 pemeriksaan_fisik: {
@@ -720,6 +743,8 @@ async function applyPendingImportData() {
                     suhu: parsed.objective?.suhu,
                     spo2: parsed.objective?.spo2,
                     respirasi: parsed.objective?.rr,
+                    tinggi_badan: parsed.objective?.tinggi_badan,
+                    berat_badan: parsed.objective?.berat_badan,
                     ...template.pemeriksaan_fisik
                 },
                 diagnosis: {
@@ -947,15 +972,20 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
     await new Promise(r => setTimeout(r, 1500)); // Increased to 1.5s
     console.log('[Import] DOM wait complete, checking elements...');
 
-    // Debug: Check if anamnesa elements exist
+    // Debug: Check if anamnesa and physical exam elements exist
     const keluhanEl = document.querySelector('#anamnesa-keluhan-utama');
     const hphtEl = document.querySelector('#anamnesa-hpht');
     const gravidaEl = document.querySelector('#anamnesa-gravida');
+    const tinggiBadanEl = document.querySelector('#pe-tinggi-badan');
+    const beratBadanEl = document.querySelector('#pe-berat-badan');
     console.log('[Import] Element check:', {
         keluhanUtama: !!keluhanEl,
         hpht: !!hphtEl,
-        gravida: !!gravidaEl
+        gravida: !!gravidaEl,
+        tinggiBadan: !!tinggiBadanEl,
+        beratBadan: !!beratBadanEl
     });
+    console.log('[Import] pemeriksaan_fisik data:', template.pemeriksaan_fisik);
 
     console.log('[Import] Applying SIMRS import data...');
 
@@ -1027,6 +1057,33 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
 
     // Also fill DOM elements directly for immediate feedback
     fillFormFieldsDirect(template, {});
+
+    // Retry fill for fields after additional delay (they might load later)
+    setTimeout(() => {
+        console.log('[Import] Retrying fill for TB/BB/Riwayat Kehamilan after delay...');
+
+        // TB/BB
+        const tbEl = document.querySelector('#pe-tinggi-badan');
+        const bbEl = document.querySelector('#pe-berat-badan');
+        if (tbEl && template.pemeriksaan_fisik?.tinggi_badan) {
+            tbEl.value = template.pemeriksaan_fisik.tinggi_badan;
+            tbEl.dispatchEvent(new Event('change', { bubbles: true }));
+            console.log('[Import] Filled TB:', template.pemeriksaan_fisik.tinggi_badan);
+        }
+        if (bbEl && template.pemeriksaan_fisik?.berat_badan) {
+            bbEl.value = template.pemeriksaan_fisik.berat_badan;
+            bbEl.dispatchEvent(new Event('change', { bubbles: true }));
+            console.log('[Import] Filled BB:', template.pemeriksaan_fisik.berat_badan);
+        }
+
+        // Riwayat Kehamilan Saat Ini
+        const riwayatEl = document.querySelector('#anamnesa-riwayat-kehamilan');
+        if (riwayatEl && template.anamnesa?.riwayat_kehamilan_saat_ini) {
+            riwayatEl.value = template.anamnesa.riwayat_kehamilan_saat_ini;
+            riwayatEl.dispatchEvent(new Event('change', { bubbles: true }));
+            console.log('[Import] Filled Riwayat Kehamilan:', template.anamnesa.riwayat_kehamilan_saat_ini.substring(0, 100));
+        }
+    }, 3000); // Retry after 3 more seconds
 
     // Persist to database via API
     if (mrId && sectionsToSave.length > 0) {
