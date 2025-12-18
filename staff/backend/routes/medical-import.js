@@ -41,7 +41,8 @@ Return this exact JSON structure:
     "rpd": "Past medical history or null",
     "rpk": "Family history or null",
     "hpht": "Last menstrual period DD/MM/YYYY or null",
-    "hpl": "Expected delivery date DD/MM/YYYY or null"
+    "hpl": "Expected delivery date DD/MM/YYYY or null",
+    "riwayat_kehamilan_saat_ini": "Full text after 'Subjective' section - capture ALL pregnancy-related text including current pregnancy history, symptoms, complaints. For Gambiran data, capture everything under Subjective as-is or null"
   },
   "objective": {
     "keadaan_umum": "General condition (Baik/Sedang/Lemah) or null",
@@ -93,7 +94,8 @@ CRITICAL RULES:
 4. For obstetric diagnosis like "G1 P0-0 uk 9 3/7mgg": extract gravida=1, para="0-0", usia_kehamilan="9 3/7mgg"
 5. Numbers should be numbers (not strings), except para which can be string like "1-0-0-1"
 6. Return null for fields not found - DO NOT GUESS
-7. Medications must include dosage: "Folamil genio 1x1 (1 botol)" not just "Folamil"`;
+7. Medications must include dosage: "Folamil genio 1x1 (1 botol)" not just "Folamil"
+8. RIWAYAT KEHAMILAN: For "riwayat_kehamilan_saat_ini", capture the ENTIRE text content under "Subjective" or "Subyektif" section as a single string. Include ALL paragraphs, symptoms, history text. This is especially important for Gambiran/RSUD data.`;
 
 /**
  * Parse medical record text using GPT-4o
@@ -1380,26 +1382,45 @@ router.post('/api/medical-import/save', verifyToken, async (req, res) => {
             visitDateTime: visitDateTime.toISOString()
         });
 
-        // Check if MR record exists
-        const [existingMR] = await db.query(
-            'SELECT id FROM sunday_clinic_records WHERE mr_id = ?',
-            [mr_id]
+        // IMPORTANT: Check if patient already has a record at this hospital FIRST
+        // This prevents creating duplicate DRDs for the same patient at same location
+        const finalLocation = visit_location || 'klinik_private';
+        const [existingAtLocation] = await db.query(
+            `SELECT id, mr_id FROM sunday_clinic_records
+             WHERE patient_id = ? AND visit_location = ?
+             ORDER BY created_at DESC LIMIT 1`,
+            [patient_id, finalLocation]
         );
 
-        if (existingMR.length === 0) {
-            // Create new sunday_clinic_record
+        let finalMrId = mr_id;
+
+        if (existingAtLocation.length > 0) {
+            // Patient already has a record at this hospital - REUSE IT
+            finalMrId = existingAtLocation[0].mr_id;
+            logger.info('[Medical Import] Reusing existing MR for patient at location', {
+                patient_id,
+                visit_location: finalLocation,
+                existingMrId: finalMrId,
+                passedMrId: mr_id
+            });
+
+            // Update last activity time
+            await db.query(
+                `UPDATE sunday_clinic_records SET last_activity_at = ? WHERE mr_id = ?`,
+                [visitDateTime, finalMrId]
+            );
+        } else {
+            // No existing record at this location - create new one
+            logger.info('[Medical Import] Creating new MR for patient at location', {
+                patient_id,
+                visit_location: finalLocation,
+                mr_id: finalMrId
+            });
+
             await db.query(
                 `INSERT INTO sunday_clinic_records (mr_id, patient_id, visit_location, created_at, last_activity_at)
                  VALUES (?, ?, ?, ?, ?)`,
-                [mr_id, patient_id, visit_location || 'klinik_private', visitDateTime, visitDateTime]
-            );
-        } else if (visit_location) {
-            // Update existing record's location and activity time
-            await db.query(
-                `UPDATE sunday_clinic_records
-                 SET visit_location = ?, last_activity_at = ?
-                 WHERE mr_id = ?`,
-                [visit_location, visitDateTime, mr_id]
+                [finalMrId, patient_id, finalLocation, visitDateTime, visitDateTime]
             );
         }
 
@@ -1411,17 +1432,18 @@ router.post('/api/medical-import/save', verifyToken, async (req, res) => {
         await db.query(
             `INSERT INTO medical_records (mr_id, record_type, record_data, created_at, created_by)
              VALUES (?, ?, ?, ?, ?)`,
-            [mr_id, recordType, JSON.stringify(record_data), visitDateTime, req.user.id]
+            [finalMrId, recordType, JSON.stringify(record_data), visitDateTime, req.user.id]
         );
 
         res.json({
             success: true,
             message: 'Medical record saved successfully',
             data: {
-                mr_id: mr_id,
+                mr_id: finalMrId,
                 patient_id: patient_id,
-                visit_location: visit_location || 'klinik_private',
-                visit_date: visitDateTime.toISOString()
+                visit_location: finalLocation,
+                visit_date: visitDateTime.toISOString(),
+                reused_existing: existingAtLocation.length > 0
             }
         });
 

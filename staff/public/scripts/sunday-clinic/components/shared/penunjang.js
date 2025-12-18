@@ -143,7 +143,7 @@ export default {
             <div class="interpretation-result border rounded p-3 bg-light">
                 <div class="d-flex align-items-center mb-3">
                     <img
-                        src="/images/logo.png"
+                        src="/staff/public/images/db-black.svg"
                         alt="Dokter Dibya"
                         style="height: 40px;"
                         class="mr-3"

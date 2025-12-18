@@ -475,7 +475,7 @@ class SundayClinicApp {
         // Location branding configuration
         const locationConfig = {
             'klinik_private': {
-                logo: '/images/dibyablacklogo.svg',
+                logo: '/staff/public/images/db-black.svg',
                 name: 'Klinik Privat dr. Dibya',
                 shortName: 'Privat',
                 tooltip: 'Keluar dari Klinik Privat',

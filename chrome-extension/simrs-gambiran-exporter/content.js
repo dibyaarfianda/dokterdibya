@@ -57,6 +57,9 @@
         if (subjectiveMatch) {
             const subText = subjectiveMatch[1];
 
+            // Capture FULL subjective text for riwayat_kehamilan_saat_ini
+            cpptData.subjective.riwayat_kehamilan_saat_ini = subText.trim();
+
             const keluhanMatch = subText.match(/Keluhan\s*Utama\s*:?\s*([^\n]+)/i);
             if (keluhanMatch) cpptData.subjective.keluhan_utama = keluhanMatch[1].trim();
 
@@ -74,6 +77,14 @@
 
             const hphtMatch = subText.match(/HPHT\s*:?\s*(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/i);
             if (hphtMatch) cpptData.subjective.hpht = hphtMatch[1];
+
+            // Extract TB (Tinggi Badan) and BB (Berat Badan) from SUBJECTIVE
+            // Store in objective since they belong to pemeriksaan fisik
+            const tbSubMatch = subText.match(/(?:TB|Tinggi\s*Badan)\s*:?\s*(\d+)\s*(?:cm)?/i);
+            if (tbSubMatch) cpptData.objective.tinggi_badan = parseInt(tbSubMatch[1]);
+
+            const bbSubMatch = subText.match(/(?:BB|Berat\s*Badan)\s*:?\s*(\d+(?:[.,]\d+)?)\s*(?:kg)?/i);
+            if (bbSubMatch) cpptData.objective.berat_badan = parseFloat(bbSubMatch[1].replace(',', '.'));
         }
 
         // Parse OBJECTIVE section
@@ -271,10 +282,40 @@
             });
 
             if (result.success) {
+                // Get local CPPT extraction and merge with API result
+                const localCPPT = extractCPPT();
+                const mergedData = result.data;
+
+                // Merge local extraction into API result (local takes priority for specific fields)
+                if (localCPPT.subjective) {
+                    mergedData.raw_parsed = mergedData.raw_parsed || {};
+                    mergedData.raw_parsed.subjective = mergedData.raw_parsed.subjective || {};
+
+                    // Merge riwayat_kehamilan_saat_ini from local extraction
+                    if (localCPPT.subjective.riwayat_kehamilan_saat_ini) {
+                        mergedData.raw_parsed.subjective.riwayat_kehamilan_saat_ini = localCPPT.subjective.riwayat_kehamilan_saat_ini;
+                    }
+                }
+                if (localCPPT.objective) {
+                    mergedData.raw_parsed = mergedData.raw_parsed || {};
+                    mergedData.raw_parsed.objective = mergedData.raw_parsed.objective || {};
+
+                    // Merge TB/BB from local extraction (from SUBJECTIVE section)
+                    if (localCPPT.objective.tinggi_badan) {
+                        mergedData.raw_parsed.objective.tinggi_badan = localCPPT.objective.tinggi_badan;
+                    }
+                    if (localCPPT.objective.berat_badan) {
+                        mergedData.raw_parsed.objective.berat_badan = localCPPT.objective.berat_badan;
+                    }
+                }
+
+                console.log('[RSUD Gambiran] Local CPPT:', localCPPT);
+                console.log('[RSUD Gambiran] Merged data:', mergedData);
+
                 // Store parsed data for the staff panel
                 try {
                     await chrome.storage.local.set({
-                        'dibya_import_data': result.data,
+                        'dibya_import_data': mergedData,
                         'dibya_import_timestamp': Date.now(),
                         'dibya_import_source': 'rsud_gambiran'
                     });
@@ -286,7 +327,7 @@
 
                 // Open staff panel in new tab
                 setTimeout(() => {
-                    window.open(CONFIG.STAFF_URL + '?import=' + encodeURIComponent(JSON.stringify(result.data)), '_blank');
+                    window.open(CONFIG.STAFF_URL + '?import=' + encodeURIComponent(JSON.stringify(mergedData)), '_blank');
                 }, 1000);
             } else {
                 throw new Error(result.message || 'Gagal parsing data');

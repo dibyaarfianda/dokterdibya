@@ -498,6 +498,17 @@
             padding-top: .2rem !important; /* default ~.25rem */
             padding-bottom: .2rem !important;
         }
+        /* Fix DataTables length select - single dropdown arrow */
+        .dataTables_length select {
+            -webkit-appearance: none !important;
+            -moz-appearance: none !important;
+            appearance: none !important;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 8L1 3h10z'/%3E%3C/svg%3E") !important;
+            background-repeat: no-repeat !important;
+            background-position: right 0.5rem center !important;
+            background-size: 10px !important;
+            padding-right: 1.75rem !important;
+        }
 
         /* Modern micro-interactions */
         html { scroll-behavior: smooth; }
@@ -787,6 +798,14 @@
 
         .announcement-card small {
             font-size: 0.65rem !important;
+        }
+
+        /* Prevent announcement images from overflowing */
+        .announcement-card img,
+        .announcement-preview img {
+            max-width: 100% !important;
+            height: auto !important;
+            object-fit: contain !important;
         }
 
         /* Chat popup position - consistent across pages */
@@ -1307,7 +1326,7 @@
     <aside class="main-sidebar sidebar-dark-primary elevation-4">
         <div class="sidebar">
             <div class="p-3 text-center sidebar-logo">
-                <img src="images/dokterDIBYA.svg" alt="Logo" class="sidebar-logo-img" title="Admin Panel">
+                <img src="images/db-black.svg" alt="Logo" class="sidebar-logo-img" title="Admin Panel">
             </div>
             <nav class="mt-2">
                 <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
@@ -4961,14 +4980,6 @@ Contoh Markdown:
                                     <h3 class="card-title"><i class="fas fa-users mr-2"></i>Kelola Pasien</h3>
                                     <div class="card-tools">
                                         <span id="adv-search-result-count" class="badge badge-light mr-2"></span>
-                                        <div class="btn-group mr-2">
-                                            <button type="button" class="btn btn-info btn-sm" onclick="openImportModal()" title="Import satu file catatan medis">
-                                                <i class="fas fa-file-import mr-1"></i>Import
-                                            </button>
-                                            <button type="button" class="btn btn-success btn-sm" onclick="openBulkImportModal()" title="Bulk import multiple file">
-                                                <i class="fas fa-file-upload mr-1"></i>Bulk
-                                            </button>
-                                        </div>
                                         <button type="button" class="btn btn-warning btn-sm mr-2" onclick="fixPatientNames()" title="Perbaiki kapitalisasi nama pasien (RAHAYU → Rahayu)">
                                             <i class="fas fa-magic mr-1"></i>Auto-Fix Nama
                                         </button>
