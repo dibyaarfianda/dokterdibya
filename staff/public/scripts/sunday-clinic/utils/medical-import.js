@@ -743,8 +743,9 @@ async function applyPendingImportData() {
                     suhu: parsed.objective?.suhu,
                     spo2: parsed.objective?.spo2,
                     respirasi: parsed.objective?.rr,
-                    tinggi_badan: parsed.objective?.tinggi_badan,
-                    berat_badan: parsed.objective?.berat_badan,
+                    // TB/BB can be in objective OR identity (Gambiran puts it in identity)
+                    tinggi_badan: parsed.objective?.tinggi_badan || parsed.identity?.tinggi_badan,
+                    berat_badan: parsed.objective?.berat_badan || parsed.identity?.berat_badan,
                     ...template.pemeriksaan_fisik
                 },
                 diagnosis: {
@@ -1062,18 +1063,60 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
     setTimeout(() => {
         console.log('[Import] Retrying fill for TB/BB/Riwayat Kehamilan after delay...');
 
-        // TB/BB
+        // TB/BB - Fill values and manually calculate BMI
         const tbEl = document.querySelector('#pe-tinggi-badan');
         const bbEl = document.querySelector('#pe-berat-badan');
+        const imtEl = document.querySelector('#pe-imt');
+        const kategoriImtEl = document.querySelector('#pe-kategori-imt');
+
         if (tbEl && template.pemeriksaan_fisik?.tinggi_badan) {
             tbEl.value = template.pemeriksaan_fisik.tinggi_badan;
-            tbEl.dispatchEvent(new Event('change', { bubbles: true }));
             console.log('[Import] Filled TB:', template.pemeriksaan_fisik.tinggi_badan);
         }
         if (bbEl && template.pemeriksaan_fisik?.berat_badan) {
             bbEl.value = template.pemeriksaan_fisik.berat_badan;
-            bbEl.dispatchEvent(new Event('change', { bubbles: true }));
             console.log('[Import] Filled BB:', template.pemeriksaan_fisik.berat_badan);
+        }
+
+        // Debug: Check element existence
+        console.log('[Import] Element check - TB:', !!tbEl, 'BB:', !!bbEl, 'IMT:', !!imtEl, 'KategoriIMT:', !!kategoriImtEl);
+        console.log('[Import] TB value:', tbEl?.value, 'BB value:', bbEl?.value);
+
+        // Manually calculate BMI since event listeners may not be ready
+        const tinggi = parseFloat(tbEl?.value);
+        const berat = parseFloat(bbEl?.value);
+        console.log('[Import] Parsed - tinggi:', tinggi, 'berat:', berat);
+
+        if (tinggi && berat && tinggi > 0) {
+            const tinggiMeter = tinggi / 100;
+            const imt = (berat / (tinggiMeter * tinggiMeter)).toFixed(1);
+            console.log('[Import] Calculated IMT value:', imt);
+
+            if (imtEl) {
+                imtEl.value = imt;
+                console.log('[Import] Set IMT field to:', imt);
+            } else {
+                console.error('[Import] IMT element not found!');
+            }
+
+            // Set kategori IMT
+            const imtNum = parseFloat(imt);
+            let kategori = '';
+            if (imtNum < 18.5) kategori = 'Kurang Energi Kronis';
+            else if (imtNum < 25.0) kategori = 'Normal';
+            else if (imtNum < 30.0) kategori = 'Kelebihan Berat Badan';
+            else if (imtNum < 35.0) kategori = 'Obesitas Grade 1';
+            else if (imtNum < 40.0) kategori = 'Obesitas Grade 2';
+            else kategori = 'Obesitas Grade 3';
+
+            if (kategoriImtEl) {
+                kategoriImtEl.value = kategori;
+                console.log('[Import] Set Kategori IMT to:', kategori);
+            } else {
+                console.error('[Import] Kategori IMT element not found!');
+            }
+        } else {
+            console.log('[Import] Cannot calculate IMT - missing TB or BB values');
         }
 
         // Riwayat Kehamilan Saat Ini
