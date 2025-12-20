@@ -117,14 +117,21 @@ export default {
                             <label class="font-weight-bold">Riwayat Kehamilan Saat Ini</label>
                             <textarea class="form-control anamnesa-field" id="anamnesa-riwayat-kehamilan" rows="3">${escapeHtml(riwayatKehamilan)}</textarea>
                         </div>
-                        <div class="form-group mb-3">
-                            <label class="font-weight-bold">HPHT (Hari Pertama Haid Terakhir)</label>
-                            <input type="date" class="form-control anamnesa-field" id="anamnesa-hpht" value="${escapeHtml(hpht)}">
-                        </div>
-                        <div class="form-group mb-3">
-                            <label class="font-weight-bold">HPL (Hari Perkiraan Lahir) <small class="text-muted">- Auto-calculate dari HPHT</small></label>
-                            <input type="text" class="form-control" id="anamnesa-hpl-display" value="${escapeHtml(hpl)}" readonly style="background-color: #f8f9fa; cursor: not-allowed;">
-                            <input type="hidden" class="anamnesa-field" id="anamnesa-hpl" value="${escapeHtml(hpl)}">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label class="font-weight-bold">HPHT (Hari Pertama Haid Terakhir)</label>
+                                    <input type="date" class="form-control anamnesa-field" id="anamnesa-hpht" value="${escapeHtml(hpht)}">
+                                    <small class="text-muted">Isi salah satu, yang lain auto-calculate</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label class="font-weight-bold">HPL (Hari Perkiraan Lahir)</label>
+                                    <input type="date" class="form-control anamnesa-field" id="anamnesa-hpl" value="${escapeHtml(hpl)}">
+                                    <small class="text-muted">Isi salah satu, yang lain auto-calculate</small>
+                                </div>
+                            </div>
                         </div>
                         <div class="form-group mb-3">
                             <label class="font-weight-bold">Perkiraan Usia Kehamilan Saat Ini</label>
@@ -254,59 +261,109 @@ export default {
     },
 
     /**
-     * Setup HPHT to HPL and gestational age calculator
+     * Setup bi-directional HPHT <-> HPL calculator
      */
     setupHPHTCalculator() {
         const hphtInput = document.getElementById('anamnesa-hpht');
-        const hplHidden = document.getElementById('anamnesa-hpl');
-        const hplDisplay = document.getElementById('anamnesa-hpl-display');
+        const hplInput = document.getElementById('anamnesa-hpl');
         const usiaKehamilanDisplay = document.getElementById('anamnesa-usia-kehamilan-display');
 
-        if (!hphtInput) return;
+        if (!hphtInput || !hplInput) return;
 
-        // Calculate on load if HPHT already has value
-        if (hphtInput.value) {
-            this.updateHPLAndGA(hphtInput.value, hplHidden, hplDisplay, usiaKehamilanDisplay);
-        }
+        // Flag to prevent infinite loop
+        let isCalculating = false;
 
         const signal = this._abortController.signal;
 
-        // Calculate on change
+        // HPHT → HPL calculation
+        const updateFromHPHT = () => {
+            if (isCalculating) return;
+            isCalculating = true;
+
+            const edd = this.calculateEDD(hphtInput.value);
+            const ga = this.calculateGestationalAge(hphtInput.value);
+
+            if (edd) {
+                hplInput.value = this.formatDate(edd);
+            }
+
+            if (ga && usiaKehamilanDisplay) {
+                usiaKehamilanDisplay.value = `${ga.weeks} minggu ${ga.days} hari`;
+            } else if (usiaKehamilanDisplay) {
+                usiaKehamilanDisplay.value = '';
+            }
+
+            isCalculating = false;
+        };
+
+        // HPL → HPHT calculation (reverse)
+        const updateFromHPL = () => {
+            if (isCalculating) return;
+            isCalculating = true;
+
+            const lmp = this.calculateLMP(hplInput.value);
+            const ga = lmp ? this.calculateGestationalAge(this.formatDate(lmp)) : null;
+
+            if (lmp) {
+                hphtInput.value = this.formatDate(lmp);
+            }
+
+            if (ga && usiaKehamilanDisplay) {
+                usiaKehamilanDisplay.value = `${ga.weeks} minggu ${ga.days} hari`;
+            } else if (usiaKehamilanDisplay) {
+                usiaKehamilanDisplay.value = '';
+            }
+
+            isCalculating = false;
+        };
+
+        // Calculate on load if HPHT has value
+        if (hphtInput.value && !hplInput.value) {
+            updateFromHPHT();
+        } else if (hplInput.value && !hphtInput.value) {
+            updateFromHPL();
+        }
+
+        // HPHT change listeners
         hphtInput.addEventListener('change', () => {
-            this.updateHPLAndGA(hphtInput.value, hplHidden, hplDisplay, usiaKehamilanDisplay);
+            updateFromHPHT();
             const updateBtn = document.getElementById('btn-update-anamnesa');
             if (updateBtn) updateBtn.style.display = 'inline-block';
         }, { signal });
 
-        // Also listen to input event for immediate feedback
         hphtInput.addEventListener('input', () => {
-            if (hphtInput.value && hphtInput.value.length === 10) { // YYYY-MM-DD format
-                this.updateHPLAndGA(hphtInput.value, hplHidden, hplDisplay, usiaKehamilanDisplay);
+            if (hphtInput.value && hphtInput.value.length === 10) {
+                updateFromHPHT();
+            }
+        }, { signal });
+
+        // HPL change listeners
+        hplInput.addEventListener('change', () => {
+            updateFromHPL();
+            const updateBtn = document.getElementById('btn-update-anamnesa');
+            if (updateBtn) updateBtn.style.display = 'inline-block';
+        }, { signal });
+
+        hplInput.addEventListener('input', () => {
+            if (hplInput.value && hplInput.value.length === 10) {
+                updateFromHPL();
             }
         }, { signal });
     },
 
     /**
-     * Update HPL and gestational age displays
+     * Calculate LMP (HPHT) from EDD (HPL) - reverse of Naegele's Rule
      */
-    updateHPLAndGA(lmpDate, hplHidden, hplDisplay, usiaKehamilanDisplay) {
-        const edd = this.calculateEDD(lmpDate);
-        const ga = this.calculateGestationalAge(lmpDate);
+    calculateLMP(eddDate) {
+        if (!eddDate) return null;
+        const edd = new Date(eddDate);
+        if (isNaN(edd.getTime())) return null;
 
-        if (edd && hplHidden && hplDisplay) {
-            const eddFormatted = this.formatDate(edd);
-            hplHidden.value = eddFormatted;
-            hplDisplay.value = this.formatDateIndo(edd);
-        } else if (hplHidden && hplDisplay) {
-            hplHidden.value = '';
-            hplDisplay.value = '';
-        }
+        // Reverse Naegele's Rule: EDD - 280 days
+        const lmp = new Date(edd);
+        lmp.setDate(lmp.getDate() - 280);
 
-        if (ga && usiaKehamilanDisplay) {
-            usiaKehamilanDisplay.value = `${ga.weeks} minggu ${ga.days} hari`;
-        } else if (usiaKehamilanDisplay) {
-            usiaKehamilanDisplay.value = '';
-        }
+        return lmp;
     },
 
     /**

@@ -20,6 +20,11 @@ export default {
         const documentsSent = state.documentsSent;
         const hasSentDocuments = documentsSent?.resume || documentsSent?.usg || documentsSent?.lab;
 
+        // Check appointment status
+        const appointment = state.appointmentData;
+        const isCompleted = appointment?.status === 'completed';
+        console.log('[Resume Medis] appointment data:', appointment, 'isCompleted:', isCompleted);
+
         // Build sent status text
         let sentStatusText = '';
         if (hasSentDocuments) {
@@ -39,6 +44,7 @@ export default {
                     <div>
                         ${savedResume ? '<span class="badge badge-light"><i class="fas fa-check"></i> Tersimpan</span>' : ''}
                         ${hasSentDocuments ? '<span class="badge badge-success ml-2 sent-badge"><i class="fas fa-paper-plane"></i> Sudah dikirim</span>' : ''}
+                        ${isCompleted ? '<span class="badge badge-info ml-2"><i class="fas fa-clipboard-check"></i> Selesai Diperiksa</span>' : ''}
                     </div>
                 </div>
                 ${metaHtml}
@@ -69,6 +75,11 @@ export default {
                                 <button type="button" class="btn btn-outline-warning ml-2" id="btn-reset-resume" onclick="window.resetResumeMedis()">
                                     <i class="fas fa-redo"></i> Reset
                                 </button>
+                                ${!isCompleted && appointment ? `
+                                <button type="button" class="btn btn-warning ml-2" id="btn-mark-completed" onclick="window.markExaminationCompleted()">
+                                    <i class="fas fa-clipboard-check"></i> Selesai Diperiksa
+                                </button>
+                                ` : ''}
                             ` : ''}
                         </div>
                     </div>
