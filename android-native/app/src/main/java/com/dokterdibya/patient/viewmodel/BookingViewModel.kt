@@ -184,11 +184,11 @@ class BookingViewModel @Inject constructor(
                     val appointmentInfos = appointments.map { apt ->
                         AppointmentInfo(
                             id = apt.id,
-                            date = apt.appointmentDate,
-                            dateFormatted = apt.getDisplayDate(),
-                            time = apt.getDisplayTime(),
+                            date = apt.appointmentDate ?: "",
+                            dateFormatted = apt.getDisplayDate() ?: apt.appointmentDate ?: "",
+                            time = apt.getDisplayTime() ?: apt.time ?: apt.timeSlot ?: "-",
                             sessionLabel = apt.sessionLabel ?: "Sesi ${apt.session ?: 1}",
-                            status = apt.status,
+                            status = apt.status ?: "pending",
                             isPast = apt.isPast ?: false
                         )
                     }

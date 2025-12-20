@@ -3,17 +3,17 @@ package com.dokterdibya.patient.data.model
 import com.google.gson.annotations.SerializedName
 
 data class Appointment(
-    val id: Int,
+    val id: Int = 0,
     @SerializedName("patient_id")
     val patientId: Int? = null,
     @SerializedName("appointment_date")
-    val appointmentDate: String,
+    val appointmentDate: String? = null,
     // API returns "time" field
     val time: String? = null,
     // Keep for backward compatibility
     @SerializedName("time_slot")
     val timeSlot: String? = null,
-    val status: String,
+    val status: String? = null,
     val notes: String? = null,
     val session: Int? = null,
     @SerializedName("slot_number")
@@ -32,11 +32,11 @@ data class Appointment(
     @SerializedName("created_at")
     val createdAt: String? = null
 ) {
-    // Helper to get display time (from either field)
-    fun getDisplayTime(): String = time ?: timeSlot ?: ""
+    // Helper to get display time (from either field) - safe for Gson null values
+    fun getDisplayTime(): String? = time ?: timeSlot
 
-    // Helper to get display date
-    fun getDisplayDate(): String = dateFormatted ?: appointmentDate
+    // Helper to get display date - safe for Gson null values
+    fun getDisplayDate(): String? = dateFormatted ?: appointmentDate
 }
 
 data class AppointmentListResponse(
