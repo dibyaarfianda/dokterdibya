@@ -34,7 +34,7 @@ interface ApiService {
     @POST("api/sunday-appointments/book")
     suspend fun bookAppointment(@Body request: BookingRequest): Response<BookingResponse>
 
-    @DELETE("api/sunday-appointments/{id}")
+    @PUT("api/sunday-appointments/{id}/cancel")
     suspend fun cancelAppointment(@Path("id") id: Int): Response<BookingResponse>
 
     // ==================== Medical Records ====================
