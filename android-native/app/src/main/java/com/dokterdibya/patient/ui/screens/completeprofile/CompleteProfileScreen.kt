@@ -263,7 +263,15 @@ private fun Step1BasicInfo(
             placeholder = { Text("Contoh: Siti Nurhaliza") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            shape = RoundedCornerShape(15.dp)
+            shape = RoundedCornerShape(15.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color(0xFF1f2937),
+                unfocusedTextColor = Color(0xFF1f2937),
+                focusedBorderColor = Accent,
+                unfocusedBorderColor = Color(0xFFe5e7eb),
+                focusedLabelColor = Accent,
+                unfocusedLabelColor = Color(0xFF6b7280)
+            )
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -311,7 +319,15 @@ private fun Step1BasicInfo(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            shape = RoundedCornerShape(15.dp)
+            shape = RoundedCornerShape(15.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color(0xFF1f2937),
+                unfocusedTextColor = Color(0xFF1f2937),
+                focusedBorderColor = Accent,
+                unfocusedBorderColor = Color(0xFFe5e7eb),
+                focusedLabelColor = Accent,
+                unfocusedLabelColor = Color(0xFF6b7280)
+            )
         )
     }
 }
@@ -348,7 +364,15 @@ private fun Step2Contact(
             shape = RoundedCornerShape(15.dp),
             supportingText = {
                 Text("Nomor dimulai 0 akan otomatis diubah ke 628")
-            }
+            },
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color(0xFF1f2937),
+                unfocusedTextColor = Color(0xFF1f2937),
+                focusedBorderColor = Accent,
+                unfocusedBorderColor = Color(0xFFe5e7eb),
+                focusedLabelColor = Accent,
+                unfocusedLabelColor = Color(0xFF6b7280)
+            )
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -361,7 +385,15 @@ private fun Step2Contact(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-            shape = RoundedCornerShape(15.dp)
+            shape = RoundedCornerShape(15.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color(0xFF1f2937),
+                unfocusedTextColor = Color(0xFF1f2937),
+                focusedBorderColor = Accent,
+                unfocusedBorderColor = Color(0xFFe5e7eb),
+                focusedLabelColor = Accent,
+                unfocusedLabelColor = Color(0xFF6b7280)
+            )
         )
     }
 }
@@ -396,7 +428,15 @@ private fun Step3Address(
                 .fillMaxWidth()
                 .height(150.dp),
             maxLines = 5,
-            shape = RoundedCornerShape(15.dp)
+            shape = RoundedCornerShape(15.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color(0xFF1f2937),
+                unfocusedTextColor = Color(0xFF1f2937),
+                focusedBorderColor = Accent,
+                unfocusedBorderColor = Color(0xFFe5e7eb),
+                focusedLabelColor = Accent,
+                unfocusedLabelColor = Color(0xFF6b7280)
+            )
         )
     }
 }
@@ -480,7 +520,15 @@ private fun Step5SpouseInfo(
             placeholder = { Text("Nama lengkap suami") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            shape = RoundedCornerShape(15.dp)
+            shape = RoundedCornerShape(15.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color(0xFF1f2937),
+                unfocusedTextColor = Color(0xFF1f2937),
+                focusedBorderColor = Accent,
+                unfocusedBorderColor = Color(0xFFe5e7eb),
+                focusedLabelColor = Accent,
+                unfocusedLabelColor = Color(0xFF6b7280)
+            )
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -493,7 +541,15 @@ private fun Step5SpouseInfo(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            shape = RoundedCornerShape(15.dp)
+            shape = RoundedCornerShape(15.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color(0xFF1f2937),
+                unfocusedTextColor = Color(0xFF1f2937),
+                focusedBorderColor = Accent,
+                unfocusedBorderColor = Color(0xFFe5e7eb),
+                focusedLabelColor = Accent,
+                unfocusedLabelColor = Color(0xFF6b7280)
+            )
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -505,7 +561,15 @@ private fun Step5SpouseInfo(
             placeholder = { Text("Contoh: Pegawai Swasta") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            shape = RoundedCornerShape(15.dp)
+            shape = RoundedCornerShape(15.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color(0xFF1f2937),
+                unfocusedTextColor = Color(0xFF1f2937),
+                focusedBorderColor = Accent,
+                unfocusedBorderColor = Color(0xFFe5e7eb),
+                focusedLabelColor = Accent,
+                unfocusedLabelColor = Color(0xFF6b7280)
+            )
         )
     }
 }
@@ -550,7 +614,15 @@ private fun Step6AdditionalInfo(
             placeholder = { Text("Contoh: Ibu Rumah Tangga") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            shape = RoundedCornerShape(15.dp)
+            shape = RoundedCornerShape(15.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color(0xFF1f2937),
+                unfocusedTextColor = Color(0xFF1f2937),
+                focusedBorderColor = Accent,
+                unfocusedBorderColor = Color(0xFFe5e7eb),
+                focusedLabelColor = Accent,
+                unfocusedLabelColor = Color(0xFF6b7280)
+            )
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -568,7 +640,15 @@ private fun Step6AdditionalInfo(
                 modifier = Modifier
                     .fillMaxWidth()
                     .menuAnchor(),
-                shape = RoundedCornerShape(15.dp)
+                shape = RoundedCornerShape(15.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color(0xFF1f2937),
+                    unfocusedTextColor = Color(0xFF1f2937),
+                    focusedBorderColor = Accent,
+                    unfocusedBorderColor = Color(0xFFe5e7eb),
+                    focusedLabelColor = Accent,
+                    unfocusedLabelColor = Color(0xFF6b7280)
+                )
             )
             ExposedDropdownMenu(
                 expanded = expanded,
@@ -576,7 +656,7 @@ private fun Step6AdditionalInfo(
             ) {
                 educationOptions.filter { it.first.isNotEmpty() }.forEach { (value, label) ->
                     DropdownMenuItem(
-                        text = { Text(label) },
+                        text = { Text(label, color = Color(0xFF1f2937)) },
                         onClick = {
                             viewModel.updateEducation(value)
                             expanded = false
@@ -595,7 +675,15 @@ private fun Step6AdditionalInfo(
             placeholder = { Text("BPJS, Private, dll") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            shape = RoundedCornerShape(15.dp)
+            shape = RoundedCornerShape(15.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color(0xFF1f2937),
+                unfocusedTextColor = Color(0xFF1f2937),
+                focusedBorderColor = Accent,
+                unfocusedBorderColor = Color(0xFFe5e7eb),
+                focusedLabelColor = Accent,
+                unfocusedLabelColor = Color(0xFF6b7280)
+            )
         )
     }
 }
@@ -628,7 +716,15 @@ private fun Step7Registration(
             placeholder = { Text("Contoh: ABC123") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
-            shape = RoundedCornerShape(15.dp)
+            shape = RoundedCornerShape(15.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedTextColor = Color(0xFF1f2937),
+                unfocusedTextColor = Color(0xFF1f2937),
+                focusedBorderColor = Accent,
+                unfocusedBorderColor = Color(0xFFe5e7eb),
+                focusedLabelColor = Accent,
+                unfocusedLabelColor = Color(0xFF6b7280)
+            )
         )
 
         Spacer(modifier = Modifier.height(24.dp))
