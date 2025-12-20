@@ -53,37 +53,30 @@ fun SlideMenu(
         MenuItem(Icons.Default.Logout, "Keluar", Danger, isLogout = true) { onLogout() }
     )
 
-    // Animated visibility for overlay
-    AnimatedVisibility(
-        visible = isOpen,
-        enter = fadeIn(animationSpec = tween(200)),
-        exit = fadeOut(animationSpec = tween(200))
-    ) {
+    // Overlay and menu container
+    if (isOpen) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
                 .background(OverlayDark)
-                .clickable(onClick = onClose)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null,
+                    onClick = onClose
+                )
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures { _, dragAmount ->
+                        if (dragAmount > 50) {
+                            onClose()
+                        }
+                    }
+                }
         )
     }
 
-    // Menu container - only intercept gestures when menu is open
+    // Menu items container
     Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .then(
-                if (isOpen) {
-                    Modifier.pointerInput(Unit) {
-                        detectHorizontalDragGestures { _, dragAmount ->
-                            if (dragAmount > 50) {
-                                onClose()
-                            }
-                        }
-                    }
-                } else {
-                    Modifier
-                }
-            )
+        modifier = Modifier.fillMaxSize()
     ) {
         // Menu items column (right side)
         AnimatedVisibility(
