@@ -123,6 +123,9 @@ dependencies {
     // Splash Screen
     implementation("androidx.core:core-splashscreen:1.0.1")
 
+    // Material Components (for XML themes)
+    implementation("com.google.android.material:material:1.11.0")
+
     // Timber (Logging)
     implementation("com.jakewharton.timber:timber:5.0.1")
 
