@@ -14,6 +14,10 @@ import com.dokterdibya.patient.data.model.FertilityPrediction
 import com.dokterdibya.patient.data.model.PatientDocument
 import com.dokterdibya.patient.data.model.FertilityInfo
 import com.dokterdibya.patient.data.model.FertilityCycleResponse
+import com.dokterdibya.patient.data.api.Announcement
+import com.dokterdibya.patient.data.api.Medication
+import com.dokterdibya.patient.data.api.PregnancyData
+import com.dokterdibya.patient.data.api.LikeRequest
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -306,6 +310,83 @@ class PatientRepository @Inject constructor(
                 Result.success(response.body()!!.data!!)
             } else {
                 Result.failure(Exception("Failed to get visit details"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // ==================== Announcements ====================
+
+    suspend fun getActiveAnnouncements(patientId: String? = null): Result<List<Announcement>> {
+        return try {
+            val response = apiService.getActiveAnnouncements(patientId)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!.data)
+            } else {
+                Result.failure(Exception("Failed to get announcements"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun toggleAnnouncementLike(announcementId: Int, patientId: String): Result<Pair<Boolean, Int>> {
+        return try {
+            val response = apiService.toggleAnnouncementLike(announcementId, LikeRequest(patientId))
+            if (response.isSuccessful && response.body() != null) {
+                val body = response.body()!!
+                Result.success(Pair(body.liked, body.like_count))
+            } else {
+                Result.failure(Exception("Failed to toggle like"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // ==================== Medications ====================
+
+    suspend fun getMedications(): Result<List<Medication>> {
+        return try {
+            val response = apiService.getMedications()
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!.data)
+            } else {
+                Result.failure(Exception("Failed to get medications"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // ==================== Pregnancy Data ====================
+
+    suspend fun getPregnancyData(): Result<PregnancyData> {
+        return try {
+            val response = apiService.getPregnancyData()
+            if (response.isSuccessful && response.body()?.data != null) {
+                Result.success(response.body()!!.data!!)
+            } else {
+                Result.failure(Exception("Failed to get pregnancy data"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // ==================== Lab Results ====================
+
+    suspend fun getLabDocuments(): Result<List<PatientDocument>> {
+        return try {
+            val response = apiService.getDocuments(null)
+            if (response.isSuccessful && response.body() != null) {
+                val labDocs = response.body()!!.documents.filter {
+                    it.documentType in listOf("lab_result", "patient_lab")
+                }
+                Result.success(labDocs)
+            } else {
+                Result.failure(Exception("Failed to get lab documents"))
             }
         } catch (e: Exception) {
             Result.failure(e)

@@ -118,16 +118,14 @@ fun LoginScreen(
                         shape = RoundedCornerShape(28.dp),
                         ambientColor = Accent.copy(alpha = 0.3f)
                     )
-                    .clip(RoundedCornerShape(28.dp))
-                    .background(Color.White),
+                    .clip(RoundedCornerShape(28.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                // Replace with actual logo
-                Text(
-                    text = "dD",
-                    fontSize = 48.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Primary
+                Image(
+                    painter = painterResource(id = R.mipmap.ic_launcher),
+                    contentDescription = "Dokter Dibya Logo",
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
                 )
             }
 

@@ -101,6 +101,10 @@ dependencies {
     // Accompanist (System UI Controller)
     implementation("com.google.accompanist:accompanist-systemuicontroller:0.32.0")
 
+    // Media3 ExoPlayer (Intro Video)
+    implementation("androidx.media3:media3-exoplayer:1.2.0")
+    implementation("androidx.media3:media3-ui:1.2.0")
+
     // Testing
     testImplementation("junit:junit:4.13.2")
     androidTestImplementation("androidx.test.ext:junit:1.1.5")

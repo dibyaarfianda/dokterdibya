@@ -70,6 +70,11 @@ class DocumentsViewModel @Inject constructor(
     fun filterByType(type: String?) {
         val filtered = if (type == null) {
             _uiState.value.allDocuments
+        } else if (type == "lab") {
+            // Lab filter matches lab_result and patient_lab types
+            _uiState.value.allDocuments.filter {
+                it.type.lowercase() in listOf("lab_result", "patient_lab")
+            }
         } else {
             _uiState.value.allDocuments.filter { it.type.equals(type, ignoreCase = true) }
         }

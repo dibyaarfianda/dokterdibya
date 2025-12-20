@@ -87,6 +87,29 @@ interface ApiService {
 
     @GET("api/app/version")
     suspend fun checkAppVersion(): Response<AppVersionResponse>
+
+    // ==================== Announcements ====================
+
+    @GET("api/announcements/active")
+    suspend fun getActiveAnnouncements(
+        @Query("patient_id") patientId: String? = null
+    ): Response<AnnouncementsResponse>
+
+    @POST("api/announcements/{id}/like")
+    suspend fun toggleAnnouncementLike(
+        @Path("id") id: Int,
+        @Body request: LikeRequest
+    ): Response<LikeResponse>
+
+    // ==================== Medications ====================
+
+    @GET("api/patients/medications")
+    suspend fun getMedications(): Response<MedicationsResponse>
+
+    // ==================== Pregnancy Data ====================
+
+    @GET("api/patients/pregnancy-data")
+    suspend fun getPregnancyData(): Response<PregnancyDataResponse>
 }
 
 // Practice Schedule models
@@ -186,4 +209,73 @@ data class BillingListResponse(
 data class BillingDetailResponse(
     val success: Boolean,
     val data: BillingDetail?
+)
+
+// Announcement models
+data class Announcement(
+    val id: Int,
+    val title: String,
+    val message: String,
+    val image_url: String? = null,
+    val formatted_content: String? = null,
+    val content_type: String? = null,
+    val created_by_name: String? = null,
+    val priority: String? = null,
+    val created_at: String? = null,
+    val like_count: Int = 0,
+    val liked_by_me: Boolean = false
+)
+
+data class AnnouncementsResponse(
+    val success: Boolean,
+    val data: List<Announcement>
+)
+
+data class LikeRequest(
+    val patient_id: String
+)
+
+data class LikeResponse(
+    val success: Boolean,
+    val liked: Boolean,
+    val like_count: Int
+)
+
+// Medication models
+data class Medication(
+    val id: Int,
+    val mr_id: String? = null,
+    val visit_date: String? = null,
+    val terapi: String? = null,
+    val is_current: Int = 0
+)
+
+data class MedicationsResponse(
+    val success: Boolean,
+    val data: List<Medication>
+)
+
+// Pregnancy data models
+data class PregnancyData(
+    val is_pregnant: Boolean = false,
+    val weeks: Int = 0,
+    val days: Int = 0,
+    val trimester: Int = 0,
+    val hpht: String? = null,
+    val hpl: String? = null,
+    val progress: Double = 0.0,
+    // Birth info (if delivered)
+    val has_given_birth: Boolean = false,
+    val birth_date: String? = null,
+    val birth_time: String? = null,
+    val baby_name: String? = null,
+    val baby_weight: String? = null,
+    val baby_length: String? = null,
+    val baby_photo_url: String? = null,
+    val doctor_message: String? = null
+)
+
+data class PregnancyDataResponse(
+    val success: Boolean,
+    val data: PregnancyData?
 )

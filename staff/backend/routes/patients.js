@@ -1132,6 +1132,189 @@ router.get('/api/patients/generate-id', async (req, res) => {
     }
 });
 
+// ==================== PREGNANCY DATA (Android App) ====================
+
+// GET pregnancy data for logged-in patient (Android App)
+router.get('/api/patients/pregnancy-data', verifyPatientToken, async (req, res) => {
+    // Prevent browser caching - always fetch fresh data
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
+    try {
+        const patientId = req.patient.id;
+
+        // Check if patient has given birth
+        const [birthRows] = await db.query(`
+            SELECT
+                baby_name,
+                DATE_FORMAT(birth_date, '%d %b %Y') as birth_date,
+                birth_time,
+                birth_weight,
+                birth_length,
+                photo_url,
+                photo_r2_key,
+                message as doctor_message
+            FROM birth_congratulations
+            WHERE patient_id = ? AND is_published = 1
+            ORDER BY created_at DESC
+            LIMIT 1
+        `, [patientId]);
+
+        if (birthRows.length > 0) {
+            const birth = birthRows[0];
+
+            // Regenerate signed URL if R2 key exists
+            let photoUrl = birth.photo_url;
+            if (birth.photo_r2_key) {
+                try {
+                    photoUrl = await r2Storage.getSignedDownloadUrl(birth.photo_r2_key, 3600);
+                } catch (r2Error) {
+                    console.error('Error generating signed URL:', r2Error);
+                }
+            }
+
+            return res.json({
+                success: true,
+                data: {
+                    is_pregnant: false,
+                    has_given_birth: true,
+                    birth_date: birth.birth_date,
+                    birth_time: birth.birth_time,
+                    baby_name: birth.baby_name,
+                    baby_weight: birth.birth_weight,
+                    baby_length: birth.birth_length,
+                    baby_photo_url: photoUrl,
+                    doctor_message: birth.doctor_message
+                }
+            });
+        }
+
+        // Get HPHT from latest obstetri record
+        const [obstetriRows] = await db.query(`
+            SELECT
+                JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) as hpht
+            FROM sunday_clinic_records scr
+            JOIN medical_records mr ON mr.mr_id COLLATE utf8mb4_general_ci = scr.mr_id COLLATE utf8mb4_general_ci
+                AND mr.record_type = 'anamnesa'
+            WHERE scr.patient_id = ?
+                AND scr.mr_category = 'obstetri'
+                AND JSON_EXTRACT(mr.record_data, '$.hpht') IS NOT NULL
+                AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != ''
+                AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != 'null'
+            ORDER BY scr.last_activity_at DESC
+            LIMIT 1
+        `, [patientId]);
+
+        if (obstetriRows.length > 0 && obstetriRows[0].hpht) {
+            const hpht = new Date(obstetriRows[0].hpht);
+
+            if (!isNaN(hpht.getTime())) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const daysPregnant = Math.floor((today.getTime() - hpht.getTime()) / (24 * 60 * 60 * 1000));
+                const weeks = Math.floor(daysPregnant / 7);
+                const days = daysPregnant % 7;
+
+                // Calculate HPL (HPHT + 280 days)
+                const hplDate = new Date(hpht.getTime() + 280 * 24 * 60 * 60 * 1000);
+                const hplFormatted = `${hplDate.getFullYear()}-${String(hplDate.getMonth() + 1).padStart(2, '0')}-${String(hplDate.getDate()).padStart(2, '0')}`;
+
+                // Calculate trimester
+                let trimester = 1;
+                if (weeks >= 13 && weeks < 27) trimester = 2;
+                else if (weeks >= 27) trimester = 3;
+
+                // Calculate progress (0.0 - 1.0)
+                const progress = Math.min(daysPregnant / 280, 1.0);
+
+                // Only return as pregnant if <= 42 weeks
+                if (weeks <= 42) {
+                    return res.json({
+                        success: true,
+                        data: {
+                            is_pregnant: true,
+                            has_given_birth: false,
+                            weeks: weeks,
+                            days: days,
+                            trimester: trimester,
+                            hpht: obstetriRows[0].hpht,
+                            hpl: hplFormatted,
+                            progress: progress
+                        }
+                    });
+                }
+            }
+        }
+
+        // No pregnancy data
+        res.json({
+            success: true,
+            data: {
+                is_pregnant: false,
+                has_given_birth: false
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching pregnancy data:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch pregnancy data',
+            error: error.message
+        });
+    }
+});
+
+// ==================== MEDICATIONS (TERAPI) ====================
+
+// GET medications/terapi for logged-in patient (Android App)
+router.get('/api/patients/medications', verifyPatientToken, async (req, res) => {
+    // Prevent browser caching - always fetch fresh data
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
+    try {
+        const patientId = req.patient.id;
+
+        // Get all visits with terapi data
+        // Join sunday_clinic_records with medical_records (planning type has terapi)
+        const [rows] = await db.query(`
+            SELECT
+                scr.id,
+                scr.mr_id,
+                DATE_FORMAT(scr.last_activity_at, '%d %b %Y') as visit_date,
+                scr.last_activity_at as visit_datetime,
+                JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.terapi')) as terapi,
+                CASE
+                    WHEN scr.last_activity_at >= DATE_SUB(NOW(), INTERVAL 30 DAY) THEN 1
+                    ELSE 0
+                END as is_current
+            FROM sunday_clinic_records scr
+            JOIN medical_records mr ON mr.mr_id COLLATE utf8mb4_general_ci = scr.mr_id COLLATE utf8mb4_general_ci
+                AND mr.record_type = 'planning'
+            WHERE scr.patient_id = ?
+                AND JSON_EXTRACT(mr.record_data, '$.terapi') IS NOT NULL
+                AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.terapi')) != ''
+                AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.terapi')) != 'null'
+            ORDER BY scr.last_activity_at DESC
+        `, [patientId]);
+
+        res.json({
+            success: true,
+            data: rows
+        });
+    } catch (error) {
+        console.error('Error fetching medications:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch medications',
+            error: error.message
+        });
+    }
+});
+
 // ==================== BIRTH CONGRATULATIONS ====================
 
 // GET birth congratulations for logged-in patient (Patient Dashboard)
