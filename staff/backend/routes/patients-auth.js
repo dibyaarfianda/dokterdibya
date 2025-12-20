@@ -1056,6 +1056,170 @@ router.post('/complete-profile', verifyToken, async (req, res) => {
     }
 });
 
+// Complete profile with full intake data (Android app)
+router.post('/complete-profile-full', verifyToken, async (req, res) => {
+    try {
+        const {
+            patient_name,
+            patient_phone,
+            patient_dob,
+            patient_age,
+            nik,
+            patient_emergency_contact,
+            patient_address,
+            patient_marital_status,
+            patient_husband_name,
+            husband_age,
+            husband_job,
+            patient_occupation,
+            patient_education,
+            patient_insurance,
+            registration_code
+        } = req.body;
+
+        // Validation
+        if (!patient_name || !patient_phone || !patient_dob) {
+            return res.status(400).json({ message: 'Nama, nomor telepon, dan tanggal lahir harus diisi' });
+        }
+
+        // Validate registration code is required
+        if (!registration_code) {
+            return res.status(400).json({ message: 'Kode registrasi wajib diisi' });
+        }
+
+        // Validate phone format
+        const phoneRegex = /^628\d{9,12}$/;
+        if (!phoneRegex.test(patient_phone)) {
+            return res.status(400).json({ message: 'Format nomor telepon tidak valid' });
+        }
+
+        // Validate registration code
+        const [regCodes] = await db.query(
+            `SELECT * FROM registration_codes
+             WHERE code = ? AND status = 'active' AND expires_at > NOW()`,
+            [registration_code.toUpperCase()]
+        );
+
+        if (regCodes.length === 0) {
+            return res.status(400).json({ message: 'Kode registrasi tidak valid atau sudah kadaluarsa' });
+        }
+
+        const regCode = regCodes[0];
+
+        // If code has a specific phone, validate it matches
+        if (regCode.phone && regCode.phone !== patient_phone) {
+            return res.status(400).json({ message: 'Nomor telepon tidak sesuai dengan kode registrasi' });
+        }
+
+        // Calculate age from birth date
+        let age = patient_age;
+        if (!age && patient_dob) {
+            const birthDate = new Date(patient_dob);
+            const today = new Date();
+            age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+                age--;
+            }
+        }
+
+        // Update patient data
+        await db.query(
+            `UPDATE patients
+             SET full_name = ?, phone = ?, birth_date = ?, age = ?, profile_completed = 1, intake_completed = 1
+             WHERE id = ?`,
+            [patient_name, patient_phone, patient_dob, age || null, req.user.id]
+        );
+
+        // Create intake submission payload
+        const intakePayload = {
+            patient_name,
+            patient_phone,
+            patient_dob,
+            patient_age: age,
+            nik: nik || null,
+            patient_emergency_contact: patient_emergency_contact || null,
+            patient_address: patient_address || null,
+            patient_marital_status: patient_marital_status || null,
+            patient_husband_name: patient_husband_name || null,
+            husband_age: husband_age || null,
+            husband_job: husband_job || null,
+            patient_occupation: patient_occupation || null,
+            patient_education: patient_education || null,
+            patient_insurance: patient_insurance || null,
+            source: 'android_app',
+            submitted_at: new Date().toISOString()
+        };
+
+        // Check if intake submission exists
+        const [existingIntake] = await db.query(
+            'SELECT id FROM patient_intake_submissions WHERE patient_id = ?',
+            [req.user.id]
+        );
+
+        if (existingIntake.length > 0) {
+            // Update existing
+            await db.query(
+                `UPDATE patient_intake_submissions
+                 SET full_name = ?, phone = ?, birth_date = ?, nik = ?, payload = ?, updated_at = NOW()
+                 WHERE patient_id = ?`,
+                [patient_name, patient_phone, patient_dob, nik || null, JSON.stringify(intakePayload), req.user.id]
+            );
+        } else {
+            // Create new submission
+            const submissionId = 'AND-' + Date.now().toString(36).toUpperCase();
+            await db.query(
+                `INSERT INTO patient_intake_submissions
+                 (submission_id, patient_id, full_name, phone, birth_date, nik, payload, status, created_at)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, 'verified', NOW())`,
+                [submissionId, req.user.id, patient_name, patient_phone, patient_dob, nik || null, JSON.stringify(intakePayload)]
+            );
+        }
+
+        // Mark registration code as used (only for non-public codes)
+        if (!regCode.is_public) {
+            await db.query(
+                `UPDATE registration_codes
+                 SET status = 'used', used_at = NOW(), used_by_patient_id = ?
+                 WHERE id = ?`,
+                [req.user.id, regCode.id]
+            );
+        }
+
+        // Fetch updated profile
+        const [updatedPatient] = await db.query(
+            'SELECT id, full_name, email, phone, photo_url, birth_date, age, registration_date, profile_completed FROM patients WHERE id = ?',
+            [req.user.id]
+        );
+
+        if (updatedPatient.length === 0) {
+            return res.status(404).json({ message: 'Pasien tidak ditemukan' });
+        }
+
+        const patient = updatedPatient[0];
+
+        res.json({
+            success: true,
+            message: 'Profil berhasil dilengkapi',
+            user: {
+                id: patient.id,
+                fullname: patient.full_name,
+                email: patient.email,
+                phone: patient.phone,
+                photo_url: patient.photo_url,
+                birth_date: patient.birth_date,
+                age: patient.age,
+                registration_date: patient.registration_date,
+                profile_completed: patient.profile_completed
+            }
+        });
+
+    } catch (error) {
+        console.error('Complete profile full error:', error);
+        res.status(500).json({ message: 'Terjadi kesalahan saat menyimpan profil' });
+    }
+});
+
 // Get all web patients (Admin/Superadmin only)
 router.get('/all', verifyToken, async (req, res) => {
     try {
