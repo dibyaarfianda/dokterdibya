@@ -8,6 +8,8 @@ import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -97,9 +99,11 @@ fun SlideMenu(
             Column(
                 modifier = Modifier
                     .padding(end = 15.dp)
-                    .width(70.dp),
+                    .width(80.dp)
+                    .heightIn(max = 360.dp)  // Show ~5 items
+                    .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 menuItems.forEachIndexed { index, item ->
                     AnimatedMenuItem(
@@ -163,12 +167,12 @@ fun MenuItemButton(item: MenuItem) {
 
     Box(
         modifier = Modifier
-            .size(46.dp)
+            .size(58.dp)
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
             }
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(18.dp))
             .background(
                 if (item.isLogout) {
                     Brush.linearGradient(
@@ -197,7 +201,7 @@ fun MenuItemButton(item: MenuItem) {
             imageVector = item.icon,
             contentDescription = item.label,
             tint = item.color,
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(26.dp)
         )
     }
 }
