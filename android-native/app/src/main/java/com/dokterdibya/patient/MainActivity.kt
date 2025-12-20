@@ -77,11 +77,17 @@ class MainActivity : ComponentActivity() {
                     val isLoggedIn by viewModel.isLoggedIn.collectAsState(initial = null)
                     val navController = rememberNavController()
 
+                    // Track if intro was shown this session
+                    var introShown by remember { mutableStateOf(false) }
+
                     // Determine start destination based on login state
-                    val startDestination = when (isLoggedIn) {
-                        true -> Screen.Home.route
-                        false -> Screen.Login.route
-                        null -> Screen.Login.route // Loading state
+                    val startDestination = when {
+                        isLoggedIn == true -> Screen.Home.route
+                        isLoggedIn == false && !introShown -> {
+                            introShown = true
+                            Screen.Intro.route
+                        }
+                        else -> Screen.Login.route
                     }
 
                     if (isLoggedIn != null) {

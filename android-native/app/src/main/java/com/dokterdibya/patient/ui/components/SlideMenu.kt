@@ -157,14 +157,13 @@ fun AnimatedMenuItem(
 
 @Composable
 fun MenuItemButton(item: MenuItem) {
-    val interactionSource = remember { androidx.compose.foundation.interaction.MutableInteractionSource() }
+    val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
 
+    // Faster, snappier scale animation
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.9f else 1f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioMediumBouncy
-        ),
+        targetValue = if (isPressed) 0.92f else 1f,
+        animationSpec = tween(durationMillis = 50),
         label = "scale"
     )
 
@@ -195,7 +194,7 @@ fun MenuItemButton(item: MenuItem) {
             )
             .clickable(
                 interactionSource = interactionSource,
-                indication = null,
+                indication = ripple(bounded = true, color = item.color.copy(alpha = 0.3f)),
                 onClick = item.onClick
             ),
         contentAlignment = Alignment.Center

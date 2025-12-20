@@ -14,8 +14,11 @@ import com.dokterdibya.patient.ui.screens.login.LoginScreen
 import com.dokterdibya.patient.ui.screens.profile.ProfileScreen
 import com.dokterdibya.patient.ui.screens.schedule.ScheduleScreen
 import com.dokterdibya.patient.ui.screens.usg.UsgGalleryScreen
+import com.dokterdibya.patient.ui.screens.medications.MedicationsScreen
+import com.dokterdibya.patient.ui.screens.intro.IntroScreen
 
 sealed class Screen(val route: String) {
+    object Intro : Screen("intro")
     object Login : Screen("login")
     object Home : Screen("home")
     object Schedule : Screen("schedule")
@@ -29,6 +32,7 @@ sealed class Screen(val route: String) {
     object Documents : Screen("documents")
     object VisitHistory : Screen("visit_history")
     object Booking : Screen("booking")
+    object Medications : Screen("medications")
 }
 
 @Composable
@@ -41,6 +45,16 @@ fun NavGraph(
         navController = navController,
         startDestination = startDestination
     ) {
+        composable(Screen.Intro.route) {
+            IntroScreen(
+                onIntroFinished = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Intro.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
         composable(Screen.Login.route) {
             LoginScreen(
                 onGoogleSignIn = onGoogleSignIn,
@@ -77,6 +91,9 @@ fun NavGraph(
                 },
                 onNavigateToVisitHistory = {
                     navController.navigate(Screen.VisitHistory.route)
+                },
+                onNavigateToMedications = {
+                    navController.navigate(Screen.Medications.route)
                 },
                 onLogout = {
                     navController.navigate(Screen.Login.route) {
@@ -138,6 +155,12 @@ fun NavGraph(
 
         composable(Screen.VisitHistory.route) {
             VisitHistoryScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.Medications.route) {
+            MedicationsScreen(
                 onBack = { navController.popBackStack() }
             )
         }

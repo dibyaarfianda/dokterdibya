@@ -2,6 +2,8 @@ package com.dokterdibya.patient.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dokterdibya.patient.data.api.Announcement
+import com.dokterdibya.patient.data.api.Medication
 import com.dokterdibya.patient.data.model.Patient
 import com.dokterdibya.patient.data.repository.PatientRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -13,6 +15,17 @@ import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import javax.inject.Inject
 
+// Birth info for congratulations card
+data class BirthInfo(
+    val babyName: String = "",
+    val birthDate: String = "",
+    val birthTime: String = "",
+    val babyWeight: String = "",
+    val babyLength: String = "",
+    val babyPhotoUrl: String? = null,
+    val doctorMessage: String? = null
+)
+
 data class HomeUiState(
     val isLoading: Boolean = false,
     val patientName: String? = null,
@@ -23,7 +36,13 @@ data class HomeUiState(
     val pregnancyProgress: Float = 0f,
     val dueDate: String? = null,
     val usgCount: Int = 0,
-    val error: String? = null
+    val error: String? = null,
+    // New features
+    val announcements: List<Announcement> = emptyList(),
+    val hasGivenBirth: Boolean = false,
+    val birthInfo: BirthInfo? = null,
+    val medications: List<Medication> = emptyList(),
+    val hasMedications: Boolean = false
 )
 
 @HiltViewModel
@@ -34,8 +53,12 @@ class HomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
+    private var patientId: String? = null
+
     init {
         loadPatientData()
+        loadAnnouncements()
+        loadMedications()
     }
 
     fun loadPatientData() {
@@ -44,6 +67,7 @@ class HomeViewModel @Inject constructor(
 
             patientRepository.getProfile().fold(
                 onSuccess = { patient ->
+                    patientId = patient.id
                     val pregnancyInfo = calculatePregnancyInfo(patient)
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
@@ -55,6 +79,9 @@ class HomeViewModel @Inject constructor(
                         pregnancyProgress = pregnancyInfo.progress,
                         dueDate = patient.expectedDueDate
                     )
+
+                    // Reload announcements with patient ID for like status
+                    loadAnnouncements()
                 },
                 onFailure = { error ->
                     _uiState.value = _uiState.value.copy(
@@ -70,6 +97,75 @@ class HomeViewModel @Inject constructor(
                     _uiState.value = _uiState.value.copy(
                         usgCount = usgDocs.size
                     )
+                },
+                onFailure = { /* Ignore */ }
+            )
+
+            // Load pregnancy data (includes birth info)
+            patientRepository.getPregnancyData().fold(
+                onSuccess = { data ->
+                    if (data.has_given_birth) {
+                        _uiState.value = _uiState.value.copy(
+                            hasGivenBirth = true,
+                            isPregnant = false,
+                            birthInfo = BirthInfo(
+                                babyName = data.baby_name ?: "",
+                                birthDate = data.birth_date ?: "",
+                                birthTime = data.birth_time ?: "",
+                                babyWeight = data.baby_weight ?: "",
+                                babyLength = data.baby_length ?: "",
+                                babyPhotoUrl = data.baby_photo_url,
+                                doctorMessage = data.doctor_message
+                            )
+                        )
+                    }
+                },
+                onFailure = { /* Ignore - pregnancy data is optional */ }
+            )
+        }
+    }
+
+    private fun loadAnnouncements() {
+        viewModelScope.launch {
+            patientRepository.getActiveAnnouncements(patientId).fold(
+                onSuccess = { announcements ->
+                    _uiState.value = _uiState.value.copy(
+                        announcements = announcements
+                    )
+                },
+                onFailure = { /* Ignore */ }
+            )
+        }
+    }
+
+    private fun loadMedications() {
+        viewModelScope.launch {
+            patientRepository.getMedications().fold(
+                onSuccess = { medications ->
+                    _uiState.value = _uiState.value.copy(
+                        medications = medications,
+                        hasMedications = medications.isNotEmpty()
+                    )
+                },
+                onFailure = { /* Ignore */ }
+            )
+        }
+    }
+
+    fun toggleLike(announcementId: Int) {
+        val pId = patientId ?: return
+        viewModelScope.launch {
+            patientRepository.toggleAnnouncementLike(announcementId, pId).fold(
+                onSuccess = { (liked, likeCount) ->
+                    // Update the announcement in the list
+                    val updatedAnnouncements = _uiState.value.announcements.map { announcement ->
+                        if (announcement.id == announcementId) {
+                            announcement.copy(liked_by_me = liked, like_count = likeCount)
+                        } else {
+                            announcement
+                        }
+                    }
+                    _uiState.value = _uiState.value.copy(announcements = updatedAnnouncements)
                 },
                 onFailure = { /* Ignore */ }
             )
@@ -100,6 +196,12 @@ class HomeViewModel @Inject constructor(
         viewModelScope.launch {
             patientRepository.logout()
         }
+    }
+
+    fun refresh() {
+        loadPatientData()
+        loadAnnouncements()
+        loadMedications()
     }
 
     private data class PregnancyInfo(
