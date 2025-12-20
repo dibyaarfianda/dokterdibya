@@ -20,6 +20,7 @@ import com.dokterdibya.patient.data.api.PregnancyData
 import com.dokterdibya.patient.data.api.LikeRequest
 import com.dokterdibya.patient.data.api.CancelRequest
 import com.dokterdibya.patient.data.model.CompleteProfileRequest
+import com.dokterdibya.patient.data.model.CompleteProfileFullRequest
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -74,6 +75,65 @@ class PatientRepository @Inject constructor(
                 val body = response.body()!!
                 if (body.success && body.user != null) {
                     // Update stored user info
+                    tokenRepository.saveUserInfo(body.user.name, body.user.email ?: "")
+                    Result.success(body.user)
+                } else {
+                    Result.failure(Exception(body.message ?: "Gagal menyimpan profil"))
+                }
+            } else {
+                val errorBody = response.errorBody()?.string()
+                val errorMsg = try {
+                    org.json.JSONObject(errorBody ?: "").optString("message", "Gagal menyimpan profil")
+                } catch (e: Exception) {
+                    "Gagal menyimpan profil"
+                }
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun completeProfileFull(
+        fullname: String,
+        phone: String,
+        birthDate: String,
+        age: Int?,
+        nik: String?,
+        emergencyContact: String?,
+        address: String?,
+        maritalStatus: String?,
+        husbandName: String?,
+        husbandAge: Int?,
+        husbandJob: String?,
+        occupation: String?,
+        education: String?,
+        insurance: String?,
+        registrationCode: String
+    ): Result<Patient> {
+        return try {
+            val response = apiService.completeProfileFull(
+                CompleteProfileFullRequest(
+                    fullname = fullname,
+                    phone = phone,
+                    birthDate = birthDate,
+                    age = age,
+                    nik = nik,
+                    emergencyContact = emergencyContact,
+                    address = address,
+                    maritalStatus = maritalStatus,
+                    husbandName = husbandName,
+                    husbandAge = husbandAge,
+                    husbandJob = husbandJob,
+                    occupation = occupation,
+                    education = education,
+                    insurance = insurance,
+                    registrationCode = registrationCode
+                )
+            )
+            if (response.isSuccessful && response.body() != null) {
+                val body = response.body()!!
+                if (body.success && body.user != null) {
                     tokenRepository.saveUserInfo(body.user.name, body.user.email ?: "")
                     Result.success(body.user)
                 } else {

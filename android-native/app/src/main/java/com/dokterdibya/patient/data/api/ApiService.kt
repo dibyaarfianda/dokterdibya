@@ -2,6 +2,7 @@ package com.dokterdibya.patient.data.api
 
 import com.dokterdibya.patient.data.model.*
 import com.dokterdibya.patient.data.model.CompleteProfileRequest
+import com.dokterdibya.patient.data.model.CompleteProfileFullRequest
 import com.dokterdibya.patient.data.model.CompleteProfileResponse
 import retrofit2.Response
 import retrofit2.http.*
@@ -22,6 +23,9 @@ interface ApiService {
 
     @POST("api/patients/complete-profile")
     suspend fun completeProfile(@Body request: CompleteProfileRequest): Response<CompleteProfileResponse>
+
+    @POST("api/patients/complete-profile-full")
+    suspend fun completeProfileFull(@Body request: CompleteProfileFullRequest): Response<CompleteProfileResponse>
 
     // ==================== Appointments ====================
 

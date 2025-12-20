@@ -74,7 +74,7 @@ data class PregnancyInfo(
     val dueDate: String
 )
 
-// Request for completing profile
+// Request for completing profile (basic)
 data class CompleteProfileRequest(
     val fullname: String,
     val phone: String,
@@ -82,6 +82,39 @@ data class CompleteProfileRequest(
     val birthDate: String,
     @SerializedName("registration_code")
     val registrationCode: String? = null
+)
+
+// Request for completing profile with full intake data
+data class CompleteProfileFullRequest(
+    @SerializedName("patient_name")
+    val fullname: String,
+    @SerializedName("patient_phone")
+    val phone: String,
+    @SerializedName("patient_dob")
+    val birthDate: String,
+    @SerializedName("patient_age")
+    val age: Int? = null,
+    val nik: String? = null,
+    @SerializedName("patient_emergency_contact")
+    val emergencyContact: String? = null,
+    @SerializedName("patient_address")
+    val address: String? = null,
+    @SerializedName("patient_marital_status")
+    val maritalStatus: String? = null,
+    @SerializedName("patient_husband_name")
+    val husbandName: String? = null,
+    @SerializedName("husband_age")
+    val husbandAge: Int? = null,
+    @SerializedName("husband_job")
+    val husbandJob: String? = null,
+    @SerializedName("patient_occupation")
+    val occupation: String? = null,
+    @SerializedName("patient_education")
+    val education: String? = null,
+    @SerializedName("patient_insurance")
+    val insurance: String? = null,
+    @SerializedName("registration_code")
+    val registrationCode: String
 )
 
 // Response for complete profile
