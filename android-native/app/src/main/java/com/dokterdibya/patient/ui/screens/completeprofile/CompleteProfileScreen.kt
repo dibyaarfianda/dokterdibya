@@ -267,10 +267,13 @@ private fun Step1BasicInfo(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = Color(0xFF1f2937),
                 unfocusedTextColor = Color(0xFF1f2937),
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
                 focusedBorderColor = Accent,
                 unfocusedBorderColor = Color(0xFFe5e7eb),
                 focusedLabelColor = Accent,
-                unfocusedLabelColor = Color(0xFF6b7280)
+                unfocusedLabelColor = Color(0xFF6b7280),
+                cursorColor = Accent
             )
         )
 
@@ -296,7 +299,8 @@ private fun Step1BasicInfo(
             colors = OutlinedTextFieldDefaults.colors(
                 disabledBorderColor = Color(0xFFe5e7eb),
                 disabledTextColor = Color(0xFF1f2937),
-                disabledLabelColor = Color(0xFF6b7280)
+                disabledLabelColor = Color(0xFF6b7280),
+                disabledContainerColor = Color.White
             )
         )
 
@@ -323,10 +327,13 @@ private fun Step1BasicInfo(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = Color(0xFF1f2937),
                 unfocusedTextColor = Color(0xFF1f2937),
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
                 focusedBorderColor = Accent,
                 unfocusedBorderColor = Color(0xFFe5e7eb),
                 focusedLabelColor = Accent,
-                unfocusedLabelColor = Color(0xFF6b7280)
+                unfocusedLabelColor = Color(0xFF6b7280),
+                cursorColor = Accent
             )
         )
     }
@@ -368,10 +375,13 @@ private fun Step2Contact(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = Color(0xFF1f2937),
                 unfocusedTextColor = Color(0xFF1f2937),
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
                 focusedBorderColor = Accent,
                 unfocusedBorderColor = Color(0xFFe5e7eb),
                 focusedLabelColor = Accent,
-                unfocusedLabelColor = Color(0xFF6b7280)
+                unfocusedLabelColor = Color(0xFF6b7280),
+                cursorColor = Accent
             )
         )
 
@@ -389,10 +399,13 @@ private fun Step2Contact(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = Color(0xFF1f2937),
                 unfocusedTextColor = Color(0xFF1f2937),
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
                 focusedBorderColor = Accent,
                 unfocusedBorderColor = Color(0xFFe5e7eb),
                 focusedLabelColor = Accent,
-                unfocusedLabelColor = Color(0xFF6b7280)
+                unfocusedLabelColor = Color(0xFF6b7280),
+                cursorColor = Accent
             )
         )
     }
@@ -432,10 +445,13 @@ private fun Step3Address(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = Color(0xFF1f2937),
                 unfocusedTextColor = Color(0xFF1f2937),
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
                 focusedBorderColor = Accent,
                 unfocusedBorderColor = Color(0xFFe5e7eb),
                 focusedLabelColor = Accent,
-                unfocusedLabelColor = Color(0xFF6b7280)
+                unfocusedLabelColor = Color(0xFF6b7280),
+                cursorColor = Accent
             )
         )
     }
@@ -524,10 +540,13 @@ private fun Step5SpouseInfo(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = Color(0xFF1f2937),
                 unfocusedTextColor = Color(0xFF1f2937),
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
                 focusedBorderColor = Accent,
                 unfocusedBorderColor = Color(0xFFe5e7eb),
                 focusedLabelColor = Accent,
-                unfocusedLabelColor = Color(0xFF6b7280)
+                unfocusedLabelColor = Color(0xFF6b7280),
+                cursorColor = Accent
             )
         )
 
@@ -545,10 +564,13 @@ private fun Step5SpouseInfo(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = Color(0xFF1f2937),
                 unfocusedTextColor = Color(0xFF1f2937),
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
                 focusedBorderColor = Accent,
                 unfocusedBorderColor = Color(0xFFe5e7eb),
                 focusedLabelColor = Accent,
-                unfocusedLabelColor = Color(0xFF6b7280)
+                unfocusedLabelColor = Color(0xFF6b7280),
+                cursorColor = Accent
             )
         )
 
@@ -565,10 +587,13 @@ private fun Step5SpouseInfo(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = Color(0xFF1f2937),
                 unfocusedTextColor = Color(0xFF1f2937),
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
                 focusedBorderColor = Accent,
                 unfocusedBorderColor = Color(0xFFe5e7eb),
                 focusedLabelColor = Accent,
-                unfocusedLabelColor = Color(0xFF6b7280)
+                unfocusedLabelColor = Color(0xFF6b7280),
+                cursorColor = Accent
             )
         )
     }
@@ -618,10 +643,13 @@ private fun Step6AdditionalInfo(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = Color(0xFF1f2937),
                 unfocusedTextColor = Color(0xFF1f2937),
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
                 focusedBorderColor = Accent,
                 unfocusedBorderColor = Color(0xFFe5e7eb),
                 focusedLabelColor = Accent,
-                unfocusedLabelColor = Color(0xFF6b7280)
+                unfocusedLabelColor = Color(0xFF6b7280),
+                cursorColor = Accent
             )
         )
 
@@ -652,7 +680,8 @@ private fun Step6AdditionalInfo(
             )
             ExposedDropdownMenu(
                 expanded = expanded,
-                onDismissRequest = { expanded = false }
+                onDismissRequest = { expanded = false },
+                modifier = Modifier.background(Color.White)
             ) {
                 educationOptions.filter { it.first.isNotEmpty() }.forEach { (value, label) ->
                     DropdownMenuItem(
@@ -660,7 +689,8 @@ private fun Step6AdditionalInfo(
                         onClick = {
                             viewModel.updateEducation(value)
                             expanded = false
-                        }
+                        },
+                        modifier = Modifier.background(Color.White)
                     )
                 }
             }
@@ -679,10 +709,13 @@ private fun Step6AdditionalInfo(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = Color(0xFF1f2937),
                 unfocusedTextColor = Color(0xFF1f2937),
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
                 focusedBorderColor = Accent,
                 unfocusedBorderColor = Color(0xFFe5e7eb),
                 focusedLabelColor = Accent,
-                unfocusedLabelColor = Color(0xFF6b7280)
+                unfocusedLabelColor = Color(0xFF6b7280),
+                cursorColor = Accent
             )
         )
     }
@@ -720,10 +753,13 @@ private fun Step7Registration(
             colors = OutlinedTextFieldDefaults.colors(
                 focusedTextColor = Color(0xFF1f2937),
                 unfocusedTextColor = Color(0xFF1f2937),
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
                 focusedBorderColor = Accent,
                 unfocusedBorderColor = Color(0xFFe5e7eb),
                 focusedLabelColor = Accent,
-                unfocusedLabelColor = Color(0xFF6b7280)
+                unfocusedLabelColor = Color(0xFF6b7280),
+                cursorColor = Accent
             )
         )
 
