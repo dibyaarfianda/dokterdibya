@@ -23,12 +23,18 @@ data class Patient(
     val expectedDueDate: String?,
     @SerializedName("email_verified")
     val emailVerified: Int = 0,
+    @SerializedName("profile_completed")
+    val profileCompleted: Int = 0,
     @SerializedName("created_at")
     val createdAt: String?
 ) {
     // Helper to get name from either field
     val name: String
         get() = fullName ?: fullname ?: "Pasien"
+
+    // Check if profile is complete (has birth_date)
+    val isProfileComplete: Boolean
+        get() = !birthDate.isNullOrBlank() || profileCompleted == 1
 }
 
 // Response for GET /api/patients/profile
@@ -66,4 +72,21 @@ data class PregnancyInfo(
     val trimester: Int,
     val progress: Float, // 0.0 to 1.0
     val dueDate: String
+)
+
+// Request for completing profile
+data class CompleteProfileRequest(
+    val fullname: String,
+    val phone: String,
+    @SerializedName("birth_date")
+    val birthDate: String,
+    @SerializedName("registration_code")
+    val registrationCode: String? = null
+)
+
+// Response for complete profile
+data class CompleteProfileResponse(
+    val success: Boolean,
+    val message: String?,
+    val user: Patient?
 )

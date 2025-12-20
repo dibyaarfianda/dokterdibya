@@ -16,10 +16,12 @@ import com.dokterdibya.patient.ui.screens.schedule.ScheduleScreen
 import com.dokterdibya.patient.ui.screens.usg.UsgGalleryScreen
 import com.dokterdibya.patient.ui.screens.medications.MedicationsScreen
 import com.dokterdibya.patient.ui.screens.intro.IntroScreen
+import com.dokterdibya.patient.ui.screens.completeprofile.CompleteProfileScreen
 
 sealed class Screen(val route: String) {
     object Intro : Screen("intro")
     object Login : Screen("login")
+    object CompleteProfile : Screen("complete_profile")
     object Home : Screen("home")
     object Schedule : Screen("schedule")
     object Health : Screen("health")
@@ -61,6 +63,21 @@ fun NavGraph(
                 onLoginSuccess = {
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                },
+                onNeedCompleteProfile = {
+                    navController.navigate(Screen.CompleteProfile.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(Screen.CompleteProfile.route) {
+            CompleteProfileScreen(
+                onComplete = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.CompleteProfile.route) { inclusive = true }
                     }
                 }
             )
