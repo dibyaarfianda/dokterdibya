@@ -4993,7 +4993,7 @@ Contoh Markdown:
                                                     <th>ID Pasien</th>
                                                     <th>MR ID</th>
                                                     <th>Nama Lengkap</th>
-                                                    <th>Telepon</th>
+                                                    <th>HPL</th>
                                                     <th>Usia</th>
                                                     <th>Status Resume</th>
                                                     <th>Tgl Registrasi</th>
@@ -7244,7 +7244,9 @@ function mobileNavClick(btn, action) {
 
             tbody.innerHTML = data.data.map(patient => {
                 const birthDate = patient.birth_date ? new Date(patient.birth_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'long', year: 'numeric'}) : '-';
+                // Format date for display (DD/MM/YY) and sorting (YYYYMMDD)
                 const regDate = patient.created_at ? (() => { const d = new Date(patient.created_at); return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear().toString().slice(-2)}`; })() : '-';
+                const regDateSort = patient.created_at ? (() => { const d = new Date(patient.created_at); return `${d.getFullYear()}${(d.getMonth()+1).toString().padStart(2,'0')}${d.getDate().toString().padStart(2,'0')}`; })() : '0';
                 // Resume status badge
                 const resumeStatusMap = {
                     'sudah_kirim_usg_resume': '<span class="badge badge-success">USG + Resume ✓</span>',
@@ -7272,20 +7274,53 @@ function mobileNavClick(btn, action) {
                     ? `<a href="sunday-clinic.html?patient=${patient.id}&mr=${patient.mr_id}" class="text-primary" title="Buka Rekam Medis">${patient.mr_id}</a>${locationBadge}`
                     : `<a href="#" onclick="showNewVisitModal('${patient.id}', '${escapedName}'); return false;" class="text-muted" title="Buat Rekam Medis Baru"><i class="fas fa-plus-circle"></i> Baru</a>`;
 
+                // HPL column with color coding for obstetri patients
+                let hplCell = '-';
+                if (patient.is_obstetri && patient.hpl && !patient.has_delivered) {
+                    const hplDate = new Date(patient.hpl);
+                    const hplFormatted = `${hplDate.getDate().toString().padStart(2,'0')}/${(hplDate.getMonth()+1).toString().padStart(2,'0')}/${hplDate.getFullYear().toString().slice(-2)}`;
+                    const weeksPregnant = Math.floor(patient.days_pregnant / 7);
+
+                    // Color coding: red for >40 weeks (280+ days), yellow for 37-40 weeks (259-279 days)
+                    let bgClass = '';
+                    let textClass = '';
+                    let icon = '';
+                    if (patient.days_pregnant >= 280) {
+                        bgClass = 'bg-danger';
+                        textClass = 'text-white';
+                        icon = '<i class="fas fa-exclamation-triangle mr-1"></i>';
+                    } else if (patient.days_pregnant >= 259) {
+                        bgClass = 'bg-warning';
+                        textClass = '';
+                        icon = '<i class="fas fa-clock mr-1"></i>';
+                    }
+
+                    hplCell = `<span class="${bgClass} ${textClass} px-2 py-1 rounded" title="Usia kehamilan: ${weeksPregnant} minggu">${icon}${hplFormatted}</span>`;
+                } else if (patient.has_delivered) {
+                    hplCell = '<span class="badge badge-success"><i class="fas fa-baby mr-1"></i>Sudah Lahir</span>';
+                }
+
+                // Mark as delivered button (only for obstetri patients who haven't delivered)
+                let deliveryButton = '';
+                if (patient.is_obstetri && !patient.has_delivered) {
+                    deliveryButton = `<button class="btn btn-sm btn-success" onclick="markAsDelivered('${patient.id}', '${escapedName}')" title="Tandai Sudah Melahirkan"><i class="fas fa-baby"></i></button>`;
+                }
+
                 return `
                     <tr>
                         <td><a href="#" class="text-primary" onclick="showPatientMRList('${patient.id}', '${(patient.full_name || '').replace(/'/g, "\\'")}'); return false;" title="Lihat Daftar Rekam Medis">${patient.id}</a></td>
                         <td>${mrIdCell}</td>
                         <td>${patient.full_name || '-'}</td>
-                        <td>${patient.whatsapp || patient.phone || '-'}</td>
+                        <td>${hplCell}</td>
                         <td>${patient.age || '-'}</td>
                         <td>${resumeStatusBadge}</td>
-                        <td>${regDate}</td>
+                        <td data-order="${regDateSort}">${regDate}</td>
                         <td>${statusBadge}</td>
                         <td class="text-nowrap">
                             <button type="button" class="btn btn-sm btn-info btn-view-patient" data-patient-id="${patient.id}" title="Detail">
                                 <i class="fas fa-eye"></i>
                             </button>
+                            ${deliveryButton}
                             <button class="btn btn-sm btn-${patient.status === 'active' ? 'warning' : 'success'}"
                                     onclick="togglePatientStatus('${patient.id}', '${patient.status}', '${patient.full_name}')"
                                     title="${patient.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}">
@@ -7472,7 +7507,9 @@ function mobileNavClick(btn, action) {
             // Render results
             tbody.innerHTML = data.data.map(patient => {
                 const birthDate = patient.birth_date ? new Date(patient.birth_date).toLocaleDateString('id-ID', {day: 'numeric', month: 'short', year: 'numeric'}) : '-';
+                // Format date for display (DD/MM/YY) and sorting (YYYYMMDD)
                 const regDate = patient.created_at ? (() => { const d = new Date(patient.created_at); return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear().toString().slice(-2)}`; })() : '-';
+                const regDateSort = patient.created_at ? (() => { const d = new Date(patient.created_at); return `${d.getFullYear()}${(d.getMonth()+1).toString().padStart(2,'0')}${d.getDate().toString().padStart(2,'0')}`; })() : '0';
                 // Resume status badge
                 const resumeStatusMap = {
                     'sudah_kirim_usg_resume': '<span class="badge badge-success">USG + Resume ✓</span>',
@@ -7500,20 +7537,49 @@ function mobileNavClick(btn, action) {
                     ? `<a href="sunday-clinic.html?patient=${patient.id}&mr=${patient.mr_id}" class="text-primary" title="Buka Rekam Medis"><small>${patient.mr_id}</small></a>${locationBadge}`
                     : `<a href="#" onclick="showNewVisitModal('${patient.id}', '${escapedName}'); return false;" class="text-muted" title="Buat Rekam Medis Baru"><i class="fas fa-plus-circle"></i></a>`;
 
+                // HPL column with color coding for obstetri patients
+                let hplCell = '-';
+                if (patient.is_obstetri && patient.hpl && !patient.has_delivered) {
+                    const hplDate = new Date(patient.hpl);
+                    const hplFormatted = `${hplDate.getDate().toString().padStart(2,'0')}/${(hplDate.getMonth()+1).toString().padStart(2,'0')}/${hplDate.getFullYear().toString().slice(-2)}`;
+                    const weeksPregnant = Math.floor(patient.days_pregnant / 7);
+                    let bgClass = '';
+                    let textClass = '';
+                    let icon = '';
+                    if (patient.days_pregnant >= 280) {
+                        bgClass = 'bg-danger';
+                        textClass = 'text-white';
+                        icon = '<i class="fas fa-exclamation-triangle mr-1"></i>';
+                    } else if (patient.days_pregnant >= 259) {
+                        bgClass = 'bg-warning';
+                        icon = '<i class="fas fa-clock mr-1"></i>';
+                    }
+                    hplCell = `<span class="${bgClass} ${textClass} px-1 rounded" title="Usia kehamilan: ${weeksPregnant} minggu">${icon}${hplFormatted}</span>`;
+                } else if (patient.has_delivered) {
+                    hplCell = '<span class="badge badge-success"><i class="fas fa-baby mr-1"></i>Lahir</span>';
+                }
+
+                // Mark as delivered button
+                let deliveryButton = '';
+                if (patient.is_obstetri && !patient.has_delivered) {
+                    deliveryButton = `<button class="btn btn-xs btn-success" onclick="markAsDelivered('${patient.id}', '${escapedName}')" title="Tandai Sudah Melahirkan"><i class="fas fa-baby"></i></button>`;
+                }
+
                 return `
                     <tr>
                         <td><a href="#" class="text-primary" onclick="showPatientMRList('${patient.id}', '${escapedName}'); return false;" title="Lihat Daftar Rekam Medis"><small>${patient.id}</small></a></td>
                         <td>${mrIdCell}</td>
                         <td>${patient.full_name || '-'}</td>
-                        <td><small>${patient.whatsapp || patient.phone || '-'}</small></td>
+                        <td>${hplCell}</td>
                         <td>${patient.age || '-'}</td>
                         <td>${resumeStatusBadge}</td>
-                        <td><small>${regDate}</small></td>
+                        <td data-order="${regDateSort}"><small>${regDate}</small></td>
                         <td>${statusBadge}</td>
                         <td class="text-nowrap">
                             <button type="button" class="btn btn-xs btn-info btn-view-patient" data-patient-id="${patient.id}" title="Detail">
                                 <i class="fas fa-eye"></i>
                             </button>
+                            ${deliveryButton}
                             <button class="btn btn-xs btn-${patient.status === 'active' ? 'warning' : 'success'}"
                                     onclick="togglePatientStatus('${patient.id}', '${patient.status}', '${patient.full_name}')"
                                     title="${patient.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}">
@@ -7678,7 +7744,37 @@ Apakah Anda yakin ingin melanjutkan?`;
             }
         }
     };
-    
+
+    // Mark patient as delivered (create birth_congratulations entry)
+    window.markAsDelivered = async function(patientId, patientName) {
+        if (!confirm(`Tandai "${patientName}" sudah melahirkan?\n\nIni akan menghapus pasien dari daftar monitoring kehamilan.`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/patients/${patientId}/mark-delivered`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('vps_auth_token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || 'Gagal menandai pasien');
+            }
+
+            alert(`✅ ${patientName} berhasil ditandai sudah melahirkan!`);
+            loadWebPatients(); // Reload the patient list
+
+        } catch (error) {
+            console.error('Error marking patient as delivered:', error);
+            alert('❌ Gagal menandai pasien: ' + error.message);
+        }
+    };
+
     window.togglePatientStatus = async function(patientId, currentStatus, patientName) {
         const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
         const action = newStatus === 'active' ? 'mengaktifkan' : 'menonaktifkan';

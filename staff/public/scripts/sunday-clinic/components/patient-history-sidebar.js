@@ -29,21 +29,43 @@ class PatientHistorySidebar {
 
         // Subscribe to state changes
         stateManager.subscribe('patientData', (patientData) => {
+            console.log('[PatientSidebar] patientData changed:', patientData);
             if (patientData) {
                 this.currentPatientId = patientData.id;
+                console.log('[PatientSidebar] Loading visit history for patientId:', patientData.id);
                 this.updateCurrentPatientInfo(patientData);
                 this.loadVisitHistory(patientData.id);
                 this.highlightCurrentPatientInQueue();
             }
         });
 
-        // Also subscribe to record changes to get MR ID
-        stateManager.subscribe('record', (record) => {
-            if (record?.mr_id) {
-                this.currentMrId = record.mr_id;
+        // Also subscribe to currentMrId changes
+        stateManager.subscribe('currentMrId', (mrId) => {
+            if (mrId) {
+                this.currentMrId = mrId;
+                console.log('[PatientSidebar] currentMrId changed:', mrId);
                 this.highlightCurrentPatientInQueue();
             }
         });
+
+        // Check if state already has data (sidebar may init after record loaded)
+        const currentState = stateManager.getState();
+        console.log('[PatientSidebar] Checking existing state:', currentState);
+
+        // Set currentMrId FIRST before loading visit history (so filter works)
+        // State has currentMrId directly, not nested in recordData.record
+        if (currentState.currentMrId) {
+            this.currentMrId = currentState.currentMrId;
+            console.log('[PatientSidebar] Set currentMrId from state:', this.currentMrId);
+            this.highlightCurrentPatientInQueue();
+        }
+
+        // Then load visit history
+        if (currentState.patientData) {
+            this.currentPatientId = currentState.patientData.id;
+            this.updateCurrentPatientInfo(currentState.patientData);
+            this.loadVisitHistory(currentState.patientData.id);
+        }
 
         this.initialized = true;
         console.log('[PatientSidebar] Initialized');
@@ -325,30 +347,37 @@ class PatientHistorySidebar {
      * Load visit history for patient
      */
     async loadVisitHistory(patientId) {
+        console.log('[PatientSidebar] loadVisitHistory called with patientId:', patientId);
         const container = document.getElementById('visit-history-list');
         const countBadge = document.getElementById('visit-count');
         const copyBtn = document.getElementById('btn-copy-history-data');
 
-        if (!container) return;
+        if (!container) {
+            console.log('[PatientSidebar] container not found!');
+            return;
+        }
 
         container.innerHTML = '<div class="text-center p-3"><i class="fas fa-spinner fa-spin"></i></div>';
 
         try {
             const response = await apiClient.get(`/api/sunday-clinic/patient-visits/${patientId}`);
+            console.log('[PatientSidebar] API response:', response);
 
             if (response.success) {
-                // Get last 5 visits
-                this.visitHistory = (response.data || []).slice(0, 5);
+                // Get visits excluding current one, then take last 5
+                const allVisits = response.data || [];
+                this.visitHistory = allVisits
+                    .filter(v => v.mr_id !== this.currentMrId)
+                    .slice(0, 5);
                 this.renderVisitHistory();
 
                 if (countBadge) {
                     countBadge.textContent = this.visitHistory.length;
                 }
 
-                // Enable copy button if there's history (excluding current visit)
+                // Enable copy button if there's history
                 if (copyBtn) {
-                    const hasOtherVisits = this.visitHistory.some(v => v.mr_id !== this.currentMrId);
-                    copyBtn.disabled = !hasOtherVisits;
+                    copyBtn.disabled = this.visitHistory.length === 0;
                 }
             }
         } catch (error) {
@@ -380,14 +409,13 @@ class PatientHistorySidebar {
         }
 
         container.innerHTML = this.visitHistory.map((visit, index) => {
-            const isCurrent = visit.mr_id === this.currentMrId;
             const categoryLabel = this.getCategoryLabel(visit.mr_category);
 
             return `
-                <div class="visit-card ${isCurrent ? 'border-primary' : ''}" data-mr-id="${visit.mr_id}">
+                <div class="visit-card" data-mr-id="${visit.mr_id}">
                     <div class="visit-card-header" data-toggle="collapse" data-target="#visit-detail-${index}">
                         <div>
-                            <div class="visit-mr">${visit.mr_id} ${isCurrent ? '<span class="badge badge-primary badge-sm ml-1">Aktif</span>' : ''}</div>
+                            <div class="visit-mr">${visit.mr_id}</div>
                             <div class="visit-date">${this.formatDate(visit.visit_date)}</div>
                         </div>
                         <div class="d-flex align-items-center">
@@ -408,12 +436,10 @@ class PatientHistorySidebar {
                                     <i class="fas fa-file-medical mr-1"></i>Muat Resume
                                 </button>
                             </div>
-                            ${!isCurrent ? `
-                                <button class="btn btn-sm btn-warning btn-block"
-                                        onclick="event.stopPropagation(); window.patientSidebar.selectForCopy('${visit.mr_id}')">
-                                    <i class="fas fa-copy mr-1"></i>Salin Data dari Kunjungan Ini
-                                </button>
-                            ` : ''}
+                            <button class="btn btn-sm btn-warning btn-block"
+                                    onclick="event.stopPropagation(); window.patientSidebar.selectForCopy('${visit.mr_id}')">
+                                <i class="fas fa-copy mr-1"></i>Salin Data dari Kunjungan Ini
+                            </button>
                         </div>
                     </div>
                 </div>

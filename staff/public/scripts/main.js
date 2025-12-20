@@ -2706,6 +2706,9 @@ async function applyMenuVisibility(user) {
         // Show invoice history for dokter
         const invoiceNav = document.getElementById('nav-invoice-history');
         if (invoiceNav) invoiceNav.classList.remove('d-none');
+        // Show birth congrats menu for dokter
+        const birthCongratsNav = document.getElementById('nav-birth-congrats');
+        if (birthCongratsNav) birthCongratsNav.classList.remove('d-none');
         return; // All menus visible
     }
 

@@ -822,8 +822,7 @@ router.post('/records/:mrId/:section', verifyToken, async (req, res, next) => {
                 // Don't fail the resume save, just log the error
             }
 
-            // Auto-finalize for hospital records (no billing) when resume_medis is saved
-            // RSIA Melinda, RSUD Gambiran, RS Bhayangkara don't use billing system
+            // Auto-finalize when resume_medis is saved (all locations including klinik_privat)
             try {
                 const [recordInfo] = await db.query(
                     'SELECT visit_location, status FROM sunday_clinic_records WHERE mr_id = ?',
@@ -831,19 +830,16 @@ router.post('/records/:mrId/:section', verifyToken, async (req, res, next) => {
                 );
 
                 if (recordInfo.length > 0 && recordInfo[0].status === 'draft') {
-                    const hospitalLocations = ['rsia_melinda', 'rsud_gambiran', 'rs_bhayangkara'];
-                    if (hospitalLocations.includes(recordInfo[0].visit_location)) {
-                        const userId = req.user.new_id || req.user.id || null;
-                        await db.query(
-                            `UPDATE sunday_clinic_records
-                             SET status = 'finalized',
-                                 finalized_at = NOW(),
-                                 finalized_by = ?
-                             WHERE mr_id = ?`,
-                            [userId, normalizedMrId]
-                        );
-                        logger.info(`Medical record ${normalizedMrId} auto-finalized after resume_medis saved (hospital: ${recordInfo[0].visit_location})`);
-                    }
+                    const userId = req.user.new_id || req.user.id || null;
+                    await db.query(
+                        `UPDATE sunday_clinic_records
+                         SET status = 'finalized',
+                             finalized_at = NOW(),
+                             finalized_by = ?
+                         WHERE mr_id = ?`,
+                        [userId, normalizedMrId]
+                    );
+                    logger.info(`Medical record ${normalizedMrId} auto-finalized after resume_medis saved (location: ${recordInfo[0].visit_location})`);
                 }
             } catch (finalizeError) {
                 logger.warn('Auto-finalize warning:', finalizeError);

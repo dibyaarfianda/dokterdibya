@@ -167,6 +167,45 @@
         }
     }
 
+    // Show category selection modal
+    function showCategoryModal() {
+        return new Promise((resolve) => {
+            const existingModal = document.getElementById('dibya-category-modal');
+            if (existingModal) existingModal.remove();
+
+            const modal = document.createElement('div');
+            modal.id = 'dibya-category-modal';
+            modal.innerHTML = `
+                <div style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 99999; display: flex; align-items: center; justify-content: center;">
+                    <div style="background: white; border-radius: 12px; padding: 24px; width: 320px; box-shadow: 0 10px 40px rgba(0,0,0,0.3);">
+                        <h3 style="margin: 0 0 16px 0; color: #333; font-size: 18px;">Pilih Kategori</h3>
+                        <select id="dibya-category-select" style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 14px; margin-bottom: 16px;">
+                            <option value="obstetri">Obstetri (Kehamilan)</option>
+                            <option value="gyn_repro">Ginekologi Reproduksi</option>
+                            <option value="gyn_special">Ginekologi Spesial</option>
+                        </select>
+                        <div style="display: flex; gap: 12px;">
+                            <button id="dibya-category-cancel" style="flex: 1; padding: 12px; border: 1px solid #ddd; background: white; border-radius: 8px; cursor: pointer; font-size: 14px;">Batal</button>
+                            <button id="dibya-category-confirm" style="flex: 1; padding: 12px; border: none; background: #007bff; color: white; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 500;">Export</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+
+            document.getElementById('dibya-category-cancel').onclick = () => {
+                modal.remove();
+                resolve(null);
+            };
+
+            document.getElementById('dibya-category-confirm').onclick = () => {
+                const category = document.getElementById('dibya-category-select').value;
+                modal.remove();
+                resolve(category);
+            };
+        });
+    }
+
     // Handle export button click
     async function handleExport() {
         const btn = document.getElementById(CONFIG.BUTTON_ID);
@@ -174,6 +213,12 @@
         if (!isExtensionValid()) {
             showNotification('Extension perlu di-refresh. Reload halaman ini (F5)', 'warning');
             return;
+        }
+
+        // Show category selection modal
+        const selectedCategory = await showCategoryModal();
+        if (!selectedCategory) {
+            return; // User cancelled
         }
 
         btn.disabled = true;
@@ -203,7 +248,7 @@
                         chrome.runtime.sendMessage({
                             action: 'parseRecord',
                             text: text,
-                            category: 'obstetri',
+                            category: selectedCategory,
                             source: 'rs_bhayangkara'
                         }, (response) => {
                             if (chrome.runtime.lastError) {
@@ -227,7 +272,7 @@
                         chrome.runtime.sendMessage({
                             action: 'parsePdf',
                             pdf_url: pdfUrl,
-                            category: 'obstetri',
+                            category: selectedCategory,
                             source: 'rs_bhayangkara'
                         }, (response) => {
                             console.log('[Bhayangkara Export] PDF parse response:', response);
@@ -252,12 +297,16 @@
             }
 
             if (result.success) {
+                // Add category to result data
+                result.data.category = selectedCategory;
+
                 // Store parsed data
                 try {
                     await chrome.storage.local.set({
                         'dibya_import_data': result.data,
                         'dibya_import_timestamp': Date.now(),
-                        'dibya_import_source': 'rs_bhayangkara'
+                        'dibya_import_source': 'rs_bhayangkara',
+                        'dibya_import_category': selectedCategory
                     });
                 } catch (e) {
                     // Ignore storage error

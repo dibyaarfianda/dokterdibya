@@ -251,8 +251,13 @@ router.get('/api/patients', verifyToken, async (req, res) => {
         // Use actual_last_visit from sunday_appointments if last_visit is null
         // Also use last_visit_date from sunday_clinic_records for location-based queries
         // Calculate resume_status for each patient
+        // Also fetch HPL data for obstetri patients
         const mappedRows = await Promise.all(rows.map(async (patient) => {
             let resume_status = null;
+            let hpl = null;
+            let days_pregnant = null;
+            let is_obstetri = false;
+            let has_delivered = false;
 
             // Only calculate if patient has an MR
             if (patient.mr_id) {
@@ -294,11 +299,57 @@ router.get('/api/patients', verifyToken, async (req, res) => {
                 }
             }
 
+            // Check if patient is obstetri and get HPL data (only for obstetri patients who haven't delivered)
+            try {
+                // Get the latest obstetri record for this patient
+                const [obstetriRecord] = await db.query(`
+                    SELECT scr.mr_id, scr.mr_category,
+                        JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) as hpht
+                    FROM sunday_clinic_records scr
+                    JOIN medical_records mr ON mr.mr_id COLLATE utf8mb4_general_ci = scr.mr_id COLLATE utf8mb4_general_ci
+                        AND mr.record_type = 'anamnesa'
+                    WHERE scr.patient_id = ?
+                        AND scr.mr_category = 'obstetri'
+                        AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) IS NOT NULL
+                        AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != ''
+                    ORDER BY scr.last_activity_at DESC
+                    LIMIT 1
+                `, [patient.id]);
+
+                if (obstetriRecord.length > 0 && obstetriRecord[0].hpht) {
+                    is_obstetri = true;
+                    const hpht = new Date(obstetriRecord[0].hpht);
+                    if (!isNaN(hpht.getTime())) {
+                        // Calculate HPL (HPHT + 280 days)
+                        const hplDate = new Date(hpht.getTime() + 280 * 24 * 60 * 60 * 1000);
+                        // Format HPL as YYYY-MM-DD using local timezone
+                        hpl = `${hplDate.getFullYear()}-${String(hplDate.getMonth() + 1).padStart(2, '0')}-${String(hplDate.getDate()).padStart(2, '0')}`;
+                        // Calculate days pregnant
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        days_pregnant = Math.floor((today.getTime() - hpht.getTime()) / (24 * 60 * 60 * 1000));
+
+                        // Check if patient has delivered (birth_congratulations entry)
+                        const [birthRecord] = await db.query(
+                            `SELECT 1 FROM birth_congratulations WHERE patient_id = ? LIMIT 1`,
+                            [patient.id]
+                        );
+                        has_delivered = birthRecord.length > 0;
+                    }
+                }
+            } catch (err) {
+                console.error('Error fetching HPL data for patient', patient.id, err.message);
+            }
+
             return {
                 ...patient,
                 whatsapp: patient.whatsapp || patient.phone || null,
                 last_visit: patient.last_visit || patient.actual_last_visit || patient.last_visit_date || null,
-                resume_status
+                resume_status,
+                hpl,
+                days_pregnant,
+                is_obstetri,
+                has_delivered
             };
         }));
 
@@ -537,6 +588,166 @@ router.post('/api/patients/fix-names', verifyToken, async (req, res) => {
         res.status(500).json({
             success: false,
             message: 'Failed to fix patient names',
+            error: error.message
+        });
+    }
+});
+
+// ==================== PREGNANCY TRACKER ====================
+// IMPORTANT: These routes MUST be defined BEFORE /api/patients/:id to avoid route conflicts
+
+// GET near-due pregnancies (37-40 weeks from HPHT, 3 weeks before due)
+// Returns unique patients (by patient_id), showing most recent obstetri record
+router.get('/api/patients/near-due-pregnancies', verifyToken, async (req, res) => {
+    try {
+        // Get the latest obstetri record per patient with valid HPHT
+        const query = `
+            SELECT
+                p.id as patient_id,
+                p.full_name,
+                p.whatsapp,
+                latest.mr_id,
+                latest.visit_location,
+                latest.hpht,
+                DATEDIFF(CURDATE(), latest.hpht) as days_pregnant,
+                FLOOR(DATEDIFF(CURDATE(), latest.hpht) / 7) as weeks_pregnant,
+                DATE_ADD(latest.hpht, INTERVAL 280 DAY) as hpl,
+                latest.last_activity_at as last_visit
+            FROM patients p
+            JOIN (
+                SELECT
+                    scr.patient_id,
+                    scr.mr_id,
+                    scr.visit_location,
+                    scr.last_activity_at,
+                    JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) as hpht,
+                    ROW_NUMBER() OVER (PARTITION BY scr.patient_id ORDER BY scr.last_activity_at DESC) as rn
+                FROM sunday_clinic_records scr
+                JOIN medical_records mr ON mr.mr_id COLLATE utf8mb4_general_ci = scr.mr_id COLLATE utf8mb4_general_ci
+                    AND mr.record_type = 'anamnesa'
+                WHERE scr.mr_category = 'obstetri'
+                AND JSON_EXTRACT(mr.record_data, '$.hpht') IS NOT NULL
+                AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != ''
+                AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != 'null'
+            ) latest ON p.id = latest.patient_id AND latest.rn = 1
+            LEFT JOIN birth_congratulations bc ON bc.patient_id = p.id AND bc.is_published = 1
+            WHERE bc.id IS NULL
+            AND DATEDIFF(CURDATE(), latest.hpht) >= 259
+            AND DATEDIFF(CURDATE(), latest.hpht) < 280
+            ORDER BY days_pregnant DESC
+        `;
+
+        const [rows] = await db.query(query);
+
+        const nearDuePatients = rows.map(row => {
+            const weeksPregnant = Math.floor(row.days_pregnant / 7);
+            const daysExtra = row.days_pregnant % 7;
+            const daysUntilDue = 280 - row.days_pregnant;
+
+            return {
+                patient_id: row.patient_id,
+                full_name: row.full_name,
+                whatsapp: row.whatsapp,
+                mr_id: row.mr_id,
+                visit_location: row.visit_location,
+                hpht: row.hpht,
+                hpl: row.hpl,
+                weeks_pregnant: weeksPregnant,
+                days_pregnant: row.days_pregnant,
+                gestational_age: `${weeksPregnant} minggu ${daysExtra} hari`,
+                days_until_due: daysUntilDue,
+                last_visit: row.last_visit
+            };
+        });
+
+        res.json({
+            success: true,
+            data: nearDuePatients,
+            count: nearDuePatients.length
+        });
+    } catch (error) {
+        console.error('Error fetching near-due pregnancies:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch near-due pregnancies',
+            error: error.message
+        });
+    }
+});
+
+// GET overdue pregnancies (>40 weeks from HPHT, not yet delivered)
+// Returns unique patients (by patient_id), showing most recent obstetri record
+router.get('/api/patients/overdue-pregnancies', verifyToken, async (req, res) => {
+    try {
+        // Get the latest obstetri record per patient with valid HPHT
+        const query = `
+            SELECT
+                p.id as patient_id,
+                p.full_name,
+                p.whatsapp,
+                latest.mr_id,
+                latest.visit_location,
+                latest.hpht,
+                DATEDIFF(CURDATE(), latest.hpht) as days_pregnant,
+                FLOOR(DATEDIFF(CURDATE(), latest.hpht) / 7) as weeks_pregnant,
+                DATE_ADD(latest.hpht, INTERVAL 280 DAY) as hpl,
+                latest.last_activity_at as last_visit
+            FROM patients p
+            JOIN (
+                SELECT
+                    scr.patient_id,
+                    scr.mr_id,
+                    scr.visit_location,
+                    scr.last_activity_at,
+                    JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) as hpht,
+                    ROW_NUMBER() OVER (PARTITION BY scr.patient_id ORDER BY scr.last_activity_at DESC) as rn
+                FROM sunday_clinic_records scr
+                JOIN medical_records mr ON mr.mr_id COLLATE utf8mb4_general_ci = scr.mr_id COLLATE utf8mb4_general_ci
+                    AND mr.record_type = 'anamnesa'
+                WHERE scr.mr_category = 'obstetri'
+                AND JSON_EXTRACT(mr.record_data, '$.hpht') IS NOT NULL
+                AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != ''
+                AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != 'null'
+            ) latest ON p.id = latest.patient_id AND latest.rn = 1
+            LEFT JOIN birth_congratulations bc ON bc.patient_id = p.id AND bc.is_published = 1
+            WHERE bc.id IS NULL
+            AND DATEDIFF(CURDATE(), latest.hpht) >= 280
+            ORDER BY days_pregnant DESC
+        `;
+
+        const [rows] = await db.query(query);
+
+        const overduePatients = rows.map(row => {
+            const weeksPregnant = Math.floor(row.days_pregnant / 7);
+            const daysExtra = row.days_pregnant % 7;
+            const daysOverdue = row.days_pregnant - 280;
+
+            return {
+                patient_id: row.patient_id,
+                full_name: row.full_name,
+                whatsapp: row.whatsapp,
+                mr_id: row.mr_id,
+                visit_location: row.visit_location,
+                hpht: row.hpht,
+                hpl: row.hpl,
+                weeks_pregnant: weeksPregnant,
+                days_pregnant: row.days_pregnant,
+                gestational_age: `${weeksPregnant} minggu ${daysExtra} hari`,
+                days_overdue: daysOverdue,
+                last_visit: row.last_visit
+            };
+        });
+
+        res.json({
+            success: true,
+            data: overduePatients,
+            count: overduePatients.length
+        });
+    } catch (error) {
+        console.error('Error fetching overdue pregnancies:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch overdue pregnancies',
             error: error.message
         });
     }
@@ -829,12 +1040,12 @@ router.patch('/api/patients/:id/status', verifyToken, async (req, res) => {
         if (result.affectedRows === 0) {
             return res.status(404).json({ success: false, message: 'Patient not found' });
         }
-        
+
         // Invalidate cache
-        cache.invalidatePattern('patients:');
-        
-        res.json({ 
-            success: true, 
+        cache.delPattern('patients:');
+
+        res.json({
+            success: true,
             message: `Patient status updated to ${status}`,
             data: { id: req.params.id, status }
         });
@@ -844,6 +1055,51 @@ router.patch('/api/patients/:id/status', verifyToken, async (req, res) => {
             success: false, 
             message: 'Failed to update patient status', 
             error: error.message 
+        });
+    }
+});
+
+// MARK PATIENT AS DELIVERED (creates birth_congratulations entry)
+router.post('/api/patients/:id/mark-delivered', verifyToken, async (req, res) => {
+    try {
+        const patientId = req.params.id;
+
+        // Check if patient exists
+        const [patientRows] = await db.query('SELECT id, full_name FROM patients WHERE id = ?', [patientId]);
+        if (patientRows.length === 0) {
+            return res.status(404).json({ success: false, message: 'Pasien tidak ditemukan' });
+        }
+
+        // Check if already marked as delivered
+        const [existingBirth] = await db.query(
+            'SELECT id FROM birth_congratulations WHERE patient_id = ?',
+            [patientId]
+        );
+
+        if (existingBirth.length > 0) {
+            return res.status(400).json({ success: false, message: 'Pasien sudah ditandai melahirkan sebelumnya' });
+        }
+
+        // Create birth_congratulations entry (minimal entry just to mark as delivered)
+        await db.query(
+            `INSERT INTO birth_congratulations (patient_id, birth_date, is_published, created_at)
+             VALUES (?, CURDATE(), 0, NOW())`,
+            [patientId]
+        );
+
+        // Invalidate cache
+        cache.delPattern('patients:');
+
+        res.json({
+            success: true,
+            message: `Pasien ${patientRows[0].full_name} berhasil ditandai sudah melahirkan`
+        });
+    } catch (error) {
+        console.error('Error marking patient as delivered:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal menandai pasien melahirkan',
+            error: error.message
         });
     }
 });

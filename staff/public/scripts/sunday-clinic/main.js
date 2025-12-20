@@ -1957,6 +1957,74 @@ window.generateResumeMedis = () => app.generateResumeMedis();
 window.saveResumeMedis = () => app.saveResumeMedis();
 window.resetResumeMedis = () => app.resetResumeMedis();
 
+// Mark examination as completed
+window.markExaminationCompleted = async () => {
+    const state = stateManager.getState();
+    const appointment = state.appointmentData;
+
+    if (!appointment || !appointment.id) {
+        window.showToast('error', 'Data janji temu tidak ditemukan');
+        return;
+    }
+
+    if (appointment.status === 'completed') {
+        window.showToast('info', 'Pemeriksaan sudah ditandai selesai');
+        return;
+    }
+
+    // Confirm action
+    if (!confirm('Tandai pasien ini sudah selesai diperiksa?')) {
+        return;
+    }
+
+    const btn = document.getElementById('btn-mark-completed');
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+    }
+
+    try {
+        const token = window.getToken();
+        const response = await fetch(`/api/sunday-appointments/${appointment.id}/status`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({ status: 'completed' })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            throw new Error(result.message || 'Gagal mengupdate status');
+        }
+
+        // Update state with new status
+        stateManager.setState({
+            appointmentData: { ...appointment, status: 'completed' }
+        });
+
+        window.showToast('success', 'Pemeriksaan berhasil ditandai selesai');
+
+        // Re-render resume medis section to show updated status
+        const resumeMedisSection = document.getElementById('resume-medis-card');
+        if (resumeMedisSection) {
+            const ResumeComponent = await import('./components/shared/resume-medis.js');
+            const newHtml = await ResumeComponent.default.render(stateManager.getState());
+            resumeMedisSection.outerHTML = newHtml;
+        }
+
+    } catch (error) {
+        console.error('Error marking examination completed:', error);
+        window.showToast('error', error.message || 'Gagal menandai selesai diperiksa');
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-clipboard-check"></i> Selesai Diperiksa';
+        }
+    }
+};
+
 // PDF Download function
 window.downloadResumePDF = async () => {
     const state = stateManager.getState();
