@@ -510,6 +510,7 @@ private fun Step5SpouseInfo(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun Step6AdditionalInfo(
     uiState: com.dokterdibya.patient.viewmodel.CompleteProfileUiState,
