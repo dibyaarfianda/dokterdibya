@@ -968,40 +968,74 @@ router.post('/change-password', verifyToken, async (req, res) => {
 // Complete profile (first-time setup)
 router.post('/complete-profile', verifyToken, async (req, res) => {
     try {
-        const { fullname, phone, birth_date, age } = req.body;
-        
+        const { fullname, phone, birth_date, age, registration_code } = req.body;
+
         // Validation
         if (!fullname || !phone || !birth_date) {
             return res.status(400).json({ message: 'Nama, nomor telepon, dan tanggal lahir harus diisi' });
         }
-        
+
+        // Validate registration code is required
+        if (!registration_code) {
+            return res.status(400).json({ message: 'Kode registrasi wajib diisi' });
+        }
+
         // Validate phone format (Indonesian mobile with country code 628)
         const phoneRegex = /^628\d{9,12}$/;
         if (!phoneRegex.test(phone)) {
             return res.status(400).json({ message: 'Format nomor telepon tidak valid. Harus dimulai dengan 628 dan 12-15 digit total' });
         }
-        
+
+        // Validate registration code
+        const [regCodes] = await db.query(
+            `SELECT * FROM registration_codes
+             WHERE code = ? AND status = 'active' AND expires_at > NOW()`,
+            [registration_code.toUpperCase()]
+        );
+
+        if (regCodes.length === 0) {
+            return res.status(400).json({ message: 'Kode registrasi tidak valid atau sudah kadaluarsa' });
+        }
+
+        const regCode = regCodes[0];
+
+        // If code has a specific phone, validate it matches
+        if (regCode.phone && regCode.phone !== phone) {
+            return res.status(400).json({ message: 'Nomor telepon tidak sesuai dengan kode registrasi' });
+        }
+
         // Update patient data and mark profile as completed
         await db.query(
-            `UPDATE patients 
+            `UPDATE patients
              SET full_name = ?, phone = ?, birth_date = ?, age = ?, profile_completed = 1
              WHERE id = ?`,
             [fullname, phone, birth_date, age || null, req.user.id]
         );
-        
+
+        // Mark registration code as used (only for non-public codes)
+        if (!regCode.is_public) {
+            await db.query(
+                `UPDATE registration_codes
+                 SET status = 'used', used_at = NOW(), used_by_patient_id = ?
+                 WHERE id = ?`,
+                [req.user.id, regCode.id]
+            );
+        }
+
         // Fetch updated profile
         const [updatedPatient] = await db.query(
             'SELECT id, full_name, email, phone, photo_url, birth_date, age, registration_date, profile_completed FROM patients WHERE id = ?',
             [req.user.id]
         );
-        
+
         if (updatedPatient.length === 0) {
             return res.status(404).json({ message: 'Pasien tidak ditemukan' });
         }
-        
+
         const patient = updatedPatient[0];
-        
-        res.json({ 
+
+        res.json({
+            success: true,
             message: 'Profil berhasil dilengkapi',
             user: {
                 id: patient.id,
@@ -1015,7 +1049,7 @@ router.post('/complete-profile', verifyToken, async (req, res) => {
                 profile_completed: patient.profile_completed
             }
         });
-        
+
     } catch (error) {
         console.error('Complete profile error:', error);
         res.status(500).json({ message: 'Terjadi kesalahan saat menyimpan profil' });

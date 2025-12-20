@@ -13,6 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.Logout
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -44,15 +45,15 @@ fun SlideMenu(
     onLogout: () -> Unit
 ) {
     val menuItems = listOf(
-        MenuItem(Icons.Default.CalendarMonth, "Booking", Accent) { onNavigateToBooking(); onClose() },
-        MenuItem(Icons.Default.Schedule, "Jadwal", Info) { onNavigateToSchedule(); onClose() },
-        MenuItem(Icons.Default.ChildCare, "USG", Purple) { onNavigateToUsg(); onClose() },
-        MenuItem(Icons.Default.Favorite, "Kesuburan", Fertility) { onNavigateToFertility(); onClose() },
-        MenuItem(Icons.Default.History, "Riwayat", Warning) { onNavigateToVisitHistory(); onClose() },
-        MenuItem(Icons.Default.Description, "Dokumen", Success) { onNavigateToDocuments(); onClose() },
-        MenuItem(Icons.Default.Article, "Artikel", Accent) { onNavigateToArticles(); onClose() },
-        MenuItem(Icons.Default.Person, "Profil", Purple) { onNavigateToProfile(); onClose() },
-        MenuItem(Icons.Default.Logout, "Keluar", Danger, isLogout = true) { onLogout() }
+        MenuItem(Icons.Filled.EventAvailable, "Booking", Accent) { onNavigateToBooking(); onClose() },
+        MenuItem(Icons.Filled.AccessTime, "Jadwal", Info) { onNavigateToSchedule(); onClose() },
+        MenuItem(Icons.Filled.ChildFriendly, "USG", Purple) { onNavigateToUsg(); onClose() },
+        MenuItem(Icons.Filled.Favorite, "Kesuburan", Fertility) { onNavigateToFertility(); onClose() },
+        MenuItem(Icons.Filled.Restore, "Riwayat", Warning) { onNavigateToVisitHistory(); onClose() },
+        MenuItem(Icons.Filled.FolderOpen, "Dokumen", Success) { onNavigateToDocuments(); onClose() },
+        MenuItem(Icons.Filled.AutoStories, "Artikel", Accent) { onNavigateToArticles(); onClose() },
+        MenuItem(Icons.Filled.AccountCircle, "Profil", Purple) { onNavigateToProfile(); onClose() },
+        MenuItem(Icons.Outlined.Logout, "Keluar", Danger, isLogout = true) { onLogout() }
     )
 
     // Overlay and menu container
@@ -100,7 +101,7 @@ fun SlideMenu(
                 modifier = Modifier
                     .padding(end = 15.dp)
                     .width(80.dp)
-                    .heightIn(max = 360.dp)  // Show ~5 items
+                    .heightIn(max = 400.dp)  // Show ~5 items
                     .verticalScroll(rememberScrollState()),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(10.dp)
@@ -167,12 +168,12 @@ fun MenuItemButton(item: MenuItem) {
 
     Box(
         modifier = Modifier
-            .size(58.dp)
+            .size(62.dp)
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
             }
-            .clip(RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(
                 if (item.isLogout) {
                     Brush.linearGradient(
@@ -201,7 +202,7 @@ fun MenuItemButton(item: MenuItem) {
             imageVector = item.icon,
             contentDescription = item.label,
             tint = item.color,
-            modifier = Modifier.size(26.dp)
+            modifier = Modifier.size(28.dp)
         )
     }
 }

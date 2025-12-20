@@ -19,6 +19,7 @@ import com.dokterdibya.patient.data.api.Medication
 import com.dokterdibya.patient.data.api.PregnancyData
 import com.dokterdibya.patient.data.api.LikeRequest
 import com.dokterdibya.patient.data.api.CancelRequest
+import com.dokterdibya.patient.data.model.CompleteProfileRequest
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -58,6 +59,34 @@ class PatientRepository @Inject constructor(
                 Result.success(response.body()!!.user!!)
             } else {
                 Result.failure(Exception("Failed to get profile"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun completeProfile(fullname: String, phone: String, birthDate: String, registrationCode: String? = null): Result<Patient> {
+        return try {
+            val response = apiService.completeProfile(
+                CompleteProfileRequest(fullname, phone, birthDate, registrationCode)
+            )
+            if (response.isSuccessful && response.body() != null) {
+                val body = response.body()!!
+                if (body.success && body.user != null) {
+                    // Update stored user info
+                    tokenRepository.saveUserInfo(body.user.name, body.user.email ?: "")
+                    Result.success(body.user)
+                } else {
+                    Result.failure(Exception(body.message ?: "Gagal menyimpan profil"))
+                }
+            } else {
+                val errorBody = response.errorBody()?.string()
+                val errorMsg = try {
+                    org.json.JSONObject(errorBody ?: "").optString("message", "Gagal menyimpan profil")
+                } catch (e: Exception) {
+                    "Gagal menyimpan profil"
+                }
+                Result.failure(Exception(errorMsg))
             }
         } catch (e: Exception) {
             Result.failure(e)

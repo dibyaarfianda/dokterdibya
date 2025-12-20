@@ -14,6 +14,7 @@ import javax.inject.Inject
 data class AuthUiState(
     val isLoading: Boolean = false,
     val isLoggedIn: Boolean = false,
+    val needsProfileCompletion: Boolean = false,
     val error: String? = null
 )
 
@@ -35,9 +36,14 @@ class AuthViewModel @Inject constructor(
             patientRepository.googleLogin(authCode).fold(
                 onSuccess = { response ->
                     if (response.success) {
+                        // Check if profile is complete
+                        val patient = response.patientData
+                        val needsCompletion = patient?.birthDate.isNullOrBlank()
+
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
-                            isLoggedIn = true
+                            isLoggedIn = true,
+                            needsProfileCompletion = needsCompletion
                         )
                     } else {
                         _uiState.value = _uiState.value.copy(
@@ -66,5 +72,27 @@ class AuthViewModel @Inject constructor(
 
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
+    }
+
+    // Check profile completion for returning users
+    fun checkProfileCompletion() {
+        viewModelScope.launch {
+            patientRepository.getProfile().fold(
+                onSuccess = { patient ->
+                    val needsCompletion = patient.birthDate.isNullOrBlank()
+                    _uiState.value = _uiState.value.copy(
+                        isLoggedIn = true,
+                        needsProfileCompletion = needsCompletion
+                    )
+                },
+                onFailure = {
+                    // If profile fetch fails, just go to home
+                    _uiState.value = _uiState.value.copy(
+                        isLoggedIn = true,
+                        needsProfileCompletion = false
+                    )
+                }
+            )
+        }
     }
 }

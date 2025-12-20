@@ -33,15 +33,28 @@ import com.dokterdibya.patient.viewmodel.AuthViewModel
 fun LoginScreen(
     onGoogleSignIn: () -> Unit,
     onLoginSuccess: () -> Unit,
+    onNeedCompleteProfile: () -> Unit = {},
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val isLoggedIn by viewModel.isLoggedIn.collectAsState(initial = false)
 
-    // Navigate to home if already logged in
+    // Navigate based on login state and profile completion
+    LaunchedEffect(uiState.isLoggedIn, uiState.needsProfileCompletion) {
+        if (uiState.isLoggedIn) {
+            if (uiState.needsProfileCompletion) {
+                onNeedCompleteProfile()
+            } else {
+                onLoginSuccess()
+            }
+        }
+    }
+
+    // Also check if already logged in (returning user)
     LaunchedEffect(isLoggedIn) {
-        if (isLoggedIn) {
-            onLoginSuccess()
+        if (isLoggedIn && !uiState.isLoggedIn) {
+            // Already logged in from previous session - check profile completion first
+            viewModel.checkProfileCompletion()
         }
     }
 
