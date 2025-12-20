@@ -4,12 +4,11 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
-import androidx.work.Configuration
 import dagger.hilt.android.HiltAndroidApp
 import timber.log.Timber
 
 @HiltAndroidApp
-class DokterDibyaApp : Application(), Configuration.Provider {
+class DokterDibyaApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
@@ -23,12 +22,6 @@ class DokterDibyaApp : Application(), Configuration.Provider {
         createNotificationChannels()
 
         Timber.d("DokterDibyaApp initialized")
-    }
-
-    override fun getWorkManagerConfiguration(): Configuration {
-        return Configuration.Builder()
-            .setMinimumLoggingLevel(if (BuildConfig.DEBUG) android.util.Log.DEBUG else android.util.Log.ERROR)
-            .build()
     }
 
     private fun createNotificationChannels() {

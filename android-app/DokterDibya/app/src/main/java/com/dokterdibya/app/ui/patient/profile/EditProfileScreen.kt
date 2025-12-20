@@ -16,6 +16,7 @@ import com.dokterdibya.app.domain.Result
 import com.dokterdibya.app.ui.common.components.AppButton
 import com.dokterdibya.app.ui.common.components.AppTextField
 import com.dokterdibya.app.ui.patient.dashboard.DashboardViewModel
+import com.dokterdibya.app.utils.ValidationResult
 import com.dokterdibya.app.utils.ValidationUtils
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -110,7 +111,7 @@ fun EditProfileScreen(
                     val nameValidation = ValidationUtils.validateName(fullName)
                     val phoneValidation = if (phoneNumber.isNotBlank()) {
                         ValidationUtils.validatePhone(phoneNumber)
-                    } else ValidationUtils.ValidationResult.Valid
+                    } else ValidationResult.Valid
 
                     fullNameError = nameValidation.errorMessage
                     phoneError = phoneValidation.errorMessage
