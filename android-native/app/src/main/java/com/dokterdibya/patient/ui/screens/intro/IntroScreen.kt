@@ -25,17 +25,20 @@ import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
 import com.dokterdibya.patient.R
 
+@androidx.annotation.OptIn(androidx.media3.common.util.UnstableApi::class)
 @Composable
 fun IntroScreen(
     onIntroFinished: () -> Unit
 ) {
     val context = LocalContext.current
+    var hasFinished by remember { mutableStateOf(false) }
 
     // Create ExoPlayer
     val exoPlayer = remember {
         ExoPlayer.Builder(context).build().apply {
             val videoUri = Uri.parse("android.resource://${context.packageName}/${R.raw.intro_video}")
             setMediaItem(MediaItem.fromUri(videoUri))
+            repeatMode = Player.REPEAT_MODE_OFF
             prepare()
             playWhenReady = true
         }
@@ -45,7 +48,8 @@ fun IntroScreen(
     DisposableEffect(exoPlayer) {
         val listener = object : Player.Listener {
             override fun onPlaybackStateChanged(state: Int) {
-                if (state == Player.STATE_ENDED) {
+                if (state == Player.STATE_ENDED && !hasFinished) {
+                    hasFinished = true
                     onIntroFinished()
                 }
             }
@@ -67,8 +71,11 @@ fun IntroScreen(
                 indication = null
             ) {
                 // Tap anywhere to skip
-                exoPlayer.stop()
-                onIntroFinished()
+                if (!hasFinished) {
+                    hasFinished = true
+                    exoPlayer.stop()
+                    onIntroFinished()
+                }
             }
     ) {
         // Video Player
@@ -77,7 +84,7 @@ fun IntroScreen(
                 PlayerView(ctx).apply {
                     player = exoPlayer
                     useController = false
-                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                    resizeMode = AspectRatioFrameLayout.RESIZE_MODE_ZOOM
                     layoutParams = FrameLayout.LayoutParams(
                         ViewGroup.LayoutParams.MATCH_PARENT,
                         ViewGroup.LayoutParams.MATCH_PARENT
@@ -90,8 +97,11 @@ fun IntroScreen(
         // Skip Button
         Button(
             onClick = {
-                exoPlayer.stop()
-                onIntroFinished()
+                if (!hasFinished) {
+                    hasFinished = true
+                    exoPlayer.stop()
+                    onIntroFinished()
+                }
             },
             modifier = Modifier
                 .align(Alignment.BottomEnd)
