@@ -294,7 +294,7 @@ class PatientRepository @Inject constructor(
         return try {
             val response = apiService.getArticles(category, limit)
             if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!.articles)
+                Result.success(response.body()!!.data ?: emptyList())
             } else {
                 Result.failure(Exception("Failed to get articles"))
             }
