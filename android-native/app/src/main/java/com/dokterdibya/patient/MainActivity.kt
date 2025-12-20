@@ -77,23 +77,21 @@ class MainActivity : ComponentActivity() {
                     val isLoggedIn by viewModel.isLoggedIn.collectAsState(initial = null)
                     val navController = rememberNavController()
 
-                    // Track if intro was shown this session
-                    var introShown by remember { mutableStateOf(false) }
-
-                    // Determine start destination based on login state
-                    val startDestination = when {
-                        isLoggedIn == true -> Screen.Home.route
-                        isLoggedIn == false && !introShown -> {
-                            introShown = true
-                            Screen.Intro.route
+                    // Calculate start destination only ONCE when isLoggedIn is first determined
+                    val startDestination by remember(isLoggedIn) {
+                        derivedStateOf {
+                            when (isLoggedIn) {
+                                true -> Screen.Home.route
+                                false -> Screen.Intro.route  // Always show intro when not logged in
+                                null -> null
+                            }
                         }
-                        else -> Screen.Login.route
                     }
 
-                    if (isLoggedIn != null) {
+                    startDestination?.let { destination ->
                         NavGraph(
                             navController = navController,
-                            startDestination = startDestination,
+                            startDestination = destination,
                             onGoogleSignIn = { signInWithGoogle() }
                         )
                     }
