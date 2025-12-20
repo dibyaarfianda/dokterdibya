@@ -185,11 +185,11 @@ class BookingViewModel @Inject constructor(
                         AppointmentInfo(
                             id = apt.id,
                             date = apt.appointmentDate,
-                            dateFormatted = apt.appointmentDate,
-                            time = apt.timeSlot,
-                            sessionLabel = apt.timeSlot,
+                            dateFormatted = apt.getDisplayDate(),
+                            time = apt.getDisplayTime(),
+                            sessionLabel = apt.sessionLabel ?: "Sesi ${apt.session ?: 1}",
                             status = apt.status,
-                            isPast = false
+                            isPast = apt.isPast ?: false
                         )
                     }
                     _uiState.value = _uiState.value.copy(
