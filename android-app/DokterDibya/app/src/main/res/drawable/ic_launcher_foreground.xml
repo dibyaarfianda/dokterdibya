@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- Background circle -->
+    <path
+        android:fillColor="#28A7E9"
+        android:pathData="M54,54m-40,0a40,40 0,1 1,80 0a40,40 0,1 1,-80 0"/>
+
+    <!-- Medical cross / Plus sign -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M48,34h12v14h14v12h-14v14h-12v-14h-14v-12h14z"/>
+
+    <!-- Stethoscope hint (simplified) -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,70 Q54,78 46,78 Q38,78 38,70"
+        android:strokeWidth="2"
+        android:strokeColor="#FFFFFF"/>
+</vector>
