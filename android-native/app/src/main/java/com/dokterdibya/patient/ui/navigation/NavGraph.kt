@@ -2,9 +2,12 @@ package com.dokterdibya.patient.ui.navigation
 
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.dokterdibya.patient.ui.screens.articles.ArticlesScreen
+import com.dokterdibya.patient.ui.screens.articles.ArticleDetailScreen
 import com.dokterdibya.patient.ui.screens.booking.BookingScreen
 import com.dokterdibya.patient.ui.screens.documents.DocumentsScreen
 import com.dokterdibya.patient.ui.screens.fertility.FertilityCalendarScreen
@@ -28,6 +31,9 @@ sealed class Screen(val route: String) {
     object Records : Screen("records")
     object Profile : Screen("profile")
     object Articles : Screen("articles")
+    object ArticleDetail : Screen("article_detail/{articleId}") {
+        fun createRoute(articleId: Int) = "article_detail/$articleId"
+    }
     object FertilityCalendar : Screen("fertility_calendar")
     object UsgGallery : Screen("usg_gallery")
     object LabResults : Screen("lab_results")
@@ -157,6 +163,18 @@ fun NavGraph(
 
         composable(Screen.Articles.route) {
             ArticlesScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToArticle = { articleId ->
+                    navController.navigate(Screen.ArticleDetail.createRoute(articleId))
+                }
+            )
+        }
+
+        composable(
+            route = Screen.ArticleDetail.route,
+            arguments = listOf(navArgument("articleId") { type = NavType.IntType })
+        ) {
+            ArticleDetailScreen(
                 onBack = { navController.popBackStack() }
             )
         }

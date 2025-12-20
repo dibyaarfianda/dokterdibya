@@ -363,6 +363,19 @@ class PatientRepository @Inject constructor(
         }
     }
 
+    suspend fun getArticleDetail(id: Int): Result<com.dokterdibya.patient.data.api.Article> {
+        return try {
+            val response = apiService.getArticleDetail(id)
+            if (response.isSuccessful && response.body()?.article != null) {
+                Result.success(response.body()!!.article!!)
+            } else {
+                Result.failure(Exception("Artikel tidak ditemukan"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     // ==================== Practice Schedules ====================
 
     suspend fun getPracticeSchedules(location: String): Result<List<com.dokterdibya.patient.data.api.PracticeSchedule>> {
