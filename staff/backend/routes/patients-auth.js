@@ -53,35 +53,27 @@ function getNotificationService() {
 }
 
 /**
- * Generate unique 5-digit medical record ID
- * Ensures no collision with existing patients
+ * Generate unique patient ID in format P{year}{sequence}
+ * Example: P2025001, P2025002, etc.
+ * Matches the web version format
  */
 async function generateUniqueMedicalRecordId() {
-    const maxAttempts = 100;
-    
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        // Generate random 5-digit number (10000-99999)
-        const randomId = String(Math.floor(Math.random() * 90000) + 10000);
-        
-        // Check if ID exists in patients table
-        const [existingPatient] = await db.query(
-            'SELECT id FROM patients WHERE id = ?',
-            [randomId]
-        );
-        
-        // If ID is unique, return it
-        if (existingPatient.length === 0) {
-            return randomId;
-        }
-    }
-    
-    // Fallback: use sequential ID if random generation fails
-    const [rows] = await db.query(
-        `SELECT LPAD(COALESCE(MAX(CAST(id AS UNSIGNED)), 0) + 1, 5, '0') AS nextId
-        FROM patients`
+    const year = new Date().getFullYear();
+
+    // Get the highest ID for this year
+    const [maxIdResult] = await db.query(
+        `SELECT id FROM patients WHERE id LIKE 'P${year}%' ORDER BY id DESC LIMIT 1`
     );
-    
-    return rows[0]?.nextId || '10000';
+
+    let nextNumber = 1;
+    if (maxIdResult.length > 0) {
+        const lastId = maxIdResult[0].id;
+        const lastNumber = parseInt(lastId.substring(5)); // Remove 'P2025'
+        nextNumber = lastNumber + 1;
+    }
+
+    const patientId = `P${year}${String(nextNumber).padStart(3, '0')}`;
+    return patientId;
 }
 
 // Middleware to verify JWT token
