@@ -5,21 +5,42 @@ import com.google.gson.annotations.SerializedName
 data class Appointment(
     val id: Int,
     @SerializedName("patient_id")
-    val patientId: Int,
+    val patientId: Int? = null,
     @SerializedName("appointment_date")
     val appointmentDate: String,
+    // API returns "time" field
+    val time: String? = null,
+    // Keep for backward compatibility
     @SerializedName("time_slot")
-    val timeSlot: String,
+    val timeSlot: String? = null,
     val status: String,
-    val notes: String?,
+    val notes: String? = null,
+    val session: Int? = null,
+    @SerializedName("slot_number")
+    val slotNumber: Int? = null,
     @SerializedName("queue_number")
-    val queueNumber: Int?,
+    val queueNumber: Int? = null,
+    // Extra fields from API
+    val sessionLabel: String? = null,
+    val dateFormatted: String? = null,
+    val isPast: Boolean? = null,
+    val categoryLabel: String? = null,
+    @SerializedName("chief_complaint")
+    val chiefComplaint: String? = null,
+    @SerializedName("consultation_category")
+    val consultationCategory: String? = null,
     @SerializedName("created_at")
-    val createdAt: String?
-)
+    val createdAt: String? = null
+) {
+    // Helper to get display time (from either field)
+    fun getDisplayTime(): String = time ?: timeSlot ?: ""
+
+    // Helper to get display date
+    fun getDisplayDate(): String = dateFormatted ?: appointmentDate
+}
 
 data class AppointmentListResponse(
-    val success: Boolean,
+    val success: Boolean? = null,
     val appointments: List<Appointment>
 )
 
@@ -80,7 +101,16 @@ data class BookingRequest(
 )
 
 data class BookingResponse(
-    val success: Boolean,
-    val appointment: Appointment?,
-    val message: String?
+    val success: Boolean? = null,
+    val message: String? = null,
+    val appointmentId: Int? = null,
+    val status: String? = null,
+    val details: BookingDetails? = null
+)
+
+data class BookingDetails(
+    val date: String? = null,
+    val session: String? = null,
+    val time: String? = null,
+    val slot: Int? = null
 )
