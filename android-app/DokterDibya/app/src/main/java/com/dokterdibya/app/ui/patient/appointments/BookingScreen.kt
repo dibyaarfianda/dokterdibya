@@ -296,6 +296,7 @@ fun DateSelector(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SessionSelector(
     selectedSession: Int?,
