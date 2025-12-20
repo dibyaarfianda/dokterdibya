@@ -151,7 +151,7 @@ data class Article(
 
 data class ArticleListResponse(
     val success: Boolean,
-    val articles: List<Article>
+    val data: List<Article>?
 )
 
 data class ArticleResponse(
