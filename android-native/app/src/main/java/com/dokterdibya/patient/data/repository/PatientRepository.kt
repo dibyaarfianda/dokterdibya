@@ -18,6 +18,7 @@ import com.dokterdibya.patient.data.api.Announcement
 import com.dokterdibya.patient.data.api.Medication
 import com.dokterdibya.patient.data.api.PregnancyData
 import com.dokterdibya.patient.data.api.LikeRequest
+import com.dokterdibya.patient.data.api.CancelRequest
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -141,9 +142,9 @@ class PatientRepository @Inject constructor(
         }
     }
 
-    suspend fun cancelAppointment(appointmentId: Int): Result<String> {
+    suspend fun cancelAppointment(appointmentId: Int, reason: String): Result<String> {
         return try {
-            val response = apiService.cancelAppointment(appointmentId)
+            val response = apiService.cancelAppointment(appointmentId, CancelRequest(reason))
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!.message ?: "Janji temu berhasil dibatalkan")
             } else {
