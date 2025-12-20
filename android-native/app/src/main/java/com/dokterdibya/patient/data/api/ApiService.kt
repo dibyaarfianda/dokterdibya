@@ -35,7 +35,10 @@ interface ApiService {
     suspend fun bookAppointment(@Body request: BookingRequest): Response<BookingResponse>
 
     @PUT("api/sunday-appointments/{id}/cancel")
-    suspend fun cancelAppointment(@Path("id") id: Int): Response<BookingResponse>
+    suspend fun cancelAppointment(
+        @Path("id") id: Int,
+        @Body request: CancelRequest
+    ): Response<BookingResponse>
 
     // ==================== Medical Records ====================
 
@@ -278,4 +281,9 @@ data class PregnancyData(
 data class PregnancyDataResponse(
     val success: Boolean,
     val data: PregnancyData?
+)
+
+// Cancel request
+data class CancelRequest(
+    val reason: String
 )

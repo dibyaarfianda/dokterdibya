@@ -282,6 +282,8 @@ fun BookingScreen(
             appointment = uiState.appointmentToCancel!!,
             isLoading = uiState.isCancelling,
             error = uiState.cancelError,
+            reason = uiState.cancelReason,
+            onReasonChange = { viewModel.updateCancelReason(it) },
             onDismiss = { viewModel.dismissCancelDialog() },
             onConfirm = { viewModel.confirmCancel() }
         )
@@ -606,6 +608,8 @@ fun CancelDialog(
     appointment: AppointmentInfo,
     isLoading: Boolean,
     error: String?,
+    reason: String,
+    onReasonChange: (String) -> Unit,
     onDismiss: () -> Unit,
     onConfirm: () -> Unit
 ) {
@@ -685,6 +689,29 @@ fun CancelDialog(
                     }
                 }
 
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Reason TextField
+                OutlinedTextField(
+                    value = reason,
+                    onValueChange = onReasonChange,
+                    label = { Text("Alasan pembatalan") },
+                    placeholder = { Text("Minimal 10 karakter") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2,
+                    maxLines = 4,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = TextPrimaryDark,
+                        unfocusedTextColor = TextPrimaryDark,
+                        focusedBorderColor = Accent,
+                        unfocusedBorderColor = TextSecondaryDark.copy(alpha = 0.5f),
+                        focusedLabelColor = Accent,
+                        unfocusedLabelColor = TextSecondaryDark,
+                        cursorColor = Accent
+                    ),
+                    enabled = !isLoading
+                )
+
                 // Error message
                 if (error != null) {
                     Spacer(modifier = Modifier.height(12.dp))
@@ -712,7 +739,7 @@ fun CancelDialog(
                     Button(
                         onClick = onConfirm,
                         modifier = Modifier.weight(1f),
-                        enabled = !isLoading,
+                        enabled = !isLoading && reason.trim().length >= 10,
                         colors = ButtonDefaults.buttonColors(containerColor = Danger)
                     ) {
                         if (isLoading) {

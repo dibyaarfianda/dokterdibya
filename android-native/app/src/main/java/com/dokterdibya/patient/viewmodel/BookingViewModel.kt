@@ -50,7 +50,8 @@ data class BookingUiState(
     val showCancelDialog: Boolean = false,
     val appointmentToCancel: AppointmentInfo? = null,
     val isCancelling: Boolean = false,
-    val cancelError: String? = null
+    val cancelError: String? = null,
+    val cancelReason: String = ""
 )
 
 @HiltViewModel
@@ -195,17 +196,30 @@ class BookingViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(
             showCancelDialog = false,
             appointmentToCancel = null,
-            cancelError = null
+            cancelError = null,
+            cancelReason = ""
         )
+    }
+
+    fun updateCancelReason(reason: String) {
+        _uiState.value = _uiState.value.copy(cancelReason = reason)
     }
 
     fun confirmCancel() {
         val appointment = _uiState.value.appointmentToCancel ?: return
+        val reason = _uiState.value.cancelReason.trim()
+
+        if (reason.length < 10) {
+            _uiState.value = _uiState.value.copy(
+                cancelError = "Mohon berikan alasan pembatalan minimal 10 karakter"
+            )
+            return
+        }
 
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isCancelling = true, cancelError = null)
 
-            repository.cancelAppointment(appointment.id)
+            repository.cancelAppointment(appointment.id, reason)
                 .onSuccess { message ->
                     _uiState.value = _uiState.value.copy(
                         isCancelling = false,
