@@ -249,7 +249,10 @@ fun BookingScreen(
                         }
 
                         items(uiState.appointments) { appointment ->
-                            AppointmentCard(appointment = appointment)
+                            AppointmentCard(
+                                appointment = appointment,
+                                onCancel = { viewModel.showCancelDialog(appointment) }
+                            )
                         }
                     }
 
@@ -269,6 +272,17 @@ fun BookingScreen(
             error = uiState.bookingError,
             onDismiss = { viewModel.dismissBookingDialog() },
             onConfirm = { complaint, category -> viewModel.confirmBooking(complaint, category) }
+        )
+    }
+
+    // Cancel Confirmation Dialog
+    if (uiState.showCancelDialog && uiState.appointmentToCancel != null) {
+        CancelDialog(
+            appointment = uiState.appointmentToCancel!!,
+            isLoading = uiState.isCancelling,
+            error = uiState.cancelError,
+            onDismiss = { viewModel.dismissCancelDialog() },
+            onConfirm = { viewModel.confirmCancel() }
         )
     }
 }
@@ -587,7 +601,140 @@ fun SlotChip(
 }
 
 @Composable
-fun AppointmentCard(appointment: AppointmentInfo) {
+fun CancelDialog(
+    appointment: AppointmentInfo,
+    isLoading: Boolean,
+    error: String?,
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit
+) {
+    Dialog(onDismissRequest = { if (!isLoading) onDismiss() }) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(containerColor = CardDark)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(20.dp)
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = Danger,
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        "Batalkan Janji Temu?",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimaryDark
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    "Apakah Anda yakin ingin membatalkan janji temu berikut?",
+                    fontSize = 14.sp,
+                    color = TextSecondaryDark
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                // Appointment info
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(8.dp),
+                    colors = CardDefaults.cardColors(containerColor = BgDark)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.CalendarToday,
+                                contentDescription = null,
+                                tint = Accent,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                appointment.dateFormatted,
+                                fontSize = 14.sp,
+                                color = TextPrimaryDark
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Schedule,
+                                contentDescription = null,
+                                tint = Accent,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "${appointment.time} - ${appointment.sessionLabel}",
+                                fontSize = 14.sp,
+                                color = TextPrimaryDark
+                            )
+                        }
+                    }
+                }
+
+                // Error message
+                if (error != null) {
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        error,
+                        color = Danger,
+                        fontSize = 13.sp
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                // Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        enabled = !isLoading
+                    ) {
+                        Text("Tidak")
+                    }
+                    Button(
+                        onClick = onConfirm,
+                        modifier = Modifier.weight(1f),
+                        enabled = !isLoading,
+                        colors = ButtonDefaults.buttonColors(containerColor = Danger)
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                color = TextPrimaryDark,
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Text("Ya, Batalkan")
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AppointmentCard(
+    appointment: AppointmentInfo,
+    onCancel: (() -> Unit)? = null
+) {
     val statusColor = when (appointment.status.lowercase()) {
         "confirmed" -> Success
         "pending" -> Warning
@@ -604,51 +751,81 @@ fun AppointmentCard(appointment: AppointmentInfo) {
         else -> appointment.status
     }
 
+    val canCancel = appointment.status.lowercase() in listOf("confirmed", "pending") && !appointment.isPast
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = CardDark)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+                .padding(16.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.Event,
-                    contentDescription = null,
-                    tint = Accent,
-                    modifier = Modifier.size(24.dp)
-                )
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text(
-                        appointment.dateFormatted,
-                        fontWeight = FontWeight.Medium,
-                        color = TextPrimaryDark
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Icon(
+                        Icons.Default.Event,
+                        contentDescription = null,
+                        tint = Accent,
+                        modifier = Modifier.size(24.dp)
                     )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Column {
+                        Text(
+                            appointment.dateFormatted,
+                            fontWeight = FontWeight.Medium,
+                            color = TextPrimaryDark
+                        )
+                        Text(
+                            "${appointment.time} - ${appointment.sessionLabel}",
+                            fontSize = 13.sp,
+                            color = TextSecondaryDark
+                        )
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(statusColor.copy(alpha = 0.2f))
+                        .padding(horizontal = 10.dp, vertical = 4.dp)
+                ) {
                     Text(
-                        appointment.sessionLabel,
-                        fontSize = 13.sp,
-                        color = TextSecondaryDark
+                        statusLabel,
+                        fontSize = 12.sp,
+                        color = statusColor,
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
-            Box(
-                modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .background(statusColor.copy(alpha = 0.2f))
-                    .padding(horizontal = 10.dp, vertical = 4.dp)
-            ) {
-                Text(
-                    statusLabel,
-                    fontSize = 12.sp,
-                    color = statusColor,
-                    fontWeight = FontWeight.Medium
-                )
+
+            // Cancel button
+            if (canCancel && onCancel != null) {
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = onCancel,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = Danger
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Danger.copy(alpha = 0.5f))
+                ) {
+                    Icon(
+                        Icons.Default.Close,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Batalkan Janji Temu")
+                }
             }
         }
     }

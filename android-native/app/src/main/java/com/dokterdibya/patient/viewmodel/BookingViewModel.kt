@@ -40,12 +40,17 @@ data class BookingUiState(
     val sessions: List<SessionSlots> = emptyList(),
     val isLoadingSlots: Boolean = false,
     val appointments: List<AppointmentInfo> = emptyList(),
-    // Dialog state
+    // Booking dialog state
     val showBookingDialog: Boolean = false,
     val selectedSlot: SelectedSlot? = null,
     val isBooking: Boolean = false,
     val bookingSuccess: String? = null,
-    val bookingError: String? = null
+    val bookingError: String? = null,
+    // Cancel dialog state
+    val showCancelDialog: Boolean = false,
+    val appointmentToCancel: AppointmentInfo? = null,
+    val isCancelling: Boolean = false,
+    val cancelError: String? = null
 )
 
 @HiltViewModel
@@ -175,6 +180,50 @@ class BookingViewModel @Inject constructor(
 
     fun dismissSuccessMessage() {
         _uiState.value = _uiState.value.copy(bookingSuccess = null)
+    }
+
+    // Cancel appointment functions
+    fun showCancelDialog(appointment: AppointmentInfo) {
+        _uiState.value = _uiState.value.copy(
+            showCancelDialog = true,
+            appointmentToCancel = appointment,
+            cancelError = null
+        )
+    }
+
+    fun dismissCancelDialog() {
+        _uiState.value = _uiState.value.copy(
+            showCancelDialog = false,
+            appointmentToCancel = null,
+            cancelError = null
+        )
+    }
+
+    fun confirmCancel() {
+        val appointment = _uiState.value.appointmentToCancel ?: return
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isCancelling = true, cancelError = null)
+
+            repository.cancelAppointment(appointment.id)
+                .onSuccess { message ->
+                    _uiState.value = _uiState.value.copy(
+                        isCancelling = false,
+                        showCancelDialog = false,
+                        appointmentToCancel = null,
+                        bookingSuccess = message
+                    )
+                    // Refresh data
+                    loadAppointments()
+                    _uiState.value.selectedSunday?.let { selectSunday(it) }
+                }
+                .onFailure { e ->
+                    _uiState.value = _uiState.value.copy(
+                        isCancelling = false,
+                        cancelError = e.message ?: "Gagal membatalkan janji temu"
+                    )
+                }
+        }
     }
 
     private fun loadAppointments() {

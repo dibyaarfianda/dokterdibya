@@ -137,6 +137,25 @@ class PatientRepository @Inject constructor(
         }
     }
 
+    suspend fun cancelAppointment(appointmentId: Int): Result<String> {
+        return try {
+            val response = apiService.cancelAppointment(appointmentId)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!.message ?: "Janji temu berhasil dibatalkan")
+            } else {
+                val errorBody = response.errorBody()?.string()
+                val errorMsg = try {
+                    org.json.JSONObject(errorBody ?: "").optString("message", "Gagal membatalkan")
+                } catch (e: Exception) {
+                    "Gagal membatalkan"
+                }
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     // ==================== Medical Records ====================
 
     suspend fun getDocuments(type: String? = null): Result<List<PatientDocument>> {
