@@ -1,7 +1,5 @@
 package com.dokterdibya.patient.ui.screens.articles
 
-import android.content.Intent
-import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,7 +14,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -30,10 +27,10 @@ import com.dokterdibya.patient.viewmodel.ArticlesViewModel
 @Composable
 fun ArticlesScreen(
     onBack: () -> Unit,
+    onNavigateToArticle: (Int) -> Unit = {},
     viewModel: ArticlesViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val context = LocalContext.current
 
     Scaffold(
         topBar = {
@@ -130,10 +127,8 @@ fun ArticlesScreen(
                             imageUrl = article.imageUrl,
                             date = article.publishedAt ?: "",
                             onClick = {
-                                // Open article in browser
-                                val url = "https://dokterdibya.com/artikel/${article.slug ?: article.id}"
-                                val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                context.startActivity(intent)
+                                // Navigate to native article detail screen
+                                onNavigateToArticle(article.id)
                             }
                         )
                     }
