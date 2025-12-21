@@ -802,30 +802,34 @@ fun AddPeriodForm(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun OptionSelector(
     options: List<Pair<String, String>>,
     selectedValue: String,
     onSelect: (String) -> Unit
 ) {
-    Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+    androidx.compose.foundation.layout.FlowRow(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
         options.forEach { (value, label) ->
             val isSelected = value == selectedValue
             Text(
                 text = label,
-                fontSize = 11.sp,
+                fontSize = 12.sp,
                 color = if (isSelected) Color.White else TextSecondaryDark,
                 fontWeight = if (isSelected) FontWeight.Medium else FontWeight.Normal,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(4.dp))
+                    .clip(RoundedCornerShape(8.dp))
                     .background(if (isSelected) Accent else Color.Transparent)
                     .border(
                         1.dp,
                         if (isSelected) Accent else TextSecondaryDark.copy(alpha = 0.3f),
-                        RoundedCornerShape(4.dp)
+                        RoundedCornerShape(8.dp)
                     )
                     .clickable { onSelect(value) }
-                    .padding(horizontal = 8.dp, vertical = 6.dp)
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
             )
         }
     }
