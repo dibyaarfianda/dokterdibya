@@ -76,8 +76,9 @@ class NotificationService : Service() {
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("dokterDIBYA")
             .setContentText("Terhubung untuk notifikasi")
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setPriority(NotificationCompat.PRIORITY_MIN)
             .setOngoing(true)
+            .setSilent(true)
             .build()
 
         startForeground(FOREGROUND_ID, notification)
@@ -114,8 +115,9 @@ class NotificationService : Service() {
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("dokterDIBYA")
             .setContentText(statusText)
-            .setPriority(NotificationCompat.PRIORITY_LOW)
+            .setPriority(NotificationCompat.PRIORITY_MIN)
             .setOngoing(true)
+            .setSilent(true)
             .build()
 
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as android.app.NotificationManager

@@ -12,6 +12,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.ui.res.painterResource
+import com.dokterdibya.patient.R
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -222,7 +224,7 @@ fun BookingScreen(
                                         horizontalAlignment = Alignment.CenterHorizontally
                                     ) {
                                         Icon(
-                                            Icons.Default.EventBusy,
+                                            painter = painterResource(id = R.drawable.temurs),
                                             contentDescription = null,
                                             tint = TextSecondaryDark,
                                             modifier = Modifier.size(40.dp)
@@ -361,7 +363,7 @@ fun BookingDialog(
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
-                                Icons.Default.Schedule,
+                                painter = painterResource(id = R.drawable.temurs),
                                 contentDescription = null,
                                 tint = Accent,
                                 modifier = Modifier.size(16.dp)
@@ -682,7 +684,7 @@ fun CancelDialog(
                         Spacer(modifier = Modifier.height(4.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
-                                Icons.Default.Schedule,
+                                painter = painterResource(id = R.drawable.temurs),
                                 contentDescription = null,
                                 tint = Accent,
                                 modifier = Modifier.size(16.dp)
@@ -809,7 +811,7 @@ fun AppointmentCard(
                     modifier = Modifier.weight(1f)
                 ) {
                     Icon(
-                        Icons.Default.Event,
+                        painter = painterResource(id = R.drawable.temurs),
                         contentDescription = null,
                         tint = Accent,
                         modifier = Modifier.size(24.dp)

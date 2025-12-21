@@ -211,7 +211,7 @@ fun ArticleCard(
                 // Date
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        Icons.Default.Schedule,
+                        painter = painterResource(id = R.drawable.temurs),
                         contentDescription = null,
                         tint = TextSecondaryDark,
                         modifier = Modifier.size(12.dp)

@@ -55,7 +55,7 @@ fun CompleteProfileScreen(
     // Date picker
     val calendar = Calendar.getInstance()
     val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-    val displayFormatter = SimpleDateFormat("dd MMMM yyyy", Locale("id", "ID"))
+    val displayFormatter = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
 
     val datePickerDialog = remember {
         DatePickerDialog(

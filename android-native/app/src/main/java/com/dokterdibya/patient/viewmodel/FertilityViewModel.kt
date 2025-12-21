@@ -454,7 +454,7 @@ class FertilityViewModel @Inject constructor(
         if (dateStr.isNullOrEmpty()) return "-"
         return try {
             val date = parseDate(dateStr)
-            val outputFormat = SimpleDateFormat("d MMM yyyy", Locale("id", "ID"))
+            val outputFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
             date?.let { outputFormat.format(it) } ?: dateStr
         } catch (e: Exception) {
             dateStr
@@ -481,7 +481,7 @@ class FertilityViewModel @Inject constructor(
         if (dateStr.isNullOrEmpty()) return "--"
         return try {
             val date = parseDate(dateStr)
-            val outputFormat = SimpleDateFormat("d MMM", Locale("id", "ID"))
+            val outputFormat = SimpleDateFormat("dd/MM", Locale.getDefault())
             date?.let { outputFormat.format(it) } ?: "--"
         } catch (e: Exception) {
             "--"

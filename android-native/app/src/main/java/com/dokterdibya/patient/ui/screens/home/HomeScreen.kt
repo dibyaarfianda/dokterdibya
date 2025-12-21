@@ -40,6 +40,9 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import io.noties.markwon.Markwon
 import io.noties.markwon.html.HtmlPlugin
 import coil.compose.AsyncImage
@@ -62,12 +65,27 @@ fun HomeScreen(
     onNavigateToSchedule: () -> Unit,
     onNavigateToVisitHistory: () -> Unit,
     onNavigateToMedications: () -> Unit = {},
+    onNavigateToNotifications: () -> Unit = {},
     onLogout: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var isMenuOpen by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
+
+    // Refresh data when screen is resumed (e.g., after returning from profile)
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refresh()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     Box(
         modifier = Modifier
@@ -145,7 +163,7 @@ fun HomeScreen(
                 ) {
                     // Notification icon with badge
                     Box {
-                        IconButton(onClick = { /* TODO: Navigate to notifications */ }) {
+                        IconButton(onClick = onNavigateToNotifications) {
                             Icon(
                                 imageVector = Icons.Outlined.Notifications,
                                 contentDescription = "Notifikasi",

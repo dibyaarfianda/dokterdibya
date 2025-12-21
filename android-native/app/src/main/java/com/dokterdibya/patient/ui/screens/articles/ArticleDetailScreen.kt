@@ -166,7 +166,7 @@ fun ArticleDetailScreen(
 
                                 if (!article.publishedAt.isNullOrEmpty()) {
                                     Icon(
-                                        Icons.Default.Schedule,
+                                        painter = painterResource(id = R.drawable.temurs),
                                         contentDescription = null,
                                         tint = TextSecondaryDark,
                                         modifier = Modifier.size(16.dp)

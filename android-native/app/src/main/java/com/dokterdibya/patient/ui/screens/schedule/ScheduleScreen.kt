@@ -242,7 +242,7 @@ fun LocationCard(
                 )
             ) {
                 Icon(
-                    if (location.hasOnlineBooking) Icons.Default.Add else Icons.Default.Event,
+                    painter = painterResource(id = if (location.hasOnlineBooking) R.drawable.book else R.drawable.temurs),
                     contentDescription = null,
                     modifier = Modifier.size(18.dp)
                 )
@@ -304,7 +304,7 @@ fun ScheduleDetailContent(
                 modifier = Modifier.padding(vertical = 8.dp)
             ) {
                 Icon(
-                    painter = painterResource(id = R.drawable.book),
+                    painter = painterResource(id = R.drawable.temurs),
                     contentDescription = null,
                     tint = Accent,
                     modifier = Modifier.size(24.dp)
@@ -364,7 +364,7 @@ fun ScheduleDetailContent(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
-                            Icons.Default.EventBusy,
+                            painter = painterResource(id = R.drawable.temurs),
                             contentDescription = null,
                             tint = TextSecondaryDark,
                             modifier = Modifier.size(48.dp)
@@ -458,7 +458,7 @@ fun ScheduleRow(
             Column(modifier = Modifier.weight(1f)) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
-                        Icons.Default.Schedule,
+                        painter = painterResource(id = R.drawable.temurs),
                         contentDescription = null,
                         tint = Success,
                         modifier = Modifier.size(16.dp)

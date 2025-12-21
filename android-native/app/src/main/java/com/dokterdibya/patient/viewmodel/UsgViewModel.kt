@@ -78,7 +78,7 @@ class UsgViewModel @Inject constructor(
         return try {
             // Parse ISO date format
             val inputFormat = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
-            val outputFormat = java.text.SimpleDateFormat("d MMM yyyy", java.util.Locale("id", "ID"))
+            val outputFormat = java.text.SimpleDateFormat("dd/MM/yyyy", java.util.Locale.getDefault())
             val date = inputFormat.parse(dateStr.take(19))
             date?.let { outputFormat.format(it) } ?: dateStr.take(10)
         } catch (e: Exception) {
