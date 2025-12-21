@@ -588,24 +588,26 @@ fun AnnouncementCard(
                     color = TextSecondaryDark.copy(alpha = 0.7f)
                 )
 
-                // Like button
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.clickable { onLike() }
+                // Like button - use IconButton for proper touch handling
+                IconButton(
+                    onClick = onLike,
+                    modifier = Modifier.size(36.dp)
                 ) {
-                    Icon(
-                        imageVector = if (announcement.liked_by_me) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = "Like",
-                        tint = if (announcement.liked_by_me) Danger else TextSecondaryDark,
-                        modifier = Modifier.size(18.dp)
-                    )
-                    if (announcement.like_count > 0) {
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = announcement.like_count.toString(),
-                            fontSize = 12.sp,
-                            color = TextSecondaryDark
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = if (announcement.liked_by_me) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                            contentDescription = "Like",
+                            tint = if (announcement.liked_by_me) Danger else TextSecondaryDark,
+                            modifier = Modifier.size(18.dp)
                         )
+                        if (announcement.like_count > 0) {
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = announcement.like_count.toString(),
+                                fontSize = 12.sp,
+                                color = TextSecondaryDark
+                            )
+                        }
                     }
                 }
             }
@@ -1166,6 +1168,9 @@ fun MarkdownText(
                 setLineSpacing(4f, 1f)
                 this.maxLines = maxLines
                 ellipsize = android.text.TextUtils.TruncateAt.END
+                // Don't consume touch events - let parent handle clicks
+                isClickable = false
+                isFocusable = false
             }
         },
         update = { textView ->
