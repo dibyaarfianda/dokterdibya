@@ -289,12 +289,17 @@ class PatientRepository @Inject constructor(
     suspend fun getFertilityCyclesData(): Result<FertilityCycleResponse> {
         return try {
             val response = apiService.getFertilityCycles()
+            android.util.Log.d("PatientRepo", "getFertilityCycles response: ${response.isSuccessful}, body: ${response.body()}")
             if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!)
+                val body = response.body()!!
+                android.util.Log.d("PatientRepo", "Cycles count: ${body.cycles?.size}, first cycle id: ${body.cycles?.firstOrNull()?.id}")
+                Result.success(body)
             } else {
+                android.util.Log.e("PatientRepo", "Failed: ${response.errorBody()?.string()}")
                 Result.failure(Exception("Failed to get fertility cycles"))
             }
         } catch (e: Exception) {
+            android.util.Log.e("PatientRepo", "Exception: ${e.message}", e)
             Result.failure(e)
         }
     }
