@@ -1,52 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="120dp"
-    android:height="120dp"
-    android:viewportWidth="120"
-    android:viewportHeight="120">
-
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
     <path
-        android:fillColor="url(#glass5)"
-        android:strokeColor="url(#border5)"
-        android:strokeWidth="2"
-        android:pathData="M 22 20 L 98 20 Q 110 20 110 32 L 110 88 Q 110 100 98 100 L 22 100 Q 10 100 10 88 L 10 32 Q 10 20 22 20 Z" />
-    <path
-        android:fillColor="#000000"
-        android:strokeColor="#bfdbfe"
-        android:strokeWidth="1"
-        android:pathData="M 30 30 L 30 90" />
-    <path
-        android:fillColor="#000000"
-        android:strokeColor="#bfdbfe"
-        android:strokeWidth="1"
-        android:pathData="M 50 30 L 50 90" />
-    <path
-        android:fillColor="#000000"
-        android:strokeColor="#bfdbfe"
-        android:strokeWidth="1"
-        android:pathData="M 70 30 L 70 90" />
-    <path
-        android:fillColor="#000000"
-        android:strokeColor="#bfdbfe"
-        android:strokeWidth="1"
-        android:pathData="M 90 30 L 90 90" />
-    <path
-        android:fillColor="#000000"
-        android:strokeColor="#bfdbfe"
-        android:strokeWidth="1"
-        android:pathData="M 20 50 L 100 50" />
-    <path
-        android:fillColor="#000000"
-        android:strokeColor="#bfdbfe"
-        android:strokeWidth="1"
-        android:pathData="M 20 70 L 100 70" />
-    <path
-        android:fillColor="url(#heartGrad5)"
-        android:pathData="M60 45 Q65 40 70 45 Q75 40 80 45 Q82 50 78 55 Q80 60 75 65 Q70 70 65 65 Q60 70 55 65 Q50 60 52 55 Q48 50 52 45 Q55 40 60 45" />
-    <path
-        android:fillColor="#60a5fa"
-        android:fillAlpha="0.3"
-        android:strokeAlpha="0.3"
-        android:strokeWidth="1"
-        android:pathData="M60 45 Q65 40 70 45 Q75 40 80 45 Q82 50 78 55 Q80 60 75 65 Q70 70 65 65 Q60 70 55 65 Q50 60 52 55 Q48 50 52 45 Q55 40 60 45" />
+        android:fillColor="#EC4899"
+        android:pathData="M12,21.35l-1.45,-1.32C5.4,15.36 2,12.28 2,8.5 2,5.42 4.42,3 7.5,3c1.74,0 3.41,0.81 4.5,2.09C13.09,3.81 14.76,3 16.5,3 19.58,3 22,5.42 22,8.5c0,3.78 -3.4,6.86 -8.55,11.54L12,21.35z"/>
 </vector>
