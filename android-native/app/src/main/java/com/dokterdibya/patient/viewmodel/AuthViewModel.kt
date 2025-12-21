@@ -15,6 +15,7 @@ data class AuthUiState(
     val isLoading: Boolean = false,
     val isLoggedIn: Boolean = false,
     val needsProfileCompletion: Boolean = false,
+    val patientId: String? = null,
     val error: String? = null
 )
 
@@ -43,7 +44,8 @@ class AuthViewModel @Inject constructor(
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
                             isLoggedIn = true,
-                            needsProfileCompletion = needsCompletion
+                            needsProfileCompletion = needsCompletion,
+                            patientId = patient?.id
                         )
                     } else {
                         _uiState.value = _uiState.value.copy(
@@ -82,7 +84,8 @@ class AuthViewModel @Inject constructor(
                     val needsCompletion = patient.birthDate.isNullOrBlank()
                     _uiState.value = _uiState.value.copy(
                         isLoggedIn = true,
-                        needsProfileCompletion = needsCompletion
+                        needsProfileCompletion = needsCompletion,
+                        patientId = patient.id
                     )
                 },
                 onFailure = {
@@ -92,6 +95,18 @@ class AuthViewModel @Inject constructor(
                         needsProfileCompletion = false
                     )
                 }
+            )
+        }
+    }
+
+    // Fetch patient ID for notification service
+    fun fetchPatientId() {
+        viewModelScope.launch {
+            patientRepository.getProfile().fold(
+                onSuccess = { patient ->
+                    _uiState.value = _uiState.value.copy(patientId = patient.id)
+                },
+                onFailure = { /* Ignore */ }
             )
         }
     }
