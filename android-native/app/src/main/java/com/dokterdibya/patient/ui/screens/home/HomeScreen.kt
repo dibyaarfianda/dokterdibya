@@ -45,11 +45,6 @@ import androidx.lifecycle.LifecycleEventObserver
 import io.noties.markwon.Markwon
 import io.noties.markwon.html.HtmlPlugin
 import coil.compose.AsyncImage
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.hazeEffect
-import dev.chrisbanes.haze.materials.HazeMaterials
-import dev.chrisbanes.haze.rememberHazeState
 import com.dokterdibya.patient.R
 import com.dokterdibya.patient.data.api.Announcement
 import com.dokterdibya.patient.data.api.Medication
@@ -77,7 +72,6 @@ fun HomeScreen(
     var isMenuOpen by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val hazeState = rememberHazeState()
 
     // Refresh data when screen is resumed (e.g., after returning from profile)
     DisposableEffect(lifecycleOwner) {
@@ -97,16 +91,13 @@ fun HomeScreen(
             .fillMaxSize()
             .background(BgDark)
     ) {
-        // Sticky Top Navigation Bar with white glassy blur effect
+        // Sticky Top Navigation Bar with semi-transparent background
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(70.dp)
                 .zIndex(10f)
-                .hazeEffect(
-                    state = hazeState,
-                    style = HazeMaterials.ultraThin(BgDark)
-                )
+                .background(BgDark.copy(alpha = 0.85f))
         ) {
             // Nav bar content
             Row(
@@ -236,11 +227,10 @@ fun HomeScreen(
             }
         }
 
-        // Main content (scrollable) - hazeSource for blur effect on nav bar
+        // Main content (scrollable)
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .hazeSource(state = hazeState)
                 .verticalScroll(rememberScrollState())
                 .padding(top = 78.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
         ) {
