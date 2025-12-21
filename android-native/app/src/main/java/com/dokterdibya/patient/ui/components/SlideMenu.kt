@@ -13,7 +13,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Logout
-import androidx.compose.material.ripple.rememberRipple
+import androidx.compose.material3.ripple
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -193,7 +193,7 @@ fun MenuItemButton(item: MenuItem) {
             )
             .clickable(
                 interactionSource = interactionSource,
-                indication = rememberRipple(bounded = true, color = item.color.copy(alpha = 0.3f)),
+                indication = ripple(bounded = true, color = item.color.copy(alpha = 0.3f)),
                 onClick = item.onClick
             ),
         contentAlignment = Alignment.Center
