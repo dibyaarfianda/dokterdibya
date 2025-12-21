@@ -579,7 +579,8 @@ class PatientRepository @Inject constructor(
 
     suspend fun uploadProfilePhoto(imageBytes: ByteArray, fileName: String): Result<String> {
         return try {
-            val requestBody = imageBytes.toRequestBody("image/*".toMediaTypeOrNull())
+            // Server expects specific MIME type (jpeg/png/webp), not image/*
+            val requestBody = imageBytes.toRequestBody("image/jpeg".toMediaTypeOrNull())
             val part = MultipartBody.Part.createFormData("photo", fileName, requestBody)
             val response = apiService.uploadProfilePhoto(part)
             if (response.isSuccessful && response.body()?.success == true) {
