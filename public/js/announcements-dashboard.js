@@ -135,7 +135,73 @@ function displayAnnouncements(announcements) {
         return;
     }
 
-    container.innerHTML = announcements.map(announcement => {
+    // Get priority announcement and most recent
+    const priorityAnnouncement = announcements.find(a => a.priority === 'important' || a.priority === 'urgent');
+    const otherAnnouncements = announcements.filter(a => a.id !== priorityAnnouncement?.id);
+
+    // Initial 2: priority (if exists) + most recent
+    const initialAnnouncements = [];
+    if (priorityAnnouncement) initialAnnouncements.push(priorityAnnouncement);
+    if (otherAnnouncements[0]) initialAnnouncements.push(otherAnnouncements[0]);
+    const initialIds = initialAnnouncements.map(a => a.id);
+
+    const remainingAnnouncements = announcements.filter(a => !initialIds.includes(a.id));
+    const hasMore = remainingAnnouncements.length > 0;
+
+    // Render initial announcements
+    let html = initialAnnouncements.map(announcement => renderAnnouncementCard(announcement)).join('');
+
+    // Add expand button if there are more
+    if (hasMore) {
+        html += `
+            <div id="remaining-announcements" style="display: none;">
+                ${remainingAnnouncements.map(announcement => renderAnnouncementCard(announcement)).join('')}
+            </div>
+            <button id="toggle-announcements-btn" onclick="toggleRemainingAnnouncements()" style="
+                width: 100%;
+                background: #333;
+                border: 1px solid #404040;
+                color: #28a7e9;
+                padding: 12px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 14px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                transition: all 0.2s;
+            " onmouseover="this.style.background='#404040'" onmouseout="this.style.background='#333'">
+                <span>Lihat ${remainingAnnouncements.length} Pengumuman Lainnya</span>
+                <i class="fa fa-chevron-down"></i>
+            </button>
+        `;
+    }
+
+    container.innerHTML = html;
+}
+
+function toggleRemainingAnnouncements() {
+    const remaining = document.getElementById('remaining-announcements');
+    const btn = document.getElementById('toggle-announcements-btn');
+
+    if (remaining.style.display === 'none') {
+        remaining.style.display = 'block';
+        btn.innerHTML = `
+            <span>Lihat Lebih Sedikit</span>
+            <i class="fa fa-chevron-up"></i>
+        `;
+    } else {
+        remaining.style.display = 'none';
+        const count = remaining.querySelectorAll('.announcement-item').length;
+        btn.innerHTML = `
+            <span>Lihat ${count} Pengumuman Lainnya</span>
+            <i class="fa fa-chevron-down"></i>
+        `;
+    }
+}
+
+function renderAnnouncementCard(announcement) {
         // Render formatted content or plain message
         const contentHtml = announcement.formatted_content && announcement.content_type === 'markdown' ?
             announcement.formatted_content :
@@ -212,7 +278,6 @@ function displayAnnouncements(announcements) {
                 </div>
             </div>
         `;
-    }).join('');
 }
 
 function getPriorityColor(priority) {
