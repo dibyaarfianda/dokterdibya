@@ -44,6 +44,7 @@ fun FertilityCalendarScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val view = androidx.compose.ui.platform.LocalView.current
 
     // Show snackbar for messages
     LaunchedEffect(uiState.successMessage) {
@@ -92,7 +93,10 @@ fun FertilityCalendarScreen(
                     Text("Kalender Kesuburan", fontWeight = FontWeight.SemiBold)
                 },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = {
+                        view.playSoundEffect(android.view.SoundEffectConstants.CLICK)
+                        onBack()
+                    }) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
                     }
                 },
