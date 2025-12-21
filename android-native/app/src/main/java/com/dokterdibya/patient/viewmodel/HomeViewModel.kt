@@ -42,7 +42,9 @@ data class HomeUiState(
     val hasGivenBirth: Boolean = false,
     val birthInfo: BirthInfo? = null,
     val medications: List<Medication> = emptyList(),
-    val hasMedications: Boolean = false
+    val hasMedications: Boolean = false,
+    // Notifications
+    val unreadNotificationCount: Int = 0
 )
 
 @HiltViewModel
@@ -59,6 +61,7 @@ class HomeViewModel @Inject constructor(
         loadPatientData()
         loadAnnouncements()
         loadMedications()
+        loadNotificationCount()
     }
 
     fun loadPatientData() {
@@ -152,6 +155,19 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    private fun loadNotificationCount() {
+        viewModelScope.launch {
+            patientRepository.getUnreadNotificationCount().fold(
+                onSuccess = { count ->
+                    _uiState.value = _uiState.value.copy(
+                        unreadNotificationCount = count
+                    )
+                },
+                onFailure = { /* Ignore */ }
+            )
+        }
+    }
+
     fun toggleLike(announcementId: Int) {
         val pId = patientId ?: return
         viewModelScope.launch {
@@ -202,6 +218,7 @@ class HomeViewModel @Inject constructor(
         loadPatientData()
         loadAnnouncements()
         loadMedications()
+        loadNotificationCount()
     }
 
     private data class PregnancyInfo(

@@ -19,6 +19,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -37,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.graphics.toArgb
+import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import io.noties.markwon.Markwon
 import io.noties.markwon.html.HtmlPlugin
@@ -72,49 +74,154 @@ fun HomeScreen(
             .fillMaxSize()
             .background(BgDark)
     ) {
-        // Main content
-        Column(
+        // Sticky Top Navigation Bar
+        Box(
             modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
+                .fillMaxWidth()
+                .zIndex(10f)
         ) {
-            // Header
+            // Blur background layer
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(70.dp)
+                    .background(BgDark.copy(alpha = 0.85f))
+            )
+
+            // Nav bar content
             Row(
-                modifier = Modifier.fillMaxWidth(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(70.dp)
+                    .padding(horizontal = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    // Logo - white for dark background
+                // Left: Logo and brand name with tagline
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     AsyncImage(
                         model = "https://dokterdibya.com/staff/images/db-white.svg",
                         contentDescription = "Dokter Dibya Logo",
                         modifier = Modifier
-                            .height(38.dp)
-                            .widthIn(max = 120.dp),
+                            .height(32.dp)
+                            .widthIn(max = 100.dp),
                         contentScale = ContentScale.Fit
                     )
-                    Spacer(modifier = Modifier.width(10.dp))
-                    Text(
-                        text = buildAnnotatedString {
-                            withStyle(SpanStyle(color = Color.White)) {
-                                append("dokter")
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Column {
+                        Text(
+                            text = buildAnnotatedString {
+                                withStyle(SpanStyle(color = Color.White)) {
+                                    append("dokter")
+                                }
+                                withStyle(SpanStyle(color = Accent)) {
+                                    append("DIBYA")
+                                }
+                            },
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = "Portal Privat Kandungan Anda",
+                            fontSize = 9.sp,
+                            color = TextSecondaryDark,
+                            letterSpacing = 0.3.sp
+                        )
+                    }
+                }
+
+                // Right: Notification icon + Profile photo + Name
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // Notification icon with badge
+                    Box {
+                        IconButton(onClick = { /* TODO: Navigate to notifications */ }) {
+                            Icon(
+                                imageVector = Icons.Outlined.Notifications,
+                                contentDescription = "Notifikasi",
+                                tint = Color.White,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+                        // Badge
+                        if (uiState.unreadNotificationCount > 0) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .offset(x = (-4).dp, y = 4.dp)
+                                    .size(18.dp)
+                                    .clip(CircleShape)
+                                    .background(Danger),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = if (uiState.unreadNotificationCount > 99) "99+" else uiState.unreadNotificationCount.toString(),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Color.White
+                                )
                             }
-                            withStyle(SpanStyle(color = Accent)) {
-                                append("DIBYA")
+                        }
+                    }
+
+                    // Profile photo
+                    val photoUrl = uiState.patient?.photoUrl ?: uiState.patient?.profilePicture
+                    val fullPhotoUrl = photoUrl?.let { url ->
+                        if (url.startsWith("/api/")) "https://dokterdibya.com$url" else url
+                    }
+
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable(onClick = onNavigateToProfile)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(CardDark),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (fullPhotoUrl != null) {
+                                AsyncImage(
+                                    model = fullPhotoUrl,
+                                    contentDescription = "Foto Profil",
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Text(
+                                    text = (uiState.patientName ?: "U").take(1).uppercase(),
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Accent
+                                )
                             }
-                        },
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = uiState.patientName?.split(" ")?.firstOrNull() ?: "Ibu",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.White,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
             }
+        }
 
-            Spacer(modifier = Modifier.height(24.dp))
-
+        // Main content (scrollable)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(top = 78.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
+        ) {
             // Welcome Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -136,57 +243,18 @@ fun HomeScreen(
                         )
                         .padding(20.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "Selamat Datang,",
-                                fontSize = 16.sp,
-                                color = TextPrimaryDark
-                            )
-                            Text(
-                                text = uiState.patientName ?: "Ibu",
-                                fontSize = 22.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                color = Accent
-                            )
-                        }
-
-                        // Profile Photo
-                        val photoUrl = uiState.patient?.photoUrl ?: uiState.patient?.profilePicture
-                        val fullPhotoUrl = photoUrl?.let { url ->
-                            if (url.startsWith("/api/")) "https://dokterdibya.com$url" else url
-                        }
-
-                        Box(
-                            modifier = Modifier
-                                .size(64.dp)
-                                .clip(CircleShape)
-                                .background(CardDark),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            if (fullPhotoUrl != null) {
-                                AsyncImage(
-                                    model = fullPhotoUrl,
-                                    contentDescription = "Foto Profil",
-                                    modifier = Modifier
-                                        .size(64.dp)
-                                        .clip(CircleShape),
-                                    contentScale = ContentScale.Crop
-                                )
-                            } else {
-                                // Placeholder with initials
-                                Text(
-                                    text = (uiState.patientName ?: "U").take(1).uppercase(),
-                                    fontSize = 24.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Accent
-                                )
-                            }
-                        }
+                    Column {
+                        Text(
+                            text = "Selamat Datang,",
+                            fontSize = 16.sp,
+                            color = TextPrimaryDark
+                        )
+                        Text(
+                            text = uiState.patientName ?: "Ibu",
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Accent
+                        )
                     }
                 }
             }

@@ -144,7 +144,38 @@ interface ApiService {
 
     @GET("api/patients/pregnancy-data")
     suspend fun getPregnancyData(): Response<PregnancyDataResponse>
+
+    // ==================== Notifications ====================
+
+    @GET("api/patient-notifications/count")
+    suspend fun getUnreadNotificationCount(): Response<NotificationCountResponse>
+
+    @GET("api/patient-notifications")
+    suspend fun getNotifications(): Response<NotificationsResponse>
 }
+
+// Notification models
+data class PatientNotificationItem(
+    val id: Int,
+    val patient_id: String,
+    val type: String?,
+    val title: String,
+    val message: String,
+    val icon: String?,
+    val icon_color: String?,
+    val is_read: Int,
+    val created_at: String?
+)
+
+data class NotificationCountResponse(
+    val success: Boolean,
+    val count: Int
+)
+
+data class NotificationsResponse(
+    val success: Boolean,
+    val notifications: List<PatientNotificationItem>
+)
 
 // Practice Schedule models
 data class PracticeSchedule(
