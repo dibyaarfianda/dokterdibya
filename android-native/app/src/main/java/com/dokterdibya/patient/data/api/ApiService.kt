@@ -334,6 +334,13 @@ data class MedicationsResponse(
     val data: List<Medication>
 )
 
+// Baby size model
+data class BabySize(
+    val emoji: String = "👶",
+    val size: String = "Bayi",
+    val length: String = "-"
+)
+
 // Pregnancy data models
 data class PregnancyData(
     val is_pregnant: Boolean = false,
@@ -343,6 +350,9 @@ data class PregnancyData(
     val hpht: String? = null,
     val hpl: String? = null,
     val progress: Double = 0.0,
+    // Baby size and tip
+    val baby_size: BabySize? = null,
+    val tip: String? = null,
     // Birth info (if delivered)
     val has_given_birth: Boolean = false,
     val birth_date: String? = null,

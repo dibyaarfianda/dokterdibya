@@ -3,6 +3,7 @@ package com.dokterdibya.patient.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dokterdibya.patient.data.api.Announcement
+import com.dokterdibya.patient.data.api.BabySize
 import com.dokterdibya.patient.data.api.Medication
 import com.dokterdibya.patient.data.model.Patient
 import com.dokterdibya.patient.data.repository.PatientRepository
@@ -37,6 +38,9 @@ data class HomeUiState(
     val pregnancyDays: Int = 0,
     val pregnancyProgress: Float = 0f,
     val dueDate: String? = null,
+    val trimester: Int = 0,
+    val babySize: BabySize? = null,
+    val pregnancyTip: String? = null,
     val usgCount: Int = 0,
     val error: String? = null,
     // New features
@@ -106,7 +110,7 @@ class HomeViewModel @Inject constructor(
                 onFailure = { /* Ignore */ }
             )
 
-            // Load pregnancy data (includes birth info)
+            // Load pregnancy data (includes birth info, baby size, tips)
             patientRepository.getPregnancyData().fold(
                 onSuccess = { data ->
                     if (data.has_given_birth) {
@@ -122,6 +126,18 @@ class HomeViewModel @Inject constructor(
                                 babyPhotoUrl = data.baby_photo_url,
                                 doctorMessage = data.doctor_message
                             )
+                        )
+                    } else if (data.is_pregnant) {
+                        // Update pregnancy info from API (more accurate than local calculation)
+                        _uiState.value = _uiState.value.copy(
+                            isPregnant = true,
+                            pregnancyWeeks = data.weeks,
+                            pregnancyDays = data.days,
+                            pregnancyProgress = data.progress.toFloat(),
+                            dueDate = formatDate(data.hpl),
+                            trimester = data.trimester,
+                            babySize = data.baby_size,
+                            pregnancyTip = data.tip
                         )
                     }
                 },

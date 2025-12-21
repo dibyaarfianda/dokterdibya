@@ -1135,6 +1135,61 @@ router.get('/api/patients/generate-id', async (req, res) => {
 
 // ==================== PREGNANCY DATA (Android App) ====================
 
+// Baby size reference (40 weeks)
+const BABY_SIZES = {
+    4: { emoji: "🌱", size: "Biji Poppy", length: "0.1 cm" },
+    5: { emoji: "🫘", size: "Biji Wijen", length: "0.2 cm" },
+    6: { emoji: "🫛", size: "Biji Lentil", length: "0.4 cm" },
+    7: { emoji: "🫐", size: "Blueberry", length: "1.3 cm" },
+    8: { emoji: "🍇", size: "Raspberry", length: "1.6 cm" },
+    9: { emoji: "🫒", size: "Zaitun", length: "2.3 cm" },
+    10: { emoji: "🌰", size: "Kurma", length: "3.1 cm" },
+    11: { emoji: "🍋", size: "Jeruk Nipis", length: "4.1 cm" },
+    12: { emoji: "🍑", size: "Plum", length: "5.4 cm" },
+    13: { emoji: "🍋", size: "Lemon", length: "7.4 cm" },
+    14: { emoji: "🍊", size: "Jeruk", length: "8.7 cm" },
+    15: { emoji: "🍎", size: "Apel", length: "10.1 cm" },
+    16: { emoji: "🥑", size: "Alpukat", length: "11.6 cm" },
+    17: { emoji: "🥔", size: "Kentang", length: "13 cm" },
+    18: { emoji: "🫑", size: "Paprika", length: "14.2 cm" },
+    19: { emoji: "🥒", size: "Timun", length: "15.3 cm" },
+    20: { emoji: "🍌", size: "Pisang", length: "16.4 cm" },
+    21: { emoji: "🥕", size: "Wortel", length: "26.7 cm" },
+    22: { emoji: "🥬", size: "Sawi", length: "27.8 cm" },
+    23: { emoji: "🥭", size: "Mangga", length: "28.9 cm" },
+    24: { emoji: "🌽", size: "Jagung", length: "30 cm" },
+    25: { emoji: "🍆", size: "Terong", length: "34.6 cm" },
+    26: { emoji: "🥦", size: "Brokoli", length: "35.6 cm" },
+    27: { emoji: "🥬", size: "Kol", length: "36.6 cm" },
+    28: { emoji: "🍈", size: "Melon Kecil", length: "37.6 cm" },
+    29: { emoji: "🎃", size: "Labu Kecil", length: "38.6 cm" },
+    30: { emoji: "🥒", size: "Mentimun Besar", length: "39.9 cm" },
+    31: { emoji: "🥥", size: "Kelapa", length: "41.1 cm" },
+    32: { emoji: "🍍", size: "Nanas", length: "42.4 cm" },
+    33: { emoji: "🎃", size: "Labu", length: "43.7 cm" },
+    34: { emoji: "🍈", size: "Melon", length: "45 cm" },
+    35: { emoji: "🥬", size: "Selada Romaine", length: "46.2 cm" },
+    36: { emoji: "🥬", size: "Kol Besar", length: "47.4 cm" },
+    37: { emoji: "🥬", size: "Lobak Swiss", length: "48.6 cm" },
+    38: { emoji: "🍈", size: "Melon Besar", length: "49.8 cm" },
+    39: { emoji: "🍉", size: "Semangka Mini", length: "50.7 cm" },
+    40: { emoji: "🍉", size: "Semangka", length: "51.2 cm" }
+};
+
+// Weekly tips (milestone weeks)
+const PREGNANCY_TIPS = {
+    4: "Embrio mulai berkembang. Istirahat cukup dan konsumsi asam folat.",
+    8: "Jantung bayi sudah berdetak! Hindari rokok dan alkohol.",
+    12: "Risiko keguguran menurun. Saatnya umumkan kehamilan!",
+    16: "Bayi mulai bergerak. Anda mungkin merasakan tendangan pertama.",
+    20: "Separuh perjalanan! Saatnya USG detail anatomi bayi.",
+    24: "Bayi sudah bisa mendengar suara Anda. Ajak bicara!",
+    28: "Trimester ketiga dimulai. Persiapkan perlengkapan bayi.",
+    32: "Bayi sudah dalam posisi kepala di bawah. Ikuti kelas persalinan.",
+    36: "Bayi hampir siap lahir. Perhatikan tanda-tanda persalinan.",
+    40: "Selamat! Bayi Anda sudah full-term. Siap menyambut si kecil!"
+};
+
 // GET pregnancy data for logged-in patient (Android App)
 router.get('/api/patients/pregnancy-data', verifyPatientToken, async (req, res) => {
     // Prevent browser caching - always fetch fresh data
@@ -1232,6 +1287,16 @@ router.get('/api/patients/pregnancy-data', verifyPatientToken, async (req, res) 
 
                 // Only return as pregnant if <= 42 weeks
                 if (weeks <= 42) {
+                    // Get baby size for current week
+                    const babySize = BABY_SIZES[weeks] || BABY_SIZES[Math.min(weeks, 40)] || { emoji: "👶", size: "Bayi", length: "-" };
+
+                    // Get tip for closest milestone week
+                    const milestoneWeeks = [4, 8, 12, 16, 20, 24, 28, 32, 36, 40];
+                    const closestMilestone = milestoneWeeks.reduce((prev, curr) =>
+                        Math.abs(curr - weeks) < Math.abs(prev - weeks) ? curr : prev
+                    );
+                    const tip = PREGNANCY_TIPS[closestMilestone] || "";
+
                     return res.json({
                         success: true,
                         data: {
@@ -1242,7 +1307,9 @@ router.get('/api/patients/pregnancy-data', verifyPatientToken, async (req, res) 
                             trimester: trimester,
                             hpht: obstetriRows[0].hpht,
                             hpl: hplFormatted,
-                            progress: progress
+                            progress: progress,
+                            baby_size: babySize,
+                            tip: tip
                         }
                     });
                 }
