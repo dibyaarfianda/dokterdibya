@@ -139,8 +139,20 @@ fun DocumentsScreen(
                                 if (doc.type.lowercase() == "resume_medis") {
                                     onNavigateToViewer(doc.id)
                                 } else if (doc.url.isNotEmpty()) {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(doc.url))
-                                    context.startActivity(intent)
+                                    try {
+                                        // Convert relative URL to full URL
+                                        val fullUrl = if (doc.url.startsWith("/")) {
+                                            "https://dokterdibya.com${doc.url}"
+                                        } else if (!doc.url.startsWith("http")) {
+                                            "https://dokterdibya.com/${doc.url}"
+                                        } else {
+                                            doc.url
+                                        }
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(fullUrl))
+                                        context.startActivity(intent)
+                                    } catch (e: Exception) {
+                                        // Silently handle if no activity can handle the intent
+                                    }
                                 }
                             }
                         )
