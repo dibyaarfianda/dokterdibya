@@ -45,6 +45,10 @@ import androidx.lifecycle.LifecycleEventObserver
 import io.noties.markwon.Markwon
 import io.noties.markwon.html.HtmlPlugin
 import coil.compose.AsyncImage
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.hazeChild
+import dev.chrisbanes.haze.HazeStyle
 import com.dokterdibya.patient.R
 import com.dokterdibya.patient.data.api.Announcement
 import com.dokterdibya.patient.data.api.Medication
@@ -72,6 +76,7 @@ fun HomeScreen(
     var isMenuOpen by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val hazeState = remember { HazeState() }
 
     // Refresh data when screen is resumed (e.g., after returning from profile)
     DisposableEffect(lifecycleOwner) {
@@ -95,16 +100,17 @@ fun HomeScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
+                .height(70.dp)
                 .zIndex(10f)
+                .hazeChild(
+                    state = hazeState,
+                    style = HazeStyle(
+                        backgroundColor = BgDark,
+                        tint = Color.White.copy(alpha = 0.15f),
+                        blurRadius = 20.dp
+                    )
+                )
         ) {
-            // White glassy background layer
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(70.dp)
-                    .background(Color.White.copy(alpha = 0.12f))
-            )
-
             // Nav bar content
             Row(
                 modifier = Modifier
@@ -233,10 +239,11 @@ fun HomeScreen(
             }
         }
 
-        // Main content (scrollable)
+        // Main content (scrollable) - hazeSource for blur effect on nav bar
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .hazeSource(state = hazeState)
                 .verticalScroll(rememberScrollState())
                 .padding(top = 78.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
         ) {
