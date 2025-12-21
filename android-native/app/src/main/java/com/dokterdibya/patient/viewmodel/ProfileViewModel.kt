@@ -60,13 +60,23 @@ class ProfileViewModel @Inject constructor(
                         }
                     }
 
+                    // Convert relative photo URLs to full URLs
+                    val rawPhotoUrl = patient.photoUrl ?: patient.profilePicture
+                    val fullPhotoUrl = rawPhotoUrl?.let { url ->
+                        if (url.startsWith("/api/")) {
+                            "https://dokterdibya.com$url"
+                        } else {
+                            url
+                        }
+                    }
+
                     _uiState.value = ProfileUiState(
                         isLoading = false,
                         name = patient.name,
                         email = patient.email ?: "",
                         phone = patient.phone ?: "",
                         birthDate = patient.birthDate ?: "",
-                        photoUrl = patient.photoUrl ?: patient.profilePicture,
+                        photoUrl = fullPhotoUrl,
                         isPregnant = patient.isPregnant,
                         pregnancyWeeks = weeks,
                         pregnancyDays = days,
