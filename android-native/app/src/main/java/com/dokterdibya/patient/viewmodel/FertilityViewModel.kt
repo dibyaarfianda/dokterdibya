@@ -464,7 +464,10 @@ class FertilityViewModel @Inject constructor(
     private fun parseDate(dateStr: String): java.util.Date? {
         return try {
             // Try ISO format first (from API: 2025-12-06T17:00:00.000Z)
-            SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).parse(dateStr)
+            // Set timezone to UTC for proper parsing
+            val isoFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault())
+            isoFormat.timeZone = java.util.TimeZone.getTimeZone("UTC")
+            isoFormat.parse(dateStr)
         } catch (e: Exception) {
             try {
                 SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(dateStr)
