@@ -4,14 +4,25 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
+import coil.ImageLoader
+import coil.ImageLoaderFactory
+import coil.decode.SvgDecoder
 import dagger.hilt.android.HiltAndroidApp
 
 @HiltAndroidApp
-class DokterDibyaApp : Application() {
+class DokterDibyaApp : Application(), ImageLoaderFactory {
 
     override fun onCreate() {
         super.onCreate()
         createNotificationChannels()
+    }
+
+    override fun newImageLoader(): ImageLoader {
+        return ImageLoader.Builder(this)
+            .components {
+                add(SvgDecoder.Factory())
+            }
+            .build()
     }
 
     private fun createNotificationChannels() {
