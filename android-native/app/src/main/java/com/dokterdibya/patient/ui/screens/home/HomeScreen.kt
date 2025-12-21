@@ -201,11 +201,12 @@ fun HomeScreen(
                                     contentScale = ContentScale.Crop
                                 )
                             } else {
-                                Text(
-                                    text = (uiState.patientName ?: "U").take(1).uppercase(),
-                                    fontSize = 16.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = Accent
+                                // Use custom profile icon
+                                Icon(
+                                    painter = painterResource(id = R.drawable.profil),
+                                    contentDescription = "Profil",
+                                    tint = Accent,
+                                    modifier = Modifier.size(24.dp)
                                 )
                             }
                         }
