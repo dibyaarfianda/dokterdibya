@@ -19,8 +19,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import android.graphics.RenderEffect
+import android.graphics.Shader
+import android.os.Build
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -98,20 +101,33 @@ fun HomeScreen(
                 .fillMaxWidth()
                 .zIndex(10f)
         ) {
-            // Glassy white blur background layer
+            // Frosted glass background with blur effect (Android 12+)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(70.dp)
-                    .background(Color.White.copy(alpha = 0.1f))
-                    .blur(20.dp)
+                    .graphicsLayer {
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                            renderEffect = RenderEffect.createBlurEffect(
+                                25f, 25f, Shader.TileMode.CLAMP
+                            )
+                        }
+                    }
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                BgDark.copy(alpha = 0.95f),
+                                BgDark.copy(alpha = 0.85f)
+                            )
+                        )
+                    )
             )
-            // Overlay for glass effect
+            // Subtle overlay for glass effect
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(70.dp)
-                    .background(Color.White.copy(alpha = 0.08f))
+                    .background(Color.White.copy(alpha = 0.05f))
             )
 
             // Nav bar content
