@@ -20,10 +20,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.graphicsLayer
-import android.graphics.RenderEffect
-import android.graphics.Shader
-import android.os.Build
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -95,39 +91,32 @@ fun HomeScreen(
             .fillMaxSize()
             .background(BgDark)
     ) {
-        // Sticky Top Navigation Bar with glassy effect
+        // Sticky Top Navigation Bar with frosted glass effect
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .zIndex(10f)
         ) {
-            // Frosted glass background with blur effect (Android 12+)
+            // Frosted glass background
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(70.dp)
-                    .graphicsLayer {
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            renderEffect = RenderEffect.createBlurEffect(
-                                25f, 25f, Shader.TileMode.CLAMP
-                            )
-                        }
-                    }
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                BgDark.copy(alpha = 0.95f),
-                                BgDark.copy(alpha = 0.85f)
+                                BgDark.copy(alpha = 0.98f),
+                                BgDark.copy(alpha = 0.92f)
                             )
                         )
                     )
             )
-            // Subtle overlay for glass effect
+            // Subtle white overlay for glass effect
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(70.dp)
-                    .background(Color.White.copy(alpha = 0.05f))
+                    .background(Color.White.copy(alpha = 0.03f))
             )
 
             // Nav bar content
