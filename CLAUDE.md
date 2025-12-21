@@ -495,3 +495,56 @@ DRD0003 = Kunjungan 3 (Pasien A di RS Y) ← PASIEN SAMA, DRD BARU!
 - `rs_bhayangkara` - RS Bhayangkara
 
 **Only `klinik_private` has billing system.** RS lain tidak ada tagihan.
+
+### 18. Solution Memory Rule
+
+**When user expresses gratitude** (says "great job", "nice", "bagus", "mantap", "thanks", etc.), **save the successful solution to this CLAUDE.md file**.
+
+This helps remember what worked and prevents repeating mistakes in the future.
+
+### 19. Android Native App Solutions
+
+**Hide Foreground Service Notification:**
+Use `IMPORTANCE_NONE` channel with new channel ID to completely hide the notification:
+
+```kotlin
+// DokterDibyaApp.kt
+val serviceChannel = NotificationChannel(
+    SERVICE_CHANNEL_ID,
+    "Background Service",
+    NotificationManager.IMPORTANCE_NONE  // Completely hidden
+).apply {
+    setShowBadge(false)
+    setSound(null, null)
+    enableVibration(false)
+    enableLights(false)
+    lockscreenVisibility = android.app.Notification.VISIBILITY_SECRET
+}
+```
+
+**Important:** User must uninstall app first before reinstalling - old notification channels persist.
+
+**Material3 Ripple Deprecation:**
+`rememberRipple` is deprecated. Either:
+1. Use `ripple()` from `androidx.compose.material3` (requires newer version)
+2. Or use `indication = null` with custom press animation (scale)
+
+```kotlin
+// Use scale animation instead of ripple
+.clickable(
+    interactionSource = interactionSource,
+    indication = null,  // No ripple, using scale animation
+    onClick = item.onClick
+)
+```
+
+**Haze Library (Blur Effect) - ISSUES:**
+The Haze library (`dev.chrisbanes.haze`) has dependency resolution issues. Artifacts tried:
+- `dev.chrisbanes.haze:haze:1.0.0` - unresolved imports
+- `dev.chrisbanes.haze:haze-android:1.0.0` - unresolved imports
+- `dev.chrisbanes.haze:haze-materials:1.0.0` - unresolved imports
+
+**Workaround:** Use semi-transparent background instead:
+```kotlin
+.background(BgDark.copy(alpha = 0.85f))
+```
