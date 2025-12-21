@@ -379,12 +379,25 @@ router.post('/publish-from-mr', verifyToken, async (req, res) => {
             // For files (usg_photo, lab_result), we expect file_path/file_url
 
             // Check for existing document - same patient, mr_id, and document_type
-            // If exists, UPDATE (overwrite) instead of creating duplicate
+            // For file-based docs (usg_photo, lab_result), also check file_url to allow multiple files
+            // For text-based docs (resume_medis), UPDATE (overwrite) instead of creating duplicate
             if (mrId) {
-                const [existing] = await db.query(`
-                    SELECT id FROM patient_documents
-                    WHERE patient_id = ? AND mr_id = ? AND document_type = ? AND status = 'published'
-                `, [patientId, mrId, doc.type]);
+                let existing = [];
+                const fileBasedTypes = ['usg_photo', 'lab_result', 'patient_usg', 'patient_lab'];
+
+                if (fileBasedTypes.includes(doc.type) && doc.fileUrl) {
+                    // For file-based docs, check by file_url to allow multiple unique files
+                    [existing] = await db.query(`
+                        SELECT id FROM patient_documents
+                        WHERE patient_id = ? AND mr_id = ? AND document_type = ? AND file_url = ? AND status = 'published'
+                    `, [patientId, mrId, doc.type, doc.fileUrl]);
+                } else {
+                    // For text-based docs (resume_medis), check only by type (overwrite)
+                    [existing] = await db.query(`
+                        SELECT id FROM patient_documents
+                        WHERE patient_id = ? AND mr_id = ? AND document_type = ? AND status = 'published'
+                    `, [patientId, mrId, doc.type]);
+                }
 
                 if (existing.length > 0) {
                     // Update existing document (overwrite)
