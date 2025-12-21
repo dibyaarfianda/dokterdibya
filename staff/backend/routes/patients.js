@@ -859,8 +859,9 @@ router.get('/api/patients/profile', verifyToken, async (req, res) => {
                 p.nik,
                 p.profile_completed,
                 p.created_at,
+                p.photo_url,
                 u.email,
-                u.photo_url as profile_picture
+                COALESCE(p.photo_url, u.photo_url) as profile_picture
             FROM patients p
             LEFT JOIN users u ON p.id = u.new_id
             WHERE p.id = ?`,
