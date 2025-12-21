@@ -46,7 +46,7 @@ fun SlideMenu(
 ) {
     val menuItems = listOf(
         MenuItem(iconRes = R.drawable.book, label = "Booking", color = Accent) { onNavigateToBooking(); onClose() },
-        MenuItem(iconRes = R.drawable.lokasi, label = "Jadwal", color = Info) { onNavigateToSchedule(); onClose() },
+        MenuItem(iconRes = R.drawable.temurs, label = "Jadwal", color = Info) { onNavigateToSchedule(); onClose() },
         MenuItem(iconRes = R.drawable.usg, label = "USG", color = Purple) { onNavigateToUsg(); onClose() },
         MenuItem(iconRes = R.drawable.subur, label = "Kesuburan", color = Fertility) { onNavigateToFertility(); onClose() },
         MenuItem(iconRes = R.drawable.erm, label = "Riwayat", color = Warning) { onNavigateToVisitHistory(); onClose() },

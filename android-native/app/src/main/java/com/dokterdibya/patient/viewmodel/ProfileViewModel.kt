@@ -8,8 +8,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
+import java.util.Locale
 import javax.inject.Inject
 
 data class ProfileUiState(
@@ -75,12 +77,12 @@ class ProfileViewModel @Inject constructor(
                         name = patient.name,
                         email = patient.email ?: "",
                         phone = patient.phone ?: "",
-                        birthDate = patient.birthDate ?: "",
+                        birthDate = formatDate(patient.birthDate),
                         photoUrl = fullPhotoUrl,
                         isPregnant = patient.isPregnant,
                         pregnancyWeeks = weeks,
                         pregnancyDays = days,
-                        dueDate = patient.expectedDueDate ?: ""
+                        dueDate = formatDate(patient.expectedDueDate)
                     )
                 }
                 .onFailure {
@@ -117,5 +119,17 @@ class ProfileViewModel @Inject constructor(
 
     fun clearUploadError() {
         _uiState.value = _uiState.value.copy(uploadError = null)
+    }
+
+    private fun formatDate(dateStr: String?): String {
+        if (dateStr.isNullOrEmpty()) return ""
+        return try {
+            val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val outputFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            val date = inputFormat.parse(dateStr.take(10))
+            date?.let { outputFormat.format(it) } ?: dateStr
+        } catch (e: Exception) {
+            dateStr
+        }
     }
 }

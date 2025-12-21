@@ -28,21 +28,27 @@ class DokterDibyaApp : Application() {
             }
             notificationManager.createNotificationChannel(mainChannel)
 
-            // Service channel (for foreground service - low importance, silent)
+            // Service channel (for foreground service - min importance, hidden)
             val serviceChannel = NotificationChannel(
                 SERVICE_CHANNEL_ID,
                 "Koneksi Background",
-                NotificationManager.IMPORTANCE_LOW
+                NotificationManager.IMPORTANCE_MIN
             ).apply {
                 description = "Menjaga koneksi notifikasi di background"
                 setShowBadge(false)
+                setSound(null, null)
+                enableVibration(false)
+                enableLights(false)
             }
             notificationManager.createNotificationChannel(serviceChannel)
+
+            // Delete old channel if exists (for upgrade)
+            notificationManager.deleteNotificationChannel("dokterdibya_service")
         }
     }
 
     companion object {
         const val NOTIFICATION_CHANNEL_ID = "dokterdibya_notifications"
-        const val SERVICE_CHANNEL_ID = "dokterdibya_service"
+        const val SERVICE_CHANNEL_ID = "dokterdibya_service_v2"  // New ID for IMPORTANCE_MIN
     }
 }

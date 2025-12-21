@@ -590,6 +590,19 @@ class PatientRepository @Inject constructor(
         }
     }
 
+    suspend fun getNotifications(): Result<List<com.dokterdibya.patient.data.api.PatientNotificationItem>> {
+        return try {
+            val response = apiService.getNotifications()
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!.notifications)
+            } else {
+                Result.success(emptyList())
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     // ==================== Profile Photo ====================
 
     suspend fun uploadProfilePhoto(imageBytes: ByteArray, fileName: String): Result<String> {

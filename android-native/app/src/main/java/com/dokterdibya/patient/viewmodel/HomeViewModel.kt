@@ -11,8 +11,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
+import java.util.Locale
 import javax.inject.Inject
 
 // Birth info for congratulations card
@@ -80,7 +82,7 @@ class HomeViewModel @Inject constructor(
                         pregnancyWeeks = pregnancyInfo.weeks,
                         pregnancyDays = pregnancyInfo.days,
                         pregnancyProgress = pregnancyInfo.progress,
-                        dueDate = patient.expectedDueDate
+                        dueDate = formatDate(patient.expectedDueDate)
                     )
 
                     // Reload announcements with patient ID for like status
@@ -226,4 +228,16 @@ class HomeViewModel @Inject constructor(
         val days: Int,
         val progress: Float
     )
+
+    private fun formatDate(dateStr: String?): String? {
+        if (dateStr.isNullOrEmpty()) return null
+        return try {
+            val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val outputFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+            val date = inputFormat.parse(dateStr.take(10))
+            date?.let { outputFormat.format(it) } ?: dateStr
+        } catch (e: Exception) {
+            dateStr
+        }
+    }
 }

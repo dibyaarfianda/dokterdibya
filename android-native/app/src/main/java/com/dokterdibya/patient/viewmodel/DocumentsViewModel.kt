@@ -100,14 +100,14 @@ class DocumentsViewModel @Inject constructor(
         return try {
             // Parse ISO date format
             val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
-            val outputFormat = SimpleDateFormat("d MMM yyyy", Locale("id", "ID"))
+            val outputFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
             val date = inputFormat.parse(dateStr.take(19))
             date?.let { outputFormat.format(it) } ?: dateStr.take(10)
         } catch (e: Exception) {
             // Try simple date format
             try {
                 val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-                val outputFormat = SimpleDateFormat("d MMM yyyy", Locale("id", "ID"))
+                val outputFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
                 val date = inputFormat.parse(dateStr.take(10))
                 date?.let { outputFormat.format(it) } ?: dateStr.take(10)
             } catch (e2: Exception) {

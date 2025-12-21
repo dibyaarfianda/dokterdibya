@@ -24,6 +24,7 @@ import com.dokterdibya.patient.ui.screens.profile.ProfileScreen
 import com.dokterdibya.patient.ui.screens.schedule.ScheduleScreen
 import com.dokterdibya.patient.ui.screens.usg.UsgGalleryScreen
 import com.dokterdibya.patient.ui.screens.medications.MedicationsScreen
+import com.dokterdibya.patient.ui.screens.notifications.NotificationsScreen
 import com.dokterdibya.patient.ui.screens.intro.IntroScreen
 import com.dokterdibya.patient.ui.screens.completeprofile.CompleteProfileScreen
 
@@ -50,6 +51,7 @@ sealed class Screen(val route: String) {
     object VisitHistory : Screen("visit_history")
     object Booking : Screen("booking")
     object Medications : Screen("medications")
+    object Notifications : Screen("notifications")
 }
 
 @Composable
@@ -126,6 +128,9 @@ fun NavGraph(
                 },
                 onNavigateToMedications = {
                     navController.navigate(Screen.Medications.route)
+                },
+                onNavigateToNotifications = {
+                    navController.navigate(Screen.Notifications.route)
                 },
                 onLogout = {
                     navController.navigate(Screen.Login.route) {
@@ -223,6 +228,12 @@ fun NavGraph(
 
         composable(Screen.Medications.route) {
             MedicationsScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.Notifications.route) {
+            NotificationsScreen(
                 onBack = { navController.popBackStack() }
             )
         }

@@ -82,7 +82,7 @@ class VisitHistoryViewModel @Inject constructor(
         if (dateString.isNullOrEmpty()) return "-"
         return try {
             val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
-            val outputFormat = SimpleDateFormat("dd MMMM yyyy", Locale("id", "ID"))
+            val outputFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
             val date = inputFormat.parse(dateString.take(10))
             date?.let { outputFormat.format(it) } ?: dateString
         } catch (e: Exception) {
