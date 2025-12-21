@@ -175,6 +175,9 @@ const PATIENT_ALLOWED_ROUTES = [
     '/api/announcements',      // Public announcements
     '/api/fertility-calendar', // Fertility cycle tracking
     '/api/app',                // Mobile app version check
+    '/api/billings/my-billings', // Patient visit history (my own billings)
+    '/api/billings/',          // Billing details (with id path)
+    '/api/usg-photos',         // USG photos access
 ];
 
 app.use('/api', (req, res, next) => {

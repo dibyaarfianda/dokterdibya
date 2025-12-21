@@ -273,7 +273,7 @@ class PatientRepository @Inject constructor(
             val response = apiService.getDocuments(null)
             if (response.isSuccessful && response.body() != null) {
                 val usgDocs = response.body()!!.documents.filter {
-                    it.documentType in listOf("usg_2d", "usg_4d", "patient_usg")
+                    it.documentType in listOf("usg_2d", "usg_4d", "patient_usg", "usg_photo")
                 }
                 Result.success(usgDocs)
             } else {

@@ -98,7 +98,7 @@ fun HomeScreen(
                             withStyle(SpanStyle(color = Accent)) {
                                 append("dokter")
                             }
-                            withStyle(SpanStyle(color = Purple)) {
+                            withStyle(SpanStyle(color = Primary)) {
                                 append("DIBYA")
                             }
                         },
@@ -1038,7 +1038,7 @@ fun JourneyBookCard(onClick: () -> Unit) {
                             withStyle(SpanStyle(color = Color.White, fontWeight = FontWeight.SemiBold)) {
                                 append("dokter")
                             }
-                            withStyle(SpanStyle(color = Purple, fontWeight = FontWeight.SemiBold)) {
+                            withStyle(SpanStyle(color = Primary, fontWeight = FontWeight.SemiBold)) {
                                 append("DIBYA")
                             }
                         },
