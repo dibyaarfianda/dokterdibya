@@ -56,6 +56,11 @@ interface ApiService {
         @Query("type") type: String? = null
     ): Response<DocumentListResponse>
 
+    @GET("api/patient-documents/{id}/content")
+    suspend fun getDocumentContent(
+        @Path("id") id: Int
+    ): Response<DocumentContentResponse>
+
     // ==================== Fertility Calendar ====================
 
     @GET("api/fertility-calendar")

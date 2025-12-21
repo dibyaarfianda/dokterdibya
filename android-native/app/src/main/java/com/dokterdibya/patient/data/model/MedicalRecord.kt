@@ -80,6 +80,24 @@ data class DocumentListResponse(
     val documents: List<PatientDocument>
 )
 
+data class DocumentContentResponse(
+    val success: Boolean,
+    val document: DocumentContent?
+)
+
+data class DocumentContent(
+    val id: Int,
+    val title: String?,
+    val description: String?,
+    @SerializedName("documentType")
+    val documentType: String?,
+    val content: String?,
+    @SerializedName("fileUrl")
+    val fileUrl: String?,
+    @SerializedName("fileName")
+    val fileName: String?
+)
+
 data class VisitHistory(
     val id: Int,
     @SerializedName("patient_id")
