@@ -12,21 +12,21 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.Logout
+import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.ripple.rememberRipple
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.dokterdibya.patient.R
 import com.dokterdibya.patient.ui.theme.*
 import kotlinx.coroutines.delay
 
@@ -45,15 +45,15 @@ fun SlideMenu(
     onLogout: () -> Unit
 ) {
     val menuItems = listOf(
-        MenuItem(Icons.Filled.EventAvailable, "Booking", Accent) { onNavigateToBooking(); onClose() },
-        MenuItem(Icons.Filled.AccessTime, "Jadwal", Info) { onNavigateToSchedule(); onClose() },
-        MenuItem(Icons.Filled.ChildFriendly, "USG", Purple) { onNavigateToUsg(); onClose() },
-        MenuItem(Icons.Filled.Favorite, "Kesuburan", Fertility) { onNavigateToFertility(); onClose() },
-        MenuItem(Icons.Filled.Restore, "Riwayat", Warning) { onNavigateToVisitHistory(); onClose() },
-        MenuItem(Icons.Filled.FolderOpen, "Dokumen", Success) { onNavigateToDocuments(); onClose() },
-        MenuItem(Icons.Filled.AutoStories, "Artikel", Accent) { onNavigateToArticles(); onClose() },
-        MenuItem(Icons.Filled.AccountCircle, "Profil", Purple) { onNavigateToProfile(); onClose() },
-        MenuItem(Icons.Outlined.Logout, "Keluar", Danger, isLogout = true) { onLogout() }
+        MenuItem(iconRes = R.drawable.book, label = "Booking", color = Accent) { onNavigateToBooking(); onClose() },
+        MenuItem(iconRes = R.drawable.lokasi, label = "Jadwal", color = Info) { onNavigateToSchedule(); onClose() },
+        MenuItem(iconRes = R.drawable.usg, label = "USG", color = Purple) { onNavigateToUsg(); onClose() },
+        MenuItem(iconRes = R.drawable.subur, label = "Kesuburan", color = Fertility) { onNavigateToFertility(); onClose() },
+        MenuItem(iconRes = R.drawable.erm, label = "Riwayat", color = Warning) { onNavigateToVisitHistory(); onClose() },
+        MenuItem(iconRes = R.drawable.erm, label = "Dokumen", color = Success) { onNavigateToDocuments(); onClose() },
+        MenuItem(iconRes = R.drawable.ruangbaca, label = "Artikel", color = Accent) { onNavigateToArticles(); onClose() },
+        MenuItem(iconRes = R.drawable.profil, label = "Profil", color = Purple) { onNavigateToProfile(); onClose() },
+        MenuItem(icon = Icons.AutoMirrored.Outlined.Logout, label = "Keluar", color = Danger, isLogout = true) { onLogout() }
     )
 
     // Overlay and menu container
@@ -198,17 +198,27 @@ fun MenuItemButton(item: MenuItem) {
             ),
         contentAlignment = Alignment.Center
     ) {
-        Icon(
-            imageVector = item.icon,
-            contentDescription = item.label,
-            tint = item.color,
-            modifier = Modifier.size(28.dp)
-        )
+        if (item.iconRes != null) {
+            Icon(
+                painter = painterResource(id = item.iconRes),
+                contentDescription = item.label,
+                tint = item.color,
+                modifier = Modifier.size(28.dp)
+            )
+        } else if (item.icon != null) {
+            Icon(
+                imageVector = item.icon,
+                contentDescription = item.label,
+                tint = item.color,
+                modifier = Modifier.size(28.dp)
+            )
+        }
     }
 }
 
 data class MenuItem(
-    val icon: ImageVector,
+    val iconRes: Int? = null,
+    val icon: ImageVector? = null,
     val label: String,
     val color: Color,
     val isLogout: Boolean = false,

@@ -12,6 +12,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.ui.res.painterResource
+import com.dokterdibya.patient.R
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -213,7 +215,7 @@ fun LocationCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        if (location.hasOnlineBooking) Icons.Default.CalendarMonth else Icons.Default.Schedule,
+                        painter = painterResource(id = if (location.hasOnlineBooking) R.drawable.book else R.drawable.lokasi),
                         contentDescription = null,
                         tint = if (location.hasOnlineBooking) Success else Warning,
                         modifier = Modifier.size(14.dp)
@@ -280,7 +282,7 @@ fun ScheduleDetailContent(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        Icons.Default.Info,
+                        painter = painterResource(id = R.drawable.identitas),
                         contentDescription = null,
                         tint = Accent,
                         modifier = Modifier.size(24.dp)
@@ -302,7 +304,7 @@ fun ScheduleDetailContent(
                 modifier = Modifier.padding(vertical = 8.dp)
             ) {
                 Icon(
-                    Icons.Default.CalendarMonth,
+                    painter = painterResource(id = R.drawable.book),
                     contentDescription = null,
                     tint = Accent,
                     modifier = Modifier.size(24.dp)

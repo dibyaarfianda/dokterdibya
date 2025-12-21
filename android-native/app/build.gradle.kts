@@ -91,6 +91,10 @@ dependencies {
     // Coil (Image Loading)
     implementation("io.coil-kt:coil-compose:2.5.0")
 
+    // Markwon (Markdown Rendering)
+    implementation("io.noties.markwon:core:4.6.2")
+    implementation("io.noties.markwon:html:4.6.2")
+
     // DataStore (Token Storage)
     implementation("androidx.datastore:datastore-preferences:1.0.0")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")

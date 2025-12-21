@@ -1,23 +1,22 @@
 package com.dokterdibya.patient.ui.screens.articles
 
-import android.text.Html
 import android.widget.TextView
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.ui.res.painterResource
+import com.dokterdibya.patient.R
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -26,6 +25,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
 import com.dokterdibya.patient.ui.theme.*
 import com.dokterdibya.patient.viewmodel.ArticleDetailViewModel
+import io.noties.markwon.Markwon
+import io.noties.markwon.html.HtmlPlugin
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -149,7 +150,7 @@ fun ArticleDetailScreen(
                             ) {
                                 if (!article.author.isNullOrEmpty()) {
                                     Icon(
-                                        Icons.Default.Person,
+                                        painter = painterResource(id = R.drawable.profil),
                                         contentDescription = null,
                                         tint = TextSecondaryDark,
                                         modifier = Modifier.size(16.dp)
@@ -189,10 +190,10 @@ fun ArticleDetailScreen(
 
                             Spacer(modifier = Modifier.height(20.dp))
 
-                            // Content - render HTML
+                            // Content - render Markdown with HTML support
                             if (!article.content.isNullOrEmpty()) {
-                                HtmlContent(
-                                    html = article.content,
+                                MarkdownContent(
+                                    content = article.content,
                                     modifier = Modifier.fillMaxWidth()
                                 )
                             } else if (!article.excerpt.isNullOrEmpty()) {
@@ -214,23 +215,37 @@ fun ArticleDetailScreen(
 }
 
 @Composable
-fun HtmlContent(
-    html: String,
+fun MarkdownContent(
+    content: String,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     val textColor = TextPrimaryDark.toArgb()
+    val linkColor = Accent.toArgb()
+
+    // Create Markwon instance with HTML support
+    val markwon = remember {
+        Markwon.builder(context)
+            .usePlugin(HtmlPlugin.create())
+            .build()
+    }
 
     AndroidView(
         modifier = modifier,
-        factory = { context ->
-            TextView(context).apply {
+        factory = { ctx ->
+            TextView(ctx).apply {
                 setTextColor(textColor)
+                setLinkTextColor(linkColor)
                 textSize = 16f
                 setLineSpacing(8f, 1f)
             }
         },
         update = { textView ->
-            textView.text = Html.fromHtml(html, Html.FROM_HTML_MODE_COMPACT)
+            // Convert </br> to <br> for proper HTML rendering
+            val normalizedContent = content
+                .replace("</br>", "<br>")
+                .replace("\\n", "\n")
+            markwon.setMarkdown(textView, normalizedContent)
         }
     )
 }
