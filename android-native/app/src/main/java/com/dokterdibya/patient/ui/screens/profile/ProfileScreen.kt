@@ -1,6 +1,10 @@
 package com.dokterdibya.patient.ui.screens.profile
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -15,10 +19,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.dokterdibya.patient.ui.theme.*
 import com.dokterdibya.patient.viewmodel.ProfileViewModel
 
@@ -30,6 +37,28 @@ fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    // Photo picker launcher
+    val photoPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            // Read image bytes and upload
+            context.contentResolver.openInputStream(it)?.use { inputStream ->
+                val bytes = inputStream.readBytes()
+                val fileName = "profile_${System.currentTimeMillis()}.jpg"
+                viewModel.uploadPhoto(bytes, fileName)
+            }
+        }
+    }
+
+    // Show error snackbar
+    LaunchedEffect(uiState.uploadError) {
+        uiState.uploadError?.let {
+            // Error will be shown in UI
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -81,19 +110,71 @@ fun ProfileScreen(
                             .padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // Avatar
+                        // Avatar with photo upload
                         Box(
                             modifier = Modifier
-                                .size(80.dp)
-                                .clip(CircleShape)
-                                .background(Accent.copy(alpha = 0.2f)),
+                                .size(100.dp)
+                                .clickable { photoPickerLauncher.launch("image/*") },
                             contentAlignment = Alignment.Center
                         ) {
+                            if (uiState.photoUrl != null) {
+                                AsyncImage(
+                                    model = uiState.photoUrl,
+                                    contentDescription = "Foto Profil",
+                                    modifier = Modifier
+                                        .size(100.dp)
+                                        .clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Box(
+                                    modifier = Modifier
+                                        .size(100.dp)
+                                        .clip(CircleShape)
+                                        .background(Accent.copy(alpha = 0.2f)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = uiState.name.take(1).uppercase(),
+                                        fontSize = 36.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Accent
+                                    )
+                                }
+                            }
+                            // Camera icon overlay
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.BottomEnd)
+                                    .size(32.dp)
+                                    .clip(CircleShape)
+                                    .background(Accent),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                if (uiState.isUploading) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        color = TextPrimaryDark,
+                                        strokeWidth = 2.dp
+                                    )
+                                } else {
+                                    Icon(
+                                        Icons.Default.CameraAlt,
+                                        contentDescription = "Ganti Foto",
+                                        tint = TextPrimaryDark,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            }
+                        }
+
+                        // Upload error message
+                        if (uiState.uploadError != null) {
+                            Spacer(modifier = Modifier.height(8.dp))
                             Text(
-                                text = uiState.name.take(1).uppercase(),
-                                fontSize = 32.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Accent
+                                text = uiState.uploadError!!,
+                                fontSize = 12.sp,
+                                color = Danger
                             )
                         }
 

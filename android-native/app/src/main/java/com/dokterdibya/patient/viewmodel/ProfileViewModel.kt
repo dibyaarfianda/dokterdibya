@@ -18,10 +18,13 @@ data class ProfileUiState(
     val email: String = "",
     val phone: String = "",
     val birthDate: String = "",
+    val photoUrl: String? = null,
     val isPregnant: Boolean = false,
     val pregnancyWeeks: Int = 0,
     val pregnancyDays: Int = 0,
-    val dueDate: String = ""
+    val dueDate: String = "",
+    val isUploading: Boolean = false,
+    val uploadError: String? = null
 )
 
 @HiltViewModel
@@ -63,6 +66,7 @@ class ProfileViewModel @Inject constructor(
                         email = patient.email ?: "",
                         phone = patient.phone ?: "",
                         birthDate = patient.birthDate ?: "",
+                        photoUrl = patient.photoUrl ?: patient.profilePicture,
                         isPregnant = patient.isPregnant,
                         pregnancyWeeks = weeks,
                         pregnancyDays = days,
@@ -79,5 +83,29 @@ class ProfileViewModel @Inject constructor(
         viewModelScope.launch {
             repository.logout()
         }
+    }
+
+    fun uploadPhoto(imageBytes: ByteArray, fileName: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isUploading = true, uploadError = null)
+
+            repository.uploadProfilePhoto(imageBytes, fileName)
+                .onSuccess { photoUrl ->
+                    _uiState.value = _uiState.value.copy(
+                        isUploading = false,
+                        photoUrl = "https://dokterdibya.com$photoUrl"
+                    )
+                }
+                .onFailure { e ->
+                    _uiState.value = _uiState.value.copy(
+                        isUploading = false,
+                        uploadError = e.message
+                    )
+                }
+        }
+    }
+
+    fun clearUploadError() {
+        _uiState.value = _uiState.value.copy(uploadError = null)
     }
 }

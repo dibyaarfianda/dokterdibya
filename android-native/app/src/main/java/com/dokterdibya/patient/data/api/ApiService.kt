@@ -4,6 +4,7 @@ import com.dokterdibya.patient.data.model.*
 import com.dokterdibya.patient.data.model.CompleteProfileRequest
 import com.dokterdibya.patient.data.model.CompleteProfileFullRequest
 import com.dokterdibya.patient.data.model.CompleteProfileResponse
+import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.*
 
@@ -26,6 +27,10 @@ interface ApiService {
 
     @POST("api/patients/complete-profile-full")
     suspend fun completeProfileFull(@Body request: CompleteProfileFullRequest): Response<CompleteProfileResponse>
+
+    @Multipart
+    @POST("api/patients/upload-photo")
+    suspend fun uploadProfilePhoto(@Part photo: MultipartBody.Part): Response<PhotoUploadResponse>
 
     // ==================== Appointments ====================
 
@@ -312,4 +317,11 @@ data class PregnancyDataResponse(
 // Cancel request
 data class CancelRequest(
     val reason: String
+)
+
+// Photo upload response
+data class PhotoUploadResponse(
+    val success: Boolean,
+    val message: String?,
+    val photo_url: String?
 )
