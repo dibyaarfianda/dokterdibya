@@ -1,5 +1,7 @@
 package com.dokterdibya.patient.ui.screens.home
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -21,6 +23,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -57,6 +60,7 @@ fun HomeScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var isMenuOpen by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     Box(
         modifier = Modifier
@@ -145,6 +149,16 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
+            // Welcome Message Card (Selamat Datang - expandable)
+            WelcomeMessageCard()
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Profile Identity Card
+            ProfileIdentityCard(onEditProfile = onNavigateToProfile)
+
+            Spacer(modifier = Modifier.height(16.dp))
+
             // Birth Congratulations Card (if has given birth)
             if (uiState.hasGivenBirth && uiState.birthInfo != null) {
                 BirthCongratulationsCard(birthInfo = uiState.birthInfo!!)
@@ -158,6 +172,15 @@ fun HomeScreen(
                     days = uiState.pregnancyDays,
                     progress = uiState.pregnancyProgress,
                     dueDate = uiState.dueDate
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Journey Book Card (only for pregnant patients)
+                JourneyBookCard(
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://dokterdibya.com/perjalanan-ibu.html"))
+                        context.startActivity(intent)
+                    }
                 )
                 Spacer(modifier = Modifier.height(16.dp))
             }
@@ -464,6 +487,8 @@ fun AnnouncementCard(
     announcement: Announcement,
     onLike: () -> Unit
 ) {
+    var isExpanded by remember { mutableStateOf(false) }
+
     val priorityColor = when (announcement.priority) {
         "urgent" -> Danger
         "important" -> Warning
@@ -471,7 +496,9 @@ fun AnnouncementCard(
     }
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { isExpanded = !isExpanded },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = CardDark)
     ) {
@@ -514,9 +541,20 @@ fun AnnouncementCard(
                 text = announcement.message,
                 fontSize = 13.sp,
                 color = TextSecondaryDark,
-                maxLines = 3,
+                maxLines = if (isExpanded) Int.MAX_VALUE else 3,
                 overflow = TextOverflow.Ellipsis
             )
+
+            // Show expand/collapse hint if text is long
+            if (announcement.message.length > 100) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = if (isExpanded) "Lihat lebih sedikit" else "Lihat selengkapnya",
+                    fontSize = 12.sp,
+                    color = Accent,
+                    fontWeight = FontWeight.Medium
+                )
+            }
 
             // Image if available
             if (!announcement.image_url.isNullOrEmpty()) {
@@ -526,7 +564,7 @@ fun AnnouncementCard(
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(120.dp)
+                        .height(if (isExpanded) 200.dp else 120.dp)
                         .clip(RoundedCornerShape(8.dp)),
                     contentScale = ContentScale.Crop
                 )
@@ -840,6 +878,252 @@ fun QuickMenuItem(
                     color = TextSecondaryDark
                 )
             }
+        }
+    }
+}
+
+@Composable
+fun WelcomeMessageCard() {
+    var isExpanded by remember { mutableStateOf(false) }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { isExpanded = !isExpanded },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = CardDark)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Favorite,
+                        contentDescription = null,
+                        tint = Accent,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(10.dp))
+                    Text(
+                        text = "Selamat Datang",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Accent
+                    )
+                }
+                Icon(
+                    imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = if (isExpanded) "Tutup" else "Buka",
+                    tint = TextSecondaryDark
+                )
+            }
+
+            if (isExpanded) {
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Halaman ini adalah ruang khusus bagi Anda — tempat saya membantu Anda, memantau kehamilan atau kesehatan kandungan Anda secara berkala dan privat. Semua catatan dan informasi di sini bersifat rahasia.",
+                    fontSize = 14.sp,
+                    color = TextSecondaryDark,
+                    lineHeight = 22.sp
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = buildAnnotatedString {
+                        append("Adanya ")
+                        withStyle(SpanStyle(color = Color.White, fontWeight = FontWeight.SemiBold)) {
+                            append("dokter")
+                        }
+                        withStyle(SpanStyle(color = Primary, fontWeight = FontWeight.SemiBold)) {
+                            append("DIBYA")
+                        }
+                        append(" berawal dari keinginan ")
+                        withStyle(SpanStyle(fontStyle = FontStyle.Italic)) {
+                            append("sederhana")
+                        }
+                        append(" saya, yaitu agar setiap pasien bisa tetap terhubung dengan dokter pilihannya, tanpa batasan rumah sakit, tempat, atau waktu.")
+                    },
+                    fontSize = 14.sp,
+                    color = TextSecondaryDark,
+                    lineHeight = 22.sp
+                )
+
+                Spacer(modifier = Modifier.height(12.dp))
+
+                Text(
+                    text = "Terima kasih telah menjadi bagian dari \"modern therapy without boundary\" — pendampingan dan terapi berkelanjutan, di mana pun dan kapan pun Anda membutuhkannya.",
+                    fontSize = 14.sp,
+                    color = TextSecondaryDark,
+                    lineHeight = 22.sp
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Salam hangat,\ndokter Anda",
+                    fontSize = 14.sp,
+                    color = Accent,
+                    fontWeight = FontWeight.Medium,
+                    textAlign = TextAlign.End,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun JourneyBookCard(onClick: () -> Unit) {
+    val Gold = Color(0xFFD4AF37)
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(
+                            Color(0xFF1a237e).copy(alpha = 0.9f),
+                            Color(0xFF0d47a1).copy(alpha = 0.9f)
+                        )
+                    )
+                )
+                .padding(20.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Book thumbnail
+                AsyncImage(
+                    model = "https://dokterdibya.com/images/dokter-dibya-book/thumb-book.jpeg",
+                    contentDescription = "Book Cover",
+                    modifier = Modifier
+                        .size(80.dp)
+                        .clip(RoundedCornerShape(8.dp)),
+                    contentScale = ContentScale.Crop
+                )
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "COMPREHENSIVE PRENATAL CARE",
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.Light,
+                        color = Gold,
+                        letterSpacing = 2.sp
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "Perjalanan menjadi Ibu",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Normal,
+                        color = Color.White,
+                        fontStyle = FontStyle.Italic
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Text(
+                        text = buildAnnotatedString {
+                            append("by ")
+                            withStyle(SpanStyle(color = Color.White, fontWeight = FontWeight.SemiBold)) {
+                                append("dokter")
+                            }
+                            withStyle(SpanStyle(color = Purple, fontWeight = FontWeight.SemiBold)) {
+                                append("DIBYA")
+                            }
+                        },
+                        fontSize = 11.sp,
+                        fontStyle = FontStyle.Italic,
+                        color = TextSecondaryDark
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.TouchApp,
+                            contentDescription = null,
+                            tint = Gold,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = buildAnnotatedString {
+                                withStyle(SpanStyle(color = Gold, fontWeight = FontWeight.SemiBold)) {
+                                    append("Klik untuk membuka")
+                                }
+                                append(" buku interaktif")
+                            },
+                            fontSize = 12.sp,
+                            color = TextSecondaryDark
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ProfileIdentityCard(onEditProfile: () -> Unit) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onEditProfile),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = CardDark)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Accent.copy(alpha = 0.2f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        tint = Accent,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.width(14.dp))
+                Column {
+                    Text(
+                        text = "Identitas Pribadi",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TextPrimaryDark
+                    )
+                    Text(
+                        text = "Lihat & Edit Data Anda",
+                        fontSize = 12.sp,
+                        color = TextSecondaryDark
+                    )
+                }
+            }
+            Icon(
+                imageVector = Icons.Default.ChevronRight,
+                contentDescription = "Edit",
+                tint = TextSecondaryDark,
+                modifier = Modifier.size(24.dp)
+            )
         }
     }
 }

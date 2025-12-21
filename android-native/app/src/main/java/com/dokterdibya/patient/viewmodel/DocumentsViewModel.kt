@@ -82,6 +82,11 @@ class DocumentsViewModel @Inject constructor(
             _uiState.value.allDocuments.filter {
                 it.type.lowercase() in listOf("lab_result", "patient_lab")
             }
+        } else if (type == "resume") {
+            // Resume filter matches resume_medis type
+            _uiState.value.allDocuments.filter {
+                it.type.lowercase() == "resume_medis"
+            }
         } else {
             _uiState.value.allDocuments.filter { it.type.equals(type, ignoreCase = true) }
         }
