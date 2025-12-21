@@ -452,6 +452,21 @@ fun AnnouncementsSection(
     announcements: List<Announcement>,
     onLike: (Int) -> Unit
 ) {
+    var showAll by remember { mutableStateOf(false) }
+
+    // Get priority announcement and most recent non-priority
+    val priorityAnnouncement = announcements.find { it.priority == "important" || it.priority == "urgent" }
+    val recentAnnouncements = announcements.filter { it.id != priorityAnnouncement?.id }
+
+    // Initial 2: priority (if exists) + most recent
+    val initialAnnouncements = buildList {
+        priorityAnnouncement?.let { add(it) }
+        recentAnnouncements.firstOrNull()?.let { add(it) }
+    }.take(2)
+
+    val remainingAnnouncements = announcements.filter { it !in initialAnnouncements }
+    val displayedAnnouncements = if (showAll) announcements else initialAnnouncements
+
     Column {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -477,12 +492,33 @@ fun AnnouncementsSection(
 
         Spacer(modifier = Modifier.height(12.dp))
 
-        announcements.take(3).forEach { announcement ->
+        displayedAnnouncements.forEach { announcement ->
             AnnouncementCard(
                 announcement = announcement,
                 onLike = { onLike(announcement.id) }
             )
             Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        // Show expand/collapse button if there are more announcements
+        if (remainingAnnouncements.isNotEmpty()) {
+            TextButton(
+                onClick = { showAll = !showAll },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(
+                    text = if (showAll) "Lihat Lebih Sedikit" else "Lihat ${remainingAnnouncements.size} Pengumuman Lainnya",
+                    fontSize = 13.sp,
+                    color = Accent
+                )
+                Spacer(modifier = Modifier.width(4.dp))
+                Icon(
+                    imageVector = if (showAll) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                    contentDescription = null,
+                    tint = Accent,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
         }
     }
 }
