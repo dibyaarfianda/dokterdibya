@@ -47,8 +47,9 @@ import io.noties.markwon.html.HtmlPlugin
 import coil.compose.AsyncImage
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.hazeChild
-import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.materials.HazeMaterials
+import dev.chrisbanes.haze.rememberHazeState
 import com.dokterdibya.patient.R
 import com.dokterdibya.patient.data.api.Announcement
 import com.dokterdibya.patient.data.api.Medication
@@ -76,7 +77,7 @@ fun HomeScreen(
     var isMenuOpen by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
-    val hazeState = remember { HazeState() }
+    val hazeState = rememberHazeState()
 
     // Refresh data when screen is resumed (e.g., after returning from profile)
     DisposableEffect(lifecycleOwner) {
@@ -102,13 +103,9 @@ fun HomeScreen(
                 .fillMaxWidth()
                 .height(70.dp)
                 .zIndex(10f)
-                .hazeChild(
+                .hazeEffect(
                     state = hazeState,
-                    style = HazeStyle(
-                        backgroundColor = BgDark,
-                        tint = Color.White.copy(alpha = 0.15f),
-                        blurRadius = 20.dp
-                    )
+                    style = HazeMaterials.ultraThin(BgDark)
                 )
         ) {
             // Nav bar content

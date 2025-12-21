@@ -95,8 +95,9 @@ dependencies {
     implementation("io.coil-kt:coil-compose:2.5.0")
     implementation("io.coil-kt:coil-svg:2.5.0")
 
-    // Haze (Blur/Frosted Glass Effect)
-    implementation("dev.chrisbanes.haze:haze:1.0.0")
+    // Haze (Blur/Frosted Glass Effect) - temporarily disabled due to build memory issues
+    // implementation("dev.chrisbanes.haze:haze-android:1.0.0")
+    // implementation("dev.chrisbanes.haze:haze-materials-android:1.0.0")
 
     // Markwon (Markdown Rendering)
     implementation("io.noties.markwon:core:4.6.2")
