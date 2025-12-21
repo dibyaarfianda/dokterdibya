@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
+import android.util.Log
 import javax.inject.Inject
 
 // Calendar mode
@@ -379,6 +380,11 @@ class FertilityViewModel @Inject constructor(
 
             repository.getFertilityCyclesData()
                 .onSuccess { response ->
+                    Log.d("FertilityVM", "API Response - cycles count: ${response.cycles?.size ?: 0}")
+                    response.cycles?.forEach { cycle ->
+                        Log.d("FertilityVM", "Cycle id=${cycle.id}, start=${cycle.cycleStartDate}, length=${cycle.cycleLength}")
+                    }
+
                     val cycleInfos = response.cycles?.map { cycle ->
                         CycleInfo(
                             id = cycle.id,
@@ -391,6 +397,7 @@ class FertilityViewModel @Inject constructor(
                             symptoms = null
                         )
                     } ?: emptyList()
+                    Log.d("FertilityVM", "Mapped cycleInfos count: ${cycleInfos.size}")
 
                     val stats = response.currentFertility?.let { cf ->
                         StatsInfo(
@@ -417,10 +424,11 @@ class FertilityViewModel @Inject constructor(
                         isLoading = false
                     )
                 }
-                .onFailure {
+                .onFailure { e ->
+                    Log.e("FertilityVM", "Failed to load cycles: ${e.message}", e)
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
-                        error = it.message
+                        error = e.message
                     )
                 }
 
@@ -445,21 +453,32 @@ class FertilityViewModel @Inject constructor(
     private fun formatDateIndo(dateStr: String?): String {
         if (dateStr.isNullOrEmpty()) return "-"
         return try {
-            val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val date = parseDate(dateStr)
             val outputFormat = SimpleDateFormat("d MMM yyyy", Locale("id", "ID"))
-            val date = inputFormat.parse(dateStr)
             date?.let { outputFormat.format(it) } ?: dateStr
         } catch (e: Exception) {
             dateStr
         }
     }
 
+    private fun parseDate(dateStr: String): java.util.Date? {
+        return try {
+            // Try ISO format first (from API: 2025-12-06T17:00:00.000Z)
+            SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.getDefault()).parse(dateStr)
+        } catch (e: Exception) {
+            try {
+                SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).parse(dateStr)
+            } catch (e2: Exception) {
+                null
+            }
+        }
+    }
+
     private fun formatDateShort(dateStr: String?): String {
         if (dateStr.isNullOrEmpty()) return "--"
         return try {
-            val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val date = parseDate(dateStr)
             val outputFormat = SimpleDateFormat("d MMM", Locale("id", "ID"))
-            val date = inputFormat.parse(dateStr)
             date?.let { outputFormat.format(it) } ?: "--"
         } catch (e: Exception) {
             "--"

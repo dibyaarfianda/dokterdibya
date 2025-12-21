@@ -5,15 +5,51 @@ import com.google.gson.annotations.SerializedName
 data class FertilityCycle(
     val id: Int,
     @SerializedName("patient_id")
-    val patientId: Int,
+    val patientId: String,  // varchar in DB
     @SerializedName("period_start_date")
     val cycleStartDate: String,
     @SerializedName("cycle_length")
     val cycleLength: Int = 28,
-    @SerializedName("period_length")
-    val periodLength: Int = 5,
+    @SerializedName("period_end_date")
+    val periodEndDate: String? = null,
+    @SerializedName("flow_intensity")
+    val flowIntensity: String? = null,
+    @SerializedName("pain_intensity")
+    val painIntensity: String? = null,
+    val symptoms: String? = null,
+    val notes: String? = null,
     val fertility: FertilityInfo? = null
-)
+) {
+    // Calculate period length from start and end dates
+    val periodLength: Int
+        get() {
+            if (periodEndDate == null) return 5
+            return try {
+                val start = parseDate(cycleStartDate)
+                val end = parseDate(periodEndDate)
+                if (start != null && end != null) {
+                    ((end.time - start.time) / (1000 * 60 * 60 * 24)).toInt() + 1
+                } else 5
+            } catch (e: Exception) {
+                5
+            }
+        }
+
+    private fun parseDate(dateStr: String?): java.util.Date? {
+        if (dateStr.isNullOrEmpty()) return null
+        return try {
+            // Try ISO format first (from API: 2025-12-06T17:00:00.000Z)
+            java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", java.util.Locale.getDefault()).parse(dateStr)
+        } catch (e: Exception) {
+            try {
+                // Fallback to simple format
+                java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.getDefault()).parse(dateStr)
+            } catch (e2: Exception) {
+                null
+            }
+        }
+    }
+}
 
 data class FertilityInfo(
     @SerializedName("ovulationDate")
