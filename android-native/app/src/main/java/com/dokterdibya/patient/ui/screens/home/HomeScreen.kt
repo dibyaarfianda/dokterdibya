@@ -1255,7 +1255,7 @@ fun ProfileIdentityCard(onEditProfile: () -> Unit) {
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
-                        imageVector = Icons.Default.Person,
+                        painter = painterResource(id = R.drawable.identitas),
                         contentDescription = null,
                         tint = Accent,
                         modifier = Modifier.size(22.dp)
