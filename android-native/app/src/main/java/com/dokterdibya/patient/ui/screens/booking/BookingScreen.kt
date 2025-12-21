@@ -50,10 +50,18 @@ fun BookingScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        "Booking Klinik Minggu",
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    Column {
+                        Text(
+                            "Klinik Minggu",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 18.sp
+                        )
+                        Text(
+                            "Buat Janji",
+                            fontSize = 12.sp,
+                            color = TextSecondaryDark
+                        )
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

@@ -96,7 +96,8 @@ router.get('/:id', async (req, res) => {
 
         res.json({
             success: true,
-            data: articles[0]
+            article: articles[0],
+            data: articles[0]  // Keep for backwards compatibility
         });
     } catch (error) {
         logger.error('Error fetching article:', error);

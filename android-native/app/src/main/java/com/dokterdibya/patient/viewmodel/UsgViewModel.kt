@@ -37,6 +37,8 @@ class UsgViewModel @Inject constructor(
         loadUsgResults()
     }
 
+    private val baseUrl = "https://dokterdibya.com"
+
     fun loadUsgResults() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
@@ -44,10 +46,15 @@ class UsgViewModel @Inject constructor(
             repository.getUsgDocuments()
                 .onSuccess { documents ->
                     val usgInfos = documents.map { doc ->
+                        // Prepend base URL if it's a relative path
+                        val fullUrl = doc.documentUrl?.let { url ->
+                            if (url.startsWith("/")) "$baseUrl$url" else url
+                        } ?: ""
+
                         UsgInfo(
                             id = doc.id,
-                            imageUrl = doc.documentUrl ?: "",
-                            date = doc.publishedAt ?: doc.createdAt ?: "",
+                            imageUrl = fullUrl,
+                            date = formatDate(doc.publishedAt ?: doc.createdAt),
                             gestationalAge = doc.description,
                             notes = doc.title
                         )
@@ -66,7 +73,24 @@ class UsgViewModel @Inject constructor(
         }
     }
 
+    private fun formatDate(dateStr: String?): String {
+        if (dateStr.isNullOrEmpty()) return "-"
+        return try {
+            // Parse ISO date format
+            val inputFormat = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale.getDefault())
+            val outputFormat = java.text.SimpleDateFormat("d MMM yyyy", java.util.Locale("id", "ID"))
+            val date = inputFormat.parse(dateStr.take(19))
+            date?.let { outputFormat.format(it) } ?: dateStr.take(10)
+        } catch (e: Exception) {
+            dateStr.take(10)
+        }
+    }
+
     fun selectUsg(usg: UsgInfo) {
         _uiState.value = _uiState.value.copy(selectedUsg = usg)
+    }
+
+    fun clearSelection() {
+        _uiState.value = _uiState.value.copy(selectedUsg = null)
     }
 }
