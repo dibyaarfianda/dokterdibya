@@ -24,6 +24,9 @@ import com.dokterdibya.patient.data.api.LikeRequest
 import com.dokterdibya.patient.data.api.CancelRequest
 import com.dokterdibya.patient.data.model.CompleteProfileRequest
 import com.dokterdibya.patient.data.model.CompleteProfileFullRequest
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -566,6 +569,24 @@ class PatientRepository @Inject constructor(
                 Result.success(labDocs)
             } else {
                 Result.failure(Exception("Failed to get lab documents"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    // ==================== Profile Photo ====================
+
+    suspend fun uploadProfilePhoto(imageBytes: ByteArray, fileName: String): Result<String> {
+        return try {
+            val requestBody = imageBytes.toRequestBody("image/*".toMediaTypeOrNull())
+            val part = MultipartBody.Part.createFormData("photo", fileName, requestBody)
+            val response = apiService.uploadProfilePhoto(part)
+            if (response.isSuccessful && response.body()?.success == true) {
+                val photoUrl = response.body()?.photo_url ?: ""
+                Result.success(photoUrl)
+            } else {
+                Result.failure(Exception(response.body()?.message ?: "Upload gagal"))
             }
         } catch (e: Exception) {
             Result.failure(e)
