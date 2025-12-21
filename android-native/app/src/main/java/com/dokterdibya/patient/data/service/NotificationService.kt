@@ -74,11 +74,11 @@ class NotificationService : Service() {
     private fun startForegroundNotification() {
         val notification = NotificationCompat.Builder(this, DokterDibyaApp.SERVICE_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("dokterDIBYA")
-            .setContentText("Terhubung untuk notifikasi")
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setOngoing(true)
             .setSilent(true)
+            .setVisibility(NotificationCompat.VISIBILITY_SECRET)
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_DEFERRED)
             .build()
 
         startForeground(FOREGROUND_ID, notification)
@@ -109,15 +109,14 @@ class NotificationService : Service() {
     }
 
     private fun updateForegroundNotification(isConnected: Boolean) {
-        val statusText = if (isConnected) "Terhubung untuk notifikasi" else "Menghubungkan..."
-
+        // Keep notification minimal and hidden - no title/text updates
         val notification = NotificationCompat.Builder(this, DokterDibyaApp.SERVICE_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
-            .setContentTitle("dokterDIBYA")
-            .setContentText(statusText)
             .setPriority(NotificationCompat.PRIORITY_MIN)
             .setOngoing(true)
             .setSilent(true)
+            .setVisibility(NotificationCompat.VISIBILITY_SECRET)
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_DEFERRED)
             .build()
 
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as android.app.NotificationManager
