@@ -575,6 +575,21 @@ class PatientRepository @Inject constructor(
         }
     }
 
+    // ==================== Notifications ====================
+
+    suspend fun getUnreadNotificationCount(): Result<Int> {
+        return try {
+            val response = apiService.getUnreadNotificationCount()
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!.count)
+            } else {
+                Result.success(0)
+            }
+        } catch (e: Exception) {
+            Result.success(0)
+        }
+    }
+
     // ==================== Profile Photo ====================
 
     suspend fun uploadProfilePhoto(imageBytes: ByteArray, fileName: String): Result<String> {
