@@ -164,8 +164,10 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startNotificationService(patientId: String) {
-        Log.d(TAG, "Starting notification service for patient: $patientId")
-        NotificationService.start(this, patientId)
+        // Foreground service disabled - Android requires visible notification for foreground services
+        // To get background notifications without persistent notification, need FCM (Firebase Cloud Messaging)
+        Log.d(TAG, "Notification service disabled - no persistent notification")
+        // NotificationService.start(this, patientId)
     }
 
     private fun stopNotificationService() {
