@@ -136,18 +136,57 @@ fun HomeScreen(
                         )
                         .padding(20.dp)
                 ) {
-                    Column {
-                        Text(
-                            text = "Selamat Datang,",
-                            fontSize = 16.sp,
-                            color = TextPrimaryDark
-                        )
-                        Text(
-                            text = uiState.patientName ?: "Ibu",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            color = Accent
-                        )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "Selamat Datang,",
+                                fontSize = 16.sp,
+                                color = TextPrimaryDark
+                            )
+                            Text(
+                                text = uiState.patientName ?: "Ibu",
+                                fontSize = 22.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Accent
+                            )
+                        }
+
+                        // Profile Photo
+                        val photoUrl = uiState.patient?.photoUrl ?: uiState.patient?.profilePicture
+                        val fullPhotoUrl = photoUrl?.let { url ->
+                            if (url.startsWith("/api/")) "https://dokterdibya.com$url" else url
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(CircleShape)
+                                .background(CardDark),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (fullPhotoUrl != null) {
+                                AsyncImage(
+                                    model = fullPhotoUrl,
+                                    contentDescription = "Foto Profil",
+                                    modifier = Modifier
+                                        .size(64.dp)
+                                        .clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                // Placeholder with initials
+                                Text(
+                                    text = (uiState.patientName ?: "U").take(1).uppercase(),
+                                    fontSize = 24.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Accent
+                                )
+                            }
+                        }
                     }
                 }
             }
