@@ -39,27 +39,29 @@ class DokterDibyaApp : Application(), ImageLoaderFactory {
             }
             notificationManager.createNotificationChannel(mainChannel)
 
-            // Service channel (for foreground service - min importance, hidden)
+            // Service channel (for foreground service - NONE importance to hide completely)
             val serviceChannel = NotificationChannel(
                 SERVICE_CHANNEL_ID,
-                "Koneksi Background",
-                NotificationManager.IMPORTANCE_MIN
+                "Background Service",
+                NotificationManager.IMPORTANCE_NONE
             ).apply {
-                description = "Menjaga koneksi notifikasi di background"
+                description = "Background connection service"
                 setShowBadge(false)
                 setSound(null, null)
                 enableVibration(false)
                 enableLights(false)
+                lockscreenVisibility = android.app.Notification.VISIBILITY_SECRET
             }
             notificationManager.createNotificationChannel(serviceChannel)
 
-            // Delete old channel if exists (for upgrade)
+            // Delete old channels if exists (for upgrade)
             notificationManager.deleteNotificationChannel("dokterdibya_service")
+            notificationManager.deleteNotificationChannel("dokterdibya_service_v2")
         }
     }
 
     companion object {
         const val NOTIFICATION_CHANNEL_ID = "dokterdibya_notifications"
-        const val SERVICE_CHANNEL_ID = "dokterdibya_service_v2"  // New ID for IMPORTANCE_MIN
+        const val SERVICE_CHANNEL_ID = "dokterdibya_service_v3"  // New ID for IMPORTANCE_NONE
     }
 }
