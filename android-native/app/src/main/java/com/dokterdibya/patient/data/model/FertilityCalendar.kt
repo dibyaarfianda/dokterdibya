@@ -18,11 +18,11 @@ data class FertilityCycle(
 data class FertilityInfo(
     @SerializedName("ovulationDate")
     val ovulationDate: String?,
-    @SerializedName("fertileStart")
+    @SerializedName("fertileWindowStart")
     val fertileStart: String?,
-    @SerializedName("fertileEnd")
+    @SerializedName("fertileWindowEnd")
     val fertileEnd: String?,
-    @SerializedName("nextPeriod")
+    @SerializedName("nextPeriodDate")
     val nextPeriod: String?
 )
 
@@ -67,17 +67,53 @@ data class CreateCycleRequest(
     val periodLength: Int = 5
 )
 
-// Calendar day types for UI
+// Calendar day types for UI (matching web version)
 enum class CalendarDayType {
     NORMAL,
-    MENSTRUATION,
+    PERIOD,
     FERTILE,
-    OVULATION
+    PEAK_FERTILE,
+    OVULATION,
+    PREDICTED_PERIOD,
+    INTERCOURSE
 }
 
 data class CalendarDay(
     val date: String,
     val dayOfMonth: Int,
     val type: CalendarDayType,
-    val isCurrentMonth: Boolean = true
+    val isCurrentMonth: Boolean = true,
+    val isToday: Boolean = false,
+    val periodDay: Int? = null,  // H1, H2, H3, etc.
+    val cycleDay: Int? = null
+)
+
+// Calendar event from API
+data class CalendarEvent(
+    val date: String,
+    val type: String,
+    val label: String?,
+    val intensity: String? = null,
+    val periodDay: Int? = null,
+    val notes: String? = null
+)
+
+// Response for calendar-data endpoint
+data class CalendarDataResponse(
+    val success: Boolean,
+    val year: Int,
+    val month: Int,
+    val events: List<CalendarEvent>?,
+    val averageCycleLength: Int?,
+    val intercourseCount: Int?
+)
+
+// Current fertility info from API (matches web)
+data class CurrentFertility(
+    val ovulationDate: String?,
+    val fertileWindowStart: String?,
+    val fertileWindowEnd: String?,
+    val nextPeriodDate: String?,
+    val cycleDay: Int?,
+    val method: String?
 )

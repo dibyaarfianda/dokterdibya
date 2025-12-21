@@ -56,7 +56,7 @@ data class PatientDocument(
     val title: String?,
     val description: String?,
     @SerializedName("file_url")
-    val documentUrl: String,
+    val documentUrl: String?,
     @SerializedName("file_name")
     val filename: String?,
     @SerializedName("file_type")

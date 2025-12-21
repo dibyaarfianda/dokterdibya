@@ -46,7 +46,7 @@ class UsgViewModel @Inject constructor(
                     val usgInfos = documents.map { doc ->
                         UsgInfo(
                             id = doc.id,
-                            imageUrl = doc.documentUrl,
+                            imageUrl = doc.documentUrl ?: "",
                             date = doc.publishedAt ?: doc.createdAt ?: "",
                             gestationalAge = doc.description,
                             notes = doc.title

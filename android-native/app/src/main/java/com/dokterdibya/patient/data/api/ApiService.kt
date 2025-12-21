@@ -61,6 +61,12 @@ interface ApiService {
     @GET("api/fertility-calendar")
     suspend fun getFertilityCycles(): Response<FertilityCycleResponse>
 
+    @GET("api/fertility-calendar/calendar-data")
+    suspend fun getCalendarData(
+        @Query("year") year: Int,
+        @Query("month") month: Int
+    ): Response<CalendarDataResponse>
+
     @GET("api/fertility-calendar/predictions")
     suspend fun getFertilityPredictions(
         @Query("months") months: Int = 3
