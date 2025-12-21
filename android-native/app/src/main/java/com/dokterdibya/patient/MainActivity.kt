@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.rememberNavController
+import com.dokterdibya.patient.data.service.FCMTokenManager
 import com.dokterdibya.patient.data.service.NotificationService
 import com.dokterdibya.patient.ui.navigation.NavGraph
 import com.dokterdibya.patient.ui.navigation.Screen
@@ -26,9 +27,14 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var fcmTokenManager: FCMTokenManager
 
     private lateinit var googleSignInClient: GoogleSignInClient
     private var currentPatientId: String? = null
@@ -94,18 +100,20 @@ class MainActivity : ComponentActivity() {
                     val authState by viewModel.uiState.collectAsState()
                     val navController = rememberNavController()
 
-                    // Handle notification service based on login state
+                    // Handle FCM token based on login state
                     LaunchedEffect(isLoggedIn) {
                         if (isLoggedIn == true) {
                             // Fetch patient ID when logged in
                             viewModel.fetchPatientId()
+                            // Register FCM token for push notifications
+                            fcmTokenManager.registerToken()
                         } else if (isLoggedIn == false) {
-                            // Stop service when logged out
-                            stopNotificationService()
+                            // Clear FCM token when logged out
+                            fcmTokenManager.clearToken()
                         }
                     }
 
-                    // Start notification service when patient ID is available
+                    // Request notification permission when patient ID is available
                     LaunchedEffect(authState.patientId) {
                         authState.patientId?.let { patientId ->
                             currentPatientId = patientId

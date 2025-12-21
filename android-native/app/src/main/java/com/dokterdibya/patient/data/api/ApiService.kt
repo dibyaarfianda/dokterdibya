@@ -152,7 +152,21 @@ interface ApiService {
 
     @GET("api/patient-notifications")
     suspend fun getNotifications(): Response<NotificationsResponse>
+
+    // ==================== FCM Token ====================
+
+    @POST("api/patients/fcm-token")
+    suspend fun registerFcmToken(@Body request: Map<String, String>): Response<FcmTokenResponse>
+
+    @DELETE("api/patients/fcm-token")
+    suspend fun unregisterFcmToken(@Body request: Map<String, String>): Response<FcmTokenResponse>
 }
+
+// FCM Token response
+data class FcmTokenResponse(
+    val success: Boolean,
+    val message: String?
+)
 
 // Notification models
 data class PatientNotificationItem(

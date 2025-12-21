@@ -31,3 +31,4 @@ node_modules/
 .DS_Store
 Thumbs.db
 android-native/gradle/wrapper/gradle-8.2-bin.zip
+staff/backend/config/*firebase*.json
