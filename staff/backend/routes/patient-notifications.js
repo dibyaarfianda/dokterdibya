@@ -237,7 +237,7 @@ async function createPatientNotification({
             VALUES (?, ?, ?, ?, ?, ?, ?)
         `, [patient_id, type, title, message, link, icon, icon_color]);
 
-        // Broadcast notification via Socket.IO for real-time updates
+        // Broadcast notification via Socket.IO for real-time updates (web)
         try {
             const realtimeSync = require('../realtime-sync');
             realtimeSync.broadcastPatientNotification({
@@ -250,7 +250,43 @@ async function createPatientNotification({
                 icon_color
             });
         } catch (broadcastError) {
-            console.warn('Failed to broadcast notification:', broadcastError.message);
+            console.warn('Failed to broadcast Socket.IO notification:', broadcastError.message);
+        }
+
+        // Send FCM push notification (mobile app)
+        try {
+            const firebase = require('../services/firebase');
+            if (firebase.isInitialized()) {
+                // Get patient's FCM token
+                const [patients] = await db.query(
+                    'SELECT fcm_token FROM patients WHERE id = ?',
+                    [patient_id]
+                );
+
+                if (patients.length > 0 && patients[0].fcm_token) {
+                    const fcmResult = await firebase.sendNotification(
+                        patients[0].fcm_token,
+                        title,
+                        message,
+                        {
+                            notification_id: String(result.insertId),
+                            type: type,
+                            link: link || ''
+                        }
+                    );
+
+                    // Remove invalid token from database
+                    if (fcmResult.shouldRemove) {
+                        await db.query(
+                            'UPDATE patients SET fcm_token = NULL WHERE id = ?',
+                            [patient_id]
+                        );
+                        console.log(`Removed invalid FCM token for patient ${patient_id}`);
+                    }
+                }
+            }
+        } catch (fcmError) {
+            console.warn('Failed to send FCM notification:', fcmError.message);
         }
 
         return { success: true, id: result.insertId };

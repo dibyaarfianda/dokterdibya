@@ -1549,5 +1549,69 @@ router.delete('/api/patients/:patientId/birth-congratulations', verifyToken, asy
     }
 });
 
+// ==================== FCM TOKEN ENDPOINTS ====================
+
+// Register FCM token for push notifications (Patient only)
+router.post('/api/patients/fcm-token', verifyPatientToken, async (req, res) => {
+    try {
+        const patientId = req.user.patient_id;
+        const { fcm_token } = req.body;
+
+        if (!fcm_token) {
+            return res.status(400).json({
+                success: false,
+                message: 'FCM token is required'
+            });
+        }
+
+        // Update patient's FCM token
+        await db.query(
+            'UPDATE patients SET fcm_token = ? WHERE id = ?',
+            [fcm_token, patientId]
+        );
+
+        console.log(`✅ FCM token registered for patient ${patientId}`);
+
+        res.json({
+            success: true,
+            message: 'FCM token registered successfully'
+        });
+    } catch (error) {
+        console.error('Error registering FCM token:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to register FCM token',
+            error: error.message
+        });
+    }
+});
+
+// Unregister FCM token (Patient only - on logout)
+router.delete('/api/patients/fcm-token', verifyPatientToken, async (req, res) => {
+    try {
+        const patientId = req.user.patient_id;
+
+        // Clear patient's FCM token
+        await db.query(
+            'UPDATE patients SET fcm_token = NULL WHERE id = ?',
+            [patientId]
+        );
+
+        console.log(`✅ FCM token cleared for patient ${patientId}`);
+
+        res.json({
+            success: true,
+            message: 'FCM token unregistered successfully'
+        });
+    } catch (error) {
+        console.error('Error unregistering FCM token:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to unregister FCM token',
+            error: error.message
+        });
+    }
+});
+
 module.exports = router;
 

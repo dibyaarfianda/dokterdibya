@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "1071671771118",
+    "project_id": "dokterdibya-8583b",
+    "storage_bucket": "dokterdibya-8583b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1071671771118:android:824498d19729d6ffbc18ff",
+        "android_client_info": {
+          "package_name": "com.dokterdibya.patient"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBS7idg-Pj-mLf5KpOI4eqHTScqDmxjd38"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
