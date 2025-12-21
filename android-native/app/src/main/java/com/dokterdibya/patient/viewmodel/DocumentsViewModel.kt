@@ -37,13 +37,20 @@ class DocumentsViewModel @Inject constructor(
         loadDocuments()
     }
 
+    // Document types that should appear in this screen (not USG - that's in USG Gallery)
+    private val allowedDocTypes = listOf("resume_medis", "lab_result", "patient_lab")
+
     private fun loadDocuments() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
             repository.getDocuments()
                 .onSuccess { documents ->
-                    val docInfos = documents.map { doc ->
+                    // Filter out USG types - those belong in USG Gallery
+                    val filteredDocs = documents.filter { doc ->
+                        doc.documentType.lowercase() in allowedDocTypes
+                    }
+                    val docInfos = filteredDocs.map { doc ->
                         DocumentInfo(
                             id = doc.id,
                             title = doc.filename ?: "Dokumen",
