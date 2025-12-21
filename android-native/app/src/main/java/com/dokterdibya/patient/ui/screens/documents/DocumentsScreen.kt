@@ -158,7 +158,7 @@ fun DocumentCard(
     val (iconRes, color) = when (type.lowercase()) {
         "invoice" -> R.drawable.erm to Accent
         "etiket" -> R.drawable.vit to Purple
-        "resume" -> R.drawable.erm to Success
+        "resume", "resume_medis" -> R.drawable.erm to Success
         "lab_result", "patient_lab", "lab" -> R.drawable.lab to Warning
         else -> R.drawable.erm to TextSecondaryDark
     }
