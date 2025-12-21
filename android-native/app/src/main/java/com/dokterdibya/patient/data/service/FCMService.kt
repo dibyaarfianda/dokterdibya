@@ -4,6 +4,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.media.RingtoneManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.dokterdibya.patient.DokterDibyaApp
@@ -86,12 +87,18 @@ class FCMService : FirebaseMessagingService() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
+        val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+
         val notification = NotificationCompat.Builder(this, DokterDibyaApp.NOTIFICATION_CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle(title)
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_MESSAGE)
+            .setSound(soundUri)
+            .setVibrate(longArrayOf(0, 300, 200, 300))
+            .setDefaults(NotificationCompat.DEFAULT_LIGHTS)
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .build()

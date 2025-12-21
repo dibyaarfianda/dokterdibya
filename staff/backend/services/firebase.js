@@ -48,10 +48,11 @@ async function sendNotification(fcmToken, title, body, data = {}) {
         android: {
             priority: 'high',
             notification: {
-                channelId: 'dokterdibya_notifications',
+                channelId: 'dokterdibya_notifications_v2',
                 priority: 'high',
                 defaultSound: true,
-                defaultVibrateTimings: true
+                defaultVibrateTimings: true,
+                sound: 'default'
             }
         }
     };
@@ -104,10 +105,11 @@ async function sendNotificationToMultiple(fcmTokens, title, body, data = {}) {
         android: {
             priority: 'high',
             notification: {
-                channelId: 'dokterdibya_notifications',
+                channelId: 'dokterdibya_notifications_v2',
                 priority: 'high',
                 defaultSound: true,
-                defaultVibrateTimings: true
+                defaultVibrateTimings: true,
+                sound: 'default'
             }
         },
         tokens: fcmTokens
