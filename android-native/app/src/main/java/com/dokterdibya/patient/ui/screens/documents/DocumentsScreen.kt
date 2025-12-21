@@ -11,6 +11,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.ui.res.painterResource
+import com.dokterdibya.patient.R
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -112,7 +114,7 @@ fun DocumentsScreen(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
-                            Icons.Default.FolderOpen,
+                            painter = painterResource(id = R.drawable.erm),
                             contentDescription = null,
                             tint = TextSecondaryDark,
                             modifier = Modifier.size(64.dp)
@@ -156,12 +158,12 @@ fun DocumentCard(
     date: String,
     onClick: () -> Unit
 ) {
-    val (icon, color) = when (type.lowercase()) {
-        "invoice" -> Icons.Default.Receipt to Accent
-        "etiket" -> Icons.Default.Medication to Purple
-        "resume" -> Icons.Default.Description to Success
-        "lab_result", "patient_lab", "lab" -> Icons.Default.Science to Warning
-        else -> Icons.Default.InsertDriveFile to TextSecondaryDark
+    val (iconRes, color) = when (type.lowercase()) {
+        "invoice" -> R.drawable.erm to Accent
+        "etiket" -> R.drawable.vit to Purple
+        "resume" -> R.drawable.erm to Success
+        "lab_result", "patient_lab", "lab" -> R.drawable.lab to Warning
+        else -> R.drawable.erm to TextSecondaryDark
     }
 
     Card(
@@ -178,7 +180,7 @@ fun DocumentCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                icon,
+                painter = painterResource(id = iconRes),
                 contentDescription = null,
                 tint = color,
                 modifier = Modifier.size(32.dp)

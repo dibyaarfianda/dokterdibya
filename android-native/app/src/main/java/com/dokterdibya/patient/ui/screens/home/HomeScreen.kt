@@ -79,14 +79,14 @@ fun HomeScreen(
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Logo
-                    Image(
-                        painter = painterResource(id = R.mipmap.ic_launcher),
+                    // Logo - white for dark background
+                    AsyncImage(
+                        model = "https://dokterdibya.com/staff/images/db-white.svg",
                         contentDescription = "Dokter Dibya Logo",
                         modifier = Modifier
-                            .size(38.dp)
-                            .clip(RoundedCornerShape(10.dp)),
-                        contentScale = ContentScale.Crop
+                            .height(38.dp)
+                            .widthIn(max = 120.dp),
+                        contentScale = ContentScale.Fit
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
@@ -186,7 +186,7 @@ fun HomeScreen(
             ) {
                 QuickMenuItem(
                     modifier = Modifier.weight(1f),
-                    icon = Icons.Default.CalendarMonth,
+                    iconRes = R.drawable.book,
                     title = "Booking",
                     subtitle = "Pesan jadwal",
                     iconColor = Accent,
@@ -194,7 +194,7 @@ fun HomeScreen(
                 )
                 QuickMenuItem(
                     modifier = Modifier.weight(1f),
-                    icon = Icons.Default.ChildCare,
+                    iconRes = R.drawable.usg,
                     title = "Hasil USG",
                     subtitle = "${uiState.usgCount} foto",
                     iconColor = Purple,
@@ -210,7 +210,7 @@ fun HomeScreen(
             ) {
                 QuickMenuItem(
                     modifier = Modifier.weight(1f),
-                    icon = Icons.Default.Favorite,
+                    iconRes = R.drawable.subur,
                     title = "Kesuburan",
                     subtitle = "Kalender",
                     iconColor = Fertility,
@@ -218,7 +218,7 @@ fun HomeScreen(
                 )
                 QuickMenuItem(
                     modifier = Modifier.weight(1f),
-                    icon = Icons.Default.Description,
+                    iconRes = R.drawable.erm,
                     title = "Dokumen",
                     subtitle = "Invoice, dll",
                     iconColor = Success,
@@ -584,7 +584,7 @@ fun MedicationsSection(
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    imageVector = Icons.Default.Medication,
+                    painter = painterResource(id = R.drawable.vit),
                     contentDescription = null,
                     tint = Success,
                     modifier = Modifier.size(20.dp)
@@ -651,7 +651,7 @@ fun MedicationItem(medication: Medication) {
             contentAlignment = Alignment.Center
         ) {
             Icon(
-                imageVector = Icons.Default.Medication,
+                painter = painterResource(id = R.drawable.vit),
                 contentDescription = null,
                 tint = if (medication.is_current == 1) Success else TextSecondaryDark,
                 modifier = Modifier.size(18.dp)
@@ -792,7 +792,7 @@ fun PregnancyCard(
 @Composable
 fun QuickMenuItem(
     modifier: Modifier = Modifier,
-    icon: ImageVector,
+    iconRes: Int,
     title: String,
     subtitle: String,
     iconColor: Color,
@@ -820,7 +820,7 @@ fun QuickMenuItem(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    imageVector = icon,
+                    painter = painterResource(id = iconRes),
                     contentDescription = null,
                     tint = iconColor,
                     modifier = Modifier.size(20.dp)

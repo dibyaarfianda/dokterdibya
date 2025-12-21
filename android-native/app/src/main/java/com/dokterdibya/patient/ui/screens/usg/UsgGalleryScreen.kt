@@ -11,6 +11,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.ui.res.painterResource
+import com.dokterdibya.patient.R
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -102,7 +104,7 @@ fun UsgGalleryScreen(
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
-                            Icons.Default.ChildCare,
+                            painter = painterResource(id = R.drawable.usg),
                             contentDescription = null,
                             tint = TextSecondaryDark,
                             modifier = Modifier.size(64.dp)
