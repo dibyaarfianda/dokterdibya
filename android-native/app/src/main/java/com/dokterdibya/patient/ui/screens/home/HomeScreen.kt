@@ -47,6 +47,7 @@ import io.noties.markwon.html.HtmlPlugin
 import coil.compose.AsyncImage
 import com.dokterdibya.patient.R
 import com.dokterdibya.patient.data.api.Announcement
+import com.dokterdibya.patient.data.api.BabySize
 import com.dokterdibya.patient.data.api.Medication
 import com.dokterdibya.patient.ui.components.SlideMenu
 import com.dokterdibya.patient.ui.theme.*
@@ -295,7 +296,10 @@ fun HomeScreen(
                     weeks = uiState.pregnancyWeeks,
                     days = uiState.pregnancyDays,
                     progress = uiState.pregnancyProgress,
-                    dueDate = uiState.dueDate
+                    dueDate = uiState.dueDate,
+                    trimester = uiState.trimester,
+                    babySize = uiState.babySize,
+                    tip = uiState.pregnancyTip
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
@@ -896,7 +900,10 @@ fun PregnancyCard(
     weeks: Int,
     days: Int,
     progress: Float,
-    dueDate: String?
+    dueDate: String?,
+    trimester: Int = 0,
+    babySize: BabySize? = null,
+    tip: String? = null
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -919,21 +926,40 @@ fun PregnancyCard(
                 .padding(18.dp)
         ) {
             Column {
+                // Header with trimester badge
                 Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.ChildCare,
-                        contentDescription = null,
-                        tint = Purple,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = "Usia Kehamilan",
-                        fontSize = 13.sp,
-                        color = Purple
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.ChildCare,
+                            contentDescription = null,
+                            tint = Purple,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = "Usia Kehamilan",
+                            fontSize = 13.sp,
+                            color = Purple
+                        )
+                    }
+                    if (trimester > 0) {
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = Purple.copy(alpha = 0.2f)
+                        ) {
+                            Text(
+                                text = "Trimester $trimester",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Medium,
+                                color = Purple,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                            )
+                        }
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(10.dp))
@@ -982,6 +1008,71 @@ fun PregnancyCard(
                     fontSize = 12.sp,
                     color = TextSecondaryDark
                 )
+
+                // Baby Size Section
+                if (babySize != null) {
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Card(
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(
+                            containerColor = CardDark.copy(alpha = 0.5f)
+                        )
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = babySize.emoji,
+                                fontSize = 32.sp
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = "Ukuran bayi Anda saat ini",
+                                    fontSize = 11.sp,
+                                    color = TextSecondaryDark
+                                )
+                                Text(
+                                    text = "Sebesar ${babySize.size}",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Fertility
+                                )
+                                Text(
+                                    text = "Panjang: ${babySize.length}",
+                                    fontSize = 11.sp,
+                                    color = TextSecondaryDark
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Tip Section
+                if (!tip.isNullOrEmpty()) {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Lightbulb,
+                            contentDescription = null,
+                            tint = Warning,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = tip,
+                            fontSize = 12.sp,
+                            color = TextSecondaryDark,
+                            lineHeight = 18.sp
+                        )
+                    }
+                }
             }
         }
     }
