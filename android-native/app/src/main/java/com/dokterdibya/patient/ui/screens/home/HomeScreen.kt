@@ -91,32 +91,18 @@ fun HomeScreen(
             .fillMaxSize()
             .background(BgDark)
     ) {
-        // Sticky Top Navigation Bar with frosted glass effect
+        // Sticky Top Navigation Bar with white glassy blur effect
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .zIndex(10f)
         ) {
-            // Frosted glass background
+            // White glassy background layer
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(70.dp)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                BgDark.copy(alpha = 0.98f),
-                                BgDark.copy(alpha = 0.92f)
-                            )
-                        )
-                    )
-            )
-            // Subtle white overlay for glass effect
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(70.dp)
-                    .background(Color.White.copy(alpha = 0.03f))
+                    .background(Color.White.copy(alpha = 0.12f))
             )
 
             // Nav bar content
