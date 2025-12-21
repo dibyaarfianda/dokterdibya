@@ -119,7 +119,7 @@ fun HomeScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(70.dp)
-                    .padding(horizontal = 16.dp),
+                    .padding(start = 8.dp, end = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -133,7 +133,7 @@ fun HomeScreen(
                             .widthIn(max = 100.dp),
                         contentScale = ContentScale.Fit
                     )
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(6.dp))
                     Column {
                         Text(
                             text = buildAnnotatedString {
