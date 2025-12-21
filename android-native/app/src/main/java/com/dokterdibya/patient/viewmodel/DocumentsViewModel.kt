@@ -49,7 +49,7 @@ class DocumentsViewModel @Inject constructor(
                             title = doc.filename ?: "Dokumen",
                             type = doc.documentType,
                             date = doc.visitDate ?: doc.createdAt ?: "",
-                            url = doc.documentUrl
+                            url = doc.documentUrl ?: ""
                         )
                     }
                     _uiState.value = _uiState.value.copy(

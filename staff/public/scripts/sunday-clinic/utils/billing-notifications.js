@@ -227,8 +227,8 @@ class BillingNotifications {
             if (e.target === overlay) close();
         });
 
-        // Auto-close after 10 seconds
-        setTimeout(close, 10000);
+        // Auto-close after 3 seconds
+        setTimeout(close, 3000);
     }
 
     /**

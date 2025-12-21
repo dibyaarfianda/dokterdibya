@@ -63,15 +63,14 @@ fun DocumentsScreen(
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            // Filter tabs
+            // Filter tabs - only Resume Medis and Hasil Lab
             var selectedTab by remember { mutableStateOf(0) }
-            val tabs = listOf("Semua", "Invoice", "Etiket", "Resume", "Hasil Lab")
+            val tabs = listOf("Semua", "Resume Medis", "Hasil Lab")
 
-            ScrollableTabRow(
+            TabRow(
                 selectedTabIndex = selectedTab,
                 containerColor = Color.Transparent,
-                contentColor = Accent,
-                edgePadding = 0.dp
+                contentColor = Accent
             ) {
                 tabs.forEachIndexed { index, title ->
                     Tab(
@@ -80,10 +79,8 @@ fun DocumentsScreen(
                             selectedTab = index
                             viewModel.filterByType(
                                 when (index) {
-                                    1 -> "invoice"
-                                    2 -> "etiket"
-                                    3 -> "resume"
-                                    4 -> "lab"
+                                    1 -> "resume"
+                                    2 -> "lab"
                                     else -> null
                                 }
                             )

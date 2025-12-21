@@ -14,6 +14,7 @@ import com.dokterdibya.patient.data.model.FertilityPrediction
 import com.dokterdibya.patient.data.model.PatientDocument
 import com.dokterdibya.patient.data.model.FertilityInfo
 import com.dokterdibya.patient.data.model.FertilityCycleResponse
+import com.dokterdibya.patient.data.model.CalendarDataResponse
 import com.dokterdibya.patient.data.api.Announcement
 import com.dokterdibya.patient.data.api.Medication
 import com.dokterdibya.patient.data.api.PregnancyData
@@ -322,6 +323,19 @@ class PatientRepository @Inject constructor(
                 }
             } else {
                 Result.failure(Exception("Failed to get fertility prediction"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getCalendarData(year: Int, month: Int): Result<CalendarDataResponse> {
+        return try {
+            val response = apiService.getCalendarData(year, month)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                Result.failure(Exception("Failed to get calendar data"))
             }
         } catch (e: Exception) {
             Result.failure(e)
