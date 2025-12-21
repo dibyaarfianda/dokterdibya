@@ -16,6 +16,7 @@ import com.dokterdibya.patient.data.model.PatientDocument
 import com.dokterdibya.patient.data.model.FertilityInfo
 import com.dokterdibya.patient.data.model.FertilityCycleResponse
 import com.dokterdibya.patient.data.model.CalendarDataResponse
+import com.dokterdibya.patient.data.model.DocumentContent
 import com.dokterdibya.patient.data.api.Announcement
 import com.dokterdibya.patient.data.api.Medication
 import com.dokterdibya.patient.data.api.PregnancyData
@@ -261,6 +262,19 @@ class PatientRepository @Inject constructor(
                 Result.success(response.body()!!.documents)
             } else {
                 Result.failure(Exception("Failed to get documents"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun getDocumentContent(id: Int): Result<DocumentContent> {
+        return try {
+            val response = apiService.getDocumentContent(id)
+            if (response.isSuccessful && response.body()?.document != null) {
+                Result.success(response.body()!!.document!!)
+            } else {
+                Result.failure(Exception("Dokumen tidak ditemukan"))
             }
         } catch (e: Exception) {
             Result.failure(e)

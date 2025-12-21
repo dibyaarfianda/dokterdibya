@@ -8,6 +8,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Locale
 import javax.inject.Inject
 
 data class DocumentInfo(
@@ -55,7 +57,7 @@ class DocumentsViewModel @Inject constructor(
                             id = doc.id,
                             title = doc.filename ?: "Dokumen",
                             type = doc.documentType,
-                            date = doc.visitDate ?: doc.createdAt ?: "",
+                            date = formatDate(doc.visitDate ?: doc.createdAt),
                             url = doc.documentUrl ?: ""
                         )
                     }
@@ -91,5 +93,26 @@ class DocumentsViewModel @Inject constructor(
             _uiState.value.allDocuments.filter { it.type.equals(type, ignoreCase = true) }
         }
         _uiState.value = _uiState.value.copy(documents = filtered)
+    }
+
+    private fun formatDate(dateStr: String?): String {
+        if (dateStr.isNullOrEmpty()) return "-"
+        return try {
+            // Parse ISO date format
+            val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.getDefault())
+            val outputFormat = SimpleDateFormat("d MMM yyyy", Locale("id", "ID"))
+            val date = inputFormat.parse(dateStr.take(19))
+            date?.let { outputFormat.format(it) } ?: dateStr.take(10)
+        } catch (e: Exception) {
+            // Try simple date format
+            try {
+                val inputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                val outputFormat = SimpleDateFormat("d MMM yyyy", Locale("id", "ID"))
+                val date = inputFormat.parse(dateStr.take(10))
+                date?.let { outputFormat.format(it) } ?: dateStr.take(10)
+            } catch (e2: Exception) {
+                dateStr.take(10)
+            }
+        }
     }
 }

@@ -15,6 +15,7 @@ import com.dokterdibya.patient.ui.screens.articles.ArticlesScreen
 import com.dokterdibya.patient.ui.screens.articles.ArticleDetailScreen
 import com.dokterdibya.patient.ui.screens.booking.BookingScreen
 import com.dokterdibya.patient.ui.screens.documents.DocumentsScreen
+import com.dokterdibya.patient.ui.screens.documents.DocumentViewerScreen
 import com.dokterdibya.patient.ui.screens.fertility.FertilityCalendarScreen
 import com.dokterdibya.patient.ui.screens.history.VisitHistoryScreen
 import com.dokterdibya.patient.ui.screens.home.HomeScreen
@@ -43,6 +44,9 @@ sealed class Screen(val route: String) {
     object UsgGallery : Screen("usg_gallery")
     object LabResults : Screen("lab_results")
     object Documents : Screen("documents")
+    object DocumentViewer : Screen("document_viewer/{documentId}") {
+        fun createRoute(documentId: Int) = "document_viewer/$documentId"
+    }
     object VisitHistory : Screen("visit_history")
     object Booking : Screen("booking")
     object Medications : Screen("medications")
@@ -157,6 +161,18 @@ fun NavGraph(
 
         composable(Screen.Documents.route) {
             DocumentsScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToViewer = { documentId ->
+                    navController.navigate(Screen.DocumentViewer.createRoute(documentId))
+                }
+            )
+        }
+
+        composable(
+            route = Screen.DocumentViewer.route,
+            arguments = listOf(navArgument("documentId") { type = NavType.IntType })
+        ) {
+            DocumentViewerScreen(
                 onBack = { navController.popBackStack() }
             )
         }

@@ -29,6 +29,7 @@ import com.dokterdibya.patient.viewmodel.DocumentsViewModel
 @Composable
 fun DocumentsScreen(
     onBack: () -> Unit,
+    onNavigateToViewer: (Int) -> Unit = {},
     viewModel: DocumentsViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -134,8 +135,10 @@ fun DocumentsScreen(
                             type = doc.type,
                             date = doc.date,
                             onClick = {
-                                // Open document URL
-                                if (doc.url.isNotEmpty()) {
+                                // Resume medis opens in viewer, others open URL
+                                if (doc.type.lowercase() == "resume_medis") {
+                                    onNavigateToViewer(doc.id)
+                                } else if (doc.url.isNotEmpty()) {
                                     val intent = Intent(Intent.ACTION_VIEW, Uri.parse(doc.url))
                                     context.startActivity(intent)
                                 }
@@ -205,8 +208,8 @@ fun DocumentCard(
                 }
             }
             Icon(
-                Icons.Default.Download,
-                contentDescription = "Download",
+                if (type.lowercase() == "resume_medis") Icons.Default.Visibility else Icons.Default.Download,
+                contentDescription = if (type.lowercase() == "resume_medis") "View" else "Download",
                 tint = TextSecondaryDark,
                 modifier = Modifier.size(20.dp)
             )
