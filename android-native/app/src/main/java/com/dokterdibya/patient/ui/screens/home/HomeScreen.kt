@@ -2,6 +2,7 @@ package com.dokterdibya.patient.ui.screens.home
 
 import android.content.Intent
 import android.net.Uri
+import android.widget.TextView
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -34,7 +35,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.graphics.toArgb
 import androidx.hilt.navigation.compose.hiltViewModel
+import io.noties.markwon.Markwon
+import io.noties.markwon.html.HtmlPlugin
 import coil.compose.AsyncImage
 import com.dokterdibya.patient.R
 import com.dokterdibya.patient.data.api.Announcement
@@ -95,10 +100,10 @@ fun HomeScreen(
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
                         text = buildAnnotatedString {
-                            withStyle(SpanStyle(color = Accent)) {
+                            withStyle(SpanStyle(color = Color.White)) {
                                 append("dokter")
                             }
-                            withStyle(SpanStyle(color = Primary)) {
+                            withStyle(SpanStyle(color = Accent)) {
                                 append("DIBYA")
                             }
                         },
@@ -537,12 +542,11 @@ fun AnnouncementCard(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Text(
-                text = announcement.message,
-                fontSize = 13.sp,
-                color = TextSecondaryDark,
+            // Render markdown content
+            MarkdownText(
+                content = announcement.message,
                 maxLines = if (isExpanded) Int.MAX_VALUE else 3,
-                overflow = TextOverflow.Ellipsis
+                modifier = Modifier.fillMaxWidth()
             )
 
             // Show expand/collapse hint if text is long
@@ -1126,4 +1130,47 @@ fun ProfileIdentityCard(onEditProfile: () -> Unit) {
             )
         }
     }
+}
+
+@Composable
+fun MarkdownText(
+    content: String,
+    maxLines: Int = Int.MAX_VALUE,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val textColor = TextSecondaryDark.toArgb()
+    val accentColor = Accent.toArgb()
+
+    // Create Markwon instance with HTML support
+    val markwon = remember {
+        Markwon.builder(context)
+            .usePlugin(HtmlPlugin.create())
+            .build()
+    }
+
+    // Normalize content: convert </br> to <br>, \n to actual newlines
+    val normalizedContent = remember(content) {
+        content
+            .replace("</br>", "<br>")
+            .replace("\\n", "\n")
+    }
+
+    AndroidView(
+        modifier = modifier,
+        factory = { ctx ->
+            TextView(ctx).apply {
+                setTextColor(textColor)
+                setLinkTextColor(accentColor)
+                textSize = 13f
+                setLineSpacing(4f, 1f)
+                this.maxLines = maxLines
+                ellipsize = android.text.TextUtils.TruncateAt.END
+            }
+        },
+        update = { textView ->
+            textView.maxLines = maxLines
+            markwon.setMarkdown(textView, normalizedContent)
+        }
+    )
 }
