@@ -435,13 +435,20 @@ class PatientRepository @Inject constructor(
 
     suspend fun getPracticeSchedules(location: String): Result<List<com.dokterdibya.patient.data.api.PracticeSchedule>> {
         return try {
+            android.util.Log.d("PatientRepo", "Getting practice schedules for location: $location")
             val response = apiService.getPracticeSchedules(location)
+            android.util.Log.d("PatientRepo", "Practice schedules response: ${response.isSuccessful}, code: ${response.code()}")
             if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!.schedules)
+                val schedules = response.body()!!.schedules
+                android.util.Log.d("PatientRepo", "Got ${schedules.size} schedules")
+                Result.success(schedules)
             } else {
+                val errorBody = response.errorBody()?.string()
+                android.util.Log.e("PatientRepo", "Failed to get schedules: $errorBody")
                 Result.failure(Exception("Failed to get practice schedules"))
             }
         } catch (e: Exception) {
+            android.util.Log.e("PatientRepo", "Exception getting schedules: ${e.message}", e)
             Result.failure(e)
         }
     }
