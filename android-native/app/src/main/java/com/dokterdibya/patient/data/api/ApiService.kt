@@ -75,6 +75,12 @@ interface ApiService {
     @POST("api/fertility-calendar")
     suspend fun createFertilityCycle(@Body request: CreateCycleRequest): Response<FertilityCycleResponse>
 
+    @DELETE("api/fertility-calendar/{id}")
+    suspend fun deleteFertilityCycle(@Path("id") id: Int): Response<DeleteCycleResponse>
+
+    @POST("api/fertility-calendar/intercourse")
+    suspend fun toggleIntercourse(@Body request: IntercourseRequest): Response<IntercourseResponse>
+
     // ==================== Articles ====================
 
     @GET("api/articles")

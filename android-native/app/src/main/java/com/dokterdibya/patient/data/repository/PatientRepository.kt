@@ -4,6 +4,7 @@ import com.dokterdibya.patient.data.api.ApiService
 import com.dokterdibya.patient.data.model.AuthResponse
 import com.dokterdibya.patient.data.model.BookingRequest
 import com.dokterdibya.patient.data.model.CreateCycleRequest
+import com.dokterdibya.patient.data.model.IntercourseRequest
 import com.dokterdibya.patient.data.model.GoogleAuthRequest
 import com.dokterdibya.patient.data.model.Patient
 import com.dokterdibya.patient.data.model.Appointment
@@ -342,20 +343,55 @@ class PatientRepository @Inject constructor(
         }
     }
 
-    suspend fun createFertilityCycle(startDate: String, cycleLength: Int, periodLength: Int): Result<FertilityCycle> {
+    suspend fun createFertilityCycle(
+        periodStartDate: String,
+        periodEndDate: String?,
+        flowIntensity: String,
+        painIntensity: String,
+        symptoms: List<String>?,
+        notes: String?
+    ): Result<Boolean> {
         return try {
             val response = apiService.createFertilityCycle(
-                CreateCycleRequest(startDate, cycleLength, periodLength)
+                CreateCycleRequest(
+                    periodStartDate = periodStartDate,
+                    periodEndDate = periodEndDate,
+                    flowIntensity = flowIntensity,
+                    painIntensity = painIntensity,
+                    symptoms = symptoms,
+                    notes = notes
+                )
             )
-            if (response.isSuccessful && response.body() != null) {
-                val cycles = response.body()!!.cycles
-                if (!cycles.isNullOrEmpty()) {
-                    Result.success(cycles.first())
-                } else {
-                    Result.failure(Exception("Failed to create fertility cycle"))
-                }
+            if (response.isSuccessful && response.body()?.success == true) {
+                Result.success(true)
             } else {
-                Result.failure(Exception("Failed to create fertility cycle"))
+                Result.failure(Exception("Gagal menyimpan data siklus"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun deleteFertilityCycle(id: Int): Result<Boolean> {
+        return try {
+            val response = apiService.deleteFertilityCycle(id)
+            if (response.isSuccessful && response.body()?.success == true) {
+                Result.success(true)
+            } else {
+                Result.failure(Exception("Gagal menghapus data siklus"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun toggleIntercourse(date: String): Result<String> {
+        return try {
+            val response = apiService.toggleIntercourse(IntercourseRequest(date))
+            if (response.isSuccessful && response.body()?.success == true) {
+                Result.success(response.body()?.action ?: "added")
+            } else {
+                Result.failure(Exception("Gagal menyimpan data"))
             }
         } catch (e: Exception) {
             Result.failure(e)

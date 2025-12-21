@@ -58,13 +58,37 @@ data class FertilityPredictionResponse(
     val message: String?
 )
 
+// Request to create new cycle (matches web form)
 data class CreateCycleRequest(
-    @SerializedName("cycle_start_date")
-    val cycleStartDate: String,
-    @SerializedName("cycle_length")
-    val cycleLength: Int = 28,
-    @SerializedName("period_length")
-    val periodLength: Int = 5
+    @SerializedName("period_start_date")
+    val periodStartDate: String,
+    @SerializedName("period_end_date")
+    val periodEndDate: String? = null,
+    @SerializedName("flow_intensity")
+    val flowIntensity: String = "medium",  // light, medium, heavy
+    @SerializedName("pain_intensity")
+    val painIntensity: String = "none",    // none, light, medium, heavy
+    val symptoms: List<String>? = null,
+    val notes: String? = null
+)
+
+// Request to toggle intercourse
+data class IntercourseRequest(
+    val date: String,
+    val notes: String? = null
+)
+
+// Response for intercourse toggle
+data class IntercourseResponse(
+    val success: Boolean,
+    val action: String?,  // "added" or "removed"
+    val message: String?
+)
+
+// Response for delete cycle
+data class DeleteCycleResponse(
+    val success: Boolean,
+    val message: String?
 )
 
 // Calendar day types for UI (matching web version)
