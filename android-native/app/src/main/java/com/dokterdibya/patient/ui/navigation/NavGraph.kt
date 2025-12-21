@@ -1,5 +1,10 @@
 package com.dokterdibya.patient.ui.navigation
 
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -126,7 +131,13 @@ fun NavGraph(
             )
         }
 
-        composable(Screen.FertilityCalendar.route) {
+        composable(
+            Screen.FertilityCalendar.route,
+            enterTransition = { fadeIn(animationSpec = tween(150)) },
+            exitTransition = { fadeOut(animationSpec = tween(150)) },
+            popEnterTransition = { fadeIn(animationSpec = tween(150)) },
+            popExitTransition = { fadeOut(animationSpec = tween(150)) }
+        ) {
             FertilityCalendarScreen(
                 onBack = { navController.popBackStack() }
             )
