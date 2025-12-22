@@ -53,14 +53,10 @@ fun CompleteProfileScreen(
 
     // State for success dialog
     var showSuccessDialog by remember { mutableStateOf(false) }
-    var registrationCode by remember { mutableStateOf("") }
 
     // Show success dialog when submission succeeds
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
-            // Extract quick ID from success message
-            val message = uiState.successMessage ?: ""
-            registrationCode = message.substringAfter("Kode: ", "").trim()
             showSuccessDialog = true
         }
     }
@@ -85,38 +81,11 @@ fun CompleteProfileScreen(
                 )
             },
             text = {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    if (registrationCode.isNotEmpty()) {
-                        Text(
-                            "Nomor Referensi Formulir:",
-                            fontSize = 14.sp,
-                            color = IntakeTextSecondary
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            registrationCode,
-                            fontSize = 32.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = IntakePrimary,
-                            letterSpacing = 4.sp
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            "Simpan nomor ini jika diperlukan",
-                            fontSize = 12.sp,
-                            color = IntakePlaceholder
-                        )
-                    } else {
-                        Text(
-                            "Data Anda telah tersimpan",
-                            fontSize = 14.sp,
-                            color = IntakeTextSecondary
-                        )
-                    }
-                }
+                Text(
+                    "Data Anda telah tersimpan",
+                    fontSize = 14.sp,
+                    color = IntakeTextSecondary
+                )
             },
             confirmButton = {
                 Button(
