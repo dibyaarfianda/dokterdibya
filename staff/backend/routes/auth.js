@@ -484,30 +484,43 @@ router.get('/api/admin/web-patients/:id', verifyToken, asyncHandler(async (req, 
     // Get patient intake submission from database
     let intake = null;
     try {
-        const patientPhone = patients[0].phone;
-        if (patientPhone) {
-            const normalizedPhone = patientPhone.replace(/\D/g, '').slice(-10);
-            const [intakeRows] = await db.query(
-                `SELECT submission_id, quick_id, payload, status, high_risk, created_at, updated_at
-                 FROM patient_intake_submissions 
-                 WHERE RIGHT(REPLACE(phone, '-', ''), 10) = ? 
-                 ORDER BY created_at DESC
-                 LIMIT 1`,
-                [normalizedPhone]
-            );
-            
-            if (intakeRows.length > 0) {
-                const row = intakeRows[0];
-                intake = {
-                    submissionId: row.submission_id,
-                    quickId: row.quick_id,
-                    payload: typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload,
-                    status: row.status,
-                    highRisk: row.high_risk,
-                    createdAt: row.created_at,
-                    updatedAt: row.updated_at
-                };
+        // Priority 1: Match by patient_id (most reliable)
+        let [intakeRows] = await db.query(
+            `SELECT submission_id, quick_id, payload, status, high_risk, created_at, updated_at
+             FROM patient_intake_submissions
+             WHERE patient_id = ?
+             ORDER BY created_at DESC
+             LIMIT 1`,
+            [patientId]
+        );
+
+        // Priority 2: Match by phone number (fallback for legacy data)
+        if (intakeRows.length === 0) {
+            const patientPhone = patients[0].phone;
+            if (patientPhone) {
+                const normalizedPhone = patientPhone.replace(/\D/g, '').slice(-10);
+                [intakeRows] = await db.query(
+                    `SELECT submission_id, quick_id, payload, status, high_risk, created_at, updated_at
+                     FROM patient_intake_submissions
+                     WHERE RIGHT(REPLACE(phone, '-', ''), 10) = ?
+                     ORDER BY created_at DESC
+                     LIMIT 1`,
+                    [normalizedPhone]
+                );
             }
+        }
+
+        if (intakeRows.length > 0) {
+            const row = intakeRows[0];
+            intake = {
+                submissionId: row.submission_id,
+                quickId: row.quick_id,
+                payload: typeof row.payload === 'string' ? JSON.parse(row.payload) : row.payload,
+                status: row.status,
+                highRisk: row.high_risk,
+                createdAt: row.created_at,
+                updatedAt: row.updated_at
+            };
         }
     } catch (intakeError) {
         logger.error('Failed to load patient intake', { patientId, error: intakeError.message });

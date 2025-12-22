@@ -3227,41 +3227,47 @@ async function showPatientDetail(patientId) {
             console.log('Patient data received from patients:', data);
             patient = data.data;
 
-            // Try to fetch intake data separately by phone
+            // Try to fetch intake data - first by patient_id, then by phone
             intake = null;
-            if (patient.whatsapp || patient.phone) {
-                try {
-                    const phoneToSearch = patient.whatsapp || patient.phone;
-                    const intakeResponse = await fetch('/api/patient-intake', {
-                        headers: {
-                            'Authorization': `Bearer ${token}`
-                        }
-                    });
-                    
-                    if (intakeResponse.ok) {
-                        const intakeData = await intakeResponse.json();
-                        // Find intake matching this patient's phone
+            try {
+                const intakeResponse = await fetch('/api/patient-intake', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                if (intakeResponse.ok) {
+                    const intakeData = await intakeResponse.json();
+
+                    // Priority 1: Match by patient_id (most reliable)
+                    let matchingIntake = intakeData.data?.find(submission =>
+                        submission.patient_id === patientId
+                    );
+
+                    // Priority 2: Match by phone number (fallback for legacy data)
+                    if (!matchingIntake && (patient.whatsapp || patient.phone)) {
+                        const phoneToSearch = patient.whatsapp || patient.phone;
                         const normalizedPatientPhone = phoneToSearch.replace(/\D/g, '').slice(-10);
-                        const matchingIntake = intakeData.data?.find(submission => {
+                        matchingIntake = intakeData.data?.find(submission => {
                             const submissionPhone = submission.phone?.replace(/\D/g, '').slice(-10);
                             return submissionPhone === normalizedPatientPhone;
                         });
-                        
-                        if (matchingIntake) {
-                            intake = {
-                                submissionId: matchingIntake.submission_id,
-                                quickId: matchingIntake.quick_id,
-                                payload: typeof matchingIntake.payload === 'string' ? JSON.parse(matchingIntake.payload) : matchingIntake.payload,
-                                status: matchingIntake.status,
-                                highRisk: matchingIntake.high_risk,
-                                createdAt: matchingIntake.created_at,
-                                updatedAt: matchingIntake.updated_at
-                            };
-                        }
                     }
-                } catch (intakeError) {
-                    console.warn('Failed to fetch intake data:', intakeError);
+
+                    if (matchingIntake) {
+                        intake = {
+                            submissionId: matchingIntake.submission_id,
+                            quickId: matchingIntake.quick_id,
+                            payload: typeof matchingIntake.payload === 'string' ? JSON.parse(matchingIntake.payload) : matchingIntake.payload,
+                            status: matchingIntake.status,
+                            highRisk: matchingIntake.high_risk,
+                            createdAt: matchingIntake.created_at,
+                            updatedAt: matchingIntake.updated_at
+                        };
+                    }
                 }
+            } catch (intakeError) {
+                console.warn('Failed to fetch intake data:', intakeError);
             }
         }
         
