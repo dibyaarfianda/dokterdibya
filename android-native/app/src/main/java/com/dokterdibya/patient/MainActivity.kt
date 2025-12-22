@@ -128,13 +128,39 @@ class MainActivity : ComponentActivity() {
                         }
                     }
 
-                    // Calculate start destination only ONCE when isLoggedIn is first determined
-                    val startDestination by remember(isLoggedIn) {
+                    // Track if profile check is complete for returning users
+                    var profileCheckComplete by remember { mutableStateOf(false) }
+                    var needsProfileCompletion by remember { mutableStateOf(false) }
+
+                    // For returning users (has token), check profile completion before navigating
+                    LaunchedEffect(isLoggedIn) {
+                        if (isLoggedIn == true && !profileCheckComplete) {
+                            Log.d(TAG, "Checking profile completion for returning user...")
+                            viewModel.checkProfileCompletion()
+                        } else if (isLoggedIn == false) {
+                            profileCheckComplete = true // No need to check, user not logged in
+                        }
+                    }
+
+                    // Listen to profile completion state from ViewModel
+                    LaunchedEffect(authState.isLoggedIn, authState.needsProfileCompletion) {
+                        if (authState.isLoggedIn) {
+                            needsProfileCompletion = authState.needsProfileCompletion
+                            profileCheckComplete = true
+                            Log.d(TAG, "Profile check complete: needsCompletion=$needsProfileCompletion")
+                        }
+                    }
+
+                    // Calculate start destination based on login status AND profile completion
+                    val startDestination by remember(isLoggedIn, profileCheckComplete, needsProfileCompletion) {
                         derivedStateOf {
-                            when (isLoggedIn) {
-                                true -> Screen.Home.route
-                                false -> Screen.Intro.route  // Always show intro when not logged in
-                                null -> null
+                            when {
+                                isLoggedIn == null -> null // Still loading
+                                isLoggedIn == false -> Screen.Intro.route
+                                isLoggedIn == true && !profileCheckComplete -> null // Wait for profile check
+                                isLoggedIn == true && needsProfileCompletion -> Screen.CompleteProfile.route
+                                isLoggedIn == true -> Screen.Home.route
+                                else -> null
                             }
                         }
                     }
