@@ -573,10 +573,10 @@ private fun Step6ChildrenObstetric(uiState: CompleteProfileUiState, viewModel: C
                 FilterChip(
                     selected = isSelected,
                     onClick = { viewModel.updateHasChildren(value) },
-                    label = { Text(label) },
+                    label = { Text(label, color = if (isSelected) Color.White else Color(0xFF1f2937)) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = Color(0xFF6366f1),
-                        selectedLabelColor = Color.White
+                        containerColor = Color(0xFFF3F4F6)
                     )
                 )
             }
@@ -671,10 +671,10 @@ private fun Step6ChildrenObstetric(uiState: CompleteProfileUiState, viewModel: C
                     FilterChip(
                         selected = isSelected,
                         onClick = { viewModel.updateHadEctopic(value) },
-                        label = { Text(label) },
+                        label = { Text(label, color = if (isSelected) Color.White else Color(0xFF1f2937)) },
                         colors = FilterChipDefaults.filterChipColors(
                             selectedContainerColor = Color(0xFF6366f1),
-                            selectedLabelColor = Color.White
+                            containerColor = Color(0xFFF3F4F6)
                         )
                     )
                 }
