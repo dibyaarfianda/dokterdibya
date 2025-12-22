@@ -19,7 +19,8 @@ import javax.inject.Inject
 data class CompleteProfileUiState(
     // Registration Code (shown at top of Step 1 if required)
     val registrationCode: String = "",
-    val registrationCodeRequired: Boolean = false,
+    val registrationCodeRequired: Boolean = true,  // Default to true until API confirms otherwise
+    val registrationCodeCheckLoading: Boolean = true,  // Loading state for initial check
     val registrationCodeValidated: Boolean = false,
     val registrationCodeValidating: Boolean = false,
 
@@ -178,13 +179,23 @@ class CompleteProfileViewModel @Inject constructor(
 
     private fun checkRegistrationCodeRequired() {
         viewModelScope.launch {
+            android.util.Log.d("CompleteProfileVM", "Checking if registration code is required...")
             patientRepository.isRegistrationCodeRequired().fold(
                 onSuccess = { required ->
-                    _uiState.value = _uiState.value.copy(registrationCodeRequired = required)
+                    android.util.Log.d("CompleteProfileVM", "Registration code required: $required")
+                    _uiState.value = _uiState.value.copy(
+                        registrationCodeRequired = required,
+                        registrationCodeCheckLoading = false
+                    )
+                    android.util.Log.d("CompleteProfileVM", "UiState updated, registrationCodeRequired: ${_uiState.value.registrationCodeRequired}")
                 },
-                onFailure = {
+                onFailure = { error ->
+                    android.util.Log.e("CompleteProfileVM", "Failed to check registration code: ${error.message}")
                     // Default to required if can't check
-                    _uiState.value = _uiState.value.copy(registrationCodeRequired = true)
+                    _uiState.value = _uiState.value.copy(
+                        registrationCodeRequired = true,
+                        registrationCodeCheckLoading = false
+                    )
                 }
             )
         }
@@ -363,6 +374,11 @@ class CompleteProfileViewModel @Inject constructor(
         return when (state.currentStep) {
             1 -> { // Basic Info + Registration Code
                 when {
+                    // Wait for registration code check to complete
+                    state.registrationCodeCheckLoading -> {
+                        _uiState.value = state.copy(error = "Mohon tunggu, sedang memeriksa pengaturan...")
+                        false
+                    }
                     // Check registration code first if required
                     state.registrationCodeRequired && state.registrationCode.isBlank() -> {
                         _uiState.value = state.copy(error = "Kode registrasi wajib diisi")
