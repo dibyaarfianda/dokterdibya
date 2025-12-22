@@ -34,6 +34,7 @@ import com.dokterdibya.patient.ui.components.CheckboxGroup
 import com.dokterdibya.patient.ui.components.MedicationRow
 import com.dokterdibya.patient.ui.components.PaymentMethodGroup
 import com.dokterdibya.patient.ui.components.SingleCheckbox
+import androidx.compose.foundation.BorderStroke
 import com.dokterdibya.patient.ui.theme.*
 import com.dokterdibya.patient.viewmodel.CompleteProfileUiState
 import com.dokterdibya.patient.viewmodel.CompleteProfileViewModel
@@ -64,7 +65,7 @@ fun CompleteProfileScreen(
         }
     }
 
-    // Success Dialog
+    // Success Dialog - Dark Glassmorphism
     if (showSuccessDialog) {
         AlertDialog(
             onDismissRequest = { /* Don't dismiss on outside click */ },
@@ -72,7 +73,7 @@ fun CompleteProfileScreen(
                 Icon(
                     Icons.Default.CheckCircle,
                     contentDescription = null,
-                    tint = Color(0xFF10B981),
+                    tint = Success,
                     modifier = Modifier.size(48.dp)
                 )
             },
@@ -80,7 +81,7 @@ fun CompleteProfileScreen(
                 Text(
                     "Formulir Berhasil Dikirim!",
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1F2937)
+                    color = IntakeTextPrimary
                 )
             },
             text = {
@@ -92,27 +93,27 @@ fun CompleteProfileScreen(
                         Text(
                             "Kode Registrasi Anda:",
                             fontSize = 14.sp,
-                            color = Color(0xFF6B7280)
+                            color = IntakeTextSecondary
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         Text(
                             registrationCode,
                             fontSize = 32.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF667EEA),
+                            color = IntakePrimary,
                             letterSpacing = 4.sp
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             "Simpan kode ini untuk referensi Anda",
                             fontSize = 12.sp,
-                            color = Color(0xFF9CA3AF)
+                            color = IntakePlaceholder
                         )
                     } else {
                         Text(
                             "Data Anda telah tersimpan",
                             fontSize = 14.sp,
-                            color = Color(0xFF6B7280)
+                            color = IntakeTextSecondary
                         )
                     }
                 }
@@ -124,14 +125,14 @@ fun CompleteProfileScreen(
                         onComplete()
                     },
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF667EEA)
+                        containerColor = IntakePrimary
                     ),
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text("Lanjut ke Dashboard", fontWeight = FontWeight.Medium)
                 }
             },
-            containerColor = Color.White,
+            containerColor = IntakeBgEnd,
             shape = RoundedCornerShape(16.dp)
         )
     }
@@ -161,10 +162,7 @@ fun CompleteProfileScreen(
             .fillMaxSize()
             .background(
                 Brush.linearGradient(
-                    colors = listOf(
-                        Color(0xFF667eea),
-                        Color(0xFF764ba2)
-                    )
+                    colors = listOf(IntakeBgStart, IntakeBgEnd)
                 )
             )
     ) {
@@ -206,13 +204,14 @@ fun CompleteProfileScreen(
                 )
             }
 
-            // Content card
+            // Content card - Glassmorphism style
             Card(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
                 shape = RoundedCornerShape(25.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+                colors = CardDefaults.cardColors(containerColor = IntakeCardBg),
+                border = BorderStroke(1.dp, IntakeBorder)
             ) {
                 Column(
                     modifier = Modifier
@@ -220,20 +219,21 @@ fun CompleteProfileScreen(
                         .verticalScroll(rememberScrollState())
                         .padding(25.dp)
                 ) {
-                    // Error message
+                    // Error message - Dark theme compatible
                     AnimatedVisibility(visible = uiState.error != null) {
                         Card(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(bottom = 16.dp),
                             colors = CardDefaults.cardColors(
-                                containerColor = Color(0xFFFEE2E2)
+                                containerColor = Danger.copy(alpha = 0.15f)
                             ),
-                            shape = RoundedCornerShape(12.dp)
+                            shape = RoundedCornerShape(12.dp),
+                            border = BorderStroke(1.dp, Danger.copy(alpha = 0.3f))
                         ) {
                             Text(
                                 text = uiState.error ?: "",
-                                color = Color(0xFFDC2626),
+                                color = Danger,
                                 fontSize = 14.sp,
                                 modifier = Modifier.padding(16.dp)
                             )
@@ -283,8 +283,9 @@ fun CompleteProfileScreen(
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(15.dp),
                                 colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = Color(0xFF6366f1)
-                                )
+                                    contentColor = IntakeTextPrimary
+                                ),
+                                border = BorderStroke(1.dp, IntakeBorder)
                             ) {
                                 Text("← Kembali", fontWeight = FontWeight.SemiBold)
                             }
@@ -301,7 +302,7 @@ fun CompleteProfileScreen(
                             modifier = Modifier.weight(1f),
                             shape = RoundedCornerShape(15.dp),
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF6366f1)
+                                containerColor = IntakePrimary
                             ),
                             enabled = !uiState.isLoading
                         ) {
@@ -341,8 +342,8 @@ private fun Step1BasicInfo(
     Column {
         Text("😊", fontSize = 48.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(modifier = Modifier.height(15.dp))
-        Text("Data Diri", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1f2937))
-        Text("Informasi dasar untuk rekam medis", fontSize = 14.sp, color = Color(0xFF6b7280), modifier = Modifier.padding(bottom = 20.dp))
+        Text("Data Diri", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = IntakeTextPrimary)
+        Text("Informasi dasar untuk rekam medis", fontSize = 14.sp, color = IntakeTextSecondary, modifier = Modifier.padding(bottom = 20.dp))
 
         // Name
         OutlinedTextField(
@@ -371,15 +372,15 @@ private fun Step1BasicInfo(
             enabled = false, readOnly = true,
             shape = RoundedCornerShape(15.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                disabledBorderColor = Color(0xFFe5e7eb),
-                disabledTextColor = Color(0xFF1f2937),
-                disabledLabelColor = Color(0xFF6b7280),
-                disabledContainerColor = Color.White
+                disabledBorderColor = IntakeBorder,
+                disabledTextColor = IntakeTextPrimary,
+                disabledLabelColor = IntakeTextSecondary,
+                disabledContainerColor = IntakeInputBg
             )
         )
 
         if (uiState.age != null) {
-            Text("Usia: ${uiState.age} tahun", fontSize = 14.sp, color = Color(0xFF6b7280), modifier = Modifier.padding(top = 8.dp))
+            Text("Usia: ${uiState.age} tahun", fontSize = 14.sp, color = IntakeTextSecondary, modifier = Modifier.padding(top = 8.dp))
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -429,8 +430,8 @@ private fun Step2Contact(uiState: CompleteProfileUiState, viewModel: CompletePro
     Column {
         Text("📱", fontSize = 48.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(modifier = Modifier.height(15.dp))
-        Text("Kontak", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1f2937))
-        Text("Nomor HP untuk konfirmasi janji temu", fontSize = 14.sp, color = Color(0xFF6b7280), modifier = Modifier.padding(bottom = 20.dp))
+        Text("Kontak", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = IntakeTextPrimary)
+        Text("Nomor HP untuk konfirmasi janji temu", fontSize = 14.sp, color = IntakeTextSecondary, modifier = Modifier.padding(bottom = 20.dp))
 
         OutlinedTextField(
             value = uiState.phone,
@@ -467,8 +468,8 @@ private fun Step3Address(uiState: CompleteProfileUiState, viewModel: CompletePro
     Column {
         Text("🏡", fontSize = 48.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(modifier = Modifier.height(15.dp))
-        Text("Alamat", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1f2937))
-        Text("Alamat lengkap untuk administrasi", fontSize = 14.sp, color = Color(0xFF6b7280), modifier = Modifier.padding(bottom = 20.dp))
+        Text("Alamat", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = IntakeTextPrimary)
+        Text("Alamat lengkap untuk administrasi", fontSize = 14.sp, color = IntakeTextSecondary, modifier = Modifier.padding(bottom = 20.dp))
 
         OutlinedTextField(
             value = uiState.address,
@@ -491,8 +492,8 @@ private fun Step4MaritalStatus(uiState: CompleteProfileUiState, viewModel: Compl
     Column {
         Text("💍", fontSize = 48.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(modifier = Modifier.height(15.dp))
-        Text("Status Pernikahan", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1f2937))
-        Text("Pilih salah satu", fontSize = 14.sp, color = Color(0xFF6b7280), modifier = Modifier.padding(bottom = 20.dp))
+        Text("Status Pernikahan", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = IntakeTextPrimary)
+        Text("Pilih salah satu", fontSize = 14.sp, color = IntakeTextSecondary, modifier = Modifier.padding(bottom = 20.dp))
 
         options.forEach { (value, label) ->
             val isSelected = uiState.maritalStatus == value
@@ -502,10 +503,10 @@ private fun Step4MaritalStatus(uiState: CompleteProfileUiState, viewModel: Compl
                     .padding(vertical = 6.dp)
                     .selectable(selected = isSelected, onClick = { viewModel.updateMaritalStatus(value) }, role = Role.RadioButton),
                 shape = RoundedCornerShape(15.dp),
-                colors = CardDefaults.cardColors(containerColor = if (isSelected) Color(0xFF6366f1) else Color.White),
-                border = if (!isSelected) CardDefaults.outlinedCardBorder() else null
+                colors = CardDefaults.cardColors(containerColor = if (isSelected) IntakePrimary else IntakeInputBg),
+                border = BorderStroke(1.dp, if (isSelected) IntakePrimary else IntakeBorder)
             ) {
-                Text(label, modifier = Modifier.padding(18.dp), color = if (isSelected) Color.White else Color(0xFF1f2937), fontWeight = FontWeight.Medium)
+                Text(label, modifier = Modifier.padding(18.dp), color = if (isSelected) Color.White else IntakeTextPrimary, fontWeight = FontWeight.Medium)
             }
         }
     }
@@ -517,8 +518,8 @@ private fun Step5SpouseInfo(uiState: CompleteProfileUiState, viewModel: Complete
     Column {
         Text("👨‍👩‍👧", fontSize = 48.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(modifier = Modifier.height(15.dp))
-        Text("Informasi Suami", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1f2937))
-        Text("Data suami (opsional)", fontSize = 14.sp, color = Color(0xFF6b7280), modifier = Modifier.padding(bottom = 20.dp))
+        Text("Informasi Suami", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = IntakeTextPrimary)
+        Text("Data suami (opsional)", fontSize = 14.sp, color = IntakeTextSecondary, modifier = Modifier.padding(bottom = 20.dp))
 
         OutlinedTextField(
             value = uiState.husbandName,
@@ -562,21 +563,21 @@ private fun Step6ChildrenObstetric(uiState: CompleteProfileUiState, viewModel: C
     Column {
         Text("👶", fontSize = 48.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(modifier = Modifier.height(15.dp))
-        Text("Riwayat Anak & Kehamilan", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1f2937))
-        Text("Informasi untuk rekam medis obstetri", fontSize = 14.sp, color = Color(0xFF6b7280), modifier = Modifier.padding(bottom = 20.dp))
+        Text("Riwayat Anak & Kehamilan", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = IntakeTextPrimary)
+        Text("Informasi untuk rekam medis obstetri", fontSize = 14.sp, color = IntakeTextSecondary, modifier = Modifier.padding(bottom = 20.dp))
 
         // Has children
-        Text("Apakah sudah punya anak?", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color(0xFF4B5563))
+        Text("Apakah sudah punya anak?", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = IntakeTextSecondary)
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(vertical = 8.dp)) {
             listOf("ya" to "Ya", "tidak" to "Tidak").forEach { (value, label) ->
                 val isSelected = uiState.hasChildren == value
                 FilterChip(
                     selected = isSelected,
                     onClick = { viewModel.updateHasChildren(value) },
-                    label = { Text(label, color = if (isSelected) Color.White else Color(0xFF1f2937)) },
+                    label = { Text(label, color = if (isSelected) Color.White else IntakeTextPrimary) },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = Color(0xFF6366f1),
-                        containerColor = Color(0xFFF3F4F6)
+                        selectedContainerColor = IntakePrimary,
+                        containerColor = IntakeInputBg
                     )
                 )
             }
@@ -612,7 +613,7 @@ private fun Step6ChildrenObstetric(uiState: CompleteProfileUiState, viewModel: C
             HorizontalDivider()
             Spacer(modifier = Modifier.height(16.dp))
 
-            Text("Riwayat Kehamilan", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color(0xFF4B5563))
+            Text("Riwayat Kehamilan", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = IntakeTextSecondary)
             Spacer(modifier = Modifier.height(8.dp))
 
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -664,17 +665,17 @@ private fun Step6ChildrenObstetric(uiState: CompleteProfileUiState, viewModel: C
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-            Text("Pernah hamil di luar kandungan (ektopik)?", fontSize = 14.sp, color = Color(0xFF4B5563))
+            Text("Pernah hamil di luar kandungan (ektopik)?", fontSize = 14.sp, color = IntakeTextSecondary)
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(vertical = 8.dp)) {
                 listOf("ya" to "Ya", "tidak" to "Tidak").forEach { (value, label) ->
                     val isSelected = uiState.hadEctopic == value
                     FilterChip(
                         selected = isSelected,
                         onClick = { viewModel.updateHadEctopic(value) },
-                        label = { Text(label, color = if (isSelected) Color.White else Color(0xFF1f2937)) },
+                        label = { Text(label, color = if (isSelected) Color.White else IntakeTextPrimary) },
                         colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = Color(0xFF6366f1),
-                            containerColor = Color(0xFFF3F4F6)
+                            selectedContainerColor = IntakePrimary,
+                            containerColor = IntakeInputBg
                         )
                     )
                 }
@@ -692,8 +693,8 @@ private fun Step7SocialPayment(uiState: CompleteProfileUiState, viewModel: Compl
     Column {
         Text("💼", fontSize = 48.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(modifier = Modifier.height(15.dp))
-        Text("Pekerjaan & Pembiayaan", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1f2937))
-        Text("Informasi sosial ekonomi", fontSize = 14.sp, color = Color(0xFF6b7280), modifier = Modifier.padding(bottom = 20.dp))
+        Text("Pekerjaan & Pembiayaan", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = IntakeTextPrimary)
+        Text("Informasi sosial ekonomi", fontSize = 14.sp, color = IntakeTextSecondary, modifier = Modifier.padding(bottom = 20.dp))
 
         OutlinedTextField(
             value = uiState.occupation,
@@ -753,8 +754,8 @@ private fun Step8BloodAllergy(uiState: CompleteProfileUiState, viewModel: Comple
     Column {
         Text("🩸", fontSize = 48.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(modifier = Modifier.height(15.dp))
-        Text("Golongan Darah & Alergi", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1f2937))
-        Text("Informasi penting untuk keselamatan", fontSize = 14.sp, color = Color(0xFF6b7280), modifier = Modifier.padding(bottom = 20.dp))
+        Text("Golongan Darah & Alergi", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = IntakeTextPrimary)
+        Text("Informasi penting untuk keselamatan", fontSize = 14.sp, color = IntakeTextSecondary, modifier = Modifier.padding(bottom = 20.dp))
 
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             // Blood type
@@ -770,20 +771,26 @@ private fun Step8BloodAllergy(uiState: CompleteProfileUiState, viewModel: Comple
                     modifier = Modifier.fillMaxWidth().menuAnchor(),
                     shape = RoundedCornerShape(15.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = if (hasBloodValue) Color(0xFF1f2937) else Color(0xFF9CA3AF),
-                        unfocusedTextColor = if (hasBloodValue) Color(0xFF1f2937) else Color(0xFF9CA3AF),
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White,
-                        focusedBorderColor = Color(0xFF6366f1),
-                        unfocusedBorderColor = Color(0xFFe5e7eb),
-                        focusedLabelColor = Color(0xFF6366f1),
-                        unfocusedLabelColor = Color(0xFF6b7280),
-                        cursorColor = Color(0xFF6366f1)
+                        focusedTextColor = if (hasBloodValue) IntakeTextPrimary else IntakePlaceholder,
+                        unfocusedTextColor = if (hasBloodValue) IntakeTextPrimary else IntakePlaceholder,
+                        focusedContainerColor = IntakeInputBg,
+                        unfocusedContainerColor = IntakeInputBg,
+                        focusedBorderColor = IntakePrimary,
+                        unfocusedBorderColor = IntakeBorder,
+                        focusedLabelColor = IntakePrimary,
+                        unfocusedLabelColor = IntakeTextSecondary,
+                        cursorColor = IntakePrimary,
+                        focusedTrailingIconColor = IntakeTextPrimary,
+                        unfocusedTrailingIconColor = IntakeTextSecondary
                     )
                 )
-                ExposedDropdownMenu(expanded = bloodExpanded, onDismissRequest = { bloodExpanded = false }) {
+                ExposedDropdownMenu(
+                    expanded = bloodExpanded,
+                    onDismissRequest = { bloodExpanded = false },
+                    containerColor = IntakeBgEnd
+                ) {
                     viewModel.bloodTypeOptions.filter { it.first.isNotEmpty() }.forEach { (value, label) ->
-                        DropdownMenuItem(text = { Text(label) }, onClick = { viewModel.updateBloodType(value); bloodExpanded = false })
+                        DropdownMenuItem(text = { Text(label, color = IntakeTextPrimary) }, onClick = { viewModel.updateBloodType(value); bloodExpanded = false })
                     }
                 }
             }
@@ -801,20 +808,26 @@ private fun Step8BloodAllergy(uiState: CompleteProfileUiState, viewModel: Comple
                     modifier = Modifier.fillMaxWidth().menuAnchor(),
                     shape = RoundedCornerShape(15.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedTextColor = if (hasRhesusValue) Color(0xFF1f2937) else Color(0xFF9CA3AF),
-                        unfocusedTextColor = if (hasRhesusValue) Color(0xFF1f2937) else Color(0xFF9CA3AF),
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White,
-                        focusedBorderColor = Color(0xFF6366f1),
-                        unfocusedBorderColor = Color(0xFFe5e7eb),
-                        focusedLabelColor = Color(0xFF6366f1),
-                        unfocusedLabelColor = Color(0xFF6b7280),
-                        cursorColor = Color(0xFF6366f1)
+                        focusedTextColor = if (hasRhesusValue) IntakeTextPrimary else IntakePlaceholder,
+                        unfocusedTextColor = if (hasRhesusValue) IntakeTextPrimary else IntakePlaceholder,
+                        focusedContainerColor = IntakeInputBg,
+                        unfocusedContainerColor = IntakeInputBg,
+                        focusedBorderColor = IntakePrimary,
+                        unfocusedBorderColor = IntakeBorder,
+                        focusedLabelColor = IntakePrimary,
+                        unfocusedLabelColor = IntakeTextSecondary,
+                        cursorColor = IntakePrimary,
+                        focusedTrailingIconColor = IntakeTextPrimary,
+                        unfocusedTrailingIconColor = IntakeTextSecondary
                     )
                 )
-                ExposedDropdownMenu(expanded = rhesusExpanded, onDismissRequest = { rhesusExpanded = false }) {
+                ExposedDropdownMenu(
+                    expanded = rhesusExpanded,
+                    onDismissRequest = { rhesusExpanded = false },
+                    containerColor = IntakeBgEnd
+                ) {
                     viewModel.rhesusOptions.filter { it.first.isNotEmpty() }.forEach { (value, label) ->
-                        DropdownMenuItem(text = { Text(label) }, onClick = { viewModel.updateRhesus(value); rhesusExpanded = false })
+                        DropdownMenuItem(text = { Text(label, color = IntakeTextPrimary) }, onClick = { viewModel.updateRhesus(value); rhesusExpanded = false })
                     }
                 }
             }
@@ -824,8 +837,8 @@ private fun Step8BloodAllergy(uiState: CompleteProfileUiState, viewModel: Comple
         HorizontalDivider()
         Spacer(modifier = Modifier.height(16.dp))
 
-        Text("Alergi", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color(0xFF4B5563))
-        Text("Isi dengan tanda (-) jika tidak ada", fontSize = 12.sp, color = Color(0xFF9CA3AF), modifier = Modifier.padding(bottom = 12.dp))
+        Text("Alergi", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = IntakeTextSecondary)
+        Text("Isi dengan tanda (-) jika tidak ada", fontSize = 12.sp, color = IntakePlaceholder, modifier = Modifier.padding(bottom = 12.dp))
 
         OutlinedTextField(
             value = uiState.allergyDrugs,
@@ -869,12 +882,12 @@ private fun Step9MedicalHistory(uiState: CompleteProfileUiState, viewModel: Comp
     Column {
         Text("📋", fontSize = 48.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(modifier = Modifier.height(15.dp))
-        Text("Riwayat Kesehatan", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1f2937))
-        Text("Riwayat penyakit dan obat", fontSize = 14.sp, color = Color(0xFF6b7280), modifier = Modifier.padding(bottom = 20.dp))
+        Text("Riwayat Kesehatan", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = IntakeTextPrimary)
+        Text("Riwayat penyakit dan obat", fontSize = 14.sp, color = IntakeTextSecondary, modifier = Modifier.padding(bottom = 20.dp))
 
         // Current medications
-        Text("Obat yang Sedang Dikonsumsi", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color(0xFF4B5563))
-        Text("Isi jika ada obat rutin", fontSize = 12.sp, color = Color(0xFF9CA3AF), modifier = Modifier.padding(bottom = 12.dp))
+        Text("Obat yang Sedang Dikonsumsi", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = IntakeTextSecondary)
+        Text("Isi jika ada obat rutin", fontSize = 12.sp, color = IntakePlaceholder, modifier = Modifier.padding(bottom = 12.dp))
 
         MedicationRow(0, uiState.medName1, uiState.medDose1, uiState.medFreq1, viewModel::updateMedName1, viewModel::updateMedDose1, viewModel::updateMedFreq1)
         Spacer(modifier = Modifier.height(8.dp))
@@ -938,8 +951,8 @@ private fun Step10Confirmation(uiState: CompleteProfileUiState, viewModel: Compl
     Column {
         Text("✍️", fontSize = 48.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(modifier = Modifier.height(15.dp))
-        Text("Konfirmasi & Tanda Tangan", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1f2937))
-        Text("Langkah terakhir untuk mengirim formulir", fontSize = 14.sp, color = Color(0xFF6b7280), modifier = Modifier.padding(bottom = 20.dp))
+        Text("Konfirmasi & Tanda Tangan", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = IntakeTextPrimary)
+        Text("Langkah terakhir untuk mengirim formulir", fontSize = 14.sp, color = IntakeTextSecondary, modifier = Modifier.padding(bottom = 20.dp))
 
         OutlinedTextField(
             value = uiState.patientSignature,
@@ -956,8 +969,9 @@ private fun Step10Confirmation(uiState: CompleteProfileUiState, viewModel: Compl
 
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = Color(0xFFF3F4F6)),
-            shape = RoundedCornerShape(12.dp)
+            colors = CardDefaults.cardColors(containerColor = IntakeInputBg),
+            shape = RoundedCornerShape(12.dp),
+            border = BorderStroke(1.dp, IntakeBorder)
         ) {
             Column(modifier = Modifier.padding(16.dp)) {
                 SingleCheckbox(
@@ -980,13 +994,14 @@ private fun Step10Confirmation(uiState: CompleteProfileUiState, viewModel: Compl
             Spacer(modifier = Modifier.height(16.dp))
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFE0F2FE)),
-                shape = RoundedCornerShape(12.dp)
+                colors = CardDefaults.cardColors(containerColor = IntakePrimary.copy(alpha = 0.2f)),
+                shape = RoundedCornerShape(12.dp),
+                border = BorderStroke(1.dp, IntakePrimary.copy(alpha = 0.3f))
             ) {
                 Text(
                     text = "Anda sedang memperbarui formulir yang sudah ada. Kode: ${uiState.existingQuickId ?: "-"}",
                     fontSize = 13.sp,
-                    color = Color(0xFF0369A1),
+                    color = IntakeTextPrimary,
                     modifier = Modifier.padding(16.dp)
                 )
             }
@@ -997,13 +1012,17 @@ private fun Step10Confirmation(uiState: CompleteProfileUiState, viewModel: Compl
 // ==================== Helper ====================
 @Composable
 private fun defaultTextFieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedTextColor = Color(0xFF1f2937),
-    unfocusedTextColor = Color(0xFF1f2937),
-    focusedContainerColor = Color.White,
-    unfocusedContainerColor = Color.White,
-    focusedBorderColor = Color(0xFF6366f1),
-    unfocusedBorderColor = Color(0xFFe5e7eb),
-    focusedLabelColor = Color(0xFF6366f1),
-    unfocusedLabelColor = Color(0xFF6b7280),
-    cursorColor = Color(0xFF6366f1)
+    focusedTextColor = IntakeTextPrimary,
+    unfocusedTextColor = IntakeTextPrimary,
+    focusedContainerColor = IntakeInputBg,
+    unfocusedContainerColor = IntakeInputBg,
+    focusedBorderColor = IntakePrimary,
+    unfocusedBorderColor = IntakeBorder,
+    focusedLabelColor = IntakePrimary,
+    unfocusedLabelColor = IntakeTextSecondary,
+    cursorColor = IntakePrimary,
+    focusedPlaceholderColor = IntakePlaceholder,
+    unfocusedPlaceholderColor = IntakePlaceholder,
+    focusedSupportingTextColor = IntakeTextSecondary,
+    unfocusedSupportingTextColor = IntakeTextSecondary
 )

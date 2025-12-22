@@ -49,3 +49,15 @@ val PregnancyGradientEnd = Color(0xFFEC4899)
 // Overlay
 val OverlayDark = Color(0x80000000)
 val OverlayLight = Color(0x33000000)
+
+// Dark Glassmorphism Theme (Patient Intake - matches web)
+val IntakeBgStart = Color(0xFF1A1A1A)
+val IntakeBgEnd = Color(0xFF303030)
+val IntakeCardBg = Color(0x1AFFFFFF)       // 10% white
+val IntakeBorder = Color(0x33FFFFFF)        // 20% white
+val IntakePrimary = Color(0xFF0066FF)
+val IntakePrimaryDark = Color(0xFF0052CC)
+val IntakeTextPrimary = Color(0xFFFFFFFF)
+val IntakeTextSecondary = Color(0xB3FFFFFF) // 70% white
+val IntakePlaceholder = Color(0x99FFFFFF)   // 60% white
+val IntakeInputBg = Color(0x0DFFFFFF)       // 5% white for inputs
