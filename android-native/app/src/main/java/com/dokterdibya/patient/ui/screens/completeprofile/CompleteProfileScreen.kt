@@ -345,8 +345,8 @@ private fun Step1BasicInfo(
         Text("Data Diri", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = IntakeTextPrimary)
         Text("Informasi dasar untuk rekam medis", fontSize = 14.sp, color = IntakeTextSecondary, modifier = Modifier.padding(bottom = 20.dp))
 
-        // Registration Code (only shown if required)
-        if (uiState.registrationCodeRequired) {
+        // Registration Code (shown while loading or if required)
+        if (uiState.registrationCodeCheckLoading || uiState.registrationCodeRequired) {
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -356,12 +356,24 @@ private fun Step1BasicInfo(
                 border = BorderStroke(1.dp, if (uiState.registrationCodeValidated) Success else IntakeBorder)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    Text(
-                        "Kode Registrasi *",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = IntakeTextSecondary
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            "Kode Registrasi *",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = IntakeTextSecondary
+                        )
+                        if (uiState.registrationCodeCheckLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(12.dp),
+                                color = IntakePrimary,
+                                strokeWidth = 2.dp
+                            )
+                        }
+                    }
                     Text(
                         "Masukkan kode 6 karakter dari klinik",
                         fontSize = 12.sp,

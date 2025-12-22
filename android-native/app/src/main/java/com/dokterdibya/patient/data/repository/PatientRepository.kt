@@ -768,14 +768,14 @@ class PatientRepository @Inject constructor(
                 android.util.Log.d("PatientRepo", "registrationCodeRequired: $required")
                 Result.success(required)
             } else {
-                // If API fails, assume code is not required
-                android.util.Log.w("PatientRepo", "API call failed, defaulting to false")
-                Result.success(false)
+                // If API fails, default to required for safety
+                android.util.Log.w("PatientRepo", "API call failed, defaulting to true (required)")
+                Result.success(true)
             }
         } catch (e: Exception) {
-            // If network error, assume code is not required
+            // If network error, default to required for safety
             android.util.Log.e("PatientRepo", "Exception checking registration code: ${e.message}")
-            Result.success(false)
+            Result.success(true)
         }
     }
 
