@@ -548,3 +548,15 @@ The Haze library (`dev.chrisbanes.haze`) has dependency resolution issues. Artif
 ```kotlin
 .background(BgDark.copy(alpha = 0.85f))
 ```
+
+**JANGAN Build APK di VPS:**
+APK harus di-build di komputer lokal developer, BUKAN di VPS. Alasan:
+- SHA-1 debug keystore VPS berbeda dengan lokal
+- Google Sign-In akan error 10 (DEVELOPER_ERROR) jika SHA-1 tidak cocok
+- SHA-1 yang terdaftar di Google Cloud Console: `CE:75:23:17:32:B5:D6:7E:E8:2B:FB:56:A0:4B:19:B9:60:11:83:C7`
+
+Jika diminta build APK, commit & push code lalu minta user build lokal:
+```bash
+git pull origin main
+./gradlew assembleDebug
+```
