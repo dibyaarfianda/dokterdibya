@@ -34,19 +34,17 @@ fun LoginScreen(
     onGoogleSignIn: () -> Unit,
     onLoginSuccess: () -> Unit,
     onNeedCompleteProfile: () -> Unit = {},
-    onNeedRegistrationCode: () -> Unit = {},
     viewModel: AuthViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val isLoggedIn by viewModel.isLoggedIn.collectAsState(initial = false)
 
-    // Navigate based on login state, registration code, and profile completion
-    LaunchedEffect(uiState.isLoggedIn, uiState.needsRegistrationCode, uiState.needsProfileCompletion) {
+    // Navigate based on login state and profile completion
+    // Registration code is now handled in CompleteProfileScreen (like website)
+    LaunchedEffect(uiState.isLoggedIn, uiState.needsProfileCompletion) {
         if (uiState.isLoggedIn) {
             when {
-                // New user needs registration code first
-                uiState.needsRegistrationCode -> onNeedRegistrationCode()
-                // New user with code validated needs to complete profile
+                // New user needs to complete profile (registration code asked in form)
                 uiState.needsProfileCompletion -> onNeedCompleteProfile()
                 // Returning user with complete profile
                 else -> onLoginSuccess()

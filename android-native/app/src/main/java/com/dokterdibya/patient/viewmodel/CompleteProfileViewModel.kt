@@ -17,6 +17,12 @@ import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 data class CompleteProfileUiState(
+    // Registration Code (shown at top of Step 1 if required)
+    val registrationCode: String = "",
+    val registrationCodeRequired: Boolean = false,
+    val registrationCodeValidated: Boolean = false,
+    val registrationCodeValidating: Boolean = false,
+
     // Step 1: Basic Info
     val fullname: String = "",
     val birthDate: String = "",
@@ -167,6 +173,68 @@ class CompleteProfileViewModel @Inject constructor(
     init {
         loadProfile()
         loadExistingIntake()
+        checkRegistrationCodeRequired()
+    }
+
+    private fun checkRegistrationCodeRequired() {
+        viewModelScope.launch {
+            patientRepository.isRegistrationCodeRequired().fold(
+                onSuccess = { required ->
+                    _uiState.value = _uiState.value.copy(registrationCodeRequired = required)
+                },
+                onFailure = {
+                    // Default to required if can't check
+                    _uiState.value = _uiState.value.copy(registrationCodeRequired = true)
+                }
+            )
+        }
+    }
+
+    fun updateRegistrationCode(value: String) {
+        // Only allow alphanumeric, uppercase, max 6 chars
+        val cleaned = value.uppercase().filter { it.isLetterOrDigit() }.take(6)
+        _uiState.value = _uiState.value.copy(
+            registrationCode = cleaned,
+            registrationCodeValidated = false,
+            error = null
+        )
+    }
+
+    fun validateRegistrationCode() {
+        val code = _uiState.value.registrationCode
+        if (code.length != 6) {
+            _uiState.value = _uiState.value.copy(error = "Kode registrasi harus 6 karakter")
+            return
+        }
+
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(registrationCodeValidating = true, error = null)
+
+            patientRepository.validateRegistrationCode(code).fold(
+                onSuccess = { valid ->
+                    if (valid) {
+                        _uiState.value = _uiState.value.copy(
+                            registrationCodeValidating = false,
+                            registrationCodeValidated = true,
+                            error = null
+                        )
+                    } else {
+                        _uiState.value = _uiState.value.copy(
+                            registrationCodeValidating = false,
+                            registrationCodeValidated = false,
+                            error = "Kode registrasi tidak valid atau sudah kadaluarsa"
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _uiState.value = _uiState.value.copy(
+                        registrationCodeValidating = false,
+                        registrationCodeValidated = false,
+                        error = error.message ?: "Gagal memvalidasi kode"
+                    )
+                }
+            )
+        }
     }
 
     private fun loadProfile() {
@@ -289,8 +357,21 @@ class CompleteProfileViewModel @Inject constructor(
     private fun validateCurrentStep(): Boolean {
         val state = _uiState.value
         return when (state.currentStep) {
-            1 -> { // Basic Info
+            1 -> { // Basic Info + Registration Code
                 when {
+                    // Check registration code first if required
+                    state.registrationCodeRequired && state.registrationCode.isBlank() -> {
+                        _uiState.value = state.copy(error = "Kode registrasi wajib diisi")
+                        false
+                    }
+                    state.registrationCodeRequired && state.registrationCode.length != 6 -> {
+                        _uiState.value = state.copy(error = "Kode registrasi harus 6 karakter")
+                        false
+                    }
+                    state.registrationCodeRequired && !state.registrationCodeValidated -> {
+                        _uiState.value = state.copy(error = "Kode registrasi belum divalidasi. Tekan tombol Validasi.")
+                        false
+                    }
                     state.fullname.isBlank() -> {
                         _uiState.value = state.copy(error = "Nama lengkap wajib diisi")
                         false
