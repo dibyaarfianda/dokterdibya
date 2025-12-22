@@ -109,9 +109,28 @@ class AuthViewModel @Inject constructor(
             patientRepository.getProfile().fold(
                 onSuccess = { patient ->
                     val needsCompletion = patient.birthDate.isNullOrBlank()
+
+                    android.util.Log.d("AuthViewModel", "checkProfileCompletion - birthDate: ${patient.birthDate}, needsCompletion: $needsCompletion")
+
+                    // For users needing profile completion, check if registration code is required
+                    var needsRegCode = false
+                    if (needsCompletion) {
+                        val hasCode = tokenRepository.hasRegistrationCode().first()
+                        android.util.Log.d("AuthViewModel", "checkProfileCompletion - hasCode: $hasCode")
+                        if (!hasCode) {
+                            val codeRequired = patientRepository.isRegistrationCodeRequired()
+                                .getOrDefault(false)
+                            android.util.Log.d("AuthViewModel", "checkProfileCompletion - codeRequired: $codeRequired")
+                            needsRegCode = codeRequired
+                        }
+                    }
+
+                    android.util.Log.d("AuthViewModel", "checkProfileCompletion - final: needsCompletion=$needsCompletion, needsRegCode=$needsRegCode")
+
                     _uiState.value = _uiState.value.copy(
                         isLoggedIn = true,
                         needsProfileCompletion = needsCompletion,
+                        needsRegistrationCode = needsRegCode,
                         patientId = patient.id
                     )
                 },
