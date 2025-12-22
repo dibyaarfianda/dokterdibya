@@ -8,6 +8,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.dokterdibya.patient.ui.theme.*
 
 /**
  * A row for entering medication information (name, dose, frequency)
@@ -29,7 +30,7 @@ fun MedicationRow(
             text = "Obat ${index + 1}",
             fontSize = 12.sp,
             fontWeight = FontWeight.Medium,
-            color = Color(0xFF6B7280),
+            color = IntakeTextSecondary,
             modifier = Modifier.padding(bottom = 4.dp)
         )
 
@@ -40,40 +41,55 @@ fun MedicationRow(
             OutlinedTextField(
                 value = name,
                 onValueChange = onNameChange,
-                placeholder = { Text("Nama obat", fontSize = 12.sp) },
+                placeholder = { Text("Nama obat", fontSize = 12.sp, color = IntakePlaceholder) },
                 modifier = Modifier.weight(1f),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF667EEA),
-                    unfocusedBorderColor = Color(0xFFD1D5DB)
+                    focusedTextColor = IntakeTextPrimary,
+                    unfocusedTextColor = IntakeTextPrimary,
+                    focusedContainerColor = IntakeInputBg,
+                    unfocusedContainerColor = IntakeInputBg,
+                    focusedBorderColor = IntakePrimary,
+                    unfocusedBorderColor = IntakeBorder,
+                    cursorColor = IntakePrimary
                 ),
-                textStyle = LocalTextStyle.current.copy(fontSize = 13.sp)
+                textStyle = LocalTextStyle.current.copy(fontSize = 13.sp, color = IntakeTextPrimary)
             )
 
             OutlinedTextField(
                 value = dose,
                 onValueChange = onDoseChange,
-                placeholder = { Text("Dosis", fontSize = 12.sp) },
+                placeholder = { Text("Dosis", fontSize = 12.sp, color = IntakePlaceholder) },
                 modifier = Modifier.weight(0.6f),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF667EEA),
-                    unfocusedBorderColor = Color(0xFFD1D5DB)
+                    focusedTextColor = IntakeTextPrimary,
+                    unfocusedTextColor = IntakeTextPrimary,
+                    focusedContainerColor = IntakeInputBg,
+                    unfocusedContainerColor = IntakeInputBg,
+                    focusedBorderColor = IntakePrimary,
+                    unfocusedBorderColor = IntakeBorder,
+                    cursorColor = IntakePrimary
                 ),
-                textStyle = LocalTextStyle.current.copy(fontSize = 13.sp)
+                textStyle = LocalTextStyle.current.copy(fontSize = 13.sp, color = IntakeTextPrimary)
             )
 
             OutlinedTextField(
                 value = frequency,
                 onValueChange = onFrequencyChange,
-                placeholder = { Text("Frekuensi", fontSize = 12.sp) },
+                placeholder = { Text("Frekuensi", fontSize = 12.sp, color = IntakePlaceholder) },
                 modifier = Modifier.weight(0.6f),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF667EEA),
-                    unfocusedBorderColor = Color(0xFFD1D5DB)
+                    focusedTextColor = IntakeTextPrimary,
+                    unfocusedTextColor = IntakeTextPrimary,
+                    focusedContainerColor = IntakeInputBg,
+                    unfocusedContainerColor = IntakeInputBg,
+                    focusedBorderColor = IntakePrimary,
+                    unfocusedBorderColor = IntakeBorder,
+                    cursorColor = IntakePrimary
                 ),
-                textStyle = LocalTextStyle.current.copy(fontSize = 13.sp)
+                textStyle = LocalTextStyle.current.copy(fontSize = 13.sp, color = IntakeTextPrimary)
             )
         }
     }
@@ -97,14 +113,14 @@ fun MedicationSection(
             text = "Obat yang Sedang Dikonsumsi",
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
-            color = Color(0xFF4B5563),
+            color = IntakeTextSecondary,
             modifier = Modifier.padding(bottom = 12.dp)
         )
 
         Text(
             text = "Isi jika ada obat yang sedang diminum secara rutin",
             fontSize = 12.sp,
-            color = Color(0xFF9CA3AF),
+            color = IntakePlaceholder,
             modifier = Modifier.padding(bottom = 12.dp)
         )
 

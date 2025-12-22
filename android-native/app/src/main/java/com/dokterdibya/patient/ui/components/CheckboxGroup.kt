@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.dokterdibya.patient.ui.theme.*
 
 /**
  * A reusable checkbox group component for multi-select options
@@ -31,7 +32,7 @@ fun CheckboxGroup(
             text = title,
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
-            color = Color(0xFF4B5563),
+            color = IntakeTextSecondary,
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
@@ -51,14 +52,15 @@ fun CheckboxGroup(
                             checked = selectedOptions.contains(value),
                             onCheckedChange = { onToggle(value) },
                             colors = CheckboxDefaults.colors(
-                                checkedColor = Color(0xFF667EEA),
-                                uncheckedColor = Color(0xFFD1D5DB)
+                                checkedColor = IntakePrimary,
+                                uncheckedColor = IntakeBorder,
+                                checkmarkColor = Color.White
                             )
                         )
                         Text(
                             text = label,
                             fontSize = 13.sp,
-                            color = Color(0xFF374151),
+                            color = IntakeTextPrimary,
                             modifier = Modifier.padding(start = 4.dp)
                         )
                     }
@@ -92,14 +94,15 @@ fun SingleCheckbox(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = CheckboxDefaults.colors(
-                checkedColor = Color(0xFF667EEA),
-                uncheckedColor = Color(0xFFD1D5DB)
+                checkedColor = IntakePrimary,
+                uncheckedColor = IntakeBorder,
+                checkmarkColor = Color.White
             )
         )
         Text(
             text = label,
             fontSize = 14.sp,
-            color = Color(0xFF374151),
+            color = IntakeTextPrimary,
             modifier = Modifier.padding(start = 8.dp)
         )
     }
@@ -127,7 +130,7 @@ fun PaymentMethodGroup(
             text = "Pembiayaan (bisa pilih lebih dari satu)",
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
-            color = Color(0xFF4B5563),
+            color = IntakeTextSecondary,
             modifier = Modifier.padding(bottom = 8.dp)
         )
 
@@ -140,14 +143,15 @@ fun PaymentMethodGroup(
                     checked = selectedMethods.contains(value),
                     onCheckedChange = { onToggle(value) },
                     colors = CheckboxDefaults.colors(
-                        checkedColor = Color(0xFF667EEA),
-                        uncheckedColor = Color(0xFFD1D5DB)
+                        checkedColor = IntakePrimary,
+                        uncheckedColor = IntakeBorder,
+                        checkmarkColor = Color.White
                     )
                 )
                 Text(
                     text = label,
                     fontSize = 14.sp,
-                    color = Color(0xFF374151),
+                    color = IntakeTextPrimary,
                     modifier = Modifier.padding(start = 8.dp)
                 )
             }
@@ -164,8 +168,17 @@ fun PaymentMethodGroup(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFF667EEA),
-                    unfocusedBorderColor = Color(0xFFD1D5DB)
+                    focusedTextColor = IntakeTextPrimary,
+                    unfocusedTextColor = IntakeTextPrimary,
+                    focusedContainerColor = IntakeInputBg,
+                    unfocusedContainerColor = IntakeInputBg,
+                    focusedBorderColor = IntakePrimary,
+                    unfocusedBorderColor = IntakeBorder,
+                    focusedLabelColor = IntakePrimary,
+                    unfocusedLabelColor = IntakeTextSecondary,
+                    cursorColor = IntakePrimary,
+                    focusedPlaceholderColor = IntakePlaceholder,
+                    unfocusedPlaceholderColor = IntakePlaceholder
                 )
             )
         }
