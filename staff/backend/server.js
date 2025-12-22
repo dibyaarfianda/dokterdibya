@@ -179,6 +179,7 @@ const PATIENT_ALLOWED_ROUTES = [
     '/api/billings/',          // Billing details (with id path)
     '/api/usg-photos',         // USG photos access
     '/api/practice-schedules', // Practice schedules for all locations
+    '/api/registration-codes', // Registration code validation (for new patients)
 ];
 
 app.use('/api', (req, res, next) => {

@@ -91,7 +91,7 @@ fun CompleteProfileScreen(
                 ) {
                     if (registrationCode.isNotEmpty()) {
                         Text(
-                            "Kode Registrasi Anda:",
+                            "Nomor Referensi Formulir:",
                             fontSize = 14.sp,
                             color = IntakeTextSecondary
                         )
@@ -105,7 +105,7 @@ fun CompleteProfileScreen(
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
-                            "Simpan kode ini untuk referensi Anda",
+                            "Simpan nomor ini jika diperlukan",
                             fontSize = 12.sp,
                             color = IntakePlaceholder
                         )
