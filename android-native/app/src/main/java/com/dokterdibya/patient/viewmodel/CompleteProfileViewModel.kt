@@ -241,7 +241,9 @@ class CompleteProfileViewModel @Inject constructor(
         viewModelScope.launch {
             patientRepository.getProfile().fold(
                 onSuccess = { patient ->
-                    _uiState.value = _uiState.value.copy(
+                    // Use current state to preserve registrationCodeRequired from parallel coroutine
+                    val current = _uiState.value
+                    _uiState.value = current.copy(
                         fullname = patient.name,
                         phone = patient.phone ?: "",
                         birthDate = patient.birthDate ?: ""
@@ -259,18 +261,20 @@ class CompleteProfileViewModel @Inject constructor(
                 onSuccess = { existing ->
                     if (existing != null) {
                         val payload = existing.payload
-                        _uiState.value = _uiState.value.copy(
+                        // Use current state to preserve registrationCodeRequired from parallel coroutine
+                        val current = _uiState.value
+                        _uiState.value = current.copy(
                             isExistingIntake = true,
                             existingSubmissionId = existing.submissionId,
                             existingQuickId = existing.quickId,
                             // Pre-fill from existing intake
-                            fullname = payload?.fullName ?: _uiState.value.fullname,
-                            birthDate = payload?.dob ?: _uiState.value.birthDate,
-                            age = payload?.age ?: _uiState.value.age,
+                            fullname = payload?.fullName ?: current.fullname,
+                            birthDate = payload?.dob ?: current.birthDate,
+                            age = payload?.age ?: current.age,
                             height = payload?.height ?: "",
                             heightUnknown = payload?.heightUnknown ?: false,
                             nik = payload?.nik ?: "",
-                            phone = payload?.phone ?: _uiState.value.phone,
+                            phone = payload?.phone ?: current.phone,
                             emergencyContact = payload?.emergencyContact ?: "",
                             address = payload?.address ?: "",
                             maritalStatus = payload?.maritalStatus ?: "",
