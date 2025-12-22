@@ -760,15 +760,21 @@ class PatientRepository @Inject constructor(
      */
     suspend fun isRegistrationCodeRequired(): Result<Boolean> {
         return try {
+            android.util.Log.d("PatientRepo", "Checking if registration code is required...")
             val response = apiService.getRegistrationCodeSettings()
+            android.util.Log.d("PatientRepo", "Settings response: ${response.isSuccessful}, body: ${response.body()}")
             if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!.registration_code_required)
+                val required = response.body()!!.registration_code_required
+                android.util.Log.d("PatientRepo", "registration_code_required: $required")
+                Result.success(required)
             } else {
                 // If API fails, assume code is not required
+                android.util.Log.w("PatientRepo", "API call failed, defaulting to false")
                 Result.success(false)
             }
         } catch (e: Exception) {
             // If network error, assume code is not required
+            android.util.Log.e("PatientRepo", "Exception checking registration code: ${e.message}")
             Result.success(false)
         }
     }

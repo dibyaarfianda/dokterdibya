@@ -43,18 +43,24 @@ class AuthViewModel @Inject constructor(
                         val patient = response.patientData
                         val needsCompletion = patient?.birthDate.isNullOrBlank()
 
+                        android.util.Log.d("AuthViewModel", "Login success - birthDate: ${patient?.birthDate}, needsCompletion: $needsCompletion")
+
                         // For new users (needs profile completion), check if registration code is required
                         var needsRegCode = false
                         if (needsCompletion) {
                             // Check if user already has a validated registration code
                             val hasCode = tokenRepository.hasRegistrationCode().first()
+                            android.util.Log.d("AuthViewModel", "hasRegistrationCode: $hasCode")
                             if (!hasCode) {
                                 // Check if registration code is required from server settings
                                 val codeRequired = patientRepository.isRegistrationCodeRequired()
                                     .getOrDefault(false)
+                                android.util.Log.d("AuthViewModel", "isRegistrationCodeRequired: $codeRequired")
                                 needsRegCode = codeRequired
                             }
                         }
+
+                        android.util.Log.d("AuthViewModel", "Final state - needsProfileCompletion: $needsCompletion, needsRegCode: $needsRegCode")
 
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
