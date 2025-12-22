@@ -30,7 +30,12 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.dokterdibya.patient.ui.components.CheckboxGroup
+import com.dokterdibya.patient.ui.components.MedicationRow
+import com.dokterdibya.patient.ui.components.PaymentMethodGroup
+import com.dokterdibya.patient.ui.components.SingleCheckbox
 import com.dokterdibya.patient.ui.theme.*
+import com.dokterdibya.patient.viewmodel.CompleteProfileUiState
 import com.dokterdibya.patient.viewmodel.CompleteProfileViewModel
 import java.text.SimpleDateFormat
 import java.util.*
@@ -89,6 +94,18 @@ fun CompleteProfileScreen(
                 .fillMaxSize()
                 .padding(20.dp)
         ) {
+            // Title based on existing intake
+            if (uiState.isExistingIntake) {
+                Text(
+                    text = "Perbarui Formulir Rekam Medis",
+                    color = Color.White,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Medium,
+                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
             // Progress bar
             Column(modifier = Modifier.padding(bottom = 20.dp)) {
                 Text(
@@ -159,19 +176,16 @@ fun CompleteProfileScreen(
                         label = "step"
                     ) { step ->
                         when (step) {
-                            1 -> Step1BasicInfo(
-                                uiState = uiState,
-                                viewModel = viewModel,
-                                onShowDatePicker = { datePickerDialog.show() },
-                                displayFormatter = displayFormatter,
-                                dateFormatter = dateFormatter
-                            )
-                            2 -> Step2Contact(uiState = uiState, viewModel = viewModel)
-                            3 -> Step3Address(uiState = uiState, viewModel = viewModel)
-                            4 -> Step4MaritalStatus(uiState = uiState, viewModel = viewModel)
-                            5 -> Step5SpouseInfo(uiState = uiState, viewModel = viewModel)
-                            6 -> Step6AdditionalInfo(uiState = uiState, viewModel = viewModel)
-                            7 -> Step7Registration(uiState = uiState, viewModel = viewModel)
+                            1 -> Step1BasicInfo(uiState, viewModel, { datePickerDialog.show() }, displayFormatter, dateFormatter)
+                            2 -> Step2Contact(uiState, viewModel)
+                            3 -> Step3Address(uiState, viewModel)
+                            4 -> Step4MaritalStatus(uiState, viewModel)
+                            5 -> Step5SpouseInfo(uiState, viewModel)
+                            6 -> Step6ChildrenObstetric(uiState, viewModel)
+                            7 -> Step7SocialPayment(uiState, viewModel)
+                            8 -> Step8BloodAllergy(uiState, viewModel)
+                            9 -> Step9MedicalHistory(uiState, viewModel)
+                            10 -> Step10Confirmation(uiState, viewModel)
                         }
                     }
 
@@ -220,7 +234,11 @@ fun CompleteProfileScreen(
                                 )
                             } else {
                                 Text(
-                                    text = if (uiState.currentStep == uiState.totalSteps) "Selesai ✓" else "Lanjut →",
+                                    text = when {
+                                        uiState.currentStep == uiState.totalSteps && uiState.isExistingIntake -> "Perbarui ✓"
+                                        uiState.currentStep == uiState.totalSteps -> "Kirim ✓"
+                                        else -> "Lanjut →"
+                                    },
                                     fontWeight = FontWeight.SemiBold
                                 )
                             }
@@ -232,9 +250,10 @@ fun CompleteProfileScreen(
     }
 }
 
+// ==================== Step 1: Basic Info ====================
 @Composable
 private fun Step1BasicInfo(
-    uiState: com.dokterdibya.patient.viewmodel.CompleteProfileUiState,
+    uiState: CompleteProfileUiState,
     viewModel: CompleteProfileViewModel,
     onShowDatePicker: () -> Unit,
     displayFormatter: SimpleDateFormat,
@@ -243,58 +262,34 @@ private fun Step1BasicInfo(
     Column {
         Text("😊", fontSize = 48.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(modifier = Modifier.height(15.dp))
-        Text(
-            text = "Siapa nama lengkap Anda?",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF1f2937)
-        )
-        Text(
-            text = "Nama sesuai KTP ya!",
-            fontSize = 14.sp,
-            color = Color(0xFF6b7280),
-            modifier = Modifier.padding(bottom = 20.dp)
-        )
+        Text("Data Diri", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1f2937))
+        Text("Informasi dasar untuk rekam medis", fontSize = 14.sp, color = Color(0xFF6b7280), modifier = Modifier.padding(bottom = 20.dp))
 
+        // Name
         OutlinedTextField(
             value = uiState.fullname,
             onValueChange = viewModel::updateFullname,
-            label = { Text("Nama Lengkap") },
-            placeholder = { Text("Contoh: Siti Nurhaliza") },
+            label = { Text("Nama Lengkap *") },
+            placeholder = { Text("Sesuai KTP") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             shape = RoundedCornerShape(15.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color(0xFF1f2937),
-                unfocusedTextColor = Color(0xFF1f2937),
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White,
-                focusedBorderColor = Accent,
-                unfocusedBorderColor = Color(0xFFe5e7eb),
-                focusedLabelColor = Accent,
-                unfocusedLabelColor = Color(0xFF6b7280),
-                cursorColor = Accent
-            )
+            colors = defaultTextFieldColors()
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Birth date
         OutlinedTextField(
             value = if (uiState.birthDate.isNotBlank()) {
-                try {
-                    dateFormatter.parse(uiState.birthDate)?.let {
-                        displayFormatter.format(it)
-                    } ?: uiState.birthDate
-                } catch (e: Exception) { uiState.birthDate }
+                try { dateFormatter.parse(uiState.birthDate)?.let { displayFormatter.format(it) } ?: uiState.birthDate }
+                catch (e: Exception) { uiState.birthDate }
             } else "",
             onValueChange = { },
-            label = { Text("Tanggal Lahir") },
-            placeholder = { Text("Pilih tanggal lahir") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { onShowDatePicker() },
-            enabled = false,
-            readOnly = true,
+            label = { Text("Tanggal Lahir *") },
+            placeholder = { Text("Pilih tanggal") },
+            modifier = Modifier.fillMaxWidth().clickable { onShowDatePicker() },
+            enabled = false, readOnly = true,
             shape = RoundedCornerShape(15.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 disabledBorderColor = Color(0xFFe5e7eb),
@@ -305,16 +300,36 @@ private fun Step1BasicInfo(
         )
 
         if (uiState.age != null) {
-            Text(
-                text = "Usia: ${uiState.age} tahun",
-                fontSize = 14.sp,
-                color = Color(0xFF6b7280),
-                modifier = Modifier.padding(top = 8.dp)
-            )
+            Text("Usia: ${uiState.age} tahun", fontSize = 14.sp, color = Color(0xFF6b7280), modifier = Modifier.padding(top = 8.dp))
         }
 
         Spacer(modifier = Modifier.height(16.dp))
 
+        // Height
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedTextField(
+                value = uiState.height,
+                onValueChange = viewModel::updateHeight,
+                label = { Text("Tinggi Badan (cm)") },
+                placeholder = { Text("160") },
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                enabled = !uiState.heightUnknown,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                shape = RoundedCornerShape(15.dp),
+                colors = defaultTextFieldColors()
+            )
+        }
+
+        SingleCheckbox(
+            label = "Tidak tahu / belum mengukur",
+            checked = uiState.heightUnknown,
+            onCheckedChange = viewModel::updateHeightUnknown
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // NIK
         OutlinedTextField(
             value = uiState.nik,
             onValueChange = viewModel::updateNik,
@@ -324,65 +339,31 @@ private fun Step1BasicInfo(
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
             shape = RoundedCornerShape(15.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color(0xFF1f2937),
-                unfocusedTextColor = Color(0xFF1f2937),
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White,
-                focusedBorderColor = Accent,
-                unfocusedBorderColor = Color(0xFFe5e7eb),
-                focusedLabelColor = Accent,
-                unfocusedLabelColor = Color(0xFF6b7280),
-                cursorColor = Accent
-            )
+            colors = defaultTextFieldColors()
         )
     }
 }
 
+// ==================== Step 2: Contact ====================
 @Composable
-private fun Step2Contact(
-    uiState: com.dokterdibya.patient.viewmodel.CompleteProfileUiState,
-    viewModel: CompleteProfileViewModel
-) {
+private fun Step2Contact(uiState: CompleteProfileUiState, viewModel: CompleteProfileViewModel) {
     Column {
         Text("📱", fontSize = 48.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(modifier = Modifier.height(15.dp))
-        Text(
-            text = "Bagaimana kami bisa menghubungi Anda?",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF1f2937)
-        )
-        Text(
-            text = "Nomor HP untuk konfirmasi janji temu",
-            fontSize = 14.sp,
-            color = Color(0xFF6b7280),
-            modifier = Modifier.padding(bottom = 20.dp)
-        )
+        Text("Kontak", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1f2937))
+        Text("Nomor HP untuk konfirmasi janji temu", fontSize = 14.sp, color = Color(0xFF6b7280), modifier = Modifier.padding(bottom = 20.dp))
 
         OutlinedTextField(
             value = uiState.phone,
             onValueChange = viewModel::updatePhone,
-            label = { Text("Nomor WhatsApp/HP") },
+            label = { Text("Nomor WhatsApp/HP *") },
             placeholder = { Text("081234567890") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
             shape = RoundedCornerShape(15.dp),
-            supportingText = {
-                Text("Nomor dimulai 0 akan otomatis diubah ke 628")
-            },
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color(0xFF1f2937),
-                unfocusedTextColor = Color(0xFF1f2937),
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White,
-                focusedBorderColor = Accent,
-                unfocusedBorderColor = Color(0xFFe5e7eb),
-                focusedLabelColor = Accent,
-                unfocusedLabelColor = Color(0xFF6b7280),
-                cursorColor = Accent
-            )
+            supportingText = { Text("Format: 08xxx atau 628xxx") },
+            colors = defaultTextFieldColors()
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -390,95 +371,49 @@ private fun Step2Contact(
         OutlinedTextField(
             value = uiState.emergencyContact,
             onValueChange = viewModel::updateEmergencyContact,
-            label = { Text("Kontak Darurat (Opsional)") },
-            placeholder = { Text("081234567890") },
+            label = { Text("Kontak Darurat") },
+            placeholder = { Text("Nomor keluarga/suami") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
             shape = RoundedCornerShape(15.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color(0xFF1f2937),
-                unfocusedTextColor = Color(0xFF1f2937),
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White,
-                focusedBorderColor = Accent,
-                unfocusedBorderColor = Color(0xFFe5e7eb),
-                focusedLabelColor = Accent,
-                unfocusedLabelColor = Color(0xFF6b7280),
-                cursorColor = Accent
-            )
+            colors = defaultTextFieldColors()
         )
     }
 }
 
+// ==================== Step 3: Address ====================
 @Composable
-private fun Step3Address(
-    uiState: com.dokterdibya.patient.viewmodel.CompleteProfileUiState,
-    viewModel: CompleteProfileViewModel
-) {
+private fun Step3Address(uiState: CompleteProfileUiState, viewModel: CompleteProfileViewModel) {
     Column {
         Text("🏡", fontSize = 48.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(modifier = Modifier.height(15.dp))
-        Text(
-            text = "Di mana alamat Anda?",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF1f2937)
-        )
-        Text(
-            text = "Alamat lengkap untuk keperluan administrasi",
-            fontSize = 14.sp,
-            color = Color(0xFF6b7280),
-            modifier = Modifier.padding(bottom = 20.dp)
-        )
+        Text("Alamat", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1f2937))
+        Text("Alamat lengkap untuk administrasi", fontSize = 14.sp, color = Color(0xFF6b7280), modifier = Modifier.padding(bottom = 20.dp))
 
         OutlinedTextField(
             value = uiState.address,
             onValueChange = viewModel::updateAddress,
             label = { Text("Alamat Lengkap") },
-            placeholder = { Text("Jl. Contoh No. 123, RT/RW, Kelurahan, Kecamatan, Kota") },
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(150.dp),
+            placeholder = { Text("Jl. Contoh No. 123, Kelurahan, Kecamatan, Kota") },
+            modifier = Modifier.fillMaxWidth().height(150.dp),
             maxLines = 5,
             shape = RoundedCornerShape(15.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color(0xFF1f2937),
-                unfocusedTextColor = Color(0xFF1f2937),
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White,
-                focusedBorderColor = Accent,
-                unfocusedBorderColor = Color(0xFFe5e7eb),
-                focusedLabelColor = Accent,
-                unfocusedLabelColor = Color(0xFF6b7280),
-                cursorColor = Accent
-            )
+            colors = defaultTextFieldColors()
         )
     }
 }
 
+// ==================== Step 4: Marital Status ====================
 @Composable
-private fun Step4MaritalStatus(
-    uiState: com.dokterdibya.patient.viewmodel.CompleteProfileUiState,
-    viewModel: CompleteProfileViewModel
-) {
-    val options = listOf("single" to "Single", "menikah" to "Menikah", "cerai" to "Cerai")
+private fun Step4MaritalStatus(uiState: CompleteProfileUiState, viewModel: CompleteProfileViewModel) {
+    val options = listOf("single" to "Single / Belum Menikah", "menikah" to "Menikah", "cerai" to "Cerai")
 
     Column {
         Text("💍", fontSize = 48.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(modifier = Modifier.height(15.dp))
-        Text(
-            text = "Status pernikahan Anda?",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF1f2937)
-        )
-        Text(
-            text = "Pilih salah satu",
-            fontSize = 14.sp,
-            color = Color(0xFF6b7280),
-            modifier = Modifier.padding(bottom = 20.dp)
-        )
+        Text("Status Pernikahan", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1f2937))
+        Text("Pilih salah satu", fontSize = 14.sp, color = Color(0xFF6b7280), modifier = Modifier.padding(bottom = 20.dp))
 
         options.forEach { (value, label) ->
             val isSelected = uiState.maritalStatus == value
@@ -486,151 +421,200 @@ private fun Step4MaritalStatus(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(vertical = 6.dp)
-                    .selectable(
-                        selected = isSelected,
-                        onClick = { viewModel.updateMaritalStatus(value) },
-                        role = Role.RadioButton
-                    ),
+                    .selectable(selected = isSelected, onClick = { viewModel.updateMaritalStatus(value) }, role = Role.RadioButton),
                 shape = RoundedCornerShape(15.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = if (isSelected) Color(0xFF6366f1) else Color.White
-                ),
+                colors = CardDefaults.cardColors(containerColor = if (isSelected) Color(0xFF6366f1) else Color.White),
                 border = if (!isSelected) CardDefaults.outlinedCardBorder() else null
             ) {
-                Text(
-                    text = label,
-                    modifier = Modifier.padding(18.dp),
-                    color = if (isSelected) Color.White else Color(0xFF1f2937),
-                    fontWeight = FontWeight.Medium
-                )
+                Text(label, modifier = Modifier.padding(18.dp), color = if (isSelected) Color.White else Color(0xFF1f2937), fontWeight = FontWeight.Medium)
             }
         }
     }
 }
 
+// ==================== Step 5: Spouse Info ====================
 @Composable
-private fun Step5SpouseInfo(
-    uiState: com.dokterdibya.patient.viewmodel.CompleteProfileUiState,
-    viewModel: CompleteProfileViewModel
-) {
+private fun Step5SpouseInfo(uiState: CompleteProfileUiState, viewModel: CompleteProfileViewModel) {
     Column {
         Text("👨‍👩‍👧", fontSize = 48.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(modifier = Modifier.height(15.dp))
-        Text(
-            text = "Informasi Pasangan",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF1f2937)
-        )
-        Text(
-            text = "Data suami (opsional)",
-            fontSize = 14.sp,
-            color = Color(0xFF6b7280),
-            modifier = Modifier.padding(bottom = 20.dp)
-        )
+        Text("Informasi Suami", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1f2937))
+        Text("Data suami (opsional)", fontSize = 14.sp, color = Color(0xFF6b7280), modifier = Modifier.padding(bottom = 20.dp))
 
         OutlinedTextField(
             value = uiState.husbandName,
             onValueChange = viewModel::updateHusbandName,
             label = { Text("Nama Suami") },
-            placeholder = { Text("Nama lengkap suami") },
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             shape = RoundedCornerShape(15.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color(0xFF1f2937),
-                unfocusedTextColor = Color(0xFF1f2937),
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White,
-                focusedBorderColor = Accent,
-                unfocusedBorderColor = Color(0xFFe5e7eb),
-                focusedLabelColor = Accent,
-                unfocusedLabelColor = Color(0xFF6b7280),
-                cursorColor = Accent
-            )
+            colors = defaultTextFieldColors()
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
-            value = uiState.husbandAge,
-            onValueChange = viewModel::updateHusbandAge,
-            label = { Text("Umur Suami") },
-            placeholder = { Text("Contoh: 35") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            shape = RoundedCornerShape(15.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color(0xFF1f2937),
-                unfocusedTextColor = Color(0xFF1f2937),
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White,
-                focusedBorderColor = Accent,
-                unfocusedBorderColor = Color(0xFFe5e7eb),
-                focusedLabelColor = Accent,
-                unfocusedLabelColor = Color(0xFF6b7280),
-                cursorColor = Accent
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            OutlinedTextField(
+                value = uiState.husbandAge,
+                onValueChange = viewModel::updateHusbandAge,
+                label = { Text("Umur") },
+                modifier = Modifier.weight(1f),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                shape = RoundedCornerShape(15.dp),
+                colors = defaultTextFieldColors()
             )
-        )
-
-        Spacer(modifier = Modifier.height(16.dp))
-
-        OutlinedTextField(
-            value = uiState.husbandJob,
-            onValueChange = viewModel::updateHusbandJob,
-            label = { Text("Pekerjaan Suami") },
-            placeholder = { Text("Contoh: Pegawai Swasta") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            shape = RoundedCornerShape(15.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color(0xFF1f2937),
-                unfocusedTextColor = Color(0xFF1f2937),
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White,
-                focusedBorderColor = Accent,
-                unfocusedBorderColor = Color(0xFFe5e7eb),
-                focusedLabelColor = Accent,
-                unfocusedLabelColor = Color(0xFF6b7280),
-                cursorColor = Accent
+            OutlinedTextField(
+                value = uiState.husbandJob,
+                onValueChange = viewModel::updateHusbandJob,
+                label = { Text("Pekerjaan") },
+                modifier = Modifier.weight(1.5f),
+                singleLine = true,
+                shape = RoundedCornerShape(15.dp),
+                colors = defaultTextFieldColors()
             )
-        )
+        }
     }
 }
 
+// ==================== Step 6: Children & Obstetric ====================
+@Composable
+private fun Step6ChildrenObstetric(uiState: CompleteProfileUiState, viewModel: CompleteProfileViewModel) {
+    Column {
+        Text("👶", fontSize = 48.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
+        Spacer(modifier = Modifier.height(15.dp))
+        Text("Riwayat Anak & Kehamilan", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1f2937))
+        Text("Informasi untuk rekam medis obstetri", fontSize = 14.sp, color = Color(0xFF6b7280), modifier = Modifier.padding(bottom = 20.dp))
+
+        // Has children
+        Text("Apakah sudah punya anak?", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color(0xFF4B5563))
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(vertical = 8.dp)) {
+            listOf("ya" to "Ya", "tidak" to "Tidak").forEach { (value, label) ->
+                val isSelected = uiState.hasChildren == value
+                FilterChip(
+                    selected = isSelected,
+                    onClick = { viewModel.updateHasChildren(value) },
+                    label = { Text(label) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        selectedContainerColor = Color(0xFF6366f1),
+                        selectedLabelColor = Color.White
+                    )
+                )
+            }
+        }
+
+        // If has children
+        if (uiState.hasChildren == "ya") {
+            Spacer(modifier = Modifier.height(12.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                OutlinedTextField(
+                    value = uiState.livingChildrenCount,
+                    onValueChange = viewModel::updateLivingChildrenCount,
+                    label = { Text("Jumlah anak hidup") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = RoundedCornerShape(15.dp),
+                    colors = defaultTextFieldColors()
+                )
+                OutlinedTextField(
+                    value = uiState.youngestChildAge,
+                    onValueChange = viewModel::updateYoungestChildAge,
+                    label = { Text("Usia terkecil (thn)") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = RoundedCornerShape(15.dp),
+                    colors = defaultTextFieldColors()
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+            HorizontalDivider()
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text("Riwayat Kehamilan", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color(0xFF4B5563))
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = uiState.totalPregnancies,
+                    onValueChange = viewModel::updateTotalPregnancies,
+                    label = { Text("Total hamil") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = defaultTextFieldColors()
+                )
+                OutlinedTextField(
+                    value = uiState.normalDeliveryCount,
+                    onValueChange = viewModel::updateNormalDeliveryCount,
+                    label = { Text("Normal") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = defaultTextFieldColors()
+                )
+            }
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = uiState.cesareanDeliveryCount,
+                    onValueChange = viewModel::updateCesareanDeliveryCount,
+                    label = { Text("Sesar (SC)") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = defaultTextFieldColors()
+                )
+                OutlinedTextField(
+                    value = uiState.miscarriageCount,
+                    onValueChange = viewModel::updateMiscarriageCount,
+                    label = { Text("Keguguran") },
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = defaultTextFieldColors()
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            Text("Pernah hamil di luar kandungan (ektopik)?", fontSize = 14.sp, color = Color(0xFF4B5563))
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(vertical = 8.dp)) {
+                listOf("ya" to "Ya", "tidak" to "Tidak").forEach { (value, label) ->
+                    val isSelected = uiState.hadEctopic == value
+                    FilterChip(
+                        selected = isSelected,
+                        onClick = { viewModel.updateHadEctopic(value) },
+                        label = { Text(label) },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Color(0xFF6366f1),
+                            selectedLabelColor = Color.White
+                        )
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ==================== Step 7: Social & Payment ====================
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun Step6AdditionalInfo(
-    uiState: com.dokterdibya.patient.viewmodel.CompleteProfileUiState,
-    viewModel: CompleteProfileViewModel
-) {
-    val educationOptions = listOf(
-        "" to "Pilih pendidikan",
-        "sd" to "SD/MI",
-        "smp" to "SMP/MTs",
-        "sma" to "SMA/SMK/MA",
-        "diploma" to "Diploma",
-        "sarjana" to "Sarjana",
-        "lainnya" to "Lainnya"
-    )
-    var expanded by remember { mutableStateOf(false) }
+private fun Step7SocialPayment(uiState: CompleteProfileUiState, viewModel: CompleteProfileViewModel) {
+    var educationExpanded by remember { mutableStateOf(false) }
 
     Column {
         Text("💼", fontSize = 48.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(modifier = Modifier.height(15.dp))
-        Text(
-            text = "Informasi Tambahan",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF1f2937)
-        )
-        Text(
-            text = "Beberapa data terakhir",
-            fontSize = 14.sp,
-            color = Color(0xFF6b7280),
-            modifier = Modifier.padding(bottom = 20.dp)
-        )
+        Text("Pekerjaan & Pembiayaan", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1f2937))
+        Text("Informasi sosial ekonomi", fontSize = 14.sp, color = Color(0xFF6b7280), modifier = Modifier.padding(bottom = 20.dp))
 
         OutlinedTextField(
             value = uiState.occupation,
@@ -640,150 +624,283 @@ private fun Step6AdditionalInfo(
             modifier = Modifier.fillMaxWidth(),
             singleLine = true,
             shape = RoundedCornerShape(15.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color(0xFF1f2937),
-                unfocusedTextColor = Color(0xFF1f2937),
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White,
-                focusedBorderColor = Accent,
-                unfocusedBorderColor = Color(0xFFe5e7eb),
-                focusedLabelColor = Accent,
-                unfocusedLabelColor = Color(0xFF6b7280),
-                cursorColor = Accent
-            )
+            colors = defaultTextFieldColors()
         )
 
         Spacer(modifier = Modifier.height(16.dp))
 
-        ExposedDropdownMenuBox(
-            expanded = expanded,
-            onExpandedChange = { expanded = !expanded }
-        ) {
+        // Education dropdown
+        ExposedDropdownMenuBox(expanded = educationExpanded, onExpandedChange = { educationExpanded = !educationExpanded }) {
             OutlinedTextField(
-                value = educationOptions.find { it.first == uiState.education }?.second ?: "Pilih pendidikan",
+                value = viewModel.educationOptions.find { it.first == uiState.education }?.second ?: "Pilih pendidikan",
                 onValueChange = {},
                 readOnly = true,
                 label = { Text("Pendidikan Terakhir") },
-                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .menuAnchor(),
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = educationExpanded) },
+                modifier = Modifier.fillMaxWidth().menuAnchor(),
                 shape = RoundedCornerShape(15.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedTextColor = Color(0xFF1f2937),
-                    unfocusedTextColor = Color(0xFF1f2937),
-                    focusedBorderColor = Accent,
-                    unfocusedBorderColor = Color(0xFFe5e7eb),
-                    focusedLabelColor = Accent,
-                    unfocusedLabelColor = Color(0xFF6b7280)
-                )
+                colors = defaultTextFieldColors()
             )
-            ExposedDropdownMenu(
-                expanded = expanded,
-                onDismissRequest = { expanded = false },
-                modifier = Modifier.background(Color.White)
-            ) {
-                educationOptions.filter { it.first.isNotEmpty() }.forEach { (value, label) ->
+            ExposedDropdownMenu(expanded = educationExpanded, onDismissRequest = { educationExpanded = false }) {
+                viewModel.educationOptions.filter { it.first.isNotEmpty() }.forEach { (value, label) ->
                     DropdownMenuItem(
-                        text = { Text(label, color = Color(0xFF1f2937)) },
-                        onClick = {
-                            viewModel.updateEducation(value)
-                            expanded = false
-                        },
-                        modifier = Modifier.background(Color.White)
+                        text = { Text(label) },
+                        onClick = { viewModel.updateEducation(value); educationExpanded = false }
                     )
                 }
             }
         }
 
+        Spacer(modifier = Modifier.height(20.dp))
+        HorizontalDivider()
         Spacer(modifier = Modifier.height(16.dp))
 
-        OutlinedTextField(
-            value = uiState.insurance,
-            onValueChange = viewModel::updateInsurance,
-            label = { Text("Asuransi (Opsional)") },
-            placeholder = { Text("BPJS, Private, dll") },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            shape = RoundedCornerShape(15.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color(0xFF1f2937),
-                unfocusedTextColor = Color(0xFF1f2937),
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White,
-                focusedBorderColor = Accent,
-                unfocusedBorderColor = Color(0xFFe5e7eb),
-                focusedLabelColor = Accent,
-                unfocusedLabelColor = Color(0xFF6b7280),
-                cursorColor = Accent
-            )
+        PaymentMethodGroup(
+            selectedMethods = uiState.paymentMethods,
+            onToggle = viewModel::togglePaymentMethod,
+            insuranceName = uiState.insuranceName,
+            onInsuranceNameChange = viewModel::updateInsuranceName
         )
     }
 }
 
+// ==================== Step 8: Blood & Allergy ====================
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun Step7Registration(
-    uiState: com.dokterdibya.patient.viewmodel.CompleteProfileUiState,
-    viewModel: CompleteProfileViewModel
-) {
+private fun Step8BloodAllergy(uiState: CompleteProfileUiState, viewModel: CompleteProfileViewModel) {
+    var bloodExpanded by remember { mutableStateOf(false) }
+    var rhesusExpanded by remember { mutableStateOf(false) }
+
     Column {
-        Text("🔑", fontSize = 48.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
+        Text("🩸", fontSize = 48.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
         Spacer(modifier = Modifier.height(15.dp))
-        Text(
-            text = "Kode Registrasi",
-            fontSize = 22.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color(0xFF1f2937)
-        )
-        Text(
-            text = "Masukkan kode dari klinik atau dokter Anda",
-            fontSize = 14.sp,
-            color = Color(0xFF6b7280),
-            modifier = Modifier.padding(bottom = 20.dp)
-        )
+        Text("Golongan Darah & Alergi", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1f2937))
+        Text("Informasi penting untuk keselamatan", fontSize = 14.sp, color = Color(0xFF6b7280), modifier = Modifier.padding(bottom = 20.dp))
+
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            // Blood type
+            ExposedDropdownMenuBox(expanded = bloodExpanded, onExpandedChange = { bloodExpanded = !bloodExpanded }, modifier = Modifier.weight(1f)) {
+                OutlinedTextField(
+                    value = viewModel.bloodTypeOptions.find { it.first == uiState.bloodType }?.second ?: "Golongan",
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Golongan Darah") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = bloodExpanded) },
+                    modifier = Modifier.fillMaxWidth().menuAnchor(),
+                    shape = RoundedCornerShape(15.dp),
+                    colors = defaultTextFieldColors()
+                )
+                ExposedDropdownMenu(expanded = bloodExpanded, onDismissRequest = { bloodExpanded = false }) {
+                    viewModel.bloodTypeOptions.filter { it.first.isNotEmpty() }.forEach { (value, label) ->
+                        DropdownMenuItem(text = { Text(label) }, onClick = { viewModel.updateBloodType(value); bloodExpanded = false })
+                    }
+                }
+            }
+
+            // Rhesus
+            ExposedDropdownMenuBox(expanded = rhesusExpanded, onExpandedChange = { rhesusExpanded = !rhesusExpanded }, modifier = Modifier.weight(1f)) {
+                OutlinedTextField(
+                    value = viewModel.rhesusOptions.find { it.first == uiState.rhesus }?.second ?: "Rhesus",
+                    onValueChange = {},
+                    readOnly = true,
+                    label = { Text("Rhesus") },
+                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = rhesusExpanded) },
+                    modifier = Modifier.fillMaxWidth().menuAnchor(),
+                    shape = RoundedCornerShape(15.dp),
+                    colors = defaultTextFieldColors()
+                )
+                ExposedDropdownMenu(expanded = rhesusExpanded, onDismissRequest = { rhesusExpanded = false }) {
+                    viewModel.rhesusOptions.filter { it.first.isNotEmpty() }.forEach { (value, label) ->
+                        DropdownMenuItem(text = { Text(label) }, onClick = { viewModel.updateRhesus(value); rhesusExpanded = false })
+                    }
+                }
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+        HorizontalDivider()
+        Spacer(modifier = Modifier.height(16.dp))
+
+        Text("Alergi", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color(0xFF4B5563))
+        Text("Isi dengan tanda (-) jika tidak ada", fontSize = 12.sp, color = Color(0xFF9CA3AF), modifier = Modifier.padding(bottom = 12.dp))
 
         OutlinedTextField(
-            value = uiState.registrationCode,
-            onValueChange = viewModel::updateRegistrationCode,
-            label = { Text("Kode Registrasi") },
-            placeholder = { Text("Contoh: ABC123") },
+            value = uiState.allergyDrugs,
+            onValueChange = viewModel::updateAllergyDrugs,
+            label = { Text("Alergi Obat") },
+            placeholder = { Text("Contoh: Penisilin, Aspirin") },
             modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
             shape = RoundedCornerShape(15.dp),
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = Color(0xFF1f2937),
-                unfocusedTextColor = Color(0xFF1f2937),
-                focusedContainerColor = Color.White,
-                unfocusedContainerColor = Color.White,
-                focusedBorderColor = Accent,
-                unfocusedBorderColor = Color(0xFFe5e7eb),
-                focusedLabelColor = Accent,
-                unfocusedLabelColor = Color(0xFF6b7280),
-                cursorColor = Accent
-            )
+            colors = defaultTextFieldColors()
         )
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clickable { viewModel.updateConsentChecked(!uiState.consentChecked) },
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Checkbox(
-                checked = uiState.consentChecked,
-                onCheckedChange = viewModel::updateConsentChecked,
-                colors = CheckboxDefaults.colors(
-                    checkedColor = Color(0xFF6366f1)
-                )
+        OutlinedTextField(
+            value = uiState.allergyFood,
+            onValueChange = viewModel::updateAllergyFood,
+            label = { Text("Alergi Makanan") },
+            placeholder = { Text("Contoh: Seafood, Kacang") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(15.dp),
+            colors = defaultTextFieldColors()
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        OutlinedTextField(
+            value = uiState.allergyEnv,
+            onValueChange = viewModel::updateAllergyEnv,
+            label = { Text("Alergi Lingkungan") },
+            placeholder = { Text("Contoh: Debu, Dingin") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(15.dp),
+            colors = defaultTextFieldColors()
+        )
+    }
+}
+
+// ==================== Step 9: Medical History ====================
+@Composable
+private fun Step9MedicalHistory(uiState: CompleteProfileUiState, viewModel: CompleteProfileViewModel) {
+    Column {
+        Text("📋", fontSize = 48.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
+        Spacer(modifier = Modifier.height(15.dp))
+        Text("Riwayat Kesehatan", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1f2937))
+        Text("Riwayat penyakit dan obat", fontSize = 14.sp, color = Color(0xFF6b7280), modifier = Modifier.padding(bottom = 20.dp))
+
+        // Current medications
+        Text("Obat yang Sedang Dikonsumsi", fontSize = 14.sp, fontWeight = FontWeight.Medium, color = Color(0xFF4B5563))
+        Text("Isi jika ada obat rutin", fontSize = 12.sp, color = Color(0xFF9CA3AF), modifier = Modifier.padding(bottom = 12.dp))
+
+        MedicationRow(0, uiState.medName1, uiState.medDose1, uiState.medFreq1, viewModel::updateMedName1, viewModel::updateMedDose1, viewModel::updateMedFreq1)
+        Spacer(modifier = Modifier.height(8.dp))
+        MedicationRow(1, uiState.medName2, uiState.medDose2, uiState.medFreq2, viewModel::updateMedName2, viewModel::updateMedDose2, viewModel::updateMedFreq2)
+        Spacer(modifier = Modifier.height(8.dp))
+        MedicationRow(2, uiState.medName3, uiState.medDose3, uiState.medFreq3, viewModel::updateMedName3, viewModel::updateMedDose3, viewModel::updateMedFreq3)
+
+        Spacer(modifier = Modifier.height(20.dp))
+        HorizontalDivider()
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Past conditions
+        CheckboxGroup(
+            title = "Riwayat Penyakit (pilih yang pernah dialami)",
+            options = viewModel.pastConditionOptions,
+            selectedOptions = uiState.pastConditions,
+            onToggle = viewModel::togglePastCondition
+        )
+
+        if (uiState.pastConditions.contains("lainnya")) {
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = uiState.pastConditionsDetail,
+                onValueChange = viewModel::updatePastConditionsDetail,
+                label = { Text("Detail penyakit lainnya") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = defaultTextFieldColors()
             )
-            Spacer(modifier = Modifier.width(8.dp))
-            Text(
-                text = "Saya setuju data ini digunakan untuk pelayanan kesehatan",
-                fontSize = 14.sp,
-                color = Color(0xFF1f2937)
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+        HorizontalDivider()
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Family history
+        CheckboxGroup(
+            title = "Riwayat Penyakit Keluarga",
+            options = viewModel.familyHistoryOptions,
+            selectedOptions = uiState.familyHistory,
+            onToggle = viewModel::toggleFamilyHistory
+        )
+
+        if (uiState.familyHistory.contains("lainnya")) {
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedTextField(
+                value = uiState.familyHistoryDetail,
+                onValueChange = viewModel::updateFamilyHistoryDetail,
+                label = { Text("Detail riwayat keluarga lainnya") },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = defaultTextFieldColors()
             )
         }
     }
 }
+
+// ==================== Step 10: Confirmation ====================
+@Composable
+private fun Step10Confirmation(uiState: CompleteProfileUiState, viewModel: CompleteProfileViewModel) {
+    Column {
+        Text("✍️", fontSize = 48.sp, modifier = Modifier.align(Alignment.CenterHorizontally))
+        Spacer(modifier = Modifier.height(15.dp))
+        Text("Konfirmasi & Tanda Tangan", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = Color(0xFF1f2937))
+        Text("Langkah terakhir untuk mengirim formulir", fontSize = 14.sp, color = Color(0xFF6b7280), modifier = Modifier.padding(bottom = 20.dp))
+
+        OutlinedTextField(
+            value = uiState.patientSignature,
+            onValueChange = viewModel::updatePatientSignature,
+            label = { Text("Tanda Tangan (Ketik Nama Lengkap) *") },
+            placeholder = { Text("Ketik nama lengkap Anda sebagai tanda tangan") },
+            modifier = Modifier.fillMaxWidth(),
+            singleLine = true,
+            shape = RoundedCornerShape(15.dp),
+            colors = defaultTextFieldColors()
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Color(0xFFF3F4F6)),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                SingleCheckbox(
+                    label = "Saya menyetujui data ini digunakan untuk pelayanan kesehatan di klinik dokterDIBYA",
+                    checked = uiState.consentChecked,
+                    onCheckedChange = viewModel::updateConsentChecked
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                SingleCheckbox(
+                    label = "Saya menyatakan bahwa semua informasi yang saya berikan adalah benar dan dapat dipertanggungjawabkan",
+                    checked = uiState.finalAckChecked,
+                    onCheckedChange = viewModel::updateFinalAckChecked
+                )
+            }
+        }
+
+        if (uiState.isExistingIntake) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFE0F2FE)),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = "Anda sedang memperbarui formulir yang sudah ada. Kode: ${uiState.existingQuickId ?: "-"}",
+                    fontSize = 13.sp,
+                    color = Color(0xFF0369A1),
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
+        }
+    }
+}
+
+// ==================== Helper ====================
+@Composable
+private fun defaultTextFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedTextColor = Color(0xFF1f2937),
+    unfocusedTextColor = Color(0xFF1f2937),
+    focusedContainerColor = Color.White,
+    unfocusedContainerColor = Color.White,
+    focusedBorderColor = Color(0xFF6366f1),
+    unfocusedBorderColor = Color(0xFFe5e7eb),
+    focusedLabelColor = Color(0xFF6366f1),
+    unfocusedLabelColor = Color(0xFF6b7280),
+    cursorColor = Color(0xFF6366f1)
+)

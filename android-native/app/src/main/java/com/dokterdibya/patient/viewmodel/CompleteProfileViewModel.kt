@@ -2,6 +2,8 @@ package com.dokterdibya.patient.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dokterdibya.patient.data.model.IntakeMetadata
+import com.dokterdibya.patient.data.model.PatientIntakeRequest
 import com.dokterdibya.patient.data.repository.PatientRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,6 +12,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import java.time.LocalDate
 import java.time.Period
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 import javax.inject.Inject
 
 data class CompleteProfileUiState(
@@ -17,6 +21,8 @@ data class CompleteProfileUiState(
     val fullname: String = "",
     val birthDate: String = "",
     val age: Int? = null,
+    val height: String = "",
+    val heightUnknown: Boolean = false,
     val nik: String = "",
 
     // Step 2: Contact
@@ -34,21 +40,61 @@ data class CompleteProfileUiState(
     val husbandAge: String = "",
     val husbandJob: String = "",
 
-    // Step 6: Additional Info
+    // Step 6: Children & Obstetric Info
+    val hasChildren: String = "", // "ya" or "tidak"
+    val livingChildrenCount: String = "",
+    val youngestChildAge: String = "",
+    val totalPregnancies: String = "",
+    val normalDeliveryCount: String = "",
+    val cesareanDeliveryCount: String = "",
+    val miscarriageCount: String = "",
+    val hadEctopic: String = "", // "ya" or "tidak"
+
+    // Step 7: Social & Payment
     val occupation: String = "",
     val education: String = "",
-    val insurance: String = "",
+    val paymentMethods: Set<String> = emptySet(), // "self", "bpjs", "insurance"
+    val insuranceName: String = "",
 
-    // Step 7: Registration
-    val registrationCode: String = "",
+    // Step 8: Blood & Allergies
+    val bloodType: String = "",
+    val rhesus: String = "",
+    val allergyDrugs: String = "",
+    val allergyFood: String = "",
+    val allergyEnv: String = "",
+
+    // Step 9: Medical History
+    val medName1: String = "",
+    val medDose1: String = "",
+    val medFreq1: String = "",
+    val medName2: String = "",
+    val medDose2: String = "",
+    val medFreq2: String = "",
+    val medName3: String = "",
+    val medDose3: String = "",
+    val medFreq3: String = "",
+    val pastConditions: Set<String> = emptySet(),
+    val pastConditionsDetail: String = "",
+    val familyHistory: Set<String> = emptySet(),
+    val familyHistoryDetail: String = "",
+
+    // Step 10: Confirmation
+    val patientSignature: String = "",
     val consentChecked: Boolean = false,
+    val finalAckChecked: Boolean = false,
+
+    // Existing intake info (for update mode)
+    val isExistingIntake: Boolean = false,
+    val existingSubmissionId: String? = null,
+    val existingQuickId: String? = null,
 
     // UI State
     val currentStep: Int = 1,
-    val totalSteps: Int = 7,
+    val totalSteps: Int = 10,
     val isLoading: Boolean = false,
     val error: String? = null,
-    val isSuccess: Boolean = false
+    val isSuccess: Boolean = false,
+    val successMessage: String? = null
 )
 
 @HiltViewModel
@@ -59,8 +105,68 @@ class CompleteProfileViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(CompleteProfileUiState())
     val uiState: StateFlow<CompleteProfileUiState> = _uiState.asStateFlow()
 
+    // Medical condition options (same as web)
+    val pastConditionOptions = listOf(
+        "diabetes" to "Diabetes",
+        "hipertensi" to "Hipertensi (Darah Tinggi)",
+        "asma" to "Asma",
+        "jantung" to "Penyakit Jantung",
+        "ginjal" to "Penyakit Ginjal",
+        "tiroid" to "Gangguan Tiroid",
+        "anemia" to "Anemia",
+        "hepatitis" to "Hepatitis",
+        "tbc" to "TBC",
+        "hiv" to "HIV/AIDS",
+        "autoimun" to "Penyakit Autoimun",
+        "kanker" to "Kanker",
+        "epilepsi" to "Epilepsi",
+        "depresi" to "Depresi/Gangguan Mental",
+        "lainnya" to "Lainnya"
+    )
+
+    val familyHistoryOptions = listOf(
+        "diabetes" to "Diabetes",
+        "hipertensi" to "Hipertensi",
+        "jantung" to "Penyakit Jantung",
+        "kanker" to "Kanker",
+        "stroke" to "Stroke",
+        "asma" to "Asma",
+        "autoimun" to "Penyakit Autoimun",
+        "kelainan_darah" to "Kelainan Darah",
+        "cacat_lahir" to "Cacat Lahir",
+        "lainnya" to "Lainnya"
+    )
+
+    val educationOptions = listOf(
+        "" to "Pilih pendidikan",
+        "sd" to "SD",
+        "smp" to "SMP",
+        "sma" to "SMA/SMK",
+        "d3" to "D3",
+        "s1" to "S1",
+        "s2" to "S2",
+        "s3" to "S3"
+    )
+
+    val bloodTypeOptions = listOf(
+        "" to "Pilih golongan darah",
+        "A" to "A",
+        "B" to "B",
+        "AB" to "AB",
+        "O" to "O",
+        "tidak_tahu" to "Tidak tahu"
+    )
+
+    val rhesusOptions = listOf(
+        "" to "Pilih rhesus",
+        "positif" to "Positif (+)",
+        "negatif" to "Negatif (-)",
+        "tidak_tahu" to "Tidak tahu"
+    )
+
     init {
         loadProfile()
+        loadExistingIntake()
     }
 
     private fun loadProfile() {
@@ -72,10 +178,71 @@ class CompleteProfileViewModel @Inject constructor(
                         phone = patient.phone ?: "",
                         birthDate = patient.birthDate ?: ""
                     )
-                    // Calculate age if birthDate exists
                     patient.birthDate?.let { calculateAge(it) }
                 },
                 onFailure = { /* Ignore, user will fill in */ }
+            )
+        }
+    }
+
+    private fun loadExistingIntake() {
+        viewModelScope.launch {
+            patientRepository.getMyIntake().fold(
+                onSuccess = { existing ->
+                    if (existing != null) {
+                        val payload = existing.payload
+                        _uiState.value = _uiState.value.copy(
+                            isExistingIntake = true,
+                            existingSubmissionId = existing.submissionId,
+                            existingQuickId = existing.quickId,
+                            // Pre-fill from existing intake
+                            fullname = payload?.fullName ?: _uiState.value.fullname,
+                            birthDate = payload?.dob ?: _uiState.value.birthDate,
+                            age = payload?.age ?: _uiState.value.age,
+                            height = payload?.height ?: "",
+                            heightUnknown = payload?.heightUnknown ?: false,
+                            nik = payload?.nik ?: "",
+                            phone = payload?.phone ?: _uiState.value.phone,
+                            emergencyContact = payload?.emergencyContact ?: "",
+                            address = payload?.address ?: "",
+                            maritalStatus = payload?.maritalStatus ?: "",
+                            husbandName = payload?.husbandName ?: "",
+                            husbandAge = payload?.husbandAge ?: "",
+                            husbandJob = payload?.husbandJob ?: "",
+                            hasChildren = payload?.hasChildren ?: "",
+                            livingChildrenCount = payload?.livingChildrenCount ?: "",
+                            youngestChildAge = payload?.youngestChildAge ?: "",
+                            totalPregnancies = payload?.totalPregnancies ?: "",
+                            normalDeliveryCount = payload?.normalDeliveryCount ?: "",
+                            cesareanDeliveryCount = payload?.cesareanDeliveryCount ?: "",
+                            miscarriageCount = payload?.miscarriageCount ?: "",
+                            hadEctopic = payload?.hadEctopic ?: "",
+                            occupation = payload?.occupation ?: "",
+                            education = payload?.education ?: "",
+                            paymentMethods = payload?.paymentMethod?.toSet() ?: emptySet(),
+                            insuranceName = payload?.insuranceName ?: "",
+                            bloodType = payload?.bloodType ?: "",
+                            rhesus = payload?.rhesus ?: "",
+                            allergyDrugs = payload?.allergyDrugs ?: "",
+                            allergyFood = payload?.allergyFood ?: "",
+                            allergyEnv = payload?.allergyEnv ?: "",
+                            medName1 = payload?.medName1 ?: "",
+                            medDose1 = payload?.medDose1 ?: "",
+                            medFreq1 = payload?.medFreq1 ?: "",
+                            medName2 = payload?.medName2 ?: "",
+                            medDose2 = payload?.medDose2 ?: "",
+                            medFreq2 = payload?.medFreq2 ?: "",
+                            medName3 = payload?.medName3 ?: "",
+                            medDose3 = payload?.medDose3 ?: "",
+                            medFreq3 = payload?.medFreq3 ?: "",
+                            pastConditions = payload?.pastConditions?.toSet() ?: emptySet(),
+                            pastConditionsDetail = payload?.pastConditionsDetail ?: "",
+                            familyHistory = payload?.familyHistory?.toSet() ?: emptySet(),
+                            familyHistoryDetail = payload?.familyHistoryDetail ?: ""
+                        )
+                    }
+                },
+                onFailure = { /* No existing intake */ }
             )
         }
     }
@@ -85,11 +252,15 @@ class CompleteProfileViewModel @Inject constructor(
         val state = _uiState.value
         if (!validateCurrentStep()) return
 
-        // Skip spouse info if not married
-        val nextStep = if (state.currentStep == 4 && state.maritalStatus != "menikah") {
-            state.currentStep + 2 // Skip step 5
-        } else {
-            state.currentStep + 1
+        var nextStep = state.currentStep + 1
+
+        // Skip spouse info (step 5) if not married
+        if (state.currentStep == 4 && state.maritalStatus != "menikah") {
+            nextStep = 7 // Skip to social/payment
+        }
+        // Skip children/obstetric (step 6) if not married
+        else if (state.currentStep == 5 && state.maritalStatus == "menikah") {
+            nextStep = 6 // Go to children step
         }
 
         if (nextStep <= state.totalSteps) {
@@ -99,11 +270,15 @@ class CompleteProfileViewModel @Inject constructor(
 
     fun prevStep() {
         val state = _uiState.value
-        // Skip spouse info if not married
-        val prevStep = if (state.currentStep == 6 && state.maritalStatus != "menikah") {
-            state.currentStep - 2 // Skip step 5
-        } else {
-            state.currentStep - 1
+        var prevStep = state.currentStep - 1
+
+        // Skip spouse info (step 5) and children (step 6) when going back if not married
+        if (state.currentStep == 7 && state.maritalStatus != "menikah") {
+            prevStep = 4 // Go back to marital status
+        }
+        // Skip children (step 6) when going back from step 7 to step 5
+        else if (state.currentStep == 7 && state.maritalStatus == "menikah" && state.hasChildren != "ya") {
+            prevStep = 5 // Go back to spouse info
         }
 
         if (prevStep >= 1) {
@@ -114,7 +289,7 @@ class CompleteProfileViewModel @Inject constructor(
     private fun validateCurrentStep(): Boolean {
         val state = _uiState.value
         return when (state.currentStep) {
-            1 -> {
+            1 -> { // Basic Info
                 when {
                     state.fullname.isBlank() -> {
                         _uiState.value = state.copy(error = "Nama lengkap wajib diisi")
@@ -127,7 +302,7 @@ class CompleteProfileViewModel @Inject constructor(
                     else -> true
                 }
             }
-            2 -> {
+            2 -> { // Contact
                 when {
                     state.phone.isBlank() -> {
                         _uiState.value = state.copy(error = "Nomor telepon wajib diisi")
@@ -136,20 +311,24 @@ class CompleteProfileViewModel @Inject constructor(
                     else -> true
                 }
             }
-            4 -> {
+            4 -> { // Marital Status
                 if (state.maritalStatus.isBlank()) {
                     _uiState.value = state.copy(error = "Pilih status pernikahan")
                     false
                 } else true
             }
-            7 -> {
+            10 -> { // Confirmation
                 when {
-                    state.registrationCode.isBlank() -> {
-                        _uiState.value = state.copy(error = "Kode registrasi wajib diisi")
+                    state.patientSignature.isBlank() -> {
+                        _uiState.value = state.copy(error = "Tanda tangan (ketik nama) wajib diisi")
                         false
                     }
                     !state.consentChecked -> {
                         _uiState.value = state.copy(error = "Anda harus menyetujui penggunaan data")
+                        false
+                    }
+                    !state.finalAckChecked -> {
+                        _uiState.value = state.copy(error = "Anda harus mengkonfirmasi kebenaran data")
                         false
                     }
                     else -> true
@@ -159,7 +338,8 @@ class CompleteProfileViewModel @Inject constructor(
         }
     }
 
-    // Field updates
+    // ==================== Field Updates ====================
+
     fun updateFullname(value: String) {
         _uiState.value = _uiState.value.copy(fullname = value, error = null)
     }
@@ -180,6 +360,19 @@ class CompleteProfileViewModel @Inject constructor(
         } catch (e: Exception) {
             // Ignore parsing errors
         }
+    }
+
+    fun updateHeight(value: String) {
+        val cleaned = value.filter { it.isDigit() }
+        _uiState.value = _uiState.value.copy(height = cleaned, error = null)
+    }
+
+    fun updateHeightUnknown(value: Boolean) {
+        _uiState.value = _uiState.value.copy(
+            heightUnknown = value,
+            height = if (value) "" else _uiState.value.height,
+            error = null
+        )
     }
 
     fun updateNik(value: String) {
@@ -218,6 +411,44 @@ class CompleteProfileViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(husbandJob = value, error = null)
     }
 
+    fun updateHasChildren(value: String) {
+        _uiState.value = _uiState.value.copy(hasChildren = value, error = null)
+    }
+
+    fun updateLivingChildrenCount(value: String) {
+        val cleaned = value.filter { it.isDigit() }
+        _uiState.value = _uiState.value.copy(livingChildrenCount = cleaned, error = null)
+    }
+
+    fun updateYoungestChildAge(value: String) {
+        val cleaned = value.filter { it.isDigit() }
+        _uiState.value = _uiState.value.copy(youngestChildAge = cleaned, error = null)
+    }
+
+    fun updateTotalPregnancies(value: String) {
+        val cleaned = value.filter { it.isDigit() }
+        _uiState.value = _uiState.value.copy(totalPregnancies = cleaned, error = null)
+    }
+
+    fun updateNormalDeliveryCount(value: String) {
+        val cleaned = value.filter { it.isDigit() }
+        _uiState.value = _uiState.value.copy(normalDeliveryCount = cleaned, error = null)
+    }
+
+    fun updateCesareanDeliveryCount(value: String) {
+        val cleaned = value.filter { it.isDigit() }
+        _uiState.value = _uiState.value.copy(cesareanDeliveryCount = cleaned, error = null)
+    }
+
+    fun updateMiscarriageCount(value: String) {
+        val cleaned = value.filter { it.isDigit() }
+        _uiState.value = _uiState.value.copy(miscarriageCount = cleaned, error = null)
+    }
+
+    fun updateHadEctopic(value: String) {
+        _uiState.value = _uiState.value.copy(hadEctopic = value, error = null)
+    }
+
     fun updateOccupation(value: String) {
         _uiState.value = _uiState.value.copy(occupation = value, error = null)
     }
@@ -226,21 +457,96 @@ class CompleteProfileViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(education = value, error = null)
     }
 
-    fun updateInsurance(value: String) {
-        _uiState.value = _uiState.value.copy(insurance = value, error = null)
+    fun togglePaymentMethod(method: String) {
+        val current = _uiState.value.paymentMethods.toMutableSet()
+        if (current.contains(method)) {
+            current.remove(method)
+        } else {
+            current.add(method)
+        }
+        _uiState.value = _uiState.value.copy(paymentMethods = current, error = null)
     }
 
-    fun updateRegistrationCode(value: String) {
-        _uiState.value = _uiState.value.copy(registrationCode = value.uppercase(), error = null)
+    fun updateInsuranceName(value: String) {
+        _uiState.value = _uiState.value.copy(insuranceName = value, error = null)
+    }
+
+    fun updateBloodType(value: String) {
+        _uiState.value = _uiState.value.copy(bloodType = value, error = null)
+    }
+
+    fun updateRhesus(value: String) {
+        _uiState.value = _uiState.value.copy(rhesus = value, error = null)
+    }
+
+    fun updateAllergyDrugs(value: String) {
+        _uiState.value = _uiState.value.copy(allergyDrugs = value, error = null)
+    }
+
+    fun updateAllergyFood(value: String) {
+        _uiState.value = _uiState.value.copy(allergyFood = value, error = null)
+    }
+
+    fun updateAllergyEnv(value: String) {
+        _uiState.value = _uiState.value.copy(allergyEnv = value, error = null)
+    }
+
+    // Medication updates
+    fun updateMedName1(value: String) { _uiState.value = _uiState.value.copy(medName1 = value, error = null) }
+    fun updateMedDose1(value: String) { _uiState.value = _uiState.value.copy(medDose1 = value, error = null) }
+    fun updateMedFreq1(value: String) { _uiState.value = _uiState.value.copy(medFreq1 = value, error = null) }
+    fun updateMedName2(value: String) { _uiState.value = _uiState.value.copy(medName2 = value, error = null) }
+    fun updateMedDose2(value: String) { _uiState.value = _uiState.value.copy(medDose2 = value, error = null) }
+    fun updateMedFreq2(value: String) { _uiState.value = _uiState.value.copy(medFreq2 = value, error = null) }
+    fun updateMedName3(value: String) { _uiState.value = _uiState.value.copy(medName3 = value, error = null) }
+    fun updateMedDose3(value: String) { _uiState.value = _uiState.value.copy(medDose3 = value, error = null) }
+    fun updateMedFreq3(value: String) { _uiState.value = _uiState.value.copy(medFreq3 = value, error = null) }
+
+    fun togglePastCondition(condition: String) {
+        val current = _uiState.value.pastConditions.toMutableSet()
+        if (current.contains(condition)) {
+            current.remove(condition)
+        } else {
+            current.add(condition)
+        }
+        _uiState.value = _uiState.value.copy(pastConditions = current, error = null)
+    }
+
+    fun updatePastConditionsDetail(value: String) {
+        _uiState.value = _uiState.value.copy(pastConditionsDetail = value, error = null)
+    }
+
+    fun toggleFamilyHistory(condition: String) {
+        val current = _uiState.value.familyHistory.toMutableSet()
+        if (current.contains(condition)) {
+            current.remove(condition)
+        } else {
+            current.add(condition)
+        }
+        _uiState.value = _uiState.value.copy(familyHistory = current, error = null)
+    }
+
+    fun updateFamilyHistoryDetail(value: String) {
+        _uiState.value = _uiState.value.copy(familyHistoryDetail = value, error = null)
+    }
+
+    fun updatePatientSignature(value: String) {
+        _uiState.value = _uiState.value.copy(patientSignature = value, error = null)
     }
 
     fun updateConsentChecked(value: Boolean) {
         _uiState.value = _uiState.value.copy(consentChecked = value, error = null)
     }
 
+    fun updateFinalAckChecked(value: Boolean) {
+        _uiState.value = _uiState.value.copy(finalAckChecked = value, error = null)
+    }
+
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
     }
+
+    // ==================== Submit ====================
 
     fun submit() {
         if (!validateCurrentStep()) return
@@ -257,28 +563,89 @@ class CompleteProfileViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
-            patientRepository.completeProfileFull(
-                fullname = state.fullname.trim(),
+            val now = ZonedDateTime.now()
+            val request = PatientIntakeRequest(
+                fullName = state.fullname.trim(),
+                dob = state.birthDate,
                 phone = phone,
-                birthDate = state.birthDate,
                 age = state.age,
+                height = state.height.ifBlank { null },
+                heightUnknown = state.heightUnknown,
                 nik = state.nik.ifBlank { null },
-                emergencyContact = formatPhoneNumber(state.emergencyContact).ifBlank { null },
                 address = state.address.ifBlank { null },
+                emergencyContact = formatPhoneNumber(state.emergencyContact).ifBlank { null },
                 maritalStatus = state.maritalStatus.ifBlank { null },
                 husbandName = state.husbandName.ifBlank { null },
-                husbandAge = state.husbandAge.toIntOrNull(),
+                husbandAge = state.husbandAge.ifBlank { null },
                 husbandJob = state.husbandJob.ifBlank { null },
+                hasChildren = state.hasChildren.ifBlank { null },
+                livingChildrenCount = state.livingChildrenCount.ifBlank { null },
+                youngestChildAge = state.youngestChildAge.ifBlank { null },
+                totalPregnancies = state.totalPregnancies.ifBlank { null },
+                normalDeliveryCount = state.normalDeliveryCount.ifBlank { null },
+                cesareanDeliveryCount = state.cesareanDeliveryCount.ifBlank { null },
+                miscarriageCount = state.miscarriageCount.ifBlank { null },
+                hadEctopic = state.hadEctopic.ifBlank { null },
                 occupation = state.occupation.ifBlank { null },
                 education = state.education.ifBlank { null },
-                insurance = state.insurance.ifBlank { null },
-                registrationCode = state.registrationCode.trim()
-            ).fold(
-                onSuccess = {
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        isSuccess = true
-                    )
+                paymentMethod = state.paymentMethods.toList().ifEmpty { null },
+                insuranceName = state.insuranceName.ifBlank { null },
+                bloodType = state.bloodType.ifBlank { null },
+                rhesus = state.rhesus.ifBlank { null },
+                allergyDrugs = state.allergyDrugs.ifBlank { null },
+                allergyFood = state.allergyFood.ifBlank { null },
+                allergyEnv = state.allergyEnv.ifBlank { null },
+                medName1 = state.medName1.ifBlank { null },
+                medDose1 = state.medDose1.ifBlank { null },
+                medFreq1 = state.medFreq1.ifBlank { null },
+                medName2 = state.medName2.ifBlank { null },
+                medDose2 = state.medDose2.ifBlank { null },
+                medFreq2 = state.medFreq2.ifBlank { null },
+                medName3 = state.medName3.ifBlank { null },
+                medDose3 = state.medDose3.ifBlank { null },
+                medFreq3 = state.medFreq3.ifBlank { null },
+                pastConditions = state.pastConditions.toList().ifEmpty { null },
+                pastConditionsDetail = state.pastConditionsDetail.ifBlank { null },
+                familyHistory = state.familyHistory.toList().ifEmpty { null },
+                familyHistoryDetail = state.familyHistoryDetail.ifBlank { null },
+                consent = state.consentChecked,
+                finalAck = state.finalAckChecked,
+                patientSignature = state.patientSignature.trim(),
+                metadata = IntakeMetadata(
+                    submittedAt = now.format(DateTimeFormatter.ISO_OFFSET_DATE_TIME),
+                    deviceTimestamp = now.toInstant().toEpochMilli().toString()
+                )
+            )
+
+            val result = if (state.isExistingIntake) {
+                patientRepository.updatePatientIntake(request)
+            } else {
+                patientRepository.submitPatientIntake(request)
+            }
+
+            result.fold(
+                onSuccess = { response ->
+                    if (response.success) {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            isSuccess = true,
+                            successMessage = "Formulir berhasil ${if (state.isExistingIntake) "diperbarui" else "dikirim"}! Kode: ${response.quickId ?: ""}"
+                        )
+                    } else if (response.shouldUpdate == true) {
+                        // Duplicate - offer to update
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            isExistingIntake = true,
+                            existingSubmissionId = response.existingSubmissionId,
+                            existingQuickId = response.quickId,
+                            error = response.message ?: "Formulir sudah ada. Tekan kirim lagi untuk memperbarui."
+                        )
+                    } else {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            error = response.message ?: "Gagal mengirim formulir"
+                        )
+                    }
                 },
                 onFailure = { error ->
                     _uiState.value = _uiState.value.copy(

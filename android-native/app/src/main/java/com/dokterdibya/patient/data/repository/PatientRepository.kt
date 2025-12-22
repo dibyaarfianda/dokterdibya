@@ -24,6 +24,10 @@ import com.dokterdibya.patient.data.api.LikeRequest
 import com.dokterdibya.patient.data.api.CancelRequest
 import com.dokterdibya.patient.data.model.CompleteProfileRequest
 import com.dokterdibya.patient.data.model.CompleteProfileFullRequest
+import com.dokterdibya.patient.data.model.PatientIntakeRequest
+import com.dokterdibya.patient.data.model.PatientIntakeResponse
+import com.dokterdibya.patient.data.model.MyIntakeResponse
+import com.dokterdibya.patient.data.model.ExistingIntake
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -161,6 +165,97 @@ class PatientRepository @Inject constructor(
 
     suspend fun logout() {
         tokenRepository.clearAll()
+    }
+
+    // ==================== Patient Intake ====================
+
+    /**
+     * Submit new patient intake form
+     * Returns PatientIntakeResponse on success
+     * On 409 (duplicate), returns response with shouldUpdate=true
+     */
+    suspend fun submitPatientIntake(request: PatientIntakeRequest): Result<PatientIntakeResponse> {
+        return try {
+            val response = apiService.submitPatientIntake(request)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else if (response.code() == 409) {
+                // Duplicate submission - parse the 409 response
+                val errorBody = response.errorBody()?.string()
+                try {
+                    val json = org.json.JSONObject(errorBody ?: "{}")
+                    val duplicateResponse = PatientIntakeResponse(
+                        success = false,
+                        message = json.optString("message", "Formulir sudah ada"),
+                        code = json.optString("code", "DUPLICATE_SUBMISSION"),
+                        existingSubmissionId = json.optString("existingSubmissionId", null),
+                        quickId = json.optString("quickId", null),
+                        shouldUpdate = json.optBoolean("shouldUpdate", true)
+                    )
+                    Result.success(duplicateResponse)
+                } catch (e: Exception) {
+                    Result.failure(Exception("Anda sudah memiliki formulir. Silakan perbarui formulir yang ada."))
+                }
+            } else {
+                val errorBody = response.errorBody()?.string()
+                val errorMsg = try {
+                    val json = org.json.JSONObject(errorBody ?: "{}")
+                    val errors = json.optJSONArray("errors")
+                    if (errors != null && errors.length() > 0) {
+                        errors.getString(0)
+                    } else {
+                        json.optString("message", "Gagal mengirim formulir")
+                    }
+                } catch (e: Exception) {
+                    "Gagal mengirim formulir"
+                }
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Get existing patient intake (if any)
+     */
+    suspend fun getMyIntake(): Result<ExistingIntake?> {
+        return try {
+            val response = apiService.getMyIntake()
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!.data)
+            } else if (response.code() == 404) {
+                // No existing intake - not an error
+                Result.success(null)
+            } else {
+                Result.failure(Exception("Gagal mengambil data formulir"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Update existing patient intake
+     */
+    suspend fun updatePatientIntake(request: PatientIntakeRequest): Result<PatientIntakeResponse> {
+        return try {
+            val response = apiService.updateMyIntake(request)
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!)
+            } else {
+                val errorBody = response.errorBody()?.string()
+                val errorMsg = try {
+                    val json = org.json.JSONObject(errorBody ?: "{}")
+                    json.optString("message", "Gagal memperbarui formulir")
+                } catch (e: Exception) {
+                    "Gagal memperbarui formulir"
+                }
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     // ==================== Appointments ====================

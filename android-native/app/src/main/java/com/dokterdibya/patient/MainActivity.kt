@@ -58,18 +58,25 @@ class MainActivity : ComponentActivity() {
     private val googleSignInLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        Log.d(TAG, "Google sign in result: resultCode=${result.resultCode}, data=${result.data != null}")
         try {
+            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
             val account = task.getResult(ApiException::class.java)
+            Log.d(TAG, "Google account: email=${account.email}, hasAuthCode=${account.serverAuthCode != null}")
             // Send auth code to backend
             account.serverAuthCode?.let { authCode ->
+                Log.d(TAG, "Sending auth code to backend, length: ${authCode.length}")
                 authViewModel?.handleGoogleAuthCode(authCode)
             } ?: run {
-                authViewModel?.setError("Gagal mendapatkan auth code")
+                Log.e(TAG, "No server auth code received")
+                authViewModel?.setError("Gagal mendapatkan auth code. Coba lagi.")
             }
         } catch (e: ApiException) {
-            Log.e(TAG, "Google sign in failed: ${e.statusCode}", e)
+            Log.e(TAG, "Google sign in ApiException: ${e.statusCode}", e)
             authViewModel?.setError("Login Google gagal: ${e.statusCode}")
+        } catch (e: Exception) {
+            Log.e(TAG, "Google sign in exception", e)
+            authViewModel?.setError("Login gagal: ${e.message}")
         }
     }
 
