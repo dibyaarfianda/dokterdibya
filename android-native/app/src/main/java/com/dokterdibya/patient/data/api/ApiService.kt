@@ -7,6 +7,7 @@ import com.dokterdibya.patient.data.model.CompleteProfileResponse
 import com.dokterdibya.patient.data.model.PatientIntakeRequest
 import com.dokterdibya.patient.data.model.PatientIntakeResponse
 import com.dokterdibya.patient.data.model.MyIntakeResponse
+import com.google.gson.annotations.SerializedName
 import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.*
@@ -189,8 +190,10 @@ interface ApiService {
 
 // Registration Code models
 data class RegistrationCodeSettingsResponse(
-    val success: Boolean,
-    val registration_code_required: Boolean
+    @SerializedName("success")
+    val success: Boolean = false,
+    @SerializedName("registration_code_required")
+    val registrationCodeRequired: Boolean = false
 )
 
 data class ValidateCodeRequest(

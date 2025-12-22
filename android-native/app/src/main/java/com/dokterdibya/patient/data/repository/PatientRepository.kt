@@ -764,8 +764,8 @@ class PatientRepository @Inject constructor(
             val response = apiService.getRegistrationCodeSettings()
             android.util.Log.d("PatientRepo", "Settings response: ${response.isSuccessful}, body: ${response.body()}")
             if (response.isSuccessful && response.body() != null) {
-                val required = response.body()!!.registration_code_required
-                android.util.Log.d("PatientRepo", "registration_code_required: $required")
+                val required = response.body()!!.registrationCodeRequired
+                android.util.Log.d("PatientRepo", "registrationCodeRequired: $required")
                 Result.success(required)
             } else {
                 // If API fails, assume code is not required
