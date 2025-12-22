@@ -8,7 +8,6 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -16,7 +15,6 @@ data class AuthUiState(
     val isLoading: Boolean = false,
     val isLoggedIn: Boolean = false,
     val needsProfileCompletion: Boolean = false,
-    val needsRegistrationCode: Boolean = false,
     val patientId: String? = null,
     val error: String? = null
 )
@@ -39,34 +37,17 @@ class AuthViewModel @Inject constructor(
             patientRepository.googleLogin(authCode).fold(
                 onSuccess = { response ->
                     if (response.success) {
-                        // Check if profile is complete
+                        // Check if profile is complete (birthDate is the indicator)
                         val patient = response.patientData
                         val needsCompletion = patient?.birthDate.isNullOrBlank()
 
                         android.util.Log.d("AuthViewModel", "Login success - birthDate: ${patient?.birthDate}, needsCompletion: $needsCompletion")
 
-                        // For new users (needs profile completion), check if registration code is required
-                        var needsRegCode = false
-                        if (needsCompletion) {
-                            // Check if user already has a validated registration code
-                            val hasCode = tokenRepository.hasRegistrationCode().first()
-                            android.util.Log.d("AuthViewModel", "hasRegistrationCode: $hasCode")
-                            if (!hasCode) {
-                                // Check if registration code is required from server settings
-                                val codeRequired = patientRepository.isRegistrationCodeRequired()
-                                    .getOrDefault(false)
-                                android.util.Log.d("AuthViewModel", "isRegistrationCodeRequired: $codeRequired")
-                                needsRegCode = codeRequired
-                            }
-                        }
-
-                        android.util.Log.d("AuthViewModel", "Final state - needsProfileCompletion: $needsCompletion, needsRegCode: $needsRegCode")
-
+                        // Registration code is now handled in CompleteProfileScreen (like website)
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
                             isLoggedIn = true,
                             needsProfileCompletion = needsCompletion,
-                            needsRegistrationCode = needsRegCode,
                             patientId = patient?.id
                         )
                     } else {
@@ -98,11 +79,6 @@ class AuthViewModel @Inject constructor(
         _uiState.value = _uiState.value.copy(error = null)
     }
 
-    // Called after registration code is validated
-    fun onRegistrationCodeValidated() {
-        _uiState.value = _uiState.value.copy(needsRegistrationCode = false)
-    }
-
     // Check profile completion for returning users
     fun checkProfileCompletion() {
         viewModelScope.launch {
@@ -112,25 +88,10 @@ class AuthViewModel @Inject constructor(
 
                     android.util.Log.d("AuthViewModel", "checkProfileCompletion - birthDate: ${patient.birthDate}, needsCompletion: $needsCompletion")
 
-                    // For users needing profile completion, check if registration code is required
-                    var needsRegCode = false
-                    if (needsCompletion) {
-                        val hasCode = tokenRepository.hasRegistrationCode().first()
-                        android.util.Log.d("AuthViewModel", "checkProfileCompletion - hasCode: $hasCode")
-                        if (!hasCode) {
-                            val codeRequired = patientRepository.isRegistrationCodeRequired()
-                                .getOrDefault(false)
-                            android.util.Log.d("AuthViewModel", "checkProfileCompletion - codeRequired: $codeRequired")
-                            needsRegCode = codeRequired
-                        }
-                    }
-
-                    android.util.Log.d("AuthViewModel", "checkProfileCompletion - final: needsCompletion=$needsCompletion, needsRegCode=$needsRegCode")
-
+                    // Registration code is now handled in CompleteProfileScreen (like website)
                     _uiState.value = _uiState.value.copy(
                         isLoggedIn = true,
                         needsProfileCompletion = needsCompletion,
-                        needsRegistrationCode = needsRegCode,
                         patientId = patient.id
                     )
                 },

@@ -345,6 +345,103 @@ private fun Step1BasicInfo(
         Text("Data Diri", fontSize = 22.sp, fontWeight = FontWeight.SemiBold, color = IntakeTextPrimary)
         Text("Informasi dasar untuk rekam medis", fontSize = 14.sp, color = IntakeTextSecondary, modifier = Modifier.padding(bottom = 20.dp))
 
+        // Registration Code (only shown if required)
+        if (uiState.registrationCodeRequired) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 20.dp),
+                colors = CardDefaults.cardColors(containerColor = IntakeInputBg),
+                shape = RoundedCornerShape(15.dp),
+                border = BorderStroke(1.dp, if (uiState.registrationCodeValidated) Success else IntakeBorder)
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        "Kode Registrasi *",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = IntakeTextSecondary
+                    )
+                    Text(
+                        "Masukkan kode 6 karakter dari klinik",
+                        fontSize = 12.sp,
+                        color = IntakePlaceholder,
+                        modifier = Modifier.padding(bottom = 12.dp)
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        OutlinedTextField(
+                            value = uiState.registrationCode,
+                            onValueChange = viewModel::updateRegistrationCode,
+                            placeholder = { Text("XXXXXX") },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            enabled = !uiState.registrationCodeValidated,
+                            shape = RoundedCornerShape(12.dp),
+                            textStyle = androidx.compose.ui.text.TextStyle(
+                                letterSpacing = 4.sp,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp
+                            ),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedTextColor = IntakeTextPrimary,
+                                unfocusedTextColor = IntakeTextPrimary,
+                                disabledTextColor = IntakeTextPrimary,
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                disabledContainerColor = Color.Transparent,
+                                focusedBorderColor = IntakePrimary,
+                                unfocusedBorderColor = IntakeBorder,
+                                disabledBorderColor = Success,
+                                cursorColor = IntakePrimary,
+                                focusedPlaceholderColor = IntakePlaceholder,
+                                unfocusedPlaceholderColor = IntakePlaceholder
+                            )
+                        )
+
+                        if (uiState.registrationCodeValidated) {
+                            Icon(
+                                Icons.Default.CheckCircle,
+                                contentDescription = "Valid",
+                                tint = Success,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        } else {
+                            Button(
+                                onClick = { viewModel.validateRegistrationCode() },
+                                enabled = uiState.registrationCode.length == 6 && !uiState.registrationCodeValidating,
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = IntakePrimary)
+                            ) {
+                                if (uiState.registrationCodeValidating) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        color = Color.White,
+                                        strokeWidth = 2.dp
+                                    )
+                                } else {
+                                    Text("Validasi", fontSize = 13.sp)
+                                }
+                            }
+                        }
+                    }
+
+                    if (uiState.registrationCodeValidated) {
+                        Text(
+                            "✓ Kode valid",
+                            fontSize = 12.sp,
+                            color = Success,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
+                }
+            }
+        }
+
         // Name
         OutlinedTextField(
             value = uiState.fullname,
