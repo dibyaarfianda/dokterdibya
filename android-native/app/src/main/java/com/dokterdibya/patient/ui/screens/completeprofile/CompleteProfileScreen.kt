@@ -787,7 +787,7 @@ private fun Step8BloodAllergy(uiState: CompleteProfileUiState, viewModel: Comple
                 ExposedDropdownMenu(
                     expanded = bloodExpanded,
                     onDismissRequest = { bloodExpanded = false },
-                    containerColor = IntakeBgEnd
+                    modifier = Modifier.background(IntakeBgEnd)
                 ) {
                     viewModel.bloodTypeOptions.filter { it.first.isNotEmpty() }.forEach { (value, label) ->
                         DropdownMenuItem(text = { Text(label, color = IntakeTextPrimary) }, onClick = { viewModel.updateBloodType(value); bloodExpanded = false })
@@ -824,7 +824,7 @@ private fun Step8BloodAllergy(uiState: CompleteProfileUiState, viewModel: Comple
                 ExposedDropdownMenu(
                     expanded = rhesusExpanded,
                     onDismissRequest = { rhesusExpanded = false },
-                    containerColor = IntakeBgEnd
+                    modifier = Modifier.background(IntakeBgEnd)
                 ) {
                     viewModel.rhesusOptions.filter { it.first.isNotEmpty() }.forEach { (value, label) ->
                         DropdownMenuItem(text = { Text(label, color = IntakeTextPrimary) }, onClick = { viewModel.updateRhesus(value); rhesusExpanded = false })
