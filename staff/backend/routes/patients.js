@@ -1621,7 +1621,7 @@ router.delete('/api/patients/:patientId/birth-congratulations', verifyToken, asy
 // Register FCM token for push notifications (Patient only)
 router.post('/api/patients/fcm-token', verifyPatientToken, async (req, res) => {
     try {
-        const patientId = req.user.patient_id;
+        const patientId = req.patient?.id || req.user?.id;
         const { fcm_token } = req.body;
 
         if (!fcm_token) {
@@ -1656,7 +1656,7 @@ router.post('/api/patients/fcm-token', verifyPatientToken, async (req, res) => {
 // Unregister FCM token (Patient only - on logout)
 router.delete('/api/patients/fcm-token', verifyPatientToken, async (req, res) => {
     try {
-        const patientId = req.user.patient_id;
+        const patientId = req.patient?.id || req.user?.id;
 
         // Clear patient's FCM token
         await db.query(
