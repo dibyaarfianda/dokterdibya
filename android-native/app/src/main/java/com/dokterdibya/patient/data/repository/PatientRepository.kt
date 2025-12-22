@@ -22,6 +22,7 @@ import com.dokterdibya.patient.data.api.Medication
 import com.dokterdibya.patient.data.api.PregnancyData
 import com.dokterdibya.patient.data.api.LikeRequest
 import com.dokterdibya.patient.data.api.CancelRequest
+import com.dokterdibya.patient.data.api.ValidateCodeRequest
 import com.dokterdibya.patient.data.model.CompleteProfileRequest
 import com.dokterdibya.patient.data.model.CompleteProfileFullRequest
 import com.dokterdibya.patient.data.model.PatientIntakeRequest
@@ -749,6 +750,56 @@ class PatientRepository @Inject constructor(
             }
         } catch (e: Exception) {
             Result.failure(e)
+        }
+    }
+
+    // ==================== Registration Code ====================
+
+    /**
+     * Check if registration code is required for new users
+     */
+    suspend fun isRegistrationCodeRequired(): Result<Boolean> {
+        return try {
+            val response = apiService.getRegistrationCodeSettings()
+            if (response.isSuccessful && response.body() != null) {
+                Result.success(response.body()!!.registration_code_required)
+            } else {
+                // If API fails, assume code is not required
+                Result.success(false)
+            }
+        } catch (e: Exception) {
+            // If network error, assume code is not required
+            Result.success(false)
+        }
+    }
+
+    /**
+     * Validate registration code against backend
+     * On success, saves the code to TokenRepository
+     */
+    suspend fun validateRegistrationCode(code: String): Result<Boolean> {
+        return try {
+            val response = apiService.validateRegistrationCode(ValidateCodeRequest(code))
+            if (response.isSuccessful && response.body() != null) {
+                val body = response.body()!!
+                if (body.success) {
+                    // Save validated code
+                    tokenRepository.saveRegistrationCode(code)
+                    Result.success(true)
+                } else {
+                    Result.failure(Exception(body.message ?: "Kode registrasi tidak valid"))
+                }
+            } else {
+                val errorBody = response.errorBody()?.string()
+                val errorMsg = try {
+                    org.json.JSONObject(errorBody ?: "").optString("message", "Kode registrasi tidak valid")
+                } catch (e: Exception) {
+                    "Kode registrasi tidak valid"
+                }
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Gagal memvalidasi kode. Periksa koneksi internet."))
         }
     }
 }

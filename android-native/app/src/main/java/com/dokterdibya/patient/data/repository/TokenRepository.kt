@@ -22,6 +22,7 @@ class TokenRepository @Inject constructor(
         private val TOKEN_KEY = stringPreferencesKey("jwt_token")
         private val USER_EMAIL_KEY = stringPreferencesKey("user_email")
         private val USER_NAME_KEY = stringPreferencesKey("user_name")
+        private val REGISTRATION_CODE_KEY = stringPreferencesKey("registration_code")
     }
 
     fun getToken(): Flow<String?> {
@@ -64,6 +65,32 @@ class TokenRepository @Inject constructor(
     fun isLoggedIn(): Flow<Boolean> {
         return context.dataStore.data.map { preferences ->
             preferences[TOKEN_KEY] != null
+        }
+    }
+
+    // ==================== Registration Code ====================
+
+    suspend fun saveRegistrationCode(code: String) {
+        context.dataStore.edit { preferences ->
+            preferences[REGISTRATION_CODE_KEY] = code
+        }
+    }
+
+    fun getRegistrationCode(): Flow<String?> {
+        return context.dataStore.data.map { preferences ->
+            preferences[REGISTRATION_CODE_KEY]
+        }
+    }
+
+    suspend fun clearRegistrationCode() {
+        context.dataStore.edit { preferences ->
+            preferences.remove(REGISTRATION_CODE_KEY)
+        }
+    }
+
+    fun hasRegistrationCode(): Flow<Boolean> {
+        return context.dataStore.data.map { preferences ->
+            preferences[REGISTRATION_CODE_KEY] != null
         }
     }
 }
