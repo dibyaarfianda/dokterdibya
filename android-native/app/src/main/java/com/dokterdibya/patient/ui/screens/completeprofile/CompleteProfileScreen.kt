@@ -759,15 +759,27 @@ private fun Step8BloodAllergy(uiState: CompleteProfileUiState, viewModel: Comple
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             // Blood type
             ExposedDropdownMenuBox(expanded = bloodExpanded, onExpandedChange = { bloodExpanded = !bloodExpanded }, modifier = Modifier.weight(1f)) {
+                val bloodValue = viewModel.bloodTypeOptions.find { it.first == uiState.bloodType }?.second
+                val hasBloodValue = uiState.bloodType.isNotEmpty()
                 OutlinedTextField(
-                    value = viewModel.bloodTypeOptions.find { it.first == uiState.bloodType }?.second ?: "Golongan",
+                    value = bloodValue ?: "Pilih...",
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Golongan Darah") },
+                    label = { Text("Gol. Darah", fontSize = 12.sp) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = bloodExpanded) },
                     modifier = Modifier.fillMaxWidth().menuAnchor(),
                     shape = RoundedCornerShape(15.dp),
-                    colors = defaultTextFieldColors()
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = if (hasBloodValue) Color(0xFF1f2937) else Color(0xFF9CA3AF),
+                        unfocusedTextColor = if (hasBloodValue) Color(0xFF1f2937) else Color(0xFF9CA3AF),
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White,
+                        focusedBorderColor = Color(0xFF6366f1),
+                        unfocusedBorderColor = Color(0xFFe5e7eb),
+                        focusedLabelColor = Color(0xFF6366f1),
+                        unfocusedLabelColor = Color(0xFF6b7280),
+                        cursorColor = Color(0xFF6366f1)
+                    )
                 )
                 ExposedDropdownMenu(expanded = bloodExpanded, onDismissRequest = { bloodExpanded = false }) {
                     viewModel.bloodTypeOptions.filter { it.first.isNotEmpty() }.forEach { (value, label) ->
@@ -778,15 +790,27 @@ private fun Step8BloodAllergy(uiState: CompleteProfileUiState, viewModel: Comple
 
             // Rhesus
             ExposedDropdownMenuBox(expanded = rhesusExpanded, onExpandedChange = { rhesusExpanded = !rhesusExpanded }, modifier = Modifier.weight(1f)) {
+                val rhesusValue = viewModel.rhesusOptions.find { it.first == uiState.rhesus }?.second
+                val hasRhesusValue = uiState.rhesus.isNotEmpty()
                 OutlinedTextField(
-                    value = viewModel.rhesusOptions.find { it.first == uiState.rhesus }?.second ?: "Rhesus",
+                    value = rhesusValue ?: "Pilih...",
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text("Rhesus") },
+                    label = { Text("Rhesus", fontSize = 12.sp) },
                     trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = rhesusExpanded) },
                     modifier = Modifier.fillMaxWidth().menuAnchor(),
                     shape = RoundedCornerShape(15.dp),
-                    colors = defaultTextFieldColors()
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedTextColor = if (hasRhesusValue) Color(0xFF1f2937) else Color(0xFF9CA3AF),
+                        unfocusedTextColor = if (hasRhesusValue) Color(0xFF1f2937) else Color(0xFF9CA3AF),
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White,
+                        focusedBorderColor = Color(0xFF6366f1),
+                        unfocusedBorderColor = Color(0xFFe5e7eb),
+                        focusedLabelColor = Color(0xFF6366f1),
+                        unfocusedLabelColor = Color(0xFF6b7280),
+                        cursorColor = Color(0xFF6366f1)
+                    )
                 )
                 ExposedDropdownMenu(expanded = rhesusExpanded, onDismissRequest = { rhesusExpanded = false }) {
                     viewModel.rhesusOptions.filter { it.first.isNotEmpty() }.forEach { (value, label) ->
