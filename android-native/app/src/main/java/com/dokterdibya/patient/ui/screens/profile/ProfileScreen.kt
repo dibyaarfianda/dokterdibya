@@ -18,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -38,6 +39,28 @@ fun ProfileScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+
+    // Edit profile dialog state
+    var showEditDialog by remember { mutableStateOf(false) }
+    var editName by remember { mutableStateOf("") }
+    var editPhone by remember { mutableStateOf("") }
+    var editBirthDate by remember { mutableStateOf("") }
+    var isSaving by remember { mutableStateOf(false) }
+    var saveError by remember { mutableStateOf<String?>(null) }
+
+    // Initialize edit fields when dialog opens
+    LaunchedEffect(showEditDialog) {
+        if (showEditDialog) {
+            editName = uiState.name
+            editPhone = uiState.phone
+            editBirthDate = uiState.birthDate
+        }
+    }
+
+    // Refresh profile when screen is displayed
+    LaunchedEffect(Unit) {
+        viewModel.refresh()
+    }
 
     // Photo picker launcher
     val photoPickerLauncher = rememberLauncherForActivityResult(
@@ -60,6 +83,105 @@ fun ProfileScreen(
         }
     }
 
+    // Edit Profile Dialog
+    if (showEditDialog) {
+        AlertDialog(
+            onDismissRequest = { if (!isSaving) showEditDialog = false },
+            title = {
+                Text(
+                    "Edit Profil",
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1F2937)
+                )
+            },
+            text = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    OutlinedTextField(
+                        value = editName,
+                        onValueChange = { editName = it },
+                        label = { Text("Nama Lengkap") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF667EEA),
+                            unfocusedBorderColor = Color(0xFFD1D5DB)
+                        )
+                    )
+                    OutlinedTextField(
+                        value = editPhone,
+                        onValueChange = { editPhone = it },
+                        label = { Text("Nomor Telepon") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF667EEA),
+                            unfocusedBorderColor = Color(0xFFD1D5DB)
+                        )
+                    )
+                    OutlinedTextField(
+                        value = editBirthDate,
+                        onValueChange = { editBirthDate = it },
+                        label = { Text("Tanggal Lahir (dd/MM/yyyy)") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = Color(0xFF667EEA),
+                            unfocusedBorderColor = Color(0xFFD1D5DB)
+                        )
+                    )
+                    if (saveError != null) {
+                        Text(
+                            saveError!!,
+                            color = Danger,
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        isSaving = true
+                        saveError = null
+                        viewModel.updateProfile(editName, editPhone, editBirthDate) { success, error ->
+                            isSaving = false
+                            if (success) {
+                                showEditDialog = false
+                            } else {
+                                saveError = error ?: "Gagal menyimpan profil"
+                            }
+                        }
+                    },
+                    enabled = !isSaving,
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF667EEA))
+                ) {
+                    if (isSaving) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            color = Color.White,
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Simpan")
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { showEditDialog = false },
+                    enabled = !isSaving
+                ) {
+                    Text("Batal", color = Color(0xFF6B7280))
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(16.dp)
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -72,6 +194,15 @@ fun ProfileScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                    }
+                },
+                actions = {
+                    IconButton(onClick = { showEditDialog = true }) {
+                        Icon(
+                            Icons.Default.Edit,
+                            contentDescription = "Edit Profil",
+                            tint = Accent
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(

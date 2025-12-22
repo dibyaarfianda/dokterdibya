@@ -117,6 +117,15 @@ data class CompleteProfileFullRequest(
     val registrationCode: String
 )
 
+// Request for updating profile
+data class UpdateProfileRequest(
+    @SerializedName("full_name")
+    val fullName: String,
+    val phone: String,
+    @SerializedName("birth_date")
+    val birthDate: String
+)
+
 // Response for complete profile
 data class CompleteProfileResponse(
     val success: Boolean,

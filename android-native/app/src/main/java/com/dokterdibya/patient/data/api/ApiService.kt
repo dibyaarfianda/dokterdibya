@@ -31,6 +31,9 @@ interface ApiService {
     @POST("api/patients/complete-profile-full")
     suspend fun completeProfileFull(@Body request: CompleteProfileFullRequest): Response<CompleteProfileResponse>
 
+    @PUT("api/patients/profile")
+    suspend fun updateProfile(@Body request: UpdateProfileRequest): Response<CompleteProfileResponse>
+
     @Multipart
     @POST("api/patients/upload-photo")
     suspend fun uploadProfilePhoto(@Part photo: MultipartBody.Part): Response<PhotoUploadResponse>

@@ -41,6 +41,14 @@ class ProfileViewModel @Inject constructor(
         loadProfile()
     }
 
+    /**
+     * Public function to refresh profile data
+     * Called when navigating back to profile after completing intake
+     */
+    fun refresh() {
+        loadProfile()
+    }
+
     private fun loadProfile() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
@@ -119,6 +127,45 @@ class ProfileViewModel @Inject constructor(
 
     fun clearUploadError() {
         _uiState.value = _uiState.value.copy(uploadError = null)
+    }
+
+    /**
+     * Update profile information
+     * @param name Full name
+     * @param phone Phone number
+     * @param birthDate Birth date in dd/MM/yyyy format
+     * @param onResult Callback with (success, errorMessage)
+     */
+    fun updateProfile(name: String, phone: String, birthDate: String, onResult: (Boolean, String?) -> Unit) {
+        viewModelScope.launch {
+            try {
+                // Convert dd/MM/yyyy to yyyy-MM-dd for API
+                val apiDateFormat = if (birthDate.contains("/")) {
+                    try {
+                        val inputFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+                        val outputFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+                        val date = inputFormat.parse(birthDate)
+                        date?.let { outputFormat.format(it) } ?: birthDate
+                    } catch (e: Exception) {
+                        birthDate
+                    }
+                } else {
+                    birthDate
+                }
+
+                repository.updateProfile(name, phone, apiDateFormat)
+                    .onSuccess {
+                        // Refresh profile to get updated data
+                        loadProfile()
+                        onResult(true, null)
+                    }
+                    .onFailure { e ->
+                        onResult(false, e.message ?: "Gagal menyimpan profil")
+                    }
+            } catch (e: Exception) {
+                onResult(false, e.message ?: "Terjadi kesalahan")
+            }
+        }
     }
 
     private fun formatDate(dateStr: String?): String {
