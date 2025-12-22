@@ -506,8 +506,10 @@ router.post('/auth/google', async (req, res) => {
 router.post('/google-auth-code', async (req, res) => {
     try {
         const { code, redirectUri } = req.body;
+        console.log('[GOOGLE-AUTH] Received request with code length:', code?.length || 0);
 
         if (!code) {
+            console.log('[GOOGLE-AUTH] No code provided');
             return res.status(400).json({ success: false, message: 'Kode otorisasi tidak ditemukan' });
         }
 
@@ -535,9 +537,10 @@ router.post('/google-auth-code', async (req, res) => {
         const tokenData = await tokenResponse.json();
 
         if (tokenData.error) {
-            console.error('Google token error:', tokenData);
+            console.error('[GOOGLE-AUTH] Token error:', tokenData);
             return res.status(401).json({ success: false, message: 'Gagal mengambil token: ' + tokenData.error_description });
         }
+        console.log('[GOOGLE-AUTH] Token exchange successful');
 
         // Get user info using access token
         const userInfoResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
@@ -546,8 +549,10 @@ router.post('/google-auth-code', async (req, res) => {
 
         const userInfo = await userInfoResponse.json();
         const { email, name, id: googleId, picture } = userInfo;
+        console.log('[GOOGLE-AUTH] User info:', { email, name, googleId: googleId?.substring(0, 8) + '...' });
 
         if (!email) {
+            console.log('[GOOGLE-AUTH] No email in user info');
             return res.status(401).json({ success: false, message: 'Tidak dapat mengambil email dari akun Google' });
         }
 
@@ -561,6 +566,7 @@ router.post('/google-auth-code', async (req, res) => {
 
         if (existingPatients.length > 0) {
             patient = existingPatients[0];
+            console.log('[GOOGLE-AUTH] Existing patient found:', patient.id);
             // Update Google ID and photo if needed
             await db.query(
                 'UPDATE patients SET google_id = COALESCE(google_id, ?), photo_url = ?, email_verified = 1 WHERE id = ?',
@@ -571,6 +577,7 @@ router.post('/google-auth-code', async (req, res) => {
         } else {
             // Create new patient
             const medicalRecordId = await generateUniqueMedicalRecordId();
+            console.log('[GOOGLE-AUTH] Creating new patient:', medicalRecordId, 'for email:', email);
 
             await db.query(
                 `INSERT INTO patients (id, full_name, email, google_id, photo_url, email_verified, registration_date, status)
@@ -586,6 +593,7 @@ router.post('/google-auth-code', async (req, res) => {
                 google_id: googleId,
                 photo_url: picture
             };
+            console.log('[GOOGLE-AUTH] Patient created successfully');
         }
 
         // Generate JWT token

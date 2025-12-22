@@ -4,6 +4,9 @@ import com.dokterdibya.patient.data.model.*
 import com.dokterdibya.patient.data.model.CompleteProfileRequest
 import com.dokterdibya.patient.data.model.CompleteProfileFullRequest
 import com.dokterdibya.patient.data.model.CompleteProfileResponse
+import com.dokterdibya.patient.data.model.PatientIntakeRequest
+import com.dokterdibya.patient.data.model.PatientIntakeResponse
+import com.dokterdibya.patient.data.model.MyIntakeResponse
 import okhttp3.MultipartBody
 import retrofit2.Response
 import retrofit2.http.*
@@ -160,6 +163,17 @@ interface ApiService {
 
     @DELETE("api/patients/fcm-token")
     suspend fun unregisterFcmToken(@Body request: Map<String, String>): Response<FcmTokenResponse>
+
+    // ==================== Patient Intake ====================
+
+    @POST("api/patient-intake")
+    suspend fun submitPatientIntake(@Body request: PatientIntakeRequest): Response<PatientIntakeResponse>
+
+    @GET("api/patient-intake/my-intake")
+    suspend fun getMyIntake(): Response<MyIntakeResponse>
+
+    @PUT("api/patient-intake/my-intake")
+    suspend fun updateMyIntake(@Body request: PatientIntakeRequest): Response<PatientIntakeResponse>
 }
 
 // FCM Token response

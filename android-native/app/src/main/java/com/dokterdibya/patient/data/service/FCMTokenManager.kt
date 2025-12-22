@@ -32,20 +32,12 @@ class FCMTokenManager @Inject constructor(
             val token = FirebaseMessaging.getInstance().token.await()
             Log.d(TAG, "FCM Token: $token")
 
-            // Check if token has changed
-            val savedToken = getSavedToken()
-            if (token != savedToken) {
-                // Save new token locally
-                saveToken(token)
-                // Send to server
-                sendTokenToServer(token)
-            } else {
-                // Check if we've successfully sent this token
-                val tokenSent = context.dataStore.data.first()[FCM_TOKEN_SENT_KEY]
-                if (tokenSent != token) {
-                    sendTokenToServer(token)
-                }
-            }
+            // Save token locally
+            saveToken(token)
+
+            // Always send token to server on app startup to ensure it's registered
+            // This ensures token is re-sent even if there was a previous registration failure
+            sendTokenToServer(token)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to get FCM token", e)
         }
