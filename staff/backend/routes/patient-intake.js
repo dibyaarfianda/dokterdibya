@@ -424,6 +424,8 @@ function buildSummary(record) {
     const routing = metadata.routing || {};
     return {
         submissionId: record.submissionId,
+        patient_id: record.patientId || record.patient_id || record.integration?.patientId || null,
+        quick_id: record.quickId || record.quick_id || null,
         receivedAt: record.receivedAt,
         status,
         patientName: payload.full_name || null,
@@ -676,65 +678,95 @@ router.post('/api/patient-intake', async (req, res, next) => {
 
 router.get('/api/patient-intake', verifyToken, async (req, res, next) => {
     try {
-        await ensureDirectory();
-        const files = await fs.readdir(STORAGE_DIR);
-        const statusFilter = req.query.status ? new Set(String(req.query.status).split(',').map((value) => value.trim().toLowerCase()).filter(Boolean)) : null;
+        const statusFilter = req.query.status ? req.query.status.split(',').map(s => s.trim().toLowerCase()).filter(Boolean) : null;
         const riskFilter = req.query.risk ? String(req.query.risk).toLowerCase() : null;
         const searchQuery = req.query.search ? String(req.query.search).trim().toLowerCase() : '';
-        const fromDate = toDate(req.query.from);
-        const toDateValue = toDate(req.query.to);
+        const fromDate = req.query.from || null;
+        const toDateValue = req.query.to || null;
         const limit = Math.min(Number.parseInt(req.query.limit, 10) || 200, 500);
 
-        const results = [];
-        for (const file of files) {
-            if (!file.endsWith('.json')) {
-                continue;
-            }
-            try {
-                const record = await loadRecordFile(file);
-                if (!record || typeof record !== 'object') {
-                    continue;
-                }
-                const summary = buildSummary(record);
-                const receivedAt = toDate(summary.receivedAt);
-                if (fromDate && receivedAt && receivedAt < fromDate) {
-                    continue;
-                }
-                if (toDateValue && receivedAt && receivedAt > toDateValue) {
-                    continue;
-                }
-                if (statusFilter && summary.status && !statusFilter.has(String(summary.status).toLowerCase())) {
-                    continue;
-                }
-                if (riskFilter === 'high' && !summary.highRisk) {
-                    continue;
-                }
-                if (riskFilter === 'normal' && summary.highRisk) {
-                    continue;
-                }
-                if (searchQuery) {
-                    const haystacks = [summary.patientName, summary.phone]
-                        .filter(Boolean)
-                        .map((value) => String(value).toLowerCase());
-                    const matches = haystacks.some((value) => value.includes(searchQuery));
-                    if (!matches) {
-                        continue;
-                    }
-                }
-                results.push(summary);
-            } catch (error) {
-                logger.warn(`Gagal membaca intake ${file}: ${error.message}`);
-            }
+        // Build query from database
+        let query = `SELECT submission_id, quick_id, patient_id, full_name, phone, birth_date, nik,
+            payload, status, high_risk, reviewed_by, reviewed_at, review_notes,
+            created_at, updated_at
+            FROM patient_intake_submissions WHERE 1=1`;
+        const params = [];
+
+        if (statusFilter && statusFilter.length > 0) {
+            query += ` AND LOWER(status) IN (${statusFilter.map(() => '?').join(',')})`;
+            params.push(...statusFilter);
         }
 
-        results.sort((a, b) => {
-            const dateA = toDate(a.receivedAt)?.valueOf() || 0;
-            const dateB = toDate(b.receivedAt)?.valueOf() || 0;
-            return dateB - dateA;
+        if (riskFilter === 'high') {
+            query += ` AND high_risk = 1`;
+        } else if (riskFilter === 'normal') {
+            query += ` AND (high_risk = 0 OR high_risk IS NULL)`;
+        }
+
+        if (searchQuery) {
+            query += ` AND (LOWER(full_name) LIKE ? OR phone LIKE ?)`;
+            params.push(`%${searchQuery}%`, `%${searchQuery}%`);
+        }
+
+        if (fromDate) {
+            query += ` AND created_at >= ?`;
+            params.push(fromDate);
+        }
+
+        if (toDateValue) {
+            query += ` AND created_at <= ?`;
+            params.push(toDateValue);
+        }
+
+        query += ` ORDER BY created_at DESC LIMIT ?`;
+        params.push(limit);
+
+        const [rows] = await db.query(query, params);
+
+        // Transform to summary format
+        const results = rows.map(row => {
+            const payload = typeof row.payload === 'string' ? JSON.parse(row.payload) : (row.payload || {});
+            const metadata = payload.metadata || {};
+            const eddInfo = metadata.edd || {};
+            const totals = metadata.obstetricTotals || {};
+            const routing = metadata.routing || {};
+
+            return {
+                submissionId: row.submission_id,
+                submission_id: row.submission_id,
+                patient_id: row.patient_id,
+                quick_id: row.quick_id,
+                receivedAt: row.created_at,
+                created_at: row.created_at,
+                updated_at: row.updated_at,
+                status: row.status || 'patient_reported',
+                patientName: row.full_name || payload.full_name || null,
+                nik: row.nik || payload.nik || null,
+                phone: row.phone || payload.phone || null,
+                edd: eddInfo.value || payload.edd || null,
+                lmp: payload.lmp || null,
+                highRisk: Boolean(row.high_risk),
+                high_risk: Boolean(row.high_risk),
+                riskFlags: metadata.riskFlags || [],
+                gravida: totals.gravida ?? payload.gravida ?? null,
+                para: totals.para ?? null,
+                abortus: totals.abortus ?? null,
+                living: totals.living ?? null,
+                reviewedBy: row.reviewed_by || null,
+                reviewedAt: row.reviewed_at || null,
+                notes: row.review_notes || null,
+                intakeCategory: metadata.intakeCategory || payload.intake_category || null,
+                routing: {
+                    pregnantStatus: routing.pregnantStatus || null,
+                    needsReproductive: routing.needsReproductive || null,
+                    hasGynIssue: routing.hasGynIssue || null,
+                },
+                adminFollowup: metadata.adminFollowup || null,
+                payload: payload
+            };
         });
 
-        const limited = results.slice(0, limit);
-        res.json({ success: true, total: results.length, count: limited.length, data: limited });
+        res.json({ success: true, total: results.length, count: results.length, data: results });
     } catch (error) {
         next(error);
     }
