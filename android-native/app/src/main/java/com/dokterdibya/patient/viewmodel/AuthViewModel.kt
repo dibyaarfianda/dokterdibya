@@ -95,11 +95,12 @@ class AuthViewModel @Inject constructor(
                         patientId = patient.id
                     )
                 },
-                onFailure = {
-                    // If profile fetch fails, just go to home
+                onFailure = { error ->
+                    // If profile fetch fails (404 = patient not found), they need to complete profile
+                    android.util.Log.d("AuthViewModel", "checkProfileCompletion failed: ${error.message}, setting needsCompletion=true")
                     _uiState.value = _uiState.value.copy(
                         isLoggedIn = true,
-                        needsProfileCompletion = false
+                        needsProfileCompletion = true  // Profile doesn't exist, needs completion
                     )
                 }
             )
