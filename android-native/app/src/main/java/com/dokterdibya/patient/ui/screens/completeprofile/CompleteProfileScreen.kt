@@ -50,11 +50,90 @@ fun CompleteProfileScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
-    // Navigate on success
+    // State for success dialog
+    var showSuccessDialog by remember { mutableStateOf(false) }
+    var registrationCode by remember { mutableStateOf("") }
+
+    // Show success dialog when submission succeeds
     LaunchedEffect(uiState.isSuccess) {
         if (uiState.isSuccess) {
-            onComplete()
+            // Extract quick ID from success message
+            val message = uiState.successMessage ?: ""
+            registrationCode = message.substringAfter("Kode: ", "").trim()
+            showSuccessDialog = true
         }
+    }
+
+    // Success Dialog
+    if (showSuccessDialog) {
+        AlertDialog(
+            onDismissRequest = { /* Don't dismiss on outside click */ },
+            icon = {
+                Icon(
+                    Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = Color(0xFF10B981),
+                    modifier = Modifier.size(48.dp)
+                )
+            },
+            title = {
+                Text(
+                    "Formulir Berhasil Dikirim!",
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1F2937)
+                )
+            },
+            text = {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    if (registrationCode.isNotEmpty()) {
+                        Text(
+                            "Kode Registrasi Anda:",
+                            fontSize = 14.sp,
+                            color = Color(0xFF6B7280)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            registrationCode,
+                            fontSize = 32.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF667EEA),
+                            letterSpacing = 4.sp
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Text(
+                            "Simpan kode ini untuk referensi Anda",
+                            fontSize = 12.sp,
+                            color = Color(0xFF9CA3AF)
+                        )
+                    } else {
+                        Text(
+                            "Data Anda telah tersimpan",
+                            fontSize = 14.sp,
+                            color = Color(0xFF6B7280)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        showSuccessDialog = false
+                        onComplete()
+                    },
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF667EEA)
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Lanjut ke Dashboard", fontWeight = FontWeight.Medium)
+                }
+            },
+            containerColor = Color.White,
+            shape = RoundedCornerShape(16.dp)
+        )
     }
 
     // Date picker

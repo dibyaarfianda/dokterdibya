@@ -633,9 +633,27 @@ async function findExistingPatient(connection, payload, sanitizedPhone) {
     return null;
 }
 
-async function ensurePatient(connection, record, sanitizedPhone) {
+async function ensurePatient(connection, record, sanitizedPhone, authenticatedPatientId = null) {
     const payload = record.payload || {};
-    const existing = await findExistingPatient(connection, payload, sanitizedPhone);
+
+    // Priority 1: Use authenticated patient ID if provided (from JWT token)
+    let existing = null;
+    if (authenticatedPatientId) {
+        const [byAuth] = await connection.query(
+            'SELECT id, medical_history FROM patients WHERE id = ? LIMIT 1',
+            [authenticatedPatientId]
+        );
+        if (byAuth.length) {
+            existing = byAuth[0];
+            logger.info('Using authenticated patient for intake integration', { patientId: authenticatedPatientId });
+        }
+    }
+
+    // Priority 2: Fallback to finding by phone/name/DOB
+    if (!existing) {
+        existing = await findExistingPatient(connection, payload, sanitizedPhone);
+    }
+
     const age = calculateAge(payload.dob);
     const allergy = buildAllergyString(payload);
     const medicalHistory = buildMedicalHistory(existing?.medical_history, record);
@@ -858,7 +876,8 @@ async function process(record, context = {}) {
 
     const integrationResult = await database.transaction(async (connection) => {
         const sanitizedPhone = sanitizePhone(payload?.phone);
-        const patientInfo = await ensurePatient(connection, record, sanitizedPhone);
+        // Pass authenticatedPatientId from context to ensure we update the correct patient
+        const patientInfo = await ensurePatient(connection, record, sanitizedPhone, context.authenticatedPatientId);
         const visitInfo = await upsertVisit(connection, patientInfo.patientId, record, context);
         const examInfo = await upsertMedicalExam(connection, patientInfo.patientId, visitInfo.visitId, record, context);
 

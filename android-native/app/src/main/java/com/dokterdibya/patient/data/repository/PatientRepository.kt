@@ -167,6 +167,41 @@ class PatientRepository @Inject constructor(
         tokenRepository.clearAll()
     }
 
+    /**
+     * Update profile information
+     */
+    suspend fun updateProfile(name: String, phone: String, birthDate: String): Result<Patient> {
+        return try {
+            val response = apiService.updateProfile(
+                com.dokterdibya.patient.data.model.UpdateProfileRequest(
+                    fullName = name,
+                    phone = phone,
+                    birthDate = birthDate
+                )
+            )
+            if (response.isSuccessful && response.body() != null) {
+                val body = response.body()!!
+                if (body.success && body.user != null) {
+                    // Update stored user info
+                    tokenRepository.saveUserInfo(body.user.name, body.user.email ?: "")
+                    Result.success(body.user)
+                } else {
+                    Result.failure(Exception(body.message ?: "Gagal menyimpan profil"))
+                }
+            } else {
+                val errorBody = response.errorBody()?.string()
+                val errorMsg = try {
+                    org.json.JSONObject(errorBody ?: "").optString("message", "Gagal menyimpan profil")
+                } catch (e: Exception) {
+                    "Gagal menyimpan profil"
+                }
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     // ==================== Patient Intake ====================
 
     /**
