@@ -8,6 +8,7 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -15,6 +16,7 @@ data class AuthUiState(
     val isLoading: Boolean = false,
     val isLoggedIn: Boolean = false,
     val needsProfileCompletion: Boolean = false,
+    val needsRegistrationCode: Boolean = false,
     val patientId: String? = null,
     val error: String? = null
 )
@@ -41,10 +43,24 @@ class AuthViewModel @Inject constructor(
                         val patient = response.patientData
                         val needsCompletion = patient?.birthDate.isNullOrBlank()
 
+                        // For new users (needs profile completion), check if registration code is required
+                        var needsRegCode = false
+                        if (needsCompletion) {
+                            // Check if user already has a validated registration code
+                            val hasCode = tokenRepository.hasRegistrationCode().first()
+                            if (!hasCode) {
+                                // Check if registration code is required from server settings
+                                val codeRequired = patientRepository.isRegistrationCodeRequired()
+                                    .getOrDefault(false)
+                                needsRegCode = codeRequired
+                            }
+                        }
+
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
                             isLoggedIn = true,
                             needsProfileCompletion = needsCompletion,
+                            needsRegistrationCode = needsRegCode,
                             patientId = patient?.id
                         )
                     } else {
@@ -74,6 +90,11 @@ class AuthViewModel @Inject constructor(
 
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
+    }
+
+    // Called after registration code is validated
+    fun onRegistrationCodeValidated() {
+        _uiState.value = _uiState.value.copy(needsRegistrationCode = false)
     }
 
     // Check profile completion for returning users

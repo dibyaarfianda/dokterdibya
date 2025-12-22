@@ -177,7 +177,30 @@ interface ApiService {
 
     @PUT("api/patient-intake/my-intake")
     suspend fun updateMyIntake(@Body request: PatientIntakeRequest): Response<PatientIntakeResponse>
+
+    // ==================== Registration Code ====================
+
+    @GET("api/registration-codes/settings")
+    suspend fun getRegistrationCodeSettings(): Response<RegistrationCodeSettingsResponse>
+
+    @POST("api/registration-codes/validate")
+    suspend fun validateRegistrationCode(@Body request: ValidateCodeRequest): Response<ValidateCodeResponse>
 }
+
+// Registration Code models
+data class RegistrationCodeSettingsResponse(
+    val success: Boolean,
+    val registration_code_required: Boolean
+)
+
+data class ValidateCodeRequest(
+    val code: String
+)
+
+data class ValidateCodeResponse(
+    val success: Boolean,
+    val message: String?
+)
 
 // FCM Token response
 data class FcmTokenResponse(

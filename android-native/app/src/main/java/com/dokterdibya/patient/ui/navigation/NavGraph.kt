@@ -27,10 +27,12 @@ import com.dokterdibya.patient.ui.screens.medications.MedicationsScreen
 import com.dokterdibya.patient.ui.screens.notifications.NotificationsScreen
 import com.dokterdibya.patient.ui.screens.intro.IntroScreen
 import com.dokterdibya.patient.ui.screens.completeprofile.CompleteProfileScreen
+import com.dokterdibya.patient.ui.screens.registrationcode.RegistrationCodeScreen
 
 sealed class Screen(val route: String) {
     object Intro : Screen("intro")
     object Login : Screen("login")
+    object RegistrationCode : Screen("registration_code")
     object CompleteProfile : Screen("complete_profile")
     object Home : Screen("home")
     object Schedule : Screen("schedule")
@@ -85,6 +87,21 @@ fun NavGraph(
                 onNeedCompleteProfile = {
                     navController.navigate(Screen.CompleteProfile.route) {
                         popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                },
+                onNeedRegistrationCode = {
+                    navController.navigate(Screen.RegistrationCode.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(Screen.RegistrationCode.route) {
+            RegistrationCodeScreen(
+                onCodeValidated = {
+                    navController.navigate(Screen.CompleteProfile.route) {
+                        popUpTo(Screen.RegistrationCode.route) { inclusive = true }
                     }
                 }
             )
