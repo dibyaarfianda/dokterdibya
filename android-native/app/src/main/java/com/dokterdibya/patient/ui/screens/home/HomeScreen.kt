@@ -1991,7 +1991,7 @@ fun JadwalDanLokasiCard(
                         )
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
-                            text = "Jl. Let. Jend. S. Parman No.39, Blitar",
+                            text = "Jl. Balowerti 2 No. 59, Kediri",
                             fontSize = 12.sp,
                             color = TextSecondaryDark,
                             maxLines = 1,
