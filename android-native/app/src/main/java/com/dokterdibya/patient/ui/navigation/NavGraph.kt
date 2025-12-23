@@ -109,6 +109,9 @@ fun NavGraph(
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.CompleteProfile.route) { inclusive = true }
                     }
+                },
+                onBack = {
+                    navController.popBackStack()
                 }
             )
         }
@@ -153,6 +156,9 @@ fun NavGraph(
                 },
                 onNavigateToWebView = { url, title ->
                     navController.navigate(Screen.WebView.createRoute(url, title))
+                },
+                onNavigateToCompleteProfile = {
+                    navController.navigate(Screen.CompleteProfile.route)
                 },
                 onLogout = {
                     navController.navigate(Screen.Login.route) {
