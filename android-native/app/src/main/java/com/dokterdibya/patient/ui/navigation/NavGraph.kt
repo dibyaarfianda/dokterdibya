@@ -27,6 +27,10 @@ import com.dokterdibya.patient.ui.screens.medications.MedicationsScreen
 import com.dokterdibya.patient.ui.screens.notifications.NotificationsScreen
 import com.dokterdibya.patient.ui.screens.intro.IntroScreen
 import com.dokterdibya.patient.ui.screens.completeprofile.CompleteProfileScreen
+import com.dokterdibya.patient.ui.screens.webview.WebViewScreen
+import java.net.URLDecoder
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 sealed class Screen(val route: String) {
     object Intro : Screen("intro")
@@ -52,6 +56,13 @@ sealed class Screen(val route: String) {
     object Booking : Screen("booking")
     object Medications : Screen("medications")
     object Notifications : Screen("notifications")
+    object WebView : Screen("webview/{url}/{title}") {
+        fun createRoute(url: String, title: String): String {
+            val encodedUrl = URLEncoder.encode(url, StandardCharsets.UTF_8.toString())
+            val encodedTitle = URLEncoder.encode(title, StandardCharsets.UTF_8.toString())
+            return "webview/$encodedUrl/$encodedTitle"
+        }
+    }
 }
 
 @Composable
@@ -131,6 +142,12 @@ fun NavGraph(
                 },
                 onNavigateToNotifications = {
                     navController.navigate(Screen.Notifications.route)
+                },
+                onNavigateToArticleDetail = { articleId ->
+                    navController.navigate(Screen.ArticleDetail.createRoute(articleId))
+                },
+                onNavigateToWebView = { url, title ->
+                    navController.navigate(Screen.WebView.createRoute(url, title))
                 },
                 onLogout = {
                     navController.navigate(Screen.Login.route) {
@@ -234,6 +251,24 @@ fun NavGraph(
 
         composable(Screen.Notifications.route) {
             NotificationsScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Screen.WebView.route,
+            arguments = listOf(
+                navArgument("url") { type = NavType.StringType },
+                navArgument("title") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val encodedUrl = backStackEntry.arguments?.getString("url") ?: ""
+            val encodedTitle = backStackEntry.arguments?.getString("title") ?: ""
+            val url = URLDecoder.decode(encodedUrl, StandardCharsets.UTF_8.toString())
+            val title = URLDecoder.decode(encodedTitle, StandardCharsets.UTF_8.toString())
+            WebViewScreen(
+                url = url,
+                title = title,
                 onBack = { navController.popBackStack() }
             )
         }
