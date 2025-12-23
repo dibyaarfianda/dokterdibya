@@ -92,21 +92,39 @@ fun HomeScreen(
 
     // Animated gradient background (like web PWA)
     val infiniteTransition = rememberInfiniteTransition(label = "bgGradient")
+
+    // Primary animation for gradient movement
     val animatedOffset by infiniteTransition.animateFloat(
         initialValue = 0f,
         targetValue = 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 15000, easing = LinearEasing),
+            animation = tween(durationMillis = 8000, easing = LinearEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "gradientOffset"
     )
 
+    // Secondary animation for color shift
+    val colorShift by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 12000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "colorShift"
+    )
+
     // Interpolate gradient positions for smooth animation
-    val startX = animatedOffset * 500f
-    val startY = animatedOffset * 300f
-    val endX = 1000f + (1f - animatedOffset) * 500f
-    val endY = 1500f + (1f - animatedOffset) * 300f
+    val startX = animatedOffset * 800f
+    val startY = animatedOffset * 600f
+    val endX = 1200f + (1f - animatedOffset) * 800f
+    val endY = 2000f + (1f - animatedOffset) * 600f
+
+    // Animate accent color glow
+    val accentAlpha = 0.03f + (colorShift * 0.04f)
+    val animatedAccent = WebAccent.copy(alpha = accentAlpha)
+    val animatedPurple = Purple.copy(alpha = accentAlpha * 0.5f)
 
     Box(
         modifier = Modifier
@@ -116,6 +134,33 @@ fun HomeScreen(
                     colors = listOf(BgDark, BgDarkEnd, BgDark),
                     start = androidx.compose.ui.geometry.Offset(startX, startY),
                     end = androidx.compose.ui.geometry.Offset(endX, endY)
+                )
+            )
+            // Add subtle color overlay that animates
+            .background(
+                Brush.radialGradient(
+                    colors = listOf(
+                        animatedAccent,
+                        Color.Transparent
+                    ),
+                    center = androidx.compose.ui.geometry.Offset(
+                        x = 200f + (animatedOffset * 600f),
+                        y = 300f + (colorShift * 400f)
+                    ),
+                    radius = 800f
+                )
+            )
+            .background(
+                Brush.radialGradient(
+                    colors = listOf(
+                        animatedPurple,
+                        Color.Transparent
+                    ),
+                    center = androidx.compose.ui.geometry.Offset(
+                        x = 800f - (animatedOffset * 400f),
+                        y = 1200f - (colorShift * 300f)
+                    ),
+                    radius = 600f
                 )
             )
     ) {
