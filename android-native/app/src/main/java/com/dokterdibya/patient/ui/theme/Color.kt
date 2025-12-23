@@ -18,11 +18,20 @@ val Fertility = Color(0xFFFF6B9D)
 val Purple = Color(0xFFA855F7)
 val Gold = Color(0xFFD4AF37)
 
-// Dark Theme Colors
-val BgDark = Color(0xFF0F0F1A)
+// Dark Theme Colors (matching website patient-dashboard)
+val BgDark = Color(0xFF1A1A1A)  // Website: #1a1a1a
+val BgDarkEnd = Color(0xFF303030)  // Website gradient end: #303030
 val BgDarkSecondary = Color(0xFF1A1A2E)
 val SurfaceDark = Color(0xFF252536)
 val CardDark = Color(0xFF1E1E2E)
+
+// Website-matching glassmorphism colors
+val WebAccent = Color(0xFF28A7E9)  // Website primary cyan: #28a7e9
+val WebAccentLight = Color(0xFF47C6F8)  // Website hover cyan: #47C6F8
+val WebSuccess = Color(0xFF28E970)  // Website success green: #28e970
+val WebCardBg = Color(0x1AFFFFFF)  // rgba(255,255,255,0.1)
+val WebCardBorder = Color(0x33FFFFFF)  // rgba(255,255,255,0.2)
+val WebCardHoverBorder = Color(0xFF28A7E9)  // Website hover border
 
 // Light Theme Colors
 val BgLight = Color(0xFFF8FBFF)

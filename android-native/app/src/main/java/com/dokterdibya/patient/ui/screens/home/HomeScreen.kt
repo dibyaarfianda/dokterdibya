@@ -90,7 +90,13 @@ fun HomeScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(BgDark)
+            .background(
+                Brush.linearGradient(
+                    colors = listOf(BgDark, BgDarkEnd),
+                    start = androidx.compose.ui.geometry.Offset(0f, 0f),
+                    end = androidx.compose.ui.geometry.Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+                )
+            )
     ) {
         // Sticky Top Navigation Bar with semi-transparent background
         Box(
@@ -98,7 +104,7 @@ fun HomeScreen(
                 .fillMaxWidth()
                 .height(70.dp)
                 .zIndex(10f)
-                .background(BgDark.copy(alpha = 0.85f))
+                .background(BgDark.copy(alpha = 0.9f))
         ) {
             // Nav bar content
             Row(
@@ -126,7 +132,7 @@ fun HomeScreen(
                                 withStyle(SpanStyle(color = Color.White)) {
                                     append("dokter")
                                 }
-                                withStyle(SpanStyle(color = Accent)) {
+                                withStyle(SpanStyle(color = WebAccent)) {
                                     append("DIBYA")
                                 }
                             },
@@ -209,7 +215,7 @@ fun HomeScreen(
                                 Icon(
                                     painter = painterResource(id = R.drawable.profil),
                                     contentDescription = "Profil",
-                                    tint = Accent,
+                                    tint = WebAccent,
                                     modifier = Modifier.size(24.dp)
                                 )
                             }
@@ -235,40 +241,42 @@ fun HomeScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(top = 78.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
         ) {
-            // Welcome Card
+            // Welcome Card (website-style glassmorphism)
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color.Transparent
-                )
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = WebCardBg),
+                border = androidx.compose.foundation.BorderStroke(1.dp, WebCardBorder)
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(
-                            Brush.linearGradient(
-                                colors = listOf(
-                                    Accent.copy(alpha = 0.2f),
-                                    Purple.copy(alpha = 0.2f)
-                                )
-                            )
-                        )
-                        .padding(20.dp)
+                Column(
+                    modifier = Modifier.padding(25.dp)
                 ) {
-                    Column {
-                        Text(
-                            text = "Selamat Datang,",
-                            fontSize = 16.sp,
-                            color = TextPrimaryDark
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = null,
+                            tint = WebAccent,
+                            modifier = Modifier.size(28.dp)
                         )
+                        Spacer(modifier = Modifier.width(10.dp))
                         Text(
-                            text = uiState.patientName ?: "Ibu",
-                            fontSize = 22.sp,
+                            text = "Selamat Datang",
+                            fontSize = 24.sp,
                             fontWeight = FontWeight.SemiBold,
-                            color = Accent
+                            color = WebAccent
                         )
                     }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text(
+                        text = "Halo, ${uiState.patientName ?: "Ibu"}!",
+                        fontSize = 16.sp,
+                        color = TextPrimaryDark
+                    )
+                    Text(
+                        text = "Selamat datang di portal privat kesehatan kandungan Anda.",
+                        fontSize = 14.sp,
+                        color = TextSecondaryDark
+                    )
                 }
             }
 
@@ -340,7 +348,7 @@ fun HomeScreen(
                     iconRes = R.drawable.book,
                     title = "Booking",
                     subtitle = "Pesan jadwal",
-                    iconColor = Accent,
+                    iconColor = WebAccent,
                     onClick = onNavigateToBooking
                 )
                 QuickMenuItem(
@@ -372,7 +380,7 @@ fun HomeScreen(
                     iconRes = R.drawable.erm,
                     title = "Dokumen",
                     subtitle = "Invoice, dll",
-                    iconColor = Success,
+                    iconColor = WebSuccess,
                     onClick = onNavigateToDocuments
                 )
             }
@@ -396,8 +404,8 @@ fun HomeScreen(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(16.dp),
-                containerColor = CardDark,
-                contentColor = Accent
+                containerColor = WebCardBg,
+                contentColor = WebAccent
             ) {
                 Icon(
                     imageVector = Icons.Default.Menu,
@@ -1091,10 +1099,9 @@ fun QuickMenuItem(
     Card(
         onClick = onClick,
         modifier = modifier,
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = CardDark
-        )
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = WebCardBg),
+        border = androidx.compose.foundation.BorderStroke(1.dp, WebCardBorder)
     ) {
         Row(
             modifier = Modifier
@@ -1142,10 +1149,11 @@ fun WelcomeMessageCard() {
         modifier = Modifier
             .fillMaxWidth()
             .clickable { isExpanded = !isExpanded },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = CardDark)
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = WebCardBg),
+        border = androidx.compose.foundation.BorderStroke(1.dp, WebCardBorder)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(20.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -1155,15 +1163,15 @@ fun WelcomeMessageCard() {
                     Icon(
                         imageVector = Icons.Default.Favorite,
                         contentDescription = null,
-                        tint = Accent,
-                        modifier = Modifier.size(20.dp)
+                        tint = WebAccent,
+                        modifier = Modifier.size(24.dp)
                     )
                     Spacer(modifier = Modifier.width(10.dp))
                     Text(
-                        text = "Selamat Datang",
-                        fontSize = 16.sp,
+                        text = "Tentang Portal Ini",
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Accent
+                        color = WebAccent
                     )
                 }
                 Icon(
@@ -1330,13 +1338,14 @@ fun ProfileIdentityCard(onEditProfile: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onEditProfile),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = CardDark)
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = WebCardBg),
+        border = androidx.compose.foundation.BorderStroke(1.dp, WebCardBorder)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(20.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -1345,13 +1354,13 @@ fun ProfileIdentityCard(onEditProfile: () -> Unit) {
                     modifier = Modifier
                         .size(42.dp)
                         .clip(RoundedCornerShape(12.dp))
-                        .background(Accent.copy(alpha = 0.2f)),
+                        .background(WebAccent.copy(alpha = 0.2f)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.identitas),
                         contentDescription = null,
-                        tint = Accent,
+                        tint = WebAccent,
                         modifier = Modifier.size(22.dp)
                     )
                 }
@@ -1373,7 +1382,7 @@ fun ProfileIdentityCard(onEditProfile: () -> Unit) {
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = "Edit",
-                tint = TextSecondaryDark,
+                tint = WebAccent,
                 modifier = Modifier.size(24.dp)
             )
         }
