@@ -49,6 +49,9 @@ fun JourneyBookScreen(
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }
 
+    // Swipe tracking for page navigation
+    var accumulatedDragX by remember { mutableFloatStateOf(0f) }
+
     // Reset zoom when changing pages
     fun resetZoom() {
         scale = 1f
@@ -171,27 +174,49 @@ fun JourneyBookScreen(
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .pointerInput(currentPage) {
-                                detectTransformGestures { _, pan, zoom, _ ->
-                                    // Update scale with limits
-                                    val newScale = (scale * zoom).coerceIn(1f, 4f)
+                            .pointerInput(currentPage, scale) {
+                                detectTransformGestures(
+                                    onGesture = { _, pan, zoom, _ ->
+                                        // Handle zoom
+                                        val newScale = (scale * zoom).coerceIn(1f, 4f)
 
-                                    // Only allow panning when zoomed in
-                                    if (newScale > 1f) {
-                                        scale = newScale
+                                        if (newScale > 1f || zoom != 1f) {
+                                            // Zooming or already zoomed - handle zoom/pan
+                                            scale = newScale
 
-                                        // Calculate pan limits based on scale
-                                        val maxOffsetX = (size.width * (scale - 1)) / 2
-                                        val maxOffsetY = (size.height * (scale - 1)) / 2
+                                            if (scale > 1f) {
+                                                // Calculate pan limits based on scale
+                                                val maxOffsetX = (size.width * (scale - 1)) / 2
+                                                val maxOffsetY = (size.height * (scale - 1)) / 2
 
-                                        offsetX = (offsetX + pan.x).coerceIn(-maxOffsetX, maxOffsetX)
-                                        offsetY = (offsetY + pan.y).coerceIn(-maxOffsetY, maxOffsetY)
-                                    } else {
-                                        scale = 1f
-                                        offsetX = 0f
-                                        offsetY = 0f
+                                                offsetX = (offsetX + pan.x).coerceIn(-maxOffsetX, maxOffsetX)
+                                                offsetY = (offsetY + pan.y).coerceIn(-maxOffsetY, maxOffsetY)
+                                            }
+                                        } else {
+                                            // Not zoomed and not zooming - track horizontal swipe for page change
+                                            accumulatedDragX += pan.x
+
+                                            // Swipe threshold (100 pixels)
+                                            val swipeThreshold = 100f
+                                            if (accumulatedDragX < -swipeThreshold) {
+                                                // Swipe left -> next page
+                                                accumulatedDragX = 0f
+                                                goToNextPage()
+                                            } else if (accumulatedDragX > swipeThreshold) {
+                                                // Swipe right -> previous page
+                                                accumulatedDragX = 0f
+                                                goToPrevPage()
+                                            }
+                                        }
+
+                                        // Reset to 1f if below threshold
+                                        if (scale < 1f) {
+                                            scale = 1f
+                                            offsetX = 0f
+                                            offsetY = 0f
+                                        }
                                     }
-                                }
+                                )
                             }
                             .pointerInput(currentPage) {
                                 detectTapGestures(
@@ -210,6 +235,9 @@ fun JourneyBookScreen(
                                         }
                                     },
                                     onTap = { tapOffset ->
+                                        // Reset accumulated drag on tap
+                                        accumulatedDragX = 0f
+
                                         // Only handle tap navigation when not zoomed
                                         if (scale <= 1f) {
                                             val width = size.width
