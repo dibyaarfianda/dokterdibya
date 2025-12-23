@@ -182,12 +182,12 @@ fun HomeScreen(
                 .hazeChild(
                     state = hazeState,
                     style = HazeStyle(
-                        backgroundColor = Color.White,
+                        backgroundColor = Color.White.copy(alpha = 0.15f),
                         tint = HazeTint(
-                            color = Color.White.copy(alpha = 0.75f)
+                            color = Color.White.copy(alpha = 0.25f)
                         ),
-                        blurRadius = 20.dp,
-                        noiseFactor = 0.05f
+                        blurRadius = 24.dp,
+                        noiseFactor = 0.02f
                     )
                 )
         ) {
