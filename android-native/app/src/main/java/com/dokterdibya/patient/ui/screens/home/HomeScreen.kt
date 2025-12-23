@@ -47,6 +47,7 @@ import io.noties.markwon.html.HtmlPlugin
 import coil.compose.AsyncImage
 import com.dokterdibya.patient.R
 import com.dokterdibya.patient.data.api.Announcement
+import com.dokterdibya.patient.data.api.Article
 import com.dokterdibya.patient.data.api.BabySize
 import com.dokterdibya.patient.data.api.Medication
 import com.dokterdibya.patient.ui.components.SlideMenu
@@ -394,6 +395,21 @@ fun HomeScreen(
                 )
             }
 
+            // Ruang Membaca Section (Articles)
+            if (uiState.articles.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                RuangMembacaSection(
+                    articles = uiState.articles,
+                    onArticleClick = { article ->
+                        // Open article in browser
+                        val url = "https://dokterdibya.com/artikel/${article.slug ?: article.id}"
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        context.startActivity(intent)
+                    },
+                    onViewAll = onNavigateToArticles
+                )
+            }
+
             Spacer(modifier = Modifier.height(100.dp))
         }
 
@@ -584,6 +600,7 @@ fun AnnouncementsSection(
     onLike: (Int) -> Unit
 ) {
     var isExpanded by remember { mutableStateOf(true) }
+    var showAllAnnouncements by remember { mutableStateOf(false) }
 
     // Get priority announcement and most recent non-priority
     val priorityAnnouncement = announcements.find { it.priority == "important" || it.priority == "urgent" }
@@ -595,7 +612,8 @@ fun AnnouncementsSection(
         recentAnnouncements.firstOrNull()?.let { add(it) }
     }.take(2)
 
-    val displayedAnnouncements = initialAnnouncements
+    val displayedAnnouncements = if (showAllAnnouncements) announcements else initialAnnouncements
+    val remainingCount = announcements.size - initialAnnouncements.size
 
     // Announcements container card (website style)
     Card(
@@ -637,6 +655,38 @@ fun AnnouncementsSection(
                 )
             }
 
+            // "Lihat X Pengumuman Lainnya" button (website style)
+            if (remainingCount > 0 && !showAllAnnouncements) {
+                Surface(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { showAllAnnouncements = true },
+                    color = WebAccent.copy(alpha = 0.1f)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 12.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Lihat $remainingCount Pengumuman Lainnya",
+                            fontSize = 14.sp,
+                            color = WebAccent,
+                            fontWeight = FontWeight.Medium
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Icon(
+                            imageVector = Icons.Default.KeyboardArrowDown,
+                            contentDescription = null,
+                            tint = WebAccent,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+                }
+            }
+
             // Content (expandable)
             if (isExpanded) {
                 Column(
@@ -650,6 +700,32 @@ fun AnnouncementsSection(
                             announcement = announcement,
                             onLike = { onLike(announcement.id) }
                         )
+                    }
+
+                    // "Sembunyikan" button when showing all
+                    if (showAllAnnouncements && announcements.size > 2) {
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showAllAnnouncements = false },
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Sembunyikan",
+                                fontSize = 13.sp,
+                                color = TextSecondaryDark,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                imageVector = Icons.Default.KeyboardArrowUp,
+                                contentDescription = null,
+                                tint = TextSecondaryDark,
+                                modifier = Modifier.size(16.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -1517,4 +1593,238 @@ fun MarkdownText(
             markwon.setMarkdown(textView, normalizedContent)
         }
     )
+}
+
+// Ruang Membaca (Articles) Section - website style
+@Composable
+fun RuangMembacaSection(
+    articles: List<Article>,
+    onArticleClick: (Article) -> Unit,
+    onViewAll: () -> Unit
+) {
+    var isExpanded by remember { mutableStateOf(true) }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = WebCardBg),
+        border = androidx.compose.foundation.BorderStroke(1.dp, WebCardBorder)
+    ) {
+        Column {
+            // Header row (clickable to expand/collapse)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { isExpanded = !isExpanded }
+                    .padding(20.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.MenuBook,
+                        contentDescription = null,
+                        tint = WebAccent,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Ruang Membaca",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = WebAccent
+                    )
+                }
+                Icon(
+                    imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = if (isExpanded) "Tutup" else "Buka",
+                    tint = WebAccent,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+
+            // Content (expandable)
+            if (isExpanded) {
+                Column(
+                    modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 20.dp)
+                ) {
+                    // Description
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Star,
+                            contentDescription = null,
+                            tint = Warning,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = buildAnnotatedString {
+                                append("Artikel pilihan dari ")
+                                withStyle(SpanStyle(color = WebAccent, fontWeight = FontWeight.SemiBold)) {
+                                    append("dokter")
+                                }
+                                withStyle(SpanStyle(color = Primary, fontWeight = FontWeight.SemiBold)) {
+                                    append("DIBYA")
+                                }
+                                append(" berdasarkan jurnal terkini")
+                            },
+                            fontSize = 12.sp,
+                            color = TextSecondaryDark
+                        )
+                    }
+
+                    // Article cards
+                    articles.forEachIndexed { index, article ->
+                        if (index > 0) {
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
+                        ArticleCard(
+                            article = article,
+                            onClick = { onArticleClick(article) }
+                        )
+                    }
+
+                    // View all button
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedButton(
+                        onClick = onViewAll,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = WebAccent),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, WebAccent),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("Lihat Semua Artikel", fontSize = 14.sp)
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Icon(
+                            imageVector = Icons.Default.ArrowForward,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ArticleCard(
+    article: Article,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = CardDark.copy(alpha = 0.6f)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, WebCardBorder.copy(alpha = 0.3f))
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.Top
+        ) {
+            // Article image thumbnail
+            Card(
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.size(width = 80.dp, height = 100.dp)
+            ) {
+                if (!article.imageUrl.isNullOrEmpty()) {
+                    AsyncImage(
+                        model = article.imageUrl,
+                        contentDescription = article.title,
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Crop
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(WebAccent.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Article,
+                            contentDescription = null,
+                            tint = WebAccent,
+                            modifier = Modifier.size(32.dp)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // Article info
+            Column(modifier = Modifier.weight(1f)) {
+                // Category badge and date
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(bottom = 6.dp)
+                ) {
+                    if (!article.category.isNullOrEmpty()) {
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = WebAccent
+                        ) {
+                            Text(
+                                text = article.category.uppercase(),
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
+                    Text(
+                        text = formatArticleDate(article.publishedAt ?: article.createdAt),
+                        fontSize = 11.sp,
+                        color = TextSecondaryDark
+                    )
+                }
+
+                // Title
+                Text(
+                    text = article.title,
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextPrimaryDark,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+
+                // Excerpt
+                if (!article.excerpt.isNullOrEmpty()) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = article.excerpt,
+                        fontSize = 12.sp,
+                        color = TextSecondaryDark,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        lineHeight = 16.sp
+                    )
+                }
+            }
+        }
+    }
+}
+
+// Helper function to format article date
+private fun formatArticleDate(dateString: String?): String {
+    if (dateString.isNullOrEmpty()) return ""
+    return try {
+        val inputFormat = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale("id", "ID"))
+        val outputFormat = java.text.SimpleDateFormat("MMM yyyy", java.util.Locale("id", "ID"))
+        val date = inputFormat.parse(dateString.take(10))
+        date?.let { outputFormat.format(it) } ?: dateString.take(10)
+    } catch (e: Exception) {
+        dateString.take(10)
+    }
 }
