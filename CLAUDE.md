@@ -538,16 +538,67 @@ val serviceChannel = NotificationChannel(
 )
 ```
 
-**Haze Library (Blur Effect) - ISSUES:**
-The Haze library (`dev.chrisbanes.haze`) has dependency resolution issues. Artifacts tried:
-- `dev.chrisbanes.haze:haze:1.0.0` - unresolved imports
-- `dev.chrisbanes.haze:haze-android:1.0.0` - unresolved imports
-- `dev.chrisbanes.haze:haze-materials:1.0.0` - unresolved imports
+**Haze Library (Blur Effect) - WORKING:**
+The Haze library (`dev.chrisbanes.haze`) provides true backdrop blur like web/iOS.
 
-**Workaround:** Use semi-transparent background instead:
+**Dependencies (build.gradle.kts):**
 ```kotlin
-.background(BgDark.copy(alpha = 0.85f))
+implementation("dev.chrisbanes.haze:haze:1.0.0")
+implementation("dev.chrisbanes.haze:haze-materials:1.0.0")
 ```
+
+**Haze 1.0 API (IMPORTANT - old API is deprecated):**
+- OLD API: `haze()` / `hazeChild()` - DEPRECATED, don't use
+- NEW API: `hazeSource()` / `hazeEffect()` - USE THIS
+
+**Imports:**
+```kotlin
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.materials.HazeMaterials
+```
+
+**Usage Example (Nav bar with backdrop blur):**
+```kotlin
+val hazeState = remember { HazeState() }
+
+Box {
+    // Nav bar - shows blurred content behind it
+    Box(
+        modifier = Modifier
+            .hazeEffect(
+                state = hazeState,
+                style = HazeMaterials.ultraThin(
+                    containerColor = BgDark.copy(alpha = 0.7f)
+                )
+            )
+    ) {
+        // Nav bar content
+    }
+
+    // Main content - this is what gets blurred behind nav bar
+    Column(
+        modifier = Modifier
+            .hazeSource(state = hazeState)
+            .verticalScroll(scrollState)
+    ) {
+        // Scrollable content
+    }
+}
+```
+
+**How it works:**
+1. `hazeSource(state)` - marks content to be captured and blurred
+2. `hazeEffect(state, style)` - shows the blurred content behind it
+3. `HazeMaterials.ultraThin()` - iOS-like material blur styling
+
+**Available HazeMaterials styles:**
+- `HazeMaterials.ultraThin()` - very subtle blur
+- `HazeMaterials.thin()` - light blur
+- `HazeMaterials.regular()` - standard blur
+- `HazeMaterials.thick()` - heavy blur
+- `HazeMaterials.ultraThick()` - very heavy blur
 
 **JANGAN Build APK di VPS:**
 APK harus di-build di komputer lokal developer, BUKAN di VPS. Alasan:
