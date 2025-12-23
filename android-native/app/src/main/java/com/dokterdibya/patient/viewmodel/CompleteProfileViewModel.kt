@@ -182,19 +182,26 @@ class CompleteProfileViewModel @Inject constructor(
             android.util.Log.d("CompleteProfileVM", "Checking if registration code is required...")
             patientRepository.isRegistrationCodeRequired().fold(
                 onSuccess = { required ->
-                    android.util.Log.d("CompleteProfileVM", "Registration code required: $required")
-                    _uiState.value = _uiState.value.copy(
-                        registrationCodeRequired = required,
-                        registrationCodeCheckLoading = false
+                    android.util.Log.d("CompleteProfileVM", "Registration code required from API: $required")
+                    val current = _uiState.value
+                    // Don't require registration code if user already has existing intake (returning patient)
+                    val actuallyRequired = required && !current.isExistingIntake
+                    android.util.Log.d("CompleteProfileVM", "isExistingIntake: ${current.isExistingIntake}, actuallyRequired: $actuallyRequired")
+                    _uiState.value = current.copy(
+                        registrationCodeRequired = actuallyRequired,
+                        registrationCodeCheckLoading = false,
+                        // If not required, consider it validated
+                        registrationCodeValidated = !actuallyRequired || current.registrationCodeValidated
                     )
-                    android.util.Log.d("CompleteProfileVM", "UiState updated, registrationCodeRequired: ${_uiState.value.registrationCodeRequired}")
                 },
                 onFailure = { error ->
                     android.util.Log.e("CompleteProfileVM", "Failed to check registration code: ${error.message}")
-                    // Default to required if can't check
-                    _uiState.value = _uiState.value.copy(
-                        registrationCodeRequired = true,
-                        registrationCodeCheckLoading = false
+                    val current = _uiState.value
+                    // Default to required if can't check, UNLESS user is a returning patient
+                    _uiState.value = current.copy(
+                        registrationCodeRequired = !current.isExistingIntake,
+                        registrationCodeCheckLoading = false,
+                        registrationCodeValidated = current.isExistingIntake || current.registrationCodeValidated
                     )
                 }
             )
@@ -272,12 +279,17 @@ class CompleteProfileViewModel @Inject constructor(
                 onSuccess = { existing ->
                     if (existing != null) {
                         val payload = existing.payload
-                        // Use current state to preserve registrationCodeRequired from parallel coroutine
+                        // Use current state to preserve other fields from parallel coroutines
                         val current = _uiState.value
+                        // IMPORTANT: Returning patient (has existing intake) does NOT need registration code
                         _uiState.value = current.copy(
                             isExistingIntake = true,
                             existingSubmissionId = existing.submissionId,
                             existingQuickId = existing.quickId,
+                            // Skip registration code for returning patients
+                            registrationCodeRequired = false,
+                            registrationCodeCheckLoading = false,
+                            registrationCodeValidated = true,  // Consider it validated for returning patients
                             // Pre-fill from existing intake
                             fullname = payload?.fullName ?: current.fullname,
                             birthDate = payload?.dob ?: current.birthDate,
