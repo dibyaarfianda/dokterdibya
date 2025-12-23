@@ -55,9 +55,9 @@ import com.dokterdibya.patient.ui.components.SlideMenu
 import com.dokterdibya.patient.ui.theme.*
 import com.dokterdibya.patient.viewmodel.BirthInfo
 import com.dokterdibya.patient.viewmodel.HomeViewModel
-import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.rememberHazeState
 import dev.chrisbanes.haze.materials.HazeMaterials
 
 @Composable
@@ -86,7 +86,7 @@ fun HomeScreen(
 
     // Track scroll state for nav bar appearance
     val scrollState = rememberScrollState()
-    val hazeState = remember { HazeState() }
+    val hazeState = rememberHazeState()
 
     // Refresh data when screen is resumed (e.g., after returning from profile)
     DisposableEffect(lifecycleOwner) {
