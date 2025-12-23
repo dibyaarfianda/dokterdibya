@@ -38,7 +38,13 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.zIndex
+import android.os.Build
 import androidx.hilt.navigation.compose.hiltViewModel
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.HazeStyle
+import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.haze
+import dev.chrisbanes.haze.hazeChild
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -76,6 +82,9 @@ fun HomeScreen(
     var isMenuOpen by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+
+    // Haze state for backdrop blur effect
+    val hazeState = remember { HazeState() }
 
     // Refresh data when screen is resumed (e.g., after returning from profile)
     DisposableEffect(lifecycleOwner) {
@@ -164,14 +173,32 @@ fun HomeScreen(
                 )
             )
     ) {
-        // Sticky Top Navigation Bar with semi-transparent background
+        // Sticky Top Navigation Bar with backdrop blur effect (Haze)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(70.dp)
                 .zIndex(10f)
-                .background(BgDark.copy(alpha = 0.9f))
+                .hazeChild(
+                    state = hazeState,
+                    style = HazeStyle(
+                        backgroundColor = BgDark,
+                        tint = HazeTint(
+                            color = BgDark.copy(alpha = 0.7f)
+                        ),
+                        blurRadius = 20.dp,
+                        noiseFactor = 0.1f
+                    )
+                )
         ) {
+            // Bottom border
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .align(Alignment.BottomCenter)
+                    .background(WebCardBorder.copy(alpha = 0.5f))
+            )
             // Nav bar content
             Row(
                 modifier = Modifier
@@ -300,10 +327,11 @@ fun HomeScreen(
             }
         }
 
-        // Main content (scrollable)
+        // Main content (scrollable) - source for backdrop blur
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .haze(state = hazeState)
                 .verticalScroll(rememberScrollState())
                 .padding(top = 78.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
         ) {
@@ -682,38 +710,6 @@ fun AnnouncementsSection(
                 )
             }
 
-            // "Lihat X Pengumuman Lainnya" button (website style)
-            if (remainingCount > 0 && !showAllAnnouncements) {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { showAllAnnouncements = true },
-                    color = WebAccent.copy(alpha = 0.1f)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 12.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Lihat $remainingCount Pengumuman Lainnya",
-                            fontSize = 14.sp,
-                            color = WebAccent,
-                            fontWeight = FontWeight.Medium
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Icon(
-                            imageVector = Icons.Default.KeyboardArrowDown,
-                            contentDescription = null,
-                            tint = WebAccent,
-                            modifier = Modifier.size(18.dp)
-                        )
-                    }
-                }
-            }
-
             // Content (expandable)
             if (isExpanded) {
                 Column(
@@ -727,6 +723,40 @@ fun AnnouncementsSection(
                             announcement = announcement,
                             onLike = { onLike(announcement.id) }
                         )
+                    }
+
+                    // "Lihat X Pengumuman Lainnya" button at BOTTOM (website style)
+                    if (remainingCount > 0 && !showAllAnnouncements) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Surface(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clickable { showAllAnnouncements = true },
+                            color = WebAccent.copy(alpha = 0.1f),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 12.dp),
+                                horizontalArrangement = Arrangement.Center,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Lihat $remainingCount Pengumuman Lainnya",
+                                    fontSize = 14.sp,
+                                    color = WebAccent,
+                                    fontWeight = FontWeight.Medium
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Icon(
+                                    imageVector = Icons.Default.KeyboardArrowDown,
+                                    contentDescription = null,
+                                    tint = WebAccent,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
                     }
 
                     // "Sembunyikan" button when showing all
