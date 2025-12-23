@@ -182,12 +182,12 @@ fun HomeScreen(
                 .hazeChild(
                     state = hazeState,
                     style = HazeStyle(
-                        backgroundColor = BgDark,
+                        backgroundColor = Color.White,
                         tint = HazeTint(
-                            color = BgDark.copy(alpha = 0.7f)
+                            color = Color.White.copy(alpha = 0.75f)
                         ),
                         blurRadius = 20.dp,
-                        noiseFactor = 0.1f
+                        noiseFactor = 0.05f
                     )
                 )
         ) {
@@ -197,7 +197,7 @@ fun HomeScreen(
                     .fillMaxWidth()
                     .height(1.dp)
                     .align(Alignment.BottomCenter)
-                    .background(WebCardBorder.copy(alpha = 0.5f))
+                    .background(Color.White.copy(alpha = 0.3f))
             )
             // Nav bar content
             Row(
