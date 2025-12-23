@@ -541,39 +541,33 @@ val serviceChannel = NotificationChannel(
 **Haze Library (Blur Effect) - WORKING:**
 The Haze library (`dev.chrisbanes.haze`) provides true backdrop blur like web/iOS.
 
+**IMPORTANT: Use haze-jetpack-compose for AndroidX Compose projects!**
+- `haze-android` requires Compose Multiplatform dependencies which conflict with AndroidX Compose
+- `haze-jetpack-compose` is specifically designed for AndroidX Compose (standard Android projects)
+
 **Dependencies (build.gradle.kts):**
 ```kotlin
-// IMPORTANT: Use haze-android for Android, not just haze
-implementation("dev.chrisbanes.haze:haze-android:1.0.1")
-implementation("dev.chrisbanes.haze:haze-materials:1.0.1")
+// Use haze-jetpack-compose for AndroidX Compose (NOT haze-android!)
+implementation("dev.chrisbanes.haze:haze-jetpack-compose:0.7.3")
 ```
-
-**Haze 1.0 API (IMPORTANT - old API is deprecated):**
-- OLD API: `haze()` / `hazeChild()` - DEPRECATED, don't use
-- NEW API: `hazeSource()` / `hazeEffect()` - USE THIS
 
 **Imports:**
 ```kotlin
-import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.hazeEffect
-import dev.chrisbanes.haze.rememberHazeState
-import dev.chrisbanes.haze.materials.HazeMaterials
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
+import dev.chrisbanes.haze.hazeChild
 ```
 
 **Usage Example (Nav bar with backdrop blur):**
 ```kotlin
-val hazeState = rememberHazeState()
+val hazeState = remember { HazeState() }
 
 Box {
     // Nav bar - shows blurred content behind it
     Box(
         modifier = Modifier
-            .hazeEffect(
-                state = hazeState,
-                style = HazeMaterials.ultraThin(
-                    containerColor = BgDark.copy(alpha = 0.7f)
-                )
-            )
+            .hazeChild(state = hazeState)
+            .background(BgDark.copy(alpha = 0.7f))
     ) {
         // Nav bar content
     }
@@ -581,7 +575,7 @@ Box {
     // Main content - this is what gets blurred behind nav bar
     Column(
         modifier = Modifier
-            .hazeSource(state = hazeState)
+            .haze(state = hazeState)
             .verticalScroll(scrollState)
     ) {
         // Scrollable content
@@ -590,16 +584,9 @@ Box {
 ```
 
 **How it works:**
-1. `hazeSource(state)` - marks content to be captured and blurred
-2. `hazeEffect(state, style)` - shows the blurred content behind it
-3. `HazeMaterials.ultraThin()` - iOS-like material blur styling
-
-**Available HazeMaterials styles:**
-- `HazeMaterials.ultraThin()` - very subtle blur
-- `HazeMaterials.thin()` - light blur
-- `HazeMaterials.regular()` - standard blur
-- `HazeMaterials.thick()` - heavy blur
-- `HazeMaterials.ultraThick()` - very heavy blur
+1. `haze(state)` - marks content to be captured and blurred
+2. `hazeChild(state)` - shows the blurred content behind it
+3. Add `.background()` with alpha for tint color
 
 **JANGAN Build APK di VPS:**
 APK harus di-build di komputer lokal developer, BUKAN di VPS. Alasan:
