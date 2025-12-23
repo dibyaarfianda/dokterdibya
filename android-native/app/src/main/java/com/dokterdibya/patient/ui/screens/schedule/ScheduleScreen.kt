@@ -110,6 +110,7 @@ fun ScheduleScreen(
         }
     }
 }
+}
 
 @Composable
 fun LocationListContent(
@@ -483,6 +484,5 @@ fun ScheduleRow(
                 }
             }
         }
-    }
     }
 }

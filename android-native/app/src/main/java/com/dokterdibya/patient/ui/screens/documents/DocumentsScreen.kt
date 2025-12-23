@@ -22,6 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.dokterdibya.patient.ui.components.ThemedBackground
 import com.dokterdibya.patient.ui.theme.*
 import com.dokterdibya.patient.viewmodel.DocumentsViewModel
 
@@ -35,6 +36,7 @@ fun DocumentsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
 
+    ThemedBackground {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -50,13 +52,13 @@ fun DocumentsScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = BgDark,
+                    containerColor = Color.Transparent,
                     titleContentColor = TextPrimaryDark,
                     navigationIconContentColor = TextPrimaryDark
                 )
             )
         },
-        containerColor = BgDark
+        containerColor = Color.Transparent
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -161,6 +163,7 @@ fun DocumentsScreen(
             }
         }
     }
+}
 }
 
 @Composable

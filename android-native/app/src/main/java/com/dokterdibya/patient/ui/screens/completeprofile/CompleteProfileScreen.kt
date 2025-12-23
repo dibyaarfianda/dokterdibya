@@ -34,6 +34,7 @@ import com.dokterdibya.patient.ui.components.CheckboxGroup
 import com.dokterdibya.patient.ui.components.MedicationRow
 import com.dokterdibya.patient.ui.components.PaymentMethodGroup
 import com.dokterdibya.patient.ui.components.SingleCheckbox
+import com.dokterdibya.patient.ui.components.ThemedBackground
 import androidx.compose.foundation.BorderStroke
 import com.dokterdibya.patient.ui.theme.*
 import com.dokterdibya.patient.viewmodel.CompleteProfileUiState
@@ -126,15 +127,10 @@ fun CompleteProfileScreen(
         }
     }
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.linearGradient(
-                    colors = listOf(IntakeBgStart, IntakeBgEnd)
-                )
-            )
-    ) {
+    ThemedBackground {
+        Box(
+            modifier = Modifier.fillMaxSize()
+        ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -297,6 +293,7 @@ fun CompleteProfileScreen(
             }
         }
     }
+}
 }
 
 // ==================== Step 1: Basic Info ====================
