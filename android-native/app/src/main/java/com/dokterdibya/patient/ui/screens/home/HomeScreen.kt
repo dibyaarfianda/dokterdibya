@@ -88,14 +88,32 @@ fun HomeScreen(
         }
     }
 
+    // Animated gradient background (like web PWA)
+    val infiniteTransition = rememberInfiniteTransition(label = "bgGradient")
+    val animatedOffset by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis = 15000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "gradientOffset"
+    )
+
+    // Interpolate gradient positions for smooth animation
+    val startX = animatedOffset * 500f
+    val startY = animatedOffset * 300f
+    val endX = 1000f + (1f - animatedOffset) * 500f
+    val endY = 1500f + (1f - animatedOffset) * 300f
+
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(
                 Brush.linearGradient(
-                    colors = listOf(BgDark, BgDarkEnd),
-                    start = androidx.compose.ui.geometry.Offset(0f, 0f),
-                    end = androidx.compose.ui.geometry.Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+                    colors = listOf(BgDark, BgDarkEnd, BgDark),
+                    start = androidx.compose.ui.geometry.Offset(startX, startY),
+                    end = androidx.compose.ui.geometry.Offset(endX, endY)
                 )
             )
     ) {
