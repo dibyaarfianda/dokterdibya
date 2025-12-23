@@ -543,8 +543,9 @@ The Haze library (`dev.chrisbanes.haze`) provides true backdrop blur like web/iO
 
 **Dependencies (build.gradle.kts):**
 ```kotlin
-implementation("dev.chrisbanes.haze:haze:1.0.0")
-implementation("dev.chrisbanes.haze:haze-materials:1.0.0")
+// IMPORTANT: Use haze-android for Android, not just haze
+implementation("dev.chrisbanes.haze:haze-android:1.0.1")
+implementation("dev.chrisbanes.haze:haze-materials:1.0.1")
 ```
 
 **Haze 1.0 API (IMPORTANT - old API is deprecated):**
@@ -553,15 +554,15 @@ implementation("dev.chrisbanes.haze:haze-materials:1.0.0")
 
 **Imports:**
 ```kotlin
-import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.hazeSource
 import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.rememberHazeState
 import dev.chrisbanes.haze.materials.HazeMaterials
 ```
 
 **Usage Example (Nav bar with backdrop blur):**
 ```kotlin
-val hazeState = remember { HazeState() }
+val hazeState = rememberHazeState()
 
 Box {
     // Nav bar - shows blurred content behind it
