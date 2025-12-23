@@ -83,103 +83,359 @@ fun ProfileScreen(
         }
     }
 
-    // Edit Profile Dialog
+    // Calculate age from birth date
+    val calculatedAge = remember(editBirthDate) {
+        try {
+            val parts = editBirthDate.split("/")
+            if (parts.size == 3) {
+                val day = parts[0].toIntOrNull() ?: return@remember null
+                val month = parts[1].toIntOrNull() ?: return@remember null
+                val year = parts[2].toIntOrNull() ?: return@remember null
+                val birthDate = java.time.LocalDate.of(year, month, day)
+                val today = java.time.LocalDate.now()
+                java.time.Period.between(birthDate, today).years
+            } else null
+        } catch (e: Exception) { null }
+    }
+
+    // Edit Profile Dialog (website-matching dark glassmorphism style)
     if (showEditDialog) {
-        AlertDialog(
-            onDismissRequest = { if (!isSaving) showEditDialog = false },
-            title = {
-                Text(
-                    "Edit Profil",
-                    fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1F2937)
-                )
-            },
-            text = {
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = { if (!isSaving) showEditDialog = false }
+        ) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = CardDark),
+                border = androidx.compose.foundation.BorderStroke(1.dp, WebCardBorder)
+            ) {
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(rememberScrollState())
+                        .padding(24.dp)
                 ) {
+                    // Header with close button
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = null,
+                                tint = WebAccent,
+                                modifier = Modifier.size(22.dp)
+                            )
+                            Spacer(modifier = Modifier.width(10.dp))
+                            Text(
+                                "Edit Profil",
+                                fontSize = 20.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                color = WebAccent
+                            )
+                        }
+                        IconButton(
+                            onClick = { if (!isSaving) showEditDialog = false },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = "Tutup",
+                                tint = TextSecondaryDark,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Photo section
+                    Text(
+                        "Foto Profil",
+                        fontSize = 14.sp,
+                        color = WebAccent,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Avatar
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(100.dp)
+                                .clip(CircleShape)
+                                .background(WebAccent.copy(alpha = 0.2f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            if (uiState.photoUrl != null) {
+                                AsyncImage(
+                                    model = uiState.photoUrl,
+                                    contentDescription = "Foto Profil",
+                                    modifier = Modifier
+                                        .size(100.dp)
+                                        .clip(CircleShape),
+                                    contentScale = ContentScale.Crop
+                                )
+                            } else {
+                                Text(
+                                    text = editName.take(1).uppercase().ifEmpty { "?" },
+                                    fontSize = 42.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = WebAccent
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Pilih Foto button
+                        OutlinedButton(
+                            onClick = { photoPickerLauncher.launch("image/*") },
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = WebAccent
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, WebAccent),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Icon(
+                                Icons.Default.CameraAlt,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Pilih Foto", fontSize = 13.sp)
+                        }
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        Text(
+                            "Klik foto atau tombol untuk upload (Maks. 2MB, format: JPEG, PNG, WebP)",
+                            fontSize = 11.sp,
+                            color = TextSecondaryDark,
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Nama Lengkap field
+                    Text(
+                        "Nama Lengkap *",
+                        fontSize = 14.sp,
+                        color = WebAccent,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = editName,
                         onValueChange = { editName = it },
-                        label = { Text("Nama Lengkap") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
+                        placeholder = { Text("Masukkan nama lengkap", color = TextSecondaryDark.copy(alpha = 0.5f)) },
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF667EEA),
-                            unfocusedBorderColor = Color(0xFFD1D5DB)
-                        )
+                            focusedBorderColor = WebAccent,
+                            unfocusedBorderColor = WebCardBorder,
+                            focusedTextColor = TextPrimaryDark,
+                            unfocusedTextColor = TextPrimaryDark,
+                            cursorColor = WebAccent,
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent
+                        ),
+                        shape = RoundedCornerShape(8.dp)
                     )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Email field (disabled)
+                    Text(
+                        "Email (tidak dapat diubah)",
+                        fontSize = 14.sp,
+                        color = TextSecondaryDark,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = uiState.email,
+                        onValueChange = {},
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        enabled = false,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            disabledBorderColor = WebCardBorder.copy(alpha = 0.5f),
+                            disabledTextColor = TextSecondaryDark,
+                            disabledContainerColor = Color.Transparent
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Nomor WhatsApp field
+                    Text(
+                        "Nomor WhatsApp *",
+                        fontSize = 14.sp,
+                        color = WebAccent,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = editPhone,
                         onValueChange = { editPhone = it },
-                        label = { Text("Nomor Telepon") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
+                        placeholder = { Text("628xxxxxxxxxx", color = TextSecondaryDark.copy(alpha = 0.5f)) },
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF667EEA),
-                            unfocusedBorderColor = Color(0xFFD1D5DB)
-                        )
+                            focusedBorderColor = WebAccent,
+                            unfocusedBorderColor = WebCardBorder,
+                            focusedTextColor = TextPrimaryDark,
+                            unfocusedTextColor = TextPrimaryDark,
+                            cursorColor = WebAccent,
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent
+                        ),
+                        shape = RoundedCornerShape(8.dp)
                     )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Tanggal Lahir field
+                    Text(
+                        "Tanggal Lahir",
+                        fontSize = 14.sp,
+                        color = WebAccent,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
                     OutlinedTextField(
                         value = editBirthDate,
                         onValueChange = { editBirthDate = it },
-                        label = { Text("Tanggal Lahir (dd/MM/yyyy)") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
+                        placeholder = { Text("dd/MM/yyyy", color = TextSecondaryDark.copy(alpha = 0.5f)) },
+                        trailingIcon = {
+                            Icon(
+                                Icons.Default.CalendarToday,
+                                contentDescription = null,
+                                tint = TextSecondaryDark,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        },
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = Color(0xFF667EEA),
-                            unfocusedBorderColor = Color(0xFFD1D5DB)
-                        )
+                            focusedBorderColor = WebAccent,
+                            unfocusedBorderColor = WebCardBorder,
+                            focusedTextColor = TextPrimaryDark,
+                            unfocusedTextColor = TextPrimaryDark,
+                            cursorColor = WebAccent,
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent
+                        ),
+                        shape = RoundedCornerShape(8.dp)
                     )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Umur field (auto-calculated, read-only)
+                    Text(
+                        "Umur",
+                        fontSize = 14.sp,
+                        color = TextSecondaryDark,
+                        fontWeight = FontWeight.Medium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = calculatedAge?.toString() ?: "",
+                        onValueChange = {},
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        enabled = false,
+                        placeholder = { Text("Otomatis dari tanggal lahir", color = TextSecondaryDark.copy(alpha = 0.5f)) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            disabledBorderColor = WebCardBorder.copy(alpha = 0.5f),
+                            disabledTextColor = TextSecondaryDark,
+                            disabledContainerColor = Color.Transparent
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    )
+
+                    // Error message
                     if (saveError != null) {
+                        Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             saveError!!,
                             color = Danger,
                             fontSize = 12.sp
                         )
                     }
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        isSaving = true
-                        saveError = null
-                        viewModel.updateProfile(editName, editPhone, editBirthDate) { success, error ->
-                            isSaving = false
-                            if (success) {
-                                showEditDialog = false
-                            } else {
-                                saveError = error ?: "Gagal menyimpan profil"
-                            }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Action buttons
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.End,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Batal button
+                        OutlinedButton(
+                            onClick = { if (!isSaving) showEditDialog = false },
+                            enabled = !isSaving,
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = TextSecondaryDark
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, WebCardBorder),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            Text("Batal", fontSize = 14.sp)
                         }
-                    },
-                    enabled = !isSaving,
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF667EEA))
-                ) {
-                    if (isSaving) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            color = Color.White,
-                            strokeWidth = 2.dp
-                        )
-                    } else {
-                        Text("Simpan")
+
+                        Spacer(modifier = Modifier.width(12.dp))
+
+                        // Simpan Perubahan button
+                        Button(
+                            onClick = {
+                                isSaving = true
+                                saveError = null
+                                viewModel.updateProfile(editName, editPhone, editBirthDate) { success, error ->
+                                    isSaving = false
+                                    if (success) {
+                                        showEditDialog = false
+                                    } else {
+                                        saveError = error ?: "Gagal menyimpan profil"
+                                    }
+                                }
+                            },
+                            enabled = !isSaving,
+                            colors = ButtonDefaults.buttonColors(containerColor = WebAccent),
+                            shape = RoundedCornerShape(8.dp)
+                        ) {
+                            if (isSaving) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    color = Color.White,
+                                    strokeWidth = 2.dp
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                            }
+                            Icon(
+                                Icons.Default.Save,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text("Simpan Perubahan", fontSize = 14.sp)
+                        }
                     }
                 }
-            },
-            dismissButton = {
-                TextButton(
-                    onClick = { showEditDialog = false },
-                    enabled = !isSaving
-                ) {
-                    Text("Batal", color = Color(0xFF6B7280))
-                }
-            },
-            containerColor = Color.White,
-            shape = RoundedCornerShape(16.dp)
-        )
+            }
+        }
     }
 
     Scaffold(
