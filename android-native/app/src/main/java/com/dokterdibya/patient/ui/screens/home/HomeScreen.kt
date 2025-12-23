@@ -271,7 +271,7 @@ fun HomeScreen(
                         contentScale = ContentScale.Fit
                     )
                     Spacer(modifier = Modifier.width(6.dp))
-                    Column {
+                    Column(verticalArrangement = Arrangement.spacedBy((-2).dp)) {
                         Text(
                             text = buildAnnotatedString {
                                 withStyle(SpanStyle(color = Color.White)) {
@@ -282,13 +282,15 @@ fun HomeScreen(
                                 }
                             },
                             fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold,
+                            lineHeight = 16.sp
                         )
                         Text(
                             text = "Portal Privat Kandungan Anda",
                             fontSize = 9.sp,
                             color = TextSecondaryDark,
-                            letterSpacing = 0.3.sp
+                            letterSpacing = 0.3.sp,
+                            lineHeight = 9.sp
                         )
                     }
                 }
