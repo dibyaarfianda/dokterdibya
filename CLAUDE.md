@@ -548,7 +548,7 @@ The Haze library (`dev.chrisbanes.haze`) provides true backdrop blur like web/iO
 **Dependencies (build.gradle.kts):**
 ```kotlin
 // Use haze-jetpack-compose for AndroidX Compose (NOT haze-android!)
-implementation("dev.chrisbanes.haze:haze-jetpack-compose:0.7.3")
+implementation("dev.chrisbanes.haze:haze-jetpack-compose:0.7.0")
 ```
 
 **Imports:**

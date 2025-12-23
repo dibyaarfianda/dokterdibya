@@ -98,7 +98,7 @@ dependencies {
 
     // Haze (Blur/Frosted Glass Effect) for backdrop blur
     // Use haze-jetpack-compose for AndroidX Compose (older API: haze/hazeChild)
-    implementation("dev.chrisbanes.haze:haze-jetpack-compose:0.7.3")
+    implementation("dev.chrisbanes.haze:haze-jetpack-compose:0.7.0")
 
     // Markwon (Markdown Rendering)
     implementation("io.noties.markwon:core:4.6.2")
