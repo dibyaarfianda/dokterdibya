@@ -583,7 +583,7 @@ fun AnnouncementsSection(
     announcements: List<Announcement>,
     onLike: (Int) -> Unit
 ) {
-    var showAll by remember { mutableStateOf(false) }
+    var isExpanded by remember { mutableStateOf(true) }
 
     // Get priority announcement and most recent non-priority
     val priorityAnnouncement = announcements.find { it.priority == "important" || it.priority == "urgent" }
@@ -595,60 +595,63 @@ fun AnnouncementsSection(
         recentAnnouncements.firstOrNull()?.let { add(it) }
     }.take(2)
 
-    val remainingAnnouncements = announcements.filter { it !in initialAnnouncements }
-    val displayedAnnouncements = if (showAll) announcements else initialAnnouncements
+    val displayedAnnouncements = initialAnnouncements
 
-    Column {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+    // Announcements container card (website style)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = WebCardBg),
+        border = androidx.compose.foundation.BorderStroke(1.dp, WebCardBorder)
+    ) {
+        Column {
+            // Header row (clickable to expand/collapse)
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { isExpanded = !isExpanded }
+                    .padding(20.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.PushPin,
+                        contentDescription = null,
+                        tint = WebAccent,
+                        modifier = Modifier.size(22.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = "Pengumuman",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = WebAccent
+                    )
+                }
                 Icon(
-                    imageVector = Icons.Default.Campaign,
-                    contentDescription = null,
-                    tint = Warning,
-                    modifier = Modifier.size(20.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = "Pengumuman",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = TextPrimaryDark
+                    imageVector = if (isExpanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
+                    contentDescription = if (isExpanded) "Tutup" else "Buka",
+                    tint = WebAccent,
+                    modifier = Modifier.size(24.dp)
                 )
             }
-        }
 
-        Spacer(modifier = Modifier.height(12.dp))
-
-        displayedAnnouncements.forEach { announcement ->
-            AnnouncementCard(
-                announcement = announcement,
-                onLike = { onLike(announcement.id) }
-            )
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
-        // Show expand/collapse button if there are more announcements
-        if (remainingAnnouncements.isNotEmpty()) {
-            TextButton(
-                onClick = { showAll = !showAll },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = if (showAll) "Lihat Lebih Sedikit" else "Lihat ${remainingAnnouncements.size} Pengumuman Lainnya",
-                    fontSize = 13.sp,
-                    color = Accent
-                )
-                Spacer(modifier = Modifier.width(4.dp))
-                Icon(
-                    imageVector = if (showAll) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
-                    contentDescription = null,
-                    tint = Accent,
-                    modifier = Modifier.size(18.dp)
-                )
+            // Content (expandable)
+            if (isExpanded) {
+                Column(
+                    modifier = Modifier.padding(start = 20.dp, end = 20.dp, bottom = 20.dp)
+                ) {
+                    displayedAnnouncements.forEachIndexed { index, announcement ->
+                        if (index > 0) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
+                        AnnouncementCard(
+                            announcement = announcement,
+                            onLike = { onLike(announcement.id) }
+                        )
+                    }
+                }
             }
         }
     }
@@ -659,126 +662,163 @@ fun AnnouncementCard(
     announcement: Announcement,
     onLike: () -> Unit
 ) {
-    var isExpanded by remember { mutableStateOf(false) }
+    val isImportant = announcement.priority == "urgent" || announcement.priority == "important"
+    val priorityColor = if (isImportant) Warning else WebAccent
+    val priorityIcon = if (isImportant) Icons.Default.Warning else Icons.Default.Info
 
-    val priorityColor = when (announcement.priority) {
-        "urgent" -> Danger
-        "important" -> Warning
-        else -> Accent
-    }
-
+    // Inner card for each announcement
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { isExpanded = !isExpanded },
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = CardDark)
+        colors = CardDefaults.cardColors(containerColor = CardDark.copy(alpha = 0.6f)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, WebCardBorder.copy(alpha = 0.3f))
     ) {
-        Column(modifier = Modifier.padding(14.dp)) {
+        Column(modifier = Modifier.padding(18.dp)) {
+            // Title row with icon and badge
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top
             ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    // Priority badge
-                    if (announcement.priority == "urgent" || announcement.priority == "important") {
-                        Surface(
-                            shape = RoundedCornerShape(4.dp),
-                            color = priorityColor.copy(alpha = 0.2f),
-                            modifier = Modifier.padding(bottom = 6.dp)
-                        ) {
-                            Text(
-                                text = if (announcement.priority == "urgent") "PENTING" else "INFO",
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = priorityColor,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
-                        }
-                    }
+                // Priority icon
+                Icon(
+                    imageVector = priorityIcon,
+                    contentDescription = null,
+                    tint = priorityColor,
+                    modifier = Modifier
+                        .size(20.dp)
+                        .padding(top = 2.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
 
+                // Title
+                Text(
+                    text = announcement.title,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextPrimaryDark,
+                    modifier = Modifier.weight(1f)
+                )
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                // Badge
+                Surface(
+                    shape = RoundedCornerShape(6.dp),
+                    color = priorityColor
+                ) {
                     Text(
-                        text = announcement.title,
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = TextPrimaryDark
+                        text = if (isImportant) "PENTING" else "INFORMASI",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isImportant) Color.Black else Color.White,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(14.dp))
 
-            // Render markdown content
+            // Message content (full text, no truncation like website)
             MarkdownText(
                 content = announcement.message,
-                maxLines = if (isExpanded) Int.MAX_VALUE else 3,
+                maxLines = Int.MAX_VALUE,
                 modifier = Modifier.fillMaxWidth()
             )
 
-            // Show expand/collapse hint if text is long
-            if (announcement.message.length > 100) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = if (isExpanded) "Lihat lebih sedikit" else "Lihat selengkapnya",
-                    fontSize = 12.sp,
-                    color = Accent,
-                    fontWeight = FontWeight.Medium
-                )
-            }
-
             // Image if available
             if (!announcement.image_url.isNullOrEmpty()) {
-                Spacer(modifier = Modifier.height(10.dp))
+                Spacer(modifier = Modifier.height(14.dp))
                 AsyncImage(
                     model = announcement.image_url,
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(if (isExpanded) 200.dp else 120.dp)
+                        .height(180.dp)
                         .clip(RoundedCornerShape(8.dp)),
                     contentScale = ContentScale.Crop
                 )
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
+            // Author section (website style)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Author and date
-                Text(
-                    text = announcement.created_by_name ?: "",
-                    fontSize = 11.sp,
-                    color = TextSecondaryDark.copy(alpha = 0.7f)
-                )
+                // Author with icon
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Person,
+                        contentDescription = null,
+                        tint = WebAccent,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = announcement.created_by_name ?: "Tim dokterDIBYA",
+                        fontSize = 12.sp,
+                        color = WebAccent,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
 
-                // Like button - use IconButton for proper touch handling
-                IconButton(
-                    onClick = onLike,
-                    modifier = Modifier.size(36.dp)
+                // Like count and date
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
+                    // Like button
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.clickable(onClick = onLike)
+                    ) {
                         Icon(
                             imageVector = if (announcement.liked_by_me) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
                             contentDescription = "Like",
                             tint = if (announcement.liked_by_me) Danger else TextSecondaryDark,
-                            modifier = Modifier.size(18.dp)
+                            modifier = Modifier.size(16.dp)
                         )
-                        if (announcement.like_count > 0) {
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = announcement.like_count.toString(),
-                                fontSize = 12.sp,
-                                color = TextSecondaryDark
-                            )
-                        }
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = announcement.like_count.toString(),
+                            fontSize = 12.sp,
+                            color = TextSecondaryDark
+                        )
+                    }
+
+                    // Date
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Default.CalendarToday,
+                            contentDescription = null,
+                            tint = TextSecondaryDark,
+                            modifier = Modifier.size(14.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = formatAnnouncementDate(announcement.created_at),
+                            fontSize = 12.sp,
+                            color = TextSecondaryDark
+                        )
                     }
                 }
             }
         }
+    }
+}
+
+// Helper function to format date
+private fun formatAnnouncementDate(dateString: String?): String {
+    if (dateString.isNullOrEmpty()) return ""
+    return try {
+        val inputFormat = java.text.SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", java.util.Locale("id", "ID"))
+        val outputFormat = java.text.SimpleDateFormat("dd MMMM yyyy", java.util.Locale("id", "ID"))
+        val date = inputFormat.parse(dateString)
+        date?.let { outputFormat.format(it) } ?: dateString.take(10)
+    } catch (e: Exception) {
+        dateString.take(10)
     }
 }
 
