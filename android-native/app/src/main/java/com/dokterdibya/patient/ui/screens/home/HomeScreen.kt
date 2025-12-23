@@ -74,6 +74,7 @@ fun HomeScreen(
     onNavigateToMedications: () -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
     onNavigateToArticleDetail: (Int) -> Unit = {},
+    onNavigateToJourneyBook: () -> Unit = {},
     onNavigateToWebView: (String, String) -> Unit = { _, _ -> },
     onLogout: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
@@ -417,9 +418,7 @@ fun HomeScreen(
 
             // Journey Book Card (shown for all users like website)
             JourneyBookCard(
-                onClick = {
-                    onNavigateToWebView("https://dokterdibya.com/perjalanan-ibu.html", "Perjalanan Ibu")
-                }
+                onClick = onNavigateToJourneyBook
             )
             Spacer(modifier = Modifier.height(16.dp))
 
