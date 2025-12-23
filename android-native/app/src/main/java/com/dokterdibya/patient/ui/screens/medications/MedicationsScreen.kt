@@ -164,6 +164,7 @@ fun MedicationsScreen(
         }
     }
 }
+}
 
 @Composable
 fun SectionHeader(
@@ -284,6 +285,5 @@ fun MedicationCard(
                 }
             }
         }
-    }
     }
 }

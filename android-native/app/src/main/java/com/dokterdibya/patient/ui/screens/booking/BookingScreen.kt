@@ -302,6 +302,7 @@ fun BookingScreen(
         )
     }
 }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -869,6 +870,5 @@ fun AppointmentCard(
                 }
             }
         }
-    }
     }
 }

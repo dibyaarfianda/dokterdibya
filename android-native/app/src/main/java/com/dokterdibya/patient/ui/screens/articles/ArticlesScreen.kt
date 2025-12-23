@@ -142,6 +142,7 @@ fun ArticlesScreen(
         }
     }
 }
+}
 
 @Composable
 fun ArticleCard(
@@ -228,6 +229,5 @@ fun ArticleCard(
                 }
             }
         }
-    }
     }
 }

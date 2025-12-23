@@ -161,6 +161,7 @@ fun UsgGalleryScreen(
         }
     }
 }
+}
 
 @Composable
 fun UsgCard(
@@ -314,6 +315,5 @@ fun ImageViewerDialog(
                 }
             }
         }
-    }
     }
 }
