@@ -19,6 +19,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.dokterdibya.patient.ui.components.ThemedBackground
 import com.dokterdibya.patient.ui.theme.*
 import com.dokterdibya.patient.viewmodel.NotificationsViewModel
 import com.dokterdibya.patient.viewmodel.NotificationItem
@@ -33,6 +34,7 @@ fun NotificationsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    ThemedBackground {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -48,13 +50,13 @@ fun NotificationsScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = BgDark,
+                    containerColor = Color.Transparent,
                     titleContentColor = TextPrimaryDark,
                     navigationIconContentColor = TextPrimaryDark
                 )
             )
         },
-        containerColor = BgDark
+        containerColor = Color.Transparent
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -100,6 +102,7 @@ fun NotificationsScreen(
                 }
             }
         }
+    }
     }
 }
 
