@@ -40,11 +40,6 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.zIndex
 import android.os.Build
 import androidx.hilt.navigation.compose.hiltViewModel
-import dev.chrisbanes.haze.HazeState
-import dev.chrisbanes.haze.HazeStyle
-import dev.chrisbanes.haze.HazeTint
-import dev.chrisbanes.haze.haze
-import dev.chrisbanes.haze.hazeChild
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -85,8 +80,8 @@ fun HomeScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    // Haze state for backdrop blur effect
-    val hazeState = remember { HazeState() }
+    // Track scroll state for nav bar appearance
+    val scrollState = rememberScrollState()
 
     // Refresh data when screen is resumed (e.g., after returning from profile)
     DisposableEffect(lifecycleOwner) {
@@ -175,31 +170,39 @@ fun HomeScreen(
                 )
             )
     ) {
-        // Sticky Top Navigation Bar with backdrop blur effect (Haze)
+        // Sticky Top Navigation Bar with frosted glass effect
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(70.dp)
                 .zIndex(10f)
-                .hazeChild(
-                    state = hazeState,
-                    style = HazeStyle(
-                        backgroundColor = Color.White.copy(alpha = 0.12f),
-                        tint = HazeTint(
-                            color = Color.White.copy(alpha = 0.18f)
-                        ),
-                        blurRadius = 40.dp,
-                        noiseFactor = 0.01f
+                .background(
+                    // Dark frosted glass background matching app theme
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            BgDark.copy(alpha = 0.95f),
+                            BgDark.copy(alpha = 0.85f)
+                        )
                     )
                 )
         ) {
-            // Bottom border
+            // Bottom border (subtle glow line)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(1.dp)
                     .align(Alignment.BottomCenter)
-                    .background(Color.White.copy(alpha = 0.3f))
+                    .background(
+                        Brush.horizontalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                WebAccent.copy(alpha = 0.3f),
+                                WebAccent.copy(alpha = 0.5f),
+                                WebAccent.copy(alpha = 0.3f),
+                                Color.Transparent
+                            )
+                        )
+                    )
             )
             // Nav bar content
             Row(
@@ -329,12 +332,11 @@ fun HomeScreen(
             }
         }
 
-        // Main content (scrollable) - source for backdrop blur
+        // Main content (scrollable)
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .haze(state = hazeState)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .padding(top = 78.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
         ) {
             // Welcome Card (website-style glassmorphism)
