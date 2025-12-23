@@ -21,6 +21,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.dokterdibya.patient.data.api.Medication
+import androidx.compose.ui.graphics.Color
+import com.dokterdibya.patient.ui.components.ThemedBackground
 import com.dokterdibya.patient.ui.theme.*
 import com.dokterdibya.patient.viewmodel.MedicationsViewModel
 
@@ -32,6 +34,7 @@ fun MedicationsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    ThemedBackground {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -47,13 +50,13 @@ fun MedicationsScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = BgDark,
+                    containerColor = Color.Transparent,
                     titleContentColor = TextPrimaryDark,
                     navigationIconContentColor = TextPrimaryDark
                 )
             )
         },
-        containerColor = BgDark
+        containerColor = Color.Transparent
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -281,5 +284,6 @@ fun MedicationCard(
                 }
             }
         }
+    }
     }
 }

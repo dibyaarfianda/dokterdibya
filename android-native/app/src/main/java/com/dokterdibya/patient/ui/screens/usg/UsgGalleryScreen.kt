@@ -30,6 +30,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.dokterdibya.patient.ui.components.ThemedBackground
 import com.dokterdibya.patient.ui.theme.*
 import com.dokterdibya.patient.viewmodel.UsgViewModel
 
@@ -41,6 +42,7 @@ fun UsgGalleryScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    ThemedBackground {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -56,13 +58,13 @@ fun UsgGalleryScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = BgDark,
+                    containerColor = Color.Transparent,
                     titleContentColor = TextPrimaryDark,
                     navigationIconContentColor = TextPrimaryDark
                 )
             )
         },
-        containerColor = BgDark
+        containerColor = Color.Transparent
     ) { paddingValues ->
         // Full-screen image viewer dialog
         if (uiState.selectedUsg != null) {
@@ -312,5 +314,6 @@ fun ImageViewerDialog(
                 }
             }
         }
+    }
     }
 }
