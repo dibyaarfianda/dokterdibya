@@ -331,60 +331,24 @@ fun HomeScreen(
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Quick Menu
-            Text(
-                text = "Menu Cepat",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = TextPrimaryDark
+            // Klinik Privat Minggu Card (Upcoming Appointments)
+            KlinikPrivatMingguCard(
+                onBookAppointment = onNavigateToBooking
             )
-            Spacer(modifier = Modifier.height(12.dp))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                QuickMenuItem(
-                    modifier = Modifier.weight(1f),
-                    iconRes = R.drawable.book,
-                    title = "Booking",
-                    subtitle = "Pesan jadwal",
-                    iconColor = WebAccent,
-                    onClick = onNavigateToBooking
-                )
-                QuickMenuItem(
-                    modifier = Modifier.weight(1f),
-                    iconRes = R.drawable.usg,
-                    title = "Hasil USG",
-                    subtitle = "${uiState.usgCount} foto",
-                    iconColor = Purple,
-                    onClick = onNavigateToUsg
-                )
-            }
+            Spacer(modifier = Modifier.height(16.dp))
 
-            Spacer(modifier = Modifier.height(10.dp))
+            // Jadwal dan Lokasi Card
+            JadwalDanLokasiCard(
+                onViewAllLocations = onNavigateToSchedule
+            )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                QuickMenuItem(
-                    modifier = Modifier.weight(1f),
-                    iconRes = R.drawable.subur,
-                    title = "Kesuburan",
-                    subtitle = "Kalender",
-                    iconColor = Fertility,
-                    onClick = onNavigateToFertility
-                )
-                QuickMenuItem(
-                    modifier = Modifier.weight(1f),
-                    iconRes = R.drawable.erm,
-                    title = "Dokumen",
-                    subtitle = "Invoice, dll",
-                    iconColor = WebSuccess,
-                    onClick = onNavigateToDocuments
-                )
-            }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Kalender Kesuburan Card
+            KalenderKesuburanCard(
+                onClick = onNavigateToFertility
+            )
 
             // Medications Section (if any)
             if (uiState.hasMedications) {
@@ -400,6 +364,7 @@ fun HomeScreen(
                 Spacer(modifier = Modifier.height(16.dp))
                 RuangMembacaSection(
                     articles = uiState.articles,
+                    totalArticleCount = uiState.totalArticleCount,
                     onArticleClick = { article ->
                         // Open article in browser
                         val url = "https://dokterdibya.com/artikel/${article.slug ?: article.id}"
@@ -1202,62 +1167,6 @@ fun PregnancyCard(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun QuickMenuItem(
-    modifier: Modifier = Modifier,
-    iconRes: Int,
-    title: String,
-    subtitle: String,
-    iconColor: Color,
-    onClick: () -> Unit
-) {
-    Card(
-        onClick = onClick,
-        modifier = modifier.height(90.dp),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = WebCardBg),
-        border = androidx.compose.foundation.BorderStroke(1.dp, WebCardBorder)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(iconColor.copy(alpha = 0.2f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    painter = painterResource(id = iconRes),
-                    contentDescription = null,
-                    tint = iconColor,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-            Spacer(modifier = Modifier.width(14.dp))
-            Column {
-                Text(
-                    text = title,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.SemiBold,
-                    color = TextPrimaryDark
-                )
-                Spacer(modifier = Modifier.height(2.dp))
-                Text(
-                    text = subtitle,
-                    fontSize = 12.sp,
-                    color = TextSecondaryDark
-                )
-            }
-        }
-    }
-}
-
 @Composable
 fun WelcomeMessageCard() {
     var isExpanded by remember { mutableStateOf(false) }
@@ -1599,6 +1508,7 @@ fun MarkdownText(
 @Composable
 fun RuangMembacaSection(
     articles: List<Article>,
+    totalArticleCount: Int = 0,
     onArticleClick: (Article) -> Unit,
     onViewAll: () -> Unit
 ) {
@@ -1687,16 +1597,19 @@ fun RuangMembacaSection(
                         )
                     }
 
-                    // View all button
+                    // View all button (filled cyan button with count - website style)
                     Spacer(modifier = Modifier.height(16.dp))
-                    OutlinedButton(
+                    Button(
                         onClick = onViewAll,
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = WebAccent),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, WebAccent),
+                        colors = ButtonDefaults.buttonColors(containerColor = WebAccent),
                         shape = RoundedCornerShape(8.dp)
                     ) {
-                        Text("Lihat Semua Artikel", fontSize = 14.sp)
+                        Text(
+                            text = if (totalArticleCount > 0) "Lihat Semua Artikel ($totalArticleCount)" else "Lihat Semua Artikel",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium
+                        )
                         Spacer(modifier = Modifier.width(6.dp))
                         Icon(
                             imageVector = Icons.Default.ArrowForward,
@@ -1826,5 +1739,289 @@ private fun formatArticleDate(dateString: String?): String {
         date?.let { outputFormat.format(it) } ?: dateString.take(10)
     } catch (e: Exception) {
         dateString.take(10)
+    }
+}
+
+// Klinik Privat Minggu Card (Upcoming Appointments) - website style
+@Composable
+fun KlinikPrivatMingguCard(
+    onBookAppointment: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = WebCardBg),
+        border = androidx.compose.foundation.BorderStroke(1.dp, WebCardBorder)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            // Header
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.CalendarMonth,
+                    contentDescription = null,
+                    tint = WebAccent,
+                    modifier = Modifier.size(22.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "Klinik Privat Minggu",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = WebAccent
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Empty state (website style)
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                // Calendar icon with empty state
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(WebAccent.copy(alpha = 0.1f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.EventBusy,
+                        contentDescription = null,
+                        tint = WebAccent,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                Text(
+                    text = "Belum ada janji temu yang akan datang",
+                    fontSize = 14.sp,
+                    color = TextSecondaryDark,
+                    textAlign = TextAlign.Center
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Book appointment button (website style)
+                Button(
+                    onClick = onBookAppointment,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = WebAccent),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Buat Janji Temu",
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+    }
+}
+
+// Jadwal dan Lokasi Card - website style
+@Composable
+fun JadwalDanLokasiCard(
+    onViewAllLocations: () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = WebCardBg),
+        border = androidx.compose.foundation.BorderStroke(1.dp, WebCardBorder)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            // Header
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.LocationOn,
+                    contentDescription = null,
+                    tint = WebAccent,
+                    modifier = Modifier.size(22.dp)
+                )
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    text = "Jadwal dan Lokasi",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = WebAccent
+                )
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Location info card
+            Card(
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = CardDark.copy(alpha = 0.6f)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, WebCardBorder.copy(alpha = 0.3f))
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Location icon
+                    Box(
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(WebAccent.copy(alpha = 0.2f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.MedicalServices,
+                            contentDescription = null,
+                            tint = WebAccent,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(14.dp))
+
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Klinik Privat",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = TextPrimaryDark
+                        )
+                        Spacer(modifier = Modifier.height(2.dp))
+                        Text(
+                            text = "Jl. Let. Jend. S. Parman No.39, Blitar",
+                            fontSize = 12.sp,
+                            color = TextSecondaryDark,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.Schedule,
+                                contentDescription = null,
+                                tint = WebAccent,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = "Minggu, 07:00 - 12:00",
+                                fontSize = 11.sp,
+                                color = WebAccent,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // View all locations button
+            OutlinedButton(
+                onClick = onViewAllLocations,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = WebAccent),
+                border = androidx.compose.foundation.BorderStroke(1.dp, WebAccent),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text("Lihat Semua Lokasi Praktek", fontSize = 14.sp)
+                Spacer(modifier = Modifier.width(6.dp))
+                Icon(
+                    imageVector = Icons.Default.ArrowForward,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp)
+                )
+            }
+        }
+    }
+}
+
+// Kalender Kesuburan Card - website style with pink/purple gradient
+@Composable
+fun KalenderKesuburanCard(
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.linearGradient(
+                        colors = listOf(
+                            Fertility.copy(alpha = 0.3f),
+                            Purple.copy(alpha = 0.3f)
+                        )
+                    )
+                )
+                .padding(20.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    // Fertility icon
+                    Box(
+                        modifier = Modifier
+                            .size(52.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Fertility.copy(alpha = 0.3f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            painter = painterResource(id = R.drawable.subur),
+                            contentDescription = null,
+                            tint = Fertility,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Column {
+                        Text(
+                            text = "Kalender Kesuburan",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            color = Fertility
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Pantau masa subur Anda",
+                            fontSize = 13.sp,
+                            color = TextSecondaryDark
+                        )
+                    }
+                }
+
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = "Buka",
+                    tint = Fertility,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+        }
     }
 }
