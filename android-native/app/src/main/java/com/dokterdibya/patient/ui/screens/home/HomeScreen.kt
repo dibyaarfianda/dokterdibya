@@ -55,10 +55,9 @@ import com.dokterdibya.patient.ui.components.SlideMenu
 import com.dokterdibya.patient.ui.theme.*
 import com.dokterdibya.patient.viewmodel.BirthInfo
 import com.dokterdibya.patient.viewmodel.HomeViewModel
-import dev.chrisbanes.haze.hazeSource
-import dev.chrisbanes.haze.hazeEffect
-import dev.chrisbanes.haze.rememberHazeState
-import dev.chrisbanes.haze.materials.HazeMaterials
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.haze
+import dev.chrisbanes.haze.hazeChild
 
 @Composable
 fun HomeScreen(
@@ -86,7 +85,7 @@ fun HomeScreen(
 
     // Track scroll state for nav bar appearance
     val scrollState = rememberScrollState()
-    val hazeState = rememberHazeState()
+    val hazeState = remember { HazeState() }
 
     // Refresh data when screen is resumed (e.g., after returning from profile)
     DisposableEffect(lifecycleOwner) {
@@ -181,12 +180,8 @@ fun HomeScreen(
                 .fillMaxWidth()
                 .height(70.dp)
                 .zIndex(10f)
-                .hazeEffect(
-                    state = hazeState,
-                    style = HazeMaterials.ultraThin(
-                        containerColor = BgDark.copy(alpha = 0.7f)
-                    )
-                )
+                .hazeChild(state = hazeState)
+                .background(BgDark.copy(alpha = 0.7f))
         ) {
             // Bottom border (subtle glow line)
             Box(
@@ -334,11 +329,11 @@ fun HomeScreen(
             }
         }
 
-        // Main content (scrollable) - hazeSource enables blur effect on nav bar
+        // Main content (scrollable) - haze enables blur effect on nav bar
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .hazeSource(state = hazeState)
+                .haze(state = hazeState)
                 .verticalScroll(scrollState)
                 .padding(top = 78.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
         ) {
