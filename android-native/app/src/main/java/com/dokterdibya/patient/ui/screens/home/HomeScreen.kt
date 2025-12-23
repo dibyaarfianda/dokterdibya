@@ -67,6 +67,8 @@ fun HomeScreen(
     onNavigateToVisitHistory: () -> Unit,
     onNavigateToMedications: () -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
+    onNavigateToArticleDetail: (Int) -> Unit = {},
+    onNavigateToWebView: (String, String) -> Unit = { _, _ -> },
     onLogout: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -343,8 +345,7 @@ fun HomeScreen(
             // Journey Book Card (shown for all users like website)
             JourneyBookCard(
                 onClick = {
-                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse("https://dokterdibya.com/perjalanan-ibu.html"))
-                    context.startActivity(intent)
+                    onNavigateToWebView("https://dokterdibya.com/perjalanan-ibu.html", "Perjalanan Ibu")
                 }
             )
             Spacer(modifier = Modifier.height(16.dp))
@@ -384,10 +385,8 @@ fun HomeScreen(
                     articles = uiState.articles,
                     totalArticleCount = uiState.totalArticleCount,
                     onArticleClick = { article ->
-                        // Open article in browser
-                        val url = "https://dokterdibya.com/artikel/${article.slug ?: article.id}"
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                        context.startActivity(intent)
+                        // Open article in app using ArticleDetailScreen
+                        onNavigateToArticleDetail(article.id)
                     },
                     onViewAll = onNavigateToArticles
                 )
