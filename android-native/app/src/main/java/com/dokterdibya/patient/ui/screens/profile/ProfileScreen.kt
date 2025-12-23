@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.dokterdibya.patient.ui.components.ThemedBackground
 import com.dokterdibya.patient.ui.theme.*
 import com.dokterdibya.patient.viewmodel.ProfileViewModel
 
@@ -438,45 +439,46 @@ fun ProfileScreen(
         }
     }
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = {
-                    Text(
-                        "Profil Saya",
-                        fontWeight = FontWeight.SemiBold
-                    )
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { showEditDialog = true }) {
-                        Icon(
-                            Icons.Default.Edit,
-                            contentDescription = "Edit Profil",
-                            tint = Accent
+    ThemedBackground {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Text(
+                            "Profil Saya",
+                            fontWeight = FontWeight.SemiBold
                         )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = BgDark,
-                    titleContentColor = TextPrimaryDark,
-                    navigationIconContentColor = TextPrimaryDark
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { showEditDialog = true }) {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = "Edit Profil",
+                                tint = Accent
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = Color.Transparent,
+                        titleContentColor = TextPrimaryDark,
+                        navigationIconContentColor = TextPrimaryDark
+                    )
                 )
-            )
-        },
-        containerColor = BgDark
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp)
-        ) {
+            },
+            containerColor = Color.Transparent
+        ) { paddingValues ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp)
+            ) {
             if (uiState.isLoading) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
@@ -489,7 +491,8 @@ fun ProfileScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = CardDark)
+                    colors = CardDefaults.cardColors(containerColor = WebCardBg),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, WebCardBorder)
                 ) {
                     Column(
                         modifier = Modifier
@@ -694,6 +697,7 @@ fun ProfileScreen(
 
                 Spacer(modifier = Modifier.height(32.dp))
             }
+        }
         }
     }
 }

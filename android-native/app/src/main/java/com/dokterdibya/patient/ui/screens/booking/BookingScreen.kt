@@ -26,6 +26,8 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.dokterdibya.patient.data.model.SessionSlots
 import com.dokterdibya.patient.data.model.SundayDate
 import com.dokterdibya.patient.data.model.TimeSlot
+import androidx.compose.ui.graphics.Color
+import com.dokterdibya.patient.ui.components.ThemedBackground
 import com.dokterdibya.patient.ui.theme.*
 import com.dokterdibya.patient.viewmodel.AppointmentInfo
 import com.dokterdibya.patient.viewmodel.BookingViewModel
@@ -48,6 +50,7 @@ fun BookingScreen(
         }
     }
 
+    ThemedBackground {
     Scaffold(
         topBar = {
             TopAppBar(
@@ -71,14 +74,14 @@ fun BookingScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = BgDark,
+                    containerColor = Color.Transparent,
                     titleContentColor = TextPrimaryDark,
                     navigationIconContentColor = TextPrimaryDark
                 )
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = BgDark
+        containerColor = Color.Transparent
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -866,5 +869,6 @@ fun AppointmentCard(
                 }
             }
         }
+    }
     }
 }
