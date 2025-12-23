@@ -21,6 +21,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -100,6 +101,47 @@ fun HomeScreen(
         }
     }
 
+    // Floating bubbles animation (like PWA website)
+    @Composable
+    fun FloatingBubble(
+        size: Float,
+        startX: Float,
+        startY: Float,
+        delay: Int,
+        duration: Int
+    ) {
+        val infiniteTransition = rememberInfiniteTransition(label = "bubble")
+
+        val offsetY by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = -100f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = duration, easing = LinearEasing, delayMillis = delay),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "bubbleY"
+        )
+
+        val rotation by infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 180f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(durationMillis = duration, easing = LinearEasing, delayMillis = delay),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "bubbleRotation"
+        )
+
+        Box(
+            modifier = Modifier
+                .offset(x = startX.dp, y = (startY + offsetY).dp)
+                .size(size.dp)
+                .graphicsLayer { rotationZ = rotation }
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.08f))
+        )
+    }
+
     // Animated gradient background (like web PWA)
     val infiniteTransition = rememberInfiniteTransition(label = "bgGradient")
 
@@ -174,6 +216,14 @@ fun HomeScreen(
                 )
             )
     ) {
+        // Floating white bubbles (like PWA website)
+        FloatingBubble(size = 80f, startX = 20f, startY = 100f, delay = 0, duration = 8000)
+        FloatingBubble(size = 60f, startX = 280f, startY = 200f, delay = 1000, duration = 10000)
+        FloatingBubble(size = 100f, startX = 150f, startY = 400f, delay = 2000, duration = 7000)
+        FloatingBubble(size = 40f, startX = 320f, startY = 600f, delay = 500, duration = 9000)
+        FloatingBubble(size = 70f, startX = 50f, startY = 700f, delay = 1500, duration = 11000)
+        FloatingBubble(size = 55f, startX = 250f, startY = 850f, delay = 3000, duration = 8500)
+
         // Sticky Top Navigation Bar with real blur effect
         Box(
             modifier = Modifier
