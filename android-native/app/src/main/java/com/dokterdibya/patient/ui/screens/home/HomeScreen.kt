@@ -76,6 +76,7 @@ fun HomeScreen(
     onNavigateToArticleDetail: (Int) -> Unit = {},
     onNavigateToJourneyBook: () -> Unit = {},
     onNavigateToWebView: (String, String) -> Unit = { _, _ -> },
+    onNavigateToCompleteProfile: () -> Unit = {},
     onLogout: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -383,7 +384,7 @@ fun HomeScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Profile Identity Card
-            ProfileIdentityCard(onEditProfile = onNavigateToProfile)
+            ProfileIdentityCard(onEditIntake = onNavigateToCompleteProfile)
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -1493,58 +1494,62 @@ fun JourneyBookCard(onClick: () -> Unit) {
 }
 
 @Composable
-fun ProfileIdentityCard(onEditProfile: () -> Unit) {
+fun ProfileIdentityCard(onEditIntake: () -> Unit) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onEditProfile),
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = WebCardBg),
         border = androidx.compose.foundation.BorderStroke(1.dp, WebCardBorder)
     ) {
-        Row(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(20.dp)
         ) {
+            // Header row with icon and title
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    modifier = Modifier
-                        .size(42.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(WebAccent.copy(alpha = 0.2f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        painter = painterResource(id = R.drawable.identitas),
-                        contentDescription = null,
-                        tint = WebAccent,
-                        modifier = Modifier.size(22.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(14.dp))
-                Column {
-                    Text(
-                        text = "Identitas Pribadi",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = TextPrimaryDark
-                    )
-                    Text(
-                        text = "Lihat & Edit Data Anda",
-                        fontSize = 12.sp,
-                        color = TextSecondaryDark
-                    )
-                }
+                Icon(
+                    painter = painterResource(id = R.drawable.identitas),
+                    contentDescription = null,
+                    tint = WebAccent,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "IDENTITAS PRIBADI",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextPrimaryDark,
+                    letterSpacing = 0.5.sp
+                )
             }
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = "Edit",
-                tint = WebAccent,
-                modifier = Modifier.size(24.dp)
-            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Green button (like website)
+            Button(
+                onClick = onEditIntake,
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Success
+                ),
+                shape = RoundedCornerShape(8.dp),
+                contentPadding = PaddingValues(vertical = 14.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(10.dp))
+                Text(
+                    text = "Lihat & Edit Identitas Pribadi",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.White
+                )
+            }
         }
     }
 }
