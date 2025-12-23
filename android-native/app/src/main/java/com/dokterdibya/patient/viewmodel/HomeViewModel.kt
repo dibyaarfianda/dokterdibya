@@ -53,7 +53,8 @@ data class HomeUiState(
     // Notifications
     val unreadNotificationCount: Int = 0,
     // Articles for Ruang Membaca
-    val articles: List<Article> = emptyList()
+    val articles: List<Article> = emptyList(),
+    val totalArticleCount: Int = 0
 )
 
 @HiltViewModel
@@ -195,7 +196,8 @@ class HomeViewModel @Inject constructor(
             patientRepository.getArticles().fold(
                 onSuccess = { articles ->
                     _uiState.value = _uiState.value.copy(
-                        articles = articles.take(3) // Show only first 3 on home
+                        articles = articles.take(3), // Show only first 3 on home
+                        totalArticleCount = articles.size
                     )
                 },
                 onFailure = { /* Ignore */ }
