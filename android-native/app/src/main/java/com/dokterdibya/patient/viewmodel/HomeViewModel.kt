@@ -3,6 +3,7 @@ package com.dokterdibya.patient.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dokterdibya.patient.data.api.Announcement
+import com.dokterdibya.patient.data.api.Article
 import com.dokterdibya.patient.data.api.BabySize
 import com.dokterdibya.patient.data.api.Medication
 import com.dokterdibya.patient.data.model.Patient
@@ -50,7 +51,9 @@ data class HomeUiState(
     val medications: List<Medication> = emptyList(),
     val hasMedications: Boolean = false,
     // Notifications
-    val unreadNotificationCount: Int = 0
+    val unreadNotificationCount: Int = 0,
+    // Articles for Ruang Membaca
+    val articles: List<Article> = emptyList()
 )
 
 @HiltViewModel
@@ -68,6 +71,7 @@ class HomeViewModel @Inject constructor(
         loadAnnouncements()
         loadMedications()
         loadNotificationCount()
+        loadArticles()
     }
 
     fun loadPatientData() {
@@ -186,6 +190,19 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    private fun loadArticles() {
+        viewModelScope.launch {
+            patientRepository.getArticles().fold(
+                onSuccess = { articles ->
+                    _uiState.value = _uiState.value.copy(
+                        articles = articles.take(3) // Show only first 3 on home
+                    )
+                },
+                onFailure = { /* Ignore */ }
+            )
+        }
+    }
+
     fun toggleLike(announcementId: Int) {
         val pId = patientId ?: return
         viewModelScope.launch {
@@ -237,6 +254,7 @@ class HomeViewModel @Inject constructor(
         loadAnnouncements()
         loadMedications()
         loadNotificationCount()
+        loadArticles()
     }
 
     private data class PregnancyInfo(
