@@ -228,34 +228,16 @@ fun HomeScreen(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(70.dp)
+                .height(56.dp)
                 .zIndex(10f)
                 .hazeChild(state = hazeState)
                 .background(Color.White.copy(alpha = 0.15f))
         ) {
-            // Bottom border (subtle glow line)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(1.dp)
-                    .align(Alignment.BottomCenter)
-                    .background(
-                        Brush.horizontalGradient(
-                            colors = listOf(
-                                Color.Transparent,
-                                WebAccent.copy(alpha = 0.3f),
-                                WebAccent.copy(alpha = 0.5f),
-                                WebAccent.copy(alpha = 0.3f),
-                                Color.Transparent
-                            )
-                        )
-                    )
-            )
             // Nav bar content
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(70.dp)
+                    .fillMaxHeight()
                     .padding(start = 8.dp, end = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
@@ -387,7 +369,7 @@ fun HomeScreen(
                 .fillMaxSize()
                 .haze(state = hazeState)
                 .verticalScroll(scrollState)
-                .padding(top = 78.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
+                .padding(top = 64.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
         ) {
             // Welcome Card (website-style glassmorphism)
             Card(
