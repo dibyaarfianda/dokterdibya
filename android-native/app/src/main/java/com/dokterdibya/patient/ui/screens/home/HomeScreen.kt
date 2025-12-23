@@ -181,7 +181,7 @@ fun HomeScreen(
                 .height(70.dp)
                 .zIndex(10f)
                 .hazeChild(state = hazeState)
-                .background(BgDark.copy(alpha = 0.7f))
+                .background(Color.White.copy(alpha = 0.15f))
         ) {
             // Bottom border (subtle glow line)
             Box(
