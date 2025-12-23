@@ -55,6 +55,10 @@ import com.dokterdibya.patient.ui.components.SlideMenu
 import com.dokterdibya.patient.ui.theme.*
 import com.dokterdibya.patient.viewmodel.BirthInfo
 import com.dokterdibya.patient.viewmodel.HomeViewModel
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
+import dev.chrisbanes.haze.hazeEffect
+import dev.chrisbanes.haze.materials.HazeMaterials
 
 @Composable
 fun HomeScreen(
@@ -82,6 +86,7 @@ fun HomeScreen(
 
     // Track scroll state for nav bar appearance
     val scrollState = rememberScrollState()
+    val hazeState = remember { HazeState() }
 
     // Refresh data when screen is resumed (e.g., after returning from profile)
     DisposableEffect(lifecycleOwner) {
@@ -170,19 +175,16 @@ fun HomeScreen(
                 )
             )
     ) {
-        // Sticky Top Navigation Bar with frosted glass effect
+        // Sticky Top Navigation Bar with real blur effect
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(70.dp)
                 .zIndex(10f)
-                .background(
-                    // Dark frosted glass background matching app theme
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            BgDark.copy(alpha = 0.95f),
-                            BgDark.copy(alpha = 0.85f)
-                        )
+                .hazeEffect(
+                    state = hazeState,
+                    style = HazeMaterials.ultraThin(
+                        containerColor = BgDark.copy(alpha = 0.7f)
                     )
                 )
         ) {
@@ -332,10 +334,11 @@ fun HomeScreen(
             }
         }
 
-        // Main content (scrollable)
+        // Main content (scrollable) - hazeSource enables blur effect on nav bar
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .hazeSource(state = hazeState)
                 .verticalScroll(scrollState)
                 .padding(top = 78.dp, start = 16.dp, end = 16.dp, bottom = 16.dp)
         ) {
