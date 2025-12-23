@@ -97,9 +97,8 @@ dependencies {
     implementation("io.coil-kt:coil-svg:2.5.0")
 
     // Haze (Blur/Frosted Glass Effect) for backdrop blur
-    // Use haze-android for Android-specific implementation
-    implementation("dev.chrisbanes.haze:haze-android:1.0.1")
-    implementation("dev.chrisbanes.haze:haze-materials:1.0.1")
+    // Use haze-jetpack-compose for AndroidX Compose (older API: haze/hazeChild)
+    implementation("dev.chrisbanes.haze:haze-jetpack-compose:0.7.3")
 
     // Markwon (Markdown Rendering)
     implementation("io.noties.markwon:core:4.6.2")
