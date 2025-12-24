@@ -101,128 +101,62 @@ fun HomeScreen(
         }
     }
 
-    // Floating bubbles animation (like PWA website)
+    // Static floating bubble (no animation for performance with Haze)
     @Composable
-    fun FloatingBubble(
+    fun StaticBubble(
         size: Float,
-        startX: Float,
-        startY: Float,
-        delay: Int,
-        duration: Int
+        x: Float,
+        y: Float
     ) {
-        val infiniteTransition = rememberInfiniteTransition(label = "bubble")
-
-        val offsetY by infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = -100f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = duration, easing = LinearEasing, delayMillis = delay),
-                repeatMode = RepeatMode.Reverse
-            ),
-            label = "bubbleY"
-        )
-
-        val rotation by infiniteTransition.animateFloat(
-            initialValue = 0f,
-            targetValue = 180f,
-            animationSpec = infiniteRepeatable(
-                animation = tween(durationMillis = duration, easing = LinearEasing, delayMillis = delay),
-                repeatMode = RepeatMode.Reverse
-            ),
-            label = "bubbleRotation"
-        )
-
         Box(
             modifier = Modifier
-                .offset(x = startX.dp, y = (startY + offsetY).dp)
+                .offset(x = x.dp, y = y.dp)
                 .size(size.dp)
-                .graphicsLayer { rotationZ = rotation }
                 .clip(CircleShape)
                 .background(Color.White.copy(alpha = 0.08f))
         )
     }
 
-    // Animated gradient background (like web PWA)
-    val infiniteTransition = rememberInfiniteTransition(label = "bgGradient")
-
-    // Primary animation for gradient movement
-    val animatedOffset by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 8000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "gradientOffset"
-    )
-
-    // Secondary animation for color shift
-    val colorShift by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(durationMillis = 12000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "colorShift"
-    )
-
-    // Interpolate gradient positions for smooth animation
-    val startX = animatedOffset * 800f
-    val startY = animatedOffset * 600f
-    val endX = 1200f + (1f - animatedOffset) * 800f
-    val endY = 2000f + (1f - animatedOffset) * 600f
-
-    // Animate accent color glow
-    val accentAlpha = 0.03f + (colorShift * 0.04f)
-    val animatedAccent = WebAccent.copy(alpha = accentAlpha)
-    val animatedPurple = Purple.copy(alpha = accentAlpha * 0.5f)
-
+    // Static gradient background (no animation for smooth Haze blur)
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(
                 Brush.linearGradient(
                     colors = listOf(BgDark, BgDarkEnd, BgDark),
-                    start = androidx.compose.ui.geometry.Offset(startX, startY),
-                    end = androidx.compose.ui.geometry.Offset(endX, endY)
+                    start = androidx.compose.ui.geometry.Offset(0f, 0f),
+                    end = androidx.compose.ui.geometry.Offset(1200f, 2000f)
                 )
             )
-            // Add subtle color overlay that animates
+            // Static subtle color overlays
             .background(
                 Brush.radialGradient(
                     colors = listOf(
-                        animatedAccent,
+                        WebAccent.copy(alpha = 0.05f),
                         Color.Transparent
                     ),
-                    center = androidx.compose.ui.geometry.Offset(
-                        x = 200f + (animatedOffset * 600f),
-                        y = 300f + (colorShift * 400f)
-                    ),
+                    center = androidx.compose.ui.geometry.Offset(x = 500f, y = 500f),
                     radius = 800f
                 )
             )
             .background(
                 Brush.radialGradient(
                     colors = listOf(
-                        animatedPurple,
+                        Purple.copy(alpha = 0.03f),
                         Color.Transparent
                     ),
-                    center = androidx.compose.ui.geometry.Offset(
-                        x = 800f - (animatedOffset * 400f),
-                        y = 1200f - (colorShift * 300f)
-                    ),
+                    center = androidx.compose.ui.geometry.Offset(x = 600f, y = 1000f),
                     radius = 600f
                 )
             )
     ) {
-        // Floating white bubbles (like PWA website)
-        FloatingBubble(size = 80f, startX = 20f, startY = 100f, delay = 0, duration = 8000)
-        FloatingBubble(size = 60f, startX = 280f, startY = 200f, delay = 1000, duration = 10000)
-        FloatingBubble(size = 100f, startX = 150f, startY = 400f, delay = 2000, duration = 7000)
-        FloatingBubble(size = 40f, startX = 320f, startY = 600f, delay = 500, duration = 9000)
-        FloatingBubble(size = 70f, startX = 50f, startY = 700f, delay = 1500, duration = 11000)
-        FloatingBubble(size = 55f, startX = 250f, startY = 850f, delay = 3000, duration = 8500)
+        // Static bubbles (frozen for performance with Haze blur)
+        StaticBubble(size = 80f, x = 20f, y = 100f)
+        StaticBubble(size = 60f, x = 280f, y = 200f)
+        StaticBubble(size = 100f, x = 150f, y = 400f)
+        StaticBubble(size = 40f, x = 320f, y = 600f)
+        StaticBubble(size = 70f, x = 50f, y = 700f)
+        StaticBubble(size = 55f, x = 250f, y = 850f)
 
         // Sticky Top Navigation Bar with real blur effect
         Box(
