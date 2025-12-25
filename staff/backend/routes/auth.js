@@ -12,6 +12,7 @@ const { HTTP_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } = require('../config/con
 const logger = require('../utils/logger');
 const { deletePatientWithRelations, deletePatientByEmail } = require('../services/patientDeletion');
 const { ROLE_IDS, isSuperadminRole } = require('../constants/roles');
+const activityLogger = require('../services/activityLogger');
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
@@ -90,6 +91,13 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
     );
 
     logger.info(`User logged in: ${user.email}`);
+
+    // Log to activity_logs table
+    try {
+        await activityLogger.log(userId, user.name || user.email, 'Login', `Logged in via admin panel`);
+    } catch (logErr) {
+        logger.warn(`Failed to log login activity: ${logErr.message}`);
+    }
 
     sendSuccess(res, {
         token,
