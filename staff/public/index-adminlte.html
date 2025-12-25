@@ -7532,6 +7532,9 @@ function mobileNavClick(btn, action) {
                                     title="${patient.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}">
                                 <i class="fas fa-${patient.status === 'active' ? 'ban' : 'check'}"></i>
                             </button>
+                            <button class="btn btn-sm btn-danger" onclick="deletePatient('${patient.id}', '${escapedName}')" title="Hapus">
+                                <i class="fas fa-trash"></i>
+                            </button>
                         </td>
                     </tr>
                 `;
