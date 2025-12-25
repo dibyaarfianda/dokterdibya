@@ -363,6 +363,25 @@
         .font-semibold { font-weight: var(--font-weight-semibold); }
         .font-bold { font-weight: var(--font-weight-bold); }
 
+        /* ========================================
+           STANDARDIZED TABLE STYLES
+           ======================================== */
+        .table-sm td,
+        .table-sm th {
+            font-size: var(--font-size-sm) !important;
+            padding: 0.4rem 0.5rem !important;
+            vertical-align: middle !important;
+        }
+
+        .table-sm .badge {
+            font-size: 0.7rem !important;
+        }
+
+        .table-sm .btn-sm {
+            padding: 0.2rem 0.4rem !important;
+            font-size: 0.75rem !important;
+        }
+
         /* Smaller sidebar navigation font */
         .sidebar .nav-sidebar .nav-link {
             font-size: 16px !important;
@@ -7574,25 +7593,25 @@ function mobileNavClick(btn, action) {
                 // Mark as delivered button
                 let deliveryButton = '';
                 if (patient.is_obstetri && !patient.has_delivered) {
-                    deliveryButton = `<button class="btn btn-xs btn-success" onclick="markAsDelivered('${patient.id}', '${escapedName}')" title="Tandai Sudah Melahirkan"><i class="fas fa-baby"></i></button>`;
+                    deliveryButton = `<button class="btn btn-sm btn-success" onclick="markAsDelivered('${patient.id}', '${escapedName}')" title="Tandai Sudah Melahirkan"><i class="fas fa-baby"></i></button>`;
                 }
 
                 return `
                     <tr>
-                        <td><a href="#" class="text-primary" onclick="showPatientMRList('${patient.id}', '${escapedName}'); return false;" title="Lihat Daftar Rekam Medis"><small>${patient.id}</small></a></td>
+                        <td><a href="#" class="text-primary" onclick="showPatientMRList('${patient.id}', '${escapedName}'); return false;" title="Lihat Daftar Rekam Medis">${patient.id}</a></td>
                         <td>${mrIdCell}</td>
                         <td>${patient.full_name || '-'}</td>
                         <td>${hplCell}</td>
                         <td>${formatPatientType(patient.last_visit_type)}</td>
                         <td>${resumeStatusBadge}</td>
-                        <td data-order="${regDateSort}"><small>${regDate}</small></td>
+                        <td data-order="${regDateSort}">${regDate}</td>
                         <td>${statusBadge}</td>
                         <td class="text-nowrap">
-                            <button type="button" class="btn btn-xs btn-info btn-view-patient" data-patient-id="${patient.id}" title="Detail">
+                            <button type="button" class="btn btn-sm btn-info btn-view-patient" data-patient-id="${patient.id}" title="Detail">
                                 <i class="fas fa-eye"></i>
                             </button>
                             ${deliveryButton}
-                            <button class="btn btn-xs btn-${patient.status === 'active' ? 'warning' : 'success'}"
+                            <button class="btn btn-sm btn-${patient.status === 'active' ? 'warning' : 'success'}"
                                     onclick="togglePatientStatus('${patient.id}', '${patient.status}', '${patient.full_name}')"
                                     title="${patient.status === 'active' ? 'Nonaktifkan' : 'Aktifkan'}">
                                 <i class="fas fa-${patient.status === 'active' ? 'ban' : 'check'}"></i>
