@@ -84,10 +84,11 @@ router.get('/api/patients', verifyToken, async (req, res) => {
                     SELECT p.*,
                         latest.visit_location as last_visit_loc,
                         latest.mr_id as mr_id,
+                        latest.mr_category as last_visit_type,
                         COALESCE(resume.resume_date, latest.last_activity_at) as last_visit_date
                     FROM patients p
                     INNER JOIN (
-                        SELECT scr.patient_id, scr.visit_location, scr.mr_id, scr.last_activity_at
+                        SELECT scr.patient_id, scr.visit_location, scr.mr_id, scr.mr_category, scr.last_activity_at
                         FROM sunday_clinic_records scr
                         INNER JOIN (
                             SELECT patient_id, MAX(last_activity_at) as max_activity
@@ -129,7 +130,10 @@ router.get('/api/patients', verifyToken, async (req, res) => {
                      ORDER BY scr.last_activity_at DESC LIMIT 1) as mr_id,
                     (SELECT scr.visit_location FROM sunday_clinic_records scr
                      WHERE scr.patient_id = p.id
-                     ORDER BY scr.last_activity_at DESC LIMIT 1) as visit_location
+                     ORDER BY scr.last_activity_at DESC LIMIT 1) as visit_location,
+                    (SELECT scr.mr_category FROM sunday_clinic_records scr
+                     WHERE scr.patient_id = p.id
+                     ORDER BY scr.last_activity_at DESC LIMIT 1) as last_visit_type
                 FROM patients p
                 INNER JOIN appointments a ON p.id = a.patient_id
                 WHERE a.hospital_location = ?
@@ -157,7 +161,10 @@ router.get('/api/patients', verifyToken, async (req, res) => {
                  ORDER BY scr.last_activity_at DESC LIMIT 1) as mr_id,
                 (SELECT scr.visit_location FROM sunday_clinic_records scr
                  WHERE scr.patient_id = p.id
-                 ORDER BY scr.last_activity_at DESC LIMIT 1) as visit_location
+                 ORDER BY scr.last_activity_at DESC LIMIT 1) as visit_location,
+                (SELECT scr.mr_category FROM sunday_clinic_records scr
+                 WHERE scr.patient_id = p.id
+                 ORDER BY scr.last_activity_at DESC LIMIT 1) as last_visit_type
                 FROM patients p`;
 
             if (search) {
