@@ -364,22 +364,27 @@
         .font-bold { font-weight: var(--font-weight-bold); }
 
         /* ========================================
-           STANDARDIZED TABLE STYLES
+           STANDARDIZED TABLE STYLES (All Tables)
            ======================================== */
-        .table-sm td,
-        .table-sm th {
+        .table td,
+        .table th {
             font-size: var(--font-size-sm) !important;
             padding: 0.4rem 0.5rem !important;
             vertical-align: middle !important;
         }
 
-        .table-sm .badge {
+        .table thead th {
+            font-weight: var(--font-weight-semibold) !important;
+        }
+
+        .table .badge {
             font-size: 0.7rem !important;
         }
 
-        .table-sm .btn-sm {
+        .table .btn-sm,
+        .table .btn-xs {
             padding: 0.2rem 0.4rem !important;
-            font-size: 0.75rem !important;
+            font-size: 0.7rem !important;
         }
 
         /* Smaller sidebar navigation font */
@@ -8703,7 +8708,7 @@ Apakah Anda yakin ingin melanjutkan?`;
             if (batches.length === 0) {
                 batchesContainer.innerHTML = '<p class="text-muted small mb-0"><i class="fas fa-info-circle mr-1"></i>Belum ada batch tercatat untuk obat ini</p>';
             } else {
-                let html = '<table class="table table-sm table-bordered mb-0" style="font-size: 12px;"><thead class="bg-light"><tr><th>Batch</th><th>Supplier</th><th class="text-center">Sisa</th><th>Harga Beli</th><th>Kadaluarsa</th></tr></thead><tbody>';
+                let html = '<table class="table table-sm table-bordered mb-0"><thead class="bg-light"><tr><th>Batch</th><th>Supplier</th><th class="text-center">Sisa</th><th>Harga Beli</th><th>Kadaluarsa</th></tr></thead><tbody>';
                 batches.forEach(b => {
                     const expDate = b.expiry_date ? new Date(b.expiry_date).toLocaleDateString('id-ID') : '-';
                     const daysLeft = b.expiry_date ? Math.ceil((new Date(b.expiry_date) - new Date()) / (1000 * 60 * 60 * 24)) : null;
