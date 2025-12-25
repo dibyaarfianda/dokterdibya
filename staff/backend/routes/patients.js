@@ -510,16 +510,84 @@ router.get('/api/patients/search/advanced', verifyToken, async (req, res) => {
         console.log('[ADVANCED SEARCH] Query returned', rows.length, 'rows');
         console.log('[ADVANCED SEARCH] Results:', rows.map(p => ({ id: p.id, name: p.full_name })));
 
-        // Map and deduplicate results
+        // Map and deduplicate results, then fetch obstetri data
         const seen = new Set();
-        const mappedRows = rows.filter(patient => {
+        const uniqueRows = rows.filter(patient => {
             if (seen.has(patient.id)) return false;
             seen.add(patient.id);
             return true;
-        }).map(patient => ({
-            ...patient,
-            whatsapp: patient.whatsapp || patient.phone || null,
-            last_visit: patient.last_visit || patient.actual_last_visit || null
+        });
+
+        // Fetch obstetri/HPL data for each patient (same as main patient list)
+        const mappedRows = await Promise.all(uniqueRows.map(async (patient) => {
+            let hpl = null;
+            let days_pregnant = null;
+            let is_obstetri = false;
+            let has_delivered = false;
+            let last_visit_type = null;
+
+            // Get last visit type (mr_category)
+            try {
+                const [lastVisit] = await db.query(`
+                    SELECT mr_category FROM sunday_clinic_records
+                    WHERE patient_id = ?
+                    ORDER BY last_activity_at DESC LIMIT 1
+                `, [patient.id]);
+                if (lastVisit.length > 0) {
+                    last_visit_type = lastVisit[0].mr_category;
+                }
+            } catch (err) {
+                console.error('Error fetching last visit type:', err.message);
+            }
+
+            // Check if patient is obstetri and get HPL data
+            try {
+                const [obstetriRecord] = await db.query(`
+                    SELECT scr.mr_id, scr.mr_category,
+                        JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) as hpht
+                    FROM sunday_clinic_records scr
+                    JOIN medical_records mr ON mr.mr_id COLLATE utf8mb4_general_ci = scr.mr_id COLLATE utf8mb4_general_ci
+                        AND mr.record_type = 'anamnesa'
+                    WHERE scr.patient_id = ?
+                        AND scr.mr_category = 'obstetri'
+                        AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) IS NOT NULL
+                        AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != ''
+                    ORDER BY scr.last_activity_at DESC
+                    LIMIT 1
+                `, [patient.id]);
+
+                if (obstetriRecord.length > 0 && obstetriRecord[0].hpht) {
+                    is_obstetri = true;
+                    const hpht = new Date(obstetriRecord[0].hpht);
+                    if (!isNaN(hpht.getTime())) {
+                        const hplDate = new Date(hpht.getTime() + 280 * 24 * 60 * 60 * 1000);
+                        hpl = `${hplDate.getFullYear()}-${String(hplDate.getMonth() + 1).padStart(2, '0')}-${String(hplDate.getDate()).padStart(2, '0')}`;
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        days_pregnant = Math.floor((today.getTime() - hpht.getTime()) / (24 * 60 * 60 * 1000));
+
+                        // Check if patient has delivered
+                        const [birthRecord] = await db.query(
+                            `SELECT 1 FROM birth_congratulations WHERE patient_id = ? LIMIT 1`,
+                            [patient.id]
+                        );
+                        has_delivered = birthRecord.length > 0;
+                    }
+                }
+            } catch (err) {
+                console.error('Error fetching HPL data for patient', patient.id, err.message);
+            }
+
+            return {
+                ...patient,
+                whatsapp: patient.whatsapp || patient.phone || null,
+                last_visit: patient.last_visit || patient.actual_last_visit || null,
+                last_visit_type,
+                hpl,
+                days_pregnant,
+                is_obstetri,
+                has_delivered
+            };
         }));
 
         res.json({
