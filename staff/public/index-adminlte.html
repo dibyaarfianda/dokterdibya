@@ -4994,7 +4994,7 @@ Contoh Markdown:
                                                     <th>MR ID</th>
                                                     <th>Nama Lengkap</th>
                                                     <th>HPL</th>
-                                                    <th>Usia</th>
+                                                    <th>Tipe</th>
                                                     <th>Status Resume</th>
                                                     <th>Tgl Registrasi</th>
                                                     <th>Status</th>
@@ -7205,6 +7205,18 @@ function mobileNavClick(btn, action) {
     }
     window.loadNewPatients = loadNewPatients;
 
+    // Format patient type from last visit for display
+    function formatPatientType(type) {
+        if (!type) return '<span class="badge badge-light">-</span>';
+        const typeMap = {
+            'obstetri': '<span class="badge badge-info">Obstetri</span>',
+            'gyn_repro': '<span class="badge badge-purple" style="background:#9c27b0;color:#fff">Gyn Repro</span>',
+            'gyn_special': '<span class="badge badge-warning">Gyn</span>'
+        };
+        return typeMap[type] || `<span class="badge badge-secondary">${type}</span>`;
+    }
+    window.formatPatientType = formatPatientType;
+
     async function loadWebPatients() {
         try {
             const token = localStorage.getItem('vps_auth_token');
@@ -7312,7 +7324,7 @@ function mobileNavClick(btn, action) {
                         <td>${mrIdCell}</td>
                         <td>${patient.full_name || '-'}</td>
                         <td>${hplCell}</td>
-                        <td>${patient.age || '-'}</td>
+                        <td>${formatPatientType(patient.last_visit_type)}</td>
                         <td>${resumeStatusBadge}</td>
                         <td data-order="${regDateSort}">${regDate}</td>
                         <td>${statusBadge}</td>
@@ -7571,7 +7583,7 @@ function mobileNavClick(btn, action) {
                         <td>${mrIdCell}</td>
                         <td>${patient.full_name || '-'}</td>
                         <td>${hplCell}</td>
-                        <td>${patient.age || '-'}</td>
+                        <td>${formatPatientType(patient.last_visit_type)}</td>
                         <td>${resumeStatusBadge}</td>
                         <td data-order="${regDateSort}"><small>${regDate}</small></td>
                         <td>${statusBadge}</td>
