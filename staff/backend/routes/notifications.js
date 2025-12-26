@@ -82,14 +82,15 @@ router.get('/', verifyToken, async (req, res) => {
 
 /**
  * GET /api/notifications/count
- * Get unread notification count for badge
+ * Get unread notification count for badge (includes staff announcements)
  */
 router.get('/count', verifyToken, async (req, res) => {
     try {
         const userId = req.user.id;
         const roleId = req.user.role_id;
 
-        const [countResult] = await db.query(`
+        // Count unread notifications
+        const [notifCountResult] = await db.query(`
             SELECT COUNT(*) as count
             FROM staff_notifications n
             LEFT JOIN staff_notification_reads nr ON n.id = nr.notification_id AND nr.user_id = ?
@@ -101,9 +102,22 @@ router.get('/count', verifyToken, async (req, res) => {
               )
         `, [userId, userId, roleId]);
 
+        // Count unread staff announcements (announcements not yet dismissed by user)
+        const [announcementCountResult] = await db.query(`
+            SELECT COUNT(*) as count
+            FROM staff_announcements sa
+            LEFT JOIN staff_announcement_reads sar ON sa.id = sar.announcement_id AND sar.user_id = ?
+            WHERE sa.status = 'active'
+              AND sar.id IS NULL
+        `, [userId]);
+
+        const totalCount = notifCountResult[0].count + announcementCountResult[0].count;
+
         res.json({
             success: true,
-            count: countResult[0].count
+            count: totalCount,
+            notifications: notifCountResult[0].count,
+            announcements: announcementCountResult[0].count
         });
 
     } catch (error) {
@@ -279,38 +293,40 @@ router.get('/with-announcements', verifyToken, async (req, res) => {
             LIMIT ?
         `, [userId, userId, roleId, parseInt(limit)]);
 
-        // Get recent announcements
+        // Get recent STAFF announcements (not patient announcements)
+        // Check staff_announcement_reads to see if user has read them
         const [announcements] = await db.query(`
             SELECT
-                id,
+                sa.id,
                 'announcement' as type,
-                title,
-                SUBSTRING(message, 1, 200) as message,
-                'javascript:showKelolaPengumumanPage()' as link,
-                CASE priority
+                sa.title,
+                SUBSTRING(sa.message, 1, 200) as message,
+                CONCAT('javascript:showNotificationsPage(', sa.id, ')') as link,
+                CASE sa.priority
                     WHEN 'urgent' THEN 'fas fa-exclamation-triangle'
                     WHEN 'important' THEN 'fas fa-exclamation-circle'
                     ELSE 'fas fa-bullhorn'
                 END as icon,
-                CASE priority
+                CASE sa.priority
                     WHEN 'urgent' THEN 'text-danger'
                     WHEN 'important' THEN 'text-warning'
                     ELSE 'text-info'
                 END as icon_color,
-                created_at,
+                sa.created_at,
                 'announcement' as source,
-                0 as is_read
-            FROM announcements
-            WHERE status = 'active'
+                CASE WHEN sar.id IS NOT NULL THEN 1 ELSE 0 END as is_read
+            FROM staff_announcements sa
+            LEFT JOIN staff_announcement_reads sar ON sa.id = sar.announcement_id AND sar.user_id = ?
+            WHERE sa.status = 'active'
             ORDER BY
-                CASE priority
+                CASE sa.priority
                     WHEN 'urgent' THEN 1
                     WHEN 'important' THEN 2
                     ELSE 3
                 END,
-                created_at DESC
+                sa.created_at DESC
             LIMIT ?
-        `, [parseInt(limit)]);
+        `, [userId, parseInt(limit)]);
 
         // Combine and sort by date
         const combined = [...notifications, ...announcements]

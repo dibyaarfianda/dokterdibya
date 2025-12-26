@@ -7,43 +7,83 @@ const { verifyToken, requireSuperadmin, requirePermission } = require('../middle
 // ==================== VISITS ROUTES ====================
 
 // GET all visits (with optional filters)
+// When exclude_dummy=true, returns actual clinic visits from sunday_clinic_records
 router.get('/', verifyToken, requirePermission('visits.view'), async (req, res) => {
     try {
         const { patient_id, start_date, end_date, exclude_dummy } = req.query;
-        
+
+        // When excluding dummy data, use sunday_clinic_records (actual clinic visits)
+        if (exclude_dummy === 'true') {
+            let query = `
+                SELECT
+                    scr.id,
+                    scr.patient_id,
+                    p.full_name as patient_name,
+                    scr.created_at as visit_date,
+                    scr.visit_location,
+                    scr.mr_id,
+                    0 as is_dummy
+                FROM sunday_clinic_records scr
+                LEFT JOIN patients p ON scr.patient_id = p.id
+                WHERE 1=1
+            `;
+            const params = [];
+
+            if (patient_id) {
+                query += ' AND scr.patient_id = ?';
+                params.push(patient_id);
+            }
+
+            if (start_date) {
+                query += ' AND DATE(scr.created_at) >= ?';
+                params.push(start_date);
+            }
+
+            if (end_date) {
+                query += ' AND DATE(scr.created_at) <= ?';
+                params.push(end_date);
+            }
+
+            query += ' ORDER BY scr.created_at DESC';
+
+            const [rows] = await pool.query(query, params);
+
+            return res.json({
+                success: true,
+                data: rows
+            });
+        }
+
+        // Default: use visits table (includes intake forms)
         let query = 'SELECT * FROM visits WHERE 1=1';
         const params = [];
-        
+
         if (patient_id) {
             query += ' AND patient_id = ?';
             params.push(patient_id);
         }
-        
+
         if (start_date) {
             query += ' AND visit_date >= ?';
             params.push(start_date);
         }
-        
+
         if (end_date) {
             query += ' AND visit_date <= ?';
             params.push(end_date);
         }
-        
-        if (exclude_dummy === 'true') {
-            query += ' AND is_dummy = 0';
-        }
-        
+
         query += ' ORDER BY visit_date DESC';
-        
+
         const [rows] = await pool.query(query, params);
-        
+
         // Parse JSON fields
         const visits = rows.map(row => ({
             ...row,
             services: row.services ? JSON.parse(row.services) : [],
             medications: row.medications ? JSON.parse(row.medications) : []
         }));
-        
+
         res.json({
             success: true,
             data: visits

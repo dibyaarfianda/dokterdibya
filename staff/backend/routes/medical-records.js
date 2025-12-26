@@ -4,6 +4,7 @@ const db = require('../db');
 const { verifyToken, requirePermission } = require('../middleware/auth');
 const logger = require('../utils/logger');
 const { getGMT7Timestamp, toMySQLTimestamp } = require('../utils/idGenerator');
+const activityLogger = require('../services/activityLogger');
 
 // Create medical_records table if not exists
 async function ensureMedicalRecordsTable() {
@@ -231,9 +232,14 @@ router.post('/api/medical-records', verifyToken, requirePermission('medical_reco
             result = insertResult;
             logger.info(`Medical record saved: ID ${result.insertId}, Patient ${patientId}, Visit ${numericVisitId || mrId || 'none'}, Type: ${recordType}, Doctor: ${finalDoctorName}`);
         }
-        
-        res.json({ 
-            success: true, 
+
+        // Log activity
+        await activityLogger.logFromRequest(req,
+            existingRecordId ? activityLogger.ACTIONS.UPDATE_MR : activityLogger.ACTIONS.CREATE_MR,
+            `${existingRecordId ? 'Updated' : 'Created'} ${recordType} for MR: ${mrId || numericVisitId || 'N/A'}`);
+
+        res.json({
+            success: true,
             message: 'Medical record saved successfully',
             data: {
                 id: result.insertId,
@@ -473,19 +479,23 @@ router.put('/api/medical-records/:id', verifyToken, requirePermission('medical_r
         const { data, type } = req.body;
         
         await db.query(
-            `UPDATE medical_records 
+            `UPDATE medical_records
              SET record_data = ?, record_type = ?, updated_at = NOW()
              WHERE id = ?`,
             [JSON.stringify(data), type, id]
         );
-        
+
         logger.info(`Medical record updated: ID ${id}`);
-        
-        res.json({ 
-            success: true, 
-            message: 'Medical record updated successfully' 
+
+        // Log activity
+        await activityLogger.logFromRequest(req, activityLogger.ACTIONS.UPDATE_MR,
+            `Updated medical record ID: ${id}, Type: ${type}`);
+
+        res.json({
+            success: true,
+            message: 'Medical record updated successfully'
         });
-        
+
     } catch (error) {
         logger.error('Error updating medical record:', error);
         res.status(500).json({ 
@@ -526,13 +536,19 @@ router.delete('/api/medical-records/by-type/:recordType', verifyToken, async (re
         
         console.log('DELETE Result:', result.affectedRows, 'rows deleted');
         logger.info(`Medical records deleted: Type ${recordType}, Patient ${patientId}, MR ${mrId || 'none'}, Count: ${result.affectedRows}`);
-        
-        res.json({ 
-            success: true, 
+
+        // Log activity
+        if (result.affectedRows > 0) {
+            await activityLogger.logFromRequest(req, activityLogger.ACTIONS.DELETE_MR,
+                `Deleted ${result.affectedRows} ${recordType} record(s) for MR: ${mrId || 'N/A'}`);
+        }
+
+        res.json({
+            success: true,
             message: `${result.affectedRows} record(s) deleted successfully`,
             deletedCount: result.affectedRows
         });
-        
+
     } catch (error) {
         logger.error('Error deleting medical records by type:', error);
         res.status(500).json({ 
@@ -546,16 +562,20 @@ router.delete('/api/medical-records/by-type/:recordType', verifyToken, async (re
 router.delete('/api/medical-records/:id', verifyToken, async (req, res) => {
     try {
         const { id } = req.params;
-        
+
         await db.query('DELETE FROM medical_records WHERE id = ?', [id]);
-        
+
         logger.info(`Medical record deleted: ID ${id}`);
-        
-        res.json({ 
-            success: true, 
-            message: 'Medical record deleted successfully' 
+
+        // Log activity
+        await activityLogger.logFromRequest(req, activityLogger.ACTIONS.DELETE_MR,
+            `Deleted medical record ID: ${id}`);
+
+        res.json({
+            success: true,
+            message: 'Medical record deleted successfully'
         });
-        
+
     } catch (error) {
         logger.error('Error deleting medical record:', error);
         res.status(500).json({ 

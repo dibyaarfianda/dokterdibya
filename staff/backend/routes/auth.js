@@ -92,9 +92,10 @@ router.post('/api/auth/login', validateLogin, asyncHandler(async (req, res) => {
 
     logger.info(`User logged in: ${user.email}`);
 
-    // Log to activity_logs table
+    // Log to activity_logs table with IP address
     try {
-        await activityLogger.log(userId, user.name || user.email, 'Login', `Logged in via admin panel`);
+        const clientIP = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip || 'unknown';
+        await activityLogger.log(userId, user.name || user.email, 'Login', `Logged in from ${clientIP}`);
     } catch (logErr) {
         logger.warn(`Failed to log login activity: ${logErr.message}`);
     }

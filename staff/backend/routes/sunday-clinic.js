@@ -7,6 +7,7 @@ const logger = require('../utils/logger');
 const { verifyToken, requireSuperadmin } = require('../middleware/auth');
 const { findRecordByMrId } = require('../services/sundayClinicService');
 const { ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
+const activityLogger = require('../services/activityLogger');
 
 // Import realtime sync for broadcasting notifications
 let realtimeSync = null;
@@ -1348,6 +1349,10 @@ router.post('/billing/:mrId/confirm', verifyToken, async (req, res, next) => {
             });
         }
 
+        // Log activity
+        await activityLogger.logFromRequest(req, 'Confirm Billing',
+            `Confirmed billing for ${patientName} (MR: ${normalizedMrId})`);
+
         res.json({
             success: true,
             message: 'Billing berhasil dikonfirmasi',
@@ -1474,6 +1479,10 @@ router.post('/billing/:mrId/mark-paid', verifyToken, async (req, res, next) => {
                 timestamp: new Date().toISOString()
             });
         }
+
+        // Log activity
+        await activityLogger.logFromRequest(req, activityLogger.ACTIONS.FINALIZE_VISIT,
+            `Marked billing paid for ${patientName} (MR: ${normalizedMrId}), Total: Rp ${billing.total}`);
 
         res.json({
             success: true,
@@ -1746,6 +1755,10 @@ router.post('/billing/:mrId/print-invoice', verifyToken, async (req, res, next) 
         // Get signed URL for download (valid for 1 hour)
         const r2Storage = require('../services/r2Storage');
         const signedUrl = await r2Storage.getSignedDownloadUrl(result.r2Key, 3600);
+
+        // Log activity
+        await activityLogger.logFromRequest(req, 'Print Invoice',
+            `Printed invoice for MR: ${normalizedMrId}`);
 
         // Return JSON with download URL (frontend will handle the download)
         res.json({

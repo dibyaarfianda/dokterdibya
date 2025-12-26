@@ -11,6 +11,7 @@ const r2Storage = require('../services/r2Storage');
 const { verifyToken, verifyPatientToken } = require('../middleware/auth');
 const { validatePatient } = require('../middleware/validation');
 const { deletePatientWithRelations } = require('../services/patientDeletion');
+const activityLogger = require('../services/activityLogger');
 
 // Configure multer for birth photo upload
 const birthPhotoUpload = multer({
@@ -884,10 +885,14 @@ router.post('/api/patients', verifyToken, validatePatient, async (req, res) => {
         
         // Invalidate patient list cache
         cache.delPattern('patients:list');
-        
-        res.status(201).json({ 
-            success: true, 
-            message: 'Patient added successfully', 
+
+        // Log activity
+        await activityLogger.logFromRequest(req, activityLogger.ACTIONS.ADD_PATIENT,
+            `Added patient: ${full_name} (ID: ${id})`);
+
+        res.status(201).json({
+            success: true,
+            message: 'Patient added successfully',
             id: id,
             age: age
         });
@@ -1058,10 +1063,14 @@ router.put('/api/patients/:id', verifyToken, validatePatient, async (req, res) =
         if (result.affectedRows === 0) {
             return res.status(404).json({ success: false, message: 'Patient not found' });
         }
-        
+
         // Invalidate patient cache
         cache.delPattern('patients:');
-        
+
+        // Log activity
+        await activityLogger.logFromRequest(req, activityLogger.ACTIONS.UPDATE_PATIENT,
+            `Updated patient: ${full_name} (ID: ${req.params.id})`);
+
         res.json({ success: true, message: 'Patient updated successfully', age: age });
     } catch (error) {
         console.error('Error updating patient:', error);

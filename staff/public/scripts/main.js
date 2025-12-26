@@ -200,7 +200,43 @@ function setTitleAndActive(title, navId, mobileAction) {
             detail: { page: mobileAction }
         }));
     }
+    // Log page navigation for audit
+    logActivity('Page View', `Viewed ${title}`);
 }
+
+// Activity logging function for audit trail
+let lastLoggedPage = '';
+function logActivity(action, details) {
+    // Debounce same page views
+    if (action === 'Page View' && details === lastLoggedPage) return;
+    if (action === 'Page View') lastLoggedPage = details;
+
+    const token = getAuthToken();
+    if (!token) return;
+
+    // Use global user info set by auth.js
+    const userId = window.currentUserId || 'unknown';
+    const userName = window.currentUserName || 'Unknown';
+
+    // Skip if user not identified yet
+    if (userId === 'unknown') return;
+
+    // Fire and forget - don't wait for response
+    fetch('/api/logs', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+            user_id: userId,
+            user_name: userName,
+            action: action,
+            details: details
+        })
+    }).catch(err => console.warn('Activity log failed:', err.message));
+}
+window.logActivity = logActivity;
 function showDashboardPage() {
     hideAllPages();
     pages.dashboard?.classList.remove('d-none');

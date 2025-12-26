@@ -1789,11 +1789,16 @@ class SundayClinicApp {
                     'success'
                 );
 
-                // Auto-refresh to reload billing data
-                setTimeout(() => {
-                    console.log('[SundayClinic] Auto-refreshing after billing confirmed');
-                    this.reload();
-                }, 2000);
+                // Only auto-refresh if the confirmed billing is for the same MR we're viewing
+                // This prevents resetting form data when staff is working on a different patient
+                if (data.mrId && this.currentMrId && data.mrId.toUpperCase() === this.currentMrId.toUpperCase()) {
+                    setTimeout(() => {
+                        console.log('[SundayClinic] Auto-refreshing after billing confirmed (same MR)');
+                        this.reload();
+                    }, 2000);
+                } else {
+                    console.log('[SundayClinic] Skipping auto-refresh - different MR (confirmed:', data.mrId, 'current:', this.currentMrId, ')');
+                }
             }
         });
 

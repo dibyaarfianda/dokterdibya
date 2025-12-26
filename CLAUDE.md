@@ -121,14 +121,23 @@ if (!socket || !currentUser) return;
 - After changing socket config, ALWAYS bump both versions
 
 ### 6. File Permissions
-Files created by Claude/root often have wrong permissions. **ALWAYS fix permissions after creating/modifying files.**
+Files created by Claude/root often have wrong permissions.
 
-**Quick fix:**
+**BE SELECTIVE - only run fix-permissions when:**
+- Creating NEW files (not editing existing)
+- User reports "Permission denied" errors
+- After batch operations on multiple files
+
+**DO NOT run fix-permissions for:**
+- Simple file edits (permissions usually preserved)
+- Every single change (unnecessary overhead)
+
+**Quick fix (when needed):**
 ```bash
 /var/www/dokterdibya/fix-permissions.sh
 ```
 
-**Auto-fix is enabled via git hooks:**
+**Auto-fix via git hooks (already configured):**
 - `.git/hooks/post-checkout` - runs after git checkout
 - `.git/hooks/post-merge` - runs after git pull
 
@@ -138,10 +147,6 @@ Files created by Claude/root often have wrong permissions. **ALWAYS fix permissi
 | Directories | rwxr-xr-x | 755 |
 | Files | rw-r--r-- | 644 |
 | Owner | www-data:www-data | - |
-
-**If permission issues occur:**
-1. Run `/var/www/dokterdibya/fix-permissions.sh`
-2. Or manually: `chmod 644 <file>` for files, `chmod 755 <dir>` for directories
 
 ### 7. AdminLTE CSS Overrides
 AdminLTE memiliki default styles dengan specificity tinggi. **Selalu gunakan `!important` saat override AdminLTE styles.**
@@ -599,3 +604,43 @@ Jika diminta build APK, commit & push code lalu minta user build lokal:
 git pull origin main
 ./gradlew assembleDebug
 ```
+
+### 20. Session Log - 27 Desember 2025
+
+**Perbaikan yang dilakukan dalam sesi ini:**
+
+1. **Activity Logging untuk Audit Trail**
+   - Implementasi logging di `patients.js` (Add/Update Patient)
+   - Implementasi logging di `medical-records.js` (Create/Update/Delete MR)
+   - Implementasi logging di `sunday-clinic.js` (Confirm Billing, Finalize Visit, Print Invoice)
+
+2. **Fix Bug Notifikasi Billing Reset Form**
+   - Bug: Event `billing_confirmed` auto-reload form staff lain yang sedang mengisi rekam medis berbeda
+   - Fix: Tambah pengecekan MR ID sebelum reload di `sunday-clinic/main.js`
+
+3. **Notifikasi Lonceng Staff Announcements**
+   - Ubah query dari tabel `announcements` ke `staff_announcements`
+   - Buat tabel `staff_announcement_reads` untuk tracking baca/belum
+   - Endpoint `POST /api/staff-announcements/:id/read` untuk mark as read
+   - Update `/api/notifications/count` include staff announcements
+   - Highlight & scroll ke pengumuman spesifik saat klik dari dropdown
+   - CSS animation `highlight-flash` untuk visual feedback
+
+4. **Activity Logging "Unknown" User**
+   - Fix `logActivity()` di main.js menggunakan `window.currentUserId` dan `window.currentUserName`
+   - Skip logging jika user belum teridentifikasi
+   - Root cause: `window.auth?.currentUser` belum ready saat page load
+
+5. **Dashboard Chart "Kunjungan 30 Hari"**
+   - Fix `loadVisitSection()` yang return early karena element `stat-visits-last-month` tidak ada
+   - Ubah endpoint `/api/visits?exclude_dummy=true` untuk query `sunday_clinic_records` (bukan tabel `visits` yang berisi intake forms)
+   - Set skala maksimal chart ke 30 kunjungan dengan pixel heights
+
+6. **UI Cleanup**
+   - Hapus icons dari form Advanced Search pasien (Nama, ID, MR ID, Email, Umur, HP, WhatsApp, Nama Suami)
+
+7. **Git Hooks**
+   - Fix `.git/hooks/post-checkout` dan `post-merge` agar executable (chmod +x)
+
+8. **CLAUDE.md Updates**
+   - Aturan selektif menjalankan `fix-permissions.sh`
