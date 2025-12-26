@@ -223,6 +223,65 @@
             background-color: #17a2b8;
             color: white;
         }
+
+        /* Sticky Modal Footer - buttons always visible */
+        #tindakan-modal .modal-content,
+        #terapi-modal .modal-content,
+        #cara-pakai-modal .modal-content {
+            display: flex;
+            flex-direction: column;
+            max-height: 85vh;
+        }
+        #tindakan-modal .modal-body,
+        #terapi-modal .modal-body,
+        #cara-pakai-modal .modal-body {
+            flex: 1;
+            overflow-y: auto;
+        }
+        #tindakan-modal .modal-footer,
+        #terapi-modal .modal-footer,
+        #cara-pakai-modal .modal-footer {
+            flex-shrink: 0;
+            border-top: 1px solid #dee2e6;
+            background: #fff;
+        }
+
+        /* Tindakan Grid Layout */
+        .tindakan-category-header {
+            background-color: #e9ecef;
+            padding: 0.5rem 0.75rem;
+            margin: 0.5rem 0;
+            font-weight: 600;
+            border-radius: 4px;
+            color: #495057;
+        }
+        .tindakan-item {
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 0.5rem 0.75rem;
+            background: #fff;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            height: 100%;
+        }
+        .tindakan-item:hover {
+            background-color: #f8f9fa;
+            border-color: #adb5bd;
+        }
+        .tindakan-item .custom-control-label {
+            font-size: 0.85rem;
+            line-height: 1.3;
+            cursor: pointer;
+        }
+        .tindakan-item .text-muted {
+            font-size: 0.75rem;
+            display: block;
+            margin-top: 0.25rem;
+        }
+        .tindakan-item.selected {
+            background-color: #e7f1ff;
+            border-color: #0d6efd;
+        }
     </style>
 
     <!-- Mobile Responsive CSS -->
@@ -797,33 +856,11 @@ PLAN
                     </button>
                 </div>
                 <div class="modal-body">
-                    <div class="alert alert-info mb-3">
-                        <i class="fas fa-info-circle mr-1"></i>
-                        Pilih tindakan yang akan dilakukan dengan mencentang checkbox, lalu klik "Konfirmasi"
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table table-hover table-sm">
-                            <thead class="thead-light">
-                                <tr>
-                                    <th width="5%">
-                                        <div class="custom-control custom-checkbox">
-                                            <input type="checkbox" class="custom-control-input" id="select-all-tindakan">
-                                            <label class="custom-control-label" for="select-all-tindakan"></label>
-                                        </div>
-                                    </th>
-                                    <th width="15%">Kode</th>
-                                    <th width="50%">Nama Tindakan</th>
-                                    <th width="30%">Kategori</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tindakan-modal-body">
-                                <tr>
-                                    <td colspan="4" class="text-center">
-                                        <i class="fas fa-spinner fa-spin"></i> Memuat data...
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <input type="text" id="tindakan-search" class="form-control mb-3" placeholder="Cari tindakan...">
+                    <div id="tindakan-modal-body">
+                        <div class="text-center py-3">
+                            <i class="fas fa-spinner fa-spin"></i> Memuat data...
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer justify-content-between">
@@ -856,10 +893,7 @@ PLAN
                     </button>
                 </div>
                 <div class="modal-body">
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle mr-1"></i>
-                        Pilih obat yang akan diresepkan dengan mencentang checkbox, lalu klik "Lanjut"
-                    </div>
+                    <input type="text" id="obat-search" class="form-control mb-3" placeholder="Cari obat...">
                     <div class="table-responsive">
                         <table class="table table-hover table-sm">
                             <thead class="thead-light">
@@ -910,7 +944,7 @@ PLAN
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <div class="modal-body" id="batch-cara-pakai-body" style="max-height: 500px; overflow-y: auto;">
+                <div class="modal-body" id="batch-cara-pakai-body">
                     <!-- Dynamic content will be inserted here -->
                 </div>
                 <div class="modal-footer">

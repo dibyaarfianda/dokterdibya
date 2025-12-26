@@ -52,56 +52,104 @@ async function openTindakanModal() {
 
 function showTindakanModal(tindakanList) {
     const modal = document.getElementById('tindakan-modal');
-    const tbody = document.getElementById('tindakan-modal-body');
+    const container = document.getElementById('tindakan-modal-body');
+    const searchInput = document.getElementById('tindakan-search');
 
-    if (!modal || !tbody) return;
-
-    // Clear existing content
-    tbody.innerHTML = '';
+    if (!modal || !container) return;
 
     // Store tindakan list for later use
     window.availableTindakanList = tindakanList;
 
-    // Populate table with checkboxes
-    tindakanList.forEach((item, index) => {
-        const row = document.createElement('tr');
-        const escapedName = escapeHtml(item.name || '');
-        const escapedCode = escapeHtml(item.code || '');
-
-        row.innerHTML = `
-            <td>
-                <div class="custom-control custom-checkbox">
-                    <input type="checkbox" class="custom-control-input tindakan-checkbox"
-                           id="tindakan-${index}"
-                           data-tindakan-name="${escapedName}"
-                           data-tindakan-code="${escapedCode}"
-                           data-tindakan-id="${item.id || ''}">
-                    <label class="custom-control-label" for="tindakan-${index}"></label>
-                </div>
-            </td>
-            <td>${escapedCode}</td>
-            <td>${escapedName}</td>
-            <td>${escapeHtml(item.category || '')}</td>
-        `;
-        tbody.appendChild(row);
-    });
-
-    // Add select all functionality
-    const selectAllCheckbox = document.getElementById('select-all-tindakan');
-    if (selectAllCheckbox) {
-        selectAllCheckbox.checked = false;
-        selectAllCheckbox.onchange = function() {
-            const checkboxes = document.querySelectorAll('.tindakan-checkbox');
-            checkboxes.forEach(cb => cb.checked = this.checked);
-            updateTindakanCount();
-        };
+    // Format rupiah helper
+    function formatRupiah(amount) {
+        return 'Rp ' + (amount || 0).toLocaleString('id-ID');
     }
 
-    // Add change listener to each checkbox to update count
-    const checkboxes = document.querySelectorAll('.tindakan-checkbox');
-    checkboxes.forEach(cb => {
-        cb.onchange = updateTindakanCount;
-    });
+    // Render function - called on initial load and search filter
+    function renderTindakanGrid(filterText = '') {
+        const filter = filterText.toLowerCase();
+
+        // Filter items
+        const filtered = tindakanList.filter(item =>
+            !filter || (item.name && item.name.toLowerCase().includes(filter))
+        );
+
+        // Group by category
+        const byCategory = {};
+        filtered.forEach(item => {
+            const cat = item.category || 'Lainnya';
+            if (!byCategory[cat]) byCategory[cat] = [];
+            byCategory[cat].push(item);
+        });
+
+        // Render each category with 4-column grid
+        let html = '';
+        Object.keys(byCategory).sort().forEach(category => {
+            html += `<div class="tindakan-category-header">${escapeHtml(category)}</div>`;
+            html += '<div class="row">';
+            byCategory[category].forEach((item) => {
+                const escapedName = escapeHtml(item.name || '');
+                const escapedCode = escapeHtml(item.code || '');
+                html += `
+                    <div class="col-3 mb-2">
+                        <div class="tindakan-item" data-tindakan-id="${item.id || ''}">
+                            <div class="custom-control custom-checkbox">
+                                <input type="checkbox" class="custom-control-input tindakan-checkbox"
+                                       id="tindakan-${item.id}"
+                                       data-tindakan-name="${escapedName}"
+                                       data-tindakan-code="${escapedCode}"
+                                       data-tindakan-id="${item.id || ''}">
+                                <label class="custom-control-label" for="tindakan-${item.id}">
+                                    ${escapedName}
+                                </label>
+                            </div>
+                            <small class="text-muted">${formatRupiah(item.price)}</small>
+                        </div>
+                    </div>
+                `;
+            });
+            html += '</div>';
+        });
+
+        if (Object.keys(byCategory).length === 0) {
+            html = '<div class="text-center text-muted py-3">Tidak ada tindakan ditemukan</div>';
+        }
+
+        container.innerHTML = html;
+
+        // Add click handler to each item container (for better UX)
+        container.querySelectorAll('.tindakan-item').forEach(item => {
+            item.addEventListener('click', (e) => {
+                // Don't toggle if clicking directly on checkbox
+                if (e.target.type !== 'checkbox') {
+                    const checkbox = item.querySelector('.tindakan-checkbox');
+                    if (checkbox) {
+                        checkbox.checked = !checkbox.checked;
+                        item.classList.toggle('selected', checkbox.checked);
+                        updateTindakanCount();
+                    }
+                }
+            });
+        });
+
+        // Add change listener to each checkbox
+        container.querySelectorAll('.tindakan-checkbox').forEach(cb => {
+            cb.addEventListener('change', function() {
+                const item = this.closest('.tindakan-item');
+                if (item) item.classList.toggle('selected', this.checked);
+                updateTindakanCount();
+            });
+        });
+    }
+
+    // Search input listener
+    if (searchInput) {
+        searchInput.value = '';
+        searchInput.oninput = (e) => renderTindakanGrid(e.target.value);
+    }
+
+    // Initial render
+    renderTindakanGrid();
 
     // Reset count
     updateTindakanCount();
@@ -199,25 +247,23 @@ async function addSelectedTindakan() {
             }
         }
 
-        // Add all selected tindakan to textarea
-        const currentValue = textarea.value.trim();
-        const newEntries = selectedTindakan.map(t => t.name).join('\n');
-
-        if (currentValue) {
-            textarea.value = currentValue + '\n' + newEntries;
-        } else {
-            textarea.value = newEntries;
-        }
+        // NOTE: No longer adding to textarea - billing items are shown in the item list
+        // Textarea is only for custom entries not in the list
 
         // Hide modal
         $('#tindakan-modal').modal('hide');
 
         if (typeof showSuccess === 'function') {
-            showSuccess(`${selectedTindakan.length} tindakan ditambahkan ke Planning dan Tagihan`);
+            showSuccess(`${selectedTindakan.length} tindakan ditambahkan ke Tagihan`);
         }
 
         // Refresh billing component if it exists
         refreshBillingIfActive();
+
+        // Refresh tindakan items list in Planning
+        if (window.renderTindakanItemsList) {
+            await window.renderTindakanItemsList();
+        }
 
     } catch (error) {
         console.error('Error adding tindakan:', error);
@@ -353,6 +399,11 @@ async function resetTindakan() {
 
             // Refresh billing component if it exists
             refreshBillingIfActive();
+
+            // Refresh tindakan items list in Planning
+            if (window.renderTindakanItemsList) {
+                await window.renderTindakanItemsList();
+            }
         } else {
             if (typeof showSuccess === 'function') {
                 showSuccess('Tindakan dihapus dari textarea');
@@ -365,6 +416,136 @@ async function resetTindakan() {
         } else {
             window.showToast('error', 'Error: ' + error.message);
         }
+    }
+}
+
+/**
+ * Delete individual tindakan from Planning section
+ * This is called when user clicks delete button on Planning UI
+ * @param {number} itemId - Billing item ID
+ * @param {string} itemName - Tindakan name for display
+ */
+async function deleteIndividualTindakan(itemId, itemName) {
+    if (!confirm(`Hapus tindakan "${itemName}" dari Planning dan Tagihan?`)) {
+        return;
+    }
+
+    try {
+        const token = await window.getToken();
+        if (!token) return;
+
+        const mrSlug = window.routeMrSlug;
+        if (!mrSlug) {
+            window.showToast('error', 'MR ID tidak ditemukan');
+            return;
+        }
+
+        const response = await fetch(`/api/sunday-clinic/billing/${mrSlug}/items/id/${itemId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Gagal menghapus tindakan');
+        }
+
+        const result = await response.json();
+
+        if (typeof showSuccess === 'function') {
+            showSuccess(result.message || 'Tindakan berhasil dihapus');
+        } else {
+            window.showToast('success', result.message || 'Tindakan berhasil dihapus');
+        }
+
+        // Refresh billing if active
+        refreshBillingIfActive();
+
+        // Re-render the tindakan list in Planning
+        if (window.renderTindakanItemsList) {
+            await window.renderTindakanItemsList();
+        }
+
+    } catch (error) {
+        console.error('Error deleting individual tindakan:', error);
+        if (typeof showError === 'function') {
+            showError('Error: ' + error.message);
+        } else {
+            window.showToast('error', 'Error: ' + error.message);
+        }
+    }
+}
+
+/**
+ * Render tindakan items as a list with individual delete buttons
+ * Fetches current billing tindakan items and displays them
+ */
+async function renderTindakanItemsList() {
+    const container = document.getElementById('tindakan-items-container');
+    if (!container) return;
+
+    try {
+        const token = await window.getToken();
+        if (!token) return;
+
+        const mrSlug = window.routeMrSlug;
+        if (!mrSlug) return;
+
+        const response = await fetch(`/api/sunday-clinic/billing/${mrSlug}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            container.innerHTML = '<p class="text-muted small">Belum ada tindakan dari billing.</p>';
+            return;
+        }
+
+        const result = await response.json();
+        const billing = result.data || {};
+        const tindakanItems = (billing.items || []).filter(item => item.item_type === 'tindakan');
+        const isDraft = billing.status === 'draft';
+
+        if (tindakanItems.length === 0) {
+            container.innerHTML = '<p class="text-muted small">Belum ada tindakan. Klik "Input Tindakan" untuk menambahkan.</p>';
+            return;
+        }
+
+        const escapeHtmlLocal = (str) => {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        };
+
+        const listHtml = tindakanItems.map(item => {
+            const escapedName = escapeHtmlLocal(item.item_name);
+
+            return `
+                <div class="tindakan-list-item d-flex align-items-center p-2 mb-1 border rounded"
+                     data-item-id="${item.id}">
+                    ${isDraft ? `
+                        <button type="button" class="btn btn-sm btn-outline-danger mr-2 tindakan-delete-btn"
+                                onclick="window.deleteIndividualTindakan(${item.id}, '${escapedName.replace(/'/g, "\\'")}')"
+                                title="Hapus tindakan ini">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    ` : ''}
+                    <strong class="small">${escapedName}</strong>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = listHtml;
+
+    } catch (error) {
+        console.error('Error rendering tindakan items:', error);
+        container.innerHTML = '<p class="text-muted small">Gagal memuat daftar tindakan.</p>';
     }
 }
 
@@ -404,29 +585,60 @@ async function openTerapiModal() {
 function showTerapiModal(obatList) {
     const modal = document.getElementById('terapi-modal');
     const tbody = document.getElementById('terapi-modal-body');
+    const searchInput = document.getElementById('obat-search');
 
     if (!modal || !tbody) return;
 
-    // Clear existing content
-    tbody.innerHTML = '';
+    // Store obat list for search
+    window.availableObatList = obatList;
 
-    // Populate table with checkboxes
-    obatList.forEach((item, index) => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-            <td>
-                <div class="custom-control custom-checkbox">
-                    <input type="checkbox" class="custom-control-input obat-checkbox" id="obat-${index}" data-obat-name="${escapeHtml(item.name || '')}" data-obat-id="${item.id || ''}">
-                    <label class="custom-control-label" for="obat-${index}"></label>
-                </div>
-            </td>
-            <td>${escapeHtml(item.code || '')}</td>
-            <td>${escapeHtml(item.name || '')}</td>
-            <td>${escapeHtml(item.category || '')}</td>
-            <td>${item.stock !== undefined ? item.stock : '-'}</td>
-        `;
-        tbody.appendChild(row);
-    });
+    // Render function - called on initial load and search filter
+    function renderObatTable(filterText = '') {
+        const filter = filterText.toLowerCase();
+
+        // Clear existing content
+        tbody.innerHTML = '';
+
+        // Filter and populate table
+        obatList.forEach((item, index) => {
+            // Filter by name or code
+            const matchesFilter = !filter ||
+                (item.name && item.name.toLowerCase().includes(filter)) ||
+                (item.code && item.code.toLowerCase().includes(filter));
+
+            if (!matchesFilter) return;
+
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>
+                    <div class="custom-control custom-checkbox">
+                        <input type="checkbox" class="custom-control-input obat-checkbox" id="obat-${index}" data-obat-name="${escapeHtml(item.name || '')}" data-obat-id="${item.id || ''}">
+                        <label class="custom-control-label" for="obat-${index}"></label>
+                    </div>
+                </td>
+                <td>${escapeHtml(item.code || '')}</td>
+                <td>${escapeHtml(item.name || '')}</td>
+                <td>${escapeHtml(item.category || '')}</td>
+                <td>${item.stock !== undefined ? item.stock : '-'}</td>
+            `;
+            tbody.appendChild(row);
+        });
+
+        if (tbody.children.length === 0) {
+            const row = document.createElement('tr');
+            row.innerHTML = '<td colspan="5" class="text-center text-muted">Tidak ada obat ditemukan</td>';
+            tbody.appendChild(row);
+        }
+    }
+
+    // Search input listener
+    if (searchInput) {
+        searchInput.value = '';
+        searchInput.oninput = (e) => renderObatTable(e.target.value);
+    }
+
+    // Initial render
+    renderObatTable();
 
     // Add select all functionality
     const selectAllCheckbox = document.getElementById('select-all-obat');
@@ -471,57 +683,92 @@ function showBatchCaraPakaiModal(selectedObat) {
     const modalBody = document.getElementById('batch-cara-pakai-body');
     if (!modalBody) return;
 
-    // Build form for each selected obat
-    let formHtml = '';
+    // Build compact form for each selected obat
+    let formHtml = '<div class="resep-compact-list">';
     selectedObat.forEach((obat, index) => {
+        const isLast = index === selectedObat.length - 1;
         formHtml += `
-            <div class="card mb-3">
-                <div class="card-header bg-light">
-                    <h6 class="mb-0"><i class="fas fa-pills mr-2"></i>${escapeHtml(obat.name)}</h6>
-                </div>
-                <div class="card-body">
-                    <div class="form-row">
-                        <div class="form-group col-md-4">
-                            <label class="font-weight-bold">Jumlah:</label>
-                            <input type="number" class="form-control draft-terapi-field" id="jumlah-${index}" min="1" value="1" placeholder="Jumlah">
-                        </div>
-                        <div class="form-group col-md-4">
-                            <label class="font-weight-bold">Satuan:</label>
-                            <select class="form-control draft-terapi-field" id="satuan-${index}">
-                                <option value="tablet">tablet</option>
-                                <option value="kapsul">kapsul</option>
-                                <option value="box">box</option>
-                                <option value="botol">botol</option>
-                                <option value="tube">tube</option>
-                                <option value="sachet">sachet</option>
-                                <option value="ampul">ampul</option>
-                                <option value="vial">vial</option>
-                            </select>
-                        </div>
-                        <div class="form-group col-md-4">
-                            <label class="font-weight-bold">Cara Pakai:</label>
-                            <input type="text" class="form-control draft-terapi-field" id="carapakai-${index}" placeholder="3x1 sebelum makan">
-                        </div>
+            <div class="resep-row mb-2 p-2 border rounded" data-index="${index}">
+                <div class="d-flex align-items-center flex-wrap">
+                    <span class="font-weight-bold mr-2" style="min-width:120px;font-size:0.9rem;">
+                        <i class="fas fa-pills text-success mr-1"></i>${escapeHtml(obat.name)}
+                    </span>
+                    <input type="number" class="form-control form-control-sm draft-terapi-field mr-1"
+                           id="jumlah-${index}" min="1" value="1" style="width:60px;"
+                           data-next="satuan-${index}">
+                    <select class="form-control form-control-sm draft-terapi-field mr-2"
+                            id="satuan-${index}" style="width:80px;"
+                            data-next="carapakai-${index}">
+                        <option value="tablet">tab</option>
+                        <option value="kapsul">kap</option>
+                        <option value="box">box</option>
+                        <option value="botol">btl</option>
+                        <option value="tube">tube</option>
+                        <option value="sachet">sach</option>
+                    </select>
+                    <div class="btn-group btn-group-sm mr-2">
+                        <button type="button" class="btn btn-outline-secondary quick-dose" data-target="carapakai-${index}" data-value="3x1">3x1</button>
+                        <button type="button" class="btn btn-outline-secondary quick-dose" data-target="carapakai-${index}" data-value="2x1">2x1</button>
+                        <button type="button" class="btn btn-outline-secondary quick-dose" data-target="carapakai-${index}" data-value="1x1">1x1</button>
                     </div>
-                    <small class="form-text text-muted">
-                        Contoh: "3x1 sebelum makan", "2x1 setelah makan", "1x1 sehari"
-                    </small>
+                    <input type="text" class="form-control form-control-sm draft-terapi-field flex-grow-1"
+                           id="carapakai-${index}" placeholder="atau ketik manual..." style="min-width:140px;"
+                           data-next="${isLast ? '' : 'jumlah-' + (index + 1)}"
+                           data-is-last="${isLast}">
                 </div>
             </div>
         `;
     });
+    formHtml += '</div>';
 
     modalBody.innerHTML = formHtml;
 
     // Store selected obat data for later use
     window.selectedObatForPrescription = selectedObat;
 
-    // Add event listeners to update draft on field changes
+    // Add event listeners
     setTimeout(() => {
+        // Quick dose buttons
+        document.querySelectorAll('.quick-dose').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const targetId = this.dataset.target;
+                const value = this.dataset.value;
+                const input = document.getElementById(targetId);
+                if (input) {
+                    input.value = value;
+                    input.dispatchEvent(new Event('input'));
+                    // Move to next row's jumlah if exists
+                    const nextField = input.dataset.next;
+                    if (nextField) {
+                        const next = document.getElementById(nextField);
+                        if (next) next.focus();
+                    }
+                }
+            });
+        });
+
+        // Enter key navigation + Tab-like behavior
         document.querySelectorAll('.draft-terapi-field').forEach(field => {
             field.addEventListener('input', updateDraftTerapiPreview);
             field.addEventListener('change', updateDraftTerapiPreview);
+            field.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const nextFieldId = this.dataset.next;
+                    if (nextFieldId) {
+                        const next = document.getElementById(nextFieldId);
+                        if (next) next.focus();
+                    } else if (this.dataset.isLast === 'true') {
+                        // Last field - submit the form
+                        addBatchTerapi();
+                    }
+                }
+            });
         });
+
+        // Focus first input
+        const firstInput = document.getElementById('jumlah-0');
+        if (firstInput) firstInput.focus();
     }, 100);
 
     // Show modal
@@ -578,24 +825,17 @@ async function addBatchTerapi() {
         return;
     }
 
-    // Add all prescriptions to textarea
-    const currentValue = textarea.value.trim();
-    const newEntries = allPrescriptions.join('\n');
+    // NOTE: No longer adding to textarea - items are shown in item list above
+    // Textarea is now only for custom entries (vitamins not in list, etc.)
 
-    if (currentValue) {
-        textarea.value = currentValue + '\n' + newEntries;
-    } else {
-        textarea.value = newEntries;
-    }
-
-    // Clear draft AFTER adding to textarea (items are now saved to both database and Planning)
+    // Clear draft
     clearDraftTerapi();
 
     // Hide modal
     $('#cara-pakai-modal').modal('hide');
 
     if (typeof showSuccess === 'function') {
-        showSuccess(`${selectedObat.length} resep obat disimpan ke Planning dan Tagihan`);
+        showSuccess(`${selectedObat.length} obat disimpan ke Tagihan`);
     }
 
     // Clear stored data
@@ -603,6 +843,11 @@ async function addBatchTerapi() {
 
     // Refresh billing component if it exists
     refreshBillingIfActive();
+
+    // Refresh terapi items list in Planning
+    if (window.renderTerapiItemsList) {
+        await window.renderTerapiItemsList();
+    }
 }
 
 async function saveStructuredTerapi(prescriptions) {
@@ -677,6 +922,11 @@ async function resetTerapi() {
 
             // Refresh billing component if it exists
             refreshBillingIfActive();
+
+            // Refresh terapi items list in Planning
+            if (window.renderTerapiItemsList) {
+                await window.renderTerapiItemsList();
+            }
         } else {
             if (typeof showSuccess === 'function') {
                 showSuccess('Terapi dihapus dari textarea');
@@ -689,6 +939,194 @@ async function resetTerapi() {
         } else {
             window.showToast('error', 'Error: ' + error.message);
         }
+    }
+}
+
+/**
+ * Remove a single obat from the Planning terapi textarea
+ * Called when an obat is deleted from Billing
+ * @param {string} obatName - Name of the obat to remove
+ */
+function removeObatFromPlanning(obatName) {
+    const textarea = document.getElementById('planning-terapi');
+    if (!textarea || !obatName) return;
+
+    const currentValue = textarea.value;
+    if (!currentValue.trim()) return;
+
+    // Split into lines
+    const lines = currentValue.split('\n');
+
+    // Filter out lines that contain this obat name
+    // Format is: R/ [Drug Name] [unit] No. [Roman] Sig. [Latin]
+    const filteredLines = lines.filter(line => {
+        const trimmedLine = line.trim();
+        if (!trimmedLine) return true; // Keep empty lines
+
+        // Check if line contains "R/" and the obat name
+        if (trimmedLine.startsWith('R/')) {
+            // Extract drug name: R/ [Drug Name] tablet/strip/etc No. ...
+            const match = trimmedLine.match(/^R\/\s+(.+?)\s+(tablet|strip|kapsul|botol|tube|sachet|ampul|vial|supp|ovula|patch)/i);
+            if (match) {
+                const drugNameInLine = match[1].trim();
+                return drugNameInLine.toLowerCase() !== obatName.toLowerCase();
+            }
+        }
+        return true;
+    });
+
+    // Update textarea - remove consecutive empty lines
+    const cleanedLines = filteredLines.filter((line, index, arr) => {
+        // Keep non-empty lines
+        if (line.trim()) return true;
+        // Keep first empty line but not consecutive ones
+        if (index === 0) return false;
+        return arr[index - 1]?.trim();
+    });
+
+    textarea.value = cleanedLines.join('\n').trim();
+}
+
+/**
+ * Delete individual obat from Planning section
+ * This is called when user clicks delete button on Planning UI
+ * @param {number} itemId - Billing item ID
+ * @param {string} itemName - Obat name for display
+ */
+async function deleteIndividualObat(itemId, itemName) {
+    if (!confirm(`Hapus obat "${itemName}" dari Planning dan Tagihan?`)) {
+        return;
+    }
+
+    try {
+        const token = await window.getToken();
+        if (!token) return;
+
+        const mrSlug = window.routeMrSlug;
+        if (!mrSlug) {
+            window.showToast('error', 'MR ID tidak ditemukan');
+            return;
+        }
+
+        const response = await fetch(`/api/sunday-clinic/billing/${mrSlug}/items/id/${itemId}`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.message || 'Gagal menghapus obat');
+        }
+
+        const result = await response.json();
+
+        // NOTE: No longer need to touch textarea - it's only for custom entries now
+        // Billing items are shown in the item list, not textarea
+
+        // Clear draft if exists
+        clearDraftTerapi();
+
+        if (typeof showSuccess === 'function') {
+            showSuccess(result.message || 'Obat berhasil dihapus');
+        } else {
+            window.showToast('success', result.message || 'Obat berhasil dihapus');
+        }
+
+        // Refresh billing if active
+        refreshBillingIfActive();
+
+        // Re-render the terapi list in Planning
+        if (window.renderTerapiItemsList) {
+            await window.renderTerapiItemsList();
+        }
+
+    } catch (error) {
+        console.error('Error deleting individual obat:', error);
+        if (typeof showError === 'function') {
+            showError('Error: ' + error.message);
+        } else {
+            window.showToast('error', 'Error: ' + error.message);
+        }
+    }
+}
+
+/**
+ * Render terapi items as a list with individual delete buttons
+ * Fetches current billing obat items and displays them
+ */
+async function renderTerapiItemsList() {
+    const container = document.getElementById('terapi-items-container');
+    if (!container) return;
+
+    try {
+        const token = await window.getToken();
+        if (!token) return;
+
+        const mrSlug = window.routeMrSlug;
+        if (!mrSlug) return;
+
+        const response = await fetch(`/api/sunday-clinic/billing/${mrSlug}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) {
+            container.innerHTML = '<p class="text-muted small">Belum ada obat dari billing.</p>';
+            return;
+        }
+
+        const result = await response.json();
+        const billing = result.data || {};
+        const obatItems = (billing.items || []).filter(item => item.item_type === 'obat');
+        const isDraft = billing.status === 'draft';
+
+        if (obatItems.length === 0) {
+            container.innerHTML = '<p class="text-muted small">Belum ada obat. Klik "Input Terapi" untuk menambahkan.</p>';
+            return;
+        }
+
+        const escapeHtmlLocal = (str) => {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        };
+
+        const listHtml = obatItems.map(item => {
+            const itemData = item.item_data || {};
+            const caraPakai = itemData.caraPakai || itemData.latinSig || '-';
+            const escapedName = escapeHtmlLocal(item.item_name);
+
+            return `
+                <div class="terapi-item d-flex align-items-center p-2 mb-1 border rounded"
+                     data-item-id="${item.id}">
+                    ${isDraft ? `
+                        <button type="button" class="btn btn-sm btn-outline-danger mr-2 terapi-delete-btn"
+                                onclick="window.deleteIndividualObat(${item.id}, '${escapedName.replace(/'/g, "\\'")}')"
+                                title="Hapus obat ini">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    ` : ''}
+                    <div class="flex-grow-1">
+                        <strong class="small">${escapedName}</strong>
+                        <small class="text-muted ml-1">x${item.quantity}</small>
+                        <br>
+                        <small class="text-muted">${escapeHtmlLocal(caraPakai)}</small>
+                    </div>
+                </div>
+            `;
+        }).join('');
+
+        container.innerHTML = listHtml;
+
+    } catch (error) {
+        console.error('Error rendering terapi items:', error);
+        container.innerHTML = '<p class="text-muted small">Gagal memuat daftar obat.</p>';
     }
 }
 
@@ -899,5 +1337,10 @@ window.updateDraftTerapiPreview = updateDraftTerapiPreview;
 window.storeDraftTerapi = storeDraftTerapi;
 window.getDraftTerapi = getDraftTerapi;
 window.clearDraftTerapi = clearDraftTerapi;
+window.removeObatFromPlanning = removeObatFromPlanning;
+window.deleteIndividualObat = deleteIndividualObat;
+window.renderTerapiItemsList = renderTerapiItemsList;
+window.deleteIndividualTindakan = deleteIndividualTindakan;
+window.renderTindakanItemsList = renderTindakanItemsList;
 
 console.log('[Planning Helpers] Loaded successfully');

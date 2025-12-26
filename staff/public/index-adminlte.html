@@ -128,6 +128,53 @@
         }
 
         /* ========================================
+           TERAPI ITEMS LIST (Planning Section)
+           ======================================== */
+        .terapi-item {
+            background-color: #f8f9fa;
+            transition: background-color 0.15s ease;
+        }
+        .terapi-item:hover {
+            background-color: #e9ecef;
+        }
+        .terapi-item .terapi-delete-btn {
+            opacity: 0.5;
+            transition: opacity 0.15s ease;
+        }
+        .terapi-item:hover .terapi-delete-btn {
+            opacity: 1;
+        }
+        #terapi-items-container {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        /* ========================================
+           STICKY MODAL FOOTER (Planning Modals)
+           ======================================== */
+        #tindakan-modal .modal-content,
+        #terapi-modal .modal-content,
+        #cara-pakai-modal .modal-content {
+            display: flex;
+            flex-direction: column;
+            max-height: 85vh;
+        }
+        #tindakan-modal .modal-body,
+        #terapi-modal .modal-body,
+        #cara-pakai-modal .modal-body {
+            flex: 1;
+            overflow-y: auto;
+            max-height: none !important;
+        }
+        #tindakan-modal .modal-footer,
+        #terapi-modal .modal-footer,
+        #cara-pakai-modal .modal-footer {
+            flex-shrink: 0;
+            border-top: 1px solid #dee2e6;
+            background: #fff;
+        }
+
+        /* ========================================
            STANDARDIZED HEADING HIERARCHY
            ======================================== */
         #page-title,
@@ -385,6 +432,78 @@
         .table .btn-xs {
             padding: 0.2rem 0.4rem !important;
             font-size: 0.7rem !important;
+        }
+
+        /* ========================================
+           STANDARDIZED CARD/INFO-BOX STYLES
+           ======================================== */
+        /* Booking Settings Cards */
+        #booking-settings-page .info-box-text {
+            font-size: var(--font-size-sm) !important;
+        }
+        #booking-settings-page .info-box-number {
+            font-size: 0.9rem !important;
+        }
+        #booking-settings-page .card-body h4 {
+            font-size: 1.1rem !important;
+        }
+        #booking-settings-page .card-body p,
+        #booking-settings-page .card-body small {
+            font-size: var(--font-size-sm) !important;
+        }
+        #booking-settings-page .card-title {
+            font-size: 0.9rem !important;
+        }
+        #booking-settings-page .card-footer .btn {
+            font-size: 0.7rem !important;
+            padding: 0.25rem 0.5rem !important;
+        }
+
+        /* Notifications Page - Staff Announcements */
+        #notifications-page .staff-announcement-item,
+        #staff-announcements-list {
+            font-size: var(--font-size-sm) !important;
+        }
+        #staff-announcements-list h5,
+        #staff-announcements-list h6 {
+            font-size: 0.85rem !important;
+        }
+        #staff-announcements-list p,
+        #staff-announcements-list div,
+        #staff-announcements-list span {
+            font-size: var(--font-size-sm) !important;
+        }
+        #staff-announcements-list .badge {
+            font-size: 0.65rem !important;
+        }
+
+        /* Kelola Import Fields (embedded) */
+        #import-fields-page .field-name {
+            font-size: 0.85rem !important;
+        }
+        #import-fields-page .field-type,
+        #import-fields-page .field-row small {
+            font-size: 0.7rem !important;
+        }
+        #import-fields-page .keyword-tag {
+            font-size: 0.7rem !important;
+            padding: 2px 8px !important;
+        }
+        #import-fields-page .add-keyword-input input {
+            font-size: 0.7rem !important;
+            width: 100px !important;
+        }
+        #import-fields-page .btn-icon {
+            font-size: 0.7rem !important;
+            padding: 3px 8px !important;
+        }
+        #import-fields-page .section-card .card-header {
+            font-size: 0.85rem !important;
+            padding: 0.5rem 0.75rem !important;
+        }
+        #import-fields-page .alert {
+            font-size: var(--font-size-sm) !important;
+            padding: 0.5rem 0.75rem !important;
         }
 
         /* Smaller sidebar navigation font */

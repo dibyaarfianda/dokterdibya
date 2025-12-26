@@ -652,8 +652,33 @@ router.post('/api/medical-records/generate-resume', verifyToken, requirePermissi
             }
         });
 
+        // Fetch billing items for this visit (obat and tindakan from billing)
+        let billingItems = { obat: [], tindakan: [] };
+        if (visitId) {
+            try {
+                const [billingRows] = await db.query(
+                    `SELECT bi.item_name, bi.quantity, bi.item_data, bi.item_type
+                     FROM sunday_clinic_billing_items bi
+                     JOIN sunday_clinic_billings b ON bi.billing_id = b.id
+                     WHERE b.mr_id = ? AND bi.item_type IN ('obat', 'tindakan')
+                     ORDER BY bi.item_type, bi.id`,
+                    [visitId.toUpperCase()]
+                );
+                // Group by type
+                billingRows.forEach(row => {
+                    if (row.item_type === 'obat') {
+                        billingItems.obat.push(row);
+                    } else if (row.item_type === 'tindakan') {
+                        billingItems.tindakan.push(row);
+                    }
+                });
+            } catch (e) {
+                logger.warn('Could not fetch billing items:', e.message);
+            }
+        }
+
         // Generate resume using AI-like logic
-        const resume = generateMedicalResume(identitas, recordsByType);
+        const resume = generateMedicalResume(identitas, recordsByType, billingItems);
 
         res.json({
             success: true,
@@ -673,8 +698,15 @@ router.post('/api/medical-records/generate-resume', verifyToken, requirePermissi
 /**
  * Generate professional medical resume from patient data
  * This creates a comprehensive medical summary similar to hospital discharge summaries
+ * @param {Object} identitas - Patient identity data
+ * @param {Object} records - Medical records by type
+ * @param {Object} billingItems - Billing items { obat: [], tindakan: [] }
  */
-function generateMedicalResume(identitas, records) {
+function generateMedicalResume(identitas, records, billingItems = { obat: [], tindakan: [] }) {
+    // Handle legacy format (array) for backward compatibility
+    if (Array.isArray(billingItems)) {
+        billingItems = { obat: billingItems, tindakan: [] };
+    }
     let resume = '';
     const today = new Date().toLocaleDateString('id-ID', { 
         day: 'numeric', 
@@ -1118,36 +1150,78 @@ function generateMedicalResume(identitas, records) {
     }
 
     // VIII. RENCANA TATALAKSANA (PLANNING)
-    if (records.planning && typeof records.planning === 'object') {
-        const planning = records.planning;
-        const hasData = Object.values(planning).some(val => val && val !== '');
-        
-        if (hasData) {
-            resume += 'VIII. RENCANA TATALAKSANA\n';
-            resume += '──────────────────────────────────────────────────\n';
-            
-            if (planning.tindakan) {
-                resume += `A. Tindakan Medis:\n${planning.tindakan}\n\n`;
-            }
-            
-            if (planning.terapi) {
-                resume += `B. Terapi:\n${planning.terapi}\n\n`;
-            }
-            
-            if (planning.rencana) {
-                resume += `C. Rencana Perawatan dan Follow-up:\n${planning.rencana}\n\n`;
-            }
-            
-            if (planning.edukasi) {
-                resume += `D. Edukasi Pasien:\n${planning.edukasi}\n\n`;
-            }
-            
-            if (planning.rujukan) {
-                resume += `E. Rujukan:\n${planning.rujukan}\n\n`;
-            }
-            
-            resume += '\n';
+    const planning = (records.planning && typeof records.planning === 'object') ? records.planning : {};
+    const hasPlanningData = Object.values(planning).some(val => val && val !== '');
+    const hasTindakanBilling = billingItems.tindakan && billingItems.tindakan.length > 0;
+    const hasObatBilling = billingItems.obat && billingItems.obat.length > 0;
+
+    if (hasPlanningData || hasTindakanBilling || hasObatBilling) {
+        resume += 'VIII. RENCANA TATALAKSANA\n';
+        resume += '──────────────────────────────────────────────────\n';
+
+        // Tindakan section: combine billing items + custom entries from textarea
+        let tindakanContent = '';
+
+        // Add billing tindakan items
+        if (hasTindakanBilling) {
+            billingItems.tindakan.forEach(item => {
+                tindakanContent += `- ${item.item_name}\n`;
+            });
         }
+
+        // Add custom entries from textarea
+        if (planning.tindakan && planning.tindakan.trim()) {
+            if (tindakanContent) tindakanContent += '\n'; // Add separator
+            tindakanContent += planning.tindakan;
+        }
+
+        if (tindakanContent) {
+            resume += `A. Tindakan Medis:\n${tindakanContent}\n\n`;
+        }
+
+        // Terapi section: combine billing items + custom entries from textarea
+        let terapiContent = '';
+
+        // Add billing items (obat from Input Terapi)
+        if (hasObatBilling) {
+            billingItems.obat.forEach(item => {
+                let itemData = item.item_data;
+                if (typeof itemData === 'string') {
+                    try { itemData = JSON.parse(itemData); } catch (e) { itemData = {}; }
+                }
+                const caraPakai = itemData?.caraPakai || itemData?.latinSig || '';
+                const qty = item.quantity || 1;
+                terapiContent += `R/ ${item.item_name} No. ${qty}`;
+                if (caraPakai) {
+                    terapiContent += ` Sig. ${caraPakai}`;
+                }
+                terapiContent += '\n';
+            });
+        }
+
+        // Add custom entries from textarea (vitamins, etc.)
+        if (planning.terapi && planning.terapi.trim()) {
+            if (terapiContent) terapiContent += '\n'; // Add separator
+            terapiContent += planning.terapi;
+        }
+
+        if (terapiContent) {
+            resume += `B. Terapi:\n${terapiContent}\n\n`;
+        }
+
+        if (planning.rencana) {
+            resume += `C. Rencana Perawatan dan Follow-up:\n${planning.rencana}\n\n`;
+        }
+
+        if (planning.edukasi) {
+            resume += `D. Edukasi Pasien:\n${planning.edukasi}\n\n`;
+        }
+
+        if (planning.rujukan) {
+            resume += `E. Rujukan:\n${planning.rujukan}\n\n`;
+        }
+
+        resume += '\n';
     }
 
     // Footer
