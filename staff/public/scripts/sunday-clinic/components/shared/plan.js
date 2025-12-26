@@ -210,13 +210,20 @@ export default {
                 <div class="sc-card">
                     <div class="mb-3">
                         <label class="font-weight-bold">Tindakan</label>
-                        <textarea class="form-control" id="planning-tindakan" rows="4"
-                                  placeholder="Klik tombol 'Input Tindakan' untuk memilih dari daftar...">${escapeHtml(planData.tindakan)}</textarea>
+
+                        <!-- Item list with individual delete buttons (synced with billing) -->
+                        <div id="tindakan-items-container" class="mb-2">
+                            <p class="text-muted small">Memuat daftar tindakan...</p>
+                        </div>
+
+                        <!-- Textarea for custom entries only -->
+                        <textarea class="form-control" id="planning-tindakan" rows="2"
+                                  placeholder="Tulis tindakan manual di sini (untuk tindakan yang tidak ada di daftar)...">${escapeHtml(planData.tindakan)}</textarea>
                         <div class="mt-2">
                             <button type="button" class="btn btn-sm btn-outline-primary mr-2" id="btn-input-tindakan">
                                 <i class="fas fa-plus-circle mr-1"></i>Input Tindakan
                             </button>
-                            <button type="button" class="btn btn-sm btn-outline-primary" id="btn-reset-tindakan">
+                            <button type="button" class="btn btn-sm btn-outline-danger" id="btn-reset-tindakan">
                                 <i class="fas fa-trash mr-1"></i>Hapus Semua
                             </button>
                         </div>
@@ -224,13 +231,20 @@ export default {
 
                     <div class="mb-3">
                         <label class="font-weight-bold">Terapi</label>
-                        <textarea class="form-control" id="planning-terapi" rows="4"
-                                  placeholder="Klik tombol 'Input Terapi' untuk memilih obat...">${escapeHtml(planData.terapi)}</textarea>
+
+                        <!-- Item list with individual delete buttons -->
+                        <div id="terapi-items-container" class="mb-2">
+                            <p class="text-muted small">Memuat daftar obat...</p>
+                        </div>
+
+                        <!-- Textarea for custom entries (vitamins not in list, etc.) -->
+                        <textarea class="form-control" id="planning-terapi" rows="3"
+                                  placeholder="Tulis resep manual di sini (untuk obat/vitamin yang tidak ada di daftar)...">${escapeHtml(planData.terapi)}</textarea>
                         <div class="mt-2">
                             <button type="button" class="btn btn-sm btn-outline-primary mr-2" id="btn-input-terapi">
                                 <i class="fas fa-plus-circle mr-1"></i>Input Terapi
                             </button>
-                            <button type="button" class="btn btn-sm btn-outline-primary" id="btn-reset-terapi">
+                            <button type="button" class="btn btn-sm btn-outline-danger" id="btn-reset-terapi">
                                 <i class="fas fa-trash mr-1"></i>Hapus Semua
                             </button>
                         </div>

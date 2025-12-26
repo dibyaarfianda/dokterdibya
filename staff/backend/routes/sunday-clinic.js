@@ -1965,6 +1965,132 @@ router.delete('/billing/:mrId/items/code/:code', verifyToken, async (req, res, n
     }
 });
 
+// Delete billing item by item ID (for individual obat deletion)
+router.delete('/billing/:mrId/items/id/:itemId', verifyToken, async (req, res, next) => {
+    const normalizedMrId = normalizeMrId(req.params.mrId);
+    const itemId = parseInt(req.params.itemId, 10);
+
+    if (!itemId || isNaN(itemId)) {
+        return res.status(400).json({
+            success: false,
+            message: 'Item ID tidak valid'
+        });
+    }
+
+    let connection;
+
+    try {
+        const recordRow = await findRecordByMrId(normalizedMrId);
+        if (!recordRow) {
+            return res.status(404).json({
+                success: false,
+                message: 'Rekam medis Sunday Clinic tidak ditemukan.'
+            });
+        }
+
+        connection = await db.getConnection();
+        await connection.beginTransaction();
+
+        // Get billing record and check status
+        const [billingRows] = await connection.query(
+            `SELECT id, status FROM sunday_clinic_billings WHERE mr_id = ? FOR UPDATE`,
+            [normalizedMrId]
+        );
+
+        if (billingRows.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({
+                success: false,
+                message: 'Billing tidak ditemukan.'
+            });
+        }
+
+        const billing = billingRows[0];
+
+        // Only allow deletion when status is 'draft'
+        if (billing.status !== 'draft') {
+            await connection.rollback();
+            return res.status(400).json({
+                success: false,
+                message: 'Tidak dapat menghapus item. Tagihan sudah dikonfirmasi.'
+            });
+        }
+
+        // Get item details before deletion (for response)
+        const [itemRows] = await connection.query(
+            `SELECT * FROM sunday_clinic_billing_items WHERE id = ? AND billing_id = ?`,
+            [itemId, billing.id]
+        );
+
+        if (itemRows.length === 0) {
+            await connection.rollback();
+            return res.status(404).json({
+                success: false,
+                message: 'Item tidak ditemukan.'
+            });
+        }
+
+        const deletedItem = itemRows[0];
+
+        // Delete item by ID
+        await connection.query(
+            `DELETE FROM sunday_clinic_billing_items WHERE id = ? AND billing_id = ?`,
+            [itemId, billing.id]
+        );
+
+        // Recalculate billing totals
+        const [[totals]] = await connection.query(
+            `SELECT COALESCE(SUM(total), 0) AS subtotal FROM sunday_clinic_billing_items WHERE billing_id = ?`,
+            [billing.id]
+        );
+
+        await connection.query(
+            `UPDATE sunday_clinic_billings
+             SET subtotal = ?, total = ?, updated_at = NOW()
+             WHERE id = ?`,
+            [totals.subtotal, totals.subtotal, billing.id]
+        );
+
+        await connection.commit();
+
+        res.json({
+            success: true,
+            message: `Item "${deletedItem.item_name}" berhasil dihapus`,
+            data: {
+                mrId: normalizedMrId,
+                billingId: billing.id,
+                deletedItem: {
+                    id: deletedItem.id,
+                    item_name: deletedItem.item_name,
+                    item_type: deletedItem.item_type,
+                    quantity: deletedItem.quantity,
+                    price: deletedItem.price
+                },
+                newSubtotal: totals.subtotal
+            }
+        });
+    } catch (error) {
+        if (connection) {
+            try {
+                await connection.rollback();
+            } catch (rollbackError) {
+                logger.error('Failed to rollback item deletion by ID', { error: rollbackError.message });
+            }
+        }
+
+        logger.error('Failed to delete billing item by ID', {
+            mrId: normalizedMrId,
+            itemId,
+            error: error.message
+        });
+        next(error);
+    } finally {
+        if (connection) {
+            connection.release();
+        }
+    }
+});
+
 // Request change to billing (anyone can request)
 router.post('/billing/:mrId/request-change', verifyToken, async (req, res, next) => {
     const normalizedMrId = normalizeMrId(req.params.mrId);

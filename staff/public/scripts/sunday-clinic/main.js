@@ -694,6 +694,18 @@ class SundayClinicApp {
             savePlanBtn.addEventListener('click', () => this.savePlanningObstetri());
         }
 
+        // Render terapi items list if container exists
+        if (document.getElementById('terapi-items-container') && window.renderTerapiItemsList) {
+            console.log('[SundayClinic] Rendering terapi items list');
+            window.renderTerapiItemsList();
+        }
+
+        // Render tindakan items list if container exists
+        if (document.getElementById('tindakan-items-container') && window.renderTindakanItemsList) {
+            console.log('[SundayClinic] Rendering tindakan items list');
+            window.renderTindakanItemsList();
+        }
+
         // Physical Exam save button (for old format obstetri category)
         const savePhysicalExamBtn = document.getElementById('save-physical-exam');
         if (savePhysicalExamBtn) {

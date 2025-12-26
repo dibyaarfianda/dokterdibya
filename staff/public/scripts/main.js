@@ -1913,6 +1913,9 @@ async function editArticle(id) {
         document.getElementById('article-published').checked = article.is_published === 1;
 
         $('#articleModal').modal('show');
+
+        // Update preview with loaded content
+        updateArticlePreview();
     } catch (error) {
         console.error('Error fetching article:', error);
         alert('Gagal memuat artikel');

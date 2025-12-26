@@ -755,9 +755,24 @@ export default {
         const itemsHtml = items.map(item => {
             const itemTotal = (item.quantity || 1) * (item.price || 0);
             subtotal += itemTotal;
+
+            // Show delete button for obat items when status is draft
+            const showDeleteBtn = item.item_type === 'obat' && status === 'draft';
+            const deleteBtn = showDeleteBtn
+                ? `<button type="button" class="btn btn-sm btn-outline-danger ml-2 delete-obat-btn"
+                           data-item-id="${item.id}"
+                           data-item-name="${escapeHtml(item.item_name)}"
+                           title="Hapus obat ini">
+                       <i class="fas fa-times"></i>
+                   </button>`
+                : '';
+
             return `
-                <tr>
-                    <td>${escapeHtml(item.item_name)}</td>
+                <tr data-item-id="${item.id}">
+                    <td>
+                        ${escapeHtml(item.item_name)}
+                        ${deleteBtn}
+                    </td>
                     <td class="text-center">${item.quantity || 1}</td>
                     <td class="text-right">${formatRupiahLocal(item.price)}</td>
                     <td class="text-right font-weight-bold">${formatRupiahLocal(itemTotal)}</td>
@@ -1064,6 +1079,80 @@ export default {
                         if (window.showError) {
                             window.showError(error.message || 'Gagal mengubah item');
                         }
+                    }
+                });
+            });
+
+            // 0b. Individual obat delete buttons
+            const deleteObatBtns = document.querySelectorAll('.delete-obat-btn');
+            deleteObatBtns.forEach(btn => {
+                btn.addEventListener('click', async function() {
+                    const itemId = this.dataset.itemId;
+                    const itemName = this.dataset.itemName;
+
+                    if (!confirm(`Hapus obat "${itemName}" dari tagihan?`)) {
+                        return;
+                    }
+
+                    try {
+                        const token = window.getToken?.();
+                        if (!token) return;
+
+                        const mrId = window.routeMrSlug;
+                        if (!mrId) {
+                            window.showToast('error', 'MR ID tidak ditemukan');
+                            return;
+                        }
+
+                        // Disable button during request
+                        this.disabled = true;
+                        this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+                        const response = await fetch(`/api/sunday-clinic/billing/${mrId}/items/id/${itemId}`, {
+                            method: 'DELETE',
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Content-Type': 'application/json'
+                            }
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json().catch(() => ({}));
+                            throw new Error(errorData.message || 'Gagal menghapus obat');
+                        }
+
+                        const result = await response.json();
+
+                        if (window.showSuccess) {
+                            window.showSuccess(result.message || 'Obat berhasil dihapus');
+                        }
+
+                        // NOTE: No longer need to touch textarea - it's only for custom entries now
+                        // Billing items are shown in the item list, not textarea
+
+                        // Refresh terapi items list in Planning if container exists
+                        if (document.getElementById('terapi-items-container') && window.renderTerapiItemsList) {
+                            window.renderTerapiItemsList();
+                        }
+
+                        // Refresh tindakan items list in Planning if container exists
+                        if (document.getElementById('tindakan-items-container') && window.renderTindakanItemsList) {
+                            window.renderTindakanItemsList();
+                        }
+
+                        // Reload billing section to show updated items
+                        if (window.handleSectionChange) {
+                            window.handleSectionChange('billing', { pushHistory: false });
+                        }
+
+                    } catch (error) {
+                        console.error('Error deleting obat:', error);
+                        if (window.showError) {
+                            window.showError(error.message || 'Gagal menghapus obat');
+                        }
+                        // Re-enable button on error
+                        this.disabled = false;
+                        this.innerHTML = '<i class="fas fa-times"></i>';
                     }
                 });
             });
