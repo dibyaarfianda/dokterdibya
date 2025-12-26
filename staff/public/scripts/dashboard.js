@@ -47,25 +47,30 @@ function renderVisitsChart(dailyData) {
         return;
     }
 
-    const maxCount = Math.max(...dailyData.map(day => day.count), 1);
+    // Fixed maximum scale at 30 visits
+    const maxScale = 30;
+    const actualMax = Math.max(...dailyData.map(day => day.count), 1);
 
     const barCount = dailyData.length;
     const barWidth = barCount > 0 ? `calc((100% - ${(barCount - 1) * 8}px) / ${barCount})` : '28px';
-    
+
+    // Max bar height in pixels (container is 200px, minus padding for labels)
+    const maxBarHeight = 120;
+
     const bars = dailyData.map((day, index) => {
-        const percentage = maxCount === 0 ? 0 : (day.count / maxCount) * 100;
-        const height = day.count === 0 ? 4 : Math.max(percentage, 6);
-        
+        // Calculate height in pixels based on fixed scale of 30
+        const heightPx = day.count === 0 ? 4 : Math.round((day.count / maxScale) * maxBarHeight);
+
         // Add vertical dashed line on month change (extend to top padding)
         const verticalLine = day.isNewMonth ? `
             <div style="position: absolute; left: -4px; top: -25px; bottom: 0; width: 1px; border-left: 2px dashed #d1d5db;"></div>
         ` : '';
-        
+
         return `
             <div class="d-flex flex-column align-items-center" style="width: ${barWidth}; gap: 6px; position: relative;">
                 ${verticalLine}
                 <div style="font-size: 11px; font-weight: 600;">${day.count}</div>
-                <div class="w-100" style="height: ${height}%; min-height: ${day.count === 0 ? 4 : 12}px; background: linear-gradient(180deg, #4f46ef, #6366f1); border-radius: 6px 6px 0 0;" title="${day.fullLabel}: ${day.count} kunjungan"></div>
+                <div class="w-100" style="height: ${heightPx}px; min-height: 4px; background: linear-gradient(180deg, #4f46ef, #6366f1); border-radius: 6px 6px 0 0;" title="${day.fullLabel}: ${day.count} kunjungan"></div>
                 <div style="font-size: 10px; color: #6b7280; text-align: center;">${day.label}</div>
             </div>
         `;
@@ -164,24 +169,25 @@ async function loadVisitSection() {
     const visitsLastMonthEl = document.getElementById('stat-visits-last-month');
     const visits30DaysEl = document.getElementById('stat-visits-30days-total');
     const chartContainer = document.getElementById('visits-30-days-chart');
-    if (!visitsLastMonthEl || !chartContainer) return;
+    // Only chartContainer is essential for this section
+    if (!chartContainer) return;
 
     try {
         const token = await getIdToken();
         if (!token) {
-            visitsLastMonthEl.textContent = '0';
+            if (visitsLastMonthEl) visitsLastMonthEl.textContent = '0';
             if (visits30DaysEl) visits30DaysEl.textContent = '0';
             chartContainer.innerHTML = '<p class="text-muted mb-0">Tidak terautentikasi.</p>';
             return;
         }
 
         const stats = await fetchVisitStats(token);
-        visitsLastMonthEl.textContent = stats.lastMonthCount.toLocaleString('id-ID');
+        if (visitsLastMonthEl) visitsLastMonthEl.textContent = stats.lastMonthCount.toLocaleString('id-ID');
         if (visits30DaysEl) visits30DaysEl.textContent = stats.totalLast30Days.toLocaleString('id-ID');
         renderVisitsChart(stats.daily);
     } catch (error) {
         console.warn('loadVisitSection failed:', error);
-        visitsLastMonthEl.textContent = '0';
+        if (visitsLastMonthEl) visitsLastMonthEl.textContent = '0';
         if (visits30DaysEl) visits30DaysEl.textContent = '0';
 
         if (chartContainer) {

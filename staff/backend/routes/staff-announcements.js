@@ -168,6 +168,35 @@ router.put('/:id', verifyToken, requireSuperadmin, async (req, res, next) => {
 });
 
 /**
+ * POST /api/staff-announcements/:id/read
+ * Mark announcement as read by current user
+ */
+router.post('/:id/read', verifyToken, async (req, res, next) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user?.id || req.user?.uid || req.user?.new_id;
+
+        if (!userId) {
+            return res.status(401).json({ success: false, message: 'User ID not found' });
+        }
+
+        // Insert or ignore if already read
+        await db.query(
+            `INSERT IGNORE INTO staff_announcement_reads (announcement_id, user_id)
+             VALUES (?, ?)`,
+            [id, userId]
+        );
+
+        logger.info('Staff announcement marked as read', { announcementId: id, userId });
+
+        res.json({ success: true, message: 'Marked as read' });
+    } catch (error) {
+        logger.error('Failed to mark announcement as read', { error: error.message });
+        next(error);
+    }
+});
+
+/**
  * DELETE /api/staff-announcements/:id
  * Delete staff announcement (dokter only)
  */

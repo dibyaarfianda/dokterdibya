@@ -508,11 +508,11 @@
 
         /* Smaller sidebar navigation font */
         .sidebar .nav-sidebar .nav-link {
-            font-size: 16px !important;
+            font-size: 14px !important;
         }
 
         .sidebar .nav-sidebar .nav-link .nav-icon {
-            font-size: 16.8px !important;
+            font-size: 14px !important;
         }
 
         /* Tighter vertical spacing for sidebar menu items */
@@ -1022,6 +1022,16 @@
             background-color: #e9ecef;
         }
 
+        /* Highlight flash for announcements */
+        @keyframes highlight-flash {
+            0% { background-color: #fff3cd; }
+            50% { background-color: #ffeeba; }
+            100% { background-color: transparent; }
+        }
+        .highlight-flash {
+            animation: highlight-flash 2s ease-out;
+        }
+
         /* Notification Message Markdown Styles */
         .notification-message {
             font-size: 0.9rem;
@@ -1331,7 +1341,7 @@
     <script>
         // Force clear cache on first load
         (function() {
-            const CACHE_VERSION = 'v37'; // Increment this to force refresh - add cost price & discount fields
+            const CACHE_VERSION = 'v42'; // Increment this to force refresh - fix announcement read status
             const currentVersion = localStorage.getItem('cache_version');
 
             if (currentVersion !== CACHE_VERSION) {
@@ -1688,7 +1698,7 @@
                         </a>
                     </li>
 
-                    <li class="nav-item superadmin-exclusive d-none" id="nav-staff-activity">
+                    <li class="nav-item dokter-only d-none" id="nav-staff-activity">
                         <a href="#" class="nav-link" onclick="showStaffActivityPage(); return false;">
                             <i class="nav-icon fas fa-user-clock"></i>
                             <p>Aktivitas Staff</p>
@@ -5037,31 +5047,31 @@ Contoh Markdown:
                                         <div class="row">
                                             <div class="col-md-3">
                                                 <div class="form-group">
-                                                    <label><i class="fas fa-user text-muted mr-1"></i>Nama Pasien</label>
+                                                    <label>Nama Pasien</label>
                                                     <input type="text" id="adv-search-name" class="form-control form-control-sm" placeholder="Cari nama...">
                                                 </div>
                                             </div>
                                             <div class="col-md-2">
                                                 <div class="form-group">
-                                                    <label><i class="fas fa-id-card text-muted mr-1"></i>ID Pasien</label>
+                                                    <label>ID Pasien</label>
                                                     <input type="text" id="adv-search-id" class="form-control form-control-sm" placeholder="DRD0001">
                                                 </div>
                                             </div>
                                             <div class="col-md-2">
                                                 <div class="form-group">
-                                                    <label><i class="fas fa-file-medical text-muted mr-1"></i>MR ID</label>
+                                                    <label>MR ID</label>
                                                     <input type="text" id="adv-search-mr" class="form-control form-control-sm" placeholder="MR-...">
                                                 </div>
                                             </div>
                                             <div class="col-md-3">
                                                 <div class="form-group">
-                                                    <label><i class="fas fa-envelope text-muted mr-1"></i>Email</label>
+                                                    <label>Email</label>
                                                     <input type="text" id="adv-search-email" class="form-control form-control-sm" placeholder="email@...">
                                                 </div>
                                             </div>
                                             <div class="col-md-2">
                                                 <div class="form-group">
-                                                    <label><i class="fas fa-birthday-cake text-muted mr-1"></i>Umur</label>
+                                                    <label>Umur</label>
                                                     <div class="input-group input-group-sm">
                                                         <input type="number" id="adv-search-age-min" class="form-control" placeholder="Min" min="0" max="150">
                                                         <div class="input-group-append input-group-prepend">
@@ -5075,19 +5085,19 @@ Contoh Markdown:
                                         <div class="row">
                                             <div class="col-md-3">
                                                 <div class="form-group">
-                                                    <label><i class="fas fa-phone text-muted mr-1"></i>No. HP</label>
+                                                    <label>No. HP</label>
                                                     <input type="text" id="adv-search-phone" class="form-control form-control-sm" placeholder="08...">
                                                 </div>
                                             </div>
                                             <div class="col-md-3">
                                                 <div class="form-group">
-                                                    <label><i class="fab fa-whatsapp text-success mr-1"></i>No. WhatsApp</label>
+                                                    <label>No. WhatsApp</label>
                                                     <input type="text" id="adv-search-whatsapp" class="form-control form-control-sm" placeholder="08...">
                                                 </div>
                                             </div>
                                             <div class="col-md-3">
                                                 <div class="form-group">
-                                                    <label><i class="fas fa-male text-muted mr-1"></i>Nama Suami</label>
+                                                    <label>Nama Suami</label>
                                                     <input type="text" id="adv-search-husband" class="form-control form-control-sm" placeholder="Nama suami...">
                                                 </div>
                                             </div>
@@ -8565,6 +8575,200 @@ Apakah Anda yakin ingin melanjutkan?`;
     };
 
     // ============================================
+    // Staff Activity Log Functions (Login/Logout Audit)
+    // ============================================
+    let staffActivityPage = 0;
+    const staffActivityLimit = 50;
+
+    window.showStaffActivityPage = function() {
+        // Hide all pages
+        document.querySelectorAll('[id$="-page"]').forEach(page => page.classList.add('d-none'));
+
+        // Show staff activity page
+        document.getElementById('staff-activity-page').classList.remove('d-none');
+
+        // Update active nav
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        document.querySelector('#nav-staff-activity .nav-link')?.classList.add('active');
+
+        // Hide floating panel
+        const floatingPanel = document.getElementById('floating-kelola-pasien');
+        if (floatingPanel) {
+            floatingPanel.classList.add('d-none');
+        }
+
+        // Load data
+        loadStaffActivityLogs();
+    };
+
+    window.loadStaffActivityLogs = async function(page = 0) {
+        staffActivityPage = page;
+        const tbody = document.getElementById('staff-activity-body');
+
+        try {
+            const token = localStorage.getItem('vps_auth_token');
+            const userFilter = document.getElementById('staff-activity-user-filter')?.value || '';
+            const actionFilter = document.getElementById('staff-activity-action-filter')?.value || '';
+            const startDate = document.getElementById('staff-activity-start-date')?.value || '';
+            const endDate = document.getElementById('staff-activity-end-date')?.value || '';
+
+            let url = `/api/logs?limit=${staffActivityLimit}&offset=${page * staffActivityLimit}`;
+            if (userFilter) url += `&user_id=${encodeURIComponent(userFilter)}`;
+            if (actionFilter) url += `&action=${encodeURIComponent(actionFilter)}`;
+            if (startDate) url += `&start_date=${startDate}`;
+            if (endDate) url += `&end_date=${endDate}`;
+
+            const response = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error('Failed to load staff activity logs');
+
+            const result = await response.json();
+            const data = result.data || [];
+
+            // Load summary
+            loadStaffActivitySummary();
+
+            // Load filter options
+            loadStaffActivityFilters();
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4"><i class="fas fa-inbox fa-2x mb-2"></i><p class="mb-0">Tidak ada log aktivitas</p></td></tr>';
+                document.getElementById('staff-activity-pagination-info').textContent = 'No data';
+                document.getElementById('staff-activity-pagination').innerHTML = '';
+                return;
+            }
+
+            tbody.innerHTML = data.map(d => {
+                const date = new Date(d.timestamp);
+                const dateStr = date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+                const timeStr = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+                let actionBadge = '<span class="badge badge-secondary">' + d.action + '</span>';
+                if (d.action === 'Login') {
+                    actionBadge = '<span class="badge badge-success"><i class="fas fa-sign-in-alt mr-1"></i>Login</span>';
+                } else if (d.action === 'Logout') {
+                    actionBadge = '<span class="badge badge-warning"><i class="fas fa-sign-out-alt mr-1"></i>Logout</span>';
+                } else if (d.action.includes('Create') || d.action.includes('Add')) {
+                    actionBadge = '<span class="badge badge-primary"><i class="fas fa-plus mr-1"></i>' + d.action + '</span>';
+                } else if (d.action.includes('Update') || d.action.includes('Edit')) {
+                    actionBadge = '<span class="badge badge-info"><i class="fas fa-edit mr-1"></i>' + d.action + '</span>';
+                } else if (d.action.includes('Delete')) {
+                    actionBadge = '<span class="badge badge-danger"><i class="fas fa-trash mr-1"></i>' + d.action + '</span>';
+                }
+
+                return `<tr>
+                    <td><small>${dateStr}<br><span class="text-muted">${timeStr}</span></small></td>
+                    <td><strong>${d.user_name}</strong><br><small class="text-muted">${d.user_id}</small></td>
+                    <td>${actionBadge}</td>
+                    <td><small>${d.details || '-'}</small></td>
+                </tr>`;
+            }).join('');
+
+            // Pagination info
+            const total = result.count || data.length;
+            const start = page * staffActivityLimit + 1;
+            const end = Math.min((page + 1) * staffActivityLimit, total);
+            document.getElementById('staff-activity-pagination-info').textContent = `Showing ${start}-${end} of ${total}`;
+
+            // Pagination buttons
+            const totalPages = Math.ceil(total / staffActivityLimit);
+            const paginationEl = document.getElementById('staff-activity-pagination');
+            let paginationHtml = '';
+            if (page > 0) {
+                paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="loadStaffActivityLogs(${page - 1}); return false;">Prev</a></li>`;
+            }
+            for (let i = 0; i < totalPages && i < 5; i++) {
+                const startPage = Math.max(0, page - 2);
+                const pageNum = startPage + i;
+                if (pageNum >= totalPages) break;
+                paginationHtml += `<li class="page-item ${pageNum === page ? 'active' : ''}"><a class="page-link" href="#" onclick="loadStaffActivityLogs(${pageNum}); return false;">${pageNum + 1}</a></li>`;
+            }
+            if (page < totalPages - 1) {
+                paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="loadStaffActivityLogs(${page + 1}); return false;">Next</a></li>`;
+            }
+            paginationEl.innerHTML = paginationHtml;
+
+        } catch (error) {
+            console.error('Load staff activity log error:', error);
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4"><i class="fas fa-exclamation-triangle fa-2x mb-2"></i><p class="mb-0">Gagal memuat data</p></td></tr>';
+        }
+    };
+
+    async function loadStaffActivitySummary() {
+        try {
+            const token = localStorage.getItem('vps_auth_token');
+            const response = await fetch('/api/logs/summary?days=7', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) return;
+
+            const result = await response.json();
+            const data = result.data || {};
+
+            document.getElementById('staff-activity-total').textContent = data.total_activities || 0;
+            document.getElementById('staff-activity-users').textContent = data.unique_users || 0;
+
+            // Top users
+            const topUsersEl = document.getElementById('staff-activity-top-users');
+            if (data.most_active_users && data.most_active_users.length > 0) {
+                topUsersEl.innerHTML = data.most_active_users.slice(0, 5).map(u => `
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span>${u.user_name}</span>
+                        <span class="badge badge-primary">${u.action_count}</span>
+                    </div>
+                `).join('');
+            } else {
+                topUsersEl.innerHTML = '<p class="text-muted small mb-0">No data</p>';
+            }
+        } catch (error) {
+            console.error('Load staff activity summary error:', error);
+        }
+    }
+
+    async function loadStaffActivityFilters() {
+        try {
+            const token = localStorage.getItem('vps_auth_token');
+
+            // Load unique actions
+            const actionsResponse = await fetch('/api/logs/actions', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (actionsResponse.ok) {
+                const actionsData = await actionsResponse.json();
+                const actionSelect = document.getElementById('staff-activity-action-filter');
+                const currentAction = actionSelect.value;
+                actionSelect.innerHTML = '<option value="">Semua Aksi</option>';
+                (actionsData.data || []).forEach(a => {
+                    actionSelect.innerHTML += `<option value="${a}" ${a === currentAction ? 'selected' : ''}>${a}</option>`;
+                });
+            }
+
+            // Load unique users from logs
+            const logsResponse = await fetch('/api/logs?limit=1000', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (logsResponse.ok) {
+                const logsData = await logsResponse.json();
+                const users = [...new Set((logsData.data || []).map(l => l.user_id))];
+                const userNames = {};
+                (logsData.data || []).forEach(l => { userNames[l.user_id] = l.user_name; });
+
+                const userSelect = document.getElementById('staff-activity-user-filter');
+                const currentUser = userSelect.value;
+                userSelect.innerHTML = '<option value="">Semua Staff</option>';
+                users.forEach(uid => {
+                    userSelect.innerHTML += `<option value="${uid}" ${uid === currentUser ? 'selected' : ''}>${userNames[uid] || uid}</option>`;
+                });
+            }
+        } catch (error) {
+            console.error('Load staff activity filters error:', error);
+        }
+    }
+
+    // ============================================
     // Supplier Management Functions
     // ============================================
     let suppliersCache = [];
@@ -11032,19 +11236,30 @@ function renderNotificationList(items) {
 }
 
 async function handleNotificationClick(id, source, link) {
-    // Mark as read if it's a notification
-    if (source === 'notification') {
-        try {
-            const token = await window.getIdToken();
+    try {
+        const token = await window.getIdToken();
+
+        // Mark as read based on source type
+        if (source === 'notification') {
             await fetch(`/api/notifications/${id}/read`, {
                 method: 'POST',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            loadNotificationCount();
-        } catch (error) {
-            console.error('[Notifications] Error marking as read:', error);
+        } else if (source === 'announcement') {
+            await fetch(`/api/staff-announcements/${id}/read`, {
+                method: 'POST',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
         }
+
+        // Update badge count
+        loadNotificationCount();
+    } catch (error) {
+        console.error('[Notifications] Error marking as read:', error);
     }
+
+    // Close dropdown first
+    $('#notification-dropdown .dropdown-toggle').dropdown('hide');
 
     // Navigate to link if provided
     if (link) {
@@ -11055,9 +11270,6 @@ async function handleNotificationClick(id, source, link) {
             window.location.href = link;
         }
     }
-
-    // Close dropdown
-    $('#notification-dropdown .dropdown-toggle').dropdown('hide');
 }
 
 async function markAllNotificationsRead() {
@@ -11096,7 +11308,7 @@ let notificationPageFilter = 'all';
 let notificationPagePage = 1;
 const notificationPageLimit = 20;
 
-function showNotificationsPage() {
+function showNotificationsPage(highlightAnnouncementId = null) {
     // Hide all pages
     document.querySelectorAll('[id$="-page"]').forEach(page => {
         page.classList.add('d-none');
@@ -11127,7 +11339,19 @@ function showNotificationsPage() {
 
     // Load notifications and staff announcements
     loadNotificationsPage();
-    loadStaffAnnouncements();
+    loadStaffAnnouncements().then(() => {
+        // Scroll to and highlight specific announcement if provided
+        if (highlightAnnouncementId) {
+            setTimeout(() => {
+                const announcementEl = document.querySelector(`[data-announcement-id="${highlightAnnouncementId}"]`);
+                if (announcementEl) {
+                    announcementEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    announcementEl.classList.add('highlight-flash');
+                    setTimeout(() => announcementEl.classList.remove('highlight-flash'), 2000);
+                }
+            }, 300);
+        }
+    });
 }
 
 // Make showNotificationsPage globally available
@@ -11165,7 +11389,7 @@ async function loadStaffAnnouncements() {
             const timeAgo = formatTimeAgo(new Date(a.created_at));
 
             return `
-                <div class="callout ${priorityClass} mb-2">
+                <div class="callout ${priorityClass} mb-2" data-announcement-id="${a.id}">
                     <div class="d-flex justify-content-between">
                         <h6 class="mb-1"><i class="fas ${priorityIcon} mr-2"></i>${escapeHtml(a.title)}${priorityBadge}</h6>
                         ${isDokter ? `
