@@ -29,11 +29,8 @@
 
         /* Logo hover zoom effect */
         #sidebar-logo {
-            transition: transform 0.5s ease;
+            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
-        }
-        #sidebar-logo:hover {
-            transform: scale(1.03);
         }
 
         /* Custom tooltip styling */
@@ -81,30 +78,36 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            min-height: 130px;
-            padding: 0.5rem;
+            min-height: 70px;
+            padding: 0.5rem 0.5rem;
         }
 
         /* Logo sizing */
         .sidebar-logo img {
-            max-height: 112px;
+            max-height: 60px;
             max-width: 100%;
             width: auto;
             height: auto;
             transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
             transform-origin: center center;
             display: block;
+            will-change: transform;
+        }
+
+        /* Subtle hover feedback for logo */
+        .sidebar-logo img:hover {
+            transform: scale(1.1);
         }
 
         /* Logo when sidebar collapsed */
         body.sidebar-collapse .sidebar-logo {
-            min-height: 95px;
+            min-height: 60px;
             padding: 0.25rem;
         }
 
         body.sidebar-collapse .sidebar-logo img {
-            max-height: 78px;
-            max-width: 78px;
+            max-height: 50px;
+            max-width: 50px;
         }
 
         /* Adjust content area to match sidebar width when expanded */
@@ -122,9 +125,11 @@
         /* Default (not selected) link/icon color - black */
         .sidebar .nav-sidebar .nav-link {
             color: #000000 !important;
+            font-size: 14px !important;
         }
         .sidebar .nav-sidebar .nav-link .nav-icon {
             color: #000000 !important;
+            font-size: 14px !important;
         }
 
         /* Hover */
@@ -352,7 +357,7 @@
                 </div>
                 <nav class="mt-2">
                     <ul class="nav nav-pills nav-sidebar flex-column" data-widget="treeview" role="menu" data-accordion="false">
-                        <li class="nav-header" style="font-size: 1.32rem; font-weight: 300;">REKAM MEDIS</li>
+                        <li class="nav-header">REKAM MEDIS</li>
                         <li class="nav-item">
                             <a href="#" class="nav-link sc-nav-link" data-section="identitas">
                                 <i class="nav-icon fas fa-id-card"></i>
