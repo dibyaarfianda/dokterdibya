@@ -1341,7 +1341,7 @@
     <script>
         // Force clear cache on first load
         (function() {
-            const CACHE_VERSION = 'v42'; // Increment this to force refresh - fix announcement read status
+            const CACHE_VERSION = 'v43'; // Increment this to force refresh - unify table styles
             const currentVersion = localStorage.getItem('cache_version');
 
             if (currentVersion !== CACHE_VERSION) {
@@ -1801,7 +1801,7 @@
                         <!-- LEFT COLUMN -->
                         <div class="col-lg-6">
                             <!-- Pasien Baru -->
-                            <div class="card card-success">
+                            <div class="card card-primary">
                                 <div class="card-header">
                                     <h3 class="card-title">
                                         <i class="fas fa-user-plus mr-2"></i>Pasien Baru
@@ -1814,8 +1814,8 @@
                                 </div>
                                 <div class="card-body">
                                     <div class="table-responsive">
-                                        <table id="dashboard-new-patients-table" class="table table-sm table-bordered table-hover">
-                                            <thead class="thead-light">
+                                        <table id="dashboard-new-patients-table" class="table table-sm table-hover mb-0">
+                                            <thead>
                                                 <tr>
                                                     <th>Nama</th>
                                                     <th>Registrasi</th>
@@ -7348,7 +7348,7 @@ function mobileNavClick(btn, action) {
                 const escapedName = (patient.full_name || '').replace(/'/g, "\\'");
                 const mrIdCell = patient.mr_id
                     ? `<a href="sunday-clinic.html?patient=${patient.id}&mr=${patient.mr_id}" class="text-primary" title="Buka Rekam Medis">${patient.mr_id}</a>${locationBadge}`
-                    : `<a href="#" onclick="showNewVisitModal('${patient.id}', '${escapedName}'); return false;" class="text-muted" title="Buat Rekam Medis Baru"><i class="fas fa-plus-circle"></i> Baru</a>`;
+                    : `<span class="text-muted">-</span>`;
 
                 // HPL column with color coding for obstetri patients
                 let hplCell = '-';
@@ -7611,7 +7611,7 @@ function mobileNavClick(btn, action) {
                 const escapedName = (patient.full_name || '').replace(/'/g, "\\'");
                 const mrIdCell = patient.mr_id
                     ? `<a href="sunday-clinic.html?patient=${patient.id}&mr=${patient.mr_id}" class="text-primary" title="Buka Rekam Medis"><small>${patient.mr_id}</small></a>${locationBadge}`
-                    : `<a href="#" onclick="showNewVisitModal('${patient.id}', '${escapedName}'); return false;" class="text-muted" title="Buat Rekam Medis Baru"><i class="fas fa-plus-circle"></i></a>`;
+                    : `<span class="text-muted">-</span>`;
 
                 // HPL column with color coding for obstetri patients
                 let hplCell = '-';
@@ -8187,10 +8187,7 @@ Apakah Anda yakin ingin melanjutkan?`;
                 recordsHtml = `
                     <div class="text-center py-4">
                         <i class="fas fa-folder-open fa-3x text-muted mb-3"></i>
-                        <p class="text-muted">Belum ada rekam medis untuk pasien ini</p>
-                        <button type="button" class="btn btn-primary" onclick="$('#patientMRListModal').modal('hide'); showNewVisitModal('${patientId}', '${escapedPatientName}');">
-                            <i class="fas fa-plus mr-1"></i> Buat Rekam Medis Baru
-                        </button>
+                        <p class="text-muted mb-0">Belum ada rekam medis untuk pasien ini</p>
                     </div>
                 `;
             } else {
@@ -8247,11 +8244,6 @@ Apakah Anda yakin ingin melanjutkan?`;
                                 }).join('')}
                             </tbody>
                         </table>
-                    </div>
-                    <div class="text-right mt-3">
-                        <button type="button" class="btn btn-success" onclick="$('#patientMRListModal').modal('hide'); showNewVisitModal('${patientId}', '${escapedPatientName}');">
-                            <i class="fas fa-plus mr-1"></i> Kunjungan Baru
-                        </button>
                     </div>
                 `;
             }

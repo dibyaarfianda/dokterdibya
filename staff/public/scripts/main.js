@@ -3762,7 +3762,11 @@ function showNewVisitForm(patientId, patientName) {
                         <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
                     </div>
                     <div class="modal-body">
-                        <p class="mb-3">Pasien: <strong>${patientName}</strong></p>
+                        <p class="mb-2">Pasien: <strong>${patientName}</strong></p>
+                        <div class="alert alert-warning py-2 mb-3" style="font-size: 13px;">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            Hanya untuk pasien yang <strong>tidak</strong> mendaftar melalui website/aplikasi
+                        </div>
                         <div class="form-group">
                             <label class="font-weight-bold mb-2">Lokasi Kunjungan:</label>
                             <div class="location-options">
