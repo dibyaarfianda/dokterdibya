@@ -1017,12 +1017,18 @@ router.post('/notify-whatsapp', verifyToken, async (req, res) => {
         const token = generateShareToken();
         const expiresAt = new Date(Date.now() + 72 * 60 * 60 * 1000); // 72 hours
 
-        // Create share records for all documents
+        // Create share records for all documents (upsert to handle re-sends)
         for (const doc of documents) {
             await db.query(`
                 INSERT INTO patient_document_shares
                 (document_id, channel, recipient_phone, share_token, expires_at, status, shared_by, created_at)
                 VALUES (?, 'whatsapp', ?, ?, ?, 'pending', ?, NOW())
+                ON DUPLICATE KEY UPDATE
+                    recipient_phone = VALUES(recipient_phone),
+                    expires_at = VALUES(expires_at),
+                    status = 'pending',
+                    shared_by = VALUES(shared_by),
+                    created_at = NOW()
             `, [doc.id, patientPhone, token, expiresAt, req.user?.id || null]);
         }
 

@@ -324,6 +324,14 @@ class SundayClinicApp {
         const state = stateManager.getState();
         const recordStatus = state.recordData?.record?.status || state.recordData?.status || 'draft';
         const isDraft = recordStatus === 'draft';
+        const recordId = state.recordData?.record?.id || state.recordData?.id || null;
+
+        // Edit category button
+        const editCategoryBtn = `
+            <button class="btn btn-sm btn-outline-secondary ml-2" onclick="window.SundayClinicApp.editCategory(${recordId})" title="Ubah Kategori">
+                <i class="fas fa-pencil-alt"></i>
+            </button>
+        `;
 
         // Delete button only for dokter and draft records
         const deleteBtn = isDokter ? `
@@ -337,6 +345,7 @@ class SundayClinicApp {
                 <span class="badge badge-${category.color} badge-lg">
                     <i class="fas fa-tag"></i> ${category.label}
                 </span>
+                ${editCategoryBtn}
                 <span class="badge badge-secondary badge-lg ml-2">
                     ${this.currentMrId}
                 </span>
@@ -416,6 +425,97 @@ class SundayClinicApp {
 
         } catch (error) {
             console.error('[SundayClinic] Delete failed:', error);
+            this.showError(error.message);
+        }
+    }
+
+    /**
+     * Edit category - show dropdown to select new category
+     */
+    async editCategory(recordId) {
+        if (!recordId) {
+            this.showError('Record ID tidak ditemukan');
+            return;
+        }
+
+        const categoryOptions = [
+            { value: 'obstetri', label: 'Obstetri' },
+            { value: 'gyn_repro', label: 'Ginekologi Reproduksi' },
+            { value: 'gyn_special', label: 'Ginekologi Khusus' }
+        ];
+
+        // Create dropdown HTML
+        const optionsHtml = categoryOptions.map(opt =>
+            `<option value="${opt.value}" ${opt.value === this.currentCategory ? 'selected' : ''}>${opt.label}</option>`
+        ).join('');
+
+        // Use SweetAlert if available, otherwise fallback to prompt
+        if (typeof Swal !== 'undefined') {
+            const { value: newCategory } = await Swal.fire({
+                title: 'Ubah Kategori',
+                html: `
+                    <select id="swal-category" class="form-control">
+                        ${optionsHtml}
+                    </select>
+                `,
+                showCancelButton: true,
+                confirmButtonText: 'Simpan',
+                cancelButtonText: 'Batal',
+                preConfirm: () => {
+                    return document.getElementById('swal-category').value;
+                }
+            });
+
+            if (newCategory && newCategory !== this.currentCategory) {
+                await this.updateCategory(recordId, newCategory);
+            }
+        } else {
+            // Fallback to simple prompt
+            const categoryMap = { '1': 'obstetri', '2': 'gyn_repro', '3': 'gyn_special' };
+            const currentNum = Object.keys(categoryMap).find(k => categoryMap[k] === this.currentCategory) || '1';
+            const input = prompt(
+                `Pilih kategori:\n1. Obstetri\n2. Ginekologi Reproduksi\n3. Ginekologi Khusus\n\nMasukkan angka (1-3):`,
+                currentNum
+            );
+
+            if (input && categoryMap[input] && categoryMap[input] !== this.currentCategory) {
+                await this.updateCategory(recordId, categoryMap[input]);
+            }
+        }
+    }
+
+    /**
+     * Update category via API
+     */
+    async updateCategory(recordId, newCategory) {
+        try {
+            const { getIdToken } = await import('../vps-auth-v2.js');
+            const token = await getIdToken();
+
+            const response = await fetch(`/api/sunday-clinic/records/${recordId}/category`, {
+                method: 'PATCH',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ category: newCategory })
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                throw new Error(result.message || 'Gagal mengubah kategori');
+            }
+
+            this.showSuccess(result.message || 'Kategori berhasil diubah');
+
+            // Reload page to reflect changes
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+
+        } catch (error) {
+            console.error('[SundayClinic] Update category failed:', error);
             this.showError(error.message);
         }
     }
@@ -1967,6 +2067,52 @@ window.SundayClinicApp = app;
 window.saveAnamnesa = () => app.saveAnamnesa();
 window.savePhysicalExam = () => app.savePhysicalExam();
 window.savePemeriksaanObstetri = () => app.savePemeriksaanObstetri();
+
+// Copy TB/BB from last visit
+window.copyLastTbBb = async () => {
+    const state = stateManager.getState();
+    const patientId = state.patientData?.id;
+    const currentMrId = state.currentMrId;
+
+    if (!patientId) {
+        window.showToast('error', 'Data pasien tidak ditemukan');
+        return;
+    }
+
+    try {
+        const { getIdToken } = await import('../vps-auth-v2.js');
+        const token = await getIdToken();
+
+        const response = await fetch(`/api/sunday-clinic/last-anthropometry/${patientId}?exclude=${currentMrId}`, {
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        });
+
+        const result = await response.json();
+
+        if (result.success && result.data) {
+            const tbField = document.getElementById('pe-tinggi-badan');
+            const bbField = document.getElementById('pe-berat-badan');
+
+            if (tbField && result.data.tinggi_badan) {
+                tbField.value = result.data.tinggi_badan;
+            }
+            if (bbField && result.data.berat_badan) {
+                bbField.value = result.data.berat_badan;
+                // Trigger BMI calculation
+                bbField.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+
+            window.showToast('success', `TB/BB disalin dari ${result.data.mr_id} (${result.data.visit_date})`);
+        } else {
+            window.showToast('warning', result.message || 'Tidak ada data TB/BB dari kunjungan sebelumnya');
+        }
+    } catch (error) {
+        console.error('[SundayClinic] Copy TB/BB failed:', error);
+        window.showToast('error', 'Gagal mengambil data TB/BB');
+    }
+};
 window.saveUSGExam = () => app.saveUSGExam();
 window.savePlanningObstetri = () => app.savePlanningObstetri();
 window.saveDiagnosis = () => app.saveDiagnosis();

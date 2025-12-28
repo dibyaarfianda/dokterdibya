@@ -160,6 +160,11 @@ export default {
                     </div>
 
                     <!-- Anthropometry (Height, Weight, BMI) -->
+                    <div class="mb-2">
+                        <button type="button" class="btn btn-sm btn-outline-info" id="btn-copy-tb-bb" onclick="window.copyLastTbBb()">
+                            <i class="fas fa-history"></i> Copy TB/BB dari Kunjungan Terakhir
+                        </button>
+                    </div>
                     <div class="row mb-3">
                         <div class="col-md-3">
                             <label class="font-weight-bold">Tinggi Badan (cm)</label>

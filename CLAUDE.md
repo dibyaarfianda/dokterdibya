@@ -644,3 +644,28 @@ git pull origin main
 
 8. **CLAUDE.md Updates**
    - Aturan selektif menjalankan `fix-permissions.sh`
+
+9. **Sidebar Riwayat Pasien - Spacing Fix**
+   - Perbesar padding di `.current-patient-info` (12px 15px)
+   - Perbesar padding di `.visit-card-header` (12px 14px, min-height 56px)
+   - File: `staff/public/styles/sunday-clinic.css`
+
+10. **Bulk Upload USG - All Staff Access**
+    - Hapus `requirePermission('medical_records.edit')` dari endpoint
+    - Hapus class `dokter-only` dari menu item
+    - Tambah role_visibility untuk semua role (admin, bidan, front_office, managerial)
+    - File: `staff/backend/routes/usg-bulk-upload.js`
+
+11. **Bulk Upload USG - CORS Fix**
+    - Bug: Request dari `www.dokterdibya.com` ke `dokterdibya.com` blocked by CORS
+    - Fix: Ubah hardcoded URL ke relative URL `/api`
+    - File: `staff/public/scripts/usg-bulk-upload.js`
+
+12. **Bulk Upload USG - Duplicate MR ID Fix (CRITICAL)**
+    - Bug: Sequence collision menyebabkan duplicate MR ID (DRD0210 assigned ke 2 pasien berbeda)
+    - Root cause: `SELECT MAX(mr_sequence)` tidak atomic, race condition pada concurrent requests
+    - Fix:
+      - Database: Update Bunga Amalina ke DRD0213, delete duplicate Ulviatul
+      - Code: Atomic transaction dengan `SELECT FOR UPDATE` lock
+      - Constraint: Add UNIQUE index pada `mr_sequence`
+    - File: `staff/backend/routes/usg-bulk-upload.js` (lines 451-490)

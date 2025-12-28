@@ -392,10 +392,16 @@ const SendToPatient = {
                     successMessage += `<br><small class="text-success"><i class="fab fa-whatsapp"></i> Notifikasi WhatsApp terkirim otomatis</small>`;
                 } else if (whatsappResult.waLink) {
                     successMessage += `
-                        <br><small class="text-success"><i class="fab fa-whatsapp"></i> Klik tombol di bawah untuk kirim via WhatsApp:</small>
-                        <br><a href="${whatsappResult.waLink}" target="_blank" class="btn btn-success btn-sm mt-2">
-                            <i class="fab fa-whatsapp"></i> Buka WhatsApp
-                        </a>
+                        <br><br>
+                        <div class="alert alert-success">
+                            <i class="fab fa-whatsapp fa-lg"></i> <strong>Kirim via WhatsApp:</strong>
+                            <br><br>
+                            <a href="${whatsappResult.waLink}" target="_blank" class="btn btn-success btn-lg btn-block" onclick="setTimeout(() => $('#sendToPatientModal').modal('hide'), 500)">
+                                <i class="fab fa-whatsapp"></i> KLIK UNTUK BUKA WHATSAPP
+                            </a>
+                            <br>
+                            <small class="text-muted">Tombol akan membuka WhatsApp dengan pesan yang sudah terisi</small>
+                        </div>
                     `;
                 }
             }
@@ -409,11 +415,12 @@ const SendToPatient = {
             sendBtn.disabled = false;
             sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Kirim ke Pasien';
 
-            // Close modal after delay (longer if WhatsApp link shown)
-            const closeDelay = whatsappResult?.waLink ? 10000 : 2000;
-            setTimeout(() => {
-                $('#sendToPatientModal').modal('hide');
-            }, closeDelay);
+            // Only auto-close if NOT showing waLink (user needs to click it)
+            if (!whatsappResult?.waLink) {
+                setTimeout(() => {
+                    $('#sendToPatientModal').modal('hide');
+                }, 2000);
+            }
 
         } catch (error) {
             console.error('Send to patient error:', error);

@@ -11,7 +11,7 @@ const logger = require('../utils/logger');
 class WhatsAppService {
     constructor() {
         this.fonnte = {
-            enabled: !!process.env.FONNTE_TOKEN,
+            enabled: process.env.FONNTE_ENABLED === 'true' && !!process.env.FONNTE_TOKEN,
             token: process.env.FONNTE_TOKEN,
             apiUrl: 'https://api.fonnte.com/send'
         };
