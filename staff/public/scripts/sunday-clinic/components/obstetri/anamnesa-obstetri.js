@@ -386,10 +386,21 @@ export default {
      */
     calculateGestationalAge(lmpDate) {
         if (!lmpDate) return null;
-        const lmp = new Date(lmpDate);
+
+        // Parse as local date to avoid timezone issues (GMT+7)
+        let lmp;
+        if (typeof lmpDate === 'string' && lmpDate.includes('-')) {
+            const [year, month, day] = lmpDate.split('-').map(Number);
+            lmp = new Date(year, month - 1, day);  // Local midnight
+        } else {
+            lmp = new Date(lmpDate);
+        }
         if (isNaN(lmp.getTime())) return null;
 
         const today = new Date();
+        today.setHours(0, 0, 0, 0);  // Set to local midnight for accurate day count
+        lmp.setHours(0, 0, 0, 0);
+
         const diffTime = today - lmp;
         const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
