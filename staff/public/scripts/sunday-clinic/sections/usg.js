@@ -135,7 +135,7 @@ export function renderUSG() {
             if (savedData.garis_bibir) screeningFindings.push('Garis bibir atas menyambung');
             
             // Jantung dan Rongga Dada
-            if (savedData.four_chamber) screeningFindings.push('Gambaran jelas 4-chamber view');
+            if (savedData['4chamber'] || savedData.four_chamber) screeningFindings.push('Gambaran jelas 4-chamber view');
             if (savedData.jantung_kiri) screeningFindings.push('Jantung di sebelah kiri');
             if (savedData.septum_interv) screeningFindings.push('Apex jantung kearah kiri (~45°)');
             if (savedData.besar_jantung) screeningFindings.push('Besar jantung <1/3 area dada');
@@ -555,7 +555,7 @@ export function renderUSG() {
                 </div>
                 <h5 class="mt-3 mb-2">Jantung dan Rongga Dada:</h5>
                 <div class="form-group">
-                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-4chamber" ${savedData.four_chamber ? 'checked' : ''}><label class="custom-control-label" for="scr-4chamber">Gambaran jelas 4-chamber view</label></div>
+                    <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-4chamber" ${(savedData['4chamber'] || savedData.four_chamber) ? 'checked' : ''}><label class="custom-control-label" for="scr-4chamber">Gambaran jelas 4-chamber view</label></div>
                     <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-jantung-kiri" ${savedData.jantung_kiri ? 'checked' : ''}><label class="custom-control-label" for="scr-jantung-kiri">Jantung di sebelah kiri</label></div>
                     <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-septum-interv" ${savedData.septum_interv ? 'checked' : ''}><label class="custom-control-label" for="scr-septum-interv">Apex jantung kearah kiri (~45')</label></div>
                     <div class="custom-control custom-checkbox"><input type="checkbox" class="custom-control-input usg-field screening-checkbox" id="scr-besar-jantung" ${savedData.besar_jantung ? 'checked' : ''}><label class="custom-control-label" for="scr-besar-jantung">Besar jantung <1/3 area dada</label></div>
@@ -999,7 +999,7 @@ export async function saveUSGExam() {
                 profil_muka: document.getElementById('scr-profil-muka')?.checked || false,
                 tulang_hidung: document.getElementById('scr-bibir-langit')?.checked || false,
                 garis_bibir: document.getElementById('scr-lens-bibir')?.checked || false,
-                four_chamber: document.getElementById('scr-4chamber')?.checked || false,
+                '4chamber': document.getElementById('scr-4chamber')?.checked || false,
                 jantung_kiri: document.getElementById('scr-jantung-kiri')?.checked || false,
                 septum_interv: document.getElementById('scr-septum-interv')?.checked || false,
                 besar_jantung: document.getElementById('scr-besar-jantung')?.checked || false,

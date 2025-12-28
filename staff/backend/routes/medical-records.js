@@ -770,8 +770,8 @@ function generateMedicalResume(identitas, records, billingItems = { obat: [], ti
             }
             
             // Riwayat Obstetri
-            if (anamnesa.para || anamnesa.abortus) {
-                resume += `Status Obstetri: Para ${anamnesa.para || 0}, Abortus ${anamnesa.abortus || 0} (P${anamnesa.para || 0}A${anamnesa.abortus || 0})`;
+            if (anamnesa.gravida || anamnesa.para || anamnesa.abortus) {
+                resume += `Status Obstetri: Gravida ${anamnesa.gravida || 0}, Para ${anamnesa.para || 0}, Abortus ${anamnesa.abortus || 0} (G${anamnesa.gravida || 0}P${anamnesa.para || 0}A${anamnesa.abortus || 0})`;
                 if (anamnesa.anak_hidup) resume += `, dengan ${anamnesa.anak_hidup} anak hidup`;
                 resume += '.\n\n';
             }

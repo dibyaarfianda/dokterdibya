@@ -148,19 +148,24 @@ const SendToPatient = {
             resumeCheckbox.checked = resumeExists;
         }
 
-        // Check if lab results exist
-        const labFiles = state.recordData?.penunjang?.files || [];
+        // Check if lab results exist (check both recordData and medicalRecords)
+        const labFilesFromState = state.recordData?.penunjang?.files || [];
+        const labFilesFromDb = state.medicalRecords?.byType?.penunjang?.data?.files || [];
+        const labFiles = labFilesFromState.length > 0 ? labFilesFromState : labFilesFromDb;
         const labContainer = document.getElementById('send-lab-container');
         const labCount = document.getElementById('send-lab-count');
         if (labFiles.length > 0) {
             labContainer.style.display = 'block';
             labCount.textContent = `${labFiles.length} file`;
+            document.getElementById('send-lab-results').checked = true;
         } else {
             labContainer.style.display = 'none';
         }
 
-        // Check if USG photos exist
-        const usgPhotos = state.recordData?.usg?.photos || [];
+        // Check if USG photos exist (check both recordData and medicalRecords)
+        const usgPhotosFromState = state.recordData?.usg?.photos || [];
+        const usgPhotosFromDb = state.medicalRecords?.byType?.usg?.data?.photos || [];
+        const usgPhotos = usgPhotosFromState.length > 0 ? usgPhotosFromState : usgPhotosFromDb;
         const usgContainer = document.getElementById('send-usg-container');
         const usgCount = document.getElementById('send-usg-count');
         if (usgPhotos.length > 0) {
@@ -266,10 +271,12 @@ const SendToPatient = {
             }
         }
 
-        // Lab Results
+        // Lab Results (check both recordData and medicalRecords)
         const sendLab = document.getElementById('send-lab-results')?.checked;
         if (sendLab) {
-            const labFiles = state.recordData?.penunjang?.files || [];
+            const labFilesFromState = state.recordData?.penunjang?.files || [];
+            const labFilesFromDb = state.medicalRecords?.byType?.penunjang?.data?.files || [];
+            const labFiles = labFilesFromState.length > 0 ? labFilesFromState : labFilesFromDb;
             for (const file of labFiles) {
                 documents.push({
                     type: 'lab_result',
@@ -282,8 +289,9 @@ const SendToPatient = {
                 });
             }
 
-            // Lab interpretation
-            const labInterpretation = state.recordData?.penunjang?.interpretation;
+            // Lab interpretation (check both sources)
+            const labInterpretation = state.recordData?.penunjang?.interpretation ||
+                                      state.medicalRecords?.byType?.penunjang?.data?.interpretation;
             if (labInterpretation) {
                 documents.push({
                     type: 'lab_interpretation',
@@ -293,10 +301,12 @@ const SendToPatient = {
             }
         }
 
-        // USG Photos
+        // USG Photos (check both recordData and medicalRecords)
         const sendUsg = document.getElementById('send-usg-photos')?.checked;
         if (sendUsg) {
-            const usgPhotos = state.recordData?.usg?.photos || [];
+            const usgPhotosFromState = state.recordData?.usg?.photos || [];
+            const usgPhotosFromDb = state.medicalRecords?.byType?.usg?.data?.photos || [];
+            const usgPhotos = usgPhotosFromState.length > 0 ? usgPhotosFromState : usgPhotosFromDb;
             for (const photo of usgPhotos) {
                 documents.push({
                     type: 'usg_photo',

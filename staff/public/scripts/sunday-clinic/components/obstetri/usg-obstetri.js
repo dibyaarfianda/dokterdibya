@@ -60,12 +60,14 @@ export default {
                 }
 
                 // Calculate LMP = EDD - 280 days
-                const edd = new Date(eddInput.value);
+                // Parse as local date (not UTC) to avoid timezone issues
+                const [year, month, day] = eddInput.value.split('-').map(Number);
+                const edd = new Date(year, month - 1, day);  // Local midnight
                 const lmp = new Date(edd);
                 lmp.setDate(lmp.getDate() - 280);
 
-                // Format LMP for date input (YYYY-MM-DD)
-                const lmpFormatted = lmp.toISOString().split('T')[0];
+                // Format LMP for date input (YYYY-MM-DD) using local date
+                const lmpFormatted = `${lmp.getFullYear()}-${String(lmp.getMonth() + 1).padStart(2, '0')}-${String(lmp.getDate()).padStart(2, '0')}`;
                 if (lmpInput) lmpInput.value = lmpFormatted;
 
                 // Calculate gestational age from LMP to today
@@ -513,7 +515,7 @@ export default {
             <h5 class="mt-3 mb-2">Jantung dan Rongga Dada:</h5>
             <div class="form-group">
                 <div class="custom-control custom-checkbox">
-                    <input type="checkbox" class="custom-control-input usg-field" id="scr-4chamber" name="scr_4chamber" ${scr.four_chamber ? 'checked' : ''}>
+                    <input type="checkbox" class="custom-control-input usg-field" id="scr-4chamber" name="scr_4chamber" ${scr['4chamber'] ? 'checked' : ''}>
                     <label class="custom-control-label" for="scr-4chamber">Gambaran jelas 4-chamber view</label>
                 </div>
                 <div class="custom-control custom-checkbox">

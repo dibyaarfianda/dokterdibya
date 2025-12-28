@@ -22,6 +22,11 @@ const RISK_FACTOR_LABELS = {
 
 function toDate(value) {
     if (!value) return null;
+    // Parse YYYY-MM-DD as local date to avoid timezone issues (GMT+7)
+    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) {
+        const [year, month, day] = value.split('-').map(Number);
+        return new Date(year, month - 1, day);  // Local midnight
+    }
     const date = new Date(value);
     return Number.isNaN(date.valueOf()) ? null : date;
 }
@@ -29,7 +34,13 @@ function toDate(value) {
 function calculateGestationalAge(lmpValue) {
     const lmpDate = toDate(lmpValue);
     if (!lmpDate) return null;
-    const diffMs = Date.now() - lmpDate.getTime();
+
+    // Set both dates to local midnight for accurate day calculation
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    lmpDate.setHours(0, 0, 0, 0);
+
+    const diffMs = today - lmpDate;
     if (diffMs < 0) return null;
     const totalDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
     const weeks = Math.floor(totalDays / 7);
