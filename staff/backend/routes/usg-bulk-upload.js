@@ -12,7 +12,7 @@ const path = require('path');
 const db = require('../db');
 const logger = require('../utils/logger');
 const r2Storage = require('../services/r2Storage');
-const { verifyToken, requirePermission } = require('../middleware/auth');
+const { verifyToken } = require('../middleware/auth');
 
 // Configure multer for ZIP file upload (memory storage)
 const upload = multer({
@@ -183,7 +183,7 @@ async function searchAllPatientsByName(searchName) {
  * POST /api/usg-bulk-upload/preview
  * Preview matches before upload
  */
-router.post('/preview', verifyToken, requirePermission('medical_records.edit'), upload.single('zipFile'), async (req, res) => {
+router.post('/preview', verifyToken, upload.single('zipFile'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ success: false, message: 'No ZIP file uploaded' });
@@ -386,7 +386,7 @@ router.get('/hospitals', verifyToken, (req, res) => {
  * POST /api/usg-bulk-upload/execute
  * Execute bulk upload after preview confirmation
  */
-router.post('/execute', verifyToken, requirePermission('medical_records.edit'), upload.single('zipFile'), async (req, res) => {
+router.post('/execute', verifyToken, upload.single('zipFile'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ success: false, message: 'No ZIP file uploaded' });
@@ -449,31 +449,59 @@ router.post('/execute', verifyToken, requirePermission('medical_records.edit'), 
                         record_id: targetRecordId
                     });
                 } else {
-                    // Create NEW kunjungan with NEW DRD (DRD selalu berbeda untuk setiap kunjungan baru)
-                    const [maxSeq] = await db.query(`
-                        SELECT MAX(mr_sequence) as max_seq FROM sunday_clinic_records
-                    `);
-                    const nextSeq = (maxSeq[0].max_seq || 0) + 1;
-                    effectiveMrId = `DRD${String(nextSeq).padStart(4, '0')}`;
+                    // Create NEW kunjungan with NEW DRD using atomic transaction
+                    // This prevents duplicate MR IDs from concurrent requests
+                    const connection = await db.getConnection();
+                    try {
+                        await connection.beginTransaction();
 
-                    const [patientInfo] = await db.query(`SELECT full_name FROM patients WHERE id = ?`, [patient_id]);
-                    const patientName = patientInfo[0]?.full_name || 'Unknown';
-                    const folderPath = `${effectiveMrId}_${patientName.replace(/[^a-zA-Z0-9]/g, '_')}`;
+                        // Lock table to get accurate MAX sequence
+                        const [maxSeq] = await connection.query(`
+                            SELECT MAX(mr_sequence) as max_seq FROM sunday_clinic_records FOR UPDATE
+                        `);
+                        const nextSeq = (maxSeq[0].max_seq || 0) + 1;
+                        effectiveMrId = `DRD${String(nextSeq).padStart(4, '0')}`;
 
-                    const [insertResult] = await db.query(`
-                        INSERT INTO sunday_clinic_records
-                        (mr_id, mr_sequence, patient_id, visit_location, folder_path, mr_category, status, created_at, updated_at)
-                        VALUES (?, ?, ?, ?, ?, 'obstetri', 'draft', NOW(), NOW())
-                    `, [effectiveMrId, nextSeq, patient_id, hospital, folderPath]);
+                        // Also update unified counter to stay in sync
+                        await connection.query(`
+                            UPDATE sunday_clinic_mr_counters
+                            SET current_sequence = GREATEST(current_sequence, ?)
+                            WHERE category = 'unified'
+                        `, [nextSeq]);
 
-                    targetRecordId = insertResult.insertId;
+                        const [patientInfo] = await connection.query(`SELECT full_name FROM patients WHERE id = ?`, [patient_id]);
+                        const patientName = patientInfo[0]?.full_name || 'Unknown';
+                        const folderPath = `${effectiveMrId}_${patientName.replace(/[^a-zA-Z0-9]/g, '_')}`;
 
-                    logger.info('[BulkUSG] Created new kunjungan with NEW DRD', {
-                        patient_id,
-                        mr_id: effectiveMrId,
-                        hospital,
-                        record_id: targetRecordId
-                    });
+                        // Get patient's last category (default obstetri for new patients)
+                        const [lastCategory] = await connection.query(`
+                            SELECT mr_category FROM sunday_clinic_records
+                            WHERE patient_id = ? ORDER BY created_at DESC LIMIT 1
+                        `, [patient_id]);
+                        const category = lastCategory[0]?.mr_category || 'obstetri';
+
+                        const [insertResult] = await connection.query(`
+                            INSERT INTO sunday_clinic_records
+                            (mr_id, mr_sequence, patient_id, visit_location, folder_path, mr_category, status, created_at, updated_at)
+                            VALUES (?, ?, ?, ?, ?, ?, 'draft', NOW(), NOW())
+                        `, [effectiveMrId, nextSeq, patient_id, hospital, folderPath, category]);
+
+                        await connection.commit();
+                        targetRecordId = insertResult.insertId;
+
+                        logger.info('[BulkUSG] Created new kunjungan with NEW DRD (atomic)', {
+                            patient_id,
+                            mr_id: effectiveMrId,
+                            hospital,
+                            category,
+                            record_id: targetRecordId
+                        });
+                    } catch (txError) {
+                        await connection.rollback();
+                        throw txError;
+                    } finally {
+                        connection.release();
+                    }
                 }
 
                 const uploadedPhotos = [];

@@ -467,5 +467,95 @@ async function createNotification({
     }
 }
 
+// ============================================
+// APPOINTMENT REMINDER ENDPOINTS
+// ============================================
+
+const appointmentReminder = require('../services/appointmentReminder');
+
+/**
+ * POST /api/notifications/send-reminders
+ * Manually trigger appointment reminders (admin only)
+ */
+router.post('/send-reminders', verifyToken, async (req, res) => {
+    try {
+        // Only allow dokter/superadmin
+        const userRole = req.user?.role || '';
+        if (userRole !== 'dokter' && userRole !== 'superadmin' && userRole !== 'admin') {
+            return res.status(403).json({
+                success: false,
+                message: 'Hanya admin yang dapat menjalankan reminder'
+            });
+        }
+
+        const results = await appointmentReminder.runAllReminders();
+
+        res.json({
+            success: true,
+            message: 'Reminder job completed',
+            results
+        });
+    } catch (error) {
+        console.error('Error running reminders:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+/**
+ * GET /api/notifications/reminder-status
+ * Check pending reminders status
+ */
+router.get('/reminder-status', verifyToken, async (req, res) => {
+    try {
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowStr = tomorrow.toISOString().split('T')[0];
+        const todayStr = new Date().toISOString().split('T')[0];
+
+        // Get count of pending H-1 reminders
+        const [h1Pending] = await db.query(`
+            SELECT COUNT(*) as count FROM sunday_appointments
+            WHERE appointment_date = ?
+              AND status = 'confirmed'
+              AND reminder_h1_sent_at IS NULL
+              AND patient_phone IS NOT NULL
+        `, [tomorrowStr]);
+
+        // Get count of pending 2h reminders for today
+        const [twoHPending] = await db.query(`
+            SELECT COUNT(*) as count FROM sunday_appointments
+            WHERE appointment_date = ?
+              AND status = 'confirmed'
+              AND reminder_2h_sent_at IS NULL
+              AND patient_phone IS NOT NULL
+        `, [todayStr]);
+
+        // Get recent sent reminders
+        const [recentSent] = await db.query(`
+            SELECT patient_name, appointment_date, session,
+                   reminder_h1_sent_at, reminder_2h_sent_at
+            FROM sunday_appointments
+            WHERE (reminder_h1_sent_at IS NOT NULL OR reminder_2h_sent_at IS NOT NULL)
+            ORDER BY COALESCE(reminder_h1_sent_at, reminder_2h_sent_at) DESC
+            LIMIT 10
+        `);
+
+        res.json({
+            success: true,
+            pending: {
+                h1: h1Pending[0].count,
+                twoHour: twoHPending[0].count
+            },
+            recentSent
+        });
+    } catch (error) {
+        console.error('Error getting reminder status:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 module.exports = router;
 module.exports.createNotification = createNotification;

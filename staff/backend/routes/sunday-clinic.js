@@ -3024,6 +3024,144 @@ router.delete('/records/:mrId', verifyToken, requireSuperadmin, async (req, res,
     }
 });
 
+// ============================================
+// UPDATE CATEGORY ENDPOINT
+// ============================================
+
+/**
+ * PATCH /api/sunday-clinic/records/:id/category
+ * Update mr_category for a record
+ */
+router.patch('/records/:id/category', verifyToken, async (req, res, next) => {
+    const recordId = req.params.id;
+    const { category } = req.body;
+
+    // Valid categories
+    const validCategories = ['obstetri', 'gyn_repro', 'gyn_special'];
+
+    if (!category || !validCategories.includes(category)) {
+        return res.status(400).json({
+            success: false,
+            message: `Kategori tidak valid. Pilihan: ${validCategories.join(', ')}`
+        });
+    }
+
+    try {
+        // Check if record exists
+        const [records] = await db.query(
+            'SELECT id, mr_id, patient_id, mr_category FROM sunday_clinic_records WHERE id = ?',
+            [recordId]
+        );
+
+        if (records.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Record tidak ditemukan'
+            });
+        }
+
+        const record = records[0];
+        const oldCategory = record.mr_category;
+
+        // Update category
+        await db.query(
+            'UPDATE sunday_clinic_records SET mr_category = ?, updated_at = NOW() WHERE id = ?',
+            [category, recordId]
+        );
+
+        // Log activity
+        await activityLogger.log({
+            userId: req.user.id,
+            userName: req.user.name,
+            action: 'update_mr_category',
+            entityType: 'sunday_clinic_records',
+            entityId: record.mr_id,
+            details: {
+                recordId,
+                mrId: record.mr_id,
+                patientId: record.patient_id,
+                oldCategory,
+                newCategory: category
+            }
+        });
+
+        logger.info(`[UPDATE CATEGORY] ${record.mr_id} changed from ${oldCategory} to ${category} by ${req.user.name}`);
+
+        res.json({
+            success: true,
+            message: `Kategori berhasil diubah ke ${category}`,
+            data: {
+                id: recordId,
+                mr_id: record.mr_id,
+                old_category: oldCategory,
+                new_category: category
+            }
+        });
+
+    } catch (error) {
+        logger.error(`[UPDATE CATEGORY] Error updating record ${recordId}:`, error);
+        next(error);
+    }
+});
+
+// ============================================
+// LAST ANTHROPOMETRY ENDPOINT (Copy TB/BB)
+// ============================================
+
+/**
+ * GET /api/sunday-clinic/last-anthropometry/:patientId
+ * Get TB/BB from patient's last visit (for copy feature)
+ */
+router.get('/last-anthropometry/:patientId', verifyToken, async (req, res, next) => {
+    const { patientId } = req.params;
+    const { exclude } = req.query; // Current MR ID to exclude
+
+    try {
+        const [rows] = await db.query(`
+            SELECT
+                mr.record_data,
+                scr.mr_id,
+                scr.created_at as visit_date
+            FROM medical_records mr
+            JOIN sunday_clinic_records scr ON mr.mr_id COLLATE utf8mb4_unicode_ci = scr.mr_id COLLATE utf8mb4_unicode_ci
+            WHERE scr.patient_id = ?
+              AND mr.record_type = 'physical_exam'
+              AND (? IS NULL OR scr.mr_id != ?)
+            ORDER BY scr.created_at DESC
+            LIMIT 1
+        `, [patientId, exclude || null, exclude || null]);
+
+        if (rows.length === 0) {
+            return res.json({
+                success: false,
+                message: 'Tidak ada data TB/BB dari kunjungan sebelumnya'
+            });
+        }
+
+        const recordData = typeof rows[0].record_data === 'string'
+            ? JSON.parse(rows[0].record_data)
+            : rows[0].record_data;
+
+        // Format visit date for display
+        const visitDate = new Date(rows[0].visit_date);
+        const formattedDate = `${visitDate.getDate()}/${visitDate.getMonth() + 1}/${visitDate.getFullYear()}`;
+
+        res.json({
+            success: true,
+            data: {
+                tinggi_badan: recordData.tinggi_badan || '',
+                berat_badan: recordData.berat_badan || '',
+                mr_id: rows[0].mr_id,
+                visit_date: formattedDate
+            }
+        });
+
+    } catch (error) {
+        logger.error(`[LAST ANTHROPOMETRY] Error fetching for patient ${patientId}:`, error);
+        next(error);
+    }
+});
+
 // Socket.io handler for real-time billing notifications
 function setupSocketHandlers(io) {
     logger.info('Setting up Socket.io handlers for Sunday Clinic billing');

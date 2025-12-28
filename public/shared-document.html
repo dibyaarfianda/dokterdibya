@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dokumen Medis - Dr. Dibya</title>
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 100%;
+            padding: 40px;
+            text-align: center;
+        }
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+        }
+        .title {
+            font-size: 24px;
+            color: #1a1a2e;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .loading {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid #e0e0e0;
+            border-top-color: #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .document-info {
+            display: none;
+            text-align: left;
+        }
+        .doc-title {
+            font-size: 20px;
+            color: #1a1a2e;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .doc-meta {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 14px 28px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            text-decoration: none;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+            width: 100%;
+            margin-bottom: 10px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+        }
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+        .error {
+            display: none;
+            color: #e53e3e;
+            padding: 20px;
+            background: #fff5f5;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .error i {
+            font-size: 40px;
+            margin-bottom: 10px;
+            display: block;
+        }
+        .preview-container {
+            margin: 20px 0;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f5f5f5;
+        }
+        .preview-container img {
+            max-width: 100%;
+            height: auto;
+        }
+        .preview-container iframe {
+            width: 100%;
+            height: 400px;
+            border: none;
+        }
+        .clinic-info {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            font-size: 12px;
+            color: #999;
+        }
+    </style>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <img src="/images/dibyablacklogo.svg" alt="Dr. Dibya" class="logo">
+        <h1 class="title">Dokumen Medis Anda</h1>
+        <p class="subtitle">Klinik Dr. Dibya, SpOG</p>
+
+        <div id="loading" class="loading">
+            <div class="spinner"></div>
+            <p>Memuat dokumen...</p>
+        </div>
+
+        <div id="error" class="error">
+            <i class="fas fa-exclamation-circle"></i>
+            <p id="error-message">Link tidak valid atau sudah kadaluarsa</p>
+        </div>
+
+        <div id="document-info" class="document-info">
+            <h2 class="doc-title" id="doc-title"></h2>
+            <p class="doc-meta" id="doc-meta"></p>
+
+            <div id="preview-container" class="preview-container" style="display:none;"></div>
+
+            <a id="view-btn" href="#" class="btn btn-primary" target="_blank">
+                <i class="fas fa-eye"></i> Lihat Dokumen
+            </a>
+            <a id="download-btn" href="#" class="btn btn-secondary" download>
+                <i class="fas fa-download"></i> Unduh
+            </a>
+        </div>
+
+        <div class="clinic-info">
+            <p>Klinik Dr. Dibya, SpOG</p>
+            <p>Jl. Diponegoro No. 123, Kediri</p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async function() {
+            const loadingEl = document.getElementById('loading');
+            const errorEl = document.getElementById('error');
+            const errorMsgEl = document.getElementById('error-message');
+            const docInfoEl = document.getElementById('document-info');
+            const docTitleEl = document.getElementById('doc-title');
+            const docMetaEl = document.getElementById('doc-meta');
+            const viewBtn = document.getElementById('view-btn');
+            const downloadBtn = document.getElementById('download-btn');
+            const previewContainer = document.getElementById('preview-container');
+
+            // Get token from URL path: /shared-document/{token}
+            const pathParts = window.location.pathname.split('/');
+            const token = pathParts[pathParts.length - 1];
+
+            if (!token || token === 'shared-document') {
+                showError('Link tidak valid');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/patient-documents/share/${token}`);
+                const result = await response.json();
+
+                if (!response.ok || !result.success) {
+                    if (response.status === 410) {
+                        showError('Link sudah kadaluarsa. Silakan minta link baru dari klinik.');
+                    } else if (response.status === 404) {
+                        showError('Dokumen tidak ditemukan. Pastikan link Anda benar.');
+                    } else {
+                        showError(result.message || 'Gagal memuat dokumen');
+                    }
+                    return;
+                }
+
+                // Show document info
+                const doc = result.document;
+                docTitleEl.textContent = doc.title || 'Dokumen Medis';
+                docMetaEl.textContent = `Tipe: ${getFileTypeLabel(doc.fileType)}`;
+
+                viewBtn.href = doc.fileUrl;
+                downloadBtn.href = doc.fileUrl;
+                downloadBtn.setAttribute('download', doc.fileName || 'dokumen');
+
+                // Show preview for images
+                if (doc.fileType && doc.fileType.startsWith('image/')) {
+                    previewContainer.innerHTML = `<img src="${doc.fileUrl}" alt="${doc.title}">`;
+                    previewContainer.style.display = 'block';
+                }
+
+                loadingEl.style.display = 'none';
+                docInfoEl.style.display = 'block';
+
+            } catch (error) {
+                console.error('Error loading document:', error);
+                showError('Terjadi kesalahan saat memuat dokumen');
+            }
+
+            function showError(message) {
+                loadingEl.style.display = 'none';
+                errorMsgEl.textContent = message;
+                errorEl.style.display = 'block';
+            }
+
+            function getFileTypeLabel(mimeType) {
+                if (!mimeType) return 'File';
+                if (mimeType.includes('pdf')) return 'PDF';
+                if (mimeType.includes('image')) return 'Gambar';
+                if (mimeType.includes('video')) return 'Video';
+                return 'File';
+            }
+        });
+    </script>
+</body>
+</html>
