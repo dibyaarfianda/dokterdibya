@@ -713,7 +713,16 @@ async function applyPendingImportData() {
                 keluhan_utama: parsed.subjective?.keluhan_utama,
                 rps: parsed.subjective?.rps,
                 rpd: parsed.subjective?.rpd,
-                rpk: parsed.subjective?.rpk
+                rpk: parsed.subjective?.rpk,
+                hpl: parsed.subjective?.hpl,
+                hpht: parsed.subjective?.hpht
+            });
+            console.log('[Import] Assessment fields:', {
+                gravida: parsed.assessment?.gravida,
+                para: parsed.assessment?.para,
+                abortus: parsed.assessment?.abortus,
+                anak_hidup: parsed.assessment?.anak_hidup,
+                is_obstetric: parsed.assessment?.is_obstetric
             });
 
             // Map SIMRS data to our template format
@@ -751,7 +760,9 @@ async function applyPendingImportData() {
                     ...template.pemeriksaan_fisik
                 },
                 diagnosis: {
-                    diagnosis_utama: parsed.assessment?.diagnosis,
+                    // For MEDIFY obstetric patients, don't fill diagnosis_utama with raw ASSESSMENT text
+                    // (it contains "G2P0000 Hamil 32 minggu" which is already extracted to separate fields)
+                    diagnosis_utama: parsed.assessment?.is_obstetric ? null : parsed.assessment?.diagnosis,
                     gravida: parsed.assessment?.gravida,
                     para: parsed.assessment?.para,
                     usia_kehamilan_minggu: parsed.assessment?.usia_kehamilan_minggu,
@@ -1128,6 +1139,82 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
             riwayatEl.dispatchEvent(new Event('change', { bubbles: true }));
             console.log('[Import] Filled Riwayat Kehamilan:', template.anamnesa.riwayat_kehamilan_saat_ini.substring(0, 100));
         }
+
+        // HPL and HPHT - convert DD/MM/YYYY to YYYY-MM-DD for date inputs
+        const convertToISODate = (dateStr) => {
+            if (!dateStr) return null;
+            if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+            const match = dateStr.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})$/);
+            if (match) {
+                let [, day, month, year] = match;
+                year = parseInt(year);
+                if (year < 100) year = year > 50 ? 1900 + year : 2000 + year;
+                return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+            }
+            return null;
+        };
+
+        // Fill HPL
+        const hplEl = document.querySelector('#anamnesa-hpl');
+        const hplValue = template.anamnesa?.hpl || template.obstetri?.hpl;
+        console.log('[Import] HPL raw value:', hplValue, 'Element exists:', !!hplEl);
+        if (hplEl && hplValue) {
+            const isoHpl = convertToISODate(hplValue);
+            console.log('[Import] HPL converted to ISO:', isoHpl);
+            if (isoHpl) {
+                hplEl.value = isoHpl;
+                hplEl.dispatchEvent(new Event('change', { bubbles: true }));
+                console.log('[Import] Filled HPL:', isoHpl);
+            }
+        }
+
+        // Fill HPHT
+        const hphtEl = document.querySelector('#anamnesa-hpht');
+        const hphtValue = template.anamnesa?.hpht || template.obstetri?.hpht;
+        console.log('[Import] HPHT raw value:', hphtValue, 'Element exists:', !!hphtEl);
+        if (hphtEl && hphtValue) {
+            const isoHpht = convertToISODate(hphtValue);
+            console.log('[Import] HPHT converted to ISO:', isoHpht);
+            if (isoHpht) {
+                hphtEl.value = isoHpht;
+                hphtEl.dispatchEvent(new Event('change', { bubbles: true }));
+                console.log('[Import] Filled HPHT:', isoHpht);
+            }
+        }
+
+        // Fill Gravida, Para, Abortus, Anak Hidup
+        const gravidaEl = document.querySelector('#anamnesa-gravida');
+        const paraEl = document.querySelector('#anamnesa-para');
+        const abortusEl = document.querySelector('#anamnesa-abortus');
+        const anakHidupEl = document.querySelector('#anamnesa-anak-hidup');
+
+        const gravidaVal = template.anamnesa?.gravida ?? template.obstetri?.gravida;
+        const paraVal = template.anamnesa?.para ?? template.obstetri?.para;
+        const abortusVal = template.anamnesa?.abortus ?? template.obstetri?.abortus;
+        const anakHidupVal = template.anamnesa?.anak_hidup ?? template.obstetri?.anak_hidup;
+
+        console.log('[Import] Obstetric values - Gravida:', gravidaVal, 'Para:', paraVal, 'Abortus:', abortusVal, 'AnakHidup:', anakHidupVal);
+
+        if (gravidaEl && (gravidaVal !== undefined && gravidaVal !== null)) {
+            gravidaEl.value = gravidaVal;
+            gravidaEl.dispatchEvent(new Event('change', { bubbles: true }));
+            console.log('[Import] Filled Gravida:', gravidaVal);
+        }
+        if (paraEl && (paraVal !== undefined && paraVal !== null)) {
+            paraEl.value = paraVal;
+            paraEl.dispatchEvent(new Event('change', { bubbles: true }));
+            console.log('[Import] Filled Para:', paraVal);
+        }
+        if (abortusEl && (abortusVal !== undefined && abortusVal !== null)) {
+            abortusEl.value = abortusVal;
+            abortusEl.dispatchEvent(new Event('change', { bubbles: true }));
+            console.log('[Import] Filled Abortus:', abortusVal);
+        }
+        if (anakHidupEl && (anakHidupVal !== undefined && anakHidupVal !== null)) {
+            anakHidupEl.value = anakHidupVal;
+            anakHidupEl.dispatchEvent(new Event('change', { bubbles: true }));
+            console.log('[Import] Filled Anak Hidup:', anakHidupVal);
+        }
     }, 3000); // Retry after 3 more seconds
 
     // Persist to database via API
@@ -1308,18 +1395,55 @@ function fillFormFieldsDirect(template, checkedFields) {
 
     console.log('[Import] fillFormFieldsDirect allData keys:', Object.keys(allData));
 
+    // Helper to convert date from DD/MM/YYYY or DD-MM-YYYY to YYYY-MM-DD (for type="date" inputs)
+    function convertToISODate(dateStr) {
+        if (!dateStr) return null;
+        // Already in ISO format
+        if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) return dateStr;
+
+        // Try DD/MM/YYYY or DD-MM-YYYY or D/M/YYYY format
+        const match = dateStr.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})$/);
+        if (match) {
+            let [, day, month, year] = match;
+            year = parseInt(year);
+            // Handle 2-digit year (assume 2000s)
+            if (year < 100) {
+                year = year > 50 ? 1900 + year : 2000 + year;
+            }
+            return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        }
+        return null;
+    }
+
+    // Fields that are date inputs requiring ISO format
+    const dateFields = ['hpl', 'hpht'];
+
     let filledCount = 0;
     for (const [field, selectors] of Object.entries(fieldMappings)) {
         // Apply if data exists (ignore checkedFields for auto-apply)
-        if (!allData[field]) continue;
+        // Use strict check to allow 0 values (e.g., para=0, abortus=0)
+        if (allData[field] === undefined || allData[field] === null || allData[field] === '') continue;
 
         for (const selector of selectors) {
             const element = document.querySelector(selector);
             if (element) {
-                console.log(`[Import] Filling ${field} with:`, allData[field]);
+                let valueToSet = allData[field];
+
+                // Convert date fields to ISO format for type="date" inputs
+                if (dateFields.includes(field) && element.type === 'date') {
+                    const isoDate = convertToISODate(valueToSet);
+                    if (isoDate) {
+                        valueToSet = isoDate;
+                        console.log(`[Import] Converted ${field} from "${allData[field]}" to ISO: "${isoDate}"`);
+                    } else {
+                        console.warn(`[Import] Could not convert ${field} date: "${valueToSet}"`);
+                    }
+                }
+
+                console.log(`[Import] Filling ${field} with:`, valueToSet);
                 if (element.tagName === 'SELECT') {
                     // Try to find matching option
-                    const value = String(allData[field]).toLowerCase();
+                    const value = String(valueToSet).toLowerCase();
                     for (const option of element.options) {
                         if (option.value.toLowerCase() === value ||
                             option.text.toLowerCase().includes(value)) {
@@ -1328,7 +1452,7 @@ function fillFormFieldsDirect(template, checkedFields) {
                         }
                     }
                 } else {
-                    element.value = allData[field];
+                    element.value = valueToSet;
                 }
                 // Trigger change event
                 element.dispatchEvent(new Event('change', { bubbles: true }));
