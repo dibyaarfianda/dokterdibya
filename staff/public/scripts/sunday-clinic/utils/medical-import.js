@@ -703,27 +703,18 @@ async function applyPendingImportData() {
             const parsed = importData.raw_parsed || importData;
             const template = importData.template || {};
 
-            // Extract riwayat_kehamilan_saat_ini from subjective section
-            // For Gambiran: capture raw subjective text or concatenate all subjective fields
-            let riwayatKehamilanSaatIni = parsed.subjective?.riwayat_kehamilan_saat_ini
-                || parsed.subjective?.raw
-                || parsed.subjective?.subjective_text
-                || parsed.subjective?.full_text;
-
-            // If still empty, concatenate all subjective fields for Gambiran
-            if (!riwayatKehamilanSaatIni && parsed.subjective) {
-                const subjectiveParts = [];
-                if (parsed.subjective.keluhan_utama) subjectiveParts.push('Keluhan: ' + parsed.subjective.keluhan_utama);
-                if (parsed.subjective.rps) subjectiveParts.push('RPS: ' + parsed.subjective.rps);
-                if (parsed.subjective.rpd) subjectiveParts.push('RPD: ' + parsed.subjective.rpd);
-                if (parsed.subjective.anamnesis) subjectiveParts.push(parsed.subjective.anamnesis);
-                if (parsed.subjective.text) subjectiveParts.push(parsed.subjective.text);
-                if (subjectiveParts.length > 0) {
-                    riwayatKehamilanSaatIni = subjectiveParts.join('\n\n');
-                }
-            }
-
-            console.log('[Import] riwayatKehamilanSaatIni extracted:', riwayatKehamilanSaatIni?.substring(0, 200));
+            // Field mapping from hospital (Melinda/Gambiran MEDIFY):
+            // - Keluhan Utama → keluhan_utama
+            // - RPS (Riwayat Penyakit Sekarang) → riwayat_kehamilan_saat_ini
+            // - RPD (Riwayat Penyakit Dahulu) → detail_riwayat_penyakit
+            // - RPK (Riwayat Penyakit Keluarga) → riwayat_keluarga
+            // NO LONGER concatenating all subjective fields - each field goes to its specific target
+            console.log('[Import] Subjective fields:', {
+                keluhan_utama: parsed.subjective?.keluhan_utama,
+                rps: parsed.subjective?.rps,
+                rpd: parsed.subjective?.rpd,
+                rpk: parsed.subjective?.rpk
+            });
 
             // Map SIMRS data to our template format
             // Field mapping from hospital (Melinda/Gambiran MEDIFY):
@@ -735,7 +726,7 @@ async function applyPendingImportData() {
                 identitas: parsed.identity || template.identitas || {},
                 anamnesa: {
                     keluhan_utama: parsed.subjective?.keluhan_utama,
-                    riwayat_kehamilan_saat_ini: parsed.subjective?.rps || riwayatKehamilanSaatIni,
+                    riwayat_kehamilan_saat_ini: parsed.subjective?.rps,  // RPS only, no fallback
                     detail_riwayat_penyakit: parsed.subjective?.rpd,
                     riwayat_keluarga: parsed.subjective?.rpk,
                     // Also include MEDIFY obstetric data
