@@ -409,12 +409,13 @@ router.get('/api/patients/search/advanced', verifyToken, async (req, res) => {
             phone,      // Nomor HP
             whatsapp,   // Nomor WhatsApp
             husband,    // Nama suami
+            visit_date, // Tanggal periksa (from sunday_clinic_records.created_at)
             limit,
             page
         } = req.query;
 
         // Debug logging
-        console.log('[ADVANCED SEARCH] Received params:', { name, id, mr_id, email, age_min, age_max, phone, whatsapp, husband });
+        console.log('[ADVANCED SEARCH] Received params:', { name, id, mr_id, email, age_min, age_max, phone, whatsapp, husband, visit_date });
 
         // Build dynamic query with LEFT JOINs for MR and email
         let query = `
@@ -481,6 +482,12 @@ router.get('/api/patients/search/advanced', verifyToken, async (req, res) => {
         if (husband && husband.trim()) {
             query += ' AND p.husband_name LIKE ?';
             params.push(`%${husband.trim()}%`);
+        }
+
+        // Filter by visit date (tanggal periksa)
+        if (visit_date && visit_date.trim()) {
+            query += ' AND DATE(scr.created_at) = ?';
+            params.push(visit_date.trim());
         }
 
         // Order by name

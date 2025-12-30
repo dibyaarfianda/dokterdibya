@@ -11,6 +11,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
     <link rel="stylesheet" href="/staff/public/styles/sunday-clinic.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         /* Clinic header title font */
         .clinic-header-title {
@@ -328,6 +329,32 @@
                         <span id="time-display"></span>
                     </span>
                 </li>
+                <!-- Search Button -->
+                <li class="nav-item mr-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-header-search" title="Cari Pasien (Ctrl+K)">
+                        <i class="fas fa-search"></i>
+                        <span class="d-none d-md-inline ml-1">Cari</span>
+                    </button>
+                </li>
+                <!-- Queue Button with Dropdown -->
+                <li class="nav-item dropdown mr-2">
+                    <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-toggle="dropdown" id="btn-header-queue" title="Antrian Hari Ini">
+                        <i class="fas fa-users"></i>
+                        <span class="d-none d-sm-inline ml-1">Antrian</span>
+                        <span class="badge badge-light ml-1" id="header-queue-count">0</span>
+                    </button>
+                    <div class="dropdown-menu dropdown-menu-right dropdown-menu-lg p-0" id="header-queue-dropdown" style="width: 350px; max-height: 450px;">
+                        <div class="dropdown-header bg-primary text-white py-2">
+                            <i class="fas fa-list-ol mr-2"></i>Antrian Hari Ini
+                        </div>
+                        <div class="header-queue-list" id="header-queue-list" style="max-height: 380px; overflow-y: auto;">
+                            <div class="text-center text-muted p-3">
+                                <i class="fas fa-spinner fa-spin"></i> Memuat...
+                            </div>
+                        </div>
+                    </div>
+                </li>
+                <!-- Import/Bulk Buttons -->
                 <li class="nav-item mr-2">
                     <div class="btn-group" role="group">
                         <button type="button" class="btn btn-outline-info btn-sm" onclick="window.openImportModal()" title="Import satu file">
@@ -340,8 +367,9 @@
                         </button>
                     </div>
                 </li>
+                <!-- Patient History Toggle -->
                 <li class="nav-item">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-toggle-patient-sidebar" title="Riwayat Pasien & Antrian">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-toggle-patient-sidebar" title="Riwayat Pasien Aktif">
                         <i class="fas fa-history"></i>
                         <span class="d-none d-lg-inline ml-1">Riwayat</span>
                     </button>
@@ -462,46 +490,6 @@
             </div>
 
             <div class="patient-sidebar-body">
-                <!-- Today's Queue Section -->
-                <div class="patient-sidebar-section">
-                    <div class="section-header" data-toggle="collapse" data-target="#queue-content" aria-expanded="true">
-                        <i class="fas fa-list-ol mr-2"></i>
-                        <span>Antrian Hari Ini</span>
-                        <span class="badge badge-primary ml-auto" id="queue-count">0</span>
-                        <i class="fas fa-chevron-down toggle-icon ml-2"></i>
-                    </div>
-                    <div class="collapse show" id="queue-content">
-                        <div class="queue-list" id="today-queue-list">
-                            <div class="text-center text-muted p-3">
-                                <i class="fas fa-spinner fa-spin"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Patient Search Section -->
-                <div class="patient-sidebar-section">
-                    <div class="section-header" data-toggle="collapse" data-target="#search-content" aria-expanded="false">
-                        <i class="fas fa-search mr-2"></i>
-                        <span>Cari Pasien</span>
-                        <i class="fas fa-chevron-down toggle-icon ml-auto"></i>
-                    </div>
-                    <div class="collapse" id="search-content">
-                        <div class="search-box p-2">
-                            <div class="input-group input-group-sm">
-                                <input type="text" class="form-control" id="sidebar-patient-search"
-                                       placeholder="Nama, MR, atau telepon...">
-                                <div class="input-group-append">
-                                    <button class="btn btn-outline-secondary" type="button" id="btn-sidebar-search">
-                                        <i class="fas fa-search"></i>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="search-results" id="sidebar-search-results"></div>
-                    </div>
-                </div>
-
                 <!-- Current Patient Section -->
                 <div class="patient-sidebar-section">
                     <div class="section-header bg-primary text-white">
@@ -544,6 +532,40 @@
                 </small>
             </div>
         </aside>
+
+    <!-- Patient Search Modal -->
+    <div class="modal fade" id="patientSearchModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal-dialog modal-lg" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-secondary text-white py-2">
+                    <h5 class="modal-title">
+                        <i class="fas fa-search mr-2"></i>Cari Pasien
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Tutup">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body p-3">
+                    <div class="input-group mb-3">
+                        <input type="text" class="form-control form-control-lg" id="modal-patient-search"
+                               placeholder="Ketik nama, MR ID, atau nomor telepon..." autofocus>
+                        <div class="input-group-append">
+                            <button class="btn btn-primary" type="button" id="btn-modal-search">
+                                <i class="fas fa-search"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="search-results-container" id="modal-search-results" style="max-height: 400px; overflow-y: auto;">
+                        <div class="text-center text-muted py-4">
+                            <i class="fas fa-search fa-3x mb-3 text-secondary"></i>
+                            <p class="mb-0">Ketik untuk mencari pasien</p>
+                            <small class="text-muted">Tekan Enter atau klik tombol cari</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- Copy Data Confirmation Modal -->
     <div class="modal fade" id="copyDataModal" tabindex="-1" role="dialog" aria-hidden="true">
@@ -975,9 +997,9 @@ PLAN
     <!-- Global Chat Loader (must be after Socket.IO) -->
     <script src="/staff/public/scripts/global-chat-loader.js"></script>
 
-    <script type="module" src="/staff/public/scripts/sunday-clinic.js"></script>
+    <script type="module" src="/staff/public/scripts/sunday-clinic.js?v=2.0.2"></script>
     <!-- Planning helpers for tindakan and terapi modals -->
-    <script src="/staff/public/scripts/sunday-clinic/utils/planning-helpers.js?v=2.0.1"></script>
+    <script src="/staff/public/scripts/sunday-clinic/utils/planning-helpers.js?v=2.0.2"></script>
     <!-- Medical import from text files -->
     <script type="module" src="/staff/public/scripts/sunday-clinic/utils/medical-import.js?v=1.0.0"></script>
     <script>

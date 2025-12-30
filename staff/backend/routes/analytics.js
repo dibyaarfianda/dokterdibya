@@ -257,13 +257,19 @@ router.get('/private-clinic', verifyToken, requirePermission('analytics.view'), 
     try {
         const { month, staffCount = 3 } = req.query;
 
-        // Default to current month if not specified
-        const targetMonth = month || new Date().toISOString().slice(0, 7);
+        // Default to current month if not specified (GMT+7 aware)
+        let targetMonth = month;
+        if (!targetMonth) {
+            const now = new Date();
+            const year = now.getFullYear();
+            const monthNum = String(now.getMonth() + 1).padStart(2, '0');
+            targetMonth = `${year}-${monthNum}`;
+        }
+
         const startDate = `${targetMonth}-01`;
-        const endDate = new Date(targetMonth + '-01');
-        endDate.setMonth(endDate.getMonth() + 1);
-        endDate.setDate(0);
-        const endDateStr = endDate.toISOString().slice(0, 10);
+        const [year, monthNum] = targetMonth.split('-').map(Number);
+        const endDate = new Date(year, monthNum, 0); // Last day of month
+        const endDateStr = `${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, '0')}-${String(endDate.getDate()).padStart(2, '0')}`;
 
         // 1. Get summary data
         const [summaryRows] = await pool.query(`
@@ -365,10 +371,13 @@ router.get('/private-clinic', verifyToken, requirePermission('analytics.view'), 
         const totalHariKerja = parseInt(summary.total_hari_kerja) || 0;
         const totalKunjungan = parseInt(summary.total_kunjungan) || 0;
 
-        // Staff cost calculation: Rp 100,000 per attendance, minimum Rp 150,000/month
-        const numStaff = parseInt(staffCount) || 3;
-        const attendancePerStaff = totalHariKerja;
-        const gajiPerStaff = Math.max(150000, attendancePerStaff * 100000);
+        // Staff cost: 8 staff, base 150k + bonus 100k per additional attendance day
+        // Formula: gaji = 150000 + max(0, (hari_kerja - 1)) × 100000
+        // Example: 4 hari Minggu = 150,000 + (3 × 100,000) = 450,000 per staff
+        const numStaff = 8;
+        const attendancePerStaff = totalHariKerja; // Jumlah hari Minggu dalam bulan
+        const bonusPerStaff = Math.max(0, attendancePerStaff - 1) * 100000;
+        const gajiPerStaff = 150000 + bonusPerStaff;
         const totalGajiStaff = numStaff * gajiPerStaff;
 
         // Net profit calculation

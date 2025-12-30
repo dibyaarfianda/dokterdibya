@@ -37,6 +37,16 @@ export default {
                     </button>
                 </div>
                 ${metaHtml}
+                <div class="form-group mb-3" style="max-width: 300px;">
+                    <label class="font-weight-bold text-primary">
+                        <i class="fas fa-clock mr-1"></i>Tanggal & Jam Pemeriksaan <span class="text-danger">*</span>
+                    </label>
+                    <input type="datetime-local"
+                           class="form-control"
+                           id="anamnesa-datetime"
+                           value="${this.escapeHtml(anamnesa.record_datetime || '')}"
+                           required>
+                </div>
 
                 ${chiefComplaint ? `
                 <div class="alert alert-info mb-3">
@@ -346,7 +356,13 @@ export default {
      * Collect form data
      */
     collectFormData() {
+        const recordDatetime = document.getElementById('anamnesa-datetime')?.value || '';
         return {
+            // Datetime
+            record_datetime: recordDatetime,
+            record_date: recordDatetime.split('T')[0] || '',
+            record_time: recordDatetime.split('T')[1] || '',
+
             // Keluhan Utama
             keluhan_utama: document.getElementById('anamnesa-keluhan-utama')?.value || '',
 
@@ -420,6 +436,17 @@ export default {
         }
 
         try {
+            // Validate datetime is filled
+            const recordDatetime = document.getElementById('anamnesa-datetime')?.value || '';
+            if (!recordDatetime) {
+                window.showToast('error', 'Tanggal & Jam Pemeriksaan harus diisi');
+                if (saveBtn) {
+                    saveBtn.innerHTML = '<i class="fas fa-save"></i> Simpan';
+                    saveBtn.disabled = false;
+                }
+                return { success: false };
+            }
+
             const data = this.collectFormData();
 
             const response = await apiClient.saveSection(mrId, 'anamnesa', data);

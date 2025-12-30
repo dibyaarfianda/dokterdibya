@@ -4,13 +4,13 @@
  */
 
 import { MR_CATEGORIES, SECTIONS } from './utils/constants.js';
-import apiClient from './utils/api-client.js';
+import apiClient from './utils/api-client.js?v=2.0.2';
 import stateManager from './utils/state-manager.js';
 import { getGMT7Timestamp } from './utils/helpers.js';
 import BillingNotifications from './utils/billing-notifications.js';
 import SendToPatient from './components/shared/send-to-patient.js';
 import { applyPendingImportData } from './utils/medical-import.js';
-import patientSidebar from './components/patient-history-sidebar.js';
+import patientSidebar from './components/patient-history-sidebar.js?v=2.0.2';
 
 // Expose stateManager to window for cross-module access (used by medical-import.js)
 window.stateManager = stateManager;
@@ -887,9 +887,20 @@ class SundayClinicApp {
         this._savingPlanning = true;
 
         try {
+            // Validate datetime is filled
+            const recordDatetime = document.getElementById('planning-datetime')?.value || '';
+            if (!recordDatetime) {
+                window.showToast('error', 'Tanggal & Jam Pemeriksaan harus diisi');
+                this._savingPlanning = false;
+                return;
+            }
+
             this.showLoading('Menyimpan Planning...');
 
             const data = {
+                record_datetime: recordDatetime,
+                record_date: recordDatetime.split('T')[0] || '',
+                record_time: recordDatetime.split('T')[1] || '',
                 tindakan: document.getElementById('planning-tindakan')?.value || '',
                 terapi: document.getElementById('planning-terapi')?.value || '',
                 rencana: document.getElementById('planning-rencana')?.value || '',
@@ -958,9 +969,20 @@ class SundayClinicApp {
         this._savingPemeriksaanObstetri = true;
         
         try {
+            // Validate datetime is filled
+            const recordDatetime = document.getElementById('pemeriksaan-obstetri-datetime')?.value || '';
+            if (!recordDatetime) {
+                window.showToast('error', 'Tanggal & Jam Pemeriksaan harus diisi');
+                this._savingPemeriksaanObstetri = false;
+                return;
+            }
+
             this.showLoading('Menyimpan Pemeriksaan Obstetri...');
 
             const data = {
+                record_datetime: recordDatetime,
+                record_date: recordDatetime.split('T')[0] || '',
+                record_time: recordDatetime.split('T')[1] || '',
                 findings: document.getElementById('pemeriksaan-obstetri-findings')?.value || '',
                 saved_at: new Date().toISOString()
             };
@@ -1034,6 +1056,18 @@ class SundayClinicApp {
         }
 
         try {
+            // Validate datetime is filled
+            const recordDatetime = document.getElementById('usg-datetime')?.value || '';
+            if (!recordDatetime) {
+                window.showToast('error', 'Tanggal & Jam Pemeriksaan harus diisi');
+                if (saveBtn) {
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>Simpan USG';
+                }
+                this._savingUSG = false;
+                return;
+            }
+
             this.showLoading('Menyimpan USG...');
 
             // Detect active trimester
@@ -1075,6 +1109,9 @@ class SundayClinicApp {
             } catch (e) { photos = []; }
 
             const data = {
+                record_datetime: recordDatetime,
+                record_date: recordDatetime.split('T')[0] || '',
+                record_time: recordDatetime.split('T')[1] || '',
                 current_trimester: trimester,
                 trimester_1: {
                     date: document.querySelector('[name="t1_date"]')?.value || '',
@@ -1204,9 +1241,20 @@ class SundayClinicApp {
         this._savingPhysicalExam = true;
         
         try {
+            // Validate datetime is filled
+            const recordDatetime = document.getElementById('physical-exam-datetime')?.value || '';
+            if (!recordDatetime) {
+                window.showToast('error', 'Tanggal & Jam Pemeriksaan harus diisi');
+                this._savingPhysicalExam = false;
+                return;
+            }
+
             this.showLoading('Menyimpan Pemeriksaan Fisik...');
 
             const data = {
+                record_datetime: recordDatetime,
+                record_date: recordDatetime.split('T')[0] || '',
+                record_time: recordDatetime.split('T')[1] || '',
                 tekanan_darah: document.getElementById('pe-tekanan-darah')?.value || '',
                 nadi: document.getElementById('pe-nadi')?.value || '',
                 suhu: document.getElementById('pe-suhu')?.value || '',
@@ -1334,8 +1382,21 @@ class SundayClinicApp {
         btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
 
         try {
+            // Validate datetime is filled
+            const recordDatetime = document.getElementById('anamnesa-datetime')?.value || '';
+            if (!recordDatetime) {
+                window.showToast('error', 'Tanggal & Jam Pemeriksaan harus diisi');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-save"></i> Simpan';
+                this._savingAnamnesa = false;
+                return;
+            }
+
             // Collect all field values
             const data = {
+                record_datetime: recordDatetime,
+                record_date: recordDatetime.split('T')[0] || '',
+                record_time: recordDatetime.split('T')[1] || '',
                 keluhan_utama: document.getElementById('anamnesa-keluhan-utama')?.value || '',
                 riwayat_kehamilan_saat_ini: document.getElementById('anamnesa-riwayat-kehamilan')?.value || '',
                 hpht: document.getElementById('anamnesa-hpht')?.value || '',
@@ -1485,9 +1546,20 @@ class SundayClinicApp {
         this._savingDiagnosis = true;
 
         try {
+            // Validate datetime is filled
+            const recordDatetime = document.getElementById('diagnosis-datetime')?.value || '';
+            if (!recordDatetime) {
+                window.showToast('error', 'Tanggal & Jam Pemeriksaan harus diisi');
+                this._savingDiagnosis = false;
+                return;
+            }
+
             this.showLoading('Menyimpan Diagnosis...');
 
             const data = {
+                record_datetime: recordDatetime,
+                record_date: recordDatetime.split('T')[0] || '',
+                record_time: recordDatetime.split('T')[1] || '',
                 diagnosis_utama: document.getElementById('diagnosis-utama')?.value || '',
                 diagnosis_sekunder: document.getElementById('diagnosis-sekunder')?.value || '',
                 saved_at: new Date().toISOString()

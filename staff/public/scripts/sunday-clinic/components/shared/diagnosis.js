@@ -141,7 +141,8 @@ export default {
         // Merge with passed diagnosis parameter (fallback to savedData from medicalRecords)
         const diagnosisData = {
             diagnosis_utama: savedData.diagnosis_utama || diagnosis.diagnosis_utama || '',
-            diagnosis_sekunder: savedData.diagnosis_sekunder || diagnosis.diagnosis_sekunder || ''
+            diagnosis_sekunder: savedData.diagnosis_sekunder || diagnosis.diagnosis_sekunder || '',
+            record_datetime: savedData.record_datetime || diagnosis.record_datetime || ''
         };
 
         const escapeHtml = (str) => {
@@ -160,6 +161,16 @@ export default {
                     <h3>Diagnosis</h3>
                 </div>
                 ${metaHtml}
+                <div class="form-group mb-3" style="max-width: 300px;">
+                    <label class="font-weight-bold text-primary">
+                        <i class="fas fa-clock mr-1"></i>Tanggal & Jam Pemeriksaan <span class="text-danger">*</span>
+                    </label>
+                    <input type="datetime-local"
+                           class="form-control"
+                           id="diagnosis-datetime"
+                           value="${escapeHtml(diagnosisData.record_datetime)}"
+                           required>
+                </div>
                 <div class="sc-card">
                     <div class="mb-3">
                         <label class="font-weight-bold">Diagnosis Utama</label>

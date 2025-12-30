@@ -14,11 +14,33 @@ export default {
     async render(state) {
         const usg = state.recordData?.usg || {};
         const isSaved = !!usg.saved_at;
+        const recordDatetime = usg.record_datetime || '';
+
+        const escapeHtml = (str) => {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        };
 
         return `
             <div class="sc-section">
                 <div class="sc-section-header">
                     <h3>Pemeriksaan USG Ginekologi</h3>
+                </div>
+
+                <div class="form-group mb-3" style="max-width: 300px;">
+                    <label class="font-weight-bold text-primary">
+                        <i class="fas fa-clock mr-1"></i>Tanggal & Jam Pemeriksaan <span class="text-danger">*</span>
+                    </label>
+                    <input type="datetime-local"
+                           class="form-control"
+                           id="usg-gyn-datetime"
+                           value="${escapeHtml(recordDatetime)}"
+                           required>
                 </div>
 
                 <div class="sc-grid two">
@@ -680,6 +702,13 @@ export default {
             return { success: false };
         }
 
+        // Validate datetime is filled
+        const recordDatetime = document.getElementById('usg-gyn-datetime')?.value || '';
+        if (!recordDatetime) {
+            window.showToast('error', 'Tanggal & Jam Pemeriksaan harus diisi');
+            return { success: false };
+        }
+
         const saveBtn = document.getElementById('usg-save');
         if (saveBtn) {
             saveBtn.disabled = true;
@@ -688,6 +717,10 @@ export default {
 
         try {
             const data = this.collectFormData();
+            // Add datetime fields
+            data.record_datetime = recordDatetime;
+            data.record_date = recordDatetime.split('T')[0] || '';
+            data.record_time = recordDatetime.split('T')[1] || '';
 
             const response = await apiClient.saveSection(mrId, 'usg', data);
 
