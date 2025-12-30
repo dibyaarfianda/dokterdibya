@@ -161,10 +161,12 @@ export function renderRecordMeta(context, primaryType) {
         meta.push(`Dicatat oleh ${escapeHtml(context.record.doctorName)}`);
     }
 
-    const timestamp = context.record.updatedAt || context.record.createdAt;
+    // Use record_datetime from user input first, fallback to database timestamp
+    const recordDatetime = context.data?.record_datetime;
+    const timestamp = recordDatetime || context.record.updatedAt || context.record.createdAt;
     const timestampText = formatDateTime(timestamp);
     if (timestampText) {
-        meta.push(`Terakhir diperbarui ${escapeHtml(timestampText)}`);
+        meta.push(`Waktu pemeriksaan ${escapeHtml(timestampText)}`);
     }
 
     if (context.source === 'complete') {
