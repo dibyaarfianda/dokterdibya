@@ -141,21 +141,47 @@
         if (subjectiveMatch) {
             const subText = subjectiveMatch[1];
 
-            const keluhanMatch = subText.match(/Keluhan\s*Utama\s*:?\s*([^\n]+)/i);
-            if (keluhanMatch) cpptData.subjective.keluhan_utama = keluhanMatch[1].trim();
+            // Capture FULL subjective text for riwayat_kehamilan_saat_ini
+            cpptData.subjective.riwayat_kehamilan_saat_ini = subText.trim();
 
-            const rpsMatch = subText.match(/(?:RPS|Riwayat\s*Penyakit\s*Sekarang)\s*(?:\([^)]+\))?\s*:?\s*([^\n]+)/i);
-            if (rpsMatch) cpptData.subjective.rps = rpsMatch[1].trim();
+            // Pattern that stops at next field label (handles comma-separated MEDIFY format)
+            const nextFieldPattern = '(?=,?\\s*(?:Riwayat\\s*Penyakit|RPD|RPK|RPO|HPL|HPHT|Alergi)|\\n|$)';
 
-            const rpdMatch = subText.match(/(?:RPD|Riwayat\s*Penyakit\s*Dahulu)\s*(?:\([^)]+\))?\s*:?\s*([^\n]+)/i);
-            if (rpdMatch) cpptData.subjective.rpd = rpdMatch[1].trim();
+            // Keluhan Utama - capture until next field
+            const keluhanMatch = subText.match(new RegExp('Keluhan\\s*Utama\\s*:?\\s*(.*?)' + nextFieldPattern, 'i'));
+            if (keluhanMatch && keluhanMatch[1]) {
+                cpptData.subjective.keluhan_utama = keluhanMatch[1].replace(/,\s*$/, '').trim();
+            }
 
-            const rpkMatch = subText.match(/(?:RPK|Riwayat\s*Penyakit\s*Keluarga)\s*:?\s*([^\n]+)/i);
-            if (rpkMatch) cpptData.subjective.rpk = rpkMatch[1].trim();
+            // RPS - capture until RPD/RPK or newline
+            const rpsMatch = subText.match(new RegExp('(?:RPS|Riwayat\\s*Penyakit\\s*Sekarang)\\s*(?:\\([^)]+\\))?\\s*:?\\s*(.*?)(?=,?\\s*(?:RPD|Riwayat\\s*Penyakit\\s*Dahulu|RPK)|\\n|$)', 'i'));
+            if (rpsMatch && rpsMatch[1]) {
+                cpptData.subjective.rps = rpsMatch[1].replace(/,\s*$/, '').trim();
+            }
 
+            // RPD - capture until RPK or newline
+            const rpdMatch = subText.match(new RegExp('(?:RPD|Riwayat\\s*Penyakit\\s*Dahulu)\\s*(?:\\([^)]+\\))?\\s*:?\\s*(.*?)(?=,?\\s*(?:RPK|Riwayat\\s*Penyakit\\s*Keluarga|HPL|HPHT)|\\n|$)', 'i'));
+            if (rpdMatch && rpdMatch[1]) {
+                cpptData.subjective.rpd = rpdMatch[1].replace(/,\s*$/, '').trim();
+            }
+
+            // RPK - capture until HPL/HPHT or newline
+            const rpkMatch = subText.match(new RegExp('(?:RPK|Riwayat\\s*Penyakit\\s*Keluarga)\\s*:?\\s*(.*?)(?=,?\\s*(?:HPL|HPHT|Alergi)|\\n|$)', 'i'));
+            if (rpkMatch && rpkMatch[1]) {
+                cpptData.subjective.rpk = rpkMatch[1].replace(/,\s*$/, '').trim();
+            }
+
+            // HPL - also check in Keluhan Utama (e.g., "kontrol hamil, HPL 29/1/26")
             const hplMatch = subText.match(/HPL\s*:?\s*(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/i);
-            if (hplMatch) cpptData.subjective.hpl = hplMatch[1];
+            if (hplMatch) {
+                cpptData.subjective.hpl = hplMatch[1];
+            } else if (cpptData.subjective.keluhan_utama) {
+                // Try to extract from Keluhan Utama
+                const hplFromKeluhan = cpptData.subjective.keluhan_utama.match(/HPL\s*:?\s*(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/i);
+                if (hplFromKeluhan) cpptData.subjective.hpl = hplFromKeluhan[1];
+            }
 
+            // HPHT
             const hphtMatch = subText.match(/HPHT\s*:?\s*(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/i);
             if (hphtMatch) cpptData.subjective.hpht = hphtMatch[1];
         }
@@ -204,12 +230,30 @@
                 cpptData.assessment.diagnosis = lines[0].trim();
             }
 
-            // Parse obstetric formula
-            const obsMatch = assText.match(/G(\d+)\s*P([\d\-]+)/i);
-            if (obsMatch) {
-                cpptData.assessment.gravida = parseInt(obsMatch[1]);
-                cpptData.assessment.para = obsMatch[2];
+            // Parse obstetric formula - MEDIFY format first (G2P0000 = P followed by 4 digits)
+            // Format: G2P0101 means Gravida=2, Aterm=0, Premature=1, Abortus=0, AnakHidup=1
+            // In our app: Para = Aterm + Premature
+            const medifyMatch = assText.match(/G(\d+)P(\d)(\d)(\d)(\d)/i);
+            if (medifyMatch) {
+                const gravida = parseInt(medifyMatch[1]);
+                const aterm = parseInt(medifyMatch[2]);
+                const premature = parseInt(medifyMatch[3]);
+                const abortus = parseInt(medifyMatch[4]);
+                const anakHidup = parseInt(medifyMatch[5]);
+
+                cpptData.assessment.gravida = gravida;
+                cpptData.assessment.para = aterm + premature;  // Para = Aterm + Premature
+                cpptData.assessment.abortus = abortus;
+                cpptData.assessment.anak_hidup = anakHidup;
                 cpptData.assessment.is_obstetric = true;
+            } else {
+                // Fallback to standard format (G_P_)
+                const obsMatch = assText.match(/G(\d+)\s*P([\d\-]+)/i);
+                if (obsMatch) {
+                    cpptData.assessment.gravida = parseInt(obsMatch[1]);
+                    cpptData.assessment.para = obsMatch[2];
+                    cpptData.assessment.is_obstetric = true;
+                }
             }
 
             // Parse gestational age
@@ -394,13 +438,72 @@
             });
 
             if (result.success) {
+                // Get local CPPT extraction and merge with API result
+                const localCPPT = extractCPPT();
+                const mergedData = result.data;
+
+                // Merge local extraction into API result (local takes priority for specific fields)
+                if (localCPPT.subjective) {
+                    mergedData.raw_parsed = mergedData.raw_parsed || {};
+                    mergedData.raw_parsed.subjective = mergedData.raw_parsed.subjective || {};
+
+                    // Merge riwayat_kehamilan_saat_ini from local extraction
+                    if (localCPPT.subjective.riwayat_kehamilan_saat_ini) {
+                        mergedData.raw_parsed.subjective.riwayat_kehamilan_saat_ini = localCPPT.subjective.riwayat_kehamilan_saat_ini;
+                    }
+
+                    // Merge HPL and HPHT from local extraction (if API didn't find them)
+                    if (localCPPT.subjective.hpl && !mergedData.raw_parsed.subjective.hpl) {
+                        mergedData.raw_parsed.subjective.hpl = localCPPT.subjective.hpl;
+                    }
+                    if (localCPPT.subjective.hpht && !mergedData.raw_parsed.subjective.hpht) {
+                        mergedData.raw_parsed.subjective.hpht = localCPPT.subjective.hpht;
+                    }
+                }
+                if (localCPPT.objective) {
+                    mergedData.raw_parsed = mergedData.raw_parsed || {};
+                    mergedData.raw_parsed.objective = mergedData.raw_parsed.objective || {};
+
+                    // Merge TB/BB from local extraction
+                    if (localCPPT.objective.tinggi_badan) {
+                        mergedData.raw_parsed.objective.tinggi_badan = localCPPT.objective.tinggi_badan;
+                    }
+                    if (localCPPT.objective.berat_badan) {
+                        mergedData.raw_parsed.objective.berat_badan = localCPPT.objective.berat_badan;
+                    }
+                }
+                // Merge obstetric fields from local extraction (if API didn't find them)
+                if (localCPPT.assessment) {
+                    mergedData.raw_parsed = mergedData.raw_parsed || {};
+                    mergedData.raw_parsed.assessment = mergedData.raw_parsed.assessment || {};
+
+                    if (localCPPT.assessment.gravida !== undefined && mergedData.raw_parsed.assessment.gravida === undefined) {
+                        mergedData.raw_parsed.assessment.gravida = localCPPT.assessment.gravida;
+                    }
+                    if (localCPPT.assessment.para !== undefined && mergedData.raw_parsed.assessment.para === undefined) {
+                        mergedData.raw_parsed.assessment.para = localCPPT.assessment.para;
+                    }
+                    if (localCPPT.assessment.abortus !== undefined && mergedData.raw_parsed.assessment.abortus === undefined) {
+                        mergedData.raw_parsed.assessment.abortus = localCPPT.assessment.abortus;
+                    }
+                    if (localCPPT.assessment.anak_hidup !== undefined && mergedData.raw_parsed.assessment.anak_hidup === undefined) {
+                        mergedData.raw_parsed.assessment.anak_hidup = localCPPT.assessment.anak_hidup;
+                    }
+                    if (localCPPT.assessment.is_obstetric) {
+                        mergedData.raw_parsed.assessment.is_obstetric = true;
+                    }
+                }
+
+                console.log('[RSIA Melinda] Local CPPT:', localCPPT);
+                console.log('[RSIA Melinda] Merged data:', mergedData);
+
                 // Add category to result data
-                result.data.category = selectedCategory;
+                mergedData.category = selectedCategory;
 
                 // Store parsed data for the staff panel
                 try {
                     await chrome.storage.local.set({
-                        'dibya_import_data': result.data,
+                        'dibya_import_data': mergedData,
                         'dibya_import_timestamp': Date.now(),
                         'dibya_import_source': 'rsia_melinda',
                         'dibya_import_category': selectedCategory
@@ -413,7 +516,7 @@
 
                 // Open staff panel in new tab with import data
                 setTimeout(() => {
-                    window.open(CONFIG.STAFF_URL + '?import=' + encodeURIComponent(JSON.stringify(result.data)), '_blank');
+                    window.open(CONFIG.STAFF_URL + '?import=' + encodeURIComponent(JSON.stringify(mergedData)), '_blank');
                 }, 1000);
             } else {
                 throw new Error(result.message || 'Gagal parsing data');

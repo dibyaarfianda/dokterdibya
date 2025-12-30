@@ -708,3 +708,37 @@ git pull origin main
    - Fix: Extract date dari folder name (e.g., `21122025-XXXX_NAMA` → `2025-12-21`)
    - File: `staff/backend/routes/usg-bulk-upload.js`
    - Fallback ke `NOW()` jika parsing gagal
+
+4. **MEDIFY Import - HPL, HPHT, Gravida, Para, Abortus, Anak Hidup Fix**
+   - Bug: HPL, HPHT, dan obstetric fields tidak terisi saat import dari Melinda/Gambiran
+   - Root cause: AI prompt tidak include fields `abortus` dan `anak_hidup`, dan HPL extraction dari Keluhan Utama tidak dijelaskan
+   - Fix:
+     - Backend AI prompt: Tambah `abortus`, `anak_hidup` ke assessment object
+     - Backend AI prompt: Tambah rule MEDIFY G*P**** format (G2P0101 → Para=Aterm+Premature)
+     - Backend AI prompt: Tambah rule HPL extraction dari Keluhan Utama ("kontrol hamil, HPL 29/1/26")
+     - Backend: Tambah `abortus`, `anak_hidup` ke `mapToTemplate()` obstetri section
+     - Frontend: Tambah retry mechanism untuk HPL, HPHT, Gravida, Para, Abortus, Anak Hidup (3 detik delay)
+     - Frontend: Tambah date conversion DD/MM/YYYY → YYYY-MM-DD untuk date inputs
+   - Files:
+     - `staff/backend/routes/medical-import.js` (AI prompt lines 43-44, 64-66, 96-108, mapToTemplate lines 1107-1108)
+     - `staff/public/scripts/sunday-clinic/utils/medical-import.js` (retry block lines 1134-1208)
+
+5. **Chrome Extension Updates - MEDIFY G*P**** Parsing**
+   - Updated both Melinda and Gambiran Chrome extensions with:
+     - Comma-separated MEDIFY format regex patterns (handles "Keluhan Utama : kontrol, HPL 29/1/26, ...")
+     - MEDIFY G*P**** parsing: G2P0101 → Gravida=2, Para=0+1=1, Abortus=0, AnakHidup=1
+     - Merge logic to combine local extraction with API result for HPL, HPHT, and obstetric fields
+   - Files:
+     - `chrome-extension/simrs-melinda-exporter/content.js` (extractCPPT function, handleExport merge logic)
+     - `chrome-extension/simrs-gambiran-exporter/content.js` (extractCPPT function, handleExport merge logic)
+   - Regex pattern for MEDIFY format:
+
+     ```javascript
+     const medifyMatch = assText.match(/G(\d+)P(\d)(\d)(\d)(\d)/i);
+     if (medifyMatch) {
+         cpptData.assessment.gravida = parseInt(medifyMatch[1]);
+         cpptData.assessment.para = parseInt(medifyMatch[2]) + parseInt(medifyMatch[3]); // Aterm + Premature
+         cpptData.assessment.abortus = parseInt(medifyMatch[4]);
+         cpptData.assessment.anak_hidup = parseInt(medifyMatch[5]);
+     }
+     ```

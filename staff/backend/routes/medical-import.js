@@ -41,7 +41,7 @@ Return this exact JSON structure:
     "rpd": "Past medical history or null",
     "rpk": "Family history or null",
     "hpht": "Last menstrual period DD/MM/YYYY or null",
-    "hpl": "Expected delivery date DD/MM/YYYY or null",
+    "hpl": "Expected delivery date DD/MM/YYYY or null - IMPORTANT: Often embedded in Keluhan Utama like 'kontrol hamil, HPL 29/1/26' - extract the date!",
     "riwayat_kehamilan_saat_ini": "Full text after 'Subjective' section - capture ALL pregnancy-related text including current pregnancy history, symptoms, complaints. For Gambiran data, capture everything under Subjective as-is or null"
   },
   "objective": {
@@ -61,7 +61,9 @@ Return this exact JSON structure:
   "assessment": {
     "diagnosis": "Full diagnosis text or null",
     "gravida": "Number of pregnancies as number or null",
-    "para": "Parity like '1-0-0-1' or as number",
+    "para": "Parity as number (for MEDIFY format G*P****: para = Aterm + Premature digits)",
+    "abortus": "Number of abortions/miscarriages as number or null",
+    "anak_hidup": "Number of living children as number or null",
     "usia_kehamilan": "Gestational age text like '9 3/7mgg' or null",
     "usia_kehamilan_minggu": "Weeks as number or null",
     "usia_kehamilan_hari": "Days as number or null",
@@ -91,11 +93,19 @@ CRITICAL RULES:
 1. NO HP: ONLY extract phone if it starts with 08 or 62 and has 10+ digits. "29/9/25" is a DATE, not a phone!
 2. TB/BB: Search EVERYWHERE in the text, including in diagnosis section
 3. Look for multi-line format: label on one line, value on next line
-4. For obstetric diagnosis like "G1 P0-0 uk 9 3/7mgg": extract gravida=1, para="0-0", usia_kehamilan="9 3/7mgg"
-5. Numbers should be numbers (not strings), except para which can be string like "1-0-0-1"
-6. Return null for fields not found - DO NOT GUESS
-7. Medications must include dosage: "Folamil genio 1x1 (1 botol)" not just "Folamil"
-8. RIWAYAT KEHAMILAN: For "riwayat_kehamilan_saat_ini", capture the ENTIRE text content under "Subjective" or "Subyektif" section as a single string. Include ALL paragraphs, symptoms, history text. This is especially important for Gambiran/RSUD data.`;
+4. MEDIFY G*P**** FORMAT (used by Melinda & Gambiran hospitals):
+   - Format: G2P0101 = Gravida=2, P=4 digits meaning: Aterm(0), Premature(1), Abortus(0), AnakHidup(1)
+   - Extract: gravida=2, para=0+1=1 (Aterm+Premature), abortus=0, anak_hidup=1
+   - Example: G3P1001 → gravida=3, para=1 (1+0), abortus=0, anak_hidup=1
+5. For standard format like "G1 P0-0 uk 9 3/7mgg": extract gravida=1, para=0, usia_kehamilan="9 3/7mgg"
+6. Numbers should be numbers (not strings). Para, abortus, anak_hidup should be numbers.
+7. Return null for fields not found - DO NOT GUESS
+8. Medications must include dosage: "Folamil genio 1x1 (1 botol)" not just "Folamil"
+9. RIWAYAT KEHAMILAN: For "riwayat_kehamilan_saat_ini", capture the ENTIRE text content under "Subjective" or "Subyektif" section as a single string. Include ALL paragraphs, symptoms, history text. This is especially important for Gambiran/RSUD data.
+10. HPL EXTRACTION: Always look for HPL (Hari Perkiraan Lahir / Expected Delivery Date) in:
+    - Keluhan Utama text: "kontrol hamil, HPL 29/1/26" → extract "29/1/26"
+    - Standalone: "HPL : 29/01/2026" → extract "29/01/2026"
+    - Return the date in DD/MM/YYYY or DD/MM/YY format as found`;
 
 /**
  * Parse medical record text using GPT-4o
@@ -169,10 +179,16 @@ async function parseWithAI(text, category) {
  * Parse visit date from text
  * Looks for common date patterns in Indonesian medical records
  * Also parses doctor signature timestamps like "04 December 2025 21:20"
+ * Also parses CPPT timestamps from MEDIFY (Melinda/Gambiran)
  */
 function parseVisitDate(text) {
     // Common date patterns in Indonesian medical records
     const patterns = [
+        // CPPT date format from MEDIFY: "CPPT 15/12/2024" or "CPPT: 15-12-2024 10:30"
+        /CPPT\s*:?\s*(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/i,
+        // CPPT with full date: "CPPT 15 December 2024"
+        /CPPT\s*:?\s*(\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4})/i,
+        /CPPT\s*:?\s*(\d{1,2}\s+(?:Januari|Februari|Maret|April|Mei|Juni|Juli|Agustus|September|Oktober|November|Desember)\s+\d{4})/i,
         // Doctor signature timestamp: "04 December 2025 21:20" (English months)
         /(\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4})\s+\d{1,2}:\d{2}/i,
         // "Tanggal: 15 November 2024" or "Tanggal : 15/11/2024"
@@ -207,8 +223,21 @@ function parseVisitDate(text) {
 
 /**
  * Parse visit time from text (for signature timestamps like "21:20")
+ * Also parses CPPT timestamps from MEDIFY (Melinda/Gambiran)
  */
 function parseVisitTime(text) {
+    // CPPT format with time: "CPPT 15/12/2024 10:30" or "CPPT: 15-12-2024 14:45"
+    const cpptTimeMatch = text.match(/CPPT\s*:?\s*\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4}\s+(\d{1,2}:\d{2})/i);
+    if (cpptTimeMatch) {
+        return cpptTimeMatch[1];
+    }
+
+    // CPPT with full date and time: "CPPT 15 December 2024 10:30"
+    const cpptFullMatch = text.match(/CPPT\s*:?\s*\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December|Januari|Februari|Maret|April|Mei|Juni|Juli|Agustus|September|Oktober|November|Desember)\s+\d{4}\s+(\d{1,2}:\d{2})/i);
+    if (cpptFullMatch) {
+        return cpptFullMatch[1];
+    }
+
     // Look for signature timestamp with time: "04 December 2025 21:20"
     const signatureMatch = text.match(/\d{1,2}\s+(?:January|February|March|April|May|June|July|August|September|October|November|December)\s+\d{4}\s+(\d{1,2}:\d{2})/i);
     if (signatureMatch) {
@@ -480,6 +509,11 @@ function parseIdentity(text) {
 
 /**
  * Parse SUBJECTIVE section (Anamnesis)
+ *
+ * MEDIFY format from Melinda/Gambiran often puts all fields on one line separated by commas:
+ * "Keluhan Utama : periksa hamil, Riwayat Penyakit Sekarang (RPS) : nyeri pinggang, Riwayat Penyakit Dahulu (RPD) : tidak ada, ..."
+ *
+ * So we need regex that stops at the next field label, not just newline.
  */
 function parseSubjective(text) {
     const subjective = {};
@@ -488,48 +522,55 @@ function parseSubjective(text) {
     const subjectiveMatch = text.match(/(?:SUBJECTIVE|ANAMNESA|ANAMNESIS|S\s*:)\s*([\s\S]*?)(?=OBJECTIVE|PEMERIKSAAN|O\s*:|$)/i);
     const subText = subjectiveMatch ? subjectiveMatch[1] : text;
 
+    // Pattern to match until next field label or newline or end
+    // This handles MEDIFY format where fields are comma-separated on same line
+    const nextFieldPattern = '(?=,?\\s*(?:Riwayat\\s*Penyakit|RPD|RPK|RPO|HPL|HPHT|Alergi|Riwayat\\s*(?:Keluarga|Dahulu|Sekarang|Obstetri))|\\n|$)';
+
     // Helper to extract with multiple pattern variations
     const extractField = (patterns) => {
         for (const pattern of patterns) {
             const match = subText.match(pattern);
             if (match && match[1] && match[1].trim()) {
-                return match[1].trim();
+                // Clean up trailing commas
+                let value = match[1].trim();
+                value = value.replace(/,\s*$/, '').trim();
+                return value;
             }
         }
         return null;
     };
 
-    // Keluhan Utama variations
+    // Keluhan Utama - capture until next field label
     subjective.keluhan_utama = extractField([
-        /Keluhan\s*(?:Utama)?\s*[:\-]\s*([^\n]+)/i,
-        /Chief\s*Complaint\s*[:\-]\s*([^\n]+)/i,
-        /CC\s*[:\-]\s*([^\n]+)/i,
-        /KU\s*[:\-]\s*([^\n]+)/i,
-        /Alasan\s*(?:Datang|Kunjungan)\s*[:\-]\s*([^\n]+)/i
+        new RegExp('Keluhan\\s*(?:Utama)?\\s*[:\\-]\\s*(.*?)' + nextFieldPattern, 'i'),
+        new RegExp('Chief\\s*Complaint\\s*[:\\-]\\s*(.*?)' + nextFieldPattern, 'i'),
+        new RegExp('CC\\s*[:\\-]\\s*(.*?)' + nextFieldPattern, 'i'),
+        new RegExp('KU\\s*[:\\-]\\s*(.*?)' + nextFieldPattern, 'i'),
+        new RegExp('Alasan\\s*(?:Datang|Kunjungan)\\s*[:\\-]\\s*(.*?)' + nextFieldPattern, 'i')
     ]);
 
-    // RPS variations
+    // RPS - capture until RPD/RPK/HPL or newline
     subjective.rps = extractField([
-        /Riwayat\s*Penyakit\s*Sekarang\s*(?:\(RPS\))?\s*[:\-]\s*([^\n]+)/i,
-        /RPS\s*[:\-]\s*([^\n]+)/i,
-        /History\s*of\s*Present\s*Illness\s*[:\-]\s*([^\n]+)/i,
-        /HPI\s*[:\-]\s*([^\n]+)/i
+        new RegExp('Riwayat\\s*Penyakit\\s*Sekarang\\s*(?:\\(RPS\\))?\\s*[:\\-]\\s*(.*?)' + nextFieldPattern, 'i'),
+        new RegExp('RPS\\s*[:\\-]\\s*(.*?)' + nextFieldPattern, 'i'),
+        new RegExp('History\\s*of\\s*Present\\s*Illness\\s*[:\\-]\\s*(.*?)' + nextFieldPattern, 'i'),
+        new RegExp('HPI\\s*[:\\-]\\s*(.*?)' + nextFieldPattern, 'i')
     ]);
 
-    // RPD variations
+    // RPD - capture until RPK/HPL or newline
     subjective.rpd = extractField([
-        /Riwayat\s*Penyakit\s*(?:Dahulu|Terdahulu)\s*(?:\(RPD\))?\s*[:\-]\s*([^\n]+)/i,
-        /RPD\s*[:\-]\s*([^\n]+)/i,
-        /Past\s*Medical\s*History\s*[:\-]\s*([^\n]+)/i,
-        /PMH\s*[:\-]\s*([^\n]+)/i
+        new RegExp('Riwayat\\s*Penyakit\\s*(?:Dahulu|Terdahulu)\\s*(?:\\(RPD\\))?\\s*[:\\-]\\s*(.*?)(?=,?\\s*(?:Riwayat\\s*Penyakit\\s*Keluarga|RPK|HPL|HPHT)|\\n|$)', 'i'),
+        new RegExp('RPD\\s*[:\\-]\\s*(.*?)(?=,?\\s*(?:Riwayat\\s*Penyakit\\s*Keluarga|RPK|HPL|HPHT)|\\n|$)', 'i'),
+        new RegExp('Past\\s*Medical\\s*History\\s*[:\\-]\\s*(.*?)(?=,?\\s*(?:Family|RPK|HPL)|\\n|$)', 'i'),
+        new RegExp('PMH\\s*[:\\-]\\s*(.*?)(?=,?\\s*(?:Family|RPK|HPL)|\\n|$)', 'i')
     ]);
 
-    // RPK variations
+    // RPK - capture until HPL/HPHT or newline
     subjective.rpk = extractField([
-        /Riwayat\s*Penyakit\s*Keluarga\s*(?:\(RPK\))?\s*[:\-]\s*([^\n]*)/i,
-        /RPK\s*[:\-]\s*([^\n]*)/i,
-        /Family\s*History\s*[:\-]\s*([^\n]*)/i,
-        /FH\s*[:\-]\s*([^\n]*)/i
+        new RegExp('Riwayat\\s*Penyakit\\s*Keluarga\\s*(?:\\(RPK\\))?\\s*[:\\-]\\s*(.*?)(?=,?\\s*(?:HPL|HPHT|Alergi)|\\n|$)', 'i'),
+        new RegExp('RPK\\s*[:\\-]\\s*(.*?)(?=,?\\s*(?:HPL|HPHT|Alergi)|\\n|$)', 'i'),
+        new RegExp('Family\\s*History\\s*[:\\-]\\s*(.*?)(?=,?\\s*(?:HPL|HPHT|Allerg)|\\n|$)', 'i'),
+        new RegExp('FH\\s*[:\\-]\\s*(.*?)(?=,?\\s*(?:HPL|HPHT|Allerg)|\\n|$)', 'i')
     ]);
 
     // HPL (Hari Perkiraan Lahir) - search in section and full text
@@ -1067,6 +1108,8 @@ function mapToTemplate(parsed, category) {
             hpht: parsed.subjective.hpht,
             gravida: parsed.assessment.gravida,
             para: parsed.assessment.para,
+            abortus: parsed.assessment.abortus,
+            anak_hidup: parsed.assessment.anak_hidup,
             usia_kehamilan: `${parsed.assessment.usia_kehamilan_minggu || ''} minggu ${parsed.assessment.usia_kehamilan_hari || ''} hari`.trim(),
             presentasi: parsed.assessment.presentasi || parsed.objective.presentasi,
             berat_janin: parsed.objective.berat_janin,
