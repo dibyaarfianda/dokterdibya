@@ -138,11 +138,15 @@ export default {
             console.error('[Diagnosis] Failed to load metadata:', error);
         }
 
+        // Get default datetime (current time)
+        const now = new Date();
+        const defaultDatetime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
         // Merge with passed diagnosis parameter (fallback to savedData from medicalRecords)
         const diagnosisData = {
             diagnosis_utama: savedData.diagnosis_utama || diagnosis.diagnosis_utama || '',
             diagnosis_sekunder: savedData.diagnosis_sekunder || diagnosis.diagnosis_sekunder || '',
-            record_datetime: savedData.record_datetime || diagnosis.record_datetime || ''
+            record_datetime: savedData.record_datetime || diagnosis.record_datetime || defaultDatetime
         };
 
         const escapeHtml = (str) => {

@@ -15,7 +15,11 @@ export default {
     async render(state) {
         const obstetricExam = state.recordData?.pemeriksaan_obstetri || {};
         const defaultText = obstetricExam.findings || 'TFU:\nDJJ:\nVT:';
-        const recordDatetime = obstetricExam.record_datetime || '';
+
+        // Get saved datetime or default to current time
+        const now = new Date();
+        const defaultDatetime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        const recordDatetime = obstetricExam.record_datetime || defaultDatetime;
 
         // Get metadata for display
         const { getMedicalRecordContext, renderRecordMeta } = await import('../../utils/helpers.js');
