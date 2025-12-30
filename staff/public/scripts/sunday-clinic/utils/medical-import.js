@@ -1170,6 +1170,30 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
 function fillFormFieldsDirect(template, checkedFields) {
     console.log('[Import] fillFormFieldsDirect called with template:', template);
 
+    // Fill datetime fields for all sections using visit_date and visit_time from template
+    const visitDate = template.visit_date || parsedImportData?.visit_date || '';
+    const visitTime = template.visit_time || parsedImportData?.visit_time || '12:00';
+    if (visitDate) {
+        const datetime = `${visitDate}T${visitTime}`;
+        const datetimeFields = [
+            '#anamnesa-datetime',
+            '#physical-exam-datetime',
+            '#pemeriksaan-obstetri-datetime',
+            '#penunjang-datetime',
+            '#usg-datetime',
+            '#usg-gyn-datetime',
+            '#diagnosis-datetime',
+            '#planning-datetime'
+        ];
+        datetimeFields.forEach(selector => {
+            const el = document.querySelector(selector);
+            if (el) {
+                el.value = datetime;
+                console.log(`[Import] Filled datetime ${selector} with: ${datetime}`);
+            }
+        });
+    }
+
     const fieldMappings = {
         // Anamnesa fields (anamnesa-obstetri.js uses #anamnesa-* IDs)
         keluhan_utama: ['#anamnesa-keluhan-utama'],

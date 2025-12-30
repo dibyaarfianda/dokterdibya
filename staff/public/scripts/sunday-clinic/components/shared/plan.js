@@ -187,7 +187,8 @@ export default {
         const planData = {
             tindakan: savedData.tindakan || statePlan.tindakan || '',
             terapi: savedData.terapi || statePlan.terapi || '',
-            rencana: savedData.rencana || statePlan.rencana || ''
+            rencana: savedData.rencana || statePlan.rencana || '',
+            record_datetime: savedData.record_datetime || statePlan.record_datetime || ''
         };
         console.log('[Plan] Final planData:', planData);
 
@@ -207,6 +208,16 @@ export default {
                     <h3>Planning</h3>
                 </div>
                 ${metaHtml}
+                <div class="form-group mb-3" style="max-width: 300px;">
+                    <label class="font-weight-bold text-primary">
+                        <i class="fas fa-clock mr-1"></i>Tanggal & Jam Pemeriksaan <span class="text-danger">*</span>
+                    </label>
+                    <input type="datetime-local"
+                           class="form-control"
+                           id="planning-datetime"
+                           value="${escapeHtml(planData.record_datetime)}"
+                           required>
+                </div>
                 <div class="sc-card">
                     <div class="mb-3">
                         <label class="font-weight-bold">Tindakan</label>

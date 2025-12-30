@@ -15,11 +15,22 @@ export default {
     async render(state) {
         const obstetricExam = state.recordData?.pemeriksaan_obstetri || {};
         const defaultText = obstetricExam.findings || 'TFU:\nDJJ:\nVT:';
+        const recordDatetime = obstetricExam.record_datetime || '';
 
         // Get metadata for display
         const { getMedicalRecordContext, renderRecordMeta } = await import('../../utils/helpers.js');
         const context = getMedicalRecordContext(state, 'pemeriksaan_obstetri');
         const metaHtml = context ? renderRecordMeta(context, 'pemeriksaan_obstetri') : '';
+
+        const escapeHtml = (str) => {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        };
 
         return `
             <div class="sc-section">
@@ -27,6 +38,16 @@ export default {
                     <h3>Pemeriksaan Obstetri</h3>
                 </div>
                 ${metaHtml}
+                <div class="form-group mb-3" style="max-width: 300px;">
+                    <label class="font-weight-bold text-primary">
+                        <i class="fas fa-clock mr-1"></i>Tanggal & Jam Pemeriksaan <span class="text-danger">*</span>
+                    </label>
+                    <input type="datetime-local"
+                           class="form-control"
+                           id="pemeriksaan-obstetri-datetime"
+                           value="${escapeHtml(recordDatetime)}"
+                           required>
+                </div>
                 <div class="sc-card">
                     <div class="form-group">
                         <label for="pemeriksaan-obstetri-findings">

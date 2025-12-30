@@ -8,10 +8,10 @@
  * Old file backed up as: sunday-clinic.js.backup
  */
 
-// Version 2.0.1 - cache buster for penunjang fixes
-import SundayClinicApp from './sunday-clinic/main.js?v=2.0.1';
-import apiClient from './sunday-clinic/utils/api-client.js?v=2.0.1';
-import stateManager from './sunday-clinic/utils/state-manager.js?v=2.0.1';
+// Version 2.0.2 - queue dropdown fix
+import SundayClinicApp from './sunday-clinic/main.js?v=2.0.2';
+import apiClient from './sunday-clinic/utils/api-client.js?v=2.0.2';
+import stateManager from './sunday-clinic/utils/state-manager.js?v=2.0.2';
 import { initRealtimeSync } from './realtime-sync.js';
 
 // ============================================================================

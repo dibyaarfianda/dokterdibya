@@ -8,14 +8,19 @@ import { API_ENDPOINTS } from './constants.js';
 class APIClient {
     constructor() {
         this.baseURL = '';
-        this.token = localStorage.getItem('vps_auth_token');
+    }
+
+    /**
+     * Get current token (always read fresh from storage)
+     */
+    getToken() {
+        return localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
     }
 
     /**
      * Set authentication token
      */
     setToken(token) {
-        this.token = token;
         localStorage.setItem('vps_auth_token', token);
     }
 
@@ -24,9 +29,10 @@ class APIClient {
      */
     async request(endpoint, options = {}) {
         const url = `${this.baseURL}${endpoint}`;
+        const token = this.getToken();
         const headers = {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.token}`,
+            'Authorization': `Bearer ${token}`,
             ...options.headers
         };
 

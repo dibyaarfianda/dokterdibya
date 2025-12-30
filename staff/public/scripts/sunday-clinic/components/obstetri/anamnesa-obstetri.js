@@ -75,6 +75,9 @@ export default {
                 .replace(/'/g, '&#039;');
         };
 
+        // Get saved datetime
+        const recordDatetime = anamnesa.record_datetime || '';
+
         // Get saved data or defaults from derived state
         const keluhanUtama = anamnesa.keluhan_utama ?? intake.chief_complaint ?? intake.keluhan_utama ?? '';
         const riwayatKehamilan = anamnesa.riwayat_kehamilan_saat_ini ?? '';
@@ -106,6 +109,16 @@ export default {
                     </button>
                 </div>
                 ${metaHtml}
+                <div class="form-group mb-3" style="max-width: 300px;">
+                    <label class="font-weight-bold text-primary">
+                        <i class="fas fa-clock mr-1"></i>Tanggal & Jam Pemeriksaan <span class="text-danger">*</span>
+                    </label>
+                    <input type="datetime-local"
+                           class="form-control"
+                           id="anamnesa-datetime"
+                           value="${escapeHtml(recordDatetime)}"
+                           required>
+                </div>
                 <div class="sc-grid two">
                     <div class="sc-card">
                         <h4>Keluhan & Kehamilan Saat Ini</h4>

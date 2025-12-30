@@ -27,11 +27,22 @@ export default {
 
         const uploadedFiles = penunjang.files || [];
         const interpretation = penunjang.interpretation || '';
+        const recordDatetime = penunjang.record_datetime || '';
 
         // Get metadata for display
         const { getMedicalRecordContext, renderRecordMeta } = await import('../../utils/helpers.js');
         const context = getMedicalRecordContext(state, 'penunjang');
         const metaHtml = context ? renderRecordMeta(context, 'penunjang') : '';
+
+        const escapeHtml = (str) => {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        };
 
         return `
             <div class="sc-section">
@@ -39,6 +50,16 @@ export default {
                     <h3>Pemeriksaan Penunjang</h3>
                 </div>
                 ${metaHtml}
+                <div class="form-group mb-3" style="max-width: 300px;">
+                    <label class="font-weight-bold text-primary">
+                        <i class="fas fa-clock mr-1"></i>Tanggal & Jam Pemeriksaan <span class="text-danger">*</span>
+                    </label>
+                    <input type="datetime-local"
+                           class="form-control"
+                           id="penunjang-datetime"
+                           value="${escapeHtml(recordDatetime)}"
+                           required>
+                </div>
                 <div class="sc-card">
                     <!-- Upload Section -->
                     <div class="form-group">
@@ -298,8 +319,19 @@ ${interpretation}
     /**
      * Save penunjang data to database
      */
-    async savePenunjangToDatabase(files, interpretation) {
+    async savePenunjangToDatabase(files, interpretation, recordDatetime = null) {
         try {
+            // Get datetime from field if not provided
+            if (!recordDatetime) {
+                recordDatetime = document.getElementById('penunjang-datetime')?.value || '';
+            }
+
+            // Validate datetime is filled
+            if (!recordDatetime) {
+                window.showToast('error', 'Tanggal & Jam Pemeriksaan harus diisi');
+                return false;
+            }
+
             const state = stateManager.getState();
             const patientId = state.derived?.patientId ||
                              state.recordData?.patientId ||
@@ -334,6 +366,9 @@ ${interpretation}
                     visitId: mrId, // Associate with current visit
                     type: 'penunjang',
                     data: {
+                        record_datetime: recordDatetime,
+                        record_date: recordDatetime.split('T')[0] || '',
+                        record_time: recordDatetime.split('T')[1] || '',
                         files: files,
                         interpretation: interpretation
                     },

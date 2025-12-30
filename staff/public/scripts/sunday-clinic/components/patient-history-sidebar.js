@@ -86,27 +86,68 @@ class PatientHistorySidebar {
             closeBtn.addEventListener('click', () => this.close());
         }
 
-        // Patient search
-        const searchInput = document.getElementById('sidebar-patient-search');
-        if (searchInput) {
-            searchInput.addEventListener('input', this.debounce((e) => {
-                this.searchPatients(e.target.value);
+        // Header Search Button - opens modal
+        const headerSearchBtn = document.getElementById('btn-header-search');
+        if (headerSearchBtn) {
+            headerSearchBtn.addEventListener('click', () => this.openSearchModal());
+        }
+
+        // Modal Patient Search
+        const modalSearchInput = document.getElementById('modal-patient-search');
+        if (modalSearchInput) {
+            modalSearchInput.addEventListener('input', this.debounce((e) => {
+                this.searchPatientsModal(e.target.value);
             }, 300));
 
-            searchInput.addEventListener('keypress', (e) => {
+            modalSearchInput.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
-                    this.searchPatients(e.target.value);
+                    this.searchPatientsModal(e.target.value);
                 }
             });
         }
 
-        const searchBtn = document.getElementById('btn-sidebar-search');
-        if (searchBtn) {
-            searchBtn.addEventListener('click', () => {
-                const query = document.getElementById('sidebar-patient-search')?.value;
-                this.searchPatients(query);
+        const modalSearchBtn = document.getElementById('btn-modal-search');
+        if (modalSearchBtn) {
+            modalSearchBtn.addEventListener('click', () => {
+                const query = document.getElementById('modal-patient-search')?.value;
+                this.searchPatientsModal(query);
             });
         }
+
+        // Keyboard shortcut Ctrl+K for search
+        document.addEventListener('keydown', (e) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                e.preventDefault();
+                this.openSearchModal();
+            }
+        });
+
+        // Clear search when modal closes
+        $('#patientSearchModal').on('hidden.bs.modal', () => {
+            const input = document.getElementById('modal-patient-search');
+            const results = document.getElementById('modal-search-results');
+            if (input) input.value = '';
+            if (results) {
+                results.innerHTML = `
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-search fa-3x mb-3 text-secondary"></i>
+                        <p class="mb-0">Ketik untuk mencari pasien</p>
+                        <small class="text-muted">Tekan Enter atau klik tombol cari</small>
+                    </div>
+                `;
+            }
+        });
+
+        // Focus input when modal opens
+        $('#patientSearchModal').on('shown.bs.modal', () => {
+            document.getElementById('modal-patient-search')?.focus();
+        });
+
+        // Refresh queue when dropdown is opened
+        $('#header-queue-dropdown').parent().on('show.bs.dropdown', () => {
+            console.log('[PatientSidebar] Queue dropdown opened, refreshing...');
+            this.loadTodayQueue();
+        });
 
         // Copy data button
         const copyBtn = document.getElementById('btn-copy-history-data');
@@ -179,45 +220,71 @@ class PatientHistorySidebar {
      * Load today's appointment queue
      */
     async loadTodayQueue() {
-        const container = document.getElementById('today-queue-list');
-        const countBadge = document.getElementById('queue-count');
+        const headerQueueList = document.getElementById('header-queue-list');
+        const headerQueueCount = document.getElementById('header-queue-count');
 
-        if (!container) return;
+        console.log('[PatientSidebar] loadTodayQueue called');
+
+        // Show loading state
+        if (headerQueueList) {
+            headerQueueList.innerHTML = `
+                <div class="text-center text-muted p-3">
+                    <i class="fas fa-spinner fa-spin"></i> Memuat antrian...
+                </div>
+            `;
+        }
 
         try {
+            console.log('[PatientSidebar] Fetching queue from API...');
             const response = await apiClient.get('/api/sunday-clinic/queue/today');
+            console.log('[PatientSidebar] Queue API response:', response);
 
             if (response.success) {
                 this.todayQueue = response.data || [];
+                console.log('[PatientSidebar] Queue loaded:', this.todayQueue.length, 'items');
                 this.renderQueue();
 
-                if (countBadge) {
-                    countBadge.textContent = this.todayQueue.length;
+                // Update header queue count
+                if (headerQueueCount) {
+                    headerQueueCount.textContent = this.todayQueue.length;
+                }
+            } else {
+                console.warn('[PatientSidebar] API returned success=false:', response.message);
+                if (headerQueueList) {
+                    headerQueueList.innerHTML = `
+                        <div class="text-center text-muted p-3">
+                            <i class="fas fa-exclamation-triangle text-warning"></i>
+                            <p class="mb-0 small mt-1">${response.message || 'Gagal memuat antrian'}</p>
+                        </div>
+                    `;
                 }
             }
         } catch (error) {
             console.error('[PatientSidebar] Failed to load queue:', error);
-            container.innerHTML = `
-                <div class="text-center text-muted p-3">
-                    <i class="fas fa-exclamation-triangle text-warning"></i>
-                    <p class="mb-0 small mt-1">Gagal memuat antrian</p>
-                </div>
-            `;
+            if (headerQueueList) {
+                headerQueueList.innerHTML = `
+                    <div class="text-center text-muted p-3">
+                        <i class="fas fa-exclamation-triangle text-warning"></i>
+                        <p class="mb-0 small mt-1">Gagal memuat antrian</p>
+                        <small class="text-muted">${error.message || 'Error'}</small>
+                    </div>
+                `;
+            }
         }
     }
 
     /**
-     * Render queue list
+     * Render queue list - renders to header dropdown
      */
     renderQueue() {
-        const container = document.getElementById('today-queue-list');
+        const container = document.getElementById('header-queue-list');
         if (!container) return;
 
         if (this.todayQueue.length === 0) {
             container.innerHTML = `
-                <div class="text-center text-muted p-3">
-                    <i class="fas fa-calendar-times fa-2x mb-2"></i>
-                    <p class="mb-0 small">Tidak ada antrian hari ini</p>
+                <div class="text-center text-muted p-4">
+                    <i class="fas fa-calendar-check fa-2x mb-2 text-secondary"></i>
+                    <p class="mb-0">Tidak ada antrian hari ini</p>
                 </div>
             `;
             return;
@@ -225,10 +292,10 @@ class PatientHistorySidebar {
 
         container.innerHTML = this.todayQueue.map((apt, index) => {
             const isActive = apt.mr_id === this.currentMrId || apt.patient_id === this.currentPatientId;
-            const chiefComplaint = apt.chief_complaint ? apt.chief_complaint.substring(0, 25) + (apt.chief_complaint.length > 25 ? '...' : '') : '-';
+            const chiefComplaint = apt.chief_complaint ? apt.chief_complaint.substring(0, 30) + (apt.chief_complaint.length > 30 ? '...' : '') : '-';
 
             return `
-                <div class="queue-item ${isActive ? 'active' : ''}"
+                <div class="header-queue-item ${isActive ? 'active' : ''}"
                      data-patient-id="${apt.patient_id}"
                      data-mr-id="${apt.mr_id || ''}"
                      data-appointment-id="${apt.id}"
@@ -236,19 +303,21 @@ class PatientHistorySidebar {
                     <span class="queue-number">${index + 1}</span>
                     <div class="queue-info">
                         <div class="queue-name">${this.escapeHtml(apt.patient_name)}</div>
-                        <div class="queue-detail">${apt.slot_time || apt.session_label} | ${chiefComplaint}</div>
+                        <div class="queue-meta">${apt.slot_time || apt.session_label} • ${chiefComplaint}</div>
                     </div>
-                    ${apt.has_record ? '<i class="fas fa-file-medical text-success ml-2" title="Sudah ada rekam medis"></i>' : ''}
+                    <div class="queue-status">
+                        ${apt.has_record ? '<i class="fas fa-check-circle text-success" title="Sudah ada rekam medis"></i>' : '<i class="far fa-circle text-muted" title="Belum diisi"></i>'}
+                    </div>
                 </div>
             `;
         }).join('');
     }
 
     /**
-     * Highlight current patient in queue
+     * Highlight current patient in queue - for header dropdown
      */
     highlightCurrentPatientInQueue() {
-        document.querySelectorAll('.queue-item').forEach(item => {
+        document.querySelectorAll('.header-queue-item').forEach(item => {
             const mrId = item.dataset.mrId;
             const patientId = item.dataset.patientId;
 
@@ -261,57 +330,90 @@ class PatientHistorySidebar {
     }
 
     /**
-     * Search patients
+     * Open search modal
      */
-    async searchPatients(query) {
-        const container = document.getElementById('sidebar-search-results');
+    openSearchModal() {
+        $('#patientSearchModal').modal('show');
+    }
+
+    /**
+     * Search patients (modal version)
+     */
+    async searchPatientsModal(query) {
+        const container = document.getElementById('modal-search-results');
         if (!container) return;
 
         if (!query || query.length < 2) {
-            container.innerHTML = '<div class="text-muted text-center small p-2">Ketik minimal 2 karakter</div>';
+            container.innerHTML = `
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-search fa-3x mb-3 text-secondary"></i>
+                    <p class="mb-0">Ketik minimal 2 karakter</p>
+                </div>
+            `;
             return;
         }
 
-        container.innerHTML = '<div class="text-center p-2"><i class="fas fa-spinner fa-spin"></i></div>';
+        container.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin fa-2x"></i></div>';
 
         try {
             const response = await apiClient.get(`/api/sunday-clinic/directory?search=${encodeURIComponent(query)}`);
 
             if (response.success && response.data?.patients) {
-                this.renderSearchResults(response.data.patients);
+                this.renderModalSearchResults(response.data.patients);
             } else {
-                container.innerHTML = '<div class="text-muted text-center small p-2">Tidak ditemukan</div>';
+                container.innerHTML = `
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-user-slash fa-2x mb-3"></i>
+                        <p class="mb-0">Tidak ditemukan</p>
+                        <small class="text-muted">Coba kata kunci lain</small>
+                    </div>
+                `;
             }
         } catch (error) {
             console.error('[PatientSidebar] Search failed:', error);
-            container.innerHTML = '<div class="text-danger text-center small p-2">Pencarian gagal</div>';
+            container.innerHTML = `
+                <div class="text-center text-danger py-4">
+                    <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                    <p class="mb-0">Pencarian gagal</p>
+                </div>
+            `;
         }
     }
 
     /**
-     * Render search results
+     * Render modal search results
      */
-    renderSearchResults(patients) {
-        const container = document.getElementById('sidebar-search-results');
+    renderModalSearchResults(patients) {
+        const container = document.getElementById('modal-search-results');
         if (!container) return;
 
         if (!patients || patients.length === 0) {
-            container.innerHTML = '<div class="text-muted text-center small p-2">Tidak ditemukan</div>';
+            container.innerHTML = `
+                <div class="text-center text-muted py-4">
+                    <i class="fas fa-user-slash fa-2x mb-3"></i>
+                    <p class="mb-0">Tidak ditemukan</p>
+                </div>
+            `;
             return;
         }
 
-        // Take first 10 results
-        const limited = patients.slice(0, 10);
+        // Take first 15 results
+        const limited = patients.slice(0, 15);
 
         container.innerHTML = limited.map(p => {
             const latestVisit = p.visits && p.visits.length > 0 ? p.visits[0] : null;
+            const initials = p.fullName ? p.fullName.split(' ').map(n => n[0]).slice(0, 2).join('').toUpperCase() : '?';
 
             return `
-                <div class="search-result-item" onclick="window.patientSidebar.openPatientFromSearch('${p.patientId}', '${latestVisit?.mrId || ''}')">
-                    <div class="result-name">${this.escapeHtml(p.fullName)}</div>
-                    <div class="result-detail">
-                        ${p.phone || p.whatsapp || '-'}
-                        ${latestVisit ? `| ${latestVisit.mrId}` : ''}
+                <div class="search-result-item" onclick="window.patientSidebar.openPatientFromSearch('${p.patientId}', '${latestVisit?.mrId || ''}'); $('#patientSearchModal').modal('hide');">
+                    <div class="patient-avatar">${initials}</div>
+                    <div class="patient-info">
+                        <div class="patient-name">${this.escapeHtml(p.fullName)}</div>
+                        <div class="patient-details">
+                            ${p.phone || p.whatsapp || '-'}
+                            ${p.age ? ` • ${p.age} tahun` : ''}
+                        </div>
+                        ${latestVisit ? `<div class="patient-mr">${latestVisit.mrId}</div>` : ''}
                     </div>
                 </div>
             `;

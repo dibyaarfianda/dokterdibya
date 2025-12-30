@@ -416,6 +416,11 @@ router.post('/execute', verifyToken, upload.single('zipFile'), async (req, res) 
         for (const mapping of mappingsData) {
             const { folderName, patient_id, mr_id, files } = mapping;
 
+            // Extract date from folder name (e.g., "21122025-061603_NAMA" -> "2025-12-21")
+            // Fallback to today's date if parsing fails
+            const folderDate = extractDateFromFolder(folderName);
+            const recordDate = folderDate || new Date().toISOString().slice(0, 10);
+
             if (!patient_id) {
                 results.push({
                     folder: folderName,
@@ -483,8 +488,8 @@ router.post('/execute', verifyToken, upload.single('zipFile'), async (req, res) 
                         const [insertResult] = await connection.query(`
                             INSERT INTO sunday_clinic_records
                             (mr_id, mr_sequence, patient_id, visit_location, folder_path, mr_category, status, created_at, updated_at)
-                            VALUES (?, ?, ?, ?, ?, ?, 'draft', NOW(), NOW())
-                        `, [effectiveMrId, nextSeq, patient_id, hospital, folderPath, category]);
+                            VALUES (?, ?, ?, ?, ?, ?, 'draft', ?, NOW())
+                        `, [effectiveMrId, nextSeq, patient_id, hospital, folderPath, category, recordDate]);
 
                         await connection.commit();
                         targetRecordId = insertResult.insertId;
@@ -597,8 +602,8 @@ router.post('/execute', verifyToken, upload.single('zipFile'), async (req, res) 
 
                     await db.query(`
                         INSERT INTO medical_records (patient_id, mr_id, record_type, record_data, created_at, updated_at)
-                        VALUES (?, ?, 'usg', ?, NOW(), NOW())
-                    `, [patient_id, effectiveMrId, JSON.stringify(recordData)]);
+                        VALUES (?, ?, 'usg', ?, ?, NOW())
+                    `, [patient_id, effectiveMrId, JSON.stringify(recordData), recordDate]);
 
                     logger.info('[BulkUSG] Created new USG record', {
                         patient_id,

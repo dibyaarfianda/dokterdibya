@@ -26,6 +26,7 @@ export default {
 
         // Use saved data if available
         const data = savedData;
+        const recordDatetime = data.record_datetime || '';
 
         const escapeHtml = (str) => {
             if (!str) return '';
@@ -93,6 +94,16 @@ export default {
                     <button type="button" class="btn btn-outline-info btn-sm ml-auto" id="btn-read-usg-photo" onclick="window.showUSGReaderModal()">
                         <i class="fas fa-magic mr-1"></i>Baca dari Foto
                     </button>
+                </div>
+                <div class="form-group mb-3" style="max-width: 300px;">
+                    <label class="font-weight-bold text-primary">
+                        <i class="fas fa-clock mr-1"></i>Tanggal & Jam Pemeriksaan <span class="text-danger">*</span>
+                    </label>
+                    <input type="datetime-local"
+                           class="form-control"
+                           id="usg-datetime"
+                           value="${escapeHtml(recordDatetime)}"
+                           required>
                 </div>
                 <div class="sc-card">
                     <!-- Trimester Selector -->
