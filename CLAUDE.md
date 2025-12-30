@@ -669,3 +669,42 @@ git pull origin main
       - Code: Atomic transaction dengan `SELECT FOR UPDATE` lock
       - Constraint: Add UNIQUE index pada `mr_sequence`
     - File: `staff/backend/routes/usg-bulk-upload.js` (lines 451-490)
+
+### 21. Session Log - 30 Desember 2025
+
+**Perbaikan yang dilakukan dalam sesi ini:**
+
+1. **DateTime Stamp per Section (Major Feature)**
+   - Tambah datetime picker ke semua section rekam medis:
+     - Anamnesa Obstetri (`components/obstetri/anamnesa-obstetri.js`)
+     - Anamnesa Gyn/Repro (`components/gyn_repro/anamnesa-gyn_repro.js`)
+     - Pemeriksaan Fisik (`components/shared/physical-exam.js`)
+     - Pemeriksaan Obstetri (`components/obstetri/pemeriksaan-obstetri.js`)
+     - Penunjang (`components/shared/penunjang.js`)
+     - USG Obstetri (`components/obstetri/usg-obstetri.js`)
+     - USG Ginekologi (`components/shared/usg-ginekologi.js`)
+     - Diagnosis (`components/shared/diagnosis.js`)
+     - Planning/Terapi (`components/shared/plan.js`)
+   - Datetime WAJIB diisi sebelum save (validasi di `main.js`)
+   - Auto-fill dari import Melinda/Gambiran (`utils/medical-import.js`)
+   - Data structure:
+
+     ```javascript
+     {
+       "record_datetime": "2025-12-30T14:30",
+       "record_date": "2025-12-30",
+       "record_time": "14:30",
+       ...otherFields
+     }
+     ```
+
+2. **Search by Tanggal Periksa**
+   - Tambah date picker ke Advanced Search di Kelola Pasien
+   - File: `staff/public/index-adminlte.html` (form + `performAdvancedSearch()`)
+   - Backend: `staff/backend/routes/patients.js` filter `DATE(scr.created_at)`
+
+3. **Bulk Upload USG - Folder Date Fix**
+   - Bug: `created_at` menggunakan `NOW()` bukan tanggal dari folder
+   - Fix: Extract date dari folder name (e.g., `21122025-XXXX_NAMA` → `2025-12-21`)
+   - File: `staff/backend/routes/usg-bulk-upload.js`
+   - Fallback ke `NOW()` jika parsing gagal
