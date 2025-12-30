@@ -726,14 +726,25 @@ async function applyPendingImportData() {
             console.log('[Import] riwayatKehamilanSaatIni extracted:', riwayatKehamilanSaatIni?.substring(0, 200));
 
             // Map SIMRS data to our template format
+            // Field mapping from hospital (Melinda/Gambiran MEDIFY):
+            // - Keluhan Utama → keluhan_utama
+            // - RPS (Riwayat Penyakit Sekarang) → riwayat_kehamilan_saat_ini
+            // - RPD (Riwayat Penyakit Dahulu) → detail_riwayat_penyakit
+            // - RPK (Riwayat Penyakit Keluarga) → riwayat_keluarga
             const mappedTemplate = {
                 identitas: parsed.identity || template.identitas || {},
                 anamnesa: {
                     keluhan_utama: parsed.subjective?.keluhan_utama,
-                    riwayat_penyakit_sekarang: parsed.subjective?.rps,
-                    riwayat_penyakit_dahulu: parsed.subjective?.rpd,
-                    riwayat_penyakit_keluarga: parsed.subjective?.rpk,
-                    riwayat_kehamilan_saat_ini: riwayatKehamilanSaatIni,
+                    riwayat_kehamilan_saat_ini: parsed.subjective?.rps || riwayatKehamilanSaatIni,
+                    detail_riwayat_penyakit: parsed.subjective?.rpd,
+                    riwayat_keluarga: parsed.subjective?.rpk,
+                    // Also include MEDIFY obstetric data
+                    gravida: parsed.assessment?.gravida,
+                    para: parsed.assessment?.para,
+                    abortus: parsed.assessment?.abortus,
+                    anak_hidup: parsed.assessment?.anak_hidup,
+                    hpl: parsed.subjective?.hpl,
+                    hpht: parsed.subjective?.hpht,
                     ...template.anamnesa
                 },
                 pemeriksaan_fisik: {
@@ -1196,10 +1207,15 @@ function fillFormFieldsDirect(template, checkedFields) {
 
     const fieldMappings = {
         // Anamnesa fields (anamnesa-obstetri.js uses #anamnesa-* IDs)
+        // Mapping from hospital export fields to our form fields:
+        // - Keluhan Utama → Keluhan Utama
+        // - RPS (Riwayat Penyakit Sekarang) → Riwayat Kehamilan Saat Ini
+        // - RPD (Riwayat Penyakit Dahulu) → Detail Riwayat Penyakit
+        // - RPK (Riwayat Penyakit Keluarga) → Riwayat Keluarga
         keluhan_utama: ['#anamnesa-keluhan-utama'],
         riwayat_kehamilan_saat_ini: ['#anamnesa-riwayat-kehamilan'],
-        rps: ['#anamnesa-detail-riwayat'],
-        riwayat_penyakit_sekarang: ['#anamnesa-detail-riwayat'],
+        rps: ['#anamnesa-riwayat-kehamilan'],
+        riwayat_penyakit_sekarang: ['#anamnesa-riwayat-kehamilan'],
         detail_riwayat_penyakit: ['#anamnesa-detail-riwayat'],
         rpd: ['#anamnesa-detail-riwayat'],
         rpk: ['#anamnesa-riwayat-keluarga'],
@@ -1332,6 +1348,61 @@ function fillFormFieldsDirect(template, checkedFields) {
         }
     }
     console.log(`[Import] Filled ${filledCount} form fields via DOM`);
+
+    // Trigger gestational age calculation if HPL or HPHT is filled
+    // Wait a bit for form to stabilize then trigger calculation
+    setTimeout(() => {
+        const hphtInput = document.getElementById('anamnesa-hpht');
+        const hplInput = document.getElementById('anamnesa-hpl');
+        const usiaKehamilanDisplay = document.getElementById('anamnesa-usia-kehamilan-display');
+
+        // If we have HPL but not HPHT, calculate HPHT from HPL (HPHT = HPL - 280 days)
+        if (hplInput?.value && !hphtInput?.value) {
+            const hplDate = parseImportDate(hplInput.value);
+            if (hplDate) {
+                // HPHT = HPL - 280 days (Naegele's rule reverse)
+                const hphtDate = new Date(hplDate);
+                hphtDate.setDate(hphtDate.getDate() - 280);
+                const hphtValue = `${hphtDate.getFullYear()}-${String(hphtDate.getMonth() + 1).padStart(2, '0')}-${String(hphtDate.getDate()).padStart(2, '0')}`;
+                if (hphtInput) {
+                    hphtInput.value = hphtValue;
+                    hphtInput.dispatchEvent(new Event('change', { bubbles: true }));
+                    console.log('[Import] Calculated HPHT from HPL:', hphtValue);
+                }
+            }
+        }
+
+        // Trigger change event to recalculate gestational age
+        if (hphtInput?.value) {
+            hphtInput.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+    }, 500);
+
+    // Helper function to parse date in various formats
+    function parseImportDate(dateStr) {
+        if (!dateStr) return null;
+
+        // Try DD/MM/YY or DD/MM/YYYY format
+        const dmyMatch = dateStr.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})$/);
+        if (dmyMatch) {
+            let [, day, month, year] = dmyMatch;
+            year = parseInt(year);
+            // Handle 2-digit year (assume 2000s)
+            if (year < 100) {
+                year = year > 50 ? 1900 + year : 2000 + year;
+            }
+            return new Date(year, parseInt(month) - 1, parseInt(day));
+        }
+
+        // Try YYYY-MM-DD format
+        const ymdMatch = dateStr.match(/^(\d{4})[-\/](\d{1,2})[-\/](\d{1,2})$/);
+        if (ymdMatch) {
+            const [, year, month, day] = ymdMatch;
+            return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        }
+
+        return null;
+    }
 }
 
 /**

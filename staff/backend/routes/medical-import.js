@@ -541,6 +541,14 @@ function parseSubjective(text) {
         /HPL\s*[:\-]?\s*(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/i
     ]);
 
+    // Also try to extract HPL from keluhan_utama (e.g., "kontrol hamil, HPL 29/1/26")
+    if (!subjective.hpl && subjective.keluhan_utama) {
+        const hplFromKeluhan = subjective.keluhan_utama.match(/HPL\s*[:\-]?\s*(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/i);
+        if (hplFromKeluhan && hplFromKeluhan[1]) {
+            subjective.hpl = hplFromKeluhan[1].trim();
+        }
+    }
+
     // HPHT (Hari Pertama Haid Terakhir) - search in section and full text
     subjective.hpht = extractField([
         /HPHT\s*[:\-]?\s*(\d{1,2}[-\/]\d{1,2}[-\/]\d{2,4})/i,
@@ -749,22 +757,42 @@ function parseAssessment(text) {
 
     assessment.diagnosis = assText;
 
-    // Parse obstetric formula (G P A) with more variations
-    const obstetricPatterns = [
-        /G\s*(\d+|I|II|III|IV|V|VI|VII|VIII|IX|X)\s*P\s*([\d\-]+)/i,
-        /Gravida\s*(\d+)\s*Para\s*([\d\-]+)/i,
-        /G(\d+)P(\d+)/i
-    ];
+    // Parse obstetric formula - MEDIFY format first (used by Melinda & Gambiran)
+    // MEDIFY format: G2P0000 where P is followed by 4 digits: Aterm, Premature, Abortus, AnakHidup
+    // In our app: Para = Aterm + Premature
+    const medifyMatch = (assText + ' ' + text).match(/G(\d+)P(\d)(\d)(\d)(\d)/i);
+    if (medifyMatch) {
+        const gravida = parseInt(medifyMatch[1]);
+        const aterm = parseInt(medifyMatch[2]);
+        const premature = parseInt(medifyMatch[3]);
+        const abortus = parseInt(medifyMatch[4]);
+        const anakHidup = parseInt(medifyMatch[5]);
 
-    for (const pattern of obstetricPatterns) {
-        const obstetricMatch = assText.match(pattern) || text.match(pattern);
-        if (obstetricMatch) {
-            const romanToNum = { 'I': 1, 'II': 2, 'III': 3, 'IV': 4, 'V': 5, 'VI': 6, 'VII': 7, 'VIII': 8, 'IX': 9, 'X': 10 };
-            let gravida = obstetricMatch[1];
-            assessment.gravida = romanToNum[gravida.toUpperCase()] || parseInt(gravida);
-            assessment.para = obstetricMatch[2];
-            assessment.is_obstetric = true;
-            break;
+        assessment.gravida = gravida;
+        assessment.para = aterm + premature;  // Para = Aterm + Premature
+        assessment.abortus = abortus;
+        assessment.anak_hidup = anakHidup;
+        assessment.is_obstetric = true;
+    }
+
+    // If not MEDIFY format, try standard obstetric patterns
+    if (!assessment.gravida) {
+        const obstetricPatterns = [
+            /G\s*(\d+|I|II|III|IV|V|VI|VII|VIII|IX|X)\s*P\s*([\d\-]+)/i,
+            /Gravida\s*(\d+)\s*Para\s*([\d\-]+)/i,
+            /G(\d+)P(\d+)/i
+        ];
+
+        for (const pattern of obstetricPatterns) {
+            const obstetricMatch = assText.match(pattern) || text.match(pattern);
+            if (obstetricMatch) {
+                const romanToNum = { 'I': 1, 'II': 2, 'III': 3, 'IV': 4, 'V': 5, 'VI': 6, 'VII': 7, 'VIII': 8, 'IX': 9, 'X': 10 };
+                let gravida = obstetricMatch[1];
+                assessment.gravida = romanToNum[gravida.toUpperCase()] || parseInt(gravida);
+                assessment.para = obstetricMatch[2];
+                assessment.is_obstetric = true;
+                break;
+            }
         }
     }
 
