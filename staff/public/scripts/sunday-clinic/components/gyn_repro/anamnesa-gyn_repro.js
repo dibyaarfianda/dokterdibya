@@ -45,6 +45,7 @@ export default {
                            class="form-control"
                            id="anamnesa-datetime"
                            value="${this.escapeHtml(anamnesa.record_datetime || '')}"
+                           autocomplete="off"
                            required>
                 </div>
 

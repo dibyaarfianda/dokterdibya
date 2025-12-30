@@ -141,6 +141,7 @@ export default {
                            class="form-control"
                            id="physical-exam-datetime"
                            value="${escapeHtml(recordDatetime)}"
+                           autocomplete="off"
                            required>
                 </div>
                 <div class="sc-card">

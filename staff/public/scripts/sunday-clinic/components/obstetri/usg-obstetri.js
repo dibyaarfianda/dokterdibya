@@ -103,6 +103,7 @@ export default {
                            class="form-control"
                            id="usg-datetime"
                            value="${escapeHtml(recordDatetime)}"
+                           autocomplete="off"
                            required>
                 </div>
                 <div class="sc-card">
