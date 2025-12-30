@@ -27,7 +27,11 @@ export default {
 
         const uploadedFiles = penunjang.files || [];
         const interpretation = penunjang.interpretation || '';
-        const recordDatetime = penunjang.record_datetime || '';
+
+        // Get saved datetime or default to current time
+        const now = new Date();
+        const defaultDatetime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        const recordDatetime = penunjang.record_datetime || defaultDatetime;
 
         // Get metadata for display
         const { getMedicalRecordContext, renderRecordMeta } = await import('../../utils/helpers.js');

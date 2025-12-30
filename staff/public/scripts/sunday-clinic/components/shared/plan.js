@@ -184,11 +184,16 @@ export default {
         const statePlan = state.recordData?.planning || state.recordData?.plan || {};
         console.log('[Plan] statePlan from stateManager:', statePlan);
         console.log('[Plan] savedData from medicalRecords:', savedData);
+
+        // Get default datetime (current time)
+        const now = new Date();
+        const defaultDatetime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
         const planData = {
             tindakan: savedData.tindakan || statePlan.tindakan || '',
             terapi: savedData.terapi || statePlan.terapi || '',
             rencana: savedData.rencana || statePlan.rencana || '',
-            record_datetime: savedData.record_datetime || statePlan.record_datetime || ''
+            record_datetime: savedData.record_datetime || statePlan.record_datetime || defaultDatetime
         };
         console.log('[Plan] Final planData:', planData);
 

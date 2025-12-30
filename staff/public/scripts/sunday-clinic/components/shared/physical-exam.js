@@ -124,8 +124,10 @@ export default {
                 .replace(/'/g, '&#039;');
         };
 
-        // Get saved datetime
-        const recordDatetime = exam.record_datetime || '';
+        // Get saved datetime or default to current time
+        const now = new Date();
+        const defaultDatetime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        const recordDatetime = exam.record_datetime || defaultDatetime;
 
         return `
             <div class="sc-section">

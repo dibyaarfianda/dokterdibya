@@ -16,6 +16,11 @@ export default {
         const chiefComplaint = state.recordData?.appointment?.chief_complaint || '';
         const isSaved = !!anamnesa.saved_at;
 
+        // Get saved datetime or default to current time
+        const now = new Date();
+        const defaultDatetime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        const recordDatetime = anamnesa.record_datetime || defaultDatetime;
+
         // Get metadata context for display
         let metaHtml = '';
         try {
@@ -44,7 +49,7 @@ export default {
                     <input type="datetime-local"
                            class="form-control"
                            id="anamnesa-datetime"
-                           value="${this.escapeHtml(anamnesa.record_datetime || '')}"
+                           value="${this.escapeHtml(recordDatetime)}"
                            autocomplete="off"
                            required>
                 </div>

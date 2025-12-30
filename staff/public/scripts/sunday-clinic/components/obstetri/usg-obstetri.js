@@ -26,7 +26,11 @@ export default {
 
         // Use saved data if available
         const data = savedData;
-        const recordDatetime = data.record_datetime || '';
+
+        // Get saved datetime or default to current time
+        const now = new Date();
+        const defaultDatetime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        const recordDatetime = data.record_datetime || defaultDatetime;
 
         const escapeHtml = (str) => {
             if (!str) return '';
