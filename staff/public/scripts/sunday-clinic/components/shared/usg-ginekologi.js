@@ -40,6 +40,7 @@ export default {
                            class="form-control"
                            id="usg-gyn-datetime"
                            value="${escapeHtml(recordDatetime)}"
+                           autocomplete="off"
                            required>
                 </div>
 

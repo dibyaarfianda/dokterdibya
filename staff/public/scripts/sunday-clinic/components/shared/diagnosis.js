@@ -169,6 +169,7 @@ export default {
                            class="form-control"
                            id="diagnosis-datetime"
                            value="${escapeHtml(diagnosisData.record_datetime)}"
+                           autocomplete="off"
                            required>
                 </div>
                 <div class="sc-card">

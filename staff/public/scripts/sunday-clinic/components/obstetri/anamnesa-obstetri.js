@@ -117,6 +117,7 @@ export default {
                            class="form-control"
                            id="anamnesa-datetime"
                            value="${escapeHtml(recordDatetime)}"
+                           autocomplete="off"
                            required>
                 </div>
                 <div class="sc-grid two">

@@ -46,6 +46,7 @@ export default {
                            class="form-control"
                            id="pemeriksaan-obstetri-datetime"
                            value="${escapeHtml(recordDatetime)}"
+                           autocomplete="off"
                            required>
                 </div>
                 <div class="sc-card">

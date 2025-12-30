@@ -216,6 +216,7 @@ export default {
                            class="form-control"
                            id="planning-datetime"
                            value="${escapeHtml(planData.record_datetime)}"
+                           autocomplete="off"
                            required>
                 </div>
                 <div class="sc-card">
