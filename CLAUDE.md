@@ -742,3 +742,15 @@ git pull origin main
          cpptData.assessment.anak_hidup = parseInt(medifyMatch[5]);
      }
      ```
+
+6. **Fix Empty Form After MEDIFY Import**
+   - Bug: Form showed empty/today's date after import, even though data was saved to database
+   - Root causes:
+     - Null values from AI parsing overwrote base template values
+     - Section save conditions required truthy values, skipping sections with nulls
+     - Form didn't refresh after API save
+   - Fixes:
+     - Added `mergeIfPresent` helper to preserve base template values when parsed values are null
+     - Changed save conditions to include sections if they have `recordDatetime` (ensures timestamp always saved)
+     - Added form refresh (`fetchRecord`) after API save to reload data from database
+   - File: `staff/public/scripts/sunday-clinic/utils/medical-import.js`

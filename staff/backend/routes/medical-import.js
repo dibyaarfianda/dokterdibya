@@ -59,7 +59,7 @@ Return this exact JSON structure:
     "ketuban": "Amniotic fluid status or null"
   },
   "assessment": {
-    "diagnosis": "Full diagnosis text or null",
+    "diagnosis": "EXACT text from Assessment section - copy verbatim, DO NOT generate ICD codes like Z34.8. Look for 'Assessment:', 'A:', 'Diagnosis:' labels. Return null if not found.",
     "gravida": "Number of pregnancies as number or null",
     "para": "Parity as number (for MEDIFY format G*P****: para = Aterm + Premature digits)",
     "abortus": "Number of abortions/miscarriages as number or null",
@@ -93,19 +93,31 @@ CRITICAL RULES:
 1. NO HP: ONLY extract phone if it starts with 08 or 62 and has 10+ digits. "29/9/25" is a DATE, not a phone!
 2. TB/BB: Search EVERYWHERE in the text, including in diagnosis section
 3. Look for multi-line format: label on one line, value on next line
-4. MEDIFY G*P**** FORMAT (used by Melinda & Gambiran hospitals):
+4. MEDIFY G*P**** FORMAT (4-digit parity):
    - Format: G2P0101 = Gravida=2, P=4 digits meaning: Aterm(0), Premature(1), Abortus(0), AnakHidup(1)
    - Extract: gravida=2, para=0+1=1 (Aterm+Premature), abortus=0, anak_hidup=1
    - Example: G3P1001 → gravida=3, para=1 (1+0), abortus=0, anak_hidup=1
-5. For standard format like "G1 P0-0 uk 9 3/7mgg": extract gravida=1, para=0, usia_kehamilan="9 3/7mgg"
-6. Numbers should be numbers (not strings). Para, abortus, anak_hidup should be numbers.
-7. Return null for fields not found - DO NOT GUESS
-8. Medications must include dosage: "Folamil genio 1x1 (1 botol)" not just "Folamil"
-9. RIWAYAT KEHAMILAN: For "riwayat_kehamilan_saat_ini", capture the ENTIRE text content under "Subjective" or "Subyektif" section as a single string. Include ALL paragraphs, symptoms, history text. This is especially important for Gambiran/RSUD data.
-10. HPL EXTRACTION: Always look for HPL (Hari Perkiraan Lahir / Expected Delivery Date) in:
+5. DASH FORMAT "G1 P0-0" or "G2P1-1" (2-digit parity with dash):
+   - The dash means Premature=0 and Abortus=0 (they are ignored/hidden)
+   - Format: G1 P0-0 = Gravida=1, Aterm=0, AnakHidup=0, Premature=0, Abortus=0
+   - Extract: gravida=1, para=0 (just Aterm), abortus=0, anak_hidup=0
+   - Example: G2P1-1 uk 9 3/7mgg → gravida=2, para=1, abortus=0, anak_hidup=1
+6. ROMAN NUMERAL FORMAT (GI, GII, GIII, etc.):
+   - GI = Gravida 1, GII = Gravida 2, GIII = Gravida 3, GIV = Gravida 4, GV = Gravida 5
+   - Example: GII P1-1 → gravida=2, para=1, abortus=0, anak_hidup=1
+   - Roman conversion: I=1, II=2, III=3, IV=4, V=5, VI=6, VII=7, VIII=8, IX=9, X=10
+7. Numbers should be numbers (not strings). Para, abortus, anak_hidup should be numbers.
+8. Return null for fields not found - DO NOT GUESS
+9. Medications must include dosage: "Folamil genio 1x1 (1 botol)" not just "Folamil"
+10. RIWAYAT KEHAMILAN: For "riwayat_kehamilan_saat_ini", capture the ENTIRE text content under "Subjective" or "Subyektif" section as a single string. Include ALL paragraphs, symptoms, history text. This is especially important for Gambiran/RSUD data.
+11. HPL EXTRACTION: Always look for HPL (Hari Perkiraan Lahir / Expected Delivery Date) in:
     - Keluhan Utama text: "kontrol hamil, HPL 29/1/26" → extract "29/1/26"
     - Standalone: "HPL : 29/01/2026" → extract "29/01/2026"
-    - Return the date in DD/MM/YYYY or DD/MM/YY format as found`;
+    - Return the date in DD/MM/YYYY or DD/MM/YY format as found
+12. DIAGNOSIS: Copy EXACT text from Assessment section. NEVER generate ICD codes like Z34.8, Z33.1, etc.
+    - If Assessment says "G2P0101 uk 9 3/7mgg + kepala" → use that as diagnosis
+    - If Assessment has ICD code already → use it as-is
+    - DO NOT fabricate or guess diagnosis codes`;
 
 /**
  * Parse medical record text using GPT-4o
@@ -264,10 +276,10 @@ function normalizeDate(dateStr) {
         'januari': '01', 'februari': '02', 'maret': '03', 'april': '04',
         'mei': '05', 'juni': '06', 'juli': '07', 'agustus': '08',
         'september': '09', 'oktober': '10', 'november': '11', 'desember': '12',
-        // English months
-        'january': '01', 'february': '02', 'march': '03',
+        // English months (complete list)
+        'january': '01', 'february': '02', 'march': '03', 'april': '04',
         'may': '05', 'june': '06', 'july': '07', 'august': '08',
-        'october': '10', 'december': '12',
+        'september': '09', 'october': '10', 'november': '11', 'december': '12',
         // Short forms
         'jan': '01', 'feb': '02', 'mar': '03', 'apr': '04',
         'jun': '06', 'jul': '07', 'aug': '08',
@@ -1153,6 +1165,9 @@ router.post('/api/medical-import/parse', verifyToken, async (req, res) => {
                 logger.info('Using AI parsing for medical record');
                 parsed = await parseWithAI(text, category);
                 parsed._parsed_by = 'ai';
+                // Log key fields for debugging
+                logger.info(`AI parsed assessment: gravida=${parsed.assessment?.gravida}, para=${parsed.assessment?.para}, abortus=${parsed.assessment?.abortus}, anak_hidup=${parsed.assessment?.anak_hidup}`);
+                logger.info(`AI parsed subjective: hpl=${parsed.subjective?.hpl}, hpht=${parsed.subjective?.hpht}`);
             } catch (aiError) {
                 logger.error('AI parsing failed, falling back to regex:', aiError.message);
                 // Fallback to regex parsing
@@ -1181,6 +1196,7 @@ router.post('/api/medical-import/parse', verifyToken, async (req, res) => {
         // Parse visit date, time and location (still use regex for these)
         const visit_date = parseVisitDate(text);
         const visit_time = parseVisitTime(text);
+        logger.info(`Parsed visit date/time: date=${visit_date || 'NULL'}, time=${visit_time || 'NULL'}`);
         const detected_location = detectLocation(text);
 
         // Map source to visit_location (source from Chrome extension takes priority)

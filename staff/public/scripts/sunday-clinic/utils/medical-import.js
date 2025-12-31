@@ -725,72 +725,92 @@ async function applyPendingImportData() {
                 is_obstetric: parsed.assessment?.is_obstetric
             });
 
+            // Helper: merge parsed values into base, but only if parsed value is not null/undefined
+            // This prevents null values from overwriting valid base template values
+            const mergeIfPresent = (base, parsed) => {
+                const result = { ...(base || {}) };
+                for (const [key, value] of Object.entries(parsed)) {
+                    if (value !== null && value !== undefined) {
+                        result[key] = value;
+                    }
+                }
+                return result;
+            };
+
             // Map SIMRS data to our template format
             // Field mapping from hospital (Melinda/Gambiran MEDIFY):
             // - Keluhan Utama → keluhan_utama
             // - RPS (Riwayat Penyakit Sekarang) → riwayat_kehamilan_saat_ini
             // - RPD (Riwayat Penyakit Dahulu) → detail_riwayat_penyakit
             // - RPK (Riwayat Penyakit Keluarga) → riwayat_keluarga
+            // IMPORTANT: Use mergeIfPresent to avoid overwriting base values with null
             const mappedTemplate = {
+                category: template.category || 'obstetri',
+                visit_date: importData.visit_date,
+                visit_time: importData.visit_time,
                 identitas: parsed.identity || template.identitas || {},
-                anamnesa: {
+                anamnesa: mergeIfPresent(template.anamnesa, {
                     keluhan_utama: parsed.subjective?.keluhan_utama,
-                    riwayat_kehamilan_saat_ini: parsed.subjective?.rps,  // RPS only, no fallback
+                    riwayat_kehamilan_saat_ini: parsed.subjective?.rps,
                     detail_riwayat_penyakit: parsed.subjective?.rpd,
                     riwayat_keluarga: parsed.subjective?.rpk,
-                    // Also include MEDIFY obstetric data
                     gravida: parsed.assessment?.gravida,
                     para: parsed.assessment?.para,
                     abortus: parsed.assessment?.abortus,
                     anak_hidup: parsed.assessment?.anak_hidup,
                     hpl: parsed.subjective?.hpl,
-                    hpht: parsed.subjective?.hpht,
-                    ...template.anamnesa
-                },
-                pemeriksaan_fisik: {
+                    hpht: parsed.subjective?.hpht
+                }),
+                pemeriksaan_fisik: mergeIfPresent(template.pemeriksaan_fisik, {
                     keadaan_umum: parsed.objective?.keadaan_umum,
                     tekanan_darah: parsed.objective?.tensi,
                     nadi: parsed.objective?.nadi,
                     suhu: parsed.objective?.suhu,
                     spo2: parsed.objective?.spo2,
                     respirasi: parsed.objective?.rr,
-                    // TB/BB can be in objective OR identity (Gambiran puts it in identity)
                     tinggi_badan: parsed.objective?.tinggi_badan || parsed.identity?.tinggi_badan,
-                    berat_badan: parsed.objective?.berat_badan || parsed.identity?.berat_badan,
-                    ...template.pemeriksaan_fisik
-                },
-                diagnosis: {
-                    // For MEDIFY obstetric patients, don't fill diagnosis_utama with raw ASSESSMENT text
-                    // (it contains "G2P0000 Hamil 32 minggu" which is already extracted to separate fields)
-                    diagnosis_utama: parsed.assessment?.is_obstetric ? null : parsed.assessment?.diagnosis,
+                    berat_badan: parsed.objective?.berat_badan || parsed.identity?.berat_badan
+                }),
+                diagnosis: mergeIfPresent(template.diagnosis, {
+                    diagnosis_utama: parsed.assessment?.diagnosis,
                     gravida: parsed.assessment?.gravida,
                     para: parsed.assessment?.para,
                     usia_kehamilan_minggu: parsed.assessment?.usia_kehamilan_minggu,
                     usia_kehamilan_hari: parsed.assessment?.usia_kehamilan_hari,
-                    presentasi: parsed.assessment?.presentasi,
-                    ...template.diagnosis
-                },
-                obstetri: {
+                    presentasi: parsed.assessment?.presentasi
+                }),
+                obstetri: mergeIfPresent(template.obstetri, {
                     hpht: parsed.subjective?.hpht,
                     hpl: parsed.subjective?.hpl,
                     gravida: parsed.assessment?.gravida,
                     para: parsed.assessment?.para,
+                    abortus: parsed.assessment?.abortus,
+                    anak_hidup: parsed.assessment?.anak_hidup,
                     usia_kehamilan: parsed.assessment?.usia_kehamilan,
                     presentasi: parsed.assessment?.presentasi || parsed.objective?.presentasi,
                     berat_janin: parsed.objective?.berat_janin,
                     plasenta: parsed.objective?.plasenta,
                     ketuban: parsed.objective?.ketuban,
-                    usg_findings: parsed.objective?.usg,
-                    ...template.obstetri
-                },
-                planning: {
-                    obat: parsed.plan?.obat || [],
-                    tindakan: parsed.plan?.tindakan || [],
-                    instruksi: parsed.plan?.instruksi || [],
-                    raw: parsed.plan?.raw,
-                    ...template.planning
-                }
+                    usg_findings: parsed.objective?.usg
+                }),
+                planning: mergeIfPresent(template.planning, {
+                    obat: parsed.plan?.obat?.length ? parsed.plan.obat : undefined,
+                    tindakan: parsed.plan?.tindakan?.length ? parsed.plan.tindakan : undefined,
+                    instruksi: parsed.plan?.instruksi?.length ? parsed.plan.instruksi : undefined,
+                    raw: parsed.plan?.raw
+                })
             };
+
+            // Debug log the mapped values
+            console.log('[Import] Mapped obstetri values:', {
+                hpht: mappedTemplate.obstetri.hpht,
+                hpl: mappedTemplate.obstetri.hpl,
+                gravida: mappedTemplate.obstetri.gravida,
+                para: mappedTemplate.obstetri.para,
+                abortus: mappedTemplate.obstetri.abortus,
+                anak_hidup: mappedTemplate.obstetri.anak_hidup
+            });
+            console.log('[Import] visit_date/time:', { visit_date: mappedTemplate.visit_date, visit_time: mappedTemplate.visit_time });
 
             // Clear SIMRS data from sessionStorage
             sessionStorage.removeItem('simrs_import_data');
@@ -836,6 +856,10 @@ async function applyPendingImportData() {
         // Prepare data for API persistence
         const sectionsToSave = [];
 
+        // Build record_datetime from visit_date and visit_time for stamping all sections
+        const recordDatetime = visitDate ? `${visitDate}T${visitTime || '12:00'}` : '';
+        console.log('[Import] Record datetime for all sections:', recordDatetime);
+
         // Apply data to stateManager if available
         if (window.stateManager) {
             try {
@@ -864,6 +888,7 @@ async function applyPendingImportData() {
                     if (template.obstetri) {
                         Object.assign(anamnesaUpdates, template.obstetri);
                     }
+                    if (recordDatetime) anamnesaUpdates.record_datetime = recordDatetime;
                     if (Object.keys(anamnesaUpdates).length > 0) {
                         window.stateManager.updateSectionData('anamnesa', anamnesaUpdates);
                         sectionsToSave.push({ section: 'anamnesa', data: anamnesaUpdates });
@@ -872,20 +897,26 @@ async function applyPendingImportData() {
 
                 // Update physical exam
                 if (template.pemeriksaan_fisik) {
-                    window.stateManager.updateSectionData('physical_exam', template.pemeriksaan_fisik);
-                    sectionsToSave.push({ section: 'physical_exam', data: template.pemeriksaan_fisik });
+                    const physicalExamData = { ...template.pemeriksaan_fisik };
+                    if (recordDatetime) physicalExamData.record_datetime = recordDatetime;
+                    window.stateManager.updateSectionData('physical_exam', physicalExamData);
+                    sectionsToSave.push({ section: 'physical_exam', data: physicalExamData });
                 }
 
                 // Update diagnosis
                 if (template.diagnosis) {
-                    window.stateManager.updateSectionData('diagnosis', template.diagnosis);
-                    sectionsToSave.push({ section: 'diagnosis', data: template.diagnosis });
+                    const diagnosisData = { ...template.diagnosis };
+                    if (recordDatetime) diagnosisData.record_datetime = recordDatetime;
+                    window.stateManager.updateSectionData('diagnosis', diagnosisData);
+                    sectionsToSave.push({ section: 'diagnosis', data: diagnosisData });
                 }
 
                 // Update obstetri if available
                 if (template.obstetri) {
-                    window.stateManager.updateSectionData('pemeriksaan_obstetri', template.obstetri);
-                    sectionsToSave.push({ section: 'pemeriksaan_obstetri', data: template.obstetri });
+                    const obstetriData = { ...template.obstetri };
+                    if (recordDatetime) obstetriData.record_datetime = recordDatetime;
+                    window.stateManager.updateSectionData('pemeriksaan_obstetri', obstetriData);
+                    sectionsToSave.push({ section: 'pemeriksaan_obstetri', data: obstetriData });
                 }
 
                 // Update planning if available
@@ -910,6 +941,7 @@ async function applyPendingImportData() {
                         planningData.tindakan = template.planning.tindakan.join('\n');
                     }
 
+                    if (recordDatetime) planningData.record_datetime = recordDatetime;
                     window.stateManager.updateSectionData('planning', planningData);
                     sectionsToSave.push({ section: 'planning', data: planningData });
                 }
@@ -1006,39 +1038,66 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
     // Prepare sections to save to database
     const sectionsToSave = [];
 
+    // Build record_datetime from visit_date and visit_time for stamping all sections
+    // NOTE: visitDate and visitTime are PARAMETERS passed from importData.visit_date/visit_time (Chrome extension)
+    // Also check template.visit_date/visit_time which we now include in mappedTemplate
+    const effectiveVisitDate = visitDate || template?.visit_date || parsedImportData?.visit_date || '';
+    const effectiveVisitTime = visitTime || template?.visit_time || parsedImportData?.visit_time || '12:00';
+    const recordDatetime = effectiveVisitDate ? `${effectiveVisitDate}T${effectiveVisitTime}` : '';
+    console.log('[Import] Building recordDatetime from:', { visitDate, visitTime, templateDate: template?.visit_date, templateTime: template?.visit_time, effectiveVisitDate, effectiveVisitTime, recordDatetime });
+    console.log('[Import] Record datetime for all sections:', recordDatetime);
+
+    // Helper: check if object has any non-null, non-empty values
+    const hasAnyValue = (obj) => {
+        if (!obj) return false;
+        return Object.values(obj).some(v => v !== null && v !== undefined && v !== '');
+    };
+
     // Apply to stateManager if available
     if (window.stateManager) {
         try {
-            // Update anamnesa
-            if (template.anamnesa && Object.keys(template.anamnesa).some(k => template.anamnesa[k])) {
+            // Update anamnesa - save if has recordDatetime OR any values
+            if (template.anamnesa && (recordDatetime || hasAnyValue(template.anamnesa))) {
                 const anamnesaUpdates = { ...template.anamnesa };
                 if (template.obstetri) {
                     Object.assign(anamnesaUpdates, template.obstetri);
                 }
+                if (recordDatetime) anamnesaUpdates.record_datetime = recordDatetime;
                 window.stateManager.updateSectionData('anamnesa', anamnesaUpdates);
                 sectionsToSave.push({ section: 'anamnesa', data: anamnesaUpdates });
+                console.log('[Import] Saving anamnesa with data:', anamnesaUpdates);
             }
 
-            // Update physical exam
-            if (template.pemeriksaan_fisik && Object.keys(template.pemeriksaan_fisik).some(k => template.pemeriksaan_fisik[k])) {
-                window.stateManager.updateSectionData('physical_exam', template.pemeriksaan_fisik);
-                sectionsToSave.push({ section: 'physical_exam', data: template.pemeriksaan_fisik });
+            // Update physical exam - save if has recordDatetime OR any values
+            if (template.pemeriksaan_fisik && (recordDatetime || hasAnyValue(template.pemeriksaan_fisik))) {
+                const physicalExamData = { ...template.pemeriksaan_fisik };
+                if (recordDatetime) physicalExamData.record_datetime = recordDatetime;
+                window.stateManager.updateSectionData('physical_exam', physicalExamData);
+                sectionsToSave.push({ section: 'physical_exam', data: physicalExamData });
+                console.log('[Import] Saving physical_exam with data:', physicalExamData);
             }
 
-            // Update diagnosis
-            if (template.diagnosis && Object.keys(template.diagnosis).some(k => template.diagnosis[k])) {
-                window.stateManager.updateSectionData('diagnosis', template.diagnosis);
-                sectionsToSave.push({ section: 'diagnosis', data: template.diagnosis });
+            // Update diagnosis - save if has recordDatetime OR any values
+            if (template.diagnosis && (recordDatetime || hasAnyValue(template.diagnosis))) {
+                const diagnosisData = { ...template.diagnosis };
+                if (recordDatetime) diagnosisData.record_datetime = recordDatetime;
+                window.stateManager.updateSectionData('diagnosis', diagnosisData);
+                sectionsToSave.push({ section: 'diagnosis', data: diagnosisData });
+                console.log('[Import] Saving diagnosis with data:', diagnosisData);
             }
 
-            // Update obstetri if available
-            if (template.obstetri && Object.keys(template.obstetri).some(k => template.obstetri[k])) {
-                window.stateManager.updateSectionData('pemeriksaan_obstetri', template.obstetri);
-                sectionsToSave.push({ section: 'pemeriksaan_obstetri', data: template.obstetri });
+            // Update obstetri - save if has recordDatetime OR any values
+            if (template.obstetri && (recordDatetime || hasAnyValue(template.obstetri))) {
+                const obstetriData = { ...template.obstetri };
+                if (recordDatetime) obstetriData.record_datetime = recordDatetime;
+                window.stateManager.updateSectionData('pemeriksaan_obstetri', obstetriData);
+                sectionsToSave.push({ section: 'pemeriksaan_obstetri', data: obstetriData });
+                console.log('[Import] Saving pemeriksaan_obstetri with data:', obstetriData);
             }
 
-            // Update planning if available
-            if (template.planning && (template.planning.obat?.length || template.planning.tindakan?.length || template.planning.raw)) {
+            // Update planning - save if has recordDatetime OR any planning data
+            const hasPlanningData = template.planning && (template.planning.obat?.length || template.planning.tindakan?.length || template.planning.raw);
+            if (template.planning && (recordDatetime || hasPlanningData)) {
                 // Convert planning data to include terapi and tindakan strings
                 const planningData = { ...template.planning };
 
@@ -1059,8 +1118,10 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
                     planningData.tindakan = template.planning.tindakan.join('\n');
                 }
 
+                if (recordDatetime) planningData.record_datetime = recordDatetime;
                 window.stateManager.updateSectionData('planning', planningData);
                 sectionsToSave.push({ section: 'planning', data: planningData });
+                console.log('[Import] Saving planning with data:', planningData);
             }
 
             console.log('[Import] StateManager updated with SIMRS data');
@@ -1215,6 +1276,33 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
             anakHidupEl.dispatchEvent(new Event('change', { bubbles: true }));
             console.log('[Import] Filled Anak Hidup:', anakHidupVal);
         }
+
+        // Retry fill datetime fields for all sections
+        // For SIMRS import, use template.visit_date/visit_time (passed from Chrome extension)
+        const visitDate = template?.visit_date || parsedImportData?.visit_date || '';
+        const visitTime = template?.visit_time || parsedImportData?.visit_time || '12:00';
+        console.log('[Import] Retry datetime - visitDate:', visitDate, 'visitTime:', visitTime);
+        if (visitDate) {
+            const datetime = `${visitDate}T${visitTime}`;
+            const datetimeFields = [
+                '#anamnesa-datetime',
+                '#physical-exam-datetime',
+                '#pemeriksaan-obstetri-datetime',
+                '#penunjang-datetime',
+                '#usg-datetime',
+                '#usg-gyn-datetime',
+                '#diagnosis-datetime',
+                '#planning-datetime'
+            ];
+            datetimeFields.forEach(selector => {
+                const el = document.querySelector(selector);
+                if (el) {  // Always overwrite with MEDIFY datetime
+                    el.value = datetime;
+                    el.dispatchEvent(new Event('change', { bubbles: true }));
+                    console.log(`[Import] Set datetime ${selector} to: ${datetime}`);
+                }
+            });
+        }
     }, 3000); // Retry after 3 more seconds
 
     // Persist to database via API
@@ -1228,6 +1316,19 @@ async function applySIMRSImportData(template, visitDate, visitTime, visitLocatio
         }
 
         console.log(`[Import] Saved ${savedCount}/${sectionsToSave.length} SIMRS sections to database`);
+
+        // Re-fetch and render the record to ensure form displays saved data
+        if (savedCount > 0 && window.sundayClinicApp && typeof window.sundayClinicApp.fetchRecord === 'function') {
+            console.log('[Import] Re-fetching record to refresh form display...');
+            setTimeout(async () => {
+                try {
+                    await window.sundayClinicApp.fetchRecord(mrId);
+                    console.log('[Import] Form refreshed with saved data');
+                } catch (e) {
+                    console.error('[Import] Failed to refresh form:', e);
+                }
+            }, 500); // Small delay to ensure API has processed
+        }
     }
 
     console.log('[Import] SIMRS import data applied successfully');
