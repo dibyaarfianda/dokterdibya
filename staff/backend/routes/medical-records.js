@@ -1189,10 +1189,14 @@ function generateMedicalResume(identitas, records, billingItems = { obat: [], ti
             });
         }
 
-        // Add custom entries from textarea
-        if (planning.tindakan && planning.tindakan.trim()) {
+        // Add custom entries from textarea (handle both string and array)
+        let customTindakan = planning.tindakan;
+        if (Array.isArray(customTindakan)) {
+            customTindakan = customTindakan.join('\n');
+        }
+        if (customTindakan && typeof customTindakan === 'string' && customTindakan.trim()) {
             if (tindakanContent) tindakanContent += '\n'; // Add separator
-            tindakanContent += planning.tindakan;
+            tindakanContent += customTindakan;
         }
 
         if (tindakanContent) {
@@ -1219,10 +1223,14 @@ function generateMedicalResume(identitas, records, billingItems = { obat: [], ti
             });
         }
 
-        // Add custom entries from textarea (vitamins, etc.)
-        if (planning.terapi && planning.terapi.trim()) {
+        // Add custom entries from textarea (vitamins, etc.) - handle both string and array
+        let customTerapi = planning.terapi;
+        if (Array.isArray(customTerapi)) {
+            customTerapi = customTerapi.join('\n');
+        }
+        if (customTerapi && typeof customTerapi === 'string' && customTerapi.trim()) {
             if (terapiContent) terapiContent += '\n'; // Add separator
-            terapiContent += planning.terapi;
+            terapiContent += customTerapi;
         }
 
         if (terapiContent) {

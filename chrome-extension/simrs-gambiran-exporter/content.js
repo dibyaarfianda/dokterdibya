@@ -47,10 +47,48 @@
             subjective: {},
             objective: {},
             assessment: {},
-            plan: {}
+            plan: {},
+            visit_date: null,
+            visit_time: null
         };
 
         const pageText = document.body.innerText;
+
+        // Extract date/time from signature block at end (e.g., "30 December 2025 21:20" or "30/12/2025 10:30")
+        // Pattern 1: "30 December 2025 21:20" (English month with time)
+        const signatureMatch1 = pageText.match(/(\d{1,2})\s+(January|February|March|April|May|June|July|August|September|October|November|December)\s+(\d{4})\s+(\d{1,2}:\d{2})/i);
+        if (signatureMatch1) {
+            const monthMap = { 'january': '01', 'february': '02', 'march': '03', 'april': '04', 'may': '05', 'june': '06', 'july': '07', 'august': '08', 'september': '09', 'october': '10', 'november': '11', 'december': '12' };
+            const day = signatureMatch1[1].padStart(2, '0');
+            const month = monthMap[signatureMatch1[2].toLowerCase()];
+            const year = signatureMatch1[3];
+            cpptData.visit_date = `${year}-${month}-${day}`;
+            cpptData.visit_time = signatureMatch1[4];
+            console.log('[RSUD Gambiran Export] Extracted signature date/time:', cpptData.visit_date, cpptData.visit_time);
+        } else {
+            // Pattern 2: "30 Desember 2025 21:20" (Indonesian month with time)
+            const signatureMatch2 = pageText.match(/(\d{1,2})\s+(Januari|Februari|Maret|April|Mei|Juni|Juli|Agustus|September|Oktober|November|Desember)\s+(\d{4})\s+(\d{1,2}:\d{2})/i);
+            if (signatureMatch2) {
+                const monthMapId = { 'januari': '01', 'februari': '02', 'maret': '03', 'april': '04', 'mei': '05', 'juni': '06', 'juli': '07', 'agustus': '08', 'september': '09', 'oktober': '10', 'november': '11', 'desember': '12' };
+                const day = signatureMatch2[1].padStart(2, '0');
+                const month = monthMapId[signatureMatch2[2].toLowerCase()];
+                const year = signatureMatch2[3];
+                cpptData.visit_date = `${year}-${month}-${day}`;
+                cpptData.visit_time = signatureMatch2[4];
+                console.log('[RSUD Gambiran Export] Extracted signature date/time (ID):', cpptData.visit_date, cpptData.visit_time);
+            } else {
+                // Pattern 3: "30/12/2025 10:30" or "30-12-2025 10:30"
+                const signatureMatch3 = pageText.match(/(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})\s+(\d{1,2}:\d{2})/);
+                if (signatureMatch3) {
+                    const day = signatureMatch3[1].padStart(2, '0');
+                    const month = signatureMatch3[2].padStart(2, '0');
+                    const year = signatureMatch3[3];
+                    cpptData.visit_date = `${year}-${month}-${day}`;
+                    cpptData.visit_time = signatureMatch3[4];
+                    console.log('[RSUD Gambiran Export] Extracted numeric date/time:', cpptData.visit_date, cpptData.visit_time);
+                }
+            }
+        }
 
         // Parse SUBJECTIVE section
         const subjectiveMatch = pageText.match(/SUBJECTIVE([\s\S]*?)(?=OBJECTIVE|$)/i);
@@ -156,6 +194,23 @@
                 cpptData.assessment.diagnosis = lines[0].trim();
             }
 
+            // Helper function to convert Roman numerals to numbers
+            function romanToNumber(roman) {
+                const romanMap = { 'I': 1, 'V': 5, 'X': 10 };
+                let result = 0;
+                const upper = roman.toUpperCase();
+                for (let i = 0; i < upper.length; i++) {
+                    const current = romanMap[upper[i]] || 0;
+                    const next = romanMap[upper[i + 1]] || 0;
+                    if (current < next) {
+                        result -= current;
+                    } else {
+                        result += current;
+                    }
+                }
+                return result;
+            }
+
             // Parse obstetric formula - MEDIFY format first (G2P0000 = P followed by 4 digits)
             // Format: G2P0101 means Gravida=2, Aterm=0, Premature=1, Abortus=0, AnakHidup=1
             // In our app: Para = Aterm + Premature
@@ -173,12 +228,37 @@
                 cpptData.assessment.anak_hidup = anakHidup;
                 cpptData.assessment.is_obstetric = true;
             } else {
-                // Fallback to standard format (G_P_)
-                const obsMatch = assText.match(/G(\d+)\s*P([\d\-]+)/i);
-                if (obsMatch) {
-                    cpptData.assessment.gravida = parseInt(obsMatch[1]);
-                    cpptData.assessment.para = obsMatch[2];
+                // Try dash format: G1 P0-0 or G2P1-1 (dash means premature=0, abortus=0)
+                const dashMatch = assText.match(/G([IVX]+|\d+)\s*P(\d+)-(\d+)/i);
+                if (dashMatch) {
+                    // Check if gravida is Roman numeral or number
+                    let gravida = dashMatch[1];
+                    if (/^[IVX]+$/i.test(gravida)) {
+                        gravida = romanToNumber(gravida);
+                    } else {
+                        gravida = parseInt(gravida);
+                    }
+                    cpptData.assessment.gravida = gravida;
+                    cpptData.assessment.para = parseInt(dashMatch[2]);  // Aterm only (dash format)
+                    cpptData.assessment.abortus = 0;  // Dash means 0
+                    cpptData.assessment.anak_hidup = parseInt(dashMatch[3]);
                     cpptData.assessment.is_obstetric = true;
+                } else {
+                    // Fallback to standard format (G_P_ or Roman GI, GII, etc.)
+                    const obsMatch = assText.match(/G([IVX]+|\d+)\s*P(\d+)/i);
+                    if (obsMatch) {
+                        let gravida = obsMatch[1];
+                        if (/^[IVX]+$/i.test(gravida)) {
+                            gravida = romanToNumber(gravida);
+                        } else {
+                            gravida = parseInt(gravida);
+                        }
+                        cpptData.assessment.gravida = gravida;
+                        cpptData.assessment.para = parseInt(obsMatch[2]);
+                        cpptData.assessment.abortus = 0;
+                        cpptData.assessment.anak_hidup = 0;
+                        cpptData.assessment.is_obstetric = true;
+                    }
                 }
             }
 
@@ -403,26 +483,37 @@
                         mergedData.raw_parsed.objective.berat_badan = localCPPT.objective.berat_badan;
                     }
                 }
-                // Merge obstetric fields from local extraction (if API didn't find them)
+                // Merge obstetric fields from local extraction (if API didn't find them or returned null)
+                // Check for both undefined AND null because AI might return null for missing fields
                 if (localCPPT.assessment) {
                     mergedData.raw_parsed = mergedData.raw_parsed || {};
                     mergedData.raw_parsed.assessment = mergedData.raw_parsed.assessment || {};
 
-                    if (localCPPT.assessment.gravida !== undefined && mergedData.raw_parsed.assessment.gravida === undefined) {
+                    if (localCPPT.assessment.gravida !== undefined && (mergedData.raw_parsed.assessment.gravida === undefined || mergedData.raw_parsed.assessment.gravida === null)) {
                         mergedData.raw_parsed.assessment.gravida = localCPPT.assessment.gravida;
                     }
-                    if (localCPPT.assessment.para !== undefined && mergedData.raw_parsed.assessment.para === undefined) {
+                    if (localCPPT.assessment.para !== undefined && (mergedData.raw_parsed.assessment.para === undefined || mergedData.raw_parsed.assessment.para === null)) {
                         mergedData.raw_parsed.assessment.para = localCPPT.assessment.para;
                     }
-                    if (localCPPT.assessment.abortus !== undefined && mergedData.raw_parsed.assessment.abortus === undefined) {
+                    if (localCPPT.assessment.abortus !== undefined && (mergedData.raw_parsed.assessment.abortus === undefined || mergedData.raw_parsed.assessment.abortus === null)) {
                         mergedData.raw_parsed.assessment.abortus = localCPPT.assessment.abortus;
                     }
-                    if (localCPPT.assessment.anak_hidup !== undefined && mergedData.raw_parsed.assessment.anak_hidup === undefined) {
+                    if (localCPPT.assessment.anak_hidup !== undefined && (mergedData.raw_parsed.assessment.anak_hidup === undefined || mergedData.raw_parsed.assessment.anak_hidup === null)) {
                         mergedData.raw_parsed.assessment.anak_hidup = localCPPT.assessment.anak_hidup;
                     }
                     if (localCPPT.assessment.is_obstetric) {
                         mergedData.raw_parsed.assessment.is_obstetric = true;
                     }
+                }
+
+                // Merge visit_date and visit_time from local extraction (signature timestamp)
+                if (localCPPT.visit_date) {
+                    mergedData.visit_date = localCPPT.visit_date;
+                    console.log('[RSUD Gambiran] Using local visit_date:', localCPPT.visit_date);
+                }
+                if (localCPPT.visit_time) {
+                    mergedData.visit_time = localCPPT.visit_time;
+                    console.log('[RSUD Gambiran] Using local visit_time:', localCPPT.visit_time);
                 }
 
                 console.log('[RSUD Gambiran] Local CPPT:', localCPPT);
