@@ -369,11 +369,25 @@ router.delete('/:id', verifyToken, async (req, res, next) => {
 /**
  * POST /api/obat-sales/:id/confirm
  * Confirm sale - deducts stock using FIFO and calculates profit
+ * Accepts payment_method: 'cash' | 'bpjs' | 'insurance'
+ * - cash: immediately paid
+ * - bpjs/insurance: payment_pending (waiting for insurance)
  */
 router.post('/:id/confirm', verifyToken, async (req, res, next) => {
     const connection = await db.getConnection();
 
     try {
+        const { payment_method } = req.body;
+
+        // Validate payment_method
+        const validMethods = ['cash', 'bpjs', 'insurance'];
+        if (!payment_method || !validMethods.includes(payment_method)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Metode pembayaran harus dipilih (cash, bpjs, atau insurance)'
+            });
+        }
+
         const [[sale]] = await connection.query(
             'SELECT * FROM obat_sales WHERE id = ?',
             [req.params.id]
@@ -449,22 +463,35 @@ router.post('/:id/confirm', verifyToken, async (req, res, next) => {
         const revenue = parseFloat(sale.total) || 0;
         const profit = revenue - totalCost;
 
-        // Update sale status and profit info
+        // Determine status based on payment method
+        // cash = immediately paid, bpjs/insurance = payment_pending
+        const newStatus = payment_method === 'cash' ? 'paid' : 'payment_pending';
+        const isPaid = payment_method === 'cash';
+
+        // Update sale status, payment method, and profit info
         await connection.query(
             `UPDATE obat_sales
-             SET status = 'confirmed',
+             SET status = ?,
+                 payment_method = ?,
                  confirmed_at = NOW(),
                  confirmed_by = ?,
                  cost_total = ?,
-                 profit = ?
+                 profit = ?${isPaid ? ', paid_at = NOW(), paid_by = ?' : ''}
              WHERE id = ?`,
-            [req.user.name || req.user.id, totalCost, profit, sale.id]
+            isPaid
+                ? [newStatus, payment_method, req.user.name || req.user.id, totalCost, profit, req.user.name || req.user.id, sale.id]
+                : [newStatus, payment_method, req.user.name || req.user.id, totalCost, profit, sale.id]
         );
 
         await connection.commit();
 
+        const paymentMethodLabels = { cash: 'Tunai', bpjs: 'BPJS', insurance: 'Asuransi' };
+        const statusLabels = { paid: 'Dibayar', payment_pending: 'Menunggu Pembayaran' };
+
         logger.info('Obat sale confirmed with stock deduction', {
             saleNumber: sale.sale_number,
+            paymentMethod: payment_method,
+            status: newStatus,
             revenue,
             cost: totalCost,
             profit,
@@ -473,8 +500,10 @@ router.post('/:id/confirm', verifyToken, async (req, res, next) => {
 
         res.json({
             success: true,
-            message: 'Penjualan berhasil dikonfirmasi, stok telah dikurangi',
+            message: `Penjualan berhasil dikonfirmasi (${paymentMethodLabels[payment_method]}) - ${statusLabels[newStatus]}`,
             data: {
+                status: newStatus,
+                paymentMethod: payment_method,
                 revenue,
                 cost: totalCost,
                 profit,
@@ -493,6 +522,7 @@ router.post('/:id/confirm', verifyToken, async (req, res, next) => {
 /**
  * POST /api/obat-sales/:id/mark-paid
  * Mark as paid (stock already deducted at confirmation)
+ * Accepts: confirmed OR payment_pending status
  */
 router.post('/:id/mark-paid', verifyToken, async (req, res, next) => {
     try {
@@ -505,10 +535,11 @@ router.post('/:id/mark-paid', verifyToken, async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'Sale not found' });
         }
 
-        if (sale.status !== 'confirmed') {
+        // Allow both 'confirmed' and 'payment_pending' to transition to 'paid'
+        if (!['confirmed', 'payment_pending'].includes(sale.status)) {
             return res.status(400).json({
                 success: false,
-                message: 'Penjualan harus dikonfirmasi terlebih dahulu'
+                message: 'Penjualan harus dikonfirmasi atau menunggu pembayaran terlebih dahulu'
             });
         }
 
@@ -520,11 +551,81 @@ router.post('/:id/mark-paid', verifyToken, async (req, res, next) => {
             [req.user.name || req.user.id, sale.id]
         );
 
-        logger.info('Obat sale marked as paid', { saleNumber: sale.sale_number, by: req.user.name });
+        const paymentMethodLabels = { cash: 'Tunai', bpjs: 'BPJS', insurance: 'Asuransi' };
+        const methodLabel = sale.payment_method ? paymentMethodLabels[sale.payment_method] : '';
 
-        res.json({ success: true, message: 'Pembayaran berhasil dicatat' });
+        logger.info('Obat sale marked as paid', {
+            saleNumber: sale.sale_number,
+            paymentMethod: sale.payment_method,
+            previousStatus: sale.status,
+            by: req.user.name
+        });
+
+        res.json({
+            success: true,
+            message: methodLabel ? `Pembayaran ${methodLabel} berhasil dicatat` : 'Pembayaran berhasil dicatat'
+        });
     } catch (error) {
         logger.error('Failed to mark obat sale as paid', { error: error.message });
+        next(error);
+    }
+});
+
+/**
+ * POST /api/obat-sales/:id/set-payment-method
+ * Set payment method for legacy confirmed sales and change status to payment_pending
+ */
+router.post('/:id/set-payment-method', verifyToken, async (req, res, next) => {
+    try {
+        const { payment_method } = req.body;
+
+        // Validate payment_method (only bpjs or insurance for pending)
+        const validMethods = ['bpjs', 'insurance'];
+        if (!payment_method || !validMethods.includes(payment_method)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Metode pembayaran harus BPJS atau Asuransi'
+            });
+        }
+
+        const [[sale]] = await db.query(
+            'SELECT * FROM obat_sales WHERE id = ?',
+            [req.params.id]
+        );
+
+        if (!sale) {
+            return res.status(404).json({ success: false, message: 'Sale not found' });
+        }
+
+        if (sale.status !== 'confirmed') {
+            return res.status(400).json({
+                success: false,
+                message: 'Hanya penjualan dengan status Confirmed yang bisa diubah'
+            });
+        }
+
+        // Update payment method and change status to payment_pending
+        await db.query(
+            `UPDATE obat_sales
+             SET payment_method = ?, status = 'payment_pending'
+             WHERE id = ?`,
+            [payment_method, sale.id]
+        );
+
+        const paymentMethodLabels = { bpjs: 'BPJS', insurance: 'Asuransi' };
+
+        logger.info('Obat sale payment method set', {
+            saleNumber: sale.sale_number,
+            paymentMethod: payment_method,
+            by: req.user.name
+        });
+
+        res.json({
+            success: true,
+            message: `Metode pembayaran ${paymentMethodLabels[payment_method]} berhasil disimpan`
+        });
+    } catch (error) {
+        logger.error('Failed to set payment method', { error: error.message });
         next(error);
     }
 });
@@ -544,7 +645,7 @@ router.post('/:id/print-invoice', verifyToken, async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'Sale not found' });
         }
 
-        if (!['confirmed', 'paid'].includes(sale.status)) {
+        if (!['confirmed', 'payment_pending', 'paid'].includes(sale.status)) {
             return res.status(400).json({
                 success: false,
                 message: 'Invoice hanya bisa dicetak untuk penjualan yang sudah dikonfirmasi'

@@ -120,10 +120,10 @@ function renderPage() {
                             <i class="fas fa-plus"></i> Penjualan Baru
                         </button>
                         <div class="d-flex gap-2">
-                            <select class="form-control" id="filter-status" style="width: 150px;">
+                            <select class="form-control" id="filter-status" style="width: 180px;">
                                 <option value="">Semua Status</option>
                                 <option value="draft">Draft</option>
-                                <option value="confirmed">Confirmed</option>
+                                <option value="payment_pending">Payment Pending</option>
                                 <option value="paid">Paid</option>
                             </select>
                             <select class="form-control" id="filter-hospital" style="width: 180px;">
@@ -390,11 +390,19 @@ async function loadSales() {
 function getStatusBadge(status) {
     const badges = {
         draft: '<span class="badge badge-secondary">Draft</span>',
-        confirmed: '<span class="badge badge-warning">Confirmed</span>',
+        confirmed: '<span class="badge badge-info">Confirmed</span>',
+        payment_pending: '<span class="badge badge-warning">Payment Pending</span>',
         paid: '<span class="badge badge-success">Paid</span>'
     };
     return badges[status] || status;
 }
+
+// Payment method labels
+const PAYMENT_METHODS = {
+    cash: 'Tunai',
+    bpjs: 'BPJS',
+    insurance: 'Asuransi'
+};
 
 // Load obat options for dropdown
 async function loadObatOptions() {
@@ -626,6 +634,9 @@ window.viewObatSale = async function(id) {
             day: '2-digit', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit'
         });
 
+        // Payment method label
+        const paymentMethodLabel = sale.payment_method ? PAYMENT_METHODS[sale.payment_method] || sale.payment_method : '-';
+
         const content = document.getElementById('view-sale-content');
         content.innerHTML = `
             <div class="row mb-3">
@@ -671,6 +682,7 @@ window.viewObatSale = async function(id) {
             <div class="row">
                 <div class="col-12">
                     <p><strong>Status:</strong> ${getStatusBadge(sale.status)}</p>
+                    ${sale.payment_method ? `<p><strong>Metode Pembayaran:</strong> ${paymentMethodLabel}</p>` : ''}
                     ${sale.confirmed_at ? `<p><small class="text-muted">Confirmed: ${new Date(sale.confirmed_at).toLocaleString('id-ID')} oleh ${sale.confirmed_by}</small></p>` : ''}
                     ${sale.paid_at ? `<p><small class="text-muted">Paid: ${new Date(sale.paid_at).toLocaleString('id-ID')} oleh ${sale.paid_by}</small></p>` : ''}
                 </div>
@@ -688,9 +700,26 @@ window.viewObatSale = async function(id) {
                 </button>
             `;
         } else if (sale.status === 'confirmed') {
+            // Legacy confirmed without payment method - allow setting payment method
+            actions += `
+                <button type="button" class="btn btn-warning" onclick="window.setPaymentMethod(${sale.id})">
+                    <i class="fas fa-credit-card"></i> Cara Pembayaran
+                </button>
+                <button type="button" class="btn btn-success" onclick="window.markObatSalePaid(${sale.id})">
+                    <i class="fas fa-money-bill"></i> Mark as Paid
+                </button>
+                <button type="button" class="btn btn-primary" onclick="window.printObatSaleInvoice(${sale.id})">
+                    <i class="fas fa-print"></i> Print Invoice
+                </button>
+            `;
+        } else if (sale.status === 'payment_pending') {
+            // Payment pending - show mark as paid and print invoice
             actions += `
                 <button type="button" class="btn btn-success" onclick="window.markObatSalePaid(${sale.id})">
                     <i class="fas fa-money-bill"></i> Mark as Paid
+                </button>
+                <button type="button" class="btn btn-primary" onclick="window.printObatSaleInvoice(${sale.id})">
+                    <i class="fas fa-print"></i> Print Invoice
                 </button>
             `;
         } else if (sale.status === 'paid') {
@@ -735,14 +764,56 @@ window.deleteObatSale = async function(id) {
     }
 };
 
-// Confirm sale
+// Confirm sale with payment method selection
 window.confirmObatSale = async function(id) {
-    const confirmed = await showConfirm('Konfirmasi Penjualan?', 'Setelah dikonfirmasi, penjualan tidak dapat diedit.');
-    if (!confirmed) return;
+    if (!window.Swal) {
+        showAlert('error', 'SweetAlert2 tidak tersedia');
+        return;
+    }
+
+    const result = await window.Swal.fire({
+        title: 'Konfirmasi Penjualan',
+        html: `
+            <p class="mb-3">Pilih metode pembayaran:</p>
+            <select id="swal-payment-method" class="form-control">
+                <option value="cash">Tunai (langsung lunas)</option>
+                <option value="bpjs">BPJS (pending payment)</option>
+                <option value="insurance">Asuransi Lainnya (pending payment)</option>
+            </select>
+            <small class="text-muted mt-2 d-block">
+                Tunai: Status langsung "Paid"<br>
+                BPJS/Asuransi: Status "Payment Pending" hingga pembayaran diterima
+            </small>
+        `,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Konfirmasi',
+        cancelButtonText: 'Batal',
+        preConfirm: () => {
+            const paymentMethod = document.getElementById('swal-payment-method').value;
+            if (!paymentMethod) {
+                Swal.showValidationMessage('Pilih metode pembayaran');
+                return false;
+            }
+            return paymentMethod;
+        }
+    });
+
+    if (!result.isConfirmed) return;
+
+    const paymentMethod = result.value;
 
     try {
-        await apiRequest(`/obat-sales/${id}/confirm`, { method: 'POST' });
-        showAlert('success', 'Penjualan berhasil dikonfirmasi');
+        await apiRequest(`/obat-sales/${id}/confirm`, {
+            method: 'POST',
+            body: JSON.stringify({ payment_method: paymentMethod })
+        });
+
+        const statusMsg = paymentMethod === 'cash'
+            ? 'Penjualan berhasil dikonfirmasi dan ditandai lunas'
+            : 'Penjualan berhasil dikonfirmasi (menunggu pembayaran)';
+
+        showAlert('success', statusMsg);
         $('#modal-view-sale').modal('hide');
         loadSales();
     } catch (error) {
@@ -751,9 +822,53 @@ window.confirmObatSale = async function(id) {
     }
 };
 
+// Set payment method for legacy confirmed sales
+window.setPaymentMethod = async function(id) {
+    if (!window.Swal) {
+        showAlert('error', 'SweetAlert2 tidak tersedia');
+        return;
+    }
+
+    const result = await window.Swal.fire({
+        title: 'Set Metode Pembayaran',
+        html: `
+            <p class="mb-3">Pilih metode pembayaran:</p>
+            <select id="swal-payment-method" class="form-control">
+                <option value="bpjs">BPJS</option>
+                <option value="insurance">Asuransi Lainnya</option>
+            </select>
+            <small class="text-muted mt-2 d-block">
+                Status akan berubah menjadi "Payment Pending"
+            </small>
+        `,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonText: 'Simpan',
+        cancelButtonText: 'Batal',
+        preConfirm: () => {
+            return document.getElementById('swal-payment-method').value;
+        }
+    });
+
+    if (!result.isConfirmed) return;
+
+    try {
+        await apiRequest(`/obat-sales/${id}/set-payment-method`, {
+            method: 'POST',
+            body: JSON.stringify({ payment_method: result.value })
+        });
+        showAlert('success', 'Metode pembayaran berhasil disimpan');
+        $('#modal-view-sale').modal('hide');
+        loadSales();
+    } catch (error) {
+        console.error('Failed to set payment method:', error);
+        showAlert('error', error.message);
+    }
+};
+
 // Mark sale as paid
 window.markObatSalePaid = async function(id) {
-    const confirmed = await showConfirm('Tandai Lunas?', 'Stok obat akan dikurangi setelah pembayaran dikonfirmasi.');
+    const confirmed = await showConfirm('Tandai Lunas?', 'Pembayaran akan ditandai sebagai sudah diterima.');
     if (!confirmed) return;
 
     try {
