@@ -31,6 +31,10 @@ const io = new Server(server, {
     maxHttpBufferSize: 1e8, // 100MB - fix 413 errors for large polling payloads
     httpCompression: true // Compress polling data
 });
+
+// Make io globally available for routes to emit events
+global.io = io;
+
 const PORT = process.env.PORT || 3000;
 
 const sundayClinicPagePath = path.join(__dirname, '../public/sunday-clinic.html');
@@ -395,6 +399,10 @@ app.use('/api/app', appRoutes);
 // USG Image Reader (AI Vision)
 const usgReaderRoutes = require('./routes/usg-reader');
 app.use('/api/usg-reader', usgReaderRoutes);
+
+// MEDIFY Batch Import (Puppeteer)
+const medifyBatchRoutes = require('./routes/medify-batch');
+app.use('/api/medify-batch', medifyBatchRoutes);
 
 // API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {

@@ -1641,4 +1641,9 @@ router.post('/parse-pdf', verifyToken, async (req, res) => {
     }
 });
 
+// Export router and helper functions for reuse
 module.exports = router;
+module.exports.parseWithAI = parseWithAI;
+module.exports.parseVisitDate = parseVisitDate;
+module.exports.parseVisitTime = parseVisitTime;
+module.exports.normalizeDate = normalizeDate;

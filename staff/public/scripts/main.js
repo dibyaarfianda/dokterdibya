@@ -100,6 +100,7 @@ function initPages() {
     pages.artikelKesehatan = grab('artikel-kesehatan-page');
     pages.penjualanObat = grab('penjualan-obat-page');
     pages.bulkUploadUSG = grab('bulk-upload-usg-page');
+    pages.medifySync = grab('medify-sync-page');
 }
 function loadExternalPage(containerId, htmlFile, options = {}) {
     const { forceReload = false } = options;
@@ -1266,6 +1267,23 @@ function showBulkUploadUSGPage() {
         }
     }).catch(error => {
         console.error('Failed to load usg-bulk-upload.js:', error);
+    });
+}
+
+function showMedifySyncPage() {
+    hideAllPages();
+    pages.medifySync?.classList.remove('d-none');
+    setTitleAndActive('MEDIFY Sync', 'nav-medify-sync', 'medify-sync');
+
+    // Dynamically import and initialize the MEDIFY Sync module
+    importWithVersion('./medify-sync.js').then(module => {
+        if (module.initMedifySync) {
+            module.initMedifySync();
+        } else {
+            console.error('MEDIFY Sync module loaded, but initMedifySync function not found.');
+        }
+    }).catch(error => {
+        console.error('Failed to load medify-sync.js:', error);
     });
 }
 
@@ -4400,6 +4418,7 @@ window.showPengaturanPage = showPengaturanPage;
 window.showKelolaObatPage = showKelolaObatPage;
 window.showPenjualanObatPage = showPenjualanObatPage;
 window.showBulkUploadUSGPage = showBulkUploadUSGPage;
+window.showMedifySyncPage = showMedifySyncPage;
 window.showHospitalAppointmentsPage = showHospitalAppointmentsPage;
 window.showHospitalPatientsPage = showHospitalPatientsPage;
 window.showPasienBaruPage = showPasienBaruPage;
