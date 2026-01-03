@@ -43,7 +43,8 @@ data class Obat(
 
 data class ObatListResponse(
     val success: Boolean,
-    val data: List<Obat>
+    val message: String? = null,
+    val data: List<Obat> = emptyList()
 )
 
 // ==================== Sales ====================
