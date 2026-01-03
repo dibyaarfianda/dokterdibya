@@ -84,7 +84,11 @@ class SalesViewModel @Inject constructor(
                 onSuccess = { obatList ->
                     _uiState.value = _uiState.value.copy(obatList = obatList)
                 },
-                onFailure = { /* Ignore */ }
+                onFailure = { error ->
+                    _uiState.value = _uiState.value.copy(
+                        error = "Gagal memuat daftar obat: ${error.message}"
+                    )
+                }
             )
         }
     }

@@ -106,6 +106,31 @@ router.get('/', verifyToken, async (req, res, next) => {
 });
 
 /**
+ * GET /api/obat-sales/obat-list
+ * Get obat list for mobile app (no additional permission required)
+ * All authenticated staff can access this for creating sales
+ */
+router.get('/obat-list', verifyToken, async (req, res, next) => {
+    try {
+        const [rows] = await db.query(`
+            SELECT id, code, name, category, price, unit, stock
+            FROM obat
+            WHERE is_active = 1
+            ORDER BY category, name
+        `);
+
+        res.json({
+            success: true,
+            data: rows,
+            count: rows.length
+        });
+    } catch (error) {
+        logger.error('Failed to fetch obat list for mobile', { error: error.message });
+        next(error);
+    }
+});
+
+/**
  * GET /api/obat-sales/:id
  * Get single sale with items
  */
