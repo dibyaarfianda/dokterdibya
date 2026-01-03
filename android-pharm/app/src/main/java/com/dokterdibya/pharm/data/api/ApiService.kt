@@ -17,7 +17,7 @@ interface ApiService {
 
     // ==================== Obat (Medications) ====================
 
-    @GET("api/obat")
+    @GET("api/obat-sales/obat-list")
     suspend fun getObatList(): Response<ObatListResponse>
 
     // ==================== Obat Sales ====================
