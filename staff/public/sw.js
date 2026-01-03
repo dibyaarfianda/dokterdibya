@@ -4,9 +4,9 @@
  * Updated: Real-time friendly for service hours
  */
 
-const CACHE_NAME = 'dokterdibya-staff-v27';
-const STATIC_CACHE = 'static-v25';
-const DYNAMIC_CACHE = 'dynamic-v25';
+const CACHE_NAME = 'dokterdibya-staff-v28';
+const STATIC_CACHE = 'static-v26';
+const DYNAMIC_CACHE = 'dynamic-v26';
 
 // Static assets to cache on install (only UI assets, not data)
 const STATIC_ASSETS = [

@@ -477,6 +477,11 @@ function setupSocketListeners() {
 
         loadSyncStatus();
         loadSyncHistory();
+
+        // Load review section for sending to portal
+        if (data.batchId) {
+            loadReviewSection(data.batchId);
+        }
     });
 }
 
@@ -650,6 +655,460 @@ function showToast(message, type = 'info') {
     }
 }
 
+// ============================================================================
+// REVIEW & SEND TO PORTAL SECTION
+// ============================================================================
+
+/**
+ * Load review section for sending documents to patient portal
+ */
+async function loadReviewSection(batchId) {
+    const container = document.getElementById('review-container');
+    if (!container) return;
+
+    container.innerHTML = `
+        <div class="card card-primary">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-paper-plane mr-2"></i>
+                    Review & Kirim ke Portal Pasien
+                </h3>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                    <p class="mt-2">Loading...</p>
+                </div>
+            </div>
+        </div>
+    `;
+
+    try {
+        const data = await apiRequest(`/medify-batch/review/${batchId}`);
+        if (data.success) {
+            renderReviewSection(data, batchId);
+        }
+    } catch (error) {
+        console.error('[MedifySync] Error loading review:', error);
+        container.innerHTML = `
+            <div class="alert alert-danger">
+                <i class="fas fa-exclamation-circle mr-2"></i>
+                Gagal memuat data review: ${error.message}
+            </div>
+        `;
+    }
+}
+
+/**
+ * Render review section with patient cards
+ */
+function renderReviewSection(data, batchId) {
+    const container = document.getElementById('review-container');
+
+    if (data.patients.length === 0) {
+        container.innerHTML = `
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle mr-2"></i>
+                Tidak ada pasien yang berhasil di-sync untuk dikirim ke portal.
+            </div>
+        `;
+        return;
+    }
+
+    const pendingPatients = data.patients.filter(p => !p.alreadySent);
+
+    container.innerHTML = `
+        <div class="card card-primary">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-paper-plane mr-2"></i>
+                    Review & Kirim ke Portal Pasien
+                </h3>
+                <div class="card-tools">
+                    <span class="badge badge-light">
+                        ${data.summary.sent}/${data.summary.total} terkirim
+                    </span>
+                </div>
+            </div>
+            <div class="card-body">
+                <!-- Bulk Actions -->
+                <div class="mb-3 d-flex align-items-center flex-wrap">
+                    <div class="custom-control custom-checkbox mr-3">
+                        <input type="checkbox" class="custom-control-input" id="select-all-patients"
+                               onchange="window.toggleSelectAllPatients(this.checked)"
+                               ${pendingPatients.length === 0 ? 'disabled' : ''}>
+                        <label class="custom-control-label" for="select-all-patients">
+                            Pilih Semua
+                        </label>
+                    </div>
+                    <button class="btn btn-primary" id="btn-send-selected"
+                            onclick="window.sendSelectedToPortal('${batchId}')"
+                            disabled>
+                        <i class="fas fa-paper-plane mr-2"></i>
+                        Kirim yang Dipilih (<span id="selected-count">0</span>)
+                    </button>
+                </div>
+
+                <!-- Patient Cards -->
+                <div id="patient-review-cards">
+                    ${data.patients.map(p => renderPatientCard(p, batchId)).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Render individual patient card
+ */
+function renderPatientCard(patient, batchId) {
+    const docIcons = [];
+    if (patient.documents.hasResume) {
+        docIcons.push('<i class="fas fa-file-medical-alt text-success" title="Resume Medis"></i>');
+    }
+    if (patient.documents.usgCount > 0) {
+        docIcons.push(`<i class="fas fa-camera text-info" title="${patient.documents.usgCount} Foto USG"></i>`);
+    }
+    if (patient.documents.labCount > 0) {
+        docIcons.push(`<i class="fas fa-flask text-warning" title="${patient.documents.labCount} File Lab"></i>`);
+    }
+
+    const statusBadge = patient.alreadySent
+        ? '<span class="badge badge-success"><i class="fas fa-check"></i> Sudah Dikirim</span>'
+        : '<span class="badge badge-secondary">Belum Dikirim</span>';
+
+    return `
+        <div class="card card-outline card-secondary patient-card" id="patient-card-${patient.patientId}">
+            <div class="card-header" style="cursor: pointer;"
+                 onclick="window.togglePatientPreview('${patient.patientId}', '${patient.mrId}')">
+                <div class="d-flex align-items-center flex-wrap">
+                    ${!patient.alreadySent ? `
+                        <div class="custom-control custom-checkbox mr-2" onclick="event.stopPropagation()">
+                            <input type="checkbox" class="custom-control-input patient-checkbox"
+                                   id="check-${patient.patientId}"
+                                   data-patient-id="${patient.patientId}"
+                                   onchange="window.updateSelectedCount()">
+                            <label class="custom-control-label" for="check-${patient.patientId}"></label>
+                        </div>
+                    ` : ''}
+                    <div class="flex-grow-1">
+                        <strong>${patient.patientName}</strong>
+                        <small class="text-muted ml-2">(${patient.mrId || 'No MR'})</small>
+                    </div>
+                    <div class="doc-icons mx-2">
+                        ${docIcons.join('')}
+                    </div>
+                    <div class="mx-2">
+                        ${statusBadge}
+                    </div>
+                    ${!patient.alreadySent ? `
+                        <button class="btn btn-sm btn-info ml-2"
+                                onclick="event.stopPropagation(); window.sendSingleToPortal('${batchId}', '${patient.patientId}')"
+                                id="btn-send-${patient.patientId}">
+                            <i class="fas fa-paper-plane"></i> Kirim
+                        </button>
+                    ` : ''}
+                    <i class="fas fa-chevron-down ml-2" id="chevron-${patient.patientId}"></i>
+                </div>
+            </div>
+            <div class="card-body p-0" id="preview-${patient.patientId}" style="display: none;">
+                <div class="text-center p-3">
+                    <i class="fas fa-spinner fa-spin"></i> Loading preview...
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Toggle patient preview expansion
+ */
+async function togglePatientPreview(patientId, mrId) {
+    const previewEl = document.getElementById(`preview-${patientId}`);
+    const chevronEl = document.getElementById(`chevron-${patientId}`);
+
+    if (!previewEl || !chevronEl) return;
+
+    if (previewEl.style.display === 'none') {
+        previewEl.style.display = 'block';
+        chevronEl.classList.remove('fa-chevron-down');
+        chevronEl.classList.add('fa-chevron-up');
+
+        // Load preview if not loaded
+        if (!previewEl.dataset.loaded) {
+            try {
+                const data = await apiRequest(`/medify-batch/patient-preview/${patientId}/${mrId}`);
+                if (data.success) {
+                    previewEl.innerHTML = renderPatientPreview(data.preview);
+                    previewEl.dataset.loaded = 'true';
+                }
+            } catch (error) {
+                previewEl.innerHTML = `<div class="p-3 text-danger">Error: ${error.message}</div>`;
+            }
+        }
+    } else {
+        previewEl.style.display = 'none';
+        chevronEl.classList.remove('fa-chevron-up');
+        chevronEl.classList.add('fa-chevron-down');
+    }
+}
+
+/**
+ * Render patient preview content
+ */
+function renderPatientPreview(preview) {
+    let html = '<div class="p-3">';
+
+    // Resume Preview (use resumeFull for complete content)
+    if (preview.resumeFull || preview.resume) {
+        const resumeText = preview.resumeFull || preview.resume;
+        html += `
+            <div class="mb-3">
+                <h6><i class="fas fa-file-medical-alt text-success mr-2"></i>Resume Medis</h6>
+                <div class="resume-preview" style="max-height: 400px; overflow-y: auto; white-space: pre-wrap; font-family: monospace; font-size: 12px; background: #f8f9fa; padding: 10px; border-radius: 4px;">${escapeHtml(resumeText)}</div>
+            </div>
+        `;
+    }
+
+    // USG Photos Thumbnails
+    if (preview.usgPhotos && preview.usgPhotos.length > 0) {
+        html += `
+            <div class="mb-3">
+                <h6><i class="fas fa-camera text-info mr-2"></i>Foto USG (${preview.usgPhotos.length})</h6>
+                <div class="d-flex flex-wrap">
+                    ${preview.usgPhotos.map(p => `
+                        <div class="m-1" style="cursor: pointer;"
+                             onclick="window.previewImage('${p.thumbnailUrl}', '${escapeHtml(p.title || p.fileName)}')">
+                            <img src="${p.thumbnailUrl}"
+                                 alt="${escapeHtml(p.title || p.fileName)}"
+                                 class="usg-thumbnail">
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    // Lab Files
+    if (preview.labFiles && preview.labFiles.length > 0) {
+        html += `
+            <div class="mb-3">
+                <h6><i class="fas fa-flask text-warning mr-2"></i>File Lab (${preview.labFiles.length})</h6>
+                <ul class="list-unstyled mb-0">
+                    ${preview.labFiles.map(f => `
+                        <li>
+                            <a href="${f.url}" target="_blank">
+                                <i class="fas fa-file-pdf text-danger"></i> ${escapeHtml(f.name)}
+                            </a>
+                        </li>
+                    `).join('')}
+                </ul>
+            </div>
+        `;
+    }
+
+    // Lab Interpretation
+    if (preview.labInterpretation) {
+        html += `
+            <div class="mb-3">
+                <h6><i class="fas fa-notes-medical text-info mr-2"></i>Interpretasi Lab</h6>
+                <div class="bg-light p-2 rounded" style="white-space: pre-wrap;">
+                    ${escapeHtml(preview.labInterpretation)}
+                </div>
+            </div>
+        `;
+    }
+
+    if (!preview.resume && (!preview.usgPhotos || preview.usgPhotos.length === 0) && (!preview.labFiles || preview.labFiles.length === 0)) {
+        html += '<p class="text-muted mb-0">Tidak ada dokumen untuk ditampilkan.</p>';
+    }
+
+    html += '</div>';
+    return html;
+}
+
+/**
+ * Send single patient to portal
+ */
+async function sendSingleToPortal(batchId, patientId) {
+    const btn = document.getElementById(`btn-send-${patientId}`);
+    if (!btn) return;
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+    try {
+        const data = await apiRequest('/medify-batch/send-to-portal', {
+            method: 'POST',
+            body: JSON.stringify({ batchId, patientIds: [patientId] })
+        });
+
+        if (data.success && data.results[0]?.success) {
+            showToast('Dokumen berhasil dikirim ke portal!', 'success');
+
+            // Update card UI
+            const card = document.getElementById(`patient-card-${patientId}`);
+            if (card) {
+                const badge = card.querySelector('.badge');
+                if (badge) {
+                    badge.className = 'badge badge-success';
+                    badge.innerHTML = '<i class="fas fa-check"></i> Sudah Dikirim';
+                }
+                btn.remove();
+
+                // Remove checkbox
+                const checkbox = document.getElementById(`check-${patientId}`);
+                if (checkbox) {
+                    checkbox.closest('.custom-control').remove();
+                }
+            }
+
+            // Update header counter
+            const headerBadge = document.querySelector('#review-container .card-header .badge-light');
+            if (headerBadge) {
+                const match = headerBadge.textContent.match(/(\d+)\/(\d+)/);
+                if (match) {
+                    const sent = parseInt(match[1]) + 1;
+                    const total = parseInt(match[2]);
+                    headerBadge.textContent = `${sent}/${total} terkirim`;
+                }
+            }
+
+            updateSelectedCount();
+        } else {
+            throw new Error(data.results[0]?.error || 'Unknown error');
+        }
+
+    } catch (error) {
+        showToast('Gagal mengirim: ' + error.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane"></i> Kirim';
+    }
+}
+
+/**
+ * Send selected patients to portal (bulk)
+ */
+async function sendSelectedToPortal(batchId) {
+    const checkboxes = document.querySelectorAll('.patient-checkbox:checked');
+    const patientIds = Array.from(checkboxes).map(cb => cb.dataset.patientId);
+
+    if (patientIds.length === 0) {
+        showToast('Pilih minimal satu pasien', 'warning');
+        return;
+    }
+
+    const btn = document.getElementById('btn-send-selected');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengirim...';
+
+    try {
+        const data = await apiRequest('/medify-batch/send-to-portal', {
+            method: 'POST',
+            body: JSON.stringify({ batchId, patientIds })
+        });
+
+        if (data.success) {
+            showToast(`Berhasil mengirim ${data.summary.success} dari ${data.summary.total} pasien`, 'success');
+
+            // Refresh the review section
+            await loadReviewSection(batchId);
+        }
+
+    } catch (error) {
+        showToast('Gagal mengirim: ' + error.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>Kirim yang Dipilih (<span id="selected-count">0</span>)';
+        updateSelectedCount();
+    }
+}
+
+/**
+ * Toggle select all patients
+ */
+function toggleSelectAllPatients(checked) {
+    const checkboxes = document.querySelectorAll('.patient-checkbox');
+    checkboxes.forEach(cb => {
+        if (!cb.disabled) {
+            cb.checked = checked;
+        }
+    });
+    updateSelectedCount();
+}
+
+/**
+ * Update selected count badge
+ */
+function updateSelectedCount() {
+    const checked = document.querySelectorAll('.patient-checkbox:checked').length;
+    const countEl = document.getElementById('selected-count');
+    const btn = document.getElementById('btn-send-selected');
+
+    if (countEl) countEl.textContent = checked;
+    if (btn) btn.disabled = checked === 0;
+}
+
+/**
+ * Preview image in modal
+ */
+function previewImage(url, title) {
+    // Create modal if not exists
+    let modal = document.getElementById('image-preview-modal');
+    if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'image-preview-modal';
+        modal.className = 'modal fade';
+        modal.innerHTML = `
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="preview-image-title">Preview</h5>
+                        <button type="button" class="close" data-dismiss="modal">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <img id="preview-image-src" src="" style="max-width: 100%; max-height: 70vh;">
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    document.getElementById('preview-image-src').src = url;
+    document.getElementById('preview-image-title').textContent = title;
+    $(modal).modal('show');
+}
+
+/**
+ * Escape HTML for safe display
+ */
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+/**
+ * Load last review from the most recent successful batch
+ */
+async function loadLastReview() {
+    try {
+        const data = await apiRequest('/medify-batch/last-batch');
+        if (data.success && data.batchId) {
+            loadReviewSection(data.batchId);
+            showToast(`Loaded review for batch from ${data.source} (${data.successCount} patients)`, 'info');
+        } else {
+            showToast('Tidak ada batch sync yang tersedia', 'warning');
+        }
+    } catch (error) {
+        console.error('[MedifySync] Error loading last review:', error);
+        showToast('Gagal memuat review: ' + error.message, 'error');
+    }
+}
+
 // Export functions to window for onclick handlers
 window.initMedifySync = initMedifySync;
 window.startSync = startSync;
@@ -657,3 +1116,13 @@ window.viewBatchDetails = viewBatchDetails;
 window.showCredentialsModal = showCredentialsModal;
 window.saveCredentials = saveCredentials;
 window.testConnection = testConnection;
+
+// Review & Send to Portal exports
+window.loadReviewSection = loadReviewSection;
+window.loadLastReview = loadLastReview;
+window.togglePatientPreview = togglePatientPreview;
+window.sendSingleToPortal = sendSingleToPortal;
+window.sendSelectedToPortal = sendSelectedToPortal;
+window.toggleSelectAllPatients = toggleSelectAllPatients;
+window.updateSelectedCount = updateSelectedCount;
+window.previewImage = previewImage;
