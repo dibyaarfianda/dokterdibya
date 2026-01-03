@@ -210,7 +210,7 @@ async function searchPatientHistory(page, source, dateFrom, dateTo) {
     // Wait for table to update
     await delay(2000);
 
-    // Extract patient list from table
+    // Extract patient list from table - ONLY Dr. Dibya's patients
     const patients = await page.evaluate((prefix) => {
         const rows = document.querySelectorAll('table tbody tr');
         const results = [];
@@ -221,6 +221,16 @@ async function searchPatientHistory(page, source, dateFrom, dateTo) {
                 // Get patient name from PASIEN column
                 const patientCell = cells[2]; // Usually 3rd column
                 const patientName = patientCell?.innerText?.trim() || '';
+
+                // Get doctor name from DOKTER/DPJP column (usually 4th column)
+                const doctorCell = cells[3];
+                const doctorName = doctorCell?.innerText?.trim() || '';
+
+                // FILTER: Only include patients handled by Dr. Dibya
+                const isDibyaPatient = doctorName.toLowerCase().includes('dibya');
+                if (!isDibyaPatient) {
+                    return; // Skip this patient - not Dr. Dibya's patient
+                }
 
                 // Get date from TGL PEMERIKSAAN column
                 const dateCell = cells[5]; // Usually 6th column
@@ -243,7 +253,8 @@ async function searchPatientHistory(page, source, dateFrom, dateTo) {
                     results.push({
                         name: patientName,
                         medId: medId,
-                        visitDate: visitDate
+                        visitDate: visitDate,
+                        doctor: doctorName
                     });
                 }
             }
@@ -252,7 +263,7 @@ async function searchPatientHistory(page, source, dateFrom, dateTo) {
         return results;
     }, config.patientIdPrefix);
 
-    console.log(`[Medify] Found ${patients.length} patients in history`);
+    console.log(`[Medify] Found ${patients.length} Dr. Dibya patients in history (filtered)`);
     return patients;
 }
 
@@ -355,40 +366,90 @@ async function extractCPPT(page, source, medId) {
     });
     console.log(`[Medify] CPPT page info:`, pageInfo);
 
-    // Get the full text content for AI parsing - find CPPT sections specifically
+    // Get CPPT content - ONLY from Dr. Dibya's entries, not nurses or other doctors
     const text = await page.evaluate(() => {
         const fullText = document.body.innerText;
 
-        // Find the SUBJECTIVE section (start of actual CPPT content)
-        const subjectiveIdx = fullText.indexOf('SUBJECTIVE');
-        const subjectifIdx = fullText.indexOf('Subjective');
-        const subyektifIdx = fullText.indexOf('SUBYEKTIF');
+        // IMPORTANT: Filter to only Dr. Dibya's CPPT entries
+        // CPPT entries are usually in format:
+        // "CPPT 1 DD-MM-YYYY Dokter - dr. Dibya Arfianda, SpOG..."
+        // or "Dibuat Oleh\ndr. Dibya..."
+        // We need to find sections that contain "Dibya" as the author
 
-        // Find the earliest CPPT marker
-        let cpptStart = -1;
-        if (subjectiveIdx !== -1 && (cpptStart === -1 || subjectiveIdx < cpptStart)) {
-            cpptStart = subjectiveIdx;
-        }
-        if (subjectifIdx !== -1 && (cpptStart === -1 || subjectifIdx < cpptStart)) {
-            cpptStart = subjectifIdx;
-        }
-        if (subyektifIdx !== -1 && (cpptStart === -1 || subyektifIdx < cpptStart)) {
-            cpptStart = subyektifIdx;
+        // Split the page into individual CPPT entries
+        // Each CPPT entry typically starts with "CPPT \d+" or "Catatan Perkembangan"
+        const cpptEntryPattern = /(?:CPPT\s*\d+|Catatan\s*Perkembangan|SOAP\s*\d*)/gi;
+        const entries = fullText.split(cpptEntryPattern);
+
+        // Find entries authored by Dr. Dibya
+        // Dr. Dibya's entries contain variations like:
+        // - "dr. Dibya Arfianda"
+        // - "Dibya Arfianda, SpOG"
+        // - "Dokter - dr. Dibya"
+        const dibyaPatterns = [
+            /dibya\s*arfianda/i,
+            /dr\.?\s*dibya/i,
+            /Dibya.*SpOG/i,
+            /Dokter\s*[-:]\s*.*dibya/i
+        ];
+
+        let dibyaText = '';
+        let foundDibyaEntry = false;
+
+        // Check each segment for Dr. Dibya's authorship
+        // IMPORTANT: Only take the FIRST (most recent) Dr. Dibya entry, not all entries!
+        // CPPT entries are in reverse chronological order (newest first)
+        // CRITICAL: Entry must contain BOTH Dr. Dibya AND SOAP content (SUBJECTIVE/OBJECTIVE)
+        //           to avoid matching page header which has "DPJP Utama: dr. DIBYA"
+        for (let i = 0; i < entries.length; i++) {
+            const entry = entries[i];
+            const isDibyaEntry = dibyaPatterns.some(pattern => pattern.test(entry));
+            const hasSOAPContent = /SUBJECTIVE|OBJECTIVE|Subjective|Objective|SUBYEKTIF|OBYEKTIF/i.test(entry);
+
+            // Must have BOTH Dr. Dibya AND SOAP content - skip page header/navigation
+            if (isDibyaEntry && hasSOAPContent) {
+                foundDibyaEntry = true;
+                // Extract ONLY this entry (the most recent one) - DO NOT combine multiple entries
+                dibyaText = entry;
+                break; // Stop after finding the first (most recent) Dr. Dibya entry
+            }
         }
 
-        let text;
-        if (cpptStart !== -1) {
-            // Extract from the CPPT section start
-            text = fullText.substring(cpptStart);
-        } else {
-            // Fallback: remove first part that's likely headers
-            // Skip to approximately 1/3 of the document where CPPT content usually is
-            const skipAmount = Math.floor(fullText.length * 0.3);
-            text = fullText.substring(skipAmount);
+        // If no explicit Dr. Dibya entries found, try alternative approach:
+        // Find text blocks from SUBJECTIVE to Dr. Dibya's signature
+        if (!foundDibyaEntry) {
+            // Look for Dr. Dibya's signature in the text and extract SOAP content BEFORE it
+            const dibyaMatch = fullText.match(/dibya\s*arfianda|dr\.?\s*dibya/i);
+            if (dibyaMatch) {
+                const dibyaIdx = fullText.search(/dibya\s*arfianda|dr\.?\s*dibya/i);
+
+                // Find the SUBJECTIVE that precedes this entry
+                const textBefore = fullText.substring(0, dibyaIdx);
+                const lastSubjective = textBefore.lastIndexOf('SUBJECTIVE');
+                const lastSubjectif = textBefore.lastIndexOf('Subjective');
+                const lastSubyektif = textBefore.lastIndexOf('SUBYEKTIF');
+
+                const cpptStart = Math.max(lastSubjective, lastSubjectif, lastSubyektif);
+
+                if (cpptStart !== -1) {
+                    // End at the signature line (include a bit after "Dibya" to get full signature)
+                    // Stop before the next CPPT entry or other doctor/nurse
+                    const signatureEnd = Math.min(dibyaIdx + 100, fullText.length);
+                    dibyaText = fullText.substring(cpptStart, signatureEnd);
+                    foundDibyaEntry = true;
+                }
+            }
+        }
+
+        // NO FALLBACK - If no Dr. Dibya entry found, return empty string
+        // This will cause the patient to be skipped (no data from other doctors/nurses)
+        if (!foundDibyaEntry || !dibyaText.trim()) {
+            console.warn('[CPPT] No Dr. Dibya entry found - skipping this patient');
+            return '';
         }
 
         // Clean up the text
-        text = text
+        let text = dibyaText
             .replace(/\t+/g, ' ')
             .replace(/  +/g, ' ')
             .replace(/\n\s*\n\s*\n/g, '\n\n')
@@ -402,8 +463,21 @@ async function extractCPPT(page, source, medId) {
         return text;
     });
 
-    // Also try to extract structured CPPT data
-    const cpptData = await page.evaluate(() => {
+    console.log(`[Medify] Extracted CPPT text length: ${text.length}, contains Dibya: ${/dibya/i.test(text)}`);
+
+    // If no text extracted (no Dr. Dibya entry), return empty
+    if (!text || text.length < 50) {
+        console.log(`[Medify] No Dr. Dibya CPPT found, skipping patient`);
+        return {
+            rawText: '',
+            structured: { subjective: {}, objective: {}, assessment: {}, plan: {} },
+            skipReason: 'no_dibya_cppt'
+        };
+    }
+
+    // Parse structured CPPT data FROM THE FILTERED TEXT (not full page)
+    // This ensures we only parse Dr. Dibya's entries
+    const cpptData = await page.evaluate((dibyaText) => {
         const cpptData = {
             subjective: {},
             objective: {},
@@ -411,7 +485,8 @@ async function extractCPPT(page, source, medId) {
             plan: {}
         };
 
-        const pageText = document.body.innerText;
+        // Use the filtered Dr. Dibya text, not full page
+        const pageText = dibyaText;
 
         // Parse SUBJECTIVE section
         const subjectiveMatch = pageText.match(/SUBJECTIVE([\s\S]*?)(?=OBJECTIVE|$)/i);
@@ -443,15 +518,30 @@ async function extractCPPT(page, source, medId) {
             if (bbMatch) cpptData.objective.berat_badan = parseFloat(bbMatch[1].replace(',', '.'));
         }
 
-        // Parse ASSESSMENT section
-        const assessmentMatch = pageText.match(/ASSESSMENT([\s\S]*?)(?=PLAN|PLANNING|$)/i);
-        if (assessmentMatch) {
-            const assText = assessmentMatch[1].trim();
+        // Parse ASSESSMENT section - try multiple patterns (Gambiran may use different labels)
+        const assessmentPatterns = [
+            /ASSESSMENT([\s\S]*?)(?=PLAN|PLANNING|Dibuat|TTD|$)/i,
+            /ASSESMEN([\s\S]*?)(?=PLAN|PLANNING|Dibuat|TTD|$)/i,      // Indonesian variant
+            /ASSESMENT([\s\S]*?)(?=PLAN|PLANNING|Dibuat|TTD|$)/i,     // Typo variant
+            /A\s*:\s*([\s\S]*?)(?=P\s*:|PLAN|$)/i                     // SOAP format A:
+        ];
 
-            // Get first line as diagnosis
+        let assText = null;
+        for (const pattern of assessmentPatterns) {
+            const match = pageText.match(pattern);
+            if (match) {
+                assText = match[1].trim();
+                break;
+            }
+        }
+
+        if (assText) {
+            // Get ALL lines as diagnosis (join with space, not just first line)
+            // This captures full diagnosis like "G2P0101 uk 9 3/7mgg + kepala + TB"
             const lines = assText.split('\n').filter(l => l.trim());
             if (lines.length > 0) {
-                cpptData.assessment.diagnosis = lines[0].trim();
+                // Join all meaningful lines for full diagnosis
+                cpptData.assessment.diagnosis = lines.slice(0, 3).join(' ').trim();
             }
 
             // Parse obstetric formula (MEDIFY format: G2P0101)
@@ -463,12 +553,22 @@ async function extractCPPT(page, source, medId) {
                 cpptData.assessment.anak_hidup = parseInt(medifyMatch[5]);
                 cpptData.assessment.is_obstetric = true;
             } else {
-                // Standard format
-                const obsMatch = assText.match(/G(\d+)\s*P([\d\-]+)/i);
-                if (obsMatch) {
-                    cpptData.assessment.gravida = parseInt(obsMatch[1]);
-                    cpptData.assessment.para = obsMatch[2];
+                // Try dash format: G1 P0-0 or G2P1-1
+                const dashMatch = assText.match(/G(\d+)\s*P(\d+)-(\d+)/i);
+                if (dashMatch) {
+                    cpptData.assessment.gravida = parseInt(dashMatch[1]);
+                    cpptData.assessment.para = parseInt(dashMatch[2]);
+                    cpptData.assessment.abortus = 0;
+                    cpptData.assessment.anak_hidup = parseInt(dashMatch[3]);
                     cpptData.assessment.is_obstetric = true;
+                } else {
+                    // Standard format
+                    const obsMatch = assText.match(/G(\d+)\s*P([\d\-]+)/i);
+                    if (obsMatch) {
+                        cpptData.assessment.gravida = parseInt(obsMatch[1]);
+                        cpptData.assessment.para = parseInt(obsMatch[2]);
+                        cpptData.assessment.is_obstetric = true;
+                    }
                 }
             }
 
@@ -488,7 +588,7 @@ async function extractCPPT(page, source, medId) {
         }
 
         return cpptData;
-    });
+    }, text);  // Pass the filtered Dr. Dibya text as parameter
 
     return {
         rawText: text,

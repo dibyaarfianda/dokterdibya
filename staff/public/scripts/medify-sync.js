@@ -260,7 +260,25 @@ async function startSync(source) {
     const statusContainer = document.getElementById('sync-status-container');
     const progressContainer = document.getElementById('batch-progress');
 
-    if (!confirm(`Mulai sync data dari ${getSourceName(source)}?`)) {
+    // Get date range from inputs
+    const dateStartInput = document.getElementById('medify-date-start');
+    const dateEndInput = document.getElementById('medify-date-end');
+
+    // Convert YYYY-MM-DD to DD-MM-YYYY for API
+    const convertDate = (dateStr) => {
+        if (!dateStr) return null;
+        const [year, month, day] = dateStr.split('-');
+        return `${day}-${month}-${year}`;
+    };
+
+    const dateStart = convertDate(dateStartInput?.value);
+    const dateEnd = convertDate(dateEndInput?.value);
+
+    const dateRangeText = dateStart && dateEnd
+        ? ` (${dateStartInput.value} s/d ${dateEndInput.value})`
+        : ' (7 hari terakhir)';
+
+    if (!confirm(`Mulai sync data dari ${getSourceName(source)}${dateRangeText}?`)) {
         return;
     }
 
@@ -281,7 +299,8 @@ async function startSync(source) {
 
     try {
         const data = await apiRequest(`/medify-batch/sync/${source}`, {
-            method: 'POST'
+            method: 'POST',
+            body: JSON.stringify({ dateStart, dateEnd })
         });
 
         if (data.success) {

@@ -5940,10 +5940,10 @@
             }
 
             // Open document
-            if (fileUrl) {
+            if (fileUrl && !fileUrl.startsWith('resume:')) {
                 window.open(fileUrl, '_blank');
-            } else if (docType === 'resume_medis') {
-                // For resume medis without file, fetch and show content in modal
+            } else if (docType === 'resume_medis' || (fileUrl && fileUrl.startsWith('resume:'))) {
+                // For resume medis without file or with "resume:" prefix, fetch and show content in modal
                 openResumeModal(docId);
             }
         }
@@ -5978,9 +5978,9 @@
             updateSectionGlow('documents-section', remainingNew > 0);
 
             // Open document in modal or new tab
-            if (fileUrl) {
+            if (fileUrl && !fileUrl.startsWith('resume:')) {
                 showDocumentModal(fileUrl, title || 'Dokumen');
-            } else if (docType === 'resume_medis') {
+            } else if (docType === 'resume_medis' || (fileUrl && fileUrl.startsWith('resume:'))) {
                 openResumeModal(docId);
             }
         }

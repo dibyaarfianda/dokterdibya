@@ -20,6 +20,7 @@ const requireDocterOrAdmin = requireRoles('dokter', 'admin');
  */
 router.post('/sync/:source', verifyToken, requireDocterOrAdmin, async (req, res) => {
     const { source } = req.params;
+    const { dateStart, dateEnd } = req.body; // Optional date range for SIMRS search
     const userId = req.user.id;
     const userName = req.user.name;
 
@@ -91,11 +92,12 @@ router.post('/sync/:source', verifyToken, requireDocterOrAdmin, async (req, res)
         );
 
         // Log activity
+        const dateRangeInfo = dateStart && dateEnd ? `, Date: ${dateStart} to ${dateEnd}` : '';
         await activityLogger.log(userId, userName, 'MEDIFY Sync Started',
-            `Source: ${source}, Batch: ${batchId}, Patients: ${patients.length}`);
+            `Source: ${source}, Batch: ${batchId}, Patients: ${patients.length}${dateRangeInfo}`);
 
         // Start background processing (async - don't await)
-        processSync(batchId, source).catch(err => {
+        processSync(batchId, source, { dateStart, dateEnd }).catch(err => {
             console.error('[Medify] Sync error:', err);
         });
 
@@ -375,9 +377,475 @@ router.get('/credentials-status', verifyToken, async (req, res) => {
 });
 
 /**
- * Background sync processor
+ * POST /api/medify-batch/test-sync
+ * Test sync: fetch data from SIMRS using one patient's name, save to another patient
+ * Used for testing the full sync flow without modifying real patient data
  */
-async function processSync(batchId, source) {
+router.post('/test-sync', verifyToken, requireDocterOrAdmin, async (req, res) => {
+    const { targetPatientId, simrsSearchName, source, dateStart, dateEnd } = req.body;
+    const userId = req.user.id;
+    const userName = req.user.name;
+
+    try {
+        // Validate inputs
+        if (!targetPatientId || !simrsSearchName || !source) {
+            return res.status(400).json({
+                success: false,
+                message: 'targetPatientId, simrsSearchName, and source are required'
+            });
+        }
+
+        if (!['rsia_melinda', 'rsud_gambiran'].includes(source)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invalid source. Must be rsia_melinda or rsud_gambiran'
+            });
+        }
+
+        // Check if target patient exists
+        const targetPatient = await pool.query(
+            `SELECT id, full_name, birth_date, age FROM patients WHERE id = ?`,
+            [targetPatientId]
+        );
+
+        if (!targetPatient || targetPatient.length === 0) {
+            return res.status(404).json({
+                success: false,
+                message: `Target patient ${targetPatientId} not found`
+            });
+        }
+
+        console.log(`[Medify Test] Starting test sync: ${simrsSearchName} → ${targetPatient[0].full_name}`);
+
+        // Log activity
+        await activityLogger.log(userId, userName, 'MEDIFY Test Sync Started',
+            `Target: ${targetPatient[0].full_name}, SIMRS Search: ${simrsSearchName}, Source: ${source}`);
+
+        // Start test sync in background
+        testSyncProcess(targetPatientId, targetPatient[0].full_name, simrsSearchName, source, { dateStart, dateEnd })
+            .then(result => {
+                console.log(`[Medify Test] Test sync completed:`, result);
+            })
+            .catch(err => {
+                console.error('[Medify Test] Test sync error:', err);
+            });
+
+        res.json({
+            success: true,
+            message: `Test sync started: searching SIMRS for "${simrsSearchName}", will save to ${targetPatient[0].full_name}`,
+            targetPatientId,
+            targetPatientName: targetPatient[0].full_name,
+            simrsSearchName,
+            source
+        });
+
+    } catch (error) {
+        console.error('[Medify Test] Error:', error);
+        res.status(500).json({
+            success: false,
+            message: error.message
+        });
+    }
+});
+
+/**
+ * Test sync processor - single patient
+ */
+async function testSyncProcess(targetPatientId, targetPatientName, simrsSearchName, source, options = {}) {
+    console.log(`[Medify Test] Processing: ${simrsSearchName} → ${targetPatientName}`);
+
+    const browser = await medifyService.getBrowser();
+    let page = null;
+
+    try {
+        page = await browser.newPage();
+        await page.setViewport({ width: 1366, height: 768 });
+
+        // Login to SIMRS
+        const loginSuccess = await medifyService.login(page, source);
+        if (!loginSuccess) {
+            throw new Error('Failed to login to SIMRS');
+        }
+        console.log(`[Medify Test] Logged in to ${source}`);
+
+        // Navigate to history page
+        const config = medifyService.SIMRS_CONFIG[source];
+        await page.goto(config.historyUrl, { waitUntil: 'networkidle0', timeout: 60000 });
+        await page.waitForSelector('table', { timeout: 15000 });
+        await medifyService.delay(2000);
+
+        // Set date filter
+        const today = new Date();
+        const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+        const formatDate = (d) => {
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${day}-${month}-${year}`;
+        };
+
+        const dateFrom = options.dateStart || formatDate(sevenDaysAgo);
+        const dateTo = options.dateEnd || formatDate(today);
+        console.log(`[Medify Test] Date range: ${dateFrom} to ${dateTo}`);
+
+        // Click Reset first
+        await page.evaluate(() => {
+            const buttons = document.querySelectorAll('button.btn-info');
+            for (const btn of buttons) {
+                if (btn.innerText.includes('Reset')) {
+                    btn.click();
+                    return;
+                }
+            }
+        });
+        await medifyService.delay(1500);
+
+        // Select dokter Dibya using the searchable dropdown (Select2)
+        try {
+            // First find and set the underlying select element directly
+            const dpjpResult = await page.evaluate(() => {
+                // Find the select element for Dokter/DPJP
+                const selects = document.querySelectorAll('select');
+                for (const sel of selects) {
+                    const label = sel.closest('.form-group, .col, div')?.querySelector('label');
+                    const labelText = label?.innerText?.toLowerCase() || '';
+                    const selId = sel.id?.toLowerCase() || '';
+                    const selName = sel.name?.toLowerCase() || '';
+
+                    if (labelText.includes('dokter') || labelText.includes('dpjp') ||
+                        selId.includes('dokter') || selId.includes('dpjp') ||
+                        selName.includes('dokter') || selName.includes('dpjp')) {
+
+                        // Find option containing "dibya"
+                        const options = sel.querySelectorAll('option');
+                        for (const opt of options) {
+                            if (opt.innerText.toLowerCase().includes('dibya')) {
+                                // Set the value directly
+                                sel.value = opt.value;
+                                // Trigger change event for Select2 to update
+                                sel.dispatchEvent(new Event('change', { bubbles: true }));
+                                // Also try jQuery trigger if available
+                                if (window.$ && $(sel).trigger) {
+                                    $(sel).trigger('change');
+                                }
+                                return {
+                                    found: true,
+                                    selected: opt.innerText.trim(),
+                                    value: opt.value,
+                                    selectId: sel.id || sel.name
+                                };
+                            }
+                        }
+                        return { found: false, error: 'Dibya option not found in select options', selectId: sel.id };
+                    }
+                }
+                return { found: false, error: 'Dokter/DPJP select element not found' };
+            });
+            console.log(`[Medify Test] DPJP filter:`, dpjpResult);
+
+            // If direct select didn't work, try the visual Select2 interaction
+            if (!dpjpResult.found) {
+                console.log(`[Medify Test] Trying Select2 visual interaction...`);
+                // Click the Select2 container to open dropdown
+                await page.evaluate(() => {
+                    const select2Containers = document.querySelectorAll('.select2-container, .select2-selection');
+                    for (const container of select2Containers) {
+                        const label = container.closest('.form-group, .col, div')?.querySelector('label');
+                        if (label?.innerText?.toLowerCase().includes('dokter')) {
+                            container.click();
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+                await medifyService.delay(500);
+                await page.keyboard.type('dibya', { delay: 100 });
+                await medifyService.delay(1500);
+
+                // Click the matching option
+                await page.evaluate(() => {
+                    const options = document.querySelectorAll('.select2-results__option');
+                    for (const opt of options) {
+                        if (opt.innerText.toLowerCase().includes('dibya')) {
+                            opt.click();
+                            return true;
+                        }
+                    }
+                    return false;
+                });
+            }
+
+            await medifyService.delay(1000); // Wait for filter to apply
+
+        } catch (dpjpError) {
+            console.log(`[Medify Test] DPJP filter error (continuing):`, dpjpError.message);
+        }
+
+        // Set date range
+        await page.evaluate((from, to) => {
+            const fromEl = document.querySelector('#tanggalMulai');
+            const toEl = document.querySelector('#tanggalAkhir');
+            if (fromEl) {
+                fromEl.value = from;
+                fromEl.dispatchEvent(new Event('input', { bubbles: true }));
+                fromEl.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            if (toEl) {
+                toEl.value = to;
+                toEl.dispatchEvent(new Event('input', { bubbles: true }));
+                toEl.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        }, dateFrom, dateTo);
+        await medifyService.delay(500);
+
+        // First change DataTable to show ALL rows before searching
+        await page.evaluate(() => {
+            const lengthSelect = document.querySelector('select[name="historiTable_length"]');
+            if (lengthSelect) {
+                // Check if "-1" (All) option exists, otherwise use max available
+                const allOption = Array.from(lengthSelect.options).find(o => o.value === '-1' || o.text.toLowerCase().includes('all'));
+                if (allOption) {
+                    lengthSelect.value = allOption.value;
+                } else {
+                    // Use the last (largest) option
+                    lengthSelect.value = lengthSelect.options[lengthSelect.options.length - 1].value;
+                }
+                lengthSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+        await medifyService.delay(2000);
+
+        // Click search
+        await page.evaluate(() => {
+            const buttons = document.querySelectorAll('button.btn-primary');
+            for (const btn of buttons) {
+                if (btn.innerText.includes('Cari')) {
+                    btn.click();
+                    return;
+                }
+            }
+        });
+        await medifyService.delay(5000); // Wait longer for all rows to load
+
+        // Get all patients from table
+        const allPatients = await page.evaluate(() => {
+            const rows = document.querySelectorAll('table tbody tr');
+            const results = [];
+            rows.forEach(row => {
+                const style = window.getComputedStyle(row);
+                if (style.display === 'none') return;
+
+                const cells = row.querySelectorAll('td');
+                if (cells.length >= 6) {
+                    const patientCell = cells[2];
+                    const cellText = patientCell?.innerText?.trim() || '';
+                    const lines = cellText.split('\n');
+                    const patientName = lines.length >= 2 ? lines[1].trim() : cellText;
+
+                    const dateCell = cells[5];
+                    const visitDate = dateCell?.innerText?.trim() || '';
+
+                    const actionCell = cells[cells.length - 1];
+                    const actionLink = actionCell?.querySelector('a[href*="/kasus/"]');
+                    let medId = null;
+
+                    if (actionLink) {
+                        const href = actionLink.getAttribute('href');
+                        const match = href.match(/\/kasus\/([\w]+)/);
+                        if (match) {
+                            medId = match[1];
+                        }
+                    }
+
+                    if (patientName && medId) {
+                        results.push({ name: patientName, medId, visitDate });
+                    }
+                }
+            });
+            return results;
+        });
+
+        // Search for simrsSearchName - use ALL words (min 2 chars to filter single letters)
+        const searchName = simrsSearchName.toLowerCase().trim();
+        const searchWords = searchName.split(/\s+/).filter(w => w.length >= 2);
+
+        // Debug: log all patients found
+        console.log(`[Medify Test] Search words: ${searchWords.join(', ')}`);
+        console.log(`[Medify Test] Total patients in table: ${allPatients.length}`);
+        console.log(`[Medify Test] First 20 patients:`, allPatients.map(p => p.name).slice(0, 20));
+
+        const matchingPatients = allPatients.filter(p => {
+            const pName = p.name.toLowerCase();
+            // Require ALL search words to match
+            return searchWords.every(word => pName.includes(word));
+        });
+
+        console.log(`[Medify Test] Found ${matchingPatients.length} matches for "${simrsSearchName}"`);
+
+        if (matchingPatients.length === 0) {
+            throw new Error(`Patient "${simrsSearchName}" not found in SIMRS`);
+        }
+
+        // Get first match
+        const firstMatch = matchingPatients[0];
+        console.log(`[Medify Test] Using match: ${firstMatch.name} (${firstMatch.medId})`);
+
+        // Extract CPPT
+        const cpptResult = await medifyService.extractCPPT(page, source, firstMatch.medId);
+        console.log(`[Medify Test] CPPT extracted, length: ${cpptResult.rawText.length}`);
+
+        // Parse with AI
+        const aiParseResult = await parseWithAI(cpptResult.rawText, 'obstetri');
+        console.log(`[Medify Test] AI parse complete`);
+
+        // Save to target patient (creates new DRD)
+        const recordsSaved = await saveMedicalRecord(targetPatientId, source, aiParseResult);
+        console.log(`[Medify Test] Saved ${recordsSaved} record sections`);
+
+        // Get the new MR ID
+        const newMR = await pool.query(
+            `SELECT mr_id FROM sunday_clinic_records
+             WHERE patient_id = ? AND visit_location = ?
+             ORDER BY created_at DESC LIMIT 1`,
+            [targetPatientId, source]
+        );
+
+        const mrId = newMR && newMR.length > 0 ? newMR[0].mr_id : null;
+        console.log(`[Medify Test] New MR ID: ${mrId}`);
+
+        // Generate resume and publish to portal
+        if (mrId) {
+            await generateAndPublishResume(targetPatientId, mrId);
+        }
+
+        return {
+            success: true,
+            targetPatientId,
+            mrId,
+            recordsSaved,
+            simrsMatch: firstMatch.name
+        };
+
+    } catch (error) {
+        console.error(`[Medify Test] Error:`, error);
+        return {
+            success: false,
+            error: error.message
+        };
+    } finally {
+        if (page) {
+            await page.close();
+        }
+    }
+}
+
+/**
+ * Generate resume medis and publish to patient portal
+ */
+async function generateAndPublishResume(patientId, mrId) {
+    try {
+        console.log(`[Medify] Generating resume for ${patientId} / ${mrId}`);
+
+        // Fetch patient data
+        const patients = await pool.query(
+            'SELECT * FROM patients WHERE id = ?',
+            [patientId]
+        );
+
+        if (!patients || patients.length === 0) {
+            console.error(`[Medify] Patient ${patientId} not found`);
+            return;
+        }
+
+        const patient = patients[0];
+        const identitas = {
+            nama: patient.full_name,
+            tanggal_lahir: patient.birth_date,
+            umur: patient.age,
+            alamat: patient.address,
+            no_telp: patient.phone
+        };
+
+        // Fetch medical records for this visit - get LATEST record for each type
+        const records = await pool.query(
+            `SELECT record_type, record_data FROM medical_records
+             WHERE mr_id = ? AND record_type != 'resume_medis'
+             ORDER BY created_at DESC`,
+            [mrId]
+        );
+
+        if (!records || records.length === 0) {
+            console.error(`[Medify] No records found for ${mrId}`);
+            return;
+        }
+
+        // Organize records by type - use FIRST occurrence (which is LATEST due to ORDER BY DESC)
+        const recordsByType = {};
+        records.forEach(record => {
+            if (!recordsByType[record.record_type]) {
+                let data = record.record_data;
+                if (typeof data === 'string') {
+                    try { data = JSON.parse(data); } catch (e) {}
+                }
+                recordsByType[record.record_type] = data;
+            }
+        });
+
+        // Generate resume using the function from medical-records.js
+        const { generateMedicalResume } = require('./medical-records');
+        const resume = generateMedicalResume(identitas, recordsByType, { obat: [], tindakan: [] });
+
+        // Save resume to medical_records
+        const now = new Date();
+        await pool.query(
+            `INSERT INTO medical_records (mr_id, patient_id, record_type, record_data, created_at)
+             VALUES (?, ?, 'resume_medis', ?, ?)
+             ON DUPLICATE KEY UPDATE record_data = VALUES(record_data), updated_at = NOW()`,
+            [mrId, patientId, JSON.stringify({ resume, saved_at: now.toISOString() }), now]
+        );
+        console.log(`[Medify] Resume saved to medical_records`);
+
+        // Get today's date for title
+        const dateStr = now.toLocaleDateString('id-ID', {
+            day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'Asia/Jakarta'
+        });
+
+        // Insert into patient_documents with status='published'
+        const docTitle = `Resume Medis - ${patient.full_name} - ${dateStr}`;
+        await pool.query(
+            `INSERT INTO patient_documents
+             (patient_id, mr_id, document_type, title, file_url, file_name, file_type, status, source, description, created_at)
+             VALUES (?, ?, 'resume_medis', ?, ?, ?, 'text/plain', 'published', 'clinic', 'Auto-generated from MEDIFY sync', NOW())`,
+            [patientId, mrId, docTitle, `resume:${mrId}`, `resume_${mrId}.txt`]
+        );
+        console.log(`[Medify] Resume published to patient_documents`);
+
+        // Create patient notification
+        await pool.query(
+            `INSERT INTO patient_notifications
+             (patient_id, type, title, message, created_at)
+             VALUES (?, 'document', 'Resume Medis Baru', ?, NOW())`,
+            [patientId, `Resume medis kunjungan ${mrId} telah tersedia di portal Anda.`]
+        );
+        console.log(`[Medify] Patient notification created`);
+
+        return true;
+
+    } catch (error) {
+        console.error(`[Medify] Error generating/publishing resume:`, error);
+        return false;
+    }
+}
+
+/**
+ * Background sync processor
+ * @param {string} batchId - Batch ID
+ * @param {string} source - SIMRS source (rsia_melinda or rsud_gambiran)
+ * @param {Object} options - Optional parameters
+ * @param {string} options.dateStart - Start date (DD-MM-YYYY format)
+ * @param {string} options.dateEnd - End date (DD-MM-YYYY format)
+ */
+async function processSync(batchId, source, options = {}) {
     console.log(`[Medify] Starting sync for batch ${batchId}`);
 
     const browser = await medifyService.getBrowser();
@@ -454,9 +922,9 @@ async function processSync(batchId, source) {
                 await page.waitForSelector('table', { timeout: 15000 });
                 await medifyService.delay(2000);
 
-                // Set date filter (last 60 days to now)
+                // Set date filter - use provided dates or default to last 7 days
                 const today = new Date();
-                const sixtyDaysAgo = new Date(today.getTime() - 60 * 24 * 60 * 60 * 1000);
+                const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
 
                 // Format as DD-MM-YYYY
                 const formatDate = (d) => {
@@ -465,8 +933,10 @@ async function processSync(batchId, source) {
                     const year = d.getFullYear();
                     return `${day}-${month}-${year}`;
                 };
-                const dateFrom = formatDate(sixtyDaysAgo);
-                const dateTo = formatDate(today);
+
+                // Use provided dates or defaults
+                const dateFrom = options.dateStart || formatDate(sevenDaysAgo);
+                const dateTo = options.dateEnd || formatDate(today);
                 console.log(`[Medify] Setting date range: ${dateFrom} to ${dateTo}`);
 
                 // Click Reset first to clear any previous filters
@@ -481,23 +951,38 @@ async function processSync(batchId, source) {
                 });
                 await medifyService.delay(2000);
 
-                // For Gambiran: Select dr. Dibya Arfianda as DPJP filter
-                if (source === 'rsud_gambiran') {
-                    await page.evaluate(() => {
-                        const dokterSelect = document.getElementById('dokter');
-                        if (dokterSelect) {
-                            // Find dr. Dibya option (value = 50)
-                            const options = Array.from(dokterSelect.options);
-                            const dibyaOption = options.find(o => o.text.toLowerCase().includes('dibya'));
-                            if (dibyaOption) {
-                                dokterSelect.value = dibyaOption.value;
-                                dokterSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                // Select dr. Dibya as DPJP filter (for both Gambiran and any other SIMRS)
+                const dpjpResult = await page.evaluate(() => {
+                    const selects = document.querySelectorAll('select');
+                    for (const sel of selects) {
+                        const label = sel.closest('.form-group, .col, div')?.querySelector('label');
+                        const labelText = label?.innerText?.toLowerCase() || '';
+                        const selId = sel.id?.toLowerCase() || '';
+                        const selName = sel.name?.toLowerCase() || '';
+
+                        if (labelText.includes('dokter') || labelText.includes('dpjp') ||
+                            selId.includes('dokter') || selId.includes('dpjp') ||
+                            selName.includes('dokter') || selName.includes('dpjp')) {
+
+                            const options = sel.querySelectorAll('option');
+                            for (const opt of options) {
+                                if (opt.innerText.toLowerCase().includes('dibya')) {
+                                    sel.value = opt.value;
+                                    sel.dispatchEvent(new Event('change', { bubbles: true }));
+                                    if (window.$ && $(sel).trigger) {
+                                        $(sel).trigger('change');
+                                    }
+                                    return { found: true, selected: opt.innerText.trim(), value: opt.value };
+                                }
                             }
                         }
-                    });
-                    await medifyService.delay(500);
-                    console.log(`[Medify] Selected DPJP: dr. Dibya Arfianda`);
+                    }
+                    return { found: false };
+                });
+                if (dpjpResult.found) {
+                    console.log(`[Medify] Selected DPJP: ${dpjpResult.selected}`);
                 }
+                await medifyService.delay(1000);
 
                 // Set date range
                 await page.evaluate((from, to) => {
@@ -516,6 +1001,21 @@ async function processSync(batchId, source) {
                 }, dateFrom, dateTo);
                 await medifyService.delay(500);
 
+                // Change DataTable to show ALL rows before searching
+                await page.evaluate(() => {
+                    const lengthSelect = document.querySelector('select[name="historiTable_length"]');
+                    if (lengthSelect) {
+                        const allOption = Array.from(lengthSelect.options).find(o => o.value === '-1' || o.text.toLowerCase().includes('all'));
+                        if (allOption) {
+                            lengthSelect.value = allOption.value;
+                        } else {
+                            lengthSelect.value = lengthSelect.options[lengthSelect.options.length - 1].value;
+                        }
+                        lengthSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+                });
+                await medifyService.delay(2000);
+
                 // Click search button
                 await page.evaluate(() => {
                     const buttons = document.querySelectorAll('button.btn-primary');
@@ -526,17 +1026,7 @@ async function processSync(batchId, source) {
                         }
                     }
                 });
-                await medifyService.delay(3000);
-
-                // Change DataTable to show 100 rows instead of 10
-                await page.evaluate(() => {
-                    const lengthSelect = document.querySelector('select[name="historiTable_length"]');
-                    if (lengthSelect) {
-                        lengthSelect.value = '100';
-                        lengthSelect.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
-                });
-                await medifyService.delay(2000);
+                await medifyService.delay(5000); // Wait longer for all rows to load
 
                 // Get ALL patients from the table (don't use DataTable search - it doesn't work reliably)
                 const allPatients = await page.evaluate(() => {
@@ -585,14 +1075,14 @@ async function processSync(batchId, source) {
                 });
 
                 // Filter to find patients matching the search name (case insensitive)
-                // Use longer words (4+ chars) to reduce false positives
-                const searchName = job.patient_name.toLowerCase();
-                const searchWords = searchName.split(/\s+/).filter(w => w.length >= 4); // Only words with 4+ chars
+                // Use ALL words (min 2 chars) and require ALL to match
+                const searchName = job.patient_name.toLowerCase().trim();
+                const searchWords = searchName.split(/\s+/).filter(w => w.length >= 2);
 
                 const matchingPatients = allPatients.filter(p => {
                     const pName = p.name.toLowerCase();
-                    // Check if any significant (long) word from search name appears in patient name
-                    return searchWords.some(word => pName.includes(word));
+                    // Require ALL search words to match
+                    return searchWords.every(word => pName.includes(word));
                 });
 
                 console.log(`[Medify] Found ${allPatients.length} patients in table, ${matchingPatients.length} match "${job.patient_name}":`);
@@ -820,10 +1310,17 @@ async function saveMedicalRecord(patientId, source, parsedData) {
             const nextSeq = seqResult[0]?.next_seq || 1;
             mrId = `DRD${String(nextSeq).padStart(4, '0')}`;
 
+            // Generate folder_path: DDMMYYYY-SEQ_PATIENTID
+            const today = new Date();
+            const dateStr = String(today.getDate()).padStart(2, '0') +
+                String(today.getMonth() + 1).padStart(2, '0') +
+                today.getFullYear();
+            const folderPath = `${dateStr}-${nextSeq}_${patientId}`;
+
             await pool.query(
-                `INSERT INTO sunday_clinic_records (mr_id, mr_sequence, patient_id, visit_location, import_source, created_at, last_activity_at)
-                 VALUES (?, ?, ?, ?, ?, NOW(), NOW())`,
-                [mrId, nextSeq, patientId, visitLocation, `medify_${source}`]
+                `INSERT INTO sunday_clinic_records (mr_id, mr_sequence, patient_id, visit_location, import_source, folder_path, created_at, last_activity_at)
+                 VALUES (?, ?, ?, ?, ?, ?, NOW(), NOW())`,
+                [mrId, nextSeq, patientId, visitLocation, `medify_${source}`, folderPath]
             );
             console.log(`[Medify] Created new MR: ${mrId}`);
         }
@@ -831,49 +1328,160 @@ async function saveMedicalRecord(patientId, source, parsedData) {
         // Determine record types to save based on parsed data
         let recordsSaved = 0;
         const now = new Date();
+        // Format: YYYY-MM-DDTHH:MM (required by form datetime inputs)
+        const recordDatetime = now.toISOString().slice(0, 16);
+
+        // Helper to convert DD/MM/YYYY or DD-MM-YYYY to YYYY-MM-DD
+        const convertDateFormat = (dateStr) => {
+            if (!dateStr) return null;
+            // Match DD/MM/YYYY or DD-MM-YYYY
+            const match = dateStr.match(/(\d{1,2})[-\/](\d{1,2})[-\/](\d{2,4})/);
+            if (match) {
+                let [, day, month, year] = match;
+                // Handle 2-digit year
+                if (year.length === 2) {
+                    year = (parseInt(year) > 50 ? '19' : '20') + year;
+                }
+                return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+            }
+            return dateStr; // Return as-is if can't parse
+        };
+
+        // Build anamnesa data - map field names to match form expectations
+        const anamnesaData = {
+            record_datetime: recordDatetime,
+            keluhan_utama: parsedData.subjective?.keluhan_utama,
+            // Map field names: rps → riwayat_kehamilan_saat_ini, etc.
+            riwayat_kehamilan_saat_ini: parsedData.subjective?.rps,
+            detail_riwayat_penyakit: parsedData.subjective?.rpd,
+            riwayat_keluarga: parsedData.subjective?.rpk,
+            // Convert dates to YYYY-MM-DD format for form inputs
+            hpht: convertDateFormat(parsedData.subjective?.hpht),
+            hpl: convertDateFormat(parsedData.subjective?.hpl),
+            // Copy obstetric fields from assessment to anamnesa (form expects them here)
+            gravida: parsedData.assessment?.gravida ?? parsedData.subjective?.gravida,
+            para: parsedData.assessment?.para ?? parsedData.subjective?.para,
+            abortus: parsedData.assessment?.abortus ?? parsedData.subjective?.abortus,
+            anak_hidup: parsedData.assessment?.anak_hidup ?? parsedData.subjective?.anak_hidup
+        };
 
         // Save anamnesa if present
-        if (parsedData.subjective && Object.keys(parsedData.subjective).length > 0) {
+        if (anamnesaData && Object.keys(anamnesaData).length > 0) {
             await pool.query(
                 `INSERT INTO medical_records (mr_id, patient_id, record_type, record_data, created_at)
                  VALUES (?, ?, 'anamnesa', ?, ?)
                  ON DUPLICATE KEY UPDATE record_data = VALUES(record_data), updated_at = NOW()`,
-                [mrId, patientId, JSON.stringify(parsedData.subjective), now]
+                [mrId, patientId, JSON.stringify(anamnesaData), now]
             );
             recordsSaved++;
+            console.log(`[Medify] Saved anamnesa for ${mrId}`);
         }
 
-        // Save pemeriksaan_obstetri if present
+        // Save physical_exam (vital signs) if present
+        const physicalExamData = {
+            record_datetime: recordDatetime,
+            keadaan_umum: parsedData.objective?.keadaan_umum,
+            tensi: parsedData.objective?.tensi,
+            nadi: parsedData.objective?.nadi,
+            suhu: parsedData.objective?.suhu,
+            spo2: parsedData.objective?.spo2,
+            rr: parsedData.objective?.rr,
+            gcs: parsedData.objective?.gcs,
+            tinggi_badan: parsedData.objective?.tinggi_badan || parsedData.identity?.tinggi_badan,
+            berat_badan: parsedData.objective?.berat_badan || parsedData.identity?.berat_badan
+        };
+        // Save if any vital sign is present
+        if (physicalExamData.tensi || physicalExamData.nadi || physicalExamData.suhu ||
+            physicalExamData.keadaan_umum || physicalExamData.tinggi_badan || physicalExamData.berat_badan) {
+            await pool.query(
+                `INSERT INTO medical_records (mr_id, patient_id, record_type, record_data, created_at)
+                 VALUES (?, ?, 'physical_exam', ?, ?)
+                 ON DUPLICATE KEY UPDATE record_data = VALUES(record_data), updated_at = NOW()`,
+                [mrId, patientId, JSON.stringify(physicalExamData), now]
+            );
+            recordsSaved++;
+            console.log(`[Medify] Saved physical_exam for ${mrId}`);
+        }
+
+        // Save pemeriksaan_obstetri if present (obstetric-specific findings)
+        const obstetriData = {
+            record_datetime: recordDatetime,
+            // TFU, DJJ, leopold, etc. would go here if parsed
+            ...parsedData.objective
+        };
         if (parsedData.objective && Object.keys(parsedData.objective).length > 0) {
             await pool.query(
                 `INSERT INTO medical_records (mr_id, patient_id, record_type, record_data, created_at)
                  VALUES (?, ?, 'pemeriksaan_obstetri', ?, ?)
                  ON DUPLICATE KEY UPDATE record_data = VALUES(record_data), updated_at = NOW()`,
-                [mrId, patientId, JSON.stringify(parsedData.objective), now]
+                [mrId, patientId, JSON.stringify(obstetriData), now]
             );
             recordsSaved++;
+            console.log(`[Medify] Saved pemeriksaan_obstetri for ${mrId}`);
+        }
+
+        // Save usg (USG data from objective) if present
+        const usgData = {
+            record_datetime: recordDatetime,
+            hasil_usg: parsedData.objective?.usg,
+            berat_janin: parsedData.objective?.berat_janin,
+            presentasi: parsedData.objective?.presentasi || parsedData.assessment?.presentasi,
+            plasenta: parsedData.objective?.plasenta,
+            ketuban: parsedData.objective?.ketuban
+        };
+        // Save if USG text or fetal weight is present
+        if (usgData.hasil_usg || usgData.berat_janin || usgData.presentasi) {
+            await pool.query(
+                `INSERT INTO medical_records (mr_id, patient_id, record_type, record_data, created_at)
+                 VALUES (?, ?, 'usg', ?, ?)
+                 ON DUPLICATE KEY UPDATE record_data = VALUES(record_data), updated_at = NOW()`,
+                [mrId, patientId, JSON.stringify(usgData), now]
+            );
+            recordsSaved++;
+            console.log(`[Medify] Saved usg for ${mrId}`);
+        }
+
+        // Save penunjang (lab results) if present
+        const penunjangData = {
+            record_datetime: recordDatetime,
+            hasil_lab: parsedData.objective?.hasil_lab,
+            catatan: parsedData.objective?.catatan_penunjang
+        };
+        if (penunjangData.hasil_lab) {
+            await pool.query(
+                `INSERT INTO medical_records (mr_id, patient_id, record_type, record_data, created_at)
+                 VALUES (?, ?, 'penunjang', ?, ?)
+                 ON DUPLICATE KEY UPDATE record_data = VALUES(record_data), updated_at = NOW()`,
+                [mrId, patientId, JSON.stringify(penunjangData), now]
+            );
+            recordsSaved++;
+            console.log(`[Medify] Saved penunjang for ${mrId}`);
         }
 
         // Save diagnosis if present
         if (parsedData.assessment && Object.keys(parsedData.assessment).length > 0) {
+            const diagnosisData = { record_datetime: recordDatetime, ...parsedData.assessment };
             await pool.query(
                 `INSERT INTO medical_records (mr_id, patient_id, record_type, record_data, created_at)
                  VALUES (?, ?, 'diagnosis', ?, ?)
                  ON DUPLICATE KEY UPDATE record_data = VALUES(record_data), updated_at = NOW()`,
-                [mrId, patientId, JSON.stringify(parsedData.assessment), now]
+                [mrId, patientId, JSON.stringify(diagnosisData), now]
             );
             recordsSaved++;
+            console.log(`[Medify] Saved diagnosis for ${mrId}`);
         }
 
         // Save planning if present
         if (parsedData.plan && Object.keys(parsedData.plan).length > 0) {
+            const planData = { record_datetime: recordDatetime, ...parsedData.plan };
             await pool.query(
                 `INSERT INTO medical_records (mr_id, patient_id, record_type, record_data, created_at)
                  VALUES (?, ?, 'planning', ?, ?)
                  ON DUPLICATE KEY UPDATE record_data = VALUES(record_data), updated_at = NOW()`,
-                [mrId, patientId, JSON.stringify(parsedData.plan), now]
+                [mrId, patientId, JSON.stringify(planData), now]
             );
             recordsSaved++;
+            console.log(`[Medify] Saved planning for ${mrId}`);
         }
 
         // Update last_activity_at on sunday_clinic_records
