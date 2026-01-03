@@ -40,15 +40,6 @@ fun SalesListScreen(
     val uiState by salesViewModel.uiState.collectAsState()
     var showLogoutDialog by remember { mutableStateOf(false) }
 
-    // Pull to refresh
-    val pullRefreshState = rememberPullToRefreshState()
-    if (pullRefreshState.isRefreshing) {
-        LaunchedEffect(true) {
-            salesViewModel.loadSales()
-            pullRefreshState.endRefresh()
-        }
-    }
-
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -78,12 +69,23 @@ fun SalesListScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { salesViewModel.loadSales() }) {
-                        Icon(
-                            Icons.Default.Refresh,
-                            contentDescription = "Refresh",
-                            tint = TextSecondaryDark
-                        )
+                    IconButton(
+                        onClick = { salesViewModel.loadSales() },
+                        enabled = !uiState.isLoading
+                    ) {
+                        if (uiState.isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = TextSecondaryDark,
+                                strokeWidth = 2.dp
+                            )
+                        } else {
+                            Icon(
+                                Icons.Default.Refresh,
+                                contentDescription = "Refresh",
+                                tint = TextSecondaryDark
+                            )
+                        }
                     }
                     IconButton(onClick = { showLogoutDialog = true }) {
                         Icon(
@@ -100,9 +102,7 @@ fun SalesListScreen(
 
             // Sales List
             Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .nestedScroll(pullRefreshState.nestedScrollConnection)
+                modifier = Modifier.fillMaxSize()
             ) {
                 if (uiState.isLoading && uiState.sales.isEmpty()) {
                     CircularProgressIndicator(
@@ -125,6 +125,10 @@ fun SalesListScreen(
                             text = "Belum ada penjualan",
                             color = TextSecondaryDark
                         )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        TextButton(onClick = { salesViewModel.loadSales() }) {
+                            Text("Refresh", color = Primary)
+                        }
                     }
                 } else {
                     LazyColumn(
@@ -142,13 +146,6 @@ fun SalesListScreen(
                         item { Spacer(modifier = Modifier.height(80.dp)) }
                     }
                 }
-
-                PullToRefreshContainer(
-                    state = pullRefreshState,
-                    modifier = Modifier.align(Alignment.TopCenter),
-                    containerColor = CardDark,
-                    contentColor = Primary
-                )
             }
         }
 
