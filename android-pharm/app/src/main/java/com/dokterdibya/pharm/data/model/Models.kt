@@ -19,6 +19,10 @@ data class LoginRequest(
 data class LoginResponse(
     val success: Boolean,
     val message: String? = null,
+    val data: LoginData? = null
+)
+
+data class LoginData(
     val token: String? = null,
     val user: User? = null
 )
