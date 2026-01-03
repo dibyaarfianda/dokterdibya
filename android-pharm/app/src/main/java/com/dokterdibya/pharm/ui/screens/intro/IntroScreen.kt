@@ -36,7 +36,7 @@ fun IntroScreen(
     // Create ExoPlayer
     val exoPlayer = remember {
         ExoPlayer.Builder(context).build().apply {
-            val videoUri = Uri.parse("android.resource://${context.packageName}/${R.raw.intro_video}")
+            val videoUri = Uri.parse("android.resource://${context.packageName}/${R.raw.intro_pharm}")
             setMediaItem(MediaItem.fromUri(videoUri))
             repeatMode = Player.REPEAT_MODE_OFF
             prepare()
