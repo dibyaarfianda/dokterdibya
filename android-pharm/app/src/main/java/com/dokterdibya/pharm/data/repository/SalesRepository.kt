@@ -14,10 +14,13 @@ class SalesRepository @Inject constructor(
     // ==================== Auth ====================
 
     suspend fun login(email: String, password: String): Result<LoginResponse> {
+        android.util.Log.d("SalesRepository", "=== LOGIN STARTED ===")
         return try {
             val response = apiService.login(LoginRequest(email, password))
+            android.util.Log.d("SalesRepository", "Response: code=${response.code()}, success=${response.isSuccessful}")
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
+                android.util.Log.d("SalesRepository", "Body: success=${body.success}, hasToken=${body.token != null}")
                 if (body.success && body.token != null) {
                     android.util.Log.d("SalesRepository", "Saving token: ${body.token.take(20)}...")
                     tokenRepository.saveToken(body.token)
@@ -26,13 +29,17 @@ class SalesRepository @Inject constructor(
                     }
                     // Verify token was saved
                     val savedToken = tokenRepository.getToken().first()
-                    android.util.Log.d("SalesRepository", "Token saved: ${savedToken != null}")
+                    android.util.Log.d("SalesRepository", "Token verified: ${savedToken != null}")
+                } else {
+                    android.util.Log.e("SalesRepository", "NO TOKEN! success=${body.success}, msg=${body.message}")
                 }
                 Result.success(body)
             } else {
+                android.util.Log.e("SalesRepository", "HTTP ERROR: ${response.code()} ${response.errorBody()?.string()}")
                 Result.failure(Exception(response.message() ?: "Login failed"))
             }
         } catch (e: Exception) {
+            android.util.Log.e("SalesRepository", "EXCEPTION: ${e.message}")
             Result.failure(e)
         }
     }
