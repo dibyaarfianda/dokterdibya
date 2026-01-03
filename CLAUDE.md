@@ -754,3 +754,66 @@ git pull origin main
      - Changed save conditions to include sections if they have `recordDatetime` (ensures timestamp always saved)
      - Added form refresh (`fetchRecord`) after API save to reload data from database
    - File: `staff/public/scripts/sunday-clinic/utils/medical-import.js`
+
+### 22. Session Log - 3 Januari 2026
+
+**Android Pharm App - Token/Login Fix**
+
+1. **Issue:** Obat/Alkes dropdown tidak bisa load data, menampilkan "HTTP 401: Missing authorization header"
+
+2. **Root Cause:** Backend API menggunakan wrapper `data` untuk response:
+   ```json
+   { "success": true, "data": { "token": "...", "user": {...} } }
+   ```
+   Tapi Android model mengharapkan `token` di root level.
+
+3. **Fixes:**
+   - **Models.kt:** Tambah `LoginData` wrapper class
+     ```kotlin
+     data class LoginResponse(
+         val success: Boolean,
+         val message: String? = null,
+         val data: LoginData? = null  // Wrapper untuk token & user
+     )
+
+     data class LoginData(
+         val token: String? = null,
+         val user: User? = null
+     )
+
+     data class User(
+         val id: String,  // Backend returns string IDs, NOT Int!
+         val name: String,
+         val email: String,
+         val role: String
+     )
+     ```
+
+   - **SalesRepository.kt:** Akses token via `body.data?.token`
+     ```kotlin
+     val token = body.data?.token
+     val user = body.data?.user
+     if (body.success && token != null) {
+         tokenRepository.saveToken(token)
+     }
+     ```
+
+   - **AuthViewModel.kt:** Akses user via `response.data?.user`
+     ```kotlin
+     if (response.success && response.data?.token != null) {
+         userName = response.data.user?.name
+     }
+     ```
+
+4. **Important Notes:**
+   - Backend `sendSuccess()` ALWAYS wraps data in `data` field
+   - User ID di backend adalah STRING (e.g., "UDZAQUCQWZ"), bukan Int
+   - Tambah delay 300ms sebelum API call untuk memastikan token tersimpan di DataStore
+
+5. **Files Modified:**
+   - `android-pharm/app/src/main/java/com/dokterdibya/pharm/data/model/Models.kt`
+   - `android-pharm/app/src/main/java/com/dokterdibya/pharm/data/repository/SalesRepository.kt`
+   - `android-pharm/app/src/main/java/com/dokterdibya/pharm/viewmodel/AuthViewModel.kt`
+   - `android-pharm/app/src/main/java/com/dokterdibya/pharm/viewmodel/SalesViewModel.kt`
+   - `android-pharm/app/src/main/java/com/dokterdibya/pharm/ui/screens/sales/SalesListScreen.kt`
+   - `android-pharm/app/src/main/java/com/dokterdibya/pharm/ui/screens/sales/NewSaleScreen.kt`

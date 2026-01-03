@@ -186,6 +186,24 @@ class SalesRepository @Inject constructor(
         }
     }
 
+    suspend fun getEtiketBase64(id: Int): Result<InvoiceBase64Response> {
+        return try {
+            val response = apiService.getEtiketBase64(id)
+            if (response.isSuccessful && response.body() != null) {
+                val body = response.body()!!
+                if (body.success && body.base64 != null) {
+                    Result.success(body)
+                } else {
+                    Result.failure(Exception(body.message ?: "Failed to get etiket"))
+                }
+            } else {
+                Result.failure(Exception("Failed to get etiket"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun deleteSale(id: Int): Result<Unit> {
         return try {
             val response = apiService.deleteSale(id)

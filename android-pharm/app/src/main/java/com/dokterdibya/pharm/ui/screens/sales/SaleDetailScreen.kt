@@ -250,26 +250,55 @@ fun SaleDetailScreen(
                                     }
                                 }
                                 "confirmed", "payment_pending", "paid" -> {
-                                    // WhatsApp Share button
-                                    Button(
-                                        onClick = { viewModel.shareInvoiceViaWhatsApp(context, saleId) },
-                                        enabled = !uiState.isLoading,
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .height(56.dp),
-                                        shape = RoundedCornerShape(12.dp),
-                                        colors = ButtonDefaults.buttonColors(containerColor = Success)
+                                    // Invoice & Etiket buttons in a row
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp)
                                     ) {
-                                        if (uiState.isLoading) {
-                                            CircularProgressIndicator(
-                                                modifier = Modifier.size(24.dp),
-                                                color = Color.White,
-                                                strokeWidth = 2.dp
-                                            )
-                                        } else {
-                                            Icon(Icons.Default.Share, contentDescription = null)
-                                            Spacer(modifier = Modifier.width(8.dp))
-                                            Text("Kirim via WhatsApp", fontWeight = FontWeight.SemiBold)
+                                        // Invoice button
+                                        Button(
+                                            onClick = { viewModel.shareInvoiceViaWhatsApp(context, saleId) },
+                                            enabled = !uiState.isLoading,
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .height(56.dp),
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = Success)
+                                        ) {
+                                            if (uiState.isLoading) {
+                                                CircularProgressIndicator(
+                                                    modifier = Modifier.size(24.dp),
+                                                    color = Color.White,
+                                                    strokeWidth = 2.dp
+                                                )
+                                            } else {
+                                                Icon(Icons.Default.Receipt, contentDescription = null)
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text("Invoice", fontWeight = FontWeight.SemiBold)
+                                            }
+                                        }
+
+                                        // Etiket button
+                                        Button(
+                                            onClick = { viewModel.shareEtiketViaWhatsApp(context, saleId) },
+                                            enabled = !uiState.isLoading,
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .height(56.dp),
+                                            shape = RoundedCornerShape(12.dp),
+                                            colors = ButtonDefaults.buttonColors(containerColor = Primary)
+                                        ) {
+                                            if (uiState.isLoading) {
+                                                CircularProgressIndicator(
+                                                    modifier = Modifier.size(24.dp),
+                                                    color = Color.White,
+                                                    strokeWidth = 2.dp
+                                                )
+                                            } else {
+                                                Icon(Icons.Default.Label, contentDescription = null)
+                                                Spacer(modifier = Modifier.width(4.dp))
+                                                Text("Etiket", fontWeight = FontWeight.SemiBold)
+                                            }
                                         }
                                     }
                                 }
