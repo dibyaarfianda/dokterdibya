@@ -189,10 +189,34 @@ export default {
         const now = new Date();
         const defaultDatetime = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 
+        // Helper to convert MEDIFY array to string
+        const convertArrayToString = (arr) => {
+            if (!arr) return '';
+            if (typeof arr === 'string') return arr;
+            if (Array.isArray(arr)) {
+                // MEDIFY saves as array like ["Item 1", "Item 2"]
+                return arr.join('\n');
+            }
+            return '';
+        };
+
+        // Get terapi - support both form field name (terapi) and MEDIFY field name (obat)
+        const terapiValue = savedData.terapi || convertArrayToString(savedData.obat) ||
+                           statePlan.terapi || convertArrayToString(statePlan.obat) || '';
+
+        // Get tindakan - MEDIFY saves as array, form expects string
+        const tindakanValue = typeof savedData.tindakan === 'string' ? savedData.tindakan :
+                             convertArrayToString(savedData.tindakan) ||
+                             (typeof statePlan.tindakan === 'string' ? statePlan.tindakan : convertArrayToString(statePlan.tindakan)) || '';
+
+        // Get rencana - MEDIFY might save as "instruksi" array
+        const rencanaValue = savedData.rencana || convertArrayToString(savedData.instruksi) ||
+                            statePlan.rencana || convertArrayToString(statePlan.instruksi) || '';
+
         const planData = {
-            tindakan: savedData.tindakan || statePlan.tindakan || '',
-            terapi: savedData.terapi || statePlan.terapi || '',
-            rencana: savedData.rencana || statePlan.rencana || '',
+            tindakan: tindakanValue,
+            terapi: terapiValue,
+            rencana: rencanaValue,
             record_datetime: savedData.record_datetime || statePlan.record_datetime || defaultDatetime
         };
         console.log('[Plan] Final planData:', planData);

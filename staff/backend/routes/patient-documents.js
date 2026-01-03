@@ -784,6 +784,25 @@ router.get('/:id/content', verifyPatientToken, async (req, res) => {
             }
         }
 
+        // Handle "resume:DRD0xxx" format - fetch content from medical_records
+        if (!content && doc.file_url && doc.file_url.startsWith('resume:')) {
+            const mrId = doc.file_url.replace('resume:', '');
+            const [resumeRecords] = await db.query(
+                `SELECT record_data FROM medical_records WHERE mr_id = ? AND record_type = 'resume_medis' ORDER BY id DESC LIMIT 1`,
+                [mrId]
+            );
+            if (resumeRecords.length > 0) {
+                try {
+                    const recordData = typeof resumeRecords[0].record_data === 'string'
+                        ? JSON.parse(resumeRecords[0].record_data)
+                        : resumeRecords[0].record_data;
+                    content = recordData.resume || null;
+                } catch (e) {
+                    logger.error('Error parsing resume record_data', e);
+                }
+            }
+        }
+
         res.json({
             success: true,
             document: {
@@ -792,7 +811,7 @@ router.get('/:id/content', verifyPatientToken, async (req, res) => {
                 description: doc.description,
                 documentType: doc.document_type,
                 content: content,
-                fileUrl: doc.file_url,
+                fileUrl: content ? null : doc.file_url, // Don't send file_url if we have content
                 fileName: doc.file_name
             }
         });

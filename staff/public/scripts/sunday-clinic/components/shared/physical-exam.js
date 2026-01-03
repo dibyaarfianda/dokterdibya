@@ -110,7 +110,27 @@ export default {
 
         // Use saved data if available, otherwise use passed exam data
         const savedData = context?.data || exam || {};
-        exam = savedData;
+
+        // Map MEDIFY field names to form field names
+        // MEDIFY saves: tensi, nadi, suhu, rr, spo2, gcs
+        // Form expects: tekanan_darah, nadi, suhu, respirasi
+        exam = {
+            ...savedData,
+            tekanan_darah: savedData.tekanan_darah || savedData.tensi || '',
+            respirasi: savedData.respirasi || savedData.rr || '',
+            // Keep other fields as-is
+            nadi: savedData.nadi || '',
+            suhu: savedData.suhu || '',
+            tinggi_badan: savedData.tinggi_badan || '',
+            berat_badan: savedData.berat_badan || '',
+            imt: savedData.imt || '',
+            kategori_imt: savedData.kategori_imt || '',
+            kepala_leher: savedData.kepala_leher || '',
+            thorax: savedData.thorax || '',
+            abdomen: savedData.abdomen || '',
+            ekstremitas: savedData.ekstremitas || '',
+            record_datetime: savedData.record_datetime || ''
+        };
 
         // Get metadata for display
         const metaHtml = context ? renderRecordMeta(context, 'physical_exam') : '';

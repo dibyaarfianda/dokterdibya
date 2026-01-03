@@ -117,7 +117,20 @@ CRITICAL RULES:
 12. DIAGNOSIS: Copy EXACT text from Assessment section. NEVER generate ICD codes like Z34.8, Z33.1, etc.
     - If Assessment says "G2P0101 uk 9 3/7mgg + kepala" → use that as diagnosis
     - If Assessment has ICD code already → use it as-is
-    - DO NOT fabricate or guess diagnosis codes`;
+    - DO NOT fabricate or guess diagnosis codes
+13. GAMBIRAN/RSUD FORMAT: Gambiran SIMRS may label Assessment differently:
+    - Look for "ASSESSMENT:", "ASSESMEN:", "A:" labels (Indonesian spelling variants)
+    - Diagnosis may span multiple lines - combine them: "G2P0101 uk 9 3/7mgg + kepala + TB"
+    - Extract the FULL Assessment text, not just the first line
+    - Common format: diagnosis on line 1, additional conditions on subsequent lines
+14. VITAL SIGNS (for physical_exam): Extract all vital signs from OBJECTIVE section:
+    - keadaan_umum: "Baik", "Sedang", "Lemah"
+    - tensi: Blood pressure like "120/80"
+    - nadi: Pulse rate number
+    - suhu: Temperature number
+    - spo2: Oxygen saturation number
+    - rr: Respiratory rate number
+    - gcs: GCS score`;
 
 /**
  * Parse medical record text using GPT-4o

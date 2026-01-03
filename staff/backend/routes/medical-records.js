@@ -820,19 +820,28 @@ function generateMedicalResume(identitas, records, billingItems = { obat: [], ti
     if (records.physical_exam && typeof records.physical_exam === 'object') {
         const pe = records.physical_exam;
         const hasData = Object.values(pe).some(val => val && val !== '');
-        
+
         if (hasData) {
             resume += 'III. PEMERIKSAAN FISIK\n';
             resume += '──────────────────────────────────────────────────\n';
-            
-            // Tanda Vital
-            resume += 'Tanda-tanda Vital:\n';
-            if (pe.tekanan_darah) resume += `- Tekanan Darah    : ${pe.tekanan_darah} mmHg\n`;
-            if (pe.nadi) resume += `- Nadi             : ${pe.nadi} kali/menit\n`;
-            if (pe.suhu) resume += `- Suhu             : ${pe.suhu}°C\n`;
-            if (pe.respirasi) resume += `- Respirasi        : ${pe.respirasi} kali/menit\n`;
-            resume += '\n';
-            
+
+            // Tanda Vital (support both form field names and MEDIFY field names)
+            const tekananDarah = pe.tekanan_darah || pe.tensi;
+            const respirasi = pe.respirasi || pe.rr;
+            const keadaanUmum = pe.keadaan_umum;
+
+            if (keadaanUmum || tekananDarah || pe.nadi || pe.suhu || respirasi || pe.spo2 || pe.gcs) {
+                resume += 'Tanda-tanda Vital:\n';
+                if (keadaanUmum) resume += `- Keadaan Umum     : ${keadaanUmum}\n`;
+                if (tekananDarah) resume += `- Tekanan Darah    : ${tekananDarah} mmHg\n`;
+                if (pe.nadi) resume += `- Nadi             : ${pe.nadi} kali/menit\n`;
+                if (pe.suhu) resume += `- Suhu             : ${pe.suhu}°C\n`;
+                if (respirasi) resume += `- Respirasi        : ${respirasi} kali/menit\n`;
+                if (pe.spo2) resume += `- SpO2             : ${pe.spo2}%\n`;
+                if (pe.gcs) resume += `- GCS              : ${pe.gcs}\n`;
+                resume += '\n';
+            }
+
             // Antropometri
             if (pe.tinggi_badan || pe.berat_badan) {
                 resume += 'Antropometri:\n';
@@ -841,22 +850,24 @@ function generateMedicalResume(identitas, records, billingItems = { obat: [], ti
                 if (pe.imt) resume += `- Indeks Massa Tubuh: ${pe.imt} kg/m² (${pe.kategori_imt || 'Normal'})\n`;
                 resume += '\n';
             }
-            
+
             // Pemeriksaan Sistemik
-            resume += 'Pemeriksaan Sistemik:\n';
-            if (pe.kepala_leher) {
-                resume += `- Kepala & Leher   : ${pe.kepala_leher}\n`;
+            if (pe.kepala_leher || pe.thorax || pe.abdomen || pe.ekstremitas) {
+                resume += 'Pemeriksaan Sistemik:\n';
+                if (pe.kepala_leher) {
+                    resume += `- Kepala & Leher   : ${pe.kepala_leher}\n`;
+                }
+                if (pe.thorax) {
+                    resume += `- Thorax           : ${pe.thorax}\n`;
+                }
+                if (pe.abdomen) {
+                    resume += `- Abdomen          : ${pe.abdomen}\n`;
+                }
+                if (pe.ekstremitas) {
+                    resume += `- Ekstremitas      : ${pe.ekstremitas}\n`;
+                }
+                resume += '\n';
             }
-            if (pe.thorax) {
-                resume += `- Thorax           : ${pe.thorax}\n`;
-            }
-            if (pe.abdomen) {
-                resume += `- Abdomen          : ${pe.abdomen}\n`;
-            }
-            if (pe.ekstremitas) {
-                resume += `- Ekstremitas      : ${pe.ekstremitas}\n`;
-            }
-            resume += '\n';
         }
     }
 
@@ -879,12 +890,32 @@ function generateMedicalResume(identitas, records, billingItems = { obat: [], ti
             resume += 'V. PEMERIKSAAN ULTRASONOGRAFI (USG)\n';
             resume += '──────────────────────────────────────────────────\n';
 
-            // Check if this is gynecology USG (has uterus or ovarium data but no trimester)
-            const isGynecologyUSG = (usg.uterus_posisi || usg.uterus_length || usg.kesan ||
-                                     usg.ovarium_kanan_visible || usg.ovarium_kiri_visible) &&
-                                    !usg.trimester && !usg.current_trimester;
+            // Check if this is simple MEDIFY USG format (has hasil_usg or berat_janin)
+            const isMedifyUSG = usg.hasil_usg || usg.berat_janin || (usg.presentasi && !usg.current_trimester);
 
-            if (isGynecologyUSG) {
+            if (isMedifyUSG) {
+                // Simple MEDIFY USG format
+                if (usg.hasil_usg) {
+                    resume += `Hasil USG:\n${usg.hasil_usg}\n\n`;
+                }
+                if (usg.berat_janin) {
+                    resume += `Berat Janin Estimasi: ${usg.berat_janin} gram\n`;
+                }
+                if (usg.presentasi) {
+                    resume += `Presentasi: ${usg.presentasi}\n`;
+                }
+                if (usg.plasenta) {
+                    resume += `Plasenta: ${usg.plasenta}\n`;
+                }
+                if (usg.ketuban) {
+                    resume += `Ketuban: ${usg.ketuban}\n`;
+                }
+                resume += '\n';
+            }
+            // Check if this is gynecology USG (has uterus or ovarium data but no trimester)
+            else if ((usg.uterus_posisi || usg.uterus_length || usg.kesan ||
+                                     usg.ovarium_kanan_visible || usg.ovarium_kiri_visible) &&
+                                    !usg.trimester && !usg.current_trimester) {
                 // Gynecology USG format
                 if (usg.transabdominal || usg.transvaginal) {
                     const methods = [];
@@ -1150,21 +1181,41 @@ function generateMedicalResume(identitas, records, billingItems = { obat: [], ti
 
     // VII. DIAGNOSIS
     if (records.diagnosis && typeof records.diagnosis === 'object') {
-        const diagnosis = records.diagnosis;
-        const hasData = diagnosis.diagnosis_utama || diagnosis.diagnosis_sekunder;
-        
+        const diag = records.diagnosis;
+        // Support both form field names (diagnosis_utama) and MEDIFY field names (diagnosis)
+        const diagnosisUtama = diag.diagnosis_utama || diag.diagnosis;
+        const hasData = diagnosisUtama || diag.diagnosis_sekunder;
+
         if (hasData) {
             resume += 'VII. DIAGNOSIS\n';
             resume += '──────────────────────────────────────────────────\n';
-            
-            if (diagnosis.diagnosis_utama) {
-                resume += `Diagnosis Utama:\n${diagnosis.diagnosis_utama}\n\n`;
+
+            if (diagnosisUtama) {
+                resume += `Diagnosis Utama:\n${diagnosisUtama}\n\n`;
             }
-            
-            if (diagnosis.diagnosis_sekunder) {
-                resume += `Diagnosis Sekunder:\n${diagnosis.diagnosis_sekunder}\n\n`;
+
+            if (diag.diagnosis_sekunder) {
+                resume += `Diagnosis Sekunder:\n${diag.diagnosis_sekunder}\n\n`;
             }
-            
+
+            // Show obstetric info if available from MEDIFY
+            if (diag.gravida !== undefined || diag.usia_kehamilan_minggu) {
+                let obsInfo = '';
+                if (diag.gravida !== undefined) {
+                    obsInfo += `G${diag.gravida}P${diag.para || 0}A${diag.abortus || 0}`;
+                    if (diag.anak_hidup !== undefined) obsInfo += ` (Anak hidup: ${diag.anak_hidup})`;
+                }
+                if (diag.usia_kehamilan_minggu) {
+                    if (obsInfo) obsInfo += ', ';
+                    obsInfo += `UK ${diag.usia_kehamilan_minggu}`;
+                    if (diag.usia_kehamilan_hari) obsInfo += ` ${diag.usia_kehamilan_hari}/7`;
+                    obsInfo += ' minggu';
+                }
+                if (obsInfo) {
+                    resume += `Status Obstetri: ${obsInfo}\n\n`;
+                }
+            }
+
             resume += '\n';
         }
     }
@@ -1224,9 +1275,15 @@ function generateMedicalResume(identitas, records, billingItems = { obat: [], ti
         }
 
         // Add custom entries from textarea (vitamins, etc.) - handle both string and array
-        let customTerapi = planning.terapi;
+        // Support both 'terapi' (form) and 'obat' (MEDIFY) field names
+        let customTerapi = planning.terapi || planning.obat;
         if (Array.isArray(customTerapi)) {
-            customTerapi = customTerapi.join('\n');
+            // If it's an array of objects with item names, extract them
+            if (customTerapi.length > 0 && typeof customTerapi[0] === 'object') {
+                customTerapi = customTerapi.map(item => item.item_name || item.name || JSON.stringify(item)).join('\n');
+            } else {
+                customTerapi = customTerapi.join('\n');
+            }
         }
         if (customTerapi && typeof customTerapi === 'string' && customTerapi.trim()) {
             if (terapiContent) terapiContent += '\n'; // Add separator
@@ -1237,16 +1294,32 @@ function generateMedicalResume(identitas, records, billingItems = { obat: [], ti
             resume += `B. Terapi:\n${terapiContent}\n\n`;
         }
 
+        // Add raw plan text if available (from MEDIFY)
+        if (planning.raw && !tindakanContent && !terapiContent) {
+            resume += `${planning.raw}\n\n`;
+        }
+
+        // Add instructions if available (from MEDIFY)
+        if (planning.instruksi) {
+            let instruksiText = planning.instruksi;
+            if (Array.isArray(instruksiText)) {
+                instruksiText = instruksiText.join('\n');
+            }
+            if (instruksiText) {
+                resume += `C. Instruksi:\n${instruksiText}\n\n`;
+            }
+        }
+
         if (planning.rencana) {
-            resume += `C. Rencana Perawatan dan Follow-up:\n${planning.rencana}\n\n`;
+            resume += `D. Rencana Perawatan dan Follow-up:\n${planning.rencana}\n\n`;
         }
 
         if (planning.edukasi) {
-            resume += `D. Edukasi Pasien:\n${planning.edukasi}\n\n`;
+            resume += `E. Edukasi Pasien:\n${planning.edukasi}\n\n`;
         }
 
         if (planning.rujukan) {
-            resume += `E. Rujukan:\n${planning.rujukan}\n\n`;
+            resume += `F. Rujukan:\n${planning.rujukan}\n\n`;
         }
 
         resume += '\n';
@@ -1261,3 +1334,4 @@ function generateMedicalResume(identitas, records, billingItems = { obat: [], ti
 }
 
 module.exports = router;
+module.exports.generateMedicalResume = generateMedicalResume;
