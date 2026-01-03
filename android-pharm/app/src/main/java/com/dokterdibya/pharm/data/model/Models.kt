@@ -28,7 +28,7 @@ data class LoginData(
 )
 
 data class User(
-    val id: Int,
+    val id: String,  // Backend returns string IDs like "UDZAQUCQWZ"
     val name: String,
     val email: String,
     val role: String
