@@ -2,6 +2,7 @@ package com.dokterdibya.pharm.data.repository
 
 import com.dokterdibya.pharm.data.api.ApiService
 import com.dokterdibya.pharm.data.model.*
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -18,10 +19,14 @@ class SalesRepository @Inject constructor(
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
                 if (body.success && body.token != null) {
+                    android.util.Log.d("SalesRepository", "Saving token: ${body.token.take(20)}...")
                     tokenRepository.saveToken(body.token)
                     body.user?.let { user ->
                         tokenRepository.saveUserInfo(user.name, user.email, user.role)
                     }
+                    // Verify token was saved
+                    val savedToken = tokenRepository.getToken().first()
+                    android.util.Log.d("SalesRepository", "Token saved: ${savedToken != null}")
                 }
                 Result.success(body)
             } else {

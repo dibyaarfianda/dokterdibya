@@ -21,8 +21,18 @@ class AuthInterceptor @Inject constructor(
             return chain.proceed(originalRequest)
         }
 
+        // Wait for token with timeout (up to 3 seconds)
         val token = runBlocking {
-            tokenRepository.getToken().first()
+            var attempts = 0
+            var result: String? = null
+            while (attempts < 30 && result == null) {
+                result = tokenRepository.getToken().first()
+                if (result == null) {
+                    kotlinx.coroutines.delay(100)
+                    attempts++
+                }
+            }
+            result
         }
 
         return if (token != null) {
@@ -32,6 +42,8 @@ class AuthInterceptor @Inject constructor(
                 .build()
             chain.proceed(newRequest)
         } else {
+            // Log for debugging
+            android.util.Log.e("AuthInterceptor", "Token is null after waiting!")
             chain.proceed(originalRequest)
         }
     }
