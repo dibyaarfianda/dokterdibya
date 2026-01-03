@@ -35,11 +35,11 @@ class AuthViewModel @Inject constructor(
 
             salesRepository.login(email, password).fold(
                 onSuccess = { response ->
-                    if (response.success) {
+                    if (response.success && response.data?.token != null) {
                         _uiState.value = _uiState.value.copy(
                             isLoading = false,
                             isLoggedIn = true,
-                            userName = response.user?.name
+                            userName = response.data.user?.name
                         )
                     } else {
                         _uiState.value = _uiState.value.copy(

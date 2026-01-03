@@ -20,12 +20,14 @@ class SalesRepository @Inject constructor(
             android.util.Log.d("SalesRepository", "Response: code=${response.code()}, success=${response.isSuccessful}")
             if (response.isSuccessful && response.body() != null) {
                 val body = response.body()!!
-                android.util.Log.d("SalesRepository", "Body: success=${body.success}, hasToken=${body.token != null}")
-                if (body.success && body.token != null) {
-                    android.util.Log.d("SalesRepository", "Saving token: ${body.token.take(20)}...")
-                    tokenRepository.saveToken(body.token)
-                    body.user?.let { user ->
-                        tokenRepository.saveUserInfo(user.name, user.email, user.role)
+                val token = body.data?.token
+                val user = body.data?.user
+                android.util.Log.d("SalesRepository", "Body: success=${body.success}, hasToken=${token != null}")
+                if (body.success && token != null) {
+                    android.util.Log.d("SalesRepository", "Saving token: ${token.take(20)}...")
+                    tokenRepository.saveToken(token)
+                    user?.let {
+                        tokenRepository.saveUserInfo(it.name, it.email, it.role)
                     }
                     // Verify token was saved
                     val savedToken = tokenRepository.getToken().first()
