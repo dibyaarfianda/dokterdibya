@@ -55,7 +55,7 @@ class SalesViewModel @Inject constructor(
 
     init {
         loadSales()
-        loadObatList()
+        // loadObatList() is called from NewSaleScreen to avoid race condition with token
     }
 
     fun loadSales() {
