@@ -295,6 +295,79 @@ class SalesViewModel @Inject constructor(
         }
     }
 
+    fun shareEtiketViaWhatsApp(context: Context, saleId: Int) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true)
+            salesRepository.getEtiketBase64(saleId).fold(
+                onSuccess = { response ->
+                    try {
+                        // Decode base64 to bytes
+                        val pdfBytes = Base64.decode(response.base64, Base64.DEFAULT)
+
+                        // Save to cache directory
+                        val cacheDir = File(context.cacheDir, "etikets")
+                        cacheDir.mkdirs()
+                        val pdfFile = File(cacheDir, response.filename ?: "etiket.pdf")
+                        pdfFile.writeBytes(pdfBytes)
+
+                        // Get URI via FileProvider
+                        val uri = FileProvider.getUriForFile(
+                            context,
+                            "${context.packageName}.provider",
+                            pdfFile
+                        )
+
+                        // Create WhatsApp intent
+                        val sale = _uiState.value.selectedSale
+                        val message = buildString {
+                            appendLine("Etiket Obat")
+                            appendLine("Pasien: ${sale?.patientName ?: "-"}")
+                            appendLine("No: ${sale?.saleNumber ?: "-"}")
+                        }
+
+                        val intent = Intent(Intent.ACTION_SEND).apply {
+                            type = "application/pdf"
+                            putExtra(Intent.EXTRA_STREAM, uri)
+                            putExtra(Intent.EXTRA_TEXT, message)
+                            setPackage("com.whatsapp")
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        }
+
+                        _uiState.value = _uiState.value.copy(isLoading = false)
+
+                        // Try WhatsApp, fallback to chooser
+                        try {
+                            context.startActivity(intent)
+                        } catch (e: Exception) {
+                            // WhatsApp not installed, use chooser
+                            val chooser = Intent.createChooser(
+                                Intent(Intent.ACTION_SEND).apply {
+                                    type = "application/pdf"
+                                    putExtra(Intent.EXTRA_STREAM, uri)
+                                    putExtra(Intent.EXTRA_TEXT, message)
+                                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                },
+                                "Kirim Etiket"
+                            )
+                            context.startActivity(chooser)
+                        }
+                    } catch (e: Exception) {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            error = "Gagal membuka WhatsApp: ${e.message}"
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = error.message
+                    )
+                }
+            )
+        }
+    }
+
     fun deleteSale(id: Int, onSuccess: () -> Unit) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)

@@ -897,6 +897,11 @@ class PDFGenerator {
                    .font('Helvetica')
                    .text(hospital.address, leftMargin, y, { width: contentWidth, align: 'center' });
 
+                // SIPA (Pharmacist License)
+                y += 10;
+                doc.fontSize(6)
+                   .text('SIPA: 503/0522/SIP-SIK/419.104/2024', leftMargin, y, { width: contentWidth, align: 'center' });
+
                 // Invoice Title
                 y += 18;
                 doc.fontSize(12)
@@ -994,6 +999,164 @@ class PDFGenerator {
                             uniqueFilename,
                             'application/pdf',
                             `invoices/obat-sales/${dateFolder}`
+                        );
+
+                        resolve({
+                            filename,
+                            r2Key: result.key,
+                            url: result.url,
+                            size: pdfBuffer.length
+                        });
+                    } catch (uploadError) {
+                        reject(uploadError);
+                    }
+                });
+
+                doc.end();
+            } catch (error) {
+                reject(error);
+            }
+        });
+    }
+
+    /**
+     * Generate Etiket (Label) PDF for Obat Sales - 3 columns per page
+     * Uploads to R2: etikets/obat-sales/DDMMYYYY/{saleNumber}e.pdf
+     */
+    async generateObatSaleEtiket(saleData) {
+        return new Promise((resolve, reject) => {
+            try {
+                const hospitalHeaders = {
+                    'rsia_melinda': {
+                        name: 'RSIA MELINDA',
+                        address: 'Jl. Balowerti 2 No. 59, Kediri'
+                    },
+                    'rsud_gambiran': {
+                        name: 'RSUD GAMBIRAN',
+                        address: 'Jl. KH. Wachid Hasyim No. 64, Kediri'
+                    },
+                    'rs_bhayangkara': {
+                        name: 'RS BHAYANGKARA',
+                        address: 'Jl. Imam Bonjol No. 1, Kediri'
+                    }
+                };
+
+                const hospital = hospitalHeaders[saleData.hospital_source] || {
+                    name: 'APOTEK',
+                    address: 'Kediri'
+                };
+
+                const doc = new PDFDocument({ size: 'A4', margin: 20 });
+
+                const chunks = [];
+                doc.on('data', chunk => chunks.push(chunk));
+
+                const filename = `${saleData.sale_number}e.pdf`;
+
+                // Label dimensions for 3-column layout
+                const labelWidth = 180;
+                const labelHeight = 130;
+                const marginX = 15;
+                const marginY = 15;
+                const gapX = 12;
+                const gapY = 12;
+                const cols = 3;
+
+                let currentX = marginX;
+                let currentY = marginY;
+                let col = 0;
+
+                const items = saleData.items || [];
+
+                items.forEach((item) => {
+                    // Check if need new page
+                    if (currentY + labelHeight > doc.page.height - marginY) {
+                        doc.addPage();
+                        currentX = marginX;
+                        currentY = marginY;
+                        col = 0;
+                    }
+
+                    // Draw label border
+                    doc.rect(currentX, currentY, labelWidth, labelHeight).stroke();
+
+                    let textY = currentY + 10;
+
+                    // Hospital header
+                    doc.fontSize(9)
+                       .font('Helvetica-Bold')
+                       .text(hospital.name, currentX + 5, textY, { width: labelWidth - 10, align: 'center' });
+
+                    textY += 11;
+                    doc.fontSize(7)
+                       .font('Helvetica')
+                       .text(hospital.address, currentX + 5, textY, { width: labelWidth - 10, align: 'center' });
+
+                    textY += 9;
+                    doc.text('SIPA: 503/0522/SIP-SIK/419.104/2024', currentX + 5, textY, { width: labelWidth - 10, align: 'center' });
+
+                    // Separator line
+                    textY += 8;
+                    doc.moveTo(currentX + 5, textY)
+                       .lineTo(currentX + labelWidth - 5, textY)
+                       .lineWidth(0.3)
+                       .stroke();
+
+                    textY += 8;
+
+                    // Patient info line
+                    doc.fontSize(7)
+                       .font('Helvetica');
+                    const patientName = this.sanitizeTextForPdf(saleData.patient_name || '-');
+                    doc.text(`Pasien: ${patientName}`, currentX + 5, textY, { width: labelWidth - 55 });
+                    doc.text(this.formatDateEuropean(saleData.created_at), currentX + labelWidth - 55, textY);
+
+                    textY += 12;
+
+                    // Drug name (bold)
+                    doc.fontSize(10)
+                       .font('Helvetica-Bold');
+                    const itemName = this.sanitizeTextForPdf(item.obat_name || '-');
+                    const truncatedName = itemName.length > 30 ? itemName.substring(0, 29) + '...' : itemName;
+                    doc.text(truncatedName, currentX + 5, textY, { width: labelWidth - 10 });
+
+                    textY += 14;
+
+                    // Quantity
+                    doc.fontSize(9)
+                       .font('Helvetica');
+                    doc.text(`Jumlah: ${item.quantity || 1}`, currentX + 5, textY, { width: labelWidth - 10 });
+
+                    // Footer
+                    doc.fontSize(6)
+                       .font('Helvetica-Bold')
+                       .text('Gunakan sesuai petunjuk',
+                             currentX + 5, currentY + labelHeight - 14, { width: labelWidth - 10 });
+
+                    // Move to next position
+                    col++;
+                    if (col >= cols) {
+                        col = 0;
+                        currentX = marginX;
+                        currentY += labelHeight + gapY;
+                    } else {
+                        currentX += labelWidth + gapX;
+                    }
+                });
+
+                // Upload to R2 when PDF is complete
+                doc.on('end', async () => {
+                    try {
+                        const pdfBuffer = Buffer.concat(chunks);
+                        const dateFolder = this.getDateFolder();
+                        const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).substr(2, 6)}`;
+                        const uniqueFilename = `${saleData.sale_number}e-${uniqueSuffix}.pdf`;
+
+                        const result = await r2Storage.uploadFile(
+                            pdfBuffer,
+                            uniqueFilename,
+                            'application/pdf',
+                            `etikets/obat-sales/${dateFolder}`
                         );
 
                         resolve({

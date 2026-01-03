@@ -54,6 +54,9 @@ interface ApiService {
     @POST("api/obat-sales/{id}/invoice-base64")
     suspend fun getInvoiceBase64(@Path("id") id: Int): Response<InvoiceBase64Response>
 
+    @POST("api/obat-sales/{id}/etiket-base64")
+    suspend fun getEtiketBase64(@Path("id") id: Int): Response<InvoiceBase64Response>
+
     @DELETE("api/obat-sales/{id}")
     suspend fun deleteSale(@Path("id") id: Int): Response<ApiResponse>
 }

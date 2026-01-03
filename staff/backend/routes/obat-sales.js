@@ -440,8 +440,32 @@ router.post('/:id/confirm', verifyToken, async (req, res, next) => {
         let totalCost = 0;
         const deductionResults = [];
 
-        // Deduct stock for each item using FIFO
+        // Check if this is a test sale (patient name = "tes" or "test", case-insensitive)
+        const isTestSale = /^tes(t)?$/i.test((sale.patient_name || '').trim());
+
+        if (isTestSale) {
+            logger.info('TEST SALE - Skipping stock deduction', {
+                saleNumber: sale.sale_number,
+                patientName: sale.patient_name
+            });
+        }
+
+        // Deduct stock for each item using FIFO (skip for test sales)
         for (const item of items) {
+            if (isTestSale) {
+                // Skip stock deduction for test sales
+                deductionResults.push({
+                    obatId: item.obat_id,
+                    obatName: item.obat_name,
+                    quantity: item.quantity,
+                    cost: 0,
+                    success: true,
+                    skipped: true,
+                    reason: 'Test sale - stock not deducted'
+                });
+                continue;
+            }
+
             try {
                 const result = await InventoryService.deductStockFIFO(
                     item.obat_id,
@@ -715,6 +739,70 @@ router.post('/:id/invoice-base64', verifyToken, async (req, res, next) => {
         });
     } catch (error) {
         logger.error('Failed to generate obat sale invoice base64', { error: error.message });
+        next(error);
+    }
+});
+
+/**
+ * POST /api/obat-sales/:id/etiket-base64
+ * Generate etiket (label) PDF and return as base64 (for mobile apps)
+ */
+router.post('/:id/etiket-base64', verifyToken, async (req, res, next) => {
+    try {
+        const [[sale]] = await db.query(
+            'SELECT * FROM obat_sales WHERE id = ?',
+            [req.params.id]
+        );
+
+        if (!sale) {
+            return res.status(404).json({ success: false, message: 'Sale not found' });
+        }
+
+        if (!['confirmed', 'payment_pending', 'paid'].includes(sale.status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Etiket hanya bisa dibuat untuk penjualan yang sudah dikonfirmasi'
+            });
+        }
+
+        // Get items
+        const [items] = await db.query(
+            'SELECT * FROM obat_sale_items WHERE sale_id = ?',
+            [sale.id]
+        );
+        sale.items = items;
+
+        // Generate PDF
+        const pdfGenerator = require('../utils/pdf-generator');
+        const result = await pdfGenerator.generateObatSaleEtiket(sale);
+
+        // Get the PDF from R2 as buffer
+        const r2Storage = require('../services/r2Storage');
+        const pdfBuffer = await r2Storage.getFileBuffer(result.r2Key);
+
+        if (!pdfBuffer) {
+            return res.status(500).json({
+                success: false,
+                message: 'Gagal mengambil PDF dari storage'
+            });
+        }
+
+        // Convert to base64
+        const base64 = pdfBuffer.toString('base64');
+
+        logger.info('Obat sale etiket generated as base64', {
+            saleNumber: sale.sale_number,
+            size: pdfBuffer.length
+        });
+
+        res.json({
+            success: true,
+            filename: result.filename,
+            base64: base64,
+            mimeType: 'application/pdf'
+        });
+    } catch (error) {
+        logger.error('Failed to generate obat sale etiket base64', { error: error.message });
         next(error);
     }
 });
