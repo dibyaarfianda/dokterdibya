@@ -631,6 +631,70 @@ router.post('/:id/set-payment-method', verifyToken, async (req, res, next) => {
 });
 
 /**
+ * POST /api/obat-sales/:id/invoice-base64
+ * Generate invoice PDF and return as base64 (for mobile apps)
+ */
+router.post('/:id/invoice-base64', verifyToken, async (req, res, next) => {
+    try {
+        const [[sale]] = await db.query(
+            'SELECT * FROM obat_sales WHERE id = ?',
+            [req.params.id]
+        );
+
+        if (!sale) {
+            return res.status(404).json({ success: false, message: 'Sale not found' });
+        }
+
+        if (!['confirmed', 'payment_pending', 'paid'].includes(sale.status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Invoice hanya bisa dibuat untuk penjualan yang sudah dikonfirmasi'
+            });
+        }
+
+        // Get items
+        const [items] = await db.query(
+            'SELECT * FROM obat_sale_items WHERE sale_id = ?',
+            [sale.id]
+        );
+        sale.items = items;
+
+        // Generate PDF
+        const pdfGenerator = require('../utils/pdf-generator');
+        const result = await pdfGenerator.generateObatSaleInvoice(sale);
+
+        // Get the PDF from R2 as buffer
+        const r2Storage = require('../services/r2Storage');
+        const pdfBuffer = await r2Storage.getFileBuffer(result.r2Key);
+
+        if (!pdfBuffer) {
+            return res.status(500).json({
+                success: false,
+                message: 'Gagal mengambil PDF dari storage'
+            });
+        }
+
+        // Convert to base64
+        const base64 = pdfBuffer.toString('base64');
+
+        logger.info('Obat sale invoice generated as base64', {
+            saleNumber: sale.sale_number,
+            size: pdfBuffer.length
+        });
+
+        res.json({
+            success: true,
+            filename: result.filename,
+            base64: base64,
+            mimeType: 'application/pdf'
+        });
+    } catch (error) {
+        logger.error('Failed to generate obat sale invoice base64', { error: error.message });
+        next(error);
+    }
+});
+
+/**
  * POST /api/obat-sales/:id/print-invoice
  * Generate and return invoice PDF
  */
