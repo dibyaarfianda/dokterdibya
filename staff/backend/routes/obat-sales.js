@@ -525,11 +525,12 @@ router.post('/:id/confirm', verifyToken, async (req, res, next) => {
                  confirmed_at = NOW(),
                  confirmed_by = ?,
                  cost_total = ?,
-                 profit = ?${isPaid ? ', paid_at = NOW(), paid_by = ?' : ''}
+                 profit = ?,
+                 is_test = ?${isPaid ? ', paid_at = NOW(), paid_by = ?' : ''}
              WHERE id = ?`,
             isPaid
-                ? [newStatus, payment_method, req.user.name || req.user.id, totalCost, profit, req.user.name || req.user.id, sale.id]
-                : [newStatus, payment_method, req.user.name || req.user.id, totalCost, profit, sale.id]
+                ? [newStatus, payment_method, req.user.name || req.user.id, totalCost, profit, isTestSale, req.user.name || req.user.id, sale.id]
+                : [newStatus, payment_method, req.user.name || req.user.id, totalCost, profit, isTestSale, sale.id]
         );
 
         await connection.commit();

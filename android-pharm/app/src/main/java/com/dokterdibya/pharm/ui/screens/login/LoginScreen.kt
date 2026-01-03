@@ -1,8 +1,11 @@
 package com.dokterdibya.pharm.ui.screens.login
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.res.painterResource
+import com.dokterdibya.pharm.R
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -65,27 +68,20 @@ fun LoginScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Title
-            Text(
-                text = "dokterDIBYA",
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold,
-                color = WebAccent
-            )
-
-            Text(
-                text = "Mobile Pharm",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium,
-                color = TextSecondaryDark,
-                modifier = Modifier.padding(bottom = 8.dp)
+            // Logo
+            Image(
+                painter = painterResource(id = R.drawable.db_pharm_logo),
+                contentDescription = "DB Pharm Logo",
+                modifier = Modifier
+                    .size(160.dp)
+                    .padding(bottom = 16.dp)
             )
 
             Text(
                 text = "Penjualan Obat & Alkes",
                 fontSize = 14.sp,
                 color = TextSecondaryDark,
-                modifier = Modifier.padding(bottom = 48.dp)
+                modifier = Modifier.padding(bottom = 32.dp)
             )
 
             // Login Card
