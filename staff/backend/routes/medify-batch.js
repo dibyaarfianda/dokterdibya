@@ -1236,9 +1236,22 @@ async function processSync(batchId, source, options = {}) {
 
     console.log(`[Medify] Sync completed for batch ${batchId}`);
 
-    // Emit completion
+    // Emit completion with stats
     if (global.io) {
-        global.io.emit('medify_sync_complete', { batchId });
+        // Get final batch stats
+        const [stats] = await pool.query(`
+            SELECT
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) as success,
+                SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+                SUM(CASE WHEN status = 'skipped' THEN 1 ELSE 0 END) as skipped
+            FROM medify_import_jobs WHERE batch_id = ?
+        `, [batchId]);
+
+        global.io.emit('medify_sync_complete', {
+            batchId,
+            stats: stats[0] || { total: 0, success: 0, failed: 0, skipped: 0 }
+        });
     }
 }
 
@@ -1513,5 +1526,338 @@ function calculateAge(birthDate) {
     }
     return age;
 }
+
+// ============================================================================
+// REVIEW & SEND TO PORTAL ENDPOINTS
+// ============================================================================
+
+/**
+ * GET /api/medify-batch/last-batch
+ * Get the most recent batch with successful syncs
+ */
+router.get('/last-batch', verifyToken, async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT batch_id, simrs_source, COUNT(*) as total,
+                   SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) as success_count,
+                   MAX(created_at) as created_at
+            FROM medify_import_jobs
+            GROUP BY batch_id, simrs_source
+            HAVING success_count > 0
+            ORDER BY created_at DESC
+            LIMIT 1
+        `);
+
+        if (result.length > 0) {
+            res.json({
+                success: true,
+                batchId: result[0].batch_id,
+                source: result[0].simrs_source,
+                successCount: result[0].success_count,
+                createdAt: result[0].created_at
+            });
+        } else {
+            res.json({ success: false, message: 'No batch found' });
+        }
+    } catch (error) {
+        console.error('[Medify] Error getting last batch:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+/**
+ * GET /api/medify-batch/review/:batchId
+ * Get patients ready for review and send to portal
+ */
+router.get('/review/:batchId', verifyToken, async (req, res) => {
+    const { batchId } = req.params;
+
+    try {
+        // Get all successful jobs from this batch with patient info
+        // Use subquery to get only the LATEST MR for each patient at that location
+        const jobs = await pool.query(`
+            SELECT
+                mij.id as job_id,
+                mij.patient_id,
+                mij.patient_name,
+                mij.records_imported,
+                mij.portal_sent_at,
+                mij.simrs_source,
+                scr.mr_id,
+                scr.created_at as visit_date,
+                p.full_name,
+                p.phone,
+                p.whatsapp
+            FROM medify_import_jobs mij
+            JOIN patients p ON mij.patient_id = p.id
+            LEFT JOIN sunday_clinic_records scr
+                ON mij.patient_id = scr.patient_id
+                AND scr.visit_location = mij.simrs_source
+                AND scr.id = (
+                    SELECT id FROM sunday_clinic_records scr2
+                    WHERE scr2.patient_id = mij.patient_id
+                    AND scr2.visit_location = mij.simrs_source
+                    ORDER BY scr2.created_at DESC
+                    LIMIT 1
+                )
+            WHERE mij.batch_id = ? AND mij.status = 'success'
+            ORDER BY mij.id DESC
+        `, [batchId]);
+
+        // For each patient, check document availability
+        const result = await Promise.all(jobs.map(async (job) => {
+            // Check for resume_medis
+            const resumeRecords = await pool.query(`
+                SELECT id FROM medical_records
+                WHERE mr_id = ? AND record_type = 'resume_medis' LIMIT 1
+            `, [job.mr_id]);
+
+            // Check for USG photos
+            const usgDocs = await pool.query(`
+                SELECT id, file_url, title FROM patient_documents
+                WHERE mr_id = ? AND document_type = 'usg_photo' AND status != 'deleted'
+            `, [job.mr_id]);
+
+            // Check for lab files (from penunjang record)
+            const penunjangRecords = await pool.query(`
+                SELECT record_data FROM medical_records
+                WHERE mr_id = ? AND record_type = 'penunjang' LIMIT 1
+            `, [job.mr_id]);
+
+            let labFiles = [];
+            if (penunjangRecords.length > 0) {
+                try {
+                    const data = JSON.parse(penunjangRecords[0].record_data);
+                    labFiles = data.files || [];
+                } catch (e) {}
+            }
+
+            // Check if already sent to portal (has published documents or portal_sent_at set)
+            const sentDocs = await pool.query(`
+                SELECT COUNT(*) as count FROM patient_documents
+                WHERE mr_id = ? AND status = 'published' AND document_type = 'resume_medis'
+            `, [job.mr_id]);
+
+            return {
+                jobId: job.job_id,
+                patientId: job.patient_id,
+                patientName: job.full_name || job.patient_name,
+                phone: job.whatsapp || job.phone,
+                mrId: job.mr_id,
+                visitDate: job.visit_date,
+                source: job.simrs_source,
+                recordsImported: job.records_imported,
+                documents: {
+                    hasResume: resumeRecords.length > 0,
+                    usgPhotos: usgDocs,
+                    labFiles: labFiles,
+                    usgCount: usgDocs.length,
+                    labCount: labFiles.length
+                },
+                alreadySent: sentDocs[0].count > 0 || !!job.portal_sent_at,
+                sentAt: job.portal_sent_at
+            };
+        }));
+
+        res.json({
+            success: true,
+            batchId,
+            patients: result,
+            summary: {
+                total: result.length,
+                sent: result.filter(r => r.alreadySent).length,
+                pending: result.filter(r => !r.alreadySent).length
+            }
+        });
+
+    } catch (error) {
+        console.error('[Medify] Error loading review data:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+/**
+ * GET /api/medify-batch/patient-preview/:patientId/:mrId
+ * Get detailed preview for a patient (resume content, USG thumbnails, lab files)
+ */
+router.get('/patient-preview/:patientId/:mrId', verifyToken, async (req, res) => {
+    const { patientId, mrId } = req.params;
+
+    try {
+        // Get resume content
+        const resumeRecords = await pool.query(`
+            SELECT record_data FROM medical_records
+            WHERE mr_id = ? AND record_type = 'resume_medis'
+            ORDER BY id DESC LIMIT 1
+        `, [mrId]);
+
+        let resumeContent = null;
+        if (resumeRecords.length > 0) {
+            try {
+                const data = JSON.parse(resumeRecords[0].record_data);
+                resumeContent = data.resume;
+            } catch (e) {}
+        }
+
+        // Get USG photos with URLs
+        const usgPhotos = await pool.query(`
+            SELECT id, title, file_url, file_name, created_at
+            FROM patient_documents
+            WHERE mr_id = ? AND document_type = 'usg_photo' AND status != 'deleted'
+            ORDER BY created_at DESC
+        `, [mrId]);
+
+        // Get lab files from penunjang
+        const penunjangRecords = await pool.query(`
+            SELECT record_data FROM medical_records
+            WHERE mr_id = ? AND record_type = 'penunjang'
+            ORDER BY id DESC LIMIT 1
+        `, [mrId]);
+
+        let labFiles = [];
+        let labInterpretation = null;
+        if (penunjangRecords.length > 0) {
+            try {
+                const data = JSON.parse(penunjangRecords[0].record_data);
+                labFiles = data.files || [];
+                labInterpretation = data.interpretation || data.hasil_lab || null;
+            } catch (e) {}
+        }
+
+        res.json({
+            success: true,
+            patientId,
+            mrId,
+            preview: {
+                resume: resumeContent
+                    ? resumeContent.substring(0, 1000) + (resumeContent.length > 1000 ? '...' : '')
+                    : null,
+                resumeFull: resumeContent,
+                usgPhotos: usgPhotos.map(p => ({
+                    id: p.id,
+                    title: p.title,
+                    thumbnailUrl: p.file_url,
+                    fileName: p.file_name
+                })),
+                labFiles: labFiles.map(f => ({
+                    name: f.name || f.fileName,
+                    url: f.url || f.fileUrl,
+                    type: f.type || 'file'
+                })),
+                labInterpretation
+            }
+        });
+
+    } catch (error) {
+        console.error('[Medify] Error loading preview:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+/**
+ * POST /api/medify-batch/send-to-portal
+ * Send documents to patient portal (single or bulk)
+ */
+router.post('/send-to-portal', verifyToken, async (req, res) => {
+    const { batchId, patientIds } = req.body;
+    const userId = req.user.id;
+    const userName = req.user.name;
+
+    try {
+        if (!patientIds || patientIds.length === 0) {
+            return res.status(400).json({
+                success: false,
+                message: 'At least one patient ID is required'
+            });
+        }
+
+        const results = [];
+
+        for (const patientId of patientIds) {
+            try {
+                // Get MR ID for this patient from the batch
+                const jobsForPatient = await pool.query(`
+                    SELECT mij.id, mij.simrs_source, scr.mr_id
+                    FROM medify_import_jobs mij
+                    LEFT JOIN sunday_clinic_records scr
+                        ON mij.patient_id = scr.patient_id
+                        AND scr.visit_location = mij.simrs_source
+                        AND scr.id = (
+                            SELECT id FROM sunday_clinic_records scr2
+                            WHERE scr2.patient_id = mij.patient_id
+                            AND scr2.visit_location = mij.simrs_source
+                            ORDER BY scr2.created_at DESC
+                            LIMIT 1
+                        )
+                    WHERE mij.batch_id = ? AND mij.patient_id = ? AND mij.status = 'success'
+                    LIMIT 1
+                `, [batchId, patientId]);
+
+                if (jobsForPatient.length === 0) {
+                    results.push({ patientId, success: false, error: 'Job not found' });
+                    continue;
+                }
+
+                const mrId = jobsForPatient[0].mr_id;
+
+                if (!mrId) {
+                    results.push({ patientId, success: false, error: 'No MR ID found' });
+                    continue;
+                }
+
+                // Generate and publish resume
+                await generateAndPublishResume(patientId, mrId);
+
+                // Also publish USG photos if available
+                await pool.query(`
+                    UPDATE patient_documents
+                    SET status = 'published', published_at = NOW(), published_by = ?
+                    WHERE mr_id = ? AND document_type = 'usg_photo' AND status != 'published'
+                `, [userId, mrId]);
+
+                // Mark job as sent
+                await pool.query(`
+                    UPDATE medify_import_jobs
+                    SET portal_sent_at = NOW(), portal_sent_by = ?
+                    WHERE batch_id = ? AND patient_id = ?
+                `, [userId, batchId, patientId]);
+
+                // Create patient notification
+                const patientData = await pool.query(`SELECT full_name FROM patients WHERE id = ?`, [patientId]);
+                const patientName = patientData[0]?.full_name || 'Pasien';
+
+                await pool.query(`
+                    INSERT INTO patient_notifications (patient_id, title, message, type, link, created_at)
+                    VALUES (?, ?, ?, 'document', '/patient-dashboard.html#documents', NOW())
+                `, [patientId, 'Dokumen Baru Tersedia', `Resume medis dan dokumen pemeriksaan Anda sudah tersedia di portal pasien.`]);
+
+                results.push({ patientId, mrId, success: true });
+
+            } catch (patientError) {
+                console.error(`[Medify] Error sending for ${patientId}:`, patientError);
+                results.push({ patientId, success: false, error: patientError.message });
+            }
+        }
+
+        // Log activity
+        const successCount = results.filter(r => r.success).length;
+        await activityLogger.log(userId, userName, 'MEDIFY Send to Portal',
+            `Batch: ${batchId}, Sent: ${successCount}/${patientIds.length}`);
+
+        res.json({
+            success: true,
+            results,
+            summary: {
+                total: patientIds.length,
+                success: successCount,
+                failed: patientIds.length - successCount
+            }
+        });
+
+    } catch (error) {
+        console.error('[Medify] Error sending to portal:', error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
 
 module.exports = router;
