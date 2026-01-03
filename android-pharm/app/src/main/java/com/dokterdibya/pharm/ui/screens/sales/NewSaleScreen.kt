@@ -44,6 +44,11 @@ fun NewSaleScreen(
         "rs_bhayangkara" to "RS Bhayangkara"
     )
 
+    // Load obat list when screen is displayed
+    LaunchedEffect(Unit) {
+        viewModel.loadObatList()
+    }
+
     // Error snackbar
     LaunchedEffect(uiState.error) {
         if (uiState.error != null) {
