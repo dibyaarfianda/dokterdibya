@@ -42,9 +42,15 @@ class SalesRepository @Inject constructor(
         return try {
             val response = apiService.getObatList()
             if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!.data)
+                val body = response.body()!!
+                if (body.success) {
+                    Result.success(body.data)
+                } else {
+                    Result.failure(Exception(body.message ?: "Failed to get obat list"))
+                }
             } else {
-                Result.failure(Exception("Failed to get obat list"))
+                val errorBody = response.errorBody()?.string()
+                Result.failure(Exception("HTTP ${response.code()}: ${errorBody ?: response.message()}"))
             }
         } catch (e: Exception) {
             Result.failure(e)
