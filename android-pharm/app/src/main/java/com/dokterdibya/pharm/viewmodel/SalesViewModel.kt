@@ -54,8 +54,9 @@ class SalesViewModel @Inject constructor(
     val formItems: StateFlow<List<FormItem>> = _formItems.asStateFlow()
 
     init {
-        loadSales()
-        // loadObatList() is called from NewSaleScreen to avoid race condition with token
+        // Data loading moved to screens to avoid race condition with token
+        // loadSales() called from SalesListScreen
+        // loadObatList() called from NewSaleScreen
     }
 
     fun loadSales() {

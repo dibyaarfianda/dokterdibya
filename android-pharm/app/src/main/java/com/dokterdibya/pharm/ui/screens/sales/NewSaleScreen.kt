@@ -45,7 +45,9 @@ fun NewSaleScreen(
     )
 
     // Load obat list when screen is displayed
+    // Small delay ensures token is persisted to DataStore
     LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(300)
         viewModel.loadObatList()
     }
 
