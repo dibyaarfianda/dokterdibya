@@ -6,6 +6,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -56,7 +57,7 @@ fun SaleDetailScreen(
                 title = { Text("Detail Penjualan", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 actions = {
@@ -189,7 +190,7 @@ fun SaleDetailScreen(
                                         )
                                     }
                                     if (index < (sale.items?.size ?: 0) - 1) {
-                                        Divider(
+                                        HorizontalDivider(
                                             color = GlassBorderDark,
                                             modifier = Modifier.padding(vertical = 8.dp)
                                         )

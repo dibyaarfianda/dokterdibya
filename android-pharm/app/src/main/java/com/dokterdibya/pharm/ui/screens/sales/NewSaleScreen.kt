@@ -7,6 +7,7 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -65,7 +66,7 @@ fun NewSaleScreen(
                 title = { Text("Penjualan Baru", fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -187,7 +188,7 @@ fun NewSaleScreen(
                                     canRemove = formItems.size > 1
                                 )
                                 if (index < formItems.size - 1) {
-                                    Divider(
+                                    HorizontalDivider(
                                         color = GlassBorderDark,
                                         modifier = Modifier.padding(vertical = 12.dp)
                                     )
