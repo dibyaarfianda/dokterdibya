@@ -40,6 +40,13 @@ fun SalesListScreen(
     val uiState by salesViewModel.uiState.collectAsState()
     var showLogoutDialog by remember { mutableStateOf(false) }
 
+    // Load sales data when screen is first displayed
+    // Small delay ensures token is persisted to DataStore
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(300) // Wait for token to be persisted
+        salesViewModel.loadSales()
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()

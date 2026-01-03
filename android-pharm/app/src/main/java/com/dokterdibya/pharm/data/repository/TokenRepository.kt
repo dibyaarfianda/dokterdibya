@@ -32,8 +32,10 @@ class TokenRepository @Inject constructor(
     }
 
     suspend fun saveToken(token: String) {
+        android.util.Log.d("TokenRepository", "saveToken called: ${token.take(20)}...")
         context.dataStore.edit { preferences ->
             preferences[TOKEN_KEY] = token
+            android.util.Log.d("TokenRepository", "Token saved to DataStore")
         }
     }
 
