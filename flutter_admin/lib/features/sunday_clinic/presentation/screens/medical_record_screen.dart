@@ -9,6 +9,10 @@ import '../widgets/anamnesa_form.dart';
 import '../widgets/physical_exam_form.dart';
 import '../widgets/diagnosis_form.dart';
 import '../widgets/plan_form.dart';
+import '../widgets/usg_obstetri_form.dart';
+import '../widgets/usg_gynecology_form.dart';
+import '../widgets/obstetric_exam_form.dart';
+import '../widgets/supporting_exam_form.dart';
 
 class MedicalRecordScreen extends ConsumerStatefulWidget {
   final String patientId;
@@ -31,14 +35,30 @@ class MedicalRecordScreen extends ConsumerStatefulWidget {
 }
 
 class _MedicalRecordScreenState extends ConsumerState<MedicalRecordScreen> {
-  final List<String> _sections = [
-    'anamnesa',
-    'physical_exam',
-    'supporting',
-    'usg',
-    'diagnosis',
-    'plan',
-  ];
+  List<String> get _sections {
+    // Return category-specific sections
+    if (widget.category == 'Obstetri') {
+      return [
+        'anamnesa',
+        'physical_exam',
+        'obstetric_exam',
+        'supporting',
+        'usg_obstetri',
+        'diagnosis',
+        'plan',
+      ];
+    } else {
+      // Gyn/Repro or Ginekologi
+      return [
+        'anamnesa',
+        'physical_exam',
+        'supporting',
+        'usg_gynecology',
+        'diagnosis',
+        'plan',
+      ];
+    }
+  }
 
   @override
   void initState() {
@@ -311,6 +331,34 @@ class _MedicalRecordScreenState extends ConsumerState<MedicalRecordScreen> {
           onSave: (data) => _saveSection('physical_exam', data),
           isSaving: state.isSaving,
         );
+      case 'obstetric_exam':
+        return ObstetricExamForm(
+          initialData: state.record!.obstetricsExamData ?? {},
+          isReadOnly: isReadOnly,
+          onSave: (data) => _saveSection('pemeriksaan_obstetri', data),
+          isSaving: state.isSaving,
+        );
+      case 'supporting':
+        return SupportingExamForm(
+          initialData: state.record!.supportingData ?? {},
+          isReadOnly: isReadOnly,
+          onSave: (data) => _saveSection('penunjang', data),
+          isSaving: state.isSaving,
+        );
+      case 'usg_obstetri':
+        return UsgObstetriForm(
+          initialData: state.record!.usgObstetriData ?? {},
+          isReadOnly: isReadOnly,
+          onSave: (data) => _saveSection('usg_obstetri', data),
+          isSaving: state.isSaving,
+        );
+      case 'usg_gynecology':
+        return UsgGynecologyForm(
+          initialData: state.record!.usgGynecologyData ?? {},
+          isReadOnly: isReadOnly,
+          onSave: (data) => _saveSection('usg', data),
+          isSaving: state.isSaving,
+        );
       case 'diagnosis':
         return DiagnosisForm(
           initialData: state.record!.diagnosisData ?? {},
@@ -479,11 +527,15 @@ class _MedicalRecordScreenState extends ConsumerState<MedicalRecordScreen> {
       case 'anamnesa':
         return 'Anamnesa';
       case 'physical_exam':
-        return 'Pemeriksaan Fisik';
+        return 'Pem. Fisik';
+      case 'obstetric_exam':
+        return 'Pem. Obstetri';
       case 'supporting':
         return 'Penunjang';
-      case 'usg':
-        return 'USG';
+      case 'usg_obstetri':
+        return 'USG Obstetri';
+      case 'usg_gynecology':
+        return 'USG Gyn';
       case 'diagnosis':
         return 'Diagnosis';
       case 'plan':
@@ -544,9 +596,13 @@ class _SectionNavItem extends StatelessWidget {
         return Icons.question_answer;
       case 'physical_exam':
         return Icons.monitor_heart;
+      case 'obstetric_exam':
+        return Icons.pregnant_woman;
       case 'supporting':
         return Icons.science;
-      case 'usg':
+      case 'usg_obstetri':
+        return Icons.wifi_tethering;
+      case 'usg_gynecology':
         return Icons.wifi_tethering;
       case 'diagnosis':
         return Icons.assignment;
@@ -563,10 +619,14 @@ class _SectionNavItem extends StatelessWidget {
         return 'Anamnesa';
       case 'physical_exam':
         return 'Pemeriksaan Fisik';
+      case 'obstetric_exam':
+        return 'Pemeriksaan Obstetri';
       case 'supporting':
         return 'Penunjang';
-      case 'usg':
-        return 'USG';
+      case 'usg_obstetri':
+        return 'USG Obstetri';
+      case 'usg_gynecology':
+        return 'USG Ginekologi';
       case 'diagnosis':
         return 'Diagnosis';
       case 'plan':
