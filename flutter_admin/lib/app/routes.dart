@@ -9,6 +9,11 @@ import '../features/patients/presentation/screens/patient_detail_screen.dart';
 import '../features/patients/presentation/screens/patient_form_screen.dart';
 import '../features/sunday_clinic/presentation/screens/queue_screen.dart';
 import '../features/sunday_clinic/presentation/screens/medical_record_screen.dart';
+import '../features/appointments/presentation/screens/appointment_list_screen.dart';
+import '../features/inventory/presentation/screens/inventory_screen.dart';
+import '../features/notifications/presentation/screens/notification_screen.dart';
+import '../features/settings/presentation/screens/settings_screen.dart';
+import '../features/settings/presentation/screens/activity_log_screen.dart';
 import '../shared/widgets/main_scaffold.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -51,11 +56,6 @@ final routerProvider = Provider<GoRouter>((ref) {
                 path: 'add',
                 name: 'addPatient',
                 builder: (context, state) => const PatientFormScreen(),
-              ),
-              GoRoute(
-                path: 'search',
-                name: 'searchPatients',
-                builder: (context, state) => const Placeholder(),
               ),
               GoRoute(
                 path: ':id',
@@ -101,22 +101,34 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/appointments',
             name: 'appointments',
-            builder: (context, state) => const Placeholder(),
+            builder: (context, state) => const AppointmentListScreen(),
           ),
           GoRoute(
             path: '/inventory',
             name: 'inventory',
-            builder: (context, state) => const Placeholder(),
+            builder: (context, state) => const InventoryScreen(),
           ),
           GoRoute(
             path: '/notifications',
             name: 'notifications',
-            builder: (context, state) => const Placeholder(),
+            builder: (context, state) => const NotificationScreen(),
           ),
           GoRoute(
             path: '/settings',
             name: 'settings',
-            builder: (context, state) => const Placeholder(),
+            builder: (context, state) => const SettingsScreen(),
+            routes: [
+              GoRoute(
+                path: 'activity-logs',
+                name: 'activityLogs',
+                builder: (context, state) => const ActivityLogScreen(),
+              ),
+              GoRoute(
+                path: 'role-visibility',
+                name: 'roleVisibility',
+                builder: (context, state) => const Placeholder(), // TODO: implement
+              ),
+            ],
           ),
         ],
       ),
