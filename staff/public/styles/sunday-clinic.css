@@ -1259,3 +1259,12 @@ body.patient-sidebar-open .main-header {
     font-size: 10px;
     font-weight: 600;
 }
+
+/* Green background for completed examination (selesai diperiksa) */
+.patient-selesai {
+    background-color: #d4edda !important;
+    color: #155724 !important;
+    padding: 2px 8px;
+    border-radius: 4px;
+    display: inline-block;
+}

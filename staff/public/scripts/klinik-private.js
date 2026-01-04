@@ -213,10 +213,14 @@ function renderAppointments(appointments) {
         const statusMeta = getStatusMeta(appointment.status);
         const statusBadge = `<span class="badge ${statusMeta.className}">${escapeHtml(statusMeta.label)}</span>`;
 
+        // Check if patient has completed examination
+        const isSelesai = (appointment.status || '').toLowerCase() === 'completed';
+        const selesaiClass = isSelesai ? 'patient-selesai' : '';
+
         tr.innerHTML = `
             <td class="text-center">${slotBadge}</td>
             <td>
-                <div class="font-weight-bold">${escapeHtml(appointment.patient_name || '-')}</div>
+                <div class="font-weight-bold ${selesaiClass}">${escapeHtml(appointment.patient_name || '-')}</div>
                 ${infoLine}
             </td>
             <td>${formatAge(appointment.patientAge)}</td>
@@ -377,7 +381,7 @@ function filterAndSortAppointments(appointments) {
     return appointments
         .filter(apt => {
             const status = (apt.status || '').toLowerCase();
-            return status === 'pending' || status === 'confirmed';
+            return status === 'pending' || status === 'confirmed' || status === 'completed';
         })
         .sort((a, b) => {
             const sessionDiff = (a.session || 0) - (b.session || 0);
