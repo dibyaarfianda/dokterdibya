@@ -133,7 +133,7 @@ class _ActivityLogTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListTile(
       leading: CircleAvatar(
-        backgroundColor: _getActionColor(log.action).withOpacity(0.1),
+        backgroundColor: _getActionColor(log.action).withValues(alpha: 0.1),
         child: Icon(
           _getActionIcon(log.action),
           size: 20,

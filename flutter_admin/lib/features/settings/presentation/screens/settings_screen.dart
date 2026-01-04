@@ -308,15 +308,17 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 onPressed: isSaving
                     ? null
                     : () async {
+                        final navigator = Navigator.of(context);
+                        final scaffoldMessenger = ScaffoldMessenger.of(context);
                         final success = await ref
                             .read(profileProvider.notifier)
                             .updateProfile({
                           'name': nameController.text.trim(),
                           'phone': phoneController.text.trim(),
                         });
-                        if (success && mounted) {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
+                        if (success && context.mounted) {
+                          navigator.pop();
+                          scaffoldMessenger.showSnackBar(
                             const SnackBar(content: Text('Profil berhasil diupdate')),
                           );
                         }
@@ -398,6 +400,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                           return;
                         }
 
+                        final navigator = Navigator.of(context);
+                        final scaffoldMessenger = ScaffoldMessenger.of(context);
                         final success = await ref
                             .read(profileProvider.notifier)
                             .changePassword(
@@ -405,15 +409,15 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                               newPassword: newController.text,
                             );
 
-                        if (success && mounted) {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(
+                        if (success && context.mounted) {
+                          navigator.pop();
+                          scaffoldMessenger.showSnackBar(
                             const SnackBar(content: Text('Password berhasil diubah')),
                           );
-                        } else {
+                        } else if (context.mounted) {
                           final error = ref.read(profileProvider).error;
                           if (error != null) {
-                            ScaffoldMessenger.of(context).showSnackBar(
+                            scaffoldMessenger.showSnackBar(
                               SnackBar(
                                 content: Text(error),
                                 backgroundColor: Colors.red,

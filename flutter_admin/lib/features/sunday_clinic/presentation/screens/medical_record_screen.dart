@@ -205,7 +205,7 @@ class _MedicalRecordScreenState extends ConsumerState<MedicalRecordScreen> {
                     onSelected: (_) {
                       ref.read(medicalRecordProvider.notifier).setActiveSection(section);
                     },
-                    selectedColor: AppColors.primary.withOpacity(0.2),
+                    selectedColor: AppColors.primary.withValues(alpha: 0.2),
                   ),
                 );
               }).toList(),
@@ -228,7 +228,7 @@ class _MedicalRecordScreenState extends ConsumerState<MedicalRecordScreen> {
       child: Row(
         children: [
           CircleAvatar(
-            backgroundColor: AppColors.primary.withOpacity(0.1),
+            backgroundColor: AppColors.primary.withValues(alpha: 0.1),
             child: Text(
               widget.patientName.isNotEmpty ? widget.patientName[0].toUpperCase() : '?',
               style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
@@ -248,7 +248,7 @@ class _MedicalRecordScreenState extends ConsumerState<MedicalRecordScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                       decoration: BoxDecoration(
-                        color: _getCategoryColor().withOpacity(0.1),
+                        color: _getCategoryColor().withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
@@ -275,8 +275,8 @@ class _MedicalRecordScreenState extends ConsumerState<MedicalRecordScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               decoration: BoxDecoration(
                 color: state.record!.isFinalized
-                    ? Colors.green.withOpacity(0.1)
-                    : Colors.orange.withOpacity(0.1),
+                    ? Colors.green.withValues(alpha: 0.1)
+                    : Colors.orange.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -473,8 +473,8 @@ class _MedicalRecordScreenState extends ConsumerState<MedicalRecordScreen> {
                               return ListTile(
                                 leading: CircleAvatar(
                                   backgroundColor: record.isFinalized
-                                      ? Colors.green.withOpacity(0.1)
-                                      : Colors.orange.withOpacity(0.1),
+                                      ? Colors.green.withValues(alpha: 0.1)
+                                      : Colors.orange.withValues(alpha: 0.1),
                                   child: Icon(
                                     Icons.medical_services,
                                     color: record.isFinalized ? Colors.green : Colors.orange,
@@ -497,8 +497,8 @@ class _MedicalRecordScreenState extends ConsumerState<MedicalRecordScreen> {
                                   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                                   decoration: BoxDecoration(
                                     color: record.isFinalized
-                                        ? Colors.green.withOpacity(0.1)
-                                        : Colors.orange.withOpacity(0.1),
+                                        ? Colors.green.withValues(alpha: 0.1)
+                                        : Colors.orange.withValues(alpha: 0.1),
                                     borderRadius: BorderRadius.circular(4),
                                   ),
                                   child: Text(
@@ -585,7 +585,7 @@ class _SectionNavItem extends StatelessWidget {
         ),
       ),
       selected: isActive,
-      selectedTileColor: AppColors.primary.withOpacity(0.1),
+      selectedTileColor: AppColors.primary.withValues(alpha: 0.1),
       onTap: onTap,
     );
   }

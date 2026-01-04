@@ -81,7 +81,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
                       width: 50,
                       height: 50,
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
@@ -178,7 +178,7 @@ class _MainScaffoldState extends ConsumerState<MainScaffold> {
               children: [
                 CircleAvatar(
                   radius: 16,
-                  backgroundColor: Colors.white.withOpacity(0.2),
+                  backgroundColor: Colors.white.withValues(alpha: 0.2),
                   child: Text(
                     (authState.user?['name'] ?? 'U')[0].toUpperCase(),
                     style: const TextStyle(color: Colors.white),
