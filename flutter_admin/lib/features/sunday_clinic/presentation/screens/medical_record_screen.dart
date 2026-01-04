@@ -20,6 +20,7 @@ class MedicalRecordScreen extends ConsumerStatefulWidget {
   final String category;
   final String location;
   final int? recordId;
+  final String? mrId;
 
   const MedicalRecordScreen({
     super.key,
@@ -28,6 +29,7 @@ class MedicalRecordScreen extends ConsumerStatefulWidget {
     required this.category,
     required this.location,
     this.recordId,
+    this.mrId,
   });
 
   @override
@@ -64,13 +66,14 @@ class _MedicalRecordScreenState extends ConsumerState<MedicalRecordScreen> {
   void initState() {
     super.initState();
     Future.microtask(() {
-      if (widget.recordId != null) {
-        ref.read(medicalRecordProvider.notifier).loadRecord(widget.recordId!);
+      if (widget.mrId != null && widget.mrId!.isNotEmpty) {
+        ref.read(medicalRecordProvider.notifier).loadRecordByMrId(widget.mrId!);
       } else {
         ref.read(medicalRecordProvider.notifier).loadOrCreateRecord(
               patientId: widget.patientId,
               category: widget.category,
               location: widget.location,
+              existingMrId: widget.mrId,
             );
       }
     });

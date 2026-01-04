@@ -152,10 +152,15 @@ class MedicalRecordNotifier extends StateNotifier<MedicalRecordState> {
   MedicalRecordNotifier(this._repository) : super(MedicalRecordState());
 
   Future<void> loadRecord(int recordId) async {
+    // Deprecated: use loadRecordByMrId instead
+    state = state.copyWith(isLoading: false, error: 'Use MR ID to load records');
+  }
+
+  Future<void> loadRecordByMrId(String mrId) async {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      final record = await _repository.getRecord(recordId);
+      final record = await _repository.getRecordByMrId(mrId);
       state = state.copyWith(record: record, isLoading: false);
 
       if (record != null) {
@@ -170,12 +175,19 @@ class MedicalRecordNotifier extends StateNotifier<MedicalRecordState> {
     required String patientId,
     required String category,
     required String location,
+    String? existingMrId,
   }) async {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      // Try to get existing record first, or create one if not exists
-      var record = await _repository.getRecordByPatient(patientId, location: location);
+      MedicalRecord? record;
+
+      // If we have an existing MR ID, load it
+      if (existingMrId != null && existingMrId.isNotEmpty) {
+        record = await _repository.getRecordByMrId(existingMrId);
+      }
+
+      // If no record found, create a new one
       record ??= await _repository.createRecord(
         patientId: patientId,
         category: category,
@@ -206,15 +218,16 @@ class MedicalRecordNotifier extends StateNotifier<MedicalRecordState> {
     required String section,
     required Map<String, dynamic> data,
   }) async {
-    if (state.record?.id == null) return false;
+    if (state.record?.mrId == null) return false;
 
     state = state.copyWith(isSaving: true, error: null, successMessage: null);
 
     try {
       final updatedRecord = await _repository.updateRecordSection(
-        recordId: state.record!.id!,
+        recordId: state.record!.id ?? 0,
         section: section,
         sectionData: data,
+        mrId: state.record!.mrId,
       );
 
       state = state.copyWith(
@@ -230,12 +243,15 @@ class MedicalRecordNotifier extends StateNotifier<MedicalRecordState> {
   }
 
   Future<bool> finalize() async {
-    if (state.record?.id == null) return false;
+    if (state.record?.mrId == null) return false;
 
     state = state.copyWith(isSaving: true, error: null);
 
     try {
-      final updatedRecord = await _repository.finalizeRecord(state.record!.id!);
+      final updatedRecord = await _repository.finalizeRecord(
+        state.record!.id ?? 0,
+        mrId: state.record!.mrId,
+      );
       state = state.copyWith(
         record: updatedRecord,
         isSaving: false,

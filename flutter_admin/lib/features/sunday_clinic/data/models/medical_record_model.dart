@@ -46,8 +46,8 @@ class MedicalRecord {
       patientId: json['patient_id']?.toString() ?? '',
       patientName: json['patient_name'],
       visitLocation: json['visit_location'] ?? 'klinik_private',
-      recordStatus: json['record_status'] ?? 'draft',
-      category: json['category'] ?? 'Obstetri',
+      recordStatus: json['record_status'] ?? json['status'] ?? 'draft',
+      category: _mapCategoryFromBackend(json['mr_category'] ?? json['category']),
       anamnesaData: _parseJsonField(json['anamnesa_data']),
       physicalExamData: _parseJsonField(json['physical_exam_data']),
       obstetricsExamData: _parseJsonField(json['obstetrics_exam_data']),
@@ -56,10 +56,80 @@ class MedicalRecord {
       usgGynecologyData: _parseJsonField(json['usg_gynecology_data']),
       diagnosisData: _parseJsonField(json['diagnosis_data']),
       planData: _parseJsonField(json['plan_data']),
-      createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at']) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.tryParse(json['updated_at']) : null,
+      createdAt: _parseDate(json['created_at'] ?? json['visit_date']),
+      updatedAt: _parseDate(json['updated_at']),
       createdBy: json['created_by'],
     );
+  }
+
+  // Parse complex API response: { record, patient, appointment, intake, medicalRecords, summary }
+  factory MedicalRecord.fromApiResponse(Map<String, dynamic> apiResponse) {
+    final record = apiResponse['record'] as Map<String, dynamic>? ?? apiResponse;
+    final patient = apiResponse['patient'] as Map<String, dynamic>?;
+    final medicalRecords = apiResponse['medicalRecords'] as Map<String, dynamic>?;
+
+    // Parse section data from medicalRecords
+    Map<String, dynamic>? anamnesaData;
+    Map<String, dynamic>? physicalExamData;
+    Map<String, dynamic>? obstetricsExamData;
+    Map<String, dynamic>? supportingData;
+    Map<String, dynamic>? usgObstetriData;
+    Map<String, dynamic>? usgGynecologyData;
+    Map<String, dynamic>? diagnosisData;
+    Map<String, dynamic>? planData;
+
+    if (medicalRecords != null) {
+      anamnesaData = _parseJsonField(medicalRecords['anamnesa']);
+      physicalExamData = _parseJsonField(medicalRecords['physicalExam']);
+      obstetricsExamData = _parseJsonField(medicalRecords['pemeriksaanObstetri']);
+      supportingData = _parseJsonField(medicalRecords['penunjang']);
+      usgObstetriData = _parseJsonField(medicalRecords['usgObstetri']);
+      usgGynecologyData = _parseJsonField(medicalRecords['usg']);
+      diagnosisData = _parseJsonField(medicalRecords['diagnosis']);
+      planData = _parseJsonField(medicalRecords['plan']);
+    }
+
+    return MedicalRecord(
+      id: record['id'],
+      mrId: record['mrId'] ?? record['mr_id'],
+      patientId: record['patientId']?.toString() ?? record['patient_id']?.toString() ?? '',
+      patientName: patient?['fullName'] ?? patient?['full_name'] ?? record['patient_name'],
+      visitLocation: record['visitLocation'] ?? record['visit_location'] ?? 'klinik_private',
+      recordStatus: record['status'] ?? record['record_status'] ?? 'draft',
+      category: _mapCategoryFromBackend(record['category'] ?? record['mr_category']),
+      anamnesaData: anamnesaData,
+      physicalExamData: physicalExamData,
+      obstetricsExamData: obstetricsExamData,
+      supportingData: supportingData,
+      usgObstetriData: usgObstetriData,
+      usgGynecologyData: usgGynecologyData,
+      diagnosisData: diagnosisData,
+      planData: planData,
+      createdAt: _parseDate(record['createdAt'] ?? record['created_at']),
+      updatedAt: _parseDate(record['updatedAt'] ?? record['updated_at']),
+      createdBy: record['createdBy'] ?? record['created_by'],
+    );
+  }
+
+  static String _mapCategoryFromBackend(String? category) {
+    if (category == null) return 'Obstetri';
+    switch (category.toLowerCase()) {
+      case 'obstetri':
+        return 'Obstetri';
+      case 'gyn_repro':
+        return 'Gyn/Repro';
+      case 'gyn_special':
+        return 'Ginekologi';
+      default:
+        return category;
+    }
+  }
+
+  static DateTime? _parseDate(dynamic date) {
+    if (date == null) return null;
+    if (date is DateTime) return date;
+    if (date is String) return DateTime.tryParse(date);
+    return null;
   }
 
   static Map<String, dynamic>? _parseJsonField(dynamic field) {

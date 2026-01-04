@@ -261,9 +261,10 @@ class _QueueScreenState extends ConsumerState<QueueScreen> with SingleTickerProv
     context.push('/sunday-clinic/record', extra: {
       'patientId': item.patientId,
       'patientName': item.patientName,
-      'category': item.category ?? 'Obstetri',
+      'category': item.category ?? item.mrCategory ?? 'Obstetri',
       'location': location,
       'recordId': item.hasRecord ? item.id : null,
+      'mrId': item.mrId,
     });
   }
 
