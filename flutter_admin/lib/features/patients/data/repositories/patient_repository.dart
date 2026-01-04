@@ -123,13 +123,15 @@ class PatientRepository {
   }
 
   Future<Map<String, dynamic>> getPatientHistory(String id) async {
-    final response = await _apiClient.get('${ApiEndpoints.patients}/$id/history');
+    // Use sunday-clinic endpoint for patient visits
+    final response = await _apiClient.get('${ApiEndpoints.sundayClinic}/patient-visits/$id');
     final data = response.data;
 
     if (data['success'] == true && data['data'] != null) {
-      return data['data'];
+      // Wrap in 'visits' key to match expected format
+      return {'visits': data['data']};
     }
-    return {};
+    return {'visits': []};
   }
 }
 
