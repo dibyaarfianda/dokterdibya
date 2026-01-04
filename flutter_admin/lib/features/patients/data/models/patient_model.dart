@@ -119,6 +119,9 @@ class Patient {
     );
   }
 
+  // Alias for name (API returns full_name)
+  String get fullName => name;
+
   String get initials {
     final parts = name.trim().split(' ');
     if (parts.length >= 2) {
