@@ -9,7 +9,7 @@
     <title>Klinik Private Minggu</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="/staff/public/styles/sunday-clinic.css">
+    <link rel="stylesheet" href="/staff/public/styles/sunday-clinic.css?v=2.0.3">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -294,6 +294,20 @@
     <link rel="stylesheet" href="/staff/public/css/mobile-responsive.css">
 </head>
 <body class="hold-transition sidebar-mini">
+    <script>
+        // Cache version control - increment to force refresh
+        (function() {
+            const SC_CACHE_VERSION = 'v2.0.3';
+            const currentVersion = localStorage.getItem('sc_cache_version');
+            if (currentVersion !== SC_CACHE_VERSION) {
+                console.log('[SundayClinic] Cache version changed:', currentVersion, '->', SC_CACHE_VERSION);
+                localStorage.setItem('sc_cache_version', SC_CACHE_VERSION);
+                if (currentVersion) {
+                    location.reload(true);
+                }
+            }
+        })();
+    </script>
     <div class="wrapper">
         <!-- Navbar -->
         <nav class="main-header navbar navbar-expand navbar-white navbar-light shadow-sm">
@@ -997,11 +1011,11 @@ PLAN
     <!-- Global Chat Loader (must be after Socket.IO) -->
     <script src="/staff/public/scripts/global-chat-loader.js"></script>
 
-    <script type="module" src="/staff/public/scripts/sunday-clinic.js?v=2.0.2"></script>
+    <script type="module" src="/staff/public/scripts/sunday-clinic.js?v=2.0.3"></script>
     <!-- Planning helpers for tindakan and terapi modals -->
-    <script src="/staff/public/scripts/sunday-clinic/utils/planning-helpers.js?v=2.0.2"></script>
+    <script src="/staff/public/scripts/sunday-clinic/utils/planning-helpers.js?v=2.0.3"></script>
     <!-- Medical import from text files -->
-    <script type="module" src="/staff/public/scripts/sunday-clinic/utils/medical-import.js?v=1.0.0"></script>
+    <script type="module" src="/staff/public/scripts/sunday-clinic/utils/medical-import.js?v=2.0.3"></script>
     <script>
         // Add click handler for sidebar navigation
         document.addEventListener('DOMContentLoaded', function() {
