@@ -14,6 +14,17 @@ import '../features/inventory/presentation/screens/inventory_screen.dart';
 import '../features/notifications/presentation/screens/notification_screen.dart';
 import '../features/settings/presentation/screens/settings_screen.dart';
 import '../features/settings/presentation/screens/activity_log_screen.dart';
+import '../features/inventory/presentation/screens/activity_log_screen.dart' as drug_log;
+import '../features/announcements/presentation/screens/announcement_screen.dart';
+import '../features/schedule/presentation/screens/schedule_screen.dart';
+import '../features/articles/presentation/screens/article_screen.dart';
+import '../features/services/presentation/screens/service_screen.dart';
+import '../features/supplier/presentation/screens/supplier_screen.dart';
+import '../features/drug_sales/presentation/screens/drug_sale_screen.dart';
+import '../features/chat/presentation/screens/chat_screen.dart';
+import '../features/hospital/presentation/screens/hospital_appointments_screen.dart';
+import '../features/staff_activity/presentation/screens/staff_activity_screen.dart';
+import '../features/booking_settings/presentation/screens/booking_settings_screen.dart';
 import '../shared/widgets/main_scaffold.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -108,11 +119,92 @@ final routerProvider = Provider<GoRouter>((ref) {
             path: '/inventory',
             name: 'inventory',
             builder: (context, state) => const InventoryScreen(),
+            routes: [
+              GoRoute(
+                path: 'activity-log',
+                name: 'drugActivityLog',
+                builder: (context, state) => const drug_log.ActivityLogScreen(),
+              ),
+            ],
           ),
           GoRoute(
             path: '/notifications',
             name: 'notifications',
             builder: (context, state) => const NotificationScreen(),
+          ),
+          // New routes
+          GoRoute(
+            path: '/announcements',
+            name: 'announcements',
+            builder: (context, state) => const AnnouncementScreen(),
+          ),
+          GoRoute(
+            path: '/schedule',
+            name: 'schedule',
+            builder: (context, state) => const ScheduleScreen(),
+          ),
+          GoRoute(
+            path: '/articles',
+            name: 'articles',
+            builder: (context, state) => const ArticleScreen(),
+          ),
+          GoRoute(
+            path: '/services',
+            name: 'services',
+            builder: (context, state) => const ServiceScreen(),
+          ),
+          GoRoute(
+            path: '/suppliers',
+            name: 'suppliers',
+            builder: (context, state) => const SupplierScreen(),
+          ),
+          GoRoute(
+            path: '/drug-sales',
+            name: 'drugSales',
+            builder: (context, state) => const DrugSaleScreen(),
+          ),
+          GoRoute(
+            path: '/chat',
+            name: 'chat',
+            builder: (context, state) => const ChatScreen(),
+          ),
+          GoRoute(
+            path: '/staff-activity',
+            name: 'staffActivity',
+            builder: (context, state) => const StaffActivityScreen(),
+          ),
+          GoRoute(
+            path: '/booking-settings',
+            name: 'bookingSettings',
+            builder: (context, state) => const BookingSettingsScreen(),
+          ),
+          // Hospital appointment routes
+          GoRoute(
+            path: '/hospital/melinda',
+            name: 'hospitalMelinda',
+            builder: (context, state) => const HospitalAppointmentsScreen(
+              location: 'rsia_melinda',
+              title: 'RSIA Melinda',
+              color: Colors.pink,
+            ),
+          ),
+          GoRoute(
+            path: '/hospital/gambiran',
+            name: 'hospitalGambiran',
+            builder: (context, state) => const HospitalAppointmentsScreen(
+              location: 'rsud_gambiran',
+              title: 'RSUD Gambiran',
+              color: Colors.cyan,
+            ),
+          ),
+          GoRoute(
+            path: '/hospital/bhayangkara',
+            name: 'hospitalBhayangkara',
+            builder: (context, state) => const HospitalAppointmentsScreen(
+              location: 'rs_bhayangkara',
+              title: 'RS Bhayangkara',
+              color: Colors.teal,
+            ),
           ),
           GoRoute(
             path: '/settings',
@@ -127,7 +219,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'role-visibility',
                 name: 'roleVisibility',
-                builder: (context, state) => const Placeholder(), // TODO: implement
+                builder: (context, state) => const Placeholder(),
               ),
             ],
           ),

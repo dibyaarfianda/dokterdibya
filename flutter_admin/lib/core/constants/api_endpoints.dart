@@ -22,6 +22,7 @@ class ApiEndpoints {
   // Inventory
   static const String obat = '/api/obat';
   static const String tindakan = '/api/tindakan';
+  static const String inventoryActivityLog = '/api/inventory/activity-log';
 
   // Notifications
   static const String notifications = '/api/notifications';
@@ -34,9 +35,31 @@ class ApiEndpoints {
   // Users
   static const String users = '/api/users';
 
-  // Articles
+  // Articles (Ruang Membaca)
   static const String articles = '/api/articles';
+  static const String articlesAdmin = '/api/articles/admin/all';
 
   // Activity Logs
   static const String activityLogs = '/api/logs/activity';
+
+  // Announcements (Patient-facing)
+  static const String announcements = '/api/announcements';
+
+  // Practice Schedules (Jadwal)
+  static const String practiceSchedules = '/api/practice-schedules';
+
+  // Booking Settings
+  static const String bookingSettings = '/api/booking-settings';
+
+  // Suppliers
+  static const String suppliers = '/api/suppliers';
+
+  // Drug Sales (Penjualan Obat)
+  static const String obatSales = '/api/obat-sales';
+
+  // Chat
+  static const String chat = '/api/chat';
+
+  // Analytics
+  static const String analytics = '/api/analytics';
 }
