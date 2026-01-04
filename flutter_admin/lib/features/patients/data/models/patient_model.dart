@@ -37,20 +37,34 @@ class Patient {
     return Patient(
       id: json['id']?.toString() ?? '',
       mrId: json['mr_id']?.toString(),
-      name: json['name'] ?? '',
+      name: json['full_name'] ?? json['name'] ?? '',
       email: json['email'],
       phone: json['phone'],
       whatsapp: json['whatsapp'],
-      age: json['age'] is int ? json['age'] : int.tryParse(json['age']?.toString() ?? ''),
-      birthDate: json['birth_date'] != null ? DateTime.tryParse(json['birth_date']) : null,
-      address: json['address'],
-      category: json['category'],
-      husbandName: json['husband_name'],
-      createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at']) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.tryParse(json['updated_at']) : null,
-      totalVisits: json['total_visits'] is int ? json['total_visits'] : int.tryParse(json['total_visits']?.toString() ?? ''),
-      lastVisit: json['last_visit'] != null ? DateTime.tryParse(json['last_visit']) : null,
+      age: _parseAge(json['age']),
+      birthDate: _parseDate(json['birth_date'] ?? json['tanggal_lahir']),
+      address: json['address'] ?? json['alamat'],
+      category: json['category'] ?? json['mr_category'],
+      husbandName: json['husband_name'] ?? json['nama_suami'],
+      createdAt: _parseDate(json['created_at']),
+      updatedAt: _parseDate(json['updated_at']),
+      totalVisits: _parseAge(json['total_visits']),
+      lastVisit: _parseDate(json['last_visit'] ?? json['last_visit_date']),
     );
+  }
+
+  static int? _parseAge(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  static DateTime? _parseDate(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    if (value is String && value.isNotEmpty) return DateTime.tryParse(value);
+    return null;
   }
 
   Map<String, dynamic> toJson() {
@@ -140,18 +154,21 @@ class PatientListResponse {
   });
 
   factory PatientListResponse.fromJson(Map<String, dynamic> json) {
-    final data = json['data'] ?? json;
-    final patientList = data['patients'] ?? data['data'] ?? [];
+    // API returns: { success, data: [...patients...], count, pagination: {...} }
+    final patientList = json['data'] ?? [];
     final patients = (patientList as List)
         .map((p) => Patient.fromJson(p))
         .toList();
 
+    // Pagination is in separate object
+    final pagination = json['pagination'] as Map<String, dynamic>? ?? {};
+
     return PatientListResponse(
       patients: patients,
-      total: _parseInt(data['total']) ?? 0,
-      page: _parseInt(data['page']) ?? 1,
-      limit: _parseInt(data['limit']) ?? 20,
-      totalPages: _parseInt(data['totalPages'] ?? data['total_pages']) ?? 1,
+      total: _parseInt(pagination['total'] ?? json['count']) ?? patients.length,
+      page: _parseInt(pagination['page']) ?? 1,
+      limit: _parseInt(pagination['limit']) ?? 20,
+      totalPages: _parseInt(pagination['totalPages']) ?? 1,
     );
   }
 
