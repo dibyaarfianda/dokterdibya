@@ -49,7 +49,7 @@ class _QueueScreenState extends ConsumerState<QueueScreen> with SingleTickerProv
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: queueState.selectedLocation,
+                      initialValue: queueState.selectedLocation,
                       decoration: InputDecoration(
                         labelText: 'Lokasi',
                         prefixIcon: const Icon(Icons.location_on),
@@ -173,7 +173,7 @@ class _QueueScreenState extends ConsumerState<QueueScreen> with SingleTickerProv
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Text(
@@ -342,7 +342,7 @@ class _QueueItemCard extends StatelessWidget {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             border: item.isCompleted
-                ? Border.all(color: Colors.green.withOpacity(0.3), width: 2)
+                ? Border.all(color: Colors.green.withValues(alpha: 0.3), width: 2)
                 : null,
           ),
           child: Row(
@@ -350,7 +350,7 @@ class _QueueItemCard extends StatelessWidget {
               // Avatar
               CircleAvatar(
                 radius: 24,
-                backgroundColor: _getStatusColor().withOpacity(0.1),
+                backgroundColor: _getStatusColor().withValues(alpha: 0.1),
                 child: Text(
                   item.initials,
                   style: TextStyle(
@@ -382,7 +382,7 @@ class _QueueItemCard extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
+                              color: AppColors.primary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -416,7 +416,7 @@ class _QueueItemCard extends StatelessWidget {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
-                              color: _getCategoryColor().withOpacity(0.1),
+                              color: _getCategoryColor().withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -452,7 +452,7 @@ class _QueueItemCard extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: _getStatusColor().withOpacity(0.1),
+                      color: _getStatusColor().withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(

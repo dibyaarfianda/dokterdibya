@@ -299,7 +299,7 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
 
   Widget _buildCategoryField() {
     return DropdownButtonFormField<String>(
-      value: _category,
+      initialValue: _category,
       decoration: const InputDecoration(
         labelText: 'Kategori',
         prefixIcon: Icon(Icons.category),
@@ -406,7 +406,7 @@ class _PatientFormScreenState extends ConsumerState<PatientFormScreen> {
         color: Colors.white,
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
+            color: Colors.grey.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, -2),
           ),

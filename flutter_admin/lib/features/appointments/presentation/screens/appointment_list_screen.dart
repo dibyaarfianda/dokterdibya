@@ -16,7 +16,6 @@ class _AppointmentListScreenState extends ConsumerState<AppointmentListScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final _dateFormat = DateFormat('d MMM yyyy');
-  final _timeFormat = DateFormat('HH:mm');
 
   final List<Map<String, String>> _locations = [
     {'id': '', 'name': 'Semua Lokasi'},

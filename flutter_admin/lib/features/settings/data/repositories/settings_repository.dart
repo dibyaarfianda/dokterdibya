@@ -139,7 +139,7 @@ class SettingsRepository {
 
   // App Preferences (Local)
   Future<AppPreferences> getPreferences() async {
-    final data = await _localStorage.getMap('app_preferences');
+    final data = _localStorage.getMap('app_preferences');
     if (data != null) {
       return AppPreferences.fromJson(data);
     }

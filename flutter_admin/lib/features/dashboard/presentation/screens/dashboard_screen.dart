@@ -51,7 +51,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       width: 60,
                       height: 60,
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withOpacity(0.1),
+                        color: AppColors.primary.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
@@ -217,12 +217,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                       itemCount: dashboardState.recentActivity.length > 5
                           ? 5
                           : dashboardState.recentActivity.length,
-                      separatorBuilder: (_, __) => const Divider(height: 1),
+                      separatorBuilder: (context, index) => const Divider(height: 1),
                       itemBuilder: (context, index) {
                         final activity = dashboardState.recentActivity[index];
                         return ListTile(
                           leading: CircleAvatar(
-                            backgroundColor: AppColors.primary.withOpacity(0.1),
+                            backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                             child: Icon(
                               _getActivityIcon(activity['action'] ?? ''),
                               color: AppColors.primary,
@@ -337,7 +337,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             dotData: const FlDotData(show: false),
             belowBarData: BarAreaData(
               show: true,
-              color: AppColors.primary.withOpacity(0.1),
+              color: AppColors.primary.withValues(alpha: 0.1),
             ),
           ),
         ],
@@ -456,7 +456,7 @@ class _StatCard extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.1),
+                    color: color.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(icon, color: color, size: 20),

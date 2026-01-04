@@ -335,7 +335,7 @@ class _PatientCard extends StatelessWidget {
               // Avatar
               CircleAvatar(
                 radius: 24,
-                backgroundColor: _getCategoryColor().withOpacity(0.1),
+                backgroundColor: _getCategoryColor().withValues(alpha: 0.1),
                 child: Text(
                   patient.initials,
                   style: TextStyle(
@@ -368,7 +368,7 @@ class _PatientCard extends StatelessWidget {
                               vertical: 2,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.primary.withOpacity(0.1),
+                              color: AppColors.primary.withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(4),
                             ),
                             child: Text(
@@ -418,7 +418,7 @@ class _PatientCard extends StatelessWidget {
                     vertical: 4,
                   ),
                   decoration: BoxDecoration(
-                    color: _getCategoryColor().withOpacity(0.1),
+                    color: _getCategoryColor().withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(

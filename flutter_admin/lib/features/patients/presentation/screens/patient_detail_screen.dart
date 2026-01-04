@@ -149,7 +149,7 @@ class _PatientDetailScreenState extends ConsumerState<PatientDetailScreen> {
               children: [
                 CircleAvatar(
                   radius: 36,
-                  backgroundColor: _getCategoryColor(patient.category).withOpacity(0.1),
+                  backgroundColor: _getCategoryColor(patient.category).withValues(alpha: 0.1),
                   child: Text(
                     patient.initials,
                     style: TextStyle(
@@ -175,7 +175,7 @@ class _PatientDetailScreenState extends ConsumerState<PatientDetailScreen> {
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
+                            color: AppColors.primary.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
                           child: Text(
@@ -331,7 +331,7 @@ class _PatientDetailScreenState extends ConsumerState<PatientDetailScreen> {
                 itemCount: (history['visits'] as List).length > 5
                     ? 5
                     : (history['visits'] as List).length,
-                separatorBuilder: (_, __) => const Divider(),
+                separatorBuilder: (context, index) => const Divider(),
                 itemBuilder: (context, index) {
                   final visit = (history['visits'] as List)[index];
                   return _VisitCard(visit: visit);
@@ -371,14 +371,16 @@ class _PatientDetailScreenState extends ConsumerState<PatientDetailScreen> {
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context);
+              final navigator = Navigator.of(context);
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
+              navigator.pop();
               final success = await ref
                   .read(patientFormProvider.notifier)
                   .deletePatient(widget.patientId);
               if (success && mounted) {
                 ref.read(patientListProvider.notifier).refresh();
-                context.pop();
-                ScaffoldMessenger.of(context).showSnackBar(
+                navigator.pop();
+                scaffoldMessenger.showSnackBar(
                   const SnackBar(content: Text('Pasien berhasil dihapus')),
                 );
               }
@@ -495,7 +497,7 @@ class _ActionChip extends StatelessWidget {
       avatar: Icon(icon, size: 18, color: chipColor),
       label: Text(label),
       labelStyle: TextStyle(color: chipColor),
-      backgroundColor: chipColor.withOpacity(0.1),
+      backgroundColor: chipColor.withValues(alpha: 0.1),
       side: BorderSide.none,
       onPressed: onTap,
     );
@@ -516,7 +518,7 @@ class _VisitCard extends StatelessWidget {
     return ListTile(
       contentPadding: EdgeInsets.zero,
       leading: CircleAvatar(
-        backgroundColor: _getLocationColor(location).withOpacity(0.1),
+        backgroundColor: _getLocationColor(location).withValues(alpha: 0.1),
         child: Icon(
           Icons.medical_services,
           color: _getLocationColor(location),
@@ -541,7 +543,7 @@ class _VisitCard extends StatelessWidget {
       trailing: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: status == 'finalized' ? Colors.green.withOpacity(0.1) : Colors.orange.withOpacity(0.1),
+          color: status == 'finalized' ? Colors.green.withValues(alpha: 0.1) : Colors.orange.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(4),
         ),
         child: Text(

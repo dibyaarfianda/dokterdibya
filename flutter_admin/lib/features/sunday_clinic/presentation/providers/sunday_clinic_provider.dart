@@ -174,17 +174,13 @@ class MedicalRecordNotifier extends StateNotifier<MedicalRecordState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
-      // Try to get existing record first
+      // Try to get existing record first, or create one if not exists
       var record = await _repository.getRecordByPatient(patientId, location: location);
-
-      // If no record exists, create one
-      if (record == null) {
-        record = await _repository.createRecord(
-          patientId: patientId,
-          category: category,
-          visitLocation: location,
-        );
-      }
+      record ??= await _repository.createRecord(
+        patientId: patientId,
+        category: category,
+        visitLocation: location,
+      );
 
       state = state.copyWith(record: record, isLoading: false);
       loadPatientHistory(patientId);

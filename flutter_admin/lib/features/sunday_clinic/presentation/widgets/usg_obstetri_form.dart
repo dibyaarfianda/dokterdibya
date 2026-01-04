@@ -854,7 +854,9 @@ class _UsgObstetriFormState extends State<UsgObstetriForm>
       children: [
         Radio<String>(
           value: value,
+          // ignore: deprecated_member_use
           groupValue: groupValue,
+          // ignore: deprecated_member_use
           onChanged: widget.isReadOnly ? null : onChanged,
         ),
         Text(label),
