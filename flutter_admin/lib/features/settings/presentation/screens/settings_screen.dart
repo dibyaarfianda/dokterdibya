@@ -99,7 +99,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             const Divider(),
 
             // Admin Settings (if admin/dokter)
-            if (authState.user?.role == 'dokter' || authState.user?.role == 'admin') ...[
+            if (authState.user?['role'] == 'dokter' || authState.user?['role'] == 'admin') ...[
               _buildSettingsSection(
                 title: 'Admin',
                 children: [
