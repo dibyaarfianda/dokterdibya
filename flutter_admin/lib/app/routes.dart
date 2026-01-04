@@ -93,6 +93,7 @@ final routerProvider = Provider<GoRouter>((ref) {
                     category: extra?['category'] ?? 'Obstetri',
                     location: extra?['location'] ?? 'klinik_private',
                     recordId: extra?['recordId'],
+                    mrId: extra?['mrId'],
                   );
                 },
               ),
