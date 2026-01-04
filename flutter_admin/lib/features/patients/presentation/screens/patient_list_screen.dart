@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../data/models/patient_model.dart';
+import '../providers/patient_provider.dart';
 
 class PatientListScreen extends ConsumerStatefulWidget {
   const PatientListScreen({super.key});
@@ -11,15 +14,38 @@ class PatientListScreen extends ConsumerStatefulWidget {
 
 class _PatientListScreenState extends ConsumerState<PatientListScreen> {
   final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    // Load patients when screen initializes
+    Future.microtask(() {
+      ref.read(patientListProvider.notifier).loadPatients(refresh: true);
+    });
+
+    // Add scroll listener for infinite scroll
+    _scrollController.addListener(_onScroll);
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      ref.read(patientListProvider.notifier).loadMore();
+    }
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final patientState = ref.watch(patientListProvider);
+
     return Column(
       children: [
         // Search Bar
@@ -39,7 +65,7 @@ class _PatientListScreenState extends ConsumerState<PatientListScreen> {
                             icon: const Icon(Icons.clear),
                             onPressed: () {
                               _searchController.clear();
-                              setState(() {});
+                              ref.read(patientListProvider.notifier).setSearchQuery('');
                             },
                           )
                         : null,
@@ -48,7 +74,9 @@ class _PatientListScreenState extends ConsumerState<PatientListScreen> {
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
-                  onChanged: (_) => setState(() {}),
+                  onChanged: (value) {
+                    ref.read(patientListProvider.notifier).setSearchQuery(value);
+                  },
                 ),
               ),
               const SizedBox(width: 8),
@@ -57,6 +85,42 @@ class _PatientListScreenState extends ConsumerState<PatientListScreen> {
                 onPressed: _showFilterDialog,
                 tooltip: 'Filter',
               ),
+              IconButton(
+                icon: const Icon(Icons.person_add),
+                onPressed: () {
+                  context.push('/patients/add');
+                },
+                tooltip: 'Tambah Pasien',
+              ),
+            ],
+          ),
+        ),
+        // Stats bar
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          color: Colors.grey[100],
+          child: Row(
+            children: [
+              Text(
+                'Total: ${patientState.total} pasien',
+                style: TextStyle(
+                  color: Colors.grey[700],
+                  fontSize: 13,
+                ),
+              ),
+              if (patientState.categoryFilter != null) ...[
+                const SizedBox(width: 8),
+                Chip(
+                  label: Text(patientState.categoryFilter!),
+                  deleteIcon: const Icon(Icons.close, size: 16),
+                  onDeleted: () {
+                    ref.read(patientListProvider.notifier).setCategoryFilter(null);
+                  },
+                  padding: EdgeInsets.zero,
+                  labelPadding: const EdgeInsets.only(left: 8),
+                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+              ],
             ],
           ),
         ),
@@ -64,33 +128,93 @@ class _PatientListScreenState extends ConsumerState<PatientListScreen> {
 
         // Patient List
         Expanded(
-          child: RefreshIndicator(
-            onRefresh: () async {
-              // TODO: Refresh patient data
-            },
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              itemCount: 20, // TODO: Replace with actual data
-              itemBuilder: (context, index) {
-                return _PatientCard(
-                  name: 'Pasien ${index + 1}',
-                  mrId: 'DRD${(index + 1).toString().padLeft(4, '0')}',
-                  age: 25 + index,
-                  phone: '08123456789${index}',
-                  category: index % 3 == 0
-                      ? 'Obstetri'
-                      : index % 3 == 1
-                          ? 'Gyn/Repro'
-                          : 'Ginekologi',
-                  onTap: () {
-                    // TODO: Navigate to patient detail
-                  },
-                );
-              },
-            ),
-          ),
+          child: patientState.isLoading && patientState.patients.isEmpty
+              ? const Center(child: CircularProgressIndicator())
+              : patientState.error != null && patientState.patients.isEmpty
+                  ? _buildErrorWidget(patientState.error!)
+                  : patientState.patients.isEmpty
+                      ? _buildEmptyWidget()
+                      : RefreshIndicator(
+                          onRefresh: () async {
+                            await ref.read(patientListProvider.notifier).refresh();
+                          },
+                          child: ListView.builder(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.symmetric(vertical: 8),
+                            itemCount: patientState.patients.length +
+                                (patientState.hasMore ? 1 : 0),
+                            itemBuilder: (context, index) {
+                              if (index >= patientState.patients.length) {
+                                return const Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.all(16),
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                );
+                              }
+
+                              final patient = patientState.patients[index];
+                              return _PatientCard(
+                                patient: patient,
+                                onTap: () {
+                                  context.push('/patients/${patient.id}');
+                                },
+                              );
+                            },
+                          ),
+                        ),
         ),
       ],
+    );
+  }
+
+  Widget _buildErrorWidget(String error) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.error_outline, size: 64, color: Colors.red),
+          const SizedBox(height: 16),
+          Text(
+            'Gagal memuat data',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            error,
+            style: TextStyle(color: Colors.grey[600]),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 16),
+          ElevatedButton(
+            onPressed: () {
+              ref.read(patientListProvider.notifier).loadPatients(refresh: true);
+            },
+            child: const Text('Coba Lagi'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyWidget() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.people_outline, size: 64, color: Colors.grey[400]),
+          const SizedBox(height: 16),
+          Text(
+            'Tidak ada pasien',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Belum ada data pasien yang sesuai',
+            style: TextStyle(color: Colors.grey[600]),
+          ),
+        ],
+      ),
     );
   }
 
@@ -101,96 +225,87 @@ class _PatientListScreenState extends ConsumerState<PatientListScreen> {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        return Consumer(
+          builder: (context, ref, child) {
+            final state = ref.watch(patientListProvider);
+            return Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Filter Pasien',
+                        style: Theme.of(context).textTheme.titleLarge,
+                      ),
+                      TextButton(
+                        onPressed: () {
+                          ref.read(patientListProvider.notifier).clearFilters();
+                          Navigator.pop(context);
+                        },
+                        child: const Text('Reset'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
                   Text(
-                    'Filter Pasien',
-                    style: Theme.of(context).textTheme.titleLarge,
+                    'Kategori',
+                    style: Theme.of(context).textTheme.titleMedium,
                   ),
-                  TextButton(
-                    onPressed: () {
-                      // Reset filters
-                      Navigator.pop(context);
-                    },
-                    child: const Text('Reset'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Kategori',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              Wrap(
-                spacing: 8,
-                children: [
-                  FilterChip(
-                    label: const Text('Obstetri'),
-                    selected: false,
-                    onSelected: (_) {},
-                  ),
-                  FilterChip(
-                    label: const Text('Gyn/Repro'),
-                    selected: false,
-                    onSelected: (_) {},
-                  ),
-                  FilterChip(
-                    label: const Text('Ginekologi'),
-                    selected: false,
-                    onSelected: (_) {},
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Rentang Usia',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      decoration: const InputDecoration(
-                        labelText: 'Min',
-                        hintText: '0',
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    children: [
+                      FilterChip(
+                        label: const Text('Obstetri'),
+                        selected: state.categoryFilter == 'Obstetri',
+                        onSelected: (selected) {
+                          ref.read(patientListProvider.notifier).setCategoryFilter(
+                                selected ? 'Obstetri' : null,
+                              );
+                          Navigator.pop(context);
+                        },
                       ),
-                      keyboardType: TextInputType.number,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: TextField(
-                      decoration: const InputDecoration(
-                        labelText: 'Max',
-                        hintText: '100',
+                      FilterChip(
+                        label: const Text('Gyn/Repro'),
+                        selected: state.categoryFilter == 'Gyn/Repro',
+                        onSelected: (selected) {
+                          ref.read(patientListProvider.notifier).setCategoryFilter(
+                                selected ? 'Gyn/Repro' : null,
+                              );
+                          Navigator.pop(context);
+                        },
                       ),
-                      keyboardType: TextInputType.number,
+                      FilterChip(
+                        label: const Text('Ginekologi'),
+                        selected: state.categoryFilter == 'Ginekologi',
+                        onSelected: (selected) {
+                          ref.read(patientListProvider.notifier).setCategoryFilter(
+                                selected ? 'Ginekologi' : null,
+                              );
+                          Navigator.pop(context);
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        context.push('/patients/search');
+                        Navigator.pop(context);
+                      },
+                      child: const Text('Advanced Search'),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: () {
-                    // Apply filters
-                    Navigator.pop(context);
-                  },
-                  child: const Text('Terapkan Filter'),
-                ),
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -198,19 +313,11 @@ class _PatientListScreenState extends ConsumerState<PatientListScreen> {
 }
 
 class _PatientCard extends StatelessWidget {
-  final String name;
-  final String mrId;
-  final int age;
-  final String phone;
-  final String category;
+  final Patient patient;
   final VoidCallback onTap;
 
   const _PatientCard({
-    required this.name,
-    required this.mrId,
-    required this.age,
-    required this.phone,
-    required this.category,
+    required this.patient,
     required this.onTap,
   });
 
@@ -230,7 +337,7 @@ class _PatientCard extends StatelessWidget {
                 radius: 24,
                 backgroundColor: _getCategoryColor().withOpacity(0.1),
                 child: Text(
-                  name[0].toUpperCase(),
+                  patient.initials,
                   style: TextStyle(
                     color: _getCategoryColor(),
                     fontWeight: FontWeight.bold,
@@ -245,7 +352,7 @@ class _PatientCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      name,
+                      patient.name,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -254,56 +361,75 @@ class _PatientCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 2,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            mrId,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w500,
+                        if (patient.mrId != null) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 2,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              patient.mrId!,
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: AppColors.primary,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
+                          const SizedBox(width: 8),
+                        ],
                         Text(
-                          '$age tahun',
+                          patient.displayAge,
                           style: const TextStyle(
                             fontSize: 12,
                             color: AppColors.textSecondary,
                           ),
                         ),
+                        if (patient.phone != null) ...[
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.phone,
+                            size: 12,
+                            color: Colors.grey[500],
+                          ),
+                          const SizedBox(width: 2),
+                          Text(
+                            patient.phone!,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey[600],
+                            ),
+                          ),
+                        ],
                       ],
                     ),
                   ],
                 ),
               ),
               // Category Badge
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 8,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: _getCategoryColor().withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  category,
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: _getCategoryColor(),
-                    fontWeight: FontWeight.w500,
+              if (patient.category != null)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: _getCategoryColor().withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    patient.category!,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: _getCategoryColor(),
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ),
-              ),
               const SizedBox(width: 8),
               const Icon(
                 Icons.chevron_right,
@@ -317,7 +443,7 @@ class _PatientCard extends StatelessWidget {
   }
 
   Color _getCategoryColor() {
-    switch (category) {
+    switch (patient.category) {
       case 'Obstetri':
         return AppColors.obstetri;
       case 'Gyn/Repro':
