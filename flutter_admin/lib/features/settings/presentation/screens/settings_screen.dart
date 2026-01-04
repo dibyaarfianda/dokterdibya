@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_provider.dart' show authStateProvider;
 import '../providers/settings_provider.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -26,7 +26,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   Widget build(BuildContext context) {
     final profileState = ref.watch(profileProvider);
     final preferences = ref.watch(preferencesProvider);
-    final authState = ref.watch(authProvider);
+    final authState = ref.watch(authStateProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -450,7 +450,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           ),
           ElevatedButton(
             onPressed: () {
-              ref.read(authProvider.notifier).logout();
+              ref.read(authStateProvider.notifier).logout();
               context.go('/login');
             },
             style: ElevatedButton.styleFrom(
