@@ -152,6 +152,22 @@ class AppointmentRepository {
       throw Exception(data['message'] ?? 'Gagal update pengaturan');
     }
   }
+
+  Future<List<Appointment>> getHospitalAppointments(String location, String date) async {
+    final response = await _apiClient.get(
+      ApiEndpoints.hospitalAppointments,
+      queryParameters: {
+        'location': location,
+        'date': date,
+      },
+    );
+
+    final data = response.data;
+    if (data['success'] == true && data['data'] != null) {
+      return (data['data'] as List).map((a) => Appointment.fromJson(a)).toList();
+    }
+    return [];
+  }
 }
 
 final appointmentRepositoryProvider = Provider<AppointmentRepository>((ref) {
