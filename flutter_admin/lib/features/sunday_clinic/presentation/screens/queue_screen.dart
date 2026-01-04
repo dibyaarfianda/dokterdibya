@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../patients/data/repositories/patient_repository.dart';
+import '../../../patients/data/models/patient_model.dart';
 import '../../data/models/medical_record_model.dart';
 import '../providers/sunday_clinic_provider.dart';
 
@@ -512,8 +514,9 @@ class _AddToQueueSheet extends ConsumerStatefulWidget {
 
 class _AddToQueueSheetState extends ConsumerState<_AddToQueueSheet> {
   final _searchController = TextEditingController();
-  List<Map<String, dynamic>> _searchResults = [];
+  List<Patient> _searchResults = [];
   bool _isSearching = false;
+  String? _selectedCategory = 'Obstetri';
 
   @override
   Widget build(BuildContext context) {
@@ -539,13 +542,32 @@ class _AddToQueueSheetState extends ConsumerState<_AddToQueueSheet> {
           TextField(
             controller: _searchController,
             decoration: InputDecoration(
-              hintText: 'Cari pasien...',
+              hintText: 'Cari pasien (nama/HP/MR ID)...',
               prefixIcon: const Icon(Icons.search),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
               ),
             ),
             onChanged: _searchPatients,
+          ),
+          const SizedBox(height: 12),
+          // Category selector
+          Row(
+            children: [
+              const Text('Kategori: '),
+              const SizedBox(width: 8),
+              ChoiceChip(
+                label: const Text('Obstetri'),
+                selected: _selectedCategory == 'Obstetri',
+                onSelected: (_) => setState(() => _selectedCategory = 'Obstetri'),
+              ),
+              const SizedBox(width: 8),
+              ChoiceChip(
+                label: const Text('Gyn/Repro'),
+                selected: _selectedCategory == 'Gyn/Repro',
+                onSelected: (_) => setState(() => _selectedCategory = 'Gyn/Repro'),
+              ),
+            ],
           ),
           const SizedBox(height: 16),
           Expanded(
@@ -567,15 +589,22 @@ class _AddToQueueSheetState extends ConsumerState<_AddToQueueSheet> {
                           final patient = _searchResults[index];
                           return ListTile(
                             leading: CircleAvatar(
+                              backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                               child: Text(
-                                (patient['name'] as String?)?.isNotEmpty == true
-                                    ? patient['name'][0].toUpperCase()
+                                patient.fullName.isNotEmpty
+                                    ? patient.fullName[0].toUpperCase()
                                     : '?',
+                                style: const TextStyle(color: AppColors.primary),
                               ),
                             ),
-                            title: Text(patient['name'] ?? '-'),
-                            subtitle: Text('${patient['age'] ?? '-'} tahun'),
-                            trailing: const Icon(Icons.add_circle_outline),
+                            title: Text(patient.fullName),
+                            subtitle: Text(
+                              '${patient.age ?? '-'} tahun • ${patient.phone ?? patient.whatsapp ?? '-'}',
+                            ),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.add_circle, color: AppColors.primary),
+                              onPressed: () => _addPatient(patient),
+                            ),
                             onTap: () => _addPatient(patient),
                           );
                         },
@@ -594,25 +623,37 @@ class _AddToQueueSheetState extends ConsumerState<_AddToQueueSheet> {
 
     setState(() => _isSearching = true);
 
-    // TODO: Implement actual search API call
-    await Future.delayed(const Duration(milliseconds: 500));
-
-    setState(() {
-      _isSearching = false;
-      _searchResults = []; // Would come from API
-    });
+    try {
+      final repository = ref.read(patientRepositoryProvider);
+      final results = await repository.searchPatients(name: query);
+      if (mounted) {
+        setState(() {
+          _isSearching = false;
+          _searchResults = results;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isSearching = false;
+          _searchResults = [];
+        });
+      }
+    }
   }
 
-  Future<void> _addPatient(Map<String, dynamic> patient) async {
-    final success = await ref.read(queueProvider.notifier).addToQueue(
-          patientId: patient['id'].toString(),
-        );
+  Future<void> _addPatient(Patient patient) async {
+    final location = ref.read(queueProvider).selectedLocation;
 
-    if (success && mounted) {
+    // Navigate directly to medical record creation
+    if (mounted) {
       Navigator.pop(context);
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${patient['name']} ditambahkan ke antrian')),
-      );
+      context.push('/sunday-clinic/record', extra: {
+        'patientId': patient.id,
+        'patientName': patient.fullName,
+        'category': _selectedCategory ?? 'Obstetri',
+        'location': location,
+      });
     }
   }
 }
