@@ -34,20 +34,33 @@ class Obat {
   factory Obat.fromJson(Map<String, dynamic> json) {
     return Obat(
       id: json['id'] ?? 0,
-      kode: json['kode'] ?? '',
-      nama: json['nama'] ?? '',
-      kategori: json['kategori'],
-      hargaBeli: _parseDouble(json['harga_beli']),
-      hargaJual: _parseDouble(json['harga_jual']),
-      stok: json['stok'] ?? 0,
-      stokMinimum: json['stok_minimum'] ?? 0,
-      satuan: json['satuan'],
-      keterangan: json['keterangan'],
-      expiredDate: json['expired_date'] != null ? DateTime.tryParse(json['expired_date']) : null,
+      kode: json['code'] ?? json['kode'] ?? '',
+      nama: json['name'] ?? json['nama'] ?? '',
+      kategori: json['category'] ?? json['kategori'],
+      hargaBeli: _parseDouble(json['default_cost_price'] ?? json['harga_beli']),
+      hargaJual: _parseDouble(json['price'] ?? json['harga_jual']),
+      stok: _parseInt(json['stock'] ?? json['stok']) ?? 0,
+      stokMinimum: _parseInt(json['min_stock'] ?? json['stok_minimum']) ?? 0,
+      satuan: json['unit'] ?? json['satuan'],
+      keterangan: json['keterangan'] ?? json['description'],
+      expiredDate: _parseDate(json['expired_date']),
       isActive: json['is_active'] ?? true,
-      createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at']) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.tryParse(json['updated_at']) : null,
+      createdAt: _parseDate(json['created_at']),
+      updatedAt: _parseDate(json['updated_at']),
     );
+  }
+
+  static int? _parseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
+
+  static DateTime? _parseDate(dynamic value) {
+    if (value == null) return null;
+    if (value is String && value.isNotEmpty) return DateTime.tryParse(value);
+    return null;
   }
 
   static double _parseDouble(dynamic value) {
