@@ -7,6 +7,8 @@ import '../features/dashboard/presentation/screens/dashboard_screen.dart';
 import '../features/patients/presentation/screens/patient_list_screen.dart';
 import '../features/patients/presentation/screens/patient_detail_screen.dart';
 import '../features/patients/presentation/screens/patient_form_screen.dart';
+import '../features/sunday_clinic/presentation/screens/queue_screen.dart';
+import '../features/sunday_clinic/presentation/screens/medical_record_screen.dart';
 import '../shared/widgets/main_scaffold.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -53,7 +55,7 @@ final routerProvider = Provider<GoRouter>((ref) {
               GoRoute(
                 path: 'search',
                 name: 'searchPatients',
-                builder: (context, state) => const Placeholder(), // TODO: Advanced search screen
+                builder: (context, state) => const Placeholder(),
               ),
               GoRoute(
                 path: ':id',
@@ -78,27 +80,43 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/sunday-clinic',
             name: 'sundayClinic',
-            builder: (context, state) => const Placeholder(), // TODO: Implement
+            builder: (context, state) => const QueueScreen(),
+            routes: [
+              GoRoute(
+                path: 'record',
+                name: 'medicalRecord',
+                builder: (context, state) {
+                  final extra = state.extra as Map<String, dynamic>?;
+                  return MedicalRecordScreen(
+                    patientId: extra?['patientId'] ?? '',
+                    patientName: extra?['patientName'] ?? '',
+                    category: extra?['category'] ?? 'Obstetri',
+                    location: extra?['location'] ?? 'klinik_private',
+                    recordId: extra?['recordId'],
+                  );
+                },
+              ),
+            ],
           ),
           GoRoute(
             path: '/appointments',
             name: 'appointments',
-            builder: (context, state) => const Placeholder(), // TODO: Implement
+            builder: (context, state) => const Placeholder(),
           ),
           GoRoute(
             path: '/inventory',
             name: 'inventory',
-            builder: (context, state) => const Placeholder(), // TODO: Implement
+            builder: (context, state) => const Placeholder(),
           ),
           GoRoute(
             path: '/notifications',
             name: 'notifications',
-            builder: (context, state) => const Placeholder(), // TODO: Implement
+            builder: (context, state) => const Placeholder(),
           ),
           GoRoute(
             path: '/settings',
             name: 'settings',
-            builder: (context, state) => const Placeholder(), // TODO: Implement
+            builder: (context, state) => const Placeholder(),
           ),
         ],
       ),
