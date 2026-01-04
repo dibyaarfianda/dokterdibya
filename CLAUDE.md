@@ -817,3 +817,31 @@ git pull origin main
    - `android-pharm/app/src/main/java/com/dokterdibya/pharm/viewmodel/SalesViewModel.kt`
    - `android-pharm/app/src/main/java/com/dokterdibya/pharm/ui/screens/sales/SalesListScreen.kt`
    - `android-pharm/app/src/main/java/com/dokterdibya/pharm/ui/screens/sales/NewSaleScreen.kt`
+
+### 23. CRITICAL: Never Assume Before Complete Analysis
+
+**ALWAYS analyze the existing codebase COMPLETELY before claiming something is done or complete.**
+
+**Rules:**
+1. When porting/replicating a system (e.g., web to Flutter), FIRST thoroughly analyze ALL features in the source
+2. Use exploration tools to list ALL pages, menus, modules, and functionality
+3. Create a complete feature comparison before saying "it's done"
+4. Never claim implementation is complete without verifying EVERY feature exists
+
+**Example - Flutter Admin Panel:**
+Before saying "Flutter admin is complete", must analyze:
+- ALL sidebar menu items in `index-adminlte.html`
+- ALL page content sections (content-* IDs)
+- ALL JavaScript modules and their functionality
+- Compare 1:1 with Flutter implementation
+
+**DO NOT:**
+- Say "structure is complete" without full analysis
+- Assume features exist without verification
+- Claim parity without side-by-side comparison
+
+**ALWAYS:**
+- Use Task/Explore tool to analyze source system first
+- List ALL features found
+- Check each feature exists in target implementation
+- Report what's missing BEFORE claiming completion
