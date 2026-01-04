@@ -52,3 +52,11 @@
 # Compose
 -keep class androidx.compose.** { *; }
 -dontwarn androidx.compose.**
+
+# Markwon (Markdown)
+-keep class io.noties.markwon.** { *; }
+-dontwarn io.noties.markwon.**
+
+# CommonMark (used by Markwon)
+-keep class org.commonmark.** { *; }
+-dontwarn org.commonmark.**
