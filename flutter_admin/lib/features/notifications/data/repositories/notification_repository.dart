@@ -26,10 +26,11 @@ class NotificationRepository {
     );
 
     final data = response.data;
-    if (data['success'] == true && data['data'] != null) {
-      final list = data['data'] is List ? data['data'] : data['data']['items'];
+    if (data['success'] == true) {
+      // API returns { notifications: [...], unread_count: N }
+      final list = data['notifications'] ?? data['data'];
       if (list is List) {
-        return list.map((n) => AppNotification.fromJson(n)).toList();
+        return list.map((n) => AppNotification.fromJson(n as Map<String, dynamic>)).toList();
       }
     }
     return [];
@@ -47,8 +48,9 @@ class NotificationRepository {
     final response = await _apiClient.get('${ApiEndpoints.notifications}/count');
 
     final data = response.data;
-    if (data['success'] == true && data['data'] != null) {
-      return NotificationCount.fromJson(data['data']);
+    if (data['success'] == true) {
+      // API returns { count, notifications, announcements } at root level
+      return NotificationCount.fromJson(data);
     }
     return NotificationCount();
   }
@@ -64,10 +66,11 @@ class NotificationRepository {
     );
 
     final data = response.data;
-    if (data['success'] == true && data['data'] != null) {
-      final list = data['data'] is List ? data['data'] : data['data']['items'];
+    if (data['success'] == true) {
+      // API may return { announcements: [...] } or { data: [...] }
+      final list = data['announcements'] ?? data['data'];
       if (list is List) {
-        return list.map((a) => StaffAnnouncement.fromJson(a)).toList();
+        return list.map((a) => StaffAnnouncement.fromJson(a as Map<String, dynamic>)).toList();
       }
     }
     return [];
