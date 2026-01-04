@@ -293,7 +293,7 @@ class PatientHistorySidebar {
         container.innerHTML = this.todayQueue.map((apt, index) => {
             const isActive = apt.mr_id === this.currentMrId || apt.patient_id === this.currentPatientId;
             const chiefComplaint = apt.chief_complaint ? apt.chief_complaint.substring(0, 30) + (apt.chief_complaint.length > 30 ? '...' : '') : '-';
-            const selesaiClass = apt.has_record ? 'patient-selesai' : '';
+            const selesaiClass = apt.record_status === 'finalized' ? 'patient-selesai' : '';
 
             return `
                 <div class="header-queue-item ${isActive ? 'active' : ''}"
