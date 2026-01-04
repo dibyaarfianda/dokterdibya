@@ -2,7 +2,7 @@ class ApiEndpoints {
   static const String baseUrl = 'https://dokterdibya.com';
 
   // Auth
-  static const String login = '/api/staff/login';
+  static const String login = '/api/auth/login';
   static const String logout = '/api/auth/logout';
   static const String profile = '/api/auth/profile';
 
