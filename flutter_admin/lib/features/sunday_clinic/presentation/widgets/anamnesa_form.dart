@@ -382,7 +382,7 @@ class _AnamnesaFormState extends State<AnamnesaForm> {
         ),
         const SizedBox(height: 12),
         DropdownButtonFormField<String>(
-          initialValue: _siklusTeratur,
+          value: _siklusTeratur,
           decoration: const InputDecoration(
             labelText: 'Siklus Teratur',
             border: OutlineInputBorder(),

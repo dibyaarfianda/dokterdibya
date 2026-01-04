@@ -49,7 +49,7 @@ class _QueueScreenState extends ConsumerState<QueueScreen> with SingleTickerProv
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      initialValue: queueState.selectedLocation,
+                      value: queueState.selectedLocation,
                       decoration: InputDecoration(
                         labelText: 'Lokasi',
                         prefixIcon: const Icon(Icons.location_on),
