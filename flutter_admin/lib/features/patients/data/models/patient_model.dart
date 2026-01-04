@@ -140,17 +140,25 @@ class PatientListResponse {
   });
 
   factory PatientListResponse.fromJson(Map<String, dynamic> json) {
-    final data = json['data'];
-    final patients = (data['patients'] as List? ?? [])
+    final data = json['data'] ?? json;
+    final patientList = data['patients'] ?? data['data'] ?? [];
+    final patients = (patientList as List)
         .map((p) => Patient.fromJson(p))
         .toList();
 
     return PatientListResponse(
       patients: patients,
-      total: data['total'] ?? 0,
-      page: data['page'] ?? 1,
-      limit: data['limit'] ?? 20,
-      totalPages: data['totalPages'] ?? 1,
+      total: _parseInt(data['total']) ?? 0,
+      page: _parseInt(data['page']) ?? 1,
+      limit: _parseInt(data['limit']) ?? 20,
+      totalPages: _parseInt(data['totalPages'] ?? data['total_pages']) ?? 1,
     );
+  }
+
+  static int? _parseInt(dynamic value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is String) return int.tryParse(value);
+    return null;
   }
 }
