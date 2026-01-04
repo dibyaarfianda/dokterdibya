@@ -103,27 +103,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 childAspectRatio: isTablet ? 1.5 : 1.3,
                 children: [
                   _StatCard(
-                    title: 'Kunjungan Hari Ini',
-                    value: dashboardState.stats.todayVisits.toString(),
+                    title: 'Total Pasien',
+                    value: _formatNumber(dashboardState.stats.totalPatients),
                     icon: Icons.people,
                     color: AppColors.primary,
                   ),
                   _StatCard(
-                    title: 'Minggu Ini',
-                    value: dashboardState.stats.weekVisits.toString(),
-                    icon: Icons.date_range,
+                    title: 'Kasus Gynae',
+                    value: dashboardState.stats.gynaeCases.toString(),
+                    icon: Icons.pregnant_woman,
                     color: AppColors.success,
                   ),
                   _StatCard(
-                    title: 'Bulan Ini',
-                    value: dashboardState.stats.monthVisits.toString(),
-                    icon: Icons.calendar_month,
+                    title: 'Jadwal Minggu',
+                    value: dashboardState.stats.nextSundayAppointments.toString(),
+                    icon: Icons.calendar_today,
                     color: AppColors.info,
                   ),
                   _StatCard(
-                    title: 'Total Pasien',
-                    value: _formatNumber(dashboardState.stats.totalPatients),
-                    icon: Icons.person,
+                    title: _formatSundayDate(dashboardState.stats.nextSundayDate),
+                    value: 'Minggu',
+                    icon: Icons.event,
                     color: AppColors.warning,
                   ),
                 ],
@@ -378,6 +378,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       return '${(number / 1000).toStringAsFixed(1)}k';
     }
     return number.toString();
+  }
+
+  String _formatSundayDate(String? dateStr) {
+    if (dateStr == null) return '-';
+    try {
+      final date = DateTime.parse(dateStr);
+      return DateFormat('d MMM').format(date);
+    } catch (e) {
+      return dateStr;
+    }
   }
 
   IconData _getActivityIcon(String action) {

@@ -399,15 +399,20 @@ class _QueueItemCard extends StatelessWidget {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Text(
-                          item.displayAge,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.grey[600],
+                        if (item.slotTime != null) ...[
+                          Icon(Icons.access_time, size: 12, color: Colors.grey[600]),
+                          const SizedBox(width: 2),
+                          Text(
+                            item.slotTime!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ),
-                        if (item.category != null) ...[
                           const SizedBox(width: 8),
+                        ],
+                        if (item.category != null)
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                             decoration: BoxDecoration(
@@ -423,9 +428,21 @@ class _QueueItemCard extends StatelessWidget {
                               ),
                             ),
                           ),
-                        ],
                       ],
                     ),
+                    if (item.chiefComplaint != null && item.chiefComplaint!.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        item.chiefComplaint!,
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.grey[500],
+                          fontStyle: FontStyle.italic,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
                   ],
                 ),
               ),

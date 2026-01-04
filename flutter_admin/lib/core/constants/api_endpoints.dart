@@ -28,7 +28,7 @@ class ApiEndpoints {
   static const String staffAnnouncements = '/api/staff-announcements';
 
   // Dashboard
-  static const String dashboardStats = '/api/dashboard/stats';
+  static const String dashboardStats = '/api/dashboard-stats';
   static const String visits = '/api/visits';
 
   // Users

@@ -159,29 +159,41 @@ class QueueItem {
   final int id;
   final String patientId;
   final String patientName;
+  final String? patientPhone;
   final int? patientAge;
+  final int? session;
+  final String? sessionLabel;
+  final int? slotNumber;
+  final String? slotTime;
+  final String? chiefComplaint;
+  final String? consultationCategory;
   final String? category;
   final String status;
-  final String? appointmentTime;
-  final String? notes;
+  final String? appointmentDate;
   final bool hasRecord;
   final String? recordStatus;
   final String? mrId;
-  final DateTime? createdAt;
+  final String? mrCategory;
 
   QueueItem({
     required this.id,
     required this.patientId,
     required this.patientName,
+    this.patientPhone,
     this.patientAge,
+    this.session,
+    this.sessionLabel,
+    this.slotNumber,
+    this.slotTime,
+    this.chiefComplaint,
+    this.consultationCategory,
     this.category,
     required this.status,
-    this.appointmentTime,
-    this.notes,
+    this.appointmentDate,
     this.hasRecord = false,
     this.recordStatus,
     this.mrId,
-    this.createdAt,
+    this.mrCategory,
   });
 
   factory QueueItem.fromJson(Map<String, dynamic> json) {
@@ -189,15 +201,21 @@ class QueueItem {
       id: json['id'] ?? 0,
       patientId: json['patient_id']?.toString() ?? '',
       patientName: json['patient_name'] ?? '',
+      patientPhone: json['patient_phone'],
       patientAge: json['patient_age'],
-      category: json['category'],
+      session: json['session'],
+      sessionLabel: json['session_label'],
+      slotNumber: json['slot_number'],
+      slotTime: json['slot_time'],
+      chiefComplaint: json['chief_complaint'],
+      consultationCategory: json['consultation_category'],
+      category: json['mr_category'] ?? json['consultation_category'],
       status: json['status'] ?? 'pending',
-      appointmentTime: json['appointment_time'],
-      notes: json['notes'],
+      appointmentDate: json['appointment_date']?.toString(),
       hasRecord: json['has_record'] == true || json['has_record'] == 1,
       recordStatus: json['record_status'],
       mrId: json['mr_id'],
-      createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at']) : null,
+      mrCategory: json['mr_category'],
     );
   }
 
@@ -210,6 +228,8 @@ class QueueItem {
   }
 
   String get displayAge => patientAge != null ? '$patientAge tahun' : '-';
+  String get displayTime => slotTime ?? sessionLabel ?? '-';
+  String get displayComplaint => chiefComplaint ?? '-';
 
   bool get isCompleted => recordStatus == 'finalized';
   bool get isInProgress => hasRecord && recordStatus == 'draft';

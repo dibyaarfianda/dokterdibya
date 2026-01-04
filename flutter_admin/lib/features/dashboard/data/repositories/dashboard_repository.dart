@@ -4,51 +4,63 @@ import '../../../../core/constants/api_endpoints.dart';
 
 class DashboardStats {
   final int totalPatients;
-  final int todayVisits;
-  final int weekVisits;
-  final int monthVisits;
-  final int pendingAppointments;
-  final int confirmedAppointments;
-  final List<DailyVisit> dailyVisits;
-  final List<CategoryCount> categoryBreakdown;
+  final int gynaeCases;
+  final int nextSundayAppointments;
+  final String? nextSundayDate;
+  final List<UpcomingAppointment> upcomingAppointments;
 
   DashboardStats({
     this.totalPatients = 0,
-    this.todayVisits = 0,
-    this.weekVisits = 0,
-    this.monthVisits = 0,
-    this.pendingAppointments = 0,
-    this.confirmedAppointments = 0,
-    this.dailyVisits = const [],
-    this.categoryBreakdown = const [],
+    this.gynaeCases = 0,
+    this.nextSundayAppointments = 0,
+    this.nextSundayDate,
+    this.upcomingAppointments = const [],
   });
 
   factory DashboardStats.fromJson(Map<String, dynamic> json) {
-    final data = json['data'] ?? json;
+    // API returns { stats: {...}, appointments: [...] }
+    final stats = json['stats'] ?? json;
+    final appointments = json['appointments'] ?? [];
 
-    List<DailyVisit> dailyVisits = [];
-    if (data['dailyVisits'] != null) {
-      dailyVisits = (data['dailyVisits'] as List)
-          .map((v) => DailyVisit.fromJson(v))
-          .toList();
-    }
-
-    List<CategoryCount> categoryBreakdown = [];
-    if (data['categoryBreakdown'] != null) {
-      categoryBreakdown = (data['categoryBreakdown'] as List)
-          .map((c) => CategoryCount.fromJson(c))
+    List<UpcomingAppointment> upcomingList = [];
+    if (appointments is List) {
+      upcomingList = appointments
+          .map((a) => UpcomingAppointment.fromJson(a as Map<String, dynamic>))
           .toList();
     }
 
     return DashboardStats(
-      totalPatients: data['totalPatients'] ?? 0,
-      todayVisits: data['todayVisits'] ?? 0,
-      weekVisits: data['weekVisits'] ?? 0,
-      monthVisits: data['monthVisits'] ?? 0,
-      pendingAppointments: data['pendingAppointments'] ?? 0,
-      confirmedAppointments: data['confirmedAppointments'] ?? 0,
-      dailyVisits: dailyVisits,
-      categoryBreakdown: categoryBreakdown,
+      totalPatients: stats['totalPatients'] ?? 0,
+      gynaeCases: stats['gynaeCases'] ?? 0,
+      nextSundayAppointments: stats['nextSundayAppointments'] ?? 0,
+      nextSundayDate: stats['nextSundayDate'],
+      upcomingAppointments: upcomingList,
+    );
+  }
+}
+
+class UpcomingAppointment {
+  final int id;
+  final String nama;
+  final String? whatsapp;
+  final String? keluhan;
+  final String? slotWaktu;
+
+  UpcomingAppointment({
+    required this.id,
+    required this.nama,
+    this.whatsapp,
+    this.keluhan,
+    this.slotWaktu,
+  });
+
+  factory UpcomingAppointment.fromJson(Map<String, dynamic> json) {
+    return UpcomingAppointment(
+      id: json['id'] ?? 0,
+      nama: json['nama'] ?? '',
+      whatsapp: json['whatsapp'],
+      keluhan: json['keluhan'],
+      slotWaktu: json['slotWaktu'],
     );
   }
 }
@@ -96,7 +108,7 @@ class DashboardRepository {
       }
       return DashboardStats();
     } catch (e) {
-      // Return empty stats on error
+      print('Dashboard stats error: $e');
       return DashboardStats();
     }
   }
