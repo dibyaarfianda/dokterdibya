@@ -293,6 +293,7 @@ class PatientHistorySidebar {
         container.innerHTML = this.todayQueue.map((apt, index) => {
             const isActive = apt.mr_id === this.currentMrId || apt.patient_id === this.currentPatientId;
             const chiefComplaint = apt.chief_complaint ? apt.chief_complaint.substring(0, 30) + (apt.chief_complaint.length > 30 ? '...' : '') : '-';
+            const selesaiClass = apt.has_record ? 'patient-selesai' : '';
 
             return `
                 <div class="header-queue-item ${isActive ? 'active' : ''}"
@@ -302,7 +303,7 @@ class PatientHistorySidebar {
                      onclick="window.patientSidebar.switchToPatient('${apt.patient_id}', '${apt.mr_id || ''}', '${apt.id}')">
                     <span class="queue-number">${index + 1}</span>
                     <div class="queue-info">
-                        <div class="queue-name">${this.escapeHtml(apt.patient_name)}</div>
+                        <div class="queue-name ${selesaiClass}">${this.escapeHtml(apt.patient_name)}</div>
                         <div class="queue-meta">${apt.slot_time || apt.session_label} • ${chiefComplaint}</div>
                     </div>
                     <div class="queue-status">
