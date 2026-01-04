@@ -116,7 +116,7 @@ class SundayClinicRepository {
         patientId: patientId,
         category: category,
         visitLocation: visitLocation,
-        status: 'draft',
+        recordStatus: 'draft',
       );
     }
     throw Exception(data['message'] ?? 'Gagal membuat rekam medis');
