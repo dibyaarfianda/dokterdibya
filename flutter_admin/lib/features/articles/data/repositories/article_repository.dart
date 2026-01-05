@@ -66,7 +66,7 @@ class ArticleRepository {
   }
 
   Future<void> publishArticle(int id) async {
-    final response = await _apiClient.patch('${ApiEndpoints.articles}/$id/publish');
+    final response = await _apiClient.post('${ApiEndpoints.articles}/$id/publish');
 
     final data = response.data;
     if (data['success'] != true) {
