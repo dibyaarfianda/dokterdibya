@@ -73,11 +73,11 @@ class _QueueScreenState extends ConsumerState<QueueScreen> with SingleTickerProv
                       },
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  IconButton(
-                    icon: const Icon(Icons.person_add),
+                  const SizedBox(width: 12),
+                  FilledButton.icon(
                     onPressed: _showAddToQueueDialog,
-                    tooltip: 'Tambah ke Antrian',
+                    icon: const Icon(Icons.person_add, size: 20),
+                    label: const Text('Tambah'),
                   ),
                 ],
               ),
