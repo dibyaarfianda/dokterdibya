@@ -12,6 +12,8 @@ final dioProvider = Provider<Dio>((ref) {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
     },
+    // Accept 4xx responses without throwing - handle errors in app logic
+    validateStatus: (status) => status != null && status < 500,
   ));
 
   dio.interceptors.add(AuthInterceptor(ref));
@@ -34,7 +36,8 @@ class AuthInterceptor extends Interceptor {
     final storage = ref.read(secureStorageProvider);
     final token = await storage.getToken();
 
-    if (token != null) {
+    // Only add token for non-login requests
+    if (token != null && !options.path.contains('/login')) {
       options.headers['Authorization'] = 'Bearer $token';
     }
 
@@ -42,12 +45,22 @@ class AuthInterceptor extends Interceptor {
   }
 
   @override
-  void onError(DioException err, ErrorInterceptorHandler handler) async {
-    if (err.response?.statusCode == 401) {
-      // Token expired, clear storage and redirect to login
+  void onResponse(Response response, ResponseInterceptorHandler handler) async {
+    // Handle 401 on authenticated requests (token expired)
+    if (response.statusCode == 401 && !response.requestOptions.path.contains('/login')) {
       final storage = ref.read(secureStorageProvider);
       await storage.clearAll();
       // Navigation to login will be handled by auth state listener
+    }
+    handler.next(response);
+  }
+
+  @override
+  void onError(DioException err, ErrorInterceptorHandler handler) async {
+    if (err.response?.statusCode == 401 && !err.requestOptions.path.contains('/login')) {
+      // Token expired, clear storage and redirect to login
+      final storage = ref.read(secureStorageProvider);
+      await storage.clearAll();
     }
     handler.next(err);
   }
