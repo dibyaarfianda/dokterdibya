@@ -13,6 +13,8 @@ import '../widgets/usg_obstetri_form.dart';
 import '../widgets/usg_gynecology_form.dart';
 import '../widgets/obstetric_exam_form.dart';
 import '../widgets/supporting_exam_form.dart';
+import '../widgets/billing_dialog.dart';
+import '../widgets/send_to_patient_dialog.dart';
 
 class MedicalRecordScreen extends ConsumerStatefulWidget {
   final String patientId;
@@ -103,6 +105,21 @@ class _MedicalRecordScreenState extends ConsumerState<MedicalRecordScreen> {
           ],
         ),
         actions: [
+          // Billing button (only for klinik_private)
+          if (recordState.record != null && widget.location == 'klinik_private')
+            IconButton(
+              icon: const Icon(Icons.receipt_long),
+              tooltip: 'Billing',
+              onPressed: () => _showBillingDialog(recordState.record!),
+            ),
+          // Send to patient button
+          if (recordState.record != null)
+            IconButton(
+              icon: const Icon(Icons.send),
+              tooltip: 'Kirim ke Pasien',
+              onPressed: () => _showSendToPatientDialog(recordState.record!),
+            ),
+          // Finalize button
           if (recordState.record != null && !recordState.record!.isFinalized)
             TextButton.icon(
               onPressed: recordState.isSaving ? null : _finalizeRecord,
@@ -432,6 +449,28 @@ class _MedicalRecordScreenState extends ConsumerState<MedicalRecordScreen> {
         context.pop();
       }
     }
+  }
+
+  void _showBillingDialog(MedicalRecord record) {
+    showDialog(
+      context: context,
+      builder: (context) => BillingDialog(
+        mrId: record.mrId ?? '',
+        patientName: widget.patientName,
+        visitLocation: widget.location,
+      ),
+    );
+  }
+
+  void _showSendToPatientDialog(MedicalRecord record) {
+    showDialog(
+      context: context,
+      builder: (context) => SendToPatientDialog(
+        mrId: record.mrId ?? '',
+        patientName: widget.patientName,
+        patientPhone: null, // Will be loaded from patient data if needed
+      ),
+    );
   }
 
   void _showPatientHistory(List<MedicalRecord> history) {

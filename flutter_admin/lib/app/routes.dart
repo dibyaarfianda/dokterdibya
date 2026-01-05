@@ -9,6 +9,7 @@ import '../features/patients/presentation/screens/patient_detail_screen.dart';
 import '../features/patients/presentation/screens/patient_form_screen.dart';
 import '../features/sunday_clinic/presentation/screens/queue_screen.dart';
 import '../features/sunday_clinic/presentation/screens/medical_record_screen.dart';
+import '../features/sunday_clinic/presentation/screens/patient_directory_screen.dart';
 import '../features/appointments/presentation/screens/appointment_list_screen.dart';
 import '../features/inventory/presentation/screens/inventory_screen.dart';
 import '../features/notifications/presentation/screens/notification_screen.dart';
@@ -93,6 +94,11 @@ final routerProvider = Provider<GoRouter>((ref) {
             name: 'sundayClinic',
             builder: (context, state) => const QueueScreen(),
             routes: [
+              GoRoute(
+                path: 'directory',
+                name: 'patientDirectory',
+                builder: (context, state) => const PatientDirectoryScreen(),
+              ),
               GoRoute(
                 path: 'record',
                 name: 'medicalRecord',

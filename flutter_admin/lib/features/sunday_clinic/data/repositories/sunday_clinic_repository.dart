@@ -213,6 +213,275 @@ class SundayClinicRepository {
       throw Exception(data['message'] ?? 'Gagal menghapus dari antrian');
     }
   }
+
+  // ========== BILLING ==========
+
+  Future<Billing?> getBilling(String mrId) async {
+    final response = await _apiClient.get(ApiEndpoints.sundayClinicBilling(mrId));
+
+    final data = response.data;
+    if (data['success'] == true && data['data'] != null) {
+      return Billing.fromJson(data['data']);
+    }
+    return null;
+  }
+
+  Future<Billing> addBillingItem({
+    required String mrId,
+    required String type,
+    required String name,
+    String? code,
+    int quantity = 1,
+    required double price,
+    String? notes,
+  }) async {
+    final response = await _apiClient.post(
+      ApiEndpoints.sundayClinicBilling(mrId),
+      data: {
+        'type': type,
+        'name': name,
+        if (code != null) 'code': code,
+        'quantity': quantity,
+        'price': price,
+        if (notes != null) 'notes': notes,
+      },
+    );
+
+    final data = response.data;
+    if (data['success'] == true) {
+      final billing = await getBilling(mrId);
+      if (billing != null) return billing;
+    }
+    throw Exception(data['message'] ?? 'Gagal menambahkan item');
+  }
+
+  Future<void> deleteBillingItem(String mrId, int itemId) async {
+    final response = await _apiClient.delete(
+      '${ApiEndpoints.sundayClinicBilling(mrId)}/items/$itemId',
+    );
+
+    final data = response.data;
+    if (data['success'] != true) {
+      throw Exception(data['message'] ?? 'Gagal menghapus item');
+    }
+  }
+
+  Future<Billing> confirmBilling(String mrId) async {
+    final response = await _apiClient.post(ApiEndpoints.sundayClinicBillingConfirm(mrId));
+
+    final data = response.data;
+    if (data['success'] == true) {
+      final billing = await getBilling(mrId);
+      if (billing != null) return billing;
+    }
+    throw Exception(data['message'] ?? 'Gagal konfirmasi billing');
+  }
+
+  Future<Billing> markBillingPaid(String mrId) async {
+    final response = await _apiClient.post(ApiEndpoints.sundayClinicBillingPaid(mrId));
+
+    final data = response.data;
+    if (data['success'] == true) {
+      final billing = await getBilling(mrId);
+      if (billing != null) return billing;
+    }
+    throw Exception(data['message'] ?? 'Gagal update status pembayaran');
+  }
+
+  Future<String> printInvoice(String mrId) async {
+    final response = await _apiClient.post(ApiEndpoints.sundayClinicPrintInvoice(mrId));
+
+    final data = response.data;
+    if (data['success'] == true && data['data'] != null) {
+      // Returns download URL
+      return data['data']['downloadUrl'] ?? data['data']['url'] ?? '';
+    }
+    throw Exception(data['message'] ?? 'Gagal mencetak invoice');
+  }
+
+  Future<String> printEtiket(String mrId) async {
+    final response = await _apiClient.post(ApiEndpoints.sundayClinicPrintEtiket(mrId));
+
+    final data = response.data;
+    if (data['success'] == true && data['data'] != null) {
+      return data['data']['downloadUrl'] ?? data['data']['url'] ?? '';
+    }
+    throw Exception(data['message'] ?? 'Gagal mencetak etiket');
+  }
+
+  // ========== SEND TO PATIENT ==========
+
+  Future<String> generateResumeMedisPdf(String mrId) async {
+    final response = await _apiClient.post(
+      ApiEndpoints.sundayClinicResumeMedisPdf,
+      data: {'mr_id': mrId},
+    );
+
+    final data = response.data;
+    if (data['success'] == true && data['data'] != null) {
+      return data['data']['downloadUrl'] ?? data['data']['url'] ?? '';
+    }
+    throw Exception(data['message'] ?? 'Gagal generate PDF');
+  }
+
+  Future<void> sendToWhatsApp({
+    required String mrId,
+    required String phone,
+    bool sendResumeMedis = true,
+    bool sendLabResults = false,
+    bool sendUsgPhotos = false,
+    String? message,
+  }) async {
+    final response = await _apiClient.post(
+      ApiEndpoints.sundayClinicResumeMedisSendWhatsApp,
+      data: {
+        'mr_id': mrId,
+        'phone': phone,
+        'send_resume_medis': sendResumeMedis,
+        'send_lab_results': sendLabResults,
+        'send_usg_photos': sendUsgPhotos,
+        if (message != null) 'message': message,
+      },
+    );
+
+    final data = response.data;
+    if (data['success'] != true) {
+      throw Exception(data['message'] ?? 'Gagal mengirim ke WhatsApp');
+    }
+  }
+
+  Future<void> sendToPatientPortal({
+    required String mrId,
+    bool sendResumeMedis = true,
+    bool sendLabResults = false,
+    bool sendUsgPhotos = false,
+    String? notes,
+  }) async {
+    final response = await _apiClient.post(
+      ApiEndpoints.sundayClinicSendToPatient(mrId),
+      data: {
+        'send_resume_medis': sendResumeMedis,
+        'send_lab_results': sendLabResults,
+        'send_usg_photos': sendUsgPhotos,
+        if (notes != null) 'notes': notes,
+      },
+    );
+
+    final data = response.data;
+    if (data['success'] != true) {
+      throw Exception(data['message'] ?? 'Gagal mengirim ke portal pasien');
+    }
+  }
+
+  Future<DocumentsSent?> getDocumentsSentStatus(String mrId) async {
+    final response = await _apiClient.get(
+      '${ApiEndpoints.sundayClinic}/records/$mrId/documents-sent',
+    );
+
+    final data = response.data;
+    if (data['success'] == true && data['data'] != null) {
+      return DocumentsSent.fromJson(data['data']);
+    }
+    return null;
+  }
+
+  // ========== USG UPLOAD ==========
+
+  Future<Map<String, dynamic>> uploadUsgImage({
+    required String mrId,
+    required List<int> imageBytes,
+    required String filename,
+    String? description,
+  }) async {
+    // Note: For image upload, we'd typically use multipart/form-data
+    // This is a placeholder - actual implementation depends on backend
+    final response = await _apiClient.post(
+      ApiEndpoints.sundayClinicUsgUpload(mrId),
+      data: {
+        'filename': filename,
+        'image_base64': imageBytes.isNotEmpty ? _bytesToBase64(imageBytes) : null,
+        if (description != null) 'description': description,
+      },
+    );
+
+    final data = response.data;
+    if (data['success'] == true && data['data'] != null) {
+      return data['data'];
+    }
+    throw Exception(data['message'] ?? 'Gagal upload gambar USG');
+  }
+
+  String _bytesToBase64(List<int> bytes) {
+    // Simple base64 encoding
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+    final encoded = StringBuffer();
+    int padding = 0;
+
+    for (int i = 0; i < bytes.length; i += 3) {
+      final b1 = bytes[i];
+      final b2 = i + 1 < bytes.length ? bytes[i + 1] : 0;
+      final b3 = i + 2 < bytes.length ? bytes[i + 2] : 0;
+
+      encoded.write(chars[(b1 >> 2) & 0x3F]);
+      encoded.write(chars[((b1 << 4) | (b2 >> 4)) & 0x3F]);
+      encoded.write(i + 1 < bytes.length ? chars[((b2 << 2) | (b3 >> 6)) & 0x3F] : '=');
+      encoded.write(i + 2 < bytes.length ? chars[b3 & 0x3F] : '=');
+    }
+
+    return encoded.toString();
+  }
+
+  // Get list of uploaded USG images for a record
+  Future<List<Map<String, dynamic>>> getUsgImages(String mrId) async {
+    final response = await _apiClient.get(
+      '${ApiEndpoints.sundayClinic}/records/$mrId/usg-images',
+    );
+
+    final data = response.data;
+    if (data['success'] == true && data['data'] != null) {
+      return List<Map<String, dynamic>>.from(data['data']);
+    }
+    return [];
+  }
+
+  Future<void> deleteUsgImage(String mrId, String imageId) async {
+    final response = await _apiClient.delete(
+      '${ApiEndpoints.sundayClinic}/records/$mrId/usg-images/$imageId',
+    );
+
+    final data = response.data;
+    if (data['success'] != true) {
+      throw Exception(data['message'] ?? 'Gagal menghapus gambar');
+    }
+  }
+
+  // ========== TINDAKAN & OBAT (for billing items) ==========
+
+  Future<List<Map<String, dynamic>>> searchTindakan(String query) async {
+    final response = await _apiClient.get(
+      ApiEndpoints.tindakan,
+      queryParameters: {'search': query, 'limit': 20},
+    );
+
+    final data = response.data;
+    if (data['success'] == true && data['data'] != null) {
+      return List<Map<String, dynamic>>.from(data['data']);
+    }
+    return [];
+  }
+
+  Future<List<Map<String, dynamic>>> searchObat(String query) async {
+    final response = await _apiClient.get(
+      ApiEndpoints.obat,
+      queryParameters: {'search': query, 'limit': 20},
+    );
+
+    final data = response.data;
+    if (data['success'] == true && data['data'] != null) {
+      return List<Map<String, dynamic>>.from(data['data']);
+    }
+    return [];
+  }
 }
 
 final sundayClinicRepositoryProvider = Provider<SundayClinicRepository>((ref) {

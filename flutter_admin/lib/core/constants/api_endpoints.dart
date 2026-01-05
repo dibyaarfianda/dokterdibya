@@ -15,6 +15,22 @@ class ApiEndpoints {
   static const String sundayClinicQueue = '/api/sunday-clinic/queue/today';
   static const String sundayClinicDirectory = '/api/sunday-clinic/directory';
 
+  // Sunday Clinic - Billing
+  static String sundayClinicBilling(String mrId) => '/api/sunday-clinic/billing/$mrId';
+  static String sundayClinicBillingConfirm(String mrId) => '/api/sunday-clinic/billing/$mrId/confirm';
+  static String sundayClinicBillingPaid(String mrId) => '/api/sunday-clinic/billing/$mrId/mark-paid';
+  static String sundayClinicPrintInvoice(String mrId) => '/api/sunday-clinic/billing/$mrId/print-invoice';
+  static String sundayClinicPrintEtiket(String mrId) => '/api/sunday-clinic/billing/$mrId/print-etiket';
+
+  // Sunday Clinic - Resume Medis & Send to Patient
+  static const String sundayClinicResumeMedisPdf = '/api/sunday-clinic/resume-medis/pdf';
+  static const String sundayClinicResumeMedisSendWhatsApp = '/api/sunday-clinic/resume-medis/send-whatsapp';
+  static String sundayClinicSendToPatient(String mrId) => '/api/sunday-clinic/send-to-patient/$mrId';
+
+  // Sunday Clinic - USG Upload
+  static const String usgBulkUpload = '/api/usg-bulk-upload';
+  static String sundayClinicUsgUpload(String mrId) => '/api/sunday-clinic/records/$mrId/usg-upload';
+
   // Appointments
   static const String appointments = '/api/sunday-appointments';
   static const String hospitalAppointments = '/api/hospital-appointments';
