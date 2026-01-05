@@ -34,13 +34,8 @@ class SundayClinicRepository {
     int page = 1,
     int limit = 20,
   }) async {
-    final queryParams = <String, dynamic>{
-      'page': page,
-      'limit': limit,
-    };
-    if (location != null) queryParams['location'] = location;
+    final queryParams = <String, dynamic>{};
     if (search != null && search.isNotEmpty) queryParams['search'] = search;
-    if (date != null) queryParams['date'] = date;
 
     final response = await _apiClient.get(
       ApiEndpoints.sundayClinicDirectory,
@@ -49,7 +44,35 @@ class SundayClinicRepository {
 
     final data = response.data;
     if (data['success'] == true && data['data'] != null) {
-      return (data['data'] as List).map((q) => QueueItem.fromJson(q)).toList();
+      // API returns { data: { patients: [...], totalPatients, totalRecords } }
+      final directoryData = data['data'] as Map<String, dynamic>;
+      final patients = directoryData['patients'] as List? ?? [];
+
+      // Flatten patients with visits into QueueItem list
+      final List<QueueItem> items = [];
+      int index = 0;
+      for (final patient in patients) {
+        final patientMap = patient as Map<String, dynamic>;
+        final visits = patientMap['visits'] as List? ?? [];
+
+        for (final visit in visits) {
+          final visitMap = visit as Map<String, dynamic>;
+          items.add(QueueItem(
+            id: index++, // Generate sequential ID for directory items
+            patientId: patientMap['patientId']?.toString() ?? '',
+            patientName: patientMap['fullName']?.toString() ?? '',
+            patientAge: patientMap['age'] is int ? patientMap['age'] : null,
+            patientPhone: patientMap['phone']?.toString() ?? patientMap['whatsapp']?.toString(),
+            mrId: visitMap['mrId']?.toString(),
+            appointmentDate: visitMap['appointmentDate']?.toString(),
+            category: null, // Not available in directory response
+            chiefComplaint: visitMap['chiefComplaint']?.toString(),
+            status: visitMap['recordStatus']?.toString() ?? visitMap['appointmentStatus']?.toString() ?? 'completed',
+            hasRecord: visitMap['mrId'] != null,
+          ));
+        }
+      }
+      return items;
     }
     return [];
   }
