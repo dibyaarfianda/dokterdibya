@@ -288,3 +288,311 @@ final usgObstetriFormProvider = StateProvider<Map<String, dynamic>>((ref) => {})
 final usgGynecologyFormProvider = StateProvider<Map<String, dynamic>>((ref) => {});
 final diagnosisFormProvider = StateProvider<Map<String, dynamic>>((ref) => {});
 final planFormProvider = StateProvider<Map<String, dynamic>>((ref) => {});
+
+// Billing State
+class BillingState {
+  final Billing? billing;
+  final bool isLoading;
+  final bool isProcessing;
+  final String? error;
+  final String? successMessage;
+
+  BillingState({
+    this.billing,
+    this.isLoading = false,
+    this.isProcessing = false,
+    this.error,
+    this.successMessage,
+  });
+
+  BillingState copyWith({
+    Billing? billing,
+    bool? isLoading,
+    bool? isProcessing,
+    String? error,
+    String? successMessage,
+  }) {
+    return BillingState(
+      billing: billing ?? this.billing,
+      isLoading: isLoading ?? this.isLoading,
+      isProcessing: isProcessing ?? this.isProcessing,
+      error: error,
+      successMessage: successMessage,
+    );
+  }
+}
+
+class BillingNotifier extends StateNotifier<BillingState> {
+  final SundayClinicRepository _repository;
+
+  BillingNotifier(this._repository) : super(BillingState());
+
+  Future<void> loadBilling(String mrId) async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      final billing = await _repository.getBilling(mrId);
+      state = state.copyWith(
+        billing: billing ?? Billing(mrId: mrId),
+        isLoading: false,
+      );
+    } catch (e) {
+      state = state.copyWith(isLoading: false, error: e.toString());
+    }
+  }
+
+  Future<bool> addItem({
+    required String mrId,
+    required String type,
+    required String name,
+    String? code,
+    int quantity = 1,
+    required double price,
+  }) async {
+    state = state.copyWith(isProcessing: true, error: null);
+
+    try {
+      final billing = await _repository.addBillingItem(
+        mrId: mrId,
+        type: type,
+        name: name,
+        code: code,
+        quantity: quantity,
+        price: price,
+      );
+      state = state.copyWith(
+        billing: billing,
+        isProcessing: false,
+        successMessage: 'Item berhasil ditambahkan',
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(isProcessing: false, error: e.toString());
+      return false;
+    }
+  }
+
+  Future<bool> deleteItem(String mrId, int itemId) async {
+    state = state.copyWith(isProcessing: true, error: null);
+
+    try {
+      await _repository.deleteBillingItem(mrId, itemId);
+      await loadBilling(mrId);
+      state = state.copyWith(
+        isProcessing: false,
+        successMessage: 'Item berhasil dihapus',
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(isProcessing: false, error: e.toString());
+      return false;
+    }
+  }
+
+  Future<bool> confirm(String mrId) async {
+    state = state.copyWith(isProcessing: true, error: null);
+
+    try {
+      final billing = await _repository.confirmBilling(mrId);
+      state = state.copyWith(
+        billing: billing,
+        isProcessing: false,
+        successMessage: 'Billing berhasil dikonfirmasi',
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(isProcessing: false, error: e.toString());
+      return false;
+    }
+  }
+
+  Future<bool> markPaid(String mrId) async {
+    state = state.copyWith(isProcessing: true, error: null);
+
+    try {
+      final billing = await _repository.markBillingPaid(mrId);
+      state = state.copyWith(
+        billing: billing,
+        isProcessing: false,
+        successMessage: 'Status pembayaran diupdate',
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(isProcessing: false, error: e.toString());
+      return false;
+    }
+  }
+
+  Future<String?> printInvoice(String mrId) async {
+    state = state.copyWith(isProcessing: true, error: null);
+
+    try {
+      final url = await _repository.printInvoice(mrId);
+      state = state.copyWith(isProcessing: false);
+      return url;
+    } catch (e) {
+      state = state.copyWith(isProcessing: false, error: e.toString());
+      return null;
+    }
+  }
+
+  Future<String?> printEtiket(String mrId) async {
+    state = state.copyWith(isProcessing: true, error: null);
+
+    try {
+      final url = await _repository.printEtiket(mrId);
+      state = state.copyWith(isProcessing: false);
+      return url;
+    } catch (e) {
+      state = state.copyWith(isProcessing: false, error: e.toString());
+      return null;
+    }
+  }
+
+  void clear() {
+    state = BillingState();
+  }
+
+  void clearMessages() {
+    state = state.copyWith(error: null, successMessage: null);
+  }
+}
+
+final billingProvider = StateNotifierProvider<BillingNotifier, BillingState>((ref) {
+  final repository = ref.watch(sundayClinicRepositoryProvider);
+  return BillingNotifier(repository);
+});
+
+// Send to Patient State
+class SendToPatientState {
+  final bool isProcessing;
+  final String? error;
+  final String? successMessage;
+  final DocumentsSent? documentsSent;
+
+  SendToPatientState({
+    this.isProcessing = false,
+    this.error,
+    this.successMessage,
+    this.documentsSent,
+  });
+
+  SendToPatientState copyWith({
+    bool? isProcessing,
+    String? error,
+    String? successMessage,
+    DocumentsSent? documentsSent,
+  }) {
+    return SendToPatientState(
+      isProcessing: isProcessing ?? this.isProcessing,
+      error: error,
+      successMessage: successMessage,
+      documentsSent: documentsSent ?? this.documentsSent,
+    );
+  }
+}
+
+class SendToPatientNotifier extends StateNotifier<SendToPatientState> {
+  final SundayClinicRepository _repository;
+
+  SendToPatientNotifier(this._repository) : super(SendToPatientState());
+
+  Future<void> loadDocumentsSentStatus(String mrId) async {
+    try {
+      final status = await _repository.getDocumentsSentStatus(mrId);
+      state = state.copyWith(documentsSent: status);
+    } catch (_) {
+      // Silently fail
+    }
+  }
+
+  Future<String?> generatePdf(String mrId) async {
+    state = state.copyWith(isProcessing: true, error: null);
+
+    try {
+      final url = await _repository.generateResumeMedisPdf(mrId);
+      state = state.copyWith(
+        isProcessing: false,
+        successMessage: 'PDF berhasil di-generate',
+      );
+      return url;
+    } catch (e) {
+      state = state.copyWith(isProcessing: false, error: e.toString());
+      return null;
+    }
+  }
+
+  Future<bool> sendToPortal({
+    required String mrId,
+    bool sendResumeMedis = true,
+    bool sendLabResults = false,
+    bool sendUsgPhotos = false,
+    String? notes,
+  }) async {
+    state = state.copyWith(isProcessing: true, error: null);
+
+    try {
+      await _repository.sendToPatientPortal(
+        mrId: mrId,
+        sendResumeMedis: sendResumeMedis,
+        sendLabResults: sendLabResults,
+        sendUsgPhotos: sendUsgPhotos,
+        notes: notes,
+      );
+      await loadDocumentsSentStatus(mrId);
+      state = state.copyWith(
+        isProcessing: false,
+        successMessage: 'Dokumen berhasil dikirim ke Portal',
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(isProcessing: false, error: e.toString());
+      return false;
+    }
+  }
+
+  Future<bool> sendToWhatsApp({
+    required String mrId,
+    required String phone,
+    bool sendResumeMedis = true,
+    bool sendLabResults = false,
+    bool sendUsgPhotos = false,
+    String? message,
+  }) async {
+    state = state.copyWith(isProcessing: true, error: null);
+
+    try {
+      await _repository.sendToWhatsApp(
+        mrId: mrId,
+        phone: phone,
+        sendResumeMedis: sendResumeMedis,
+        sendLabResults: sendLabResults,
+        sendUsgPhotos: sendUsgPhotos,
+        message: message,
+      );
+      await loadDocumentsSentStatus(mrId);
+      state = state.copyWith(
+        isProcessing: false,
+        successMessage: 'Dokumen berhasil dikirim via WhatsApp',
+      );
+      return true;
+    } catch (e) {
+      state = state.copyWith(isProcessing: false, error: e.toString());
+      return false;
+    }
+  }
+
+  void clear() {
+    state = SendToPatientState();
+  }
+
+  void clearMessages() {
+    state = state.copyWith(error: null, successMessage: null);
+  }
+}
+
+final sendToPatientProvider =
+    StateNotifierProvider<SendToPatientNotifier, SendToPatientState>((ref) {
+  final repository = ref.watch(sundayClinicRepositoryProvider);
+  return SendToPatientNotifier(repository);
+});

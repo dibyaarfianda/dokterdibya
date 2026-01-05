@@ -350,3 +350,306 @@ class PatientCategory {
     PatientCategory(id: 'Ginekologi', name: 'Ginekologi'),
   ];
 }
+
+// Billing Models
+class Billing {
+  final int? id;
+  final String mrId;
+  final String? patientId;
+  final String? patientName;
+  final List<BillingItem> items;
+  final double subtotal;
+  final double discount;
+  final double tax;
+  final double grandTotal;
+  final String status;
+  final String? confirmedBy;
+  final DateTime? confirmedAt;
+  final String? invoiceUrl;
+  final String? etiketUrl;
+  final DateTime? createdAt;
+
+  Billing({
+    this.id,
+    required this.mrId,
+    this.patientId,
+    this.patientName,
+    this.items = const [],
+    this.subtotal = 0,
+    this.discount = 0,
+    this.tax = 0,
+    this.grandTotal = 0,
+    this.status = 'draft',
+    this.confirmedBy,
+    this.confirmedAt,
+    this.invoiceUrl,
+    this.etiketUrl,
+    this.createdAt,
+  });
+
+  factory Billing.fromJson(Map<String, dynamic> json) {
+    final itemsList = json['items'] as List? ?? [];
+    return Billing(
+      id: json['id'],
+      mrId: json['mr_id']?.toString() ?? json['mrId']?.toString() ?? '',
+      patientId: json['patient_id']?.toString(),
+      patientName: json['patient_name'],
+      items: itemsList.map((item) => BillingItem.fromJson(item)).toList(),
+      subtotal: (json['subtotal'] ?? 0).toDouble(),
+      discount: (json['discount'] ?? 0).toDouble(),
+      tax: (json['tax'] ?? 0).toDouble(),
+      grandTotal: (json['grand_total'] ?? json['grandTotal'] ?? 0).toDouble(),
+      status: json['status'] ?? 'draft',
+      confirmedBy: json['confirmed_by'],
+      confirmedAt: json['confirmed_at'] != null
+          ? DateTime.tryParse(json['confirmed_at'].toString())
+          : null,
+      invoiceUrl: json['invoice_url'],
+      etiketUrl: json['etiket_url'],
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'].toString())
+          : null,
+    );
+  }
+
+  bool get isDraft => status == 'draft';
+  bool get isConfirmed => status == 'confirmed';
+  bool get isPaid => status == 'paid';
+  bool get hasInvoice => invoiceUrl != null && invoiceUrl!.isNotEmpty;
+  bool get hasEtiket => etiketUrl != null && etiketUrl!.isNotEmpty;
+
+  String get statusDisplayName {
+    switch (status) {
+      case 'draft':
+        return 'Draft';
+      case 'confirmed':
+        return 'Dikonfirmasi';
+      case 'paid':
+        return 'Lunas';
+      default:
+        return status;
+    }
+  }
+
+  Billing copyWith({
+    int? id,
+    String? mrId,
+    String? patientId,
+    String? patientName,
+    List<BillingItem>? items,
+    double? subtotal,
+    double? discount,
+    double? tax,
+    double? grandTotal,
+    String? status,
+    String? confirmedBy,
+    DateTime? confirmedAt,
+    String? invoiceUrl,
+    String? etiketUrl,
+    DateTime? createdAt,
+  }) {
+    return Billing(
+      id: id ?? this.id,
+      mrId: mrId ?? this.mrId,
+      patientId: patientId ?? this.patientId,
+      patientName: patientName ?? this.patientName,
+      items: items ?? this.items,
+      subtotal: subtotal ?? this.subtotal,
+      discount: discount ?? this.discount,
+      tax: tax ?? this.tax,
+      grandTotal: grandTotal ?? this.grandTotal,
+      status: status ?? this.status,
+      confirmedBy: confirmedBy ?? this.confirmedBy,
+      confirmedAt: confirmedAt ?? this.confirmedAt,
+      invoiceUrl: invoiceUrl ?? this.invoiceUrl,
+      etiketUrl: etiketUrl ?? this.etiketUrl,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+}
+
+class BillingItem {
+  final int? id;
+  final String type;
+  final String? code;
+  final String name;
+  final int quantity;
+  final double price;
+  final double total;
+  final String? notes;
+
+  BillingItem({
+    this.id,
+    required this.type,
+    this.code,
+    required this.name,
+    this.quantity = 1,
+    required this.price,
+    double? total,
+    this.notes,
+  }) : total = total ?? (price * quantity);
+
+  factory BillingItem.fromJson(Map<String, dynamic> json) {
+    final qty = (json['quantity'] ?? json['qty'] ?? 1).toInt();
+    final price = (json['price'] ?? json['unit_price'] ?? 0).toDouble();
+    return BillingItem(
+      id: json['id'],
+      type: json['type'] ?? json['item_type'] ?? 'tindakan',
+      code: json['code'] ?? json['item_code'],
+      name: json['name'] ?? json['item_name'] ?? '',
+      quantity: qty,
+      price: price,
+      total: (json['total'] ?? json['subtotal'] ?? (price * qty)).toDouble(),
+      notes: json['notes'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      if (id != null) 'id': id,
+      'type': type,
+      if (code != null) 'code': code,
+      'name': name,
+      'quantity': quantity,
+      'price': price,
+      'total': total,
+      if (notes != null) 'notes': notes,
+    };
+  }
+
+  String get typeDisplayName {
+    switch (type) {
+      case 'tindakan':
+        return 'Tindakan';
+      case 'obat':
+        return 'Obat';
+      case 'admin':
+        return 'Admin';
+      default:
+        return type;
+    }
+  }
+}
+
+// Send to Patient Models
+class SendToPatientRequest {
+  final String mrId;
+  final bool sendResumeMedis;
+  final bool sendLabResults;
+  final bool sendUsgPhotos;
+  final String channel;
+  final String? phoneNumber;
+  final String? notes;
+
+  SendToPatientRequest({
+    required this.mrId,
+    this.sendResumeMedis = true,
+    this.sendLabResults = false,
+    this.sendUsgPhotos = false,
+    this.channel = 'portal',
+    this.phoneNumber,
+    this.notes,
+  });
+
+  Map<String, dynamic> toJson() {
+    return {
+      'mr_id': mrId,
+      'send_resume_medis': sendResumeMedis,
+      'send_lab_results': sendLabResults,
+      'send_usg_photos': sendUsgPhotos,
+      'channel': channel,
+      if (phoneNumber != null) 'phone': phoneNumber,
+      if (notes != null) 'notes': notes,
+    };
+  }
+}
+
+class DocumentsSent {
+  final bool resumeMedis;
+  final bool labResults;
+  final bool usgPhotos;
+  final DateTime? lastSentAt;
+  final String? sentVia;
+
+  DocumentsSent({
+    this.resumeMedis = false,
+    this.labResults = false,
+    this.usgPhotos = false,
+    this.lastSentAt,
+    this.sentVia,
+  });
+
+  factory DocumentsSent.fromJson(Map<String, dynamic> json) {
+    return DocumentsSent(
+      resumeMedis: json['resume_medis'] == true,
+      labResults: json['lab_results'] == true,
+      usgPhotos: json['usg_photos'] == true,
+      lastSentAt: json['last_sent_at'] != null
+          ? DateTime.tryParse(json['last_sent_at'].toString())
+          : null,
+      sentVia: json['sent_via'],
+    );
+  }
+
+  bool get hasSentAny => resumeMedis || labResults || usgPhotos;
+}
+
+// Patient Visit History Model (for directory)
+class PatientVisit {
+  final String mrId;
+  final String patientId;
+  final String patientName;
+  final String visitLocation;
+  final String category;
+  final String status;
+  final DateTime visitDate;
+  final String? diagnosis;
+  final bool hasInvoice;
+  final bool documentsSent;
+
+  PatientVisit({
+    required this.mrId,
+    required this.patientId,
+    required this.patientName,
+    required this.visitLocation,
+    required this.category,
+    required this.status,
+    required this.visitDate,
+    this.diagnosis,
+    this.hasInvoice = false,
+    this.documentsSent = false,
+  });
+
+  factory PatientVisit.fromJson(Map<String, dynamic> json) {
+    return PatientVisit(
+      mrId: json['mr_id']?.toString() ?? '',
+      patientId: json['patient_id']?.toString() ?? '',
+      patientName: json['patient_name'] ?? '',
+      visitLocation: json['visit_location'] ?? 'klinik_private',
+      category: json['mr_category'] ?? json['category'] ?? 'Obstetri',
+      status: json['status'] ?? json['record_status'] ?? 'draft',
+      visitDate: DateTime.tryParse(json['visit_date']?.toString() ??
+          json['created_at']?.toString() ?? '') ?? DateTime.now(),
+      diagnosis: json['diagnosis'],
+      hasInvoice: json['has_invoice'] == true,
+      documentsSent: json['documents_sent'] == true,
+    );
+  }
+
+  String get locationDisplayName {
+    switch (visitLocation) {
+      case 'klinik_private':
+        return 'Klinik Privat';
+      case 'rsia_melinda':
+        return 'RSIA Melinda';
+      case 'rsud_gambiran':
+        return 'RSUD Gambiran';
+      case 'rs_bhayangkara':
+        return 'RS Bhayangkara';
+      default:
+        return visitLocation;
+    }
+  }
+
+  bool get isFinalized => status == 'finalized';
+}

@@ -73,7 +73,14 @@ class _QueueScreenState extends ConsumerState<QueueScreen> with SingleTickerProv
                       },
                     ),
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
+                  // Directory button
+                  OutlinedButton.icon(
+                    onPressed: () => context.push('/sunday-clinic/directory'),
+                    icon: const Icon(Icons.folder_shared, size: 20),
+                    label: const Text('Direktori'),
+                  ),
+                  const SizedBox(width: 8),
                   FilledButton.icon(
                     onPressed: _showAddToQueueDialog,
                     icon: const Icon(Icons.person_add, size: 20),
