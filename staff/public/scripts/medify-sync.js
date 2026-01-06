@@ -1109,6 +1109,426 @@ async function loadLastReview() {
     }
 }
 
+// ==================== REVERSE SYNC (SIMRS-FIRST) ====================
+
+let reverseSyncResults = null;
+
+/**
+ * Start reverse sync - scan SIMRS by date and match to our patients
+ */
+async function startReverseSync(source) {
+    const dateStart = document.getElementById('reverse-sync-date-start')?.value;
+    const dateEnd = document.getElementById('reverse-sync-date-end')?.value;
+
+    if (!dateStart || !dateEnd) {
+        showToast('Pilih tanggal mulai dan tanggal akhir', 'error');
+        return;
+    }
+
+    // Format dates to DD/MM/YYYY for SIMRS
+    const formatDate = (dateStr) => {
+        const d = new Date(dateStr);
+        return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+    };
+
+    const btn = document.getElementById(`btn-reverse-sync-${source.replace('_', '-')}`);
+    const originalText = btn?.innerHTML;
+    if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Scanning SIMRS...';
+    }
+
+    try {
+        showToast(`Memindai SIMRS ${getSourceName(source)}...`, 'info');
+
+        const data = await apiRequest(`/medify-batch/reverse-sync/${source}`, {
+            method: 'POST',
+            body: JSON.stringify({
+                dateStart: formatDate(dateStart),
+                dateEnd: formatDate(dateEnd)
+            })
+        });
+
+        if (data.success) {
+            reverseSyncResults = data;
+            displayReverseSyncResults(data);
+            showToast(`Ditemukan ${data.summary.total} pasien dari SIMRS`, 'success');
+        } else {
+            showToast(data.message || 'Reverse sync gagal', 'error');
+        }
+    } catch (error) {
+        console.error('[ReverseSync] Error:', error);
+        showToast('Error: ' + error.message, 'error');
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
+    }
+}
+
+/**
+ * Display reverse sync results
+ */
+function displayReverseSyncResults(data) {
+    const container = document.getElementById('reverse-sync-results');
+    if (!container) return;
+
+    const { results, summary, source } = data;
+
+    // Build factor badges helper
+    const factorBadges = (factors) => {
+        const factorLabels = {
+            name: 'Nama',
+            age: 'Umur',
+            dob: 'Tgl Lahir',
+            address: 'Alamat',
+            phone: 'HP'
+        };
+        return factors.map(f => `<span class="badge badge-success badge-sm mr-1">${factorLabels[f] || f}</span>`).join('');
+    };
+
+    // Build patient row helper
+    const buildRow = (item, category, allowActions = true) => {
+        const simrs = item.simrs || {};
+        const patient = item.patient || {};
+        const matchBadge = item.matchCount >= 3
+            ? `<span class="badge badge-success">${item.matchCount}/5</span>`
+            : item.matchCount === 2
+                ? `<span class="badge badge-warning">${item.matchCount}/5</span>`
+                : `<span class="badge badge-danger">${item.matchCount}/5</span>`;
+
+        let actionHtml = '';
+        if (allowActions) {
+            if (category === 'matched_with_drd') {
+                actionHtml = `
+                    <button class="btn btn-sm btn-info" onclick="importFromReverseSync('${item.drd}', '${simrs.medId}', '${source}')">
+                        <i class="fas fa-download"></i> Import
+                    </button>`;
+            } else if (category === 'matched_no_drd') {
+                actionHtml = `
+                    <button class="btn btn-sm btn-success" onclick="createAndImportDrd('${patient.id}', '${simrs.medId}', '${source}')">
+                        <i class="fas fa-plus"></i> Buat DRD & Import
+                    </button>`;
+            }
+        }
+
+        return `
+            <tr>
+                <td>
+                    <strong>${escapeHtml(simrs.name)}</strong><br>
+                    <small class="text-muted">SIMRS ID: ${simrs.medId}</small><br>
+                    <small>${simrs.visitDate || '-'}</small>
+                </td>
+                <td>
+                    ${patient.id ? `
+                        <strong>${escapeHtml(patient.name)}</strong><br>
+                        <small class="text-muted">${patient.id}</small>
+                    ` : '<span class="text-muted">-</span>'}
+                </td>
+                <td class="text-center">
+                    ${matchBadge}<br>
+                    <small>${factorBadges(item.factors || [])}</small>
+                </td>
+                <td>
+                    ${item.drd ? `<span class="badge badge-primary">${item.drd}</span>` : '<span class="text-muted">-</span>'}
+                </td>
+                <td class="text-center">
+                    ${actionHtml}
+                </td>
+            </tr>
+        `;
+    };
+
+    container.innerHTML = `
+        <div class="card card-outline card-primary">
+            <div class="card-header">
+                <h3 class="card-title">
+                    <i class="fas fa-search mr-2"></i>
+                    Hasil Scan SIMRS - ${getSourceName(source)}
+                </h3>
+                <div class="card-tools">
+                    <span class="badge badge-primary">${summary.total} pasien ditemukan</span>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                <!-- Summary Cards -->
+                <div class="row p-3">
+                    <div class="col-md-3">
+                        <div class="info-box bg-success mb-0">
+                            <span class="info-box-icon"><i class="fas fa-check-double"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Matched + DRD</span>
+                                <span class="info-box-number">${summary.matched_with_drd}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="info-box bg-warning mb-0">
+                            <span class="info-box-icon"><i class="fas fa-user-plus"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Matched, Perlu DRD</span>
+                                <span class="info-box-number">${summary.matched_no_drd}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="info-box bg-info mb-0">
+                            <span class="info-box-icon"><i class="fas fa-question"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Partial Match</span>
+                                <span class="info-box-number">${summary.partial_match}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="info-box bg-secondary mb-0">
+                            <span class="info-box-icon"><i class="fas fa-user-slash"></i></span>
+                            <div class="info-box-content">
+                                <span class="info-box-text">Tidak Dikenali</span>
+                                <span class="info-box-number">${summary.no_match}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Matched with DRD -->
+                ${results.matched_with_drd.length > 0 ? `
+                <div class="p-3 border-top">
+                    <h5 class="text-success"><i class="fas fa-check-double mr-2"></i>Matched + Sudah Ada DRD (${results.matched_with_drd.length})</h5>
+                    <p class="text-muted small">Pasien sudah terdaftar dan memiliki DRD di lokasi ini. Klik Import untuk mengambil rekam medis.</p>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead><tr><th>SIMRS</th><th>Pasien Kami</th><th>Match</th><th>DRD</th><th>Aksi</th></tr></thead>
+                            <tbody>${results.matched_with_drd.map(item => buildRow(item, 'matched_with_drd')).join('')}</tbody>
+                        </table>
+                    </div>
+                    ${results.matched_with_drd.length > 1 ? `
+                        <button class="btn btn-info" onclick="importAllMatched('${source}')">
+                            <i class="fas fa-download mr-1"></i> Import Semua (${results.matched_with_drd.length})
+                        </button>
+                    ` : ''}
+                </div>
+                ` : ''}
+
+                <!-- Matched without DRD -->
+                ${results.matched_no_drd.length > 0 ? `
+                <div class="p-3 border-top">
+                    <h5 class="text-warning"><i class="fas fa-user-plus mr-2"></i>Matched, Perlu DRD Baru (${results.matched_no_drd.length})</h5>
+                    <p class="text-muted small">Pasien sudah terdaftar tapi belum punya DRD di lokasi ini (mungkin pindah dari RS lain). Klik untuk buat DRD baru & import.</p>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead><tr><th>SIMRS</th><th>Pasien Kami</th><th>Match</th><th>DRD</th><th>Aksi</th></tr></thead>
+                            <tbody>${results.matched_no_drd.map(item => buildRow(item, 'matched_no_drd')).join('')}</tbody>
+                        </table>
+                    </div>
+                    ${results.matched_no_drd.length > 1 ? `
+                        <button class="btn btn-success" onclick="createAllDrdsAndImport('${source}')">
+                            <i class="fas fa-plus mr-1"></i> Buat DRD & Import Semua (${results.matched_no_drd.length})
+                        </button>
+                    ` : ''}
+                </div>
+                ` : ''}
+
+                <!-- Partial Match -->
+                ${results.partial_match.length > 0 ? `
+                <div class="p-3 border-top">
+                    <h5 class="text-info"><i class="fas fa-question mr-2"></i>Partial Match - 2 Faktor (${results.partial_match.length})</h5>
+                    <p class="text-muted small">Hanya 2 dari 5 faktor cocok. Perlu verifikasi manual.</p>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead><tr><th>SIMRS</th><th>Kandidat</th><th>Match</th><th>DRD</th><th>Aksi</th></tr></thead>
+                            <tbody>${results.partial_match.map(item => buildRow(item, 'partial_match', false)).join('')}</tbody>
+                        </table>
+                    </div>
+                </div>
+                ` : ''}
+
+                <!-- No Match -->
+                ${results.no_match.length > 0 ? `
+                <div class="p-3 border-top">
+                    <h5 class="text-secondary"><i class="fas fa-user-slash mr-2"></i>Tidak Dikenali (${results.no_match.length})</h5>
+                    <p class="text-muted small">Pasien dari SIMRS tidak cocok dengan database kami. Mungkin pasien baru yang belum terdaftar.</p>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-striped">
+                            <thead><tr><th>SIMRS</th><th>Info</th><th>Match</th><th colspan="2">-</th></tr></thead>
+                            <tbody>
+                                ${results.no_match.map(item => `
+                                    <tr>
+                                        <td>
+                                            <strong>${escapeHtml(item.simrs?.name || '-')}</strong><br>
+                                            <small class="text-muted">SIMRS ID: ${item.simrs?.medId || '-'}</small><br>
+                                            <small>${item.simrs?.visitDate || '-'}</small>
+                                        </td>
+                                        <td>
+                                            <small>DOB: ${item.simrs?.dob || '-'}</small><br>
+                                            <small>HP: ${item.simrs?.phone || '-'}</small>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge badge-danger">${item.matchCount || 0}/5</span>
+                                        </td>
+                                        <td colspan="2" class="text-muted text-center">
+                                            <small>Daftarkan pasien terlebih dahulu</small>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+        </div>
+    `;
+}
+
+/**
+ * Create DRD and import for a single patient
+ */
+async function createAndImportDrd(patientId, simrsMedId, source) {
+    const btn = event.target.closest('button');
+    const originalHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+    try {
+        // Step 1: Create DRD
+        const createResult = await apiRequest(`/medify-batch/reverse-sync/${source}/create-drd`, {
+            method: 'POST',
+            body: JSON.stringify({ patientId, simrsMedId, category: 'obstetri' })
+        });
+
+        if (!createResult.success) {
+            throw new Error(createResult.message || 'Gagal membuat DRD');
+        }
+
+        const mrId = createResult.mrId;
+        showToast(`DRD ${mrId} berhasil dibuat`, 'success');
+
+        // Step 2: Import medical record
+        await importFromReverseSync(mrId, simrsMedId, source);
+
+        // Update UI - change button to show success
+        btn.innerHTML = `<i class="fas fa-check text-success"></i> ${mrId}`;
+        btn.classList.remove('btn-success');
+        btn.classList.add('btn-outline-success');
+
+    } catch (error) {
+        console.error('[ReverseSync] Error:', error);
+        showToast('Error: ' + error.message, 'error');
+        btn.disabled = false;
+        btn.innerHTML = originalHtml;
+    }
+}
+
+/**
+ * Import medical record from SIMRS
+ */
+async function importFromReverseSync(mrId, simrsMedId, source) {
+    try {
+        const result = await apiRequest(`/medify-batch/reverse-sync/${source}/import`, {
+            method: 'POST',
+            body: JSON.stringify({ mrId, simrsMedId })
+        });
+
+        if (result.success) {
+            showToast(`Rekam medis ${mrId} berhasil diimport (${result.sectionsImported} sections)`, 'success');
+        } else {
+            throw new Error(result.message || 'Import gagal');
+        }
+    } catch (error) {
+        console.error('[ReverseSync] Import error:', error);
+        showToast('Import error: ' + error.message, 'error');
+    }
+}
+
+/**
+ * Import all matched patients
+ */
+async function importAllMatched(source) {
+    if (!reverseSyncResults?.results?.matched_with_drd) return;
+
+    const items = reverseSyncResults.results.matched_with_drd;
+    const btn = event.target.closest('button');
+    const originalHtml = btn.innerHTML;
+    btn.disabled = true;
+
+    let success = 0;
+    let failed = 0;
+
+    for (let i = 0; i < items.length; i++) {
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-1"></i> ${i + 1}/${items.length}`;
+
+        try {
+            await apiRequest(`/medify-batch/reverse-sync/${source}/import`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    mrId: items[i].drd,
+                    simrsMedId: items[i].simrs.medId
+                })
+            });
+            success++;
+        } catch (e) {
+            failed++;
+            console.error(`[ReverseSync] Failed to import ${items[i].drd}:`, e);
+        }
+    }
+
+    btn.innerHTML = `<i class="fas fa-check"></i> Done (${success}/${items.length})`;
+    showToast(`Import selesai: ${success} berhasil, ${failed} gagal`, success > 0 ? 'success' : 'error');
+}
+
+/**
+ * Create DRDs and import for all matched patients without DRD
+ */
+async function createAllDrdsAndImport(source) {
+    if (!reverseSyncResults?.results?.matched_no_drd) return;
+
+    const items = reverseSyncResults.results.matched_no_drd;
+    const btn = event.target.closest('button');
+    const originalHtml = btn.innerHTML;
+    btn.disabled = true;
+
+    let success = 0;
+    let failed = 0;
+
+    for (let i = 0; i < items.length; i++) {
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin mr-1"></i> ${i + 1}/${items.length}`;
+
+        try {
+            // Create DRD
+            const createResult = await apiRequest(`/medify-batch/reverse-sync/${source}/create-drd`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    patientId: items[i].patient.id,
+                    simrsMedId: items[i].simrs.medId,
+                    category: 'obstetri'
+                })
+            });
+
+            if (createResult.success) {
+                // Import
+                await apiRequest(`/medify-batch/reverse-sync/${source}/import`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        mrId: createResult.mrId,
+                        simrsMedId: items[i].simrs.medId
+                    })
+                });
+                success++;
+            } else {
+                failed++;
+            }
+        } catch (e) {
+            failed++;
+            console.error(`[ReverseSync] Failed:`, e);
+        }
+    }
+
+    btn.innerHTML = `<i class="fas fa-check"></i> Done (${success}/${items.length})`;
+    showToast(`Selesai: ${success} berhasil, ${failed} gagal`, success > 0 ? 'success' : 'error');
+}
+
 // Export functions to window for onclick handlers
 window.initMedifySync = initMedifySync;
 window.startSync = startSync;
@@ -1126,3 +1546,10 @@ window.sendSelectedToPortal = sendSelectedToPortal;
 window.toggleSelectAllPatients = toggleSelectAllPatients;
 window.updateSelectedCount = updateSelectedCount;
 window.previewImage = previewImage;
+
+// Reverse Sync exports
+window.startReverseSync = startReverseSync;
+window.createAndImportDrd = createAndImportDrd;
+window.importFromReverseSync = importFromReverseSync;
+window.importAllMatched = importAllMatched;
+window.createAllDrdsAndImport = createAllDrdsAndImport;
