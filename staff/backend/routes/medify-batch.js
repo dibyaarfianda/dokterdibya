@@ -51,17 +51,15 @@ router.post('/sync/:source', verifyToken, requireDocterOrAdmin, async (req, res)
         // Generate batch ID
         const batchId = uuidv4();
 
-        // Find patients who need syncing
+        // Find ALL patients who need syncing (match against SIMRS for chosen date)
         const patients = await pool.query(
-            `SELECT DISTINCT p.id, p.full_name, p.birth_date, p.age, p.whatsapp as alamat
+            `SELECT p.id, p.full_name, p.birth_date, p.age, p.whatsapp as alamat
              FROM patients p
-             JOIN sunday_clinic_records scr ON p.id = scr.patient_id
-             WHERE scr.visit_location = ?
+             WHERE p.full_name IS NOT NULL
                AND (p.last_medify_sync IS NULL
                     OR p.last_medify_sync < DATE_SUB(NOW(), INTERVAL 7 DAY))
-             ORDER BY scr.created_at DESC
-             LIMIT 100`,
-            [source]
+             ORDER BY p.created_at DESC
+             LIMIT 100`
         );
 
         if (!patients || patients.length === 0) {
