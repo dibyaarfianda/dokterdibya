@@ -3378,13 +3378,73 @@
                             </div>
                         </div>
 
-                        <!-- Sync Buttons -->
+                        <!-- REVERSE SYNC (SIMRS-First) -->
+                        <div class="card card-primary mb-4">
+                            <div class="card-header">
+                                <h3 class="card-title">
+                                    <i class="fas fa-search mr-2"></i>Reverse Sync (SIMRS-First)
+                                </h3>
+                                <div class="card-tools">
+                                    <span class="badge badge-warning">NEW</span>
+                                </div>
+                            </div>
+                            <div class="card-body">
+                                <p class="text-muted mb-3">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    Scan SIMRS berdasarkan tanggal, lalu cocokkan dengan <strong>semua pasien terdaftar</strong> menggunakan 5 faktor:
+                                    <span class="badge badge-light">Nama</span>
+                                    <span class="badge badge-light">Umur</span>
+                                    <span class="badge badge-light">Tgl Lahir</span>
+                                    <span class="badge badge-light">Alamat</span>
+                                    <span class="badge badge-light">No HP</span>
+                                </p>
+                                <p class="text-info small mb-3">
+                                    <i class="fas fa-lightbulb mr-1"></i>
+                                    <strong>Keuntungan:</strong> Mendeteksi pasien yang pindah lokasi kontrol (misal dari Bhayangkara ke Melinda) dan pasien baru yang sudah terdaftar tapi belum punya DRD.
+                                </p>
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label>Tanggal Mulai</label>
+                                            <input type="date" class="form-control" id="reverse-sync-date-start">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label>Tanggal Akhir</label>
+                                            <input type="date" class="form-control" id="reverse-sync-date-end">
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label>&nbsp;</label>
+                                            <button class="btn btn-info btn-block" id="btn-reverse-sync-rsia-melinda" onclick="window.startReverseSync('rsia_melinda')">
+                                                <i class="fas fa-search mr-1"></i>Scan Melinda
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="form-group">
+                                            <label>&nbsp;</label>
+                                            <button class="btn btn-success btn-block" id="btn-reverse-sync-rsud-gambiran" onclick="window.startReverseSync('rsud_gambiran')">
+                                                <i class="fas fa-search mr-1"></i>Scan Gambiran
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Reverse Sync Results -->
+                        <div id="reverse-sync-results" class="mb-4"></div>
+
+                        <!-- Sync Buttons (Original) -->
                         <div class="row mb-4">
                             <!-- RSIA Melinda -->
                             <div class="col-md-6">
                                 <div class="card card-info">
                                     <div class="card-header">
-                                        <h3 class="card-title"><i class="fas fa-hospital mr-2"></i>RSIA Melinda</h3>
+                                        <h3 class="card-title"><i class="fas fa-hospital mr-2"></i>RSIA Melinda (Sync Lama)</h3>
                                         <div class="card-tools">
                                             <button type="button" class="btn btn-tool" onclick="window.testConnection('rsia_melinda')" id="btn-test-melinda" title="Test Connection">
                                                 <i class="fas fa-plug"></i>
@@ -3409,7 +3469,7 @@
                             <div class="col-md-6">
                                 <div class="card card-success">
                                     <div class="card-header">
-                                        <h3 class="card-title"><i class="fas fa-hospital mr-2"></i>RSUD Gambiran</h3>
+                                        <h3 class="card-title"><i class="fas fa-hospital mr-2"></i>RSUD Gambiran (Sync Lama)</h3>
                                         <div class="card-tools">
                                             <button type="button" class="btn btn-tool" onclick="window.testConnection('rsud_gambiran')" id="btn-test-gambiran" title="Test Connection">
                                                 <i class="fas fa-plug"></i>
