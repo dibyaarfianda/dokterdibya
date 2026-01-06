@@ -111,7 +111,7 @@ async function login(page, source) {
     await page.goto(config.loginUrl, { waitUntil: 'networkidle0', timeout: 60000 });
 
     // Wait for login form (increased timeout for slow networks)
-    await page.waitForSelector('input[name="email"], input[name="username"]', { timeout: 30000 });
+    await page.waitForSelector('input[name="email"], input[name="username"]', { timeout: 60000 });
 
     // Fill login form
     const emailInput = await page.$('input[name="email"]') || await page.$('input[name="username"]');
