@@ -176,6 +176,17 @@ async function searchPatientHistory(page, source, dateFrom, dateTo) {
             await delay(2000);
         }
 
+        // Convert DD/MM/YYYY to YYYY-MM-DD format for SIMRS date picker
+        const convertDate = (dateStr) => {
+            const parts = dateStr.split('/');
+            if (parts.length === 3) {
+                return `${parts[2]}-${parts[1]}-${parts[0]}`; // YYYY-MM-DD
+            }
+            return dateStr;
+        };
+        const fromFormatted = convertDate(dateFrom);
+        const toFormatted = convertDate(dateTo);
+
         // Set dates using JavaScript to ensure they're properly set
         await page.evaluate((from, to) => {
             const fromEl = document.querySelector('#tanggalMulai');
@@ -190,9 +201,9 @@ async function searchPatientHistory(page, source, dateFrom, dateTo) {
                 toEl.dispatchEvent(new Event('input', { bubbles: true }));
                 toEl.dispatchEvent(new Event('change', { bubbles: true }));
             }
-        }, dateFrom, dateTo);
+        }, fromFormatted, toFormatted);
 
-        console.log(`[Medify] Set date range: ${dateFrom} to ${dateTo}`);
+        console.log(`[Medify] Set date range: ${fromFormatted} to ${toFormatted}`);
         await delay(500);
 
         // Click the "Cari" button
