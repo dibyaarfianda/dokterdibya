@@ -7,6 +7,7 @@ const express = require('express');
 const router = express.Router();
 const { v4: uuidv4 } = require('uuid');
 const pool = require('../utils/database');
+const db = require('../db'); // Raw mysql pool for transactions
 const { verifyToken, requireRoles } = require('../middleware/auth');
 const activityLogger = require('../services/activityLogger');
 const medifyService = require('../services/medifyPuppeteerService');
@@ -1920,15 +1921,15 @@ router.post('/reverse-sync/:source', verifyToken, requireDocterOrAdmin, async (r
         }
 
         // Get ALL registered patients from our database for matching
-        const [allPatients] = await pool.query(
-            `SELECT p.id, p.full_name, p.birth_date, p.age, p.phone, p.whatsapp, p.address
+        const allPatients = await pool.query(
+            `SELECT p.id, p.full_name, p.birth_date, p.age, p.phone, p.whatsapp
              FROM patients p
              WHERE p.full_name IS NOT NULL`
         );
         console.log(`[ReverseSync] Loaded ${allPatients.length} registered patients for matching`);
 
         // Get existing DRDs at this location
-        const [existingDrds] = await pool.query(
+        const existingDrds = await pool.query(
             `SELECT DISTINCT patient_id, mr_id
              FROM sunday_clinic_records
              WHERE visit_location = ?`,
@@ -1976,7 +1977,7 @@ router.post('/reverse-sync/:source', verifyToken, requireDocterOrAdmin, async (r
                         birth_date: dibyaPatient.birth_date,
                         age: dibyaPatient.age,
                         whatsapp: dibyaPatient.whatsapp || dibyaPatient.phone,
-                        alamat: dibyaPatient.address
+                        alamat: '' // No address in patients table, use empty string
                     });
 
                     if (matchResult.matchCount > bestMatchCount) {
@@ -2093,7 +2094,7 @@ router.post('/reverse-sync/:source/create-drd', verifyToken, requireDocterOrAdmi
         }
 
         // Get patient info
-        const [patients] = await pool.query(
+        const patients = await pool.query(
             'SELECT id, full_name FROM patients WHERE id = ?',
             [patientId]
         );
@@ -2108,7 +2109,7 @@ router.post('/reverse-sync/:source/create-drd', verifyToken, requireDocterOrAdmi
         const patient = patients[0];
 
         // Check if already has DRD at this location
-        const [existing] = await pool.query(
+        const existing = await pool.query(
             `SELECT mr_id FROM sunday_clinic_records
              WHERE patient_id = ? AND visit_location = ? LIMIT 1`,
             [patientId, source]
@@ -2124,7 +2125,7 @@ router.post('/reverse-sync/:source/create-drd', verifyToken, requireDocterOrAdmi
         }
 
         // Generate new MR ID using atomic transaction
-        const conn = await pool.getConnection();
+        const conn = await db.getConnection();
         try {
             await conn.beginTransaction();
 
@@ -2206,17 +2207,19 @@ router.post('/reverse-sync/:source/import', verifyToken, requireDocterOrAdmin, a
         }
 
         // Save to medical records
-        const [record] = await pool.query(
+        const records = await pool.query(
             'SELECT id, patient_id FROM sunday_clinic_records WHERE mr_id = ?',
             [mrId]
         );
 
-        if (!record || record.length === 0) {
+        if (!records || records.length === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'Medical record not found'
             });
         }
+
+        const record = records[0];
 
         // Insert medical record sections
         const sections = cpptResult.sections || {};
@@ -2230,7 +2233,7 @@ router.post('/reverse-sync/:source/import', verifyToken, requireDocterOrAdmin, a
                      record_data = VALUES(record_data),
                      updated_by = VALUES(created_by),
                      updated_at = NOW()`,
-                    [record[0].id, sectionType, JSON.stringify(data), userId]
+                    [record.id, sectionType, JSON.stringify(data), userId]
                 );
             }
         }
