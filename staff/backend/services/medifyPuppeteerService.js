@@ -38,7 +38,6 @@ async function getBrowser() {
     if (!browserInstance || !browserInstance.isConnected()) {
         browserInstance = await puppeteer.launch({
             headless: 'new',
-            protocolTimeout: 180000, // 3 minutes for slow SIMRS pages
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
@@ -111,15 +110,8 @@ async function login(page, source) {
 
     await page.goto(config.loginUrl, { waitUntil: 'networkidle0', timeout: 60000 });
 
-    // Check if already logged in (redirected away from login page)
-    const currentUrl = page.url();
-    if (!currentUrl.includes('login')) {
-        console.log(`[Medify] Already logged in to ${config.name}`);
-        return true;
-    }
-
     // Wait for login form (increased timeout for slow networks)
-    await page.waitForSelector('input[name="email"], input[name="username"]', { timeout: 60000 });
+    await page.waitForSelector('input[name="email"], input[name="username"]', { timeout: 30000 });
 
     // Fill login form
     const emailInput = await page.$('input[name="email"]') || await page.$('input[name="username"]');
@@ -135,8 +127,8 @@ async function login(page, source) {
     ]);
 
     // Check if login was successful
-    const afterLoginUrl = page.url();
-    if (afterLoginUrl.includes('login')) {
+    const currentUrl = page.url();
+    if (currentUrl.includes('login')) {
         throw new Error('Login failed - check credentials');
     }
 
@@ -176,17 +168,6 @@ async function searchPatientHistory(page, source, dateFrom, dateTo) {
             await delay(2000);
         }
 
-        // Convert DD/MM/YYYY to YYYY-MM-DD format for SIMRS date picker
-        const convertDate = (dateStr) => {
-            const parts = dateStr.split('/');
-            if (parts.length === 3) {
-                return `${parts[2]}-${parts[1]}-${parts[0]}`; // YYYY-MM-DD
-            }
-            return dateStr;
-        };
-        const fromFormatted = convertDate(dateFrom);
-        const toFormatted = convertDate(dateTo);
-
         // Set dates using JavaScript to ensure they're properly set
         await page.evaluate((from, to) => {
             const fromEl = document.querySelector('#tanggalMulai');
@@ -201,9 +182,9 @@ async function searchPatientHistory(page, source, dateFrom, dateTo) {
                 toEl.dispatchEvent(new Event('input', { bubbles: true }));
                 toEl.dispatchEvent(new Event('change', { bubbles: true }));
             }
-        }, fromFormatted, toFormatted);
+        }, dateFrom, dateTo);
 
-        console.log(`[Medify] Set date range: ${fromFormatted} to ${toFormatted}`);
+        console.log(`[Medify] Set date range: ${dateFrom} to ${dateTo}`);
         await delay(500);
 
         // Click the "Cari" button
@@ -226,17 +207,16 @@ async function searchPatientHistory(page, source, dateFrom, dateTo) {
         console.log('[Medify] Could not set date filter:', e.message);
     }
 
-    // Wait for table to update and AJAX to complete
-    await delay(5000);
+    // Wait for table to update
+    await delay(2000);
 
     // Extract patient list from table - ONLY Dr. Dibya's patients
     const patients = await page.evaluate((prefix) => {
         const rows = document.querySelectorAll('table tbody tr');
         const results = [];
 
-        rows.forEach((row, rowIdx) => {
+        rows.forEach(row => {
             const cells = row.querySelectorAll('td');
-
             if (cells.length >= 6) {
                 // Get patient name from PASIEN column
                 const patientCell = cells[2]; // Usually 3rd column
