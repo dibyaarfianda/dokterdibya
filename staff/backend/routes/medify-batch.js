@@ -1897,6 +1897,8 @@ router.post('/reverse-sync/:source', verifyToken, requireDocterOrAdmin, async (r
         const browser = await medifyService.getBrowser();
         const page = await browser.newPage();
         await page.setViewport({ width: 1920, height: 1080 });
+        page.setDefaultTimeout(180000); // 3 minutes for slow SIMRS pages
+        page.setDefaultNavigationTimeout(180000);
 
         // Login to SIMRS
         await medifyService.login(page, source);

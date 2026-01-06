@@ -38,6 +38,7 @@ async function getBrowser() {
     if (!browserInstance || !browserInstance.isConnected()) {
         browserInstance = await puppeteer.launch({
             headless: 'new',
+            protocolTimeout: 180000, // 3 minutes for slow SIMRS pages
             args: [
                 '--no-sandbox',
                 '--disable-setuid-sandbox',
@@ -110,6 +111,13 @@ async function login(page, source) {
 
     await page.goto(config.loginUrl, { waitUntil: 'networkidle0', timeout: 60000 });
 
+    // Check if already logged in (redirected away from login page)
+    const currentUrl = page.url();
+    if (!currentUrl.includes('login')) {
+        console.log(`[Medify] Already logged in to ${config.name}`);
+        return true;
+    }
+
     // Wait for login form (increased timeout for slow networks)
     await page.waitForSelector('input[name="email"], input[name="username"]', { timeout: 60000 });
 
@@ -127,8 +135,8 @@ async function login(page, source) {
     ]);
 
     // Check if login was successful
-    const currentUrl = page.url();
-    if (currentUrl.includes('login')) {
+    const afterLoginUrl = page.url();
+    if (afterLoginUrl.includes('login')) {
         throw new Error('Login failed - check credentials');
     }
 
@@ -207,16 +215,17 @@ async function searchPatientHistory(page, source, dateFrom, dateTo) {
         console.log('[Medify] Could not set date filter:', e.message);
     }
 
-    // Wait for table to update
-    await delay(2000);
+    // Wait for table to update and AJAX to complete
+    await delay(5000);
 
     // Extract patient list from table - ONLY Dr. Dibya's patients
     const patients = await page.evaluate((prefix) => {
         const rows = document.querySelectorAll('table tbody tr');
         const results = [];
 
-        rows.forEach(row => {
+        rows.forEach((row, rowIdx) => {
             const cells = row.querySelectorAll('td');
+
             if (cells.length >= 6) {
                 // Get patient name from PASIEN column
                 const patientCell = cells[2]; // Usually 3rd column
