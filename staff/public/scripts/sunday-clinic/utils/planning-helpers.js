@@ -592,9 +592,21 @@ function showTerapiModal(obatList) {
     // Store obat list for search
     window.availableObatList = obatList;
 
+    // Track selected obat IDs (persists across search/filter)
+    const selectedObatIds = new Set();
+
     // Render function - called on initial load and search filter
     function renderObatTable(filterText = '') {
         const filter = filterText.toLowerCase();
+
+        // Save current state of ALL visible checkboxes before clearing
+        document.querySelectorAll('.obat-checkbox').forEach(cb => {
+            if (cb.checked) {
+                selectedObatIds.add(cb.dataset.obatId);
+            } else {
+                selectedObatIds.delete(cb.dataset.obatId);
+            }
+        });
 
         // Clear existing content
         tbody.innerHTML = '';
@@ -608,11 +620,14 @@ function showTerapiModal(obatList) {
 
             if (!matchesFilter) return;
 
+            // Check if this item was previously selected
+            const isChecked = selectedObatIds.has(String(item.id || ''));
+
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>
                     <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input obat-checkbox" id="obat-${index}" data-obat-name="${escapeHtml(item.name || '')}" data-obat-id="${item.id || ''}">
+                        <input type="checkbox" class="custom-control-input obat-checkbox" id="obat-${index}" data-obat-name="${escapeHtml(item.name || '')}" data-obat-id="${item.id || ''}" ${isChecked ? 'checked' : ''}>
                         <label class="custom-control-label" for="obat-${index}"></label>
                     </div>
                 </td>
