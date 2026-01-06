@@ -110,12 +110,33 @@ async function login(page, source) {
 
     await page.goto(config.loginUrl, { waitUntil: 'networkidle0', timeout: 60000 });
 
-    // Wait for login form (increased timeout for slow networks)
-    await page.waitForSelector('input[name="email"], input[name="username"]', { timeout: 30000 });
+    // Check if already logged in (redirected away from login page)
+    const currentUrl = page.url();
+    if (!currentUrl.includes('login')) {
+        console.log(`[Medify] Already logged in to ${config.name}`);
+        return true;
+    }
+
+    // Try to find login form, but don't fail if not found (might be logged in)
+    try {
+        await page.waitForSelector('input[name="email"], input[name="username"]', { timeout: 10000 });
+    } catch (e) {
+        // Check again if we're logged in
+        const urlNow = page.url();
+        if (!urlNow.includes('login')) {
+            console.log(`[Medify] Already logged in to ${config.name} (no login form found)`);
+            return true;
+        }
+        throw new Error(`Login page not loading properly: ${e.message}`);
+    }
 
     // Fill login form
     const emailInput = await page.$('input[name="email"]') || await page.$('input[name="username"]');
     const passwordInput = await page.$('input[name="password"]');
+
+    if (!emailInput || !passwordInput) {
+        throw new Error('Login form fields not found');
+    }
 
     await emailInput.type(credentials.username, { delay: 50 });
     await passwordInput.type(credentials.password, { delay: 50 });
@@ -127,8 +148,8 @@ async function login(page, source) {
     ]);
 
     // Check if login was successful
-    const currentUrl = page.url();
-    if (currentUrl.includes('login')) {
+    const finalUrl = page.url();
+    if (finalUrl.includes('login')) {
         throw new Error('Login failed - check credentials');
     }
 
