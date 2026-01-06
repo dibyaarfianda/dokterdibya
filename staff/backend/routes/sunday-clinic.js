@@ -1174,10 +1174,8 @@ router.post('/billing/:mrId/obat', verifyToken, async (req, res, next) => {
             billingId = billingRows[0].id;
         }
 
-        await connection.query(
-            `DELETE FROM sunday_clinic_billing_items WHERE billing_id = ? AND item_type = 'obat'`,
-            [billingId]
-        );
+        // NOTE: No longer deleting existing items - now APPENDING new items
+        // This allows users to add medications incrementally without losing previous selections
 
         for (const rawItem of items) {
             const name = typeof rawItem.name === 'string' ? rawItem.name.trim() : '';
