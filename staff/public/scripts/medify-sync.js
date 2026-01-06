@@ -253,32 +253,27 @@ function renderHistoryTable(history) {
 }
 
 /**
- * Start sync for a source
+ * Start sync for a source (FAST SYNC - scrapes SIMRS once, matches all)
  */
 async function startSync(source) {
     const btn = document.getElementById(`btn-sync-${source === 'rsia_melinda' ? 'melinda' : 'gambiran'}`);
     const statusContainer = document.getElementById('sync-status-container');
     const progressContainer = document.getElementById('batch-progress');
 
-    // Get date range from inputs
-    const dateStartInput = document.getElementById('medify-date-start');
-    const dateEndInput = document.getElementById('medify-date-end');
+    // Get date from input (fast sync uses single date)
+    const dateInput = document.getElementById('medify-date-start');
+    const targetDate = dateInput?.value; // YYYY-MM-DD format
 
-    // Convert YYYY-MM-DD to DD-MM-YYYY for API
-    const convertDate = (dateStr) => {
-        if (!dateStr) return null;
-        const [year, month, day] = dateStr.split('-');
-        return `${day}-${month}-${year}`;
-    };
+    if (!targetDate) {
+        showToast('Pilih tanggal terlebih dahulu', 'warning');
+        return;
+    }
 
-    const dateStart = convertDate(dateStartInput?.value);
-    const dateEnd = convertDate(dateEndInput?.value);
+    const dateText = new Date(targetDate).toLocaleDateString('id-ID', {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    });
 
-    const dateRangeText = dateStart && dateEnd
-        ? ` (${dateStartInput.value} s/d ${dateEndInput.value})`
-        : ' (7 hari terakhir)';
-
-    if (!confirm(`Mulai sync data dari ${getSourceName(source)}${dateRangeText}?`)) {
+    if (!confirm(`Mulai FAST SYNC dari ${getSourceName(source)}?\n\nTanggal: ${dateText}\n\nProses akan:\n1. Login ke SIMRS sekali\n2. Ambil semua pasien Dr. Dibya pada tanggal tersebut\n3. Cocokkan dengan database kita\n4. Import CPPT untuk pasien yang cocok`)) {
         return;
     }
 
@@ -291,43 +286,43 @@ async function startSync(source) {
         statusContainer.innerHTML = `
             <div class="alert alert-info">
                 <i class="fas fa-spinner fa-spin mr-2"></i>
-                <strong>Memulai sync ${getSourceName(source)}...</strong>
-                <p class="mb-0 mt-2">Menghubungkan ke SIMRS...</p>
+                <strong>Fast Sync ${getSourceName(source)}...</strong>
+                <p class="mb-0 mt-2">Login ke SIMRS & mencari pasien tanggal ${dateText}...</p>
             </div>
         `;
     }
 
     try {
-        const data = await apiRequest(`/medify-batch/sync/${source}`, {
+        const data = await apiRequest(`/medify-batch/fast-sync/${source}`, {
             method: 'POST',
-            body: JSON.stringify({ dateStart, dateEnd })
+            body: JSON.stringify({ date: targetDate })
         });
 
         if (data.success) {
             currentBatchId = data.batchId;
-            showToast(`Sync dimulai untuk ${data.count} pasien`, 'success');
+            showToast('Fast Sync dimulai - scraping SIMRS...', 'success');
 
-            // Show progress bar
-            if (progressContainer && data.count > 0) {
+            // Show progress UI for fast sync
+            if (progressContainer) {
                 progressContainer.style.display = 'block';
                 progressContainer.innerHTML = `
                     <div class="card card-info">
                         <div class="card-header">
                             <h3 class="card-title">
-                                <i class="fas fa-sync-alt fa-spin mr-2"></i>
-                                Sync Progress - ${getSourceName(source)}
+                                <i class="fas fa-bolt mr-2"></i>
+                                Fast Sync - ${getSourceName(source)}
                             </h3>
                         </div>
                         <div class="card-body">
                             <div class="progress mb-3" style="height: 30px;">
-                                <div class="progress-bar progress-bar-striped progress-bar-animated bg-info"
-                                     role="progressbar" style="width: 0%"
+                                <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning"
+                                     role="progressbar" style="width: 100%"
                                      id="sync-progress-bar">
-                                    0/${data.count}
+                                    Scraping SIMRS...
                                 </div>
                             </div>
                             <p class="mb-0" id="sync-current-patient">
-                                <i class="fas fa-hourglass-start mr-2"></i>Menunggu login ke SIMRS...
+                                <i class="fas fa-search mr-2"></i>Mencari pasien di SIMRS dan mencocokkan dengan database...
                             </p>
                         </div>
                     </div>
@@ -335,7 +330,7 @@ async function startSync(source) {
             }
 
             // Keep button disabled while syncing
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Syncing...';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Fast Syncing...';
 
             // Start polling for status
             if (!refreshInterval) {
