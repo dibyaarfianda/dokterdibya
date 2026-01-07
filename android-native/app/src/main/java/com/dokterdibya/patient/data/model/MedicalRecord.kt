@@ -52,7 +52,7 @@ data class LabListResponse(
 data class PatientDocument(
     val id: Int,
     @SerializedName("document_type")
-    val documentType: String, // invoice, etiket, resume_medis, usg_2d, usg_4d
+    val documentType: String, // invoice, etiket, resume_medis, usg_2d, usg_4d, lab_result
     val title: String?,
     val description: String?,
     @SerializedName("file_url")
@@ -72,7 +72,9 @@ data class PatientDocument(
     @SerializedName("location_name")
     val locationName: String?,
     @SerializedName("visit_date")
-    val visitDate: String?
+    val visitDate: String?,
+    @SerializedName("is_read")
+    val isRead: Int = 1  // 0 = unread (new), 1 = read
 )
 
 data class DocumentListResponse(

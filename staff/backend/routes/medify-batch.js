@@ -16,111 +16,10 @@ const requireDocterOrAdmin = requireRoles('dokter', 'admin');
 
 /**
  * POST /api/medify-batch/sync/:source
- * Start a batch sync for a specific SIMRS source
+ * Sync medical records from SIMRS for a specific date
+ * Scrapes SIMRS once, matches against ALL patients in DB
  */
 router.post('/sync/:source', verifyToken, requireDocterOrAdmin, async (req, res) => {
-    const { source } = req.params;
-    const { dateStart, dateEnd } = req.body; // Optional date range for SIMRS search
-    const userId = req.user.id;
-    const userName = req.user.name;
-
-    try {
-        // Validate source
-        if (!['rsia_melinda', 'rsud_gambiran'].includes(source)) {
-            return res.status(400).json({
-                success: false,
-                message: 'Invalid source. Must be rsia_melinda or rsud_gambiran'
-            });
-        }
-
-        // Check if there's already a running sync for this source
-        const running = await pool.query(
-            `SELECT id FROM medify_import_jobs
-             WHERE simrs_source = ? AND status IN ('pending', 'processing')
-             LIMIT 1`,
-            [source]
-        );
-
-        if (running && running.length > 0) {
-            return res.status(409).json({
-                success: false,
-                message: 'A sync is already in progress for this source'
-            });
-        }
-
-        // Generate batch ID
-        const batchId = uuidv4();
-
-        // Find ALL patients who need syncing (match against SIMRS for chosen date)
-        const patients = await pool.query(
-            `SELECT p.id, p.full_name, p.birth_date, p.age, p.whatsapp as alamat
-             FROM patients p
-             WHERE p.full_name IS NOT NULL
-               AND (p.last_medify_sync IS NULL
-                    OR p.last_medify_sync < DATE_SUB(NOW(), INTERVAL 7 DAY))
-             ORDER BY p.created_at DESC
-             LIMIT 100`
-        );
-
-        if (!patients || patients.length === 0) {
-            return res.json({
-                success: true,
-                message: 'No patients need syncing',
-                batchId,
-                count: 0
-            });
-        }
-
-        // Create job entries for each patient
-        const values = patients.map(p => [
-            batchId,
-            p.id,
-            p.full_name,
-            p.age || calculateAge(p.birth_date),
-            source,
-            'pending',
-            userId
-        ]);
-
-        await pool.query(
-            `INSERT INTO medify_import_jobs
-             (batch_id, patient_id, patient_name, patient_age, simrs_source, status, created_by)
-             VALUES ?`,
-            [values]
-        );
-
-        // Log activity
-        const dateRangeInfo = dateStart && dateEnd ? `, Date: ${dateStart} to ${dateEnd}` : '';
-        await activityLogger.log(userId, userName, 'MEDIFY Sync Started',
-            `Source: ${source}, Batch: ${batchId}, Patients: ${patients.length}${dateRangeInfo}`);
-
-        // Start background processing (async - don't await)
-        processSync(batchId, source, { dateStart, dateEnd }).catch(err => {
-            console.error('[Medify] Sync error:', err);
-        });
-
-        res.json({
-            success: true,
-            message: `Sync started for ${patients.length} patients`,
-            batchId,
-            count: patients.length
-        });
-
-    } catch (error) {
-        console.error('[Medify] Error starting sync:', error);
-        res.status(500).json({
-            success: false,
-            message: error.message
-        });
-    }
-});
-
-/**
- * POST /api/medify-batch/fast-sync/:source
- * FAST SYNC - Scrapes SIMRS once, matches against ALL patients in DB
- * Much faster than old sync which searched SIMRS per patient
- */
-router.post('/fast-sync/:source', verifyToken, requireDocterOrAdmin, async (req, res) => {
     const { source } = req.params;
     const { date } = req.body; // Required: target date (YYYY-MM-DD)
     const userId = req.user.id;
@@ -153,7 +52,7 @@ router.post('/fast-sync/:source', verifyToken, requireDocterOrAdmin, async (req,
         if (running && running.length > 0) {
             return res.status(409).json({
                 success: false,
-                message: 'A sync is already in progress for this source'
+                message: 'Sync sedang berjalan untuk source ini'
             });
         }
 
@@ -161,22 +60,22 @@ router.post('/fast-sync/:source', verifyToken, requireDocterOrAdmin, async (req,
         const batchId = uuidv4();
 
         // Log activity
-        await activityLogger.log(userId, userName, 'MEDIFY Fast Sync Started',
+        await activityLogger.log(userId, userName, 'MEDIFY Sync Started',
             `Source: ${source}, Batch: ${batchId}, Date: ${date}`);
 
         // Start background processing (async - don't await)
-        processFastSync(batchId, source, date, userId).catch(err => {
-            console.error('[Medify] Fast sync error:', err);
+        processSync(batchId, source, date, userId).catch(err => {
+            console.error('[Medify] Sync error:', err);
         });
 
         res.json({
             success: true,
-            message: `Fast sync started for ${date}`,
+            message: `Sync dimulai untuk tanggal ${date}`,
             batchId
         });
 
     } catch (error) {
-        console.error('[Medify] Error starting fast sync:', error);
+        console.error('[Medify] Error starting sync:', error);
         res.status(500).json({
             success: false,
             message: error.message
@@ -185,14 +84,25 @@ router.post('/fast-sync/:source', verifyToken, requireDocterOrAdmin, async (req,
 });
 
 /**
- * Process fast sync in background
+ * Process sync in background
  * 1. Login once
  * 2. Scrape SIMRS once for the date
  * 3. Match each SIMRS patient against ALL patients in DB
  * 4. Extract CPPT only for matches
  */
-async function processFastSync(batchId, source, targetDate, userId) {
-    console.log(`[Medify] Starting fast sync for ${source} on ${targetDate}`);
+async function processSync(batchId, source, targetDate, userId) {
+    console.log(`[Medify] Starting sync for ${source} on ${targetDate}`);
+
+    // Helper to emit progress
+    const emitProgress = (phase, data) => {
+        if (global.io) {
+            global.io.emit('medify_progress', {
+                batchId,
+                phase,
+                ...data
+            });
+        }
+    };
 
     const browser = await medifyService.getBrowser();
     const page = await browser.newPage();
@@ -203,18 +113,23 @@ async function processFastSync(batchId, source, targetDate, userId) {
         page.setDefaultTimeout(60000);
 
         // Step 1: Login once
+        emitProgress('login', { message: 'Logging in to SIMRS...' });
         console.log(`[Medify] Logging in to ${source}...`);
         await medifyService.login(page, source);
         console.log(`[Medify] Login successful`);
+        emitProgress('login', { message: 'Login successful', done: true });
 
         // Step 2: Scrape history for target date (SIMRS uses YYYY-MM-DD format)
+        emitProgress('scrape', { message: 'Searching patient history...' });
         console.log(`[Medify] Searching history for ${targetDate}...`);
         const simrsPatients = await medifyService.searchPatientHistory(page, source, targetDate, targetDate);
         console.log(`[Medify] Found ${simrsPatients.length} Dr. Dibya patients in SIMRS`);
+        emitProgress('scrape', { message: `Found ${simrsPatients.length} patients in SIMRS`, total: simrsPatients.length, done: true });
 
         if (simrsPatients.length === 0) {
             await page.close();
             console.log(`[Medify] No patients found in SIMRS for ${targetDate}`);
+            emitProgress('complete', { message: 'No patients found', matches: 0, noMatches: 0 });
             return;
         }
 
@@ -236,12 +151,18 @@ async function processFastSync(batchId, source, targetDate, userId) {
         };
 
         // Step 4: For each SIMRS patient, find matching DB patient
+        emitProgress('matching', { message: 'Mencocokkan pasien...', total: simrsPatients.length, current: 0 });
         const matches = [];
         const noMatches = [];
 
         for (let i = 0; i < simrsPatients.length; i++) {
             const simrsPatient = simrsPatients[i];
             console.log(`[Medify] Processing ${i + 1}/${simrsPatients.length}: ${simrsPatient.name}`);
+            emitProgress('matching', {
+                message: `Mencocokkan: ${simrsPatient.name}`,
+                total: simrsPatients.length,
+                current: i + 1
+            });
 
             // Quick name filter - find potential matches
             const simrsNameNorm = normalizeName(simrsPatient.name);
@@ -296,6 +217,13 @@ async function processFastSync(batchId, source, targetDate, userId) {
         }
 
         console.log(`[Medify] Matching complete: ${matches.length} matches, ${noMatches.length} no matches`);
+        emitProgress('matching', {
+            message: `Selesai: ${matches.length} pasien cocok`,
+            total: simrsPatients.length,
+            current: simrsPatients.length,
+            matches: matches.length,
+            done: true
+        });
 
         // Step 5: Create import jobs only for matches
         if (matches.length > 0) {
@@ -324,10 +252,30 @@ async function processFastSync(batchId, source, targetDate, userId) {
         }
 
         await page.close();
-        console.log(`[Medify] Fast sync complete for ${source}`);
+        console.log(`[Medify] Sync complete for ${source}`);
+
+        // Emit completion
+        emitProgress('complete', { message: 'Sync selesai' });
+
+        // Get stats and emit sync_complete
+        const stats = await pool.query(`
+            SELECT
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) as success,
+                SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+                SUM(CASE WHEN status = 'skipped' THEN 1 ELSE 0 END) as skipped
+            FROM medify_import_jobs WHERE batch_id = ?
+        `, [batchId]);
+
+        if (global.io) {
+            global.io.emit('medify_sync_complete', {
+                batchId,
+                stats: stats[0] || { total: 0, success: 0, failed: 0, skipped: 0 }
+            });
+        }
 
     } catch (error) {
-        console.error(`[Medify] Fast sync error:`, error);
+        console.error(`[Medify] Sync error:`, error);
         await page.close();
 
         // Mark any pending jobs as failed
@@ -337,6 +285,15 @@ async function processFastSync(batchId, source, targetDate, userId) {
              WHERE batch_id = ? AND status = 'pending'`,
             [error.message, batchId]
         );
+
+        // Emit error
+        if (global.io) {
+            global.io.emit('medify_sync_complete', {
+                batchId,
+                error: error.message,
+                stats: { total: 0, success: 0, failed: 0, skipped: 0 }
+            });
+        }
     }
 }
 
@@ -353,7 +310,26 @@ async function processSyncJobs(batchId, source, page) {
 
     console.log(`[Medify] Processing ${jobs.length} CPPT extractions...`);
 
-    for (const job of jobs) {
+    // Emit progress helper for this phase
+    const emitExtractProgress = (data) => {
+        if (global.io) {
+            global.io.emit('medify_progress', {
+                batchId,
+                phase: 'extract',
+                ...data
+            });
+        }
+    };
+
+    emitExtractProgress({ message: 'Mengekstrak rekam medis...', total: jobs.length, current: 0 });
+
+    for (let i = 0; i < jobs.length; i++) {
+        const job = jobs[i];
+        emitExtractProgress({
+            message: `Ekstrak: ${job.patient_name}`,
+            total: jobs.length,
+            current: i + 1
+        });
         try {
             // Mark as processing
             await pool.query(
@@ -376,17 +352,26 @@ async function processSyncJobs(batchId, source, page) {
                 continue;
             }
 
-            // Save CPPT data
+            // Parse CPPT with AI
+            console.log(`[Medify] Parsing CPPT for ${job.patient_name}...`);
+            const aiParseResult = await parseWithAI(cpptResult.rawText, 'obstetri');
+
+            // Save to medical record (creates DRD if needed)
+            console.log(`[Medify] Saving medical record for ${job.patient_name}...`);
+            const recordsSaved = await saveMedicalRecord(job.patient_id, source, aiParseResult);
+
+            // Save CPPT data and update status
             await pool.query(
                 `UPDATE medify_import_jobs
                  SET status = 'success',
                      cppt_data = ?,
+                     records_imported = ?,
                      completed_at = NOW()
                  WHERE id = ?`,
-                [JSON.stringify(cpptResult), job.id]
+                [JSON.stringify(cpptResult), recordsSaved, job.id]
             );
 
-            console.log(`[Medify] CPPT extracted for ${job.patient_name}`);
+            console.log(`[Medify] CPPT extracted and saved for ${job.patient_name} (${recordsSaved} sections)`);
 
         } catch (error) {
             console.error(`[Medify] CPPT extraction failed for ${job.patient_name}:`, error.message);
@@ -1117,424 +1102,6 @@ async function generateAndPublishResume(patientId, mrId) {
     } catch (error) {
         console.error(`[Medify] Error generating/publishing resume:`, error);
         return false;
-    }
-}
-
-/**
- * Background sync processor
- * @param {string} batchId - Batch ID
- * @param {string} source - SIMRS source (rsia_melinda or rsud_gambiran)
- * @param {Object} options - Optional parameters
- * @param {string} options.dateStart - Start date (DD-MM-YYYY format)
- * @param {string} options.dateEnd - End date (DD-MM-YYYY format)
- */
-async function processSync(batchId, source, options = {}) {
-    console.log(`[Medify] Starting sync for batch ${batchId}`);
-
-    const browser = await medifyService.getBrowser();
-    let page = null;
-    let isLoggedIn = false;
-
-    try {
-        // Get all pending jobs for this batch
-        const jobs = await pool.query(
-            `SELECT id, patient_id, patient_name, patient_age
-             FROM medify_import_jobs
-             WHERE batch_id = ? AND status = 'pending'
-             ORDER BY id`,
-            [batchId]
-        );
-
-        if (!jobs || jobs.length === 0) {
-            console.log(`[Medify] No pending jobs for batch ${batchId}`);
-            return;
-        }
-
-        page = await browser.newPage();
-        await page.setViewport({ width: 1920, height: 1080 });
-
-        // Login once
-        await medifyService.login(page, source);
-        isLoggedIn = true;
-
-        // Process each job
-        const totalJobs = jobs.length;
-        let processedCount = 0;
-
-        for (const job of jobs) {
-            processedCount++;
-            console.log(`[Medify] Processing job ${processedCount}/${totalJobs}: ${job.patient_name}`);
-
-            try {
-                // Update status to processing
-                await pool.query(
-                    `UPDATE medify_import_jobs SET status = 'processing' WHERE id = ?`,
-                    [job.id]
-                );
-
-                // Emit progress via Socket.IO if available
-                if (global.io) {
-                    global.io.emit('medify_progress', {
-                        batchId,
-                        jobId: job.id,
-                        patientName: job.patient_name,
-                        status: 'processing',
-                        current: processedCount,
-                        total: totalJobs
-                    });
-                }
-
-                // Get patient details from database
-                const patientResult = await pool.query(
-                    `SELECT id, full_name, birth_date, age, whatsapp as phone
-                     FROM patients WHERE id = ?`,
-                    [job.patient_id]
-                );
-
-                if (!patientResult || patientResult.length === 0) {
-                    throw new Error('Patient not found');
-                }
-                const patient = patientResult[0];
-
-                // Search for patient in SIMRS history
-                // Navigate to history page and set date filter first
-                const config = medifyService.SIMRS_CONFIG[source];
-                await page.goto(config.historyUrl, { waitUntil: 'networkidle0', timeout: 60000 });
-
-                // Wait for table
-                await page.waitForSelector('table', { timeout: 15000 });
-                await medifyService.delay(2000);
-
-                // Set date filter - use provided dates or default to last 7 days
-                const today = new Date();
-                const sevenDaysAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-
-                // Format as DD-MM-YYYY
-                const formatDate = (d) => {
-                    const day = String(d.getDate()).padStart(2, '0');
-                    const month = String(d.getMonth() + 1).padStart(2, '0');
-                    const year = d.getFullYear();
-                    return `${day}-${month}-${year}`;
-                };
-
-                // Use provided dates or defaults
-                const dateFrom = options.dateStart || formatDate(sevenDaysAgo);
-                const dateTo = options.dateEnd || formatDate(today);
-                console.log(`[Medify] Setting date range: ${dateFrom} to ${dateTo}`);
-
-                // Click Reset first to clear any previous filters
-                await page.evaluate(() => {
-                    const buttons = document.querySelectorAll('button.btn-info');
-                    for (const btn of buttons) {
-                        if (btn.innerText.includes('Reset')) {
-                            btn.click();
-                            return;
-                        }
-                    }
-                });
-                await medifyService.delay(2000);
-
-                // Select dr. Dibya as DPJP filter (for both Gambiran and any other SIMRS)
-                const dpjpResult = await page.evaluate(() => {
-                    const selects = document.querySelectorAll('select');
-                    for (const sel of selects) {
-                        const label = sel.closest('.form-group, .col, div')?.querySelector('label');
-                        const labelText = label?.innerText?.toLowerCase() || '';
-                        const selId = sel.id?.toLowerCase() || '';
-                        const selName = sel.name?.toLowerCase() || '';
-
-                        if (labelText.includes('dokter') || labelText.includes('dpjp') ||
-                            selId.includes('dokter') || selId.includes('dpjp') ||
-                            selName.includes('dokter') || selName.includes('dpjp')) {
-
-                            const options = sel.querySelectorAll('option');
-                            for (const opt of options) {
-                                if (opt.innerText.toLowerCase().includes('dibya')) {
-                                    sel.value = opt.value;
-                                    sel.dispatchEvent(new Event('change', { bubbles: true }));
-                                    if (window.$ && $(sel).trigger) {
-                                        $(sel).trigger('change');
-                                    }
-                                    return { found: true, selected: opt.innerText.trim(), value: opt.value };
-                                }
-                            }
-                        }
-                    }
-                    return { found: false };
-                });
-                if (dpjpResult.found) {
-                    console.log(`[Medify] Selected DPJP: ${dpjpResult.selected}`);
-                }
-                await medifyService.delay(1000);
-
-                // Set date range
-                await page.evaluate((from, to) => {
-                    const fromEl = document.querySelector('#tanggalMulai');
-                    const toEl = document.querySelector('#tanggalAkhir');
-                    if (fromEl) {
-                        fromEl.value = from;
-                        fromEl.dispatchEvent(new Event('input', { bubbles: true }));
-                        fromEl.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
-                    if (toEl) {
-                        toEl.value = to;
-                        toEl.dispatchEvent(new Event('input', { bubbles: true }));
-                        toEl.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
-                }, dateFrom, dateTo);
-                await medifyService.delay(500);
-
-                // Change DataTable to show ALL rows before searching
-                await page.evaluate(() => {
-                    const lengthSelect = document.querySelector('select[name="historiTable_length"]');
-                    if (lengthSelect) {
-                        const allOption = Array.from(lengthSelect.options).find(o => o.value === '-1' || o.text.toLowerCase().includes('all'));
-                        if (allOption) {
-                            lengthSelect.value = allOption.value;
-                        } else {
-                            lengthSelect.value = lengthSelect.options[lengthSelect.options.length - 1].value;
-                        }
-                        lengthSelect.dispatchEvent(new Event('change', { bubbles: true }));
-                    }
-                });
-                await medifyService.delay(2000);
-
-                // Click search button
-                await page.evaluate(() => {
-                    const buttons = document.querySelectorAll('button.btn-primary');
-                    for (const btn of buttons) {
-                        if (btn.innerText.includes('Cari')) {
-                            btn.click();
-                            return;
-                        }
-                    }
-                });
-                await medifyService.delay(5000); // Wait longer for all rows to load
-
-                // Get ALL patients from the table (don't use DataTable search - it doesn't work reliably)
-                const allPatients = await page.evaluate(() => {
-                    const rows = document.querySelectorAll('table tbody tr');
-                    const results = [];
-
-                    rows.forEach(row => {
-                        const style = window.getComputedStyle(row);
-                        if (style.display === 'none') return;
-
-                        const cells = row.querySelectorAll('td');
-                        if (cells.length >= 6) {
-                            // Cell 2 contains: "NUMBER\nNAME\nGender, Age"
-                            const patientCell = cells[2];
-                            const cellText = patientCell?.innerText?.trim() || '';
-                            // Extract just the name (second line)
-                            const lines = cellText.split('\n');
-                            const patientName = lines.length >= 2 ? lines[1].trim() : cellText;
-
-                            const dateCell = cells[5];
-                            const visitDate = dateCell?.innerText?.trim() || '';
-
-                            const actionCell = cells[cells.length - 1];
-                            const actionLink = actionCell?.querySelector('a[href*="/kasus/"]');
-                            let medId = null;
-
-                            if (actionLink) {
-                                const href = actionLink.getAttribute('href');
-                                const match = href.match(/\/kasus\/([\w]+)/);
-                                if (match) {
-                                    medId = match[1];
-                                }
-                            }
-
-                            if (patientName && medId) {
-                                results.push({
-                                    name: patientName,
-                                    medId: medId,
-                                    visitDate: visitDate
-                                });
-                            }
-                        }
-                    });
-
-                    return results;
-                });
-
-                // Filter to find patients matching the search name (case insensitive)
-                // Use ALL words (min 2 chars) and require ALL to match
-                const searchName = job.patient_name.toLowerCase().trim();
-                const searchWords = searchName.split(/\s+/).filter(w => w.length >= 2);
-
-                const matchingPatients = allPatients.filter(p => {
-                    const pName = p.name.toLowerCase();
-                    // Require ALL search words to match
-                    return searchWords.every(word => pName.includes(word));
-                });
-
-                console.log(`[Medify] Found ${allPatients.length} patients in table, ${matchingPatients.length} match "${job.patient_name}":`);
-                if (matchingPatients.length > 0) {
-                    console.log(`[Medify] Matches:`, matchingPatients.slice(0, 3).map(p => `${p.name} (${p.medId})`));
-                }
-
-                if (matchingPatients.length === 0) {
-                    // No match found
-                    await pool.query(
-                        `UPDATE medify_import_jobs
-                         SET status = 'skipped',
-                             simrs_patient_found = FALSE,
-                             error_message = 'Patient not found in SIMRS',
-                             completed_at = NOW()
-                         WHERE id = ?`,
-                        [job.id]
-                    );
-
-                    // Emit skipped progress
-                    if (global.io) {
-                        global.io.emit('medify_progress', {
-                            batchId,
-                            jobId: job.id,
-                            patientName: job.patient_name,
-                            status: 'skipped',
-                            error: 'Patient not found in SIMRS',
-                            current: processedCount,
-                            total: totalJobs
-                        });
-                    }
-                    console.log(`[Medify] Skipped: ${job.patient_name} - not found in SIMRS`);
-                    continue;
-                }
-
-                // Get identity for first match to verify
-                const firstMatch = matchingPatients[0];
-                const identity = await medifyService.extractPatientIdentity(page, source, firstMatch.medId);
-
-                // Combine identity with match info
-                const simrsPatient = {
-                    ...firstMatch,
-                    ...identity
-                };
-
-                // Check matching factors
-                const matchResult = medifyService.countMatchingFactors(simrsPatient, patient);
-
-                if (matchResult.matchCount < 3) {
-                    const errorMsg = `Only ${matchResult.matchCount} matching factors: ${matchResult.factors.join(', ')}`;
-                    await pool.query(
-                        `UPDATE medify_import_jobs
-                         SET status = 'skipped',
-                             simrs_patient_found = TRUE,
-                             simrs_patient_id = ?,
-                             error_message = ?,
-                             completed_at = NOW()
-                         WHERE id = ?`,
-                        [firstMatch.medId, errorMsg, job.id]
-                    );
-
-                    // Emit skipped progress
-                    if (global.io) {
-                        global.io.emit('medify_progress', {
-                            batchId,
-                            jobId: job.id,
-                            patientName: job.patient_name,
-                            status: 'skipped',
-                            error: errorMsg,
-                            current: processedCount,
-                            total: totalJobs
-                        });
-                    }
-                    console.log(`[Medify] Skipped: ${job.patient_name} - ${errorMsg}`);
-                    continue;
-                }
-
-                // Extract CPPT
-                const cpptResult = await medifyService.extractCPPT(page, source, firstMatch.medId);
-
-                // Parse with AI
-                const aiParseResult = await parseWithAI(cpptResult.rawText, 'obstetri');
-
-                // Save to medical records
-                const recordsSaved = await saveMedicalRecord(job.patient_id, source, aiParseResult);
-
-                // Update job as success
-                await pool.query(
-                    `UPDATE medify_import_jobs
-                     SET status = 'success',
-                         simrs_patient_found = TRUE,
-                         simrs_patient_id = ?,
-                         records_imported = ?,
-                         completed_at = NOW()
-                     WHERE id = ?`,
-                    [firstMatch.medId, recordsSaved, job.id]
-                );
-
-                // Update patient last sync
-                await pool.query(
-                    `UPDATE patients SET last_medify_sync = NOW() WHERE id = ?`,
-                    [job.patient_id]
-                );
-
-                // Emit success
-                if (global.io) {
-                    global.io.emit('medify_progress', {
-                        batchId,
-                        jobId: job.id,
-                        patientName: job.patient_name,
-                        status: 'success',
-                        recordsImported: recordsSaved
-                    });
-                }
-
-            } catch (error) {
-                console.error(`[Medify] Error processing job ${job.id}:`, error);
-
-                await pool.query(
-                    `UPDATE medify_import_jobs
-                     SET status = 'failed',
-                         error_message = ?,
-                         completed_at = NOW()
-                     WHERE id = ?`,
-                    [error.message, job.id]
-                );
-
-                if (global.io) {
-                    global.io.emit('medify_progress', {
-                        batchId,
-                        jobId: job.id,
-                        patientName: job.patient_name,
-                        status: 'failed',
-                        error: error.message
-                    });
-                }
-            }
-
-            // Delay between requests
-            await medifyService.delay(parseInt(process.env.MEDIFY_DELAY_BETWEEN_REQUESTS) || 5000);
-        }
-
-    } catch (error) {
-        console.error(`[Medify] Fatal sync error:`, error);
-    } finally {
-        if (page) {
-            await page.close();
-        }
-        // Don't close browser - keep it for future syncs
-    }
-
-    console.log(`[Medify] Sync completed for batch ${batchId}`);
-
-    // Emit completion with stats
-    if (global.io) {
-        // Get final batch stats
-        const [stats] = await pool.query(`
-            SELECT
-                COUNT(*) as total,
-                SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) as success,
-                SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
-                SUM(CASE WHEN status = 'skipped' THEN 1 ELSE 0 END) as skipped
-            FROM medify_import_jobs WHERE batch_id = ?
-        `, [batchId]);
-
-        global.io.emit('medify_sync_complete', {
-            batchId,
-            stats: stats[0] || { total: 0, success: 0, failed: 0, skipped: 0 }
-        });
     }
 }
 

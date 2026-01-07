@@ -41,15 +41,17 @@ fun SlideMenu(
     onNavigateToArticles: () -> Unit,
     onNavigateToSchedule: () -> Unit,
     onNavigateToVisitHistory: () -> Unit,
+    onNavigateToLabResults: () -> Unit = {},
     onLogout: () -> Unit
 ) {
     val menuItems = listOf(
         MenuItem(iconRes = R.drawable.book, label = "Booking", color = Accent) { onNavigateToBooking(); onClose() },
         MenuItem(iconRes = R.drawable.temurs, label = "Jadwal", color = Info) { onNavigateToSchedule(); onClose() },
         MenuItem(iconRes = R.drawable.usg, label = "USG", color = Purple) { onNavigateToUsg(); onClose() },
+        MenuItem(iconRes = R.drawable.lab, label = "Hasil Lab", color = Success) { onNavigateToLabResults(); onClose() },
         MenuItem(iconRes = R.drawable.subur, label = "Kesuburan", color = Fertility) { onNavigateToFertility(); onClose() },
         MenuItem(iconRes = R.drawable.erm, label = "Riwayat", color = Warning) { onNavigateToVisitHistory(); onClose() },
-        MenuItem(iconRes = R.drawable.erm, label = "Dokumen", color = Success) { onNavigateToDocuments(); onClose() },
+        MenuItem(iconRes = R.drawable.erm, label = "Dokumen", color = Info) { onNavigateToDocuments(); onClose() },
         MenuItem(iconRes = R.drawable.ruangbaca, label = "Artikel", color = Accent) { onNavigateToArticles(); onClose() },
         MenuItem(iconRes = R.drawable.profil, label = "Profil", color = Purple) { onNavigateToProfile(); onClose() },
         MenuItem(icon = Icons.AutoMirrored.Outlined.Logout, label = "Keluar", color = Danger, isLogout = true) { onLogout() }

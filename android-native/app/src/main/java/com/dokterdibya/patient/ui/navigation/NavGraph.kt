@@ -23,6 +23,7 @@ import com.dokterdibya.patient.ui.screens.login.LoginScreen
 import com.dokterdibya.patient.ui.screens.profile.ProfileScreen
 import com.dokterdibya.patient.ui.screens.schedule.ScheduleScreen
 import com.dokterdibya.patient.ui.screens.usg.UsgGalleryScreen
+import com.dokterdibya.patient.ui.screens.lab.LabResultsScreen
 import com.dokterdibya.patient.ui.screens.medications.MedicationsScreen
 import com.dokterdibya.patient.ui.screens.notifications.NotificationsScreen
 import com.dokterdibya.patient.ui.screens.intro.IntroScreen
@@ -157,6 +158,9 @@ fun NavGraph(
                 onNavigateToWebView = { url, title ->
                     navController.navigate(Screen.WebView.createRoute(url, title))
                 },
+                onNavigateToLabResults = {
+                    navController.navigate(Screen.LabResults.route)
+                },
                 onNavigateToCompleteProfile = {
                     navController.navigate(Screen.CompleteProfile.route)
                 },
@@ -189,6 +193,15 @@ fun NavGraph(
         composable(Screen.UsgGallery.route) {
             UsgGalleryScreen(
                 onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.LabResults.route) {
+            LabResultsScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToViewer = { documentId ->
+                    navController.navigate(Screen.DocumentViewer.createRoute(documentId))
+                }
             )
         }
 

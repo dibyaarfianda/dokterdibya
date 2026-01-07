@@ -231,6 +231,43 @@ async function searchPatientHistory(page, source, dateFrom, dateTo) {
     // Wait for table to update
     await delay(2000);
 
+    // IMPORTANT: Change DataTable to show ALL rows before scraping
+    try {
+        const lengthChanged = await page.evaluate(() => {
+            const lengthSelect = document.querySelector('select[name="historiTable_length"]');
+            if (lengthSelect) {
+                // Find "All" option (usually value="-1" or text="All"/"Semua")
+                const allOption = Array.from(lengthSelect.options).find(o =>
+                    o.value === '-1' || o.text.toLowerCase().includes('all') || o.text.toLowerCase().includes('semua')
+                );
+                if (allOption) {
+                    lengthSelect.value = allOption.value;
+                    lengthSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                    return { success: true, value: allOption.value, text: allOption.text };
+                }
+                // Fallback: use the largest available option
+                const maxOption = Array.from(lengthSelect.options).reduce((max, opt) =>
+                    parseInt(opt.value) > parseInt(max.value) ? opt : max
+                );
+                if (maxOption && parseInt(maxOption.value) > 10) {
+                    lengthSelect.value = maxOption.value;
+                    lengthSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                    return { success: true, value: maxOption.value, text: maxOption.text };
+                }
+            }
+            return { success: false };
+        });
+
+        if (lengthChanged.success) {
+            console.log(`[Medify] Changed DataTable to show: ${lengthChanged.text} (value: ${lengthChanged.value})`);
+            await delay(3000); // Wait for table to reload with all rows
+        } else {
+            console.log(`[Medify] Could not change DataTable length - may only get partial results`);
+        }
+    } catch (e) {
+        console.log('[Medify] Could not change DataTable length:', e.message);
+    }
+
     // Extract patient list from table - ONLY Dr. Dibya's patients
     const patients = await page.evaluate((prefix) => {
         const rows = document.querySelectorAll('table tbody tr');

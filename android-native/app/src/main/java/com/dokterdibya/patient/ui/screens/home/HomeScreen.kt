@@ -76,6 +76,7 @@ fun HomeScreen(
     onNavigateToJourneyBook: () -> Unit = {},
     onNavigateToWebView: (String, String) -> Unit = { _, _ -> },
     onNavigateToCompleteProfile: () -> Unit = {},
+    onNavigateToLabResults: () -> Unit = {},
     onLogout: () -> Unit,
     viewModel: HomeViewModel = hiltViewModel()
 ) {
@@ -465,6 +466,7 @@ fun HomeScreen(
             onNavigateToArticles = onNavigateToArticles,
             onNavigateToSchedule = onNavigateToSchedule,
             onNavigateToVisitHistory = onNavigateToVisitHistory,
+            onNavigateToLabResults = onNavigateToLabResults,
             onLogout = {
                 viewModel.logout()
                 onLogout()
