@@ -43,7 +43,7 @@ import android.os.Build
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
-import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import io.noties.markwon.Markwon
 import io.noties.markwon.html.HtmlPlugin
 import coil.compose.AsyncImage
@@ -1010,7 +1010,7 @@ fun MedicationItem(medication: Medication) {
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.vit),
-                contentDescription = medication.item_name ?: "Obat",
+                contentDescription = medication.terapi ?: "Obat",
                 tint = if (medication.is_current == 1) Success else TextSecondaryDark,
                 modifier = Modifier.size(18.dp)
             )
