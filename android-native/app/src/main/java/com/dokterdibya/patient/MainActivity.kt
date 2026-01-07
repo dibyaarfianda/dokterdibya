@@ -27,6 +27,7 @@ import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -112,7 +113,9 @@ class MainActivity : ComponentActivity() {
                         if (isLoggedIn == true) {
                             // Fetch patient ID when logged in
                             viewModel.fetchPatientId()
-                            // Register FCM token for push notifications
+                            // Defer FCM token registration to improve startup time
+                            // Small delay ensures UI is fully rendered first
+                            delay(1500)
                             fcmTokenManager.registerToken()
                         } else if (isLoggedIn == false) {
                             // Clear FCM token when logged out

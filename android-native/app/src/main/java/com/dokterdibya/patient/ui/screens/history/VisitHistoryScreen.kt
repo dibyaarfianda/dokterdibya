@@ -173,7 +173,7 @@ fun VisitListContent(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(visits) { visit ->
+            items(visits, key = { it.id }) { visit ->
                 VisitCard(
                     billing = visit,
                     viewModel = viewModel,

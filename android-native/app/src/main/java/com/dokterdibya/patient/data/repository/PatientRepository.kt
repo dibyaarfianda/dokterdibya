@@ -30,6 +30,7 @@ import com.dokterdibya.patient.data.model.PatientIntakeRequest
 import com.dokterdibya.patient.data.model.PatientIntakeResponse
 import com.dokterdibya.patient.data.model.MyIntakeResponse
 import com.dokterdibya.patient.data.model.ExistingIntake
+import com.dokterdibya.patient.data.local.*
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
@@ -39,8 +40,26 @@ import javax.inject.Singleton
 @Singleton
 class PatientRepository @Inject constructor(
     private val apiService: ApiService,
-    private val tokenRepository: TokenRepository
+    private val tokenRepository: TokenRepository,
+    private val articleDao: ArticleDao,
+    private val notificationDao: NotificationDao,
+    private val medicationDao: MedicationDao,
+    private val cacheMetadataDao: CacheMetadataDao
 ) {
+
+    // Cache expiry times
+    private val articlesCacheExpiry = 24 * 60 * 60 * 1000L      // 24 hours
+    private val notificationsCacheExpiry = 60 * 60 * 1000L     // 1 hour
+    private val medicationsCacheExpiry = 12 * 60 * 60 * 1000L  // 12 hours
+
+    private suspend fun isCacheValid(key: String, expiryTime: Long): Boolean {
+        val metadata = cacheMetadataDao.get(key) ?: return false
+        return (System.currentTimeMillis() - metadata.lastUpdated) < expiryTime
+    }
+
+    private suspend fun updateCacheTimestamp(key: String) {
+        cacheMetadataDao.upsert(CacheMetadata(key, System.currentTimeMillis()))
+    }
     // ==================== Authentication ====================
 
     suspend fun emailLogin(email: String, password: String): Result<AuthResponse> {
@@ -193,6 +212,20 @@ class PatientRepository @Inject constructor(
 
     suspend fun logout() {
         tokenRepository.clearAll()
+        // Clear all cached data
+        clearAllCache()
+    }
+
+    /**
+     * Clear all cached data from Room database
+     */
+    suspend fun clearAllCache() {
+        articleDao.deleteAll()
+        notificationDao.deleteAll()
+        medicationDao.deleteAll()
+        cacheMetadataDao.delete("articles")
+        cacheMetadataDao.delete("notifications")
+        cacheMetadataDao.delete("medications")
     }
 
     /**
@@ -584,13 +617,32 @@ class PatientRepository @Inject constructor(
         return try {
             val response = apiService.getArticles(category, limit)
             if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!.data ?: emptyList())
+                val articles = response.body()!!.data ?: emptyList()
+                // Cache articles
+                if (category == null) {
+                    articleDao.insertAll(articles.map { ArticleEntity.fromArticle(it) })
+                    updateCacheTimestamp("articles")
+                }
+                Result.success(articles)
             } else {
                 Result.failure(Exception("Failed to get articles"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            // Return cached data on network error
+            val cached = articleDao.getAllArticlesOnce()
+            if (cached.isNotEmpty()) {
+                Result.success(cached.map { it.toArticle() })
+            } else {
+                Result.failure(e)
+            }
         }
+    }
+
+    /**
+     * Get cached articles without network call (for immediate display)
+     */
+    suspend fun getCachedArticles(): List<com.dokterdibya.patient.data.api.Article> {
+        return articleDao.getAllArticlesOnce().map { it.toArticle() }
     }
 
     suspend fun getArticleDetail(id: Int): Result<com.dokterdibya.patient.data.api.Article> {
@@ -691,13 +743,31 @@ class PatientRepository @Inject constructor(
         return try {
             val response = apiService.getMedications()
             if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!.data)
+                val medications = response.body()!!.data
+                // Cache medications
+                medicationDao.deleteAll()
+                medicationDao.insertAll(medications.map { MedicationEntity.fromMedication(it) })
+                updateCacheTimestamp("medications")
+                Result.success(medications)
             } else {
                 Result.failure(Exception("Failed to get medications"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            // Return cached data on network error
+            val cached = medicationDao.getAllMedicationsOnce()
+            if (cached.isNotEmpty()) {
+                Result.success(cached.map { it.toMedication() })
+            } else {
+                Result.failure(e)
+            }
         }
+    }
+
+    /**
+     * Get cached medications without network call
+     */
+    suspend fun getCachedMedications(): List<Medication> {
+        return medicationDao.getAllMedicationsOnce().map { it.toMedication() }
     }
 
     // ==================== Pregnancy Data ====================
@@ -752,13 +822,31 @@ class PatientRepository @Inject constructor(
         return try {
             val response = apiService.getNotifications()
             if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!.notifications)
+                val notifications = response.body()!!.notifications
+                // Cache notifications
+                notificationDao.deleteAll()
+                notificationDao.insertAll(notifications.map { NotificationEntity.fromNotification(it) })
+                updateCacheTimestamp("notifications")
+                Result.success(notifications)
             } else {
                 Result.success(emptyList())
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            // Return cached data on network error
+            val cached = notificationDao.getAllNotificationsOnce()
+            if (cached.isNotEmpty()) {
+                Result.success(cached.map { it.toNotification() })
+            } else {
+                Result.failure(e)
+            }
         }
+    }
+
+    /**
+     * Get cached notifications without network call
+     */
+    suspend fun getCachedNotifications(): List<com.dokterdibya.patient.data.api.PatientNotificationItem> {
+        return notificationDao.getAllNotificationsOnce().map { it.toNotification() }
     }
 
     // ==================== Profile Photo ====================

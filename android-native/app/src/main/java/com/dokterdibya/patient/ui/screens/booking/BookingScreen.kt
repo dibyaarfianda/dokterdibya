@@ -241,7 +241,7 @@ fun BookingScreen(
                                 }
                             }
                         } else {
-                            items(uiState.sessions) { session ->
+                            items(uiState.sessions, key = { it.session }) { session ->
                                 SessionCard(
                                     session = session,
                                     onSlotClick = { slot -> viewModel.onSlotClick(session, slot) }
@@ -262,7 +262,7 @@ fun BookingScreen(
                             )
                         }
 
-                        items(uiState.appointments) { appointment ->
+                        items(uiState.appointments, key = { it.id }) { appointment ->
                             AppointmentCard(
                                 appointment = appointment,
                                 onCancel = { viewModel.showCancelDialog(appointment) }

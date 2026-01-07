@@ -131,7 +131,7 @@ fun LocationListContent(
             )
         }
 
-        items(locations) { location ->
+        items(locations, key = { it.id }) { location ->
             LocationCard(
                 location = location,
                 onClick = { onLocationClick(location) }
@@ -382,7 +382,7 @@ fun ScheduleDetailContent(
                 }
             }
         } else {
-            items(schedules) { schedule ->
+            items(schedules, key = { it.id }) { schedule ->
                 ScheduleRow(
                     dayName = viewModel.getDayName(schedule.day_of_week),
                     startTime = viewModel.formatTime(schedule.start_time),

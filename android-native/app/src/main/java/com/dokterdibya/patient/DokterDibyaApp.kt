@@ -3,16 +3,22 @@ package com.dokterdibya.patient
 import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.content.ComponentCallbacks2
 import android.media.AudioAttributes
 import android.media.RingtoneManager
 import android.os.Build
 import coil.ImageLoader
 import coil.ImageLoaderFactory
 import coil.decode.SvgDecoder
+import coil.disk.DiskCache
+import coil.memory.MemoryCache
 import dagger.hilt.android.HiltAndroidApp
+import java.io.File
 
 @HiltAndroidApp
 class DokterDibyaApp : Application(), ImageLoaderFactory {
+
+    private var imageLoader: ImageLoader? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -21,10 +27,37 @@ class DokterDibyaApp : Application(), ImageLoaderFactory {
 
     override fun newImageLoader(): ImageLoader {
         return ImageLoader.Builder(this)
+            .memoryCache {
+                MemoryCache.Builder(this)
+                    .maxSizePercent(0.25) // 25% of app memory
+                    .build()
+            }
+            .diskCache {
+                DiskCache.Builder()
+                    .directory(File(cacheDir, "image_cache"))
+                    .maxSizeBytes(50L * 1024 * 1024) // 50 MB
+                    .build()
+            }
             .components {
                 add(SvgDecoder.Factory())
             }
+            .crossfade(true)
+            .respectCacheHeaders(false) // Ignore server cache headers, use our cache policy
             .build()
+            .also { imageLoader = it }
+    }
+
+    override fun onTrimMemory(level: Int) {
+        super.onTrimMemory(level)
+        // Clear image cache on low memory
+        if (level >= ComponentCallbacks2.TRIM_MEMORY_MODERATE) {
+            imageLoader?.memoryCache?.clear()
+        }
+    }
+
+    override fun onLowMemory() {
+        super.onLowMemory()
+        imageLoader?.memoryCache?.clear()
     }
 
     private fun createNotificationChannels() {

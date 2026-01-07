@@ -9,6 +9,7 @@ import com.dokterdibya.patient.data.api.Medication
 import com.dokterdibya.patient.data.model.Patient
 import com.dokterdibya.patient.data.repository.PatientRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -68,23 +69,31 @@ class HomeViewModel @Inject constructor(
     private var patientId: String? = null
 
     init {
-        loadPatientData()
-        loadAnnouncements()
-        loadMedications()
-        loadNotificationCount()
-        loadArticles()
+        loadAllData()
     }
 
-    fun loadPatientData() {
+    /**
+     * Load all home screen data in parallel for better performance
+     */
+    private fun loadAllData() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true)
 
-            patientRepository.getProfile().fold(
+            // Launch all API calls in parallel
+            val profileDeferred = async { patientRepository.getProfile() }
+            val usgDeferred = async { patientRepository.getUsgDocuments() }
+            val pregnancyDeferred = async { patientRepository.getPregnancyData() }
+            val medicationsDeferred = async { patientRepository.getMedications() }
+            val notificationsDeferred = async { patientRepository.getUnreadNotificationCount() }
+            val articlesDeferred = async { patientRepository.getArticles() }
+
+            // Process profile result first (needed for announcements)
+            val profileResult = profileDeferred.await()
+            profileResult.fold(
                 onSuccess = { patient ->
                     patientId = patient.id
                     val pregnancyInfo = calculatePregnancyInfo(patient)
                     _uiState.value = _uiState.value.copy(
-                        isLoading = false,
                         patient = patient,
                         patientName = patient.name,
                         isPregnant = patient.isPregnant,
@@ -93,115 +102,72 @@ class HomeViewModel @Inject constructor(
                         pregnancyProgress = pregnancyInfo.progress,
                         dueDate = formatDate(patient.expectedDueDate)
                     )
-
-                    // Reload announcements with patient ID for like status
-                    loadAnnouncements()
                 },
                 onFailure = { error ->
-                    _uiState.value = _uiState.value.copy(
-                        isLoading = false,
-                        error = error.message
-                    )
+                    _uiState.value = _uiState.value.copy(error = error.message)
                 }
             )
 
-            // Load USG count
-            patientRepository.getUsgDocuments().fold(
-                onSuccess = { usgDocs ->
-                    _uiState.value = _uiState.value.copy(
-                        usgCount = usgDocs.size
-                    )
-                },
-                onFailure = { /* Ignore */ }
-            )
+            // Load announcements after we have patient ID
+            val announcementsDeferred = async { patientRepository.getActiveAnnouncements(patientId) }
 
-            // Load pregnancy data (includes birth info, baby size, tips)
-            patientRepository.getPregnancyData().fold(
-                onSuccess = { data ->
-                    if (data.has_given_birth) {
-                        _uiState.value = _uiState.value.copy(
-                            hasGivenBirth = true,
-                            isPregnant = false,
-                            birthInfo = BirthInfo(
-                                babyName = data.baby_name ?: "",
-                                birthDate = data.birth_date ?: "",
-                                birthTime = data.birth_time ?: "",
-                                babyWeight = data.baby_weight ?: "",
-                                babyLength = data.baby_length ?: "",
-                                babyPhotoUrl = data.baby_photo_url,
-                                doctorMessage = data.doctor_message
-                            )
+            // Process other results
+            usgDeferred.await().onSuccess { usgDocs ->
+                _uiState.value = _uiState.value.copy(usgCount = usgDocs.size)
+            }
+
+            pregnancyDeferred.await().onSuccess { data ->
+                if (data.has_given_birth) {
+                    _uiState.value = _uiState.value.copy(
+                        hasGivenBirth = true,
+                        isPregnant = false,
+                        birthInfo = BirthInfo(
+                            babyName = data.baby_name ?: "",
+                            birthDate = data.birth_date ?: "",
+                            birthTime = data.birth_time ?: "",
+                            babyWeight = data.baby_weight ?: "",
+                            babyLength = data.baby_length ?: "",
+                            babyPhotoUrl = data.baby_photo_url,
+                            doctorMessage = data.doctor_message
                         )
-                    } else if (data.is_pregnant) {
-                        // Update pregnancy info from API (more accurate than local calculation)
-                        _uiState.value = _uiState.value.copy(
-                            isPregnant = true,
-                            pregnancyWeeks = data.weeks,
-                            pregnancyDays = data.days,
-                            pregnancyProgress = data.progress.toFloat(),
-                            dueDate = formatDate(data.hpl),
-                            trimester = data.trimester,
-                            babySize = data.baby_size,
-                            pregnancyTip = data.tip
-                        )
-                    }
-                },
-                onFailure = { /* Ignore - pregnancy data is optional */ }
-            )
-        }
-    }
-
-    private fun loadAnnouncements() {
-        viewModelScope.launch {
-            patientRepository.getActiveAnnouncements(patientId).fold(
-                onSuccess = { announcements ->
-                    _uiState.value = _uiState.value.copy(
-                        announcements = announcements
                     )
-                },
-                onFailure = { /* Ignore */ }
-            )
-        }
-    }
-
-    private fun loadMedications() {
-        viewModelScope.launch {
-            patientRepository.getMedications().fold(
-                onSuccess = { medications ->
+                } else if (data.is_pregnant) {
                     _uiState.value = _uiState.value.copy(
-                        medications = medications,
-                        hasMedications = medications.isNotEmpty()
+                        isPregnant = true,
+                        pregnancyWeeks = data.weeks,
+                        pregnancyDays = data.days,
+                        pregnancyProgress = data.progress.toFloat(),
+                        dueDate = formatDate(data.hpl),
+                        trimester = data.trimester,
+                        babySize = data.baby_size,
+                        pregnancyTip = data.tip
                     )
-                },
-                onFailure = { /* Ignore */ }
-            )
-        }
-    }
+                }
+            }
 
-    private fun loadNotificationCount() {
-        viewModelScope.launch {
-            patientRepository.getUnreadNotificationCount().fold(
-                onSuccess = { count ->
-                    _uiState.value = _uiState.value.copy(
-                        unreadNotificationCount = count
-                    )
-                },
-                onFailure = { /* Ignore */ }
-            )
-        }
-    }
+            medicationsDeferred.await().onSuccess { medications ->
+                _uiState.value = _uiState.value.copy(
+                    medications = medications,
+                    hasMedications = medications.isNotEmpty()
+                )
+            }
 
-    private fun loadArticles() {
-        viewModelScope.launch {
-            patientRepository.getArticles().fold(
-                onSuccess = { articles ->
-                    _uiState.value = _uiState.value.copy(
-                        articles = articles.take(3), // Show only first 3 on home
-                        totalArticleCount = articles.size
-                    )
-                },
-                onFailure = { /* Ignore */ }
-            )
+            notificationsDeferred.await().onSuccess { count ->
+                _uiState.value = _uiState.value.copy(unreadNotificationCount = count)
+            }
+
+            articlesDeferred.await().onSuccess { articles ->
+                _uiState.value = _uiState.value.copy(
+                    articles = articles.take(3),
+                    totalArticleCount = articles.size
+                )
+            }
+
+            announcementsDeferred.await().onSuccess { announcements ->
+                _uiState.value = _uiState.value.copy(announcements = announcements)
+            }
+
+            _uiState.value = _uiState.value.copy(isLoading = false)
         }
     }
 
@@ -252,11 +218,7 @@ class HomeViewModel @Inject constructor(
     }
 
     fun refresh() {
-        loadPatientData()
-        loadAnnouncements()
-        loadMedications()
-        loadNotificationCount()
-        loadArticles()
+        loadAllData()
     }
 
     private data class PregnancyInfo(

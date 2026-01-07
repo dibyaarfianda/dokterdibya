@@ -148,7 +148,7 @@ fun UsgGalleryScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    items(uiState.results) { usg ->
+                    items(uiState.results, key = { it.id }) { usg ->
                         UsgCard(
                             imageUrl = usg.imageUrl,
                             date = usg.date,
