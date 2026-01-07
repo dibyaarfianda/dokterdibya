@@ -6,6 +6,7 @@ import com.dokterdibya.patient.data.model.BookingRequest
 import com.dokterdibya.patient.data.model.CreateCycleRequest
 import com.dokterdibya.patient.data.model.IntercourseRequest
 import com.dokterdibya.patient.data.model.GoogleAuthRequest
+import com.dokterdibya.patient.data.model.EmailLoginRequest
 import com.dokterdibya.patient.data.model.Patient
 import com.dokterdibya.patient.data.model.Appointment
 import com.dokterdibya.patient.data.model.SundayDate
@@ -41,6 +42,32 @@ class PatientRepository @Inject constructor(
     private val tokenRepository: TokenRepository
 ) {
     // ==================== Authentication ====================
+
+    suspend fun emailLogin(email: String, password: String): Result<AuthResponse> {
+        return try {
+            val response = apiService.emailLogin(EmailLoginRequest(email = email, password = password))
+            if (response.isSuccessful && response.body() != null) {
+                val authResponse = response.body()!!
+                if (authResponse.success && authResponse.token != null) {
+                    tokenRepository.saveToken(authResponse.token)
+                    authResponse.patientData?.let { patient ->
+                        tokenRepository.saveUserInfo(patient.name, patient.email ?: "")
+                    }
+                }
+                Result.success(authResponse)
+            } else {
+                val errorBody = response.errorBody()?.string()
+                val errorMsg = try {
+                    org.json.JSONObject(errorBody ?: "").optString("message", "Login gagal")
+                } catch (e: Exception) {
+                    "Email atau password salah"
+                }
+                Result.failure(Exception(errorMsg))
+            }
+        } catch (e: Exception) {
+            Result.failure(Exception("Gagal menghubungi server. Periksa koneksi internet."))
+        }
+    }
 
     suspend fun googleLogin(authCode: String): Result<AuthResponse> {
         return try {

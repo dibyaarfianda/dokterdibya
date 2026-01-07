@@ -23,6 +23,9 @@ interface ApiService {
     @POST("api/patients/google-auth-code")
     suspend fun googleAuth(@Body request: GoogleAuthRequest): Response<AuthResponse>
 
+    @POST("api/auth/patient-login")
+    suspend fun emailLogin(@Body request: EmailLoginRequest): Response<AuthResponse>
+
     @GET("api/patients/profile")
     suspend fun getPatientProfile(): Response<PatientProfileResponse>
 

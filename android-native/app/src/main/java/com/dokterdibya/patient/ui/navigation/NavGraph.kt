@@ -24,6 +24,8 @@ import com.dokterdibya.patient.ui.screens.profile.ProfileScreen
 import com.dokterdibya.patient.ui.screens.schedule.ScheduleScreen
 import com.dokterdibya.patient.ui.screens.usg.UsgGalleryScreen
 import com.dokterdibya.patient.ui.screens.lab.LabResultsScreen
+import com.dokterdibya.patient.ui.screens.kesehatan.HealthScreen
+import com.dokterdibya.patient.ui.screens.rekam.RecordsScreen
 import com.dokterdibya.patient.ui.screens.medications.MedicationsScreen
 import com.dokterdibya.patient.ui.screens.notifications.NotificationsScreen
 import com.dokterdibya.patient.ui.screens.intro.IntroScreen
@@ -161,6 +163,12 @@ fun NavGraph(
                 onNavigateToLabResults = {
                     navController.navigate(Screen.LabResults.route)
                 },
+                onNavigateToHealth = {
+                    navController.navigate(Screen.Health.route)
+                },
+                onNavigateToRecords = {
+                    navController.navigate(Screen.Records.route)
+                },
                 onNavigateToCompleteProfile = {
                     navController.navigate(Screen.CompleteProfile.route)
                 },
@@ -201,6 +209,24 @@ fun NavGraph(
                 onBack = { navController.popBackStack() },
                 onNavigateToViewer = { documentId ->
                     navController.navigate(Screen.DocumentViewer.createRoute(documentId))
+                }
+            )
+        }
+
+        composable(Screen.Health.route) {
+            HealthScreen(
+                onBack = { navController.popBackStack() },
+                onEditIntake = {
+                    navController.navigate(Screen.CompleteProfile.route)
+                }
+            )
+        }
+
+        composable(Screen.Records.route) {
+            RecordsScreen(
+                onBack = { navController.popBackStack() },
+                onNavigateToDocuments = {
+                    navController.navigate(Screen.Documents.route)
                 }
             )
         }

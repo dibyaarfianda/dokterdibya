@@ -54,6 +54,11 @@ data class GoogleAuthRequest(
     val redirectUri: String = ""  // Empty for Android app
 )
 
+data class EmailLoginRequest(
+    val email: String,
+    val password: String
+)
+
 data class AuthResponse(
     val success: Boolean,
     val token: String?,

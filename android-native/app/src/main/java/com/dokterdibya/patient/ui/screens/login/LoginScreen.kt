@@ -2,7 +2,15 @@ package com.dokterdibya.patient.ui.screens.login
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,6 +24,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -35,14 +46,16 @@ fun LoginScreen(
     val uiState by viewModel.uiState.collectAsState()
     val isLoggedIn by viewModel.isLoggedIn.collectAsState(initial = false)
 
+    // Email login state
+    var email by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
+
     // Navigate based on login state and profile completion
-    // Registration code is now handled in CompleteProfileScreen (like website)
     LaunchedEffect(uiState.isLoggedIn, uiState.needsProfileCompletion) {
         if (uiState.isLoggedIn) {
             when {
-                // New user needs to complete profile (registration code asked in form)
                 uiState.needsProfileCompletion -> onNeedCompleteProfile()
-                // Returning user with complete profile
                 else -> onLoginSuccess()
             }
         }
@@ -51,30 +64,31 @@ fun LoginScreen(
     // Also check if already logged in (returning user)
     LaunchedEffect(isLoggedIn) {
         if (isLoggedIn && !uiState.isLoggedIn) {
-            // Already logged in from previous session - check profile completion first
             viewModel.checkProfileCompletion()
         }
     }
 
     ThemedBackground {
-        // Main content
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            Spacer(modifier = Modifier.height(40.dp))
+
             // Logo
             Box(
                 modifier = Modifier
-                    .size(120.dp)
+                    .size(100.dp)
                     .shadow(
                         elevation = 20.dp,
-                        shape = RoundedCornerShape(28.dp),
+                        shape = RoundedCornerShape(24.dp),
                         ambientColor = Accent.copy(alpha = 0.3f)
                     )
-                    .clip(RoundedCornerShape(28.dp)),
+                    .clip(RoundedCornerShape(24.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Image(
@@ -85,7 +99,7 @@ fun LoginScreen(
                 )
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(20.dp))
 
             // App name
             Text(
@@ -95,18 +109,18 @@ fun LoginScreen(
                         append("DIBYA")
                     }
                 },
-                fontSize = 28.sp,
+                fontSize = 26.sp,
                 fontWeight = FontWeight.SemiBold,
                 color = Color.White
             )
 
             Text(
                 text = stringResource(R.string.app_tagline),
-                fontSize = 14.sp,
+                fontSize = 13.sp,
                 color = TextSecondaryDark
             )
 
-            Spacer(modifier = Modifier.height(60.dp))
+            Spacer(modifier = Modifier.height(40.dp))
 
             // Error message
             if (uiState.error != null) {
@@ -128,48 +142,176 @@ fun LoginScreen(
                 }
             }
 
+            // Email field
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                label = { Text("Email") },
+                placeholder = { Text("contoh@email.com") },
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.Email,
+                        contentDescription = null,
+                        tint = TextSecondaryDark
+                    )
+                },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                shape = RoundedCornerShape(14.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    focusedContainerColor = CardDark,
+                    unfocusedContainerColor = CardDark,
+                    focusedBorderColor = Accent,
+                    unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
+                    focusedLabelColor = Accent,
+                    unfocusedLabelColor = TextSecondaryDark,
+                    cursorColor = Accent,
+                    focusedPlaceholderColor = TextSecondaryDark,
+                    unfocusedPlaceholderColor = TextSecondaryDark,
+                    focusedLeadingIconColor = Accent,
+                    unfocusedLeadingIconColor = TextSecondaryDark
+                )
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            // Password field
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("Password") },
+                placeholder = { Text("Masukkan password") },
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.Lock,
+                        contentDescription = null,
+                        tint = TextSecondaryDark
+                    )
+                },
+                trailingIcon = {
+                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                        Icon(
+                            if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                            contentDescription = if (passwordVisible) "Hide password" else "Show password",
+                            tint = TextSecondaryDark
+                        )
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                shape = RoundedCornerShape(14.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    focusedContainerColor = CardDark,
+                    unfocusedContainerColor = CardDark,
+                    focusedBorderColor = Accent,
+                    unfocusedBorderColor = Color.White.copy(alpha = 0.2f),
+                    focusedLabelColor = Accent,
+                    unfocusedLabelColor = TextSecondaryDark,
+                    cursorColor = Accent,
+                    focusedPlaceholderColor = TextSecondaryDark,
+                    unfocusedPlaceholderColor = TextSecondaryDark,
+                    focusedLeadingIconColor = Accent,
+                    unfocusedLeadingIconColor = TextSecondaryDark
+                )
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Email Login Button
+            Button(
+                onClick = { viewModel.handleEmailLogin(email.trim(), password) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Accent,
+                    contentColor = Color.White
+                ),
+                enabled = !uiState.isLoading && email.isNotBlank() && password.isNotBlank()
+            ) {
+                if (uiState.isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(24.dp),
+                        color = Color.White,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Text(
+                        text = "Masuk dengan Email",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Divider with "atau"
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                HorizontalDivider(
+                    modifier = Modifier.weight(1f),
+                    color = Color.White.copy(alpha = 0.2f)
+                )
+                Text(
+                    text = "  atau  ",
+                    fontSize = 13.sp,
+                    color = TextSecondaryDark
+                )
+                HorizontalDivider(
+                    modifier = Modifier.weight(1f),
+                    color = Color.White.copy(alpha = 0.2f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
             // Google Sign In Button
             Button(
                 onClick = onGoogleSignIn,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
+                    .height(52.dp),
                 shape = RoundedCornerShape(14.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = Color.White,
                     contentColor = Color(0xFF333333)
                 ),
                 elevation = ButtonDefaults.buttonElevation(
-                    defaultElevation = 8.dp
+                    defaultElevation = 4.dp
                 ),
                 enabled = !uiState.isLoading
             ) {
-                if (uiState.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = Primary
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Text(
+                        text = "G",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF4285F4)
                     )
-                } else {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        // Google icon (placeholder - use actual SVG)
-                        Text(
-                            text = "G",
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF4285F4)
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Text(
-                            text = stringResource(R.string.login_google),
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(
+                        text = stringResource(R.string.login_google),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
+
+            Spacer(modifier = Modifier.height(40.dp))
         }
     }
 }
