@@ -1,7 +1,7 @@
 package com.dokterdibya.patient.di
 
 import android.content.Context
-import com.dokterdibya.patient.BuildConfig
+import android.content.pm.ApplicationInfo
 import com.dokterdibya.patient.data.api.ApiService
 import com.dokterdibya.patient.data.api.AuthInterceptor
 import dagger.Module
@@ -32,11 +32,13 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideLoggingInterceptor(): HttpLoggingInterceptor {
+    fun provideLoggingInterceptor(@ApplicationContext context: Context): HttpLoggingInterceptor {
+        // Use ApplicationInfo to detect debug mode - more reliable than BuildConfig
+        val isDebug = (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
         return HttpLoggingInterceptor().apply {
             // SECURITY: Use BASIC level to avoid logging auth tokens and request bodies
             // Only log headers in debug builds, nothing in release
-            level = if (BuildConfig.DEBUG) {
+            level = if (isDebug) {
                 HttpLoggingInterceptor.Level.BASIC
             } else {
                 HttpLoggingInterceptor.Level.NONE
