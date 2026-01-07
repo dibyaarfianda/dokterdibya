@@ -42,6 +42,8 @@ fun SlideMenu(
     onNavigateToSchedule: () -> Unit,
     onNavigateToVisitHistory: () -> Unit,
     onNavigateToLabResults: () -> Unit = {},
+    onNavigateToHealth: () -> Unit = {},
+    onNavigateToRecords: () -> Unit = {},
     onLogout: () -> Unit
 ) {
     val menuItems = listOf(
@@ -50,7 +52,8 @@ fun SlideMenu(
         MenuItem(iconRes = R.drawable.usg, label = "USG", color = Purple) { onNavigateToUsg(); onClose() },
         MenuItem(iconRes = R.drawable.lab, label = "Hasil Lab", color = Success) { onNavigateToLabResults(); onClose() },
         MenuItem(iconRes = R.drawable.subur, label = "Kesuburan", color = Fertility) { onNavigateToFertility(); onClose() },
-        MenuItem(iconRes = R.drawable.erm, label = "Riwayat", color = Warning) { onNavigateToVisitHistory(); onClose() },
+        MenuItem(iconRes = R.drawable.vit, label = "Kesehatan", color = Danger) { onNavigateToHealth(); onClose() },
+        MenuItem(iconRes = R.drawable.erm, label = "Rekam Medis", color = Warning) { onNavigateToRecords(); onClose() },
         MenuItem(iconRes = R.drawable.erm, label = "Dokumen", color = Info) { onNavigateToDocuments(); onClose() },
         MenuItem(iconRes = R.drawable.ruangbaca, label = "Artikel", color = Accent) { onNavigateToArticles(); onClose() },
         MenuItem(iconRes = R.drawable.profil, label = "Profil", color = Purple) { onNavigateToProfile(); onClose() },

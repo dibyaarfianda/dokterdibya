@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -77,89 +78,96 @@ fun LabResultsScreen(
                 )
             }
 
-            Column(
+            PullToRefreshBox(
+                isRefreshing = uiState.isRefreshing,
+                onRefresh = { viewModel.refresh() },
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .padding(16.dp)
             ) {
-                if (uiState.isLoading) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        CircularProgressIndicator(color = Success)
-                    }
-                } else if (uiState.error != null) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                Icons.Default.Warning,
-                                contentDescription = null,
-                                tint = Danger,
-                                modifier = Modifier.size(48.dp)
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(
-                                uiState.error ?: "Terjadi kesalahan",
-                                color = TextSecondaryDark
-                            )
-                            Spacer(modifier = Modifier.height(16.dp))
-                            Button(
-                                onClick = { viewModel.loadLabResults() },
-                                colors = ButtonDefaults.buttonColors(containerColor = Success)
-                            ) {
-                                Text("Coba Lagi")
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp)
+                ) {
+                    if (uiState.isLoading) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(color = Success)
+                        }
+                    } else if (uiState.error != null) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    Icons.Default.Warning,
+                                    contentDescription = null,
+                                    tint = Danger,
+                                    modifier = Modifier.size(48.dp)
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text(
+                                    uiState.error ?: "Terjadi kesalahan",
+                                    color = TextSecondaryDark
+                                )
+                                Spacer(modifier = Modifier.height(16.dp))
+                                Button(
+                                    onClick = { viewModel.loadLabResults() },
+                                    colors = ButtonDefaults.buttonColors(containerColor = Success)
+                                ) {
+                                    Text("Coba Lagi")
+                                }
                             }
                         }
-                    }
-                } else if (uiState.results.isEmpty()) {
-                    Box(
-                        modifier = Modifier.fillMaxSize(),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                Icons.Default.Science,
-                                contentDescription = null,
-                                tint = TextSecondaryDark,
-                                modifier = Modifier.size(64.dp)
-                            )
-                            Spacer(modifier = Modifier.height(12.dp))
-                            Text(
-                                "Belum ada hasil laboratorium",
-                                color = TextSecondaryDark,
-                                fontSize = 16.sp
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                "Hasil lab dari dokter akan muncul di sini",
-                                color = TextSecondaryDark.copy(alpha = 0.7f),
-                                fontSize = 13.sp
-                            )
+                    } else if (uiState.results.isEmpty()) {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Icon(
+                                    Icons.Default.Science,
+                                    contentDescription = null,
+                                    tint = TextSecondaryDark,
+                                    modifier = Modifier.size(64.dp)
+                                )
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Text(
+                                    "Belum ada hasil laboratorium",
+                                    color = TextSecondaryDark,
+                                    fontSize = 16.sp
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    "Hasil lab dari dokter akan muncul di sini",
+                                    color = TextSecondaryDark.copy(alpha = 0.7f),
+                                    fontSize = 13.sp
+                                )
+                            }
                         }
-                    }
-                } else {
-                    Text(
-                        "${uiState.results.size} hasil lab",
-                        fontSize = 14.sp,
-                        color = TextSecondaryDark
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
+                    } else {
+                        Text(
+                            "${uiState.results.size} hasil lab",
+                            fontSize = 14.sp,
+                            color = TextSecondaryDark
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
 
-                    LazyVerticalGrid(
-                        columns = GridCells.Fixed(2),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        items(uiState.results) { lab ->
-                            LabResultCard(
-                                lab = lab,
-                                onClick = { viewModel.selectLab(lab) }
-                            )
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            items(uiState.results) { lab ->
+                                LabResultCard(
+                                    lab = lab,
+                                    onClick = { viewModel.selectLab(lab) }
+                                )
+                            }
                         }
                     }
                 }

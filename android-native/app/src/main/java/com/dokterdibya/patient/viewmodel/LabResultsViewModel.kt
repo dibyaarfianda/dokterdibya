@@ -21,6 +21,7 @@ data class LabResultInfo(
 
 data class LabResultsUiState(
     val isLoading: Boolean = true,
+    val isRefreshing: Boolean = false,
     val error: String? = null,
     val results: List<LabResultInfo> = emptyList(),
     val selectedLab: LabResultInfo? = null
@@ -38,6 +39,38 @@ class LabResultsViewModel @Inject constructor(
 
     init {
         loadLabResults()
+    }
+
+    fun refresh() {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isRefreshing = true)
+            repository.getLabDocuments()
+                .onSuccess { documents ->
+                    val labInfos = documents.map { doc ->
+                        val fullImageUrl = doc.documentUrl?.let { url ->
+                            if (url.startsWith("/")) "$baseUrl$url" else url
+                        }
+                        val fullDocUrl = doc.documentUrl?.let { url ->
+                            if (url.startsWith("/")) "$baseUrl$url" else url
+                        }
+                        LabResultInfo(
+                            id = doc.id,
+                            title = doc.title ?: "Hasil Lab",
+                            imageUrl = fullImageUrl,
+                            documentUrl = fullDocUrl,
+                            date = formatDate(doc.publishedAt ?: doc.createdAt),
+                            isNew = doc.isRead == 0
+                        )
+                    }
+                    _uiState.value = _uiState.value.copy(
+                        isRefreshing = false,
+                        results = labInfos
+                    )
+                }
+                .onFailure {
+                    _uiState.value = _uiState.value.copy(isRefreshing = false)
+                }
+        }
     }
 
     fun loadLabResults() {

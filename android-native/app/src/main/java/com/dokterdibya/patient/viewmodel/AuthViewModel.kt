@@ -30,6 +30,41 @@ class AuthViewModel @Inject constructor(
 
     val isLoggedIn = tokenRepository.isLoggedIn()
 
+    fun handleEmailLogin(email: String, password: String) {
+        viewModelScope.launch {
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+
+            patientRepository.emailLogin(email, password).fold(
+                onSuccess = { response ->
+                    if (response.success) {
+                        val patient = response.patientData
+                        val needsCompletion = patient?.birthDate.isNullOrBlank()
+
+                        android.util.Log.d("AuthViewModel", "Email login success - birthDate: ${patient?.birthDate}, needsCompletion: $needsCompletion")
+
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            isLoggedIn = true,
+                            needsProfileCompletion = needsCompletion,
+                            patientId = patient?.id
+                        )
+                    } else {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            error = response.message ?: "Login gagal"
+                        )
+                    }
+                },
+                onFailure = { error ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = error.message ?: "Email atau password salah"
+                    )
+                }
+            )
+        }
+    }
+
     fun handleGoogleAuthCode(authCode: String) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
