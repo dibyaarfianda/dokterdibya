@@ -41,9 +41,9 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.zIndex
 import android.os.Build
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import io.noties.markwon.Markwon
 import io.noties.markwon.html.HtmlPlugin
 import coil.compose.AsyncImage
