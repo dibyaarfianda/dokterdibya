@@ -139,7 +139,7 @@ fun MedicationsScreen(
                                     color = Success
                                 )
                             }
-                            items(uiState.currentMedications) { medication ->
+                            items(uiState.currentMedications, key = { it.id }) { medication ->
                                 MedicationCard(medication = medication, isCurrent = true)
                             }
                         }
@@ -154,7 +154,7 @@ fun MedicationsScreen(
                                     color = TextSecondaryDark
                                 )
                             }
-                            items(uiState.pastMedications) { medication ->
+                            items(uiState.pastMedications, key = { it.id }) { medication ->
                                 MedicationCard(medication = medication, isCurrent = false)
                             }
                         }

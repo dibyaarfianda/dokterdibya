@@ -124,7 +124,7 @@ fun ArticlesScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(uiState.articles) { article ->
+                    items(uiState.articles, key = { it.id }) { article ->
                         ArticleCard(
                             title = article.title,
                             excerpt = article.excerpt ?: "",

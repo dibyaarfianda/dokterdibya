@@ -95,7 +95,7 @@ fun NotificationsScreen(
                         contentPadding = PaddingValues(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(uiState.notifications) { notification ->
+                        items(uiState.notifications, key = { it.id }) { notification ->
                             NotificationCard(notification = notification)
                         }
                     }

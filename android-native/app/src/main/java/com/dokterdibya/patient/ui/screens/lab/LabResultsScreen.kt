@@ -155,7 +155,7 @@ fun LabResultsScreen(
                             horizontalArrangement = Arrangement.spacedBy(10.dp),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            items(uiState.results) { lab ->
+                            items(uiState.results, key = { it.id }) { lab ->
                                 LabResultCard(
                                     lab = lab,
                                     onClick = { viewModel.selectLab(lab) }

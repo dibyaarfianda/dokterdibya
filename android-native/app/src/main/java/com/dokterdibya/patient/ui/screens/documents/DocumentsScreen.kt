@@ -131,7 +131,7 @@ fun DocumentsScreen(
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    items(uiState.documents) { doc ->
+                    items(uiState.documents, key = { it.id }) { doc ->
                         DocumentCard(
                             title = doc.title,
                             type = doc.type,

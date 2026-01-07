@@ -183,7 +183,7 @@ fun RecordsScreen(
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        items(uiState.records) { record ->
+                        items(uiState.records, key = { it.id }) { record ->
                             RecordCard(record = record)
                         }
                     }
