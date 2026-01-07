@@ -54,7 +54,7 @@ fun UsgGalleryScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -97,7 +97,7 @@ fun UsgGalleryScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
                             Icons.Default.Warning,
-                            contentDescription = null,
+                            contentDescription = "Error",
                             tint = Danger,
                             modifier = Modifier.size(48.dp)
                         )
@@ -123,7 +123,7 @@ fun UsgGalleryScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
                             painter = painterResource(id = R.drawable.usg),
-                            contentDescription = null,
+                            contentDescription = "Tidak ada hasil USG",
                             tint = TextSecondaryDark,
                             modifier = Modifier.size(64.dp)
                         )
@@ -248,7 +248,7 @@ fun ImageViewerDialog(
             ) {
                 Icon(
                     Icons.Default.Close,
-                    contentDescription = "Close",
+                    contentDescription = "Tutup",
                     tint = Color.White,
                     modifier = Modifier.size(28.dp)
                 )

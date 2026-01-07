@@ -127,7 +127,7 @@ fun ProfileScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 Icons.Default.Edit,
-                                contentDescription = null,
+                                contentDescription = "Edit profil",
                                 tint = WebAccent,
                                 modifier = Modifier.size(22.dp)
                             )
@@ -207,7 +207,7 @@ fun ProfileScreen(
                         ) {
                             Icon(
                                 Icons.Default.CameraAlt,
-                                contentDescription = null,
+                                contentDescription = "Pilih foto",
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
@@ -324,7 +324,7 @@ fun ProfileScreen(
                         trailingIcon = {
                             Icon(
                                 Icons.Default.CalendarToday,
-                                contentDescription = null,
+                                contentDescription = "Pilih tanggal",
                                 tint = TextSecondaryDark,
                                 modifier = Modifier.size(20.dp)
                             )
@@ -427,7 +427,7 @@ fun ProfileScreen(
                             }
                             Icon(
                                 Icons.Default.Save,
-                                contentDescription = null,
+                                contentDescription = "Simpan",
                                 modifier = Modifier.size(16.dp)
                             )
                             Spacer(modifier = Modifier.width(6.dp))
@@ -451,7 +451,7 @@ fun ProfileScreen(
                     },
                     navigationIcon = {
                         IconButton(onClick = onBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali")
                         }
                     },
                     actions = {
@@ -690,7 +690,7 @@ fun ProfileScreen(
                     colors = ButtonDefaults.buttonColors(containerColor = Danger),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Icon(Icons.Default.Logout, contentDescription = null)
+                    Icon(Icons.Default.Logout, contentDescription = "Logout")
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Keluar")
                 }
@@ -715,7 +715,7 @@ fun ProfileInfoRow(
     ) {
         Icon(
             icon,
-            contentDescription = null,
+            contentDescription = label,
             tint = iconColor,
             modifier = Modifier.size(20.dp)
         )

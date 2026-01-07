@@ -46,7 +46,7 @@ fun NotificationsScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -77,7 +77,7 @@ fun NotificationsScreen(
                     ) {
                         Icon(
                             Icons.Default.NotificationsNone,
-                            contentDescription = null,
+                            contentDescription = "Tidak ada notifikasi",
                             tint = TextSecondaryDark,
                             modifier = Modifier.size(64.dp)
                         )
@@ -143,7 +143,12 @@ fun NotificationCard(notification: NotificationItem) {
                         "reminder" -> Icons.Default.Alarm
                         else -> Icons.Default.Notifications
                     },
-                    contentDescription = null,
+                    contentDescription = when (notification.type) {
+                        "appointment" -> "Janji temu"
+                        "document" -> "Dokumen"
+                        "reminder" -> "Pengingat"
+                        else -> "Notifikasi"
+                    },
                     tint = iconColor,
                     modifier = Modifier.size(20.dp)
                 )

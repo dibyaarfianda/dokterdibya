@@ -31,7 +31,9 @@ import com.dokterdibya.patient.data.model.PatientIntakeResponse
 import com.dokterdibya.patient.data.model.MyIntakeResponse
 import com.dokterdibya.patient.data.model.ExistingIntake
 import com.dokterdibya.patient.data.local.*
+import com.dokterdibya.patient.data.api.NetworkException
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import retrofit2.Response
 import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import javax.inject.Inject
@@ -60,6 +62,34 @@ class PatientRepository @Inject constructor(
     private suspend fun updateCacheTimestamp(key: String) {
         cacheMetadataDao.upsert(CacheMetadata(key, System.currentTimeMillis()))
     }
+
+    /**
+     * Helper to handle API responses with proper error differentiation
+     * Converts HTTP errors to appropriate NetworkException types
+     */
+    private fun <T> handleResponse(response: Response<T>): Result<T> {
+        return if (response.isSuccessful && response.body() != null) {
+            Result.success(response.body()!!)
+        } else {
+            val errorBody = response.errorBody()?.string()
+            Result.failure(NetworkException.fromHttpCode(response.code(), errorBody))
+        }
+    }
+
+    /**
+     * Wrap an API call with proper exception handling
+     * Converts network exceptions to appropriate NetworkException types
+     */
+    private suspend fun <T> safeApiCall(
+        call: suspend () -> Response<T>
+    ): Result<T> {
+        return try {
+            handleResponse(call())
+        } catch (e: Exception) {
+            Result.failure(NetworkException.from(e))
+        }
+    }
+
     // ==================== Authentication ====================
 
     suspend fun emailLogin(email: String, password: String): Result<AuthResponse> {
@@ -613,13 +643,13 @@ class PatientRepository @Inject constructor(
 
     // ==================== Articles ====================
 
-    suspend fun getArticles(category: String? = null, limit: Int = 20): Result<List<com.dokterdibya.patient.data.api.Article>> {
+    suspend fun getArticles(category: String? = null, limit: Int = 20, offset: Int = 0): Result<List<com.dokterdibya.patient.data.api.Article>> {
         return try {
-            val response = apiService.getArticles(category, limit)
+            val response = apiService.getArticles(category, limit, offset)
             if (response.isSuccessful && response.body() != null) {
                 val articles = response.body()!!.data ?: emptyList()
-                // Cache articles
-                if (category == null) {
+                // Cache articles (only first page when no category filter)
+                if (category == null && offset == 0) {
                     articleDao.insertAll(articles.map { ArticleEntity.fromArticle(it) })
                     updateCacheTimestamp("articles")
                 }
@@ -628,13 +658,14 @@ class PatientRepository @Inject constructor(
                 Result.failure(Exception("Failed to get articles"))
             }
         } catch (e: Exception) {
-            // Return cached data on network error
-            val cached = articleDao.getAllArticlesOnce()
-            if (cached.isNotEmpty()) {
-                Result.success(cached.map { it.toArticle() })
-            } else {
-                Result.failure(e)
+            // Return cached data on network error (only for first page)
+            if (offset == 0) {
+                val cached = articleDao.getAllArticlesOnce()
+                if (cached.isNotEmpty()) {
+                    return Result.success(cached.map { it.toArticle() })
+                }
             }
+            Result.failure(e)
         }
     }
 

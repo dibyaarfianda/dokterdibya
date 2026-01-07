@@ -63,7 +63,7 @@ fun ScheduleScreen(
                             onBack()
                         }
                     }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -176,7 +176,7 @@ fun LocationCard(
                 ) {
                     Icon(
                         Icons.Default.LocalHospital,
-                        contentDescription = null,
+                        contentDescription = "Lokasi praktik",
                         tint = TextPrimaryDark,
                         modifier = Modifier.padding(16.dp)
                     )
@@ -220,7 +220,7 @@ fun LocationCard(
                 ) {
                     Icon(
                         painter = painterResource(id = if (location.hasOnlineBooking) R.drawable.book else R.drawable.lokasi),
-                        contentDescription = null,
+                        contentDescription = if (location.hasOnlineBooking) "Booking tersedia" else "Lihat jadwal",
                         tint = if (location.hasOnlineBooking) Success else Warning,
                         modifier = Modifier.size(14.dp)
                     )
@@ -247,7 +247,7 @@ fun LocationCard(
             ) {
                 Icon(
                     painter = painterResource(id = if (location.hasOnlineBooking) R.drawable.book else R.drawable.temurs),
-                    contentDescription = null,
+                    contentDescription = if (location.hasOnlineBooking) "Buat janji" else "Lihat jadwal",
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
@@ -287,7 +287,7 @@ fun ScheduleDetailContent(
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.identitas),
-                        contentDescription = null,
+                        contentDescription = "Informasi",
                         tint = Accent,
                         modifier = Modifier.size(24.dp)
                     )
@@ -309,7 +309,7 @@ fun ScheduleDetailContent(
             ) {
                 Icon(
                     painter = painterResource(id = R.drawable.temurs),
-                    contentDescription = null,
+                    contentDescription = "Jadwal",
                     tint = Accent,
                     modifier = Modifier.size(24.dp)
                 )
@@ -346,7 +346,7 @@ fun ScheduleDetailContent(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
                             Icons.Default.Warning,
-                            contentDescription = null,
+                            contentDescription = "Error",
                             tint = Danger,
                             modifier = Modifier.size(48.dp)
                         )
@@ -369,7 +369,7 @@ fun ScheduleDetailContent(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
                             painter = painterResource(id = R.drawable.temurs),
-                            contentDescription = null,
+                            contentDescription = "Tidak ada jadwal",
                             tint = TextSecondaryDark,
                             modifier = Modifier.size(48.dp)
                         )
@@ -417,7 +417,7 @@ fun ScheduleDetailContent(
                     ) {
                         Icon(
                             Icons.Default.Chat,
-                            contentDescription = null,
+                            contentDescription = "WhatsApp",
                             modifier = Modifier.size(18.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
@@ -463,7 +463,7 @@ fun ScheduleRow(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         painter = painterResource(id = R.drawable.temurs),
-                        contentDescription = null,
+                        contentDescription = "Waktu",
                         tint = Success,
                         modifier = Modifier.size(16.dp)
                     )

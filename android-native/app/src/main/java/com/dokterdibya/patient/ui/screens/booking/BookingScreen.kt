@@ -70,7 +70,7 @@ fun BookingScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -103,7 +103,7 @@ fun BookingScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
                             Icons.Default.Warning,
-                            contentDescription = null,
+                            contentDescription = "Error",
                             tint = Danger,
                             modifier = Modifier.size(48.dp)
                         )
@@ -140,7 +140,7 @@ fun BookingScreen(
                             ) {
                                 Icon(
                                     Icons.Default.Info,
-                                    contentDescription = null,
+                                    contentDescription = "Informasi",
                                     tint = Accent
                                 )
                                 Spacer(modifier = Modifier.width(12.dp))
@@ -228,7 +228,7 @@ fun BookingScreen(
                                     ) {
                                         Icon(
                                             painter = painterResource(id = R.drawable.temurs),
-                                            contentDescription = null,
+                                            contentDescription = "Tidak ada slot",
                                             tint = TextSecondaryDark,
                                             modifier = Modifier.size(40.dp)
                                         )
@@ -353,7 +353,7 @@ fun BookingDialog(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 Icons.Default.CalendarToday,
-                                contentDescription = null,
+                                contentDescription = "Tanggal",
                                 tint = Accent,
                                 modifier = Modifier.size(16.dp)
                             )
@@ -368,7 +368,7 @@ fun BookingDialog(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 painter = painterResource(id = R.drawable.temurs),
-                                contentDescription = null,
+                                contentDescription = "Waktu",
                                 tint = Accent,
                                 modifier = Modifier.size(16.dp)
                             )
@@ -641,7 +641,7 @@ fun CancelDialog(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.Default.Warning,
-                        contentDescription = null,
+                        contentDescription = "Peringatan",
                         tint = Danger,
                         modifier = Modifier.size(28.dp)
                     )
@@ -674,7 +674,7 @@ fun CancelDialog(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 Icons.Default.CalendarToday,
-                                contentDescription = null,
+                                contentDescription = "Tanggal",
                                 tint = Accent,
                                 modifier = Modifier.size(16.dp)
                             )
@@ -689,7 +689,7 @@ fun CancelDialog(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 painter = painterResource(id = R.drawable.temurs),
-                                contentDescription = null,
+                                contentDescription = "Waktu",
                                 tint = Accent,
                                 modifier = Modifier.size(16.dp)
                             )
@@ -862,7 +862,7 @@ fun AppointmentCard(
                 ) {
                     Icon(
                         Icons.Default.Close,
-                        contentDescription = null,
+                        contentDescription = "Batalkan",
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))

@@ -22,6 +22,10 @@ object DatabaseModule {
             AppDatabase::class.java,
             AppDatabase.DATABASE_NAME
         )
+            // Add all defined migrations
+            .addMigrations(*AppDatabase.ALL_MIGRATIONS)
+            // For cache database, use destructive migration as fallback
+            // This is safe because cache data can always be re-fetched from server
             .fallbackToDestructiveMigration()
             .build()
     }

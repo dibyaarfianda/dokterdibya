@@ -1,6 +1,7 @@
 package com.dokterdibya.patient.di
 
 import android.content.Context
+import com.dokterdibya.patient.BuildConfig
 import com.dokterdibya.patient.data.api.ApiService
 import com.dokterdibya.patient.data.api.AuthInterceptor
 import dagger.Module
@@ -33,7 +34,13 @@ object NetworkModule {
     @Singleton
     fun provideLoggingInterceptor(): HttpLoggingInterceptor {
         return HttpLoggingInterceptor().apply {
-            level = HttpLoggingInterceptor.Level.BODY
+            // SECURITY: Use BASIC level to avoid logging auth tokens and request bodies
+            // Only log headers in debug builds, nothing in release
+            level = if (BuildConfig.DEBUG) {
+                HttpLoggingInterceptor.Level.BASIC
+            } else {
+                HttpLoggingInterceptor.Level.NONE
+            }
         }
     }
 
@@ -48,9 +55,11 @@ object NetworkModule {
             .cache(cache)
             .addInterceptor(authInterceptor)
             .addInterceptor(loggingInterceptor)
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
+            // Shorter timeouts for mobile networks with retry logic
+            .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(20, TimeUnit.SECONDS)
+            .writeTimeout(20, TimeUnit.SECONDS)
+            .retryOnConnectionFailure(true)
             .build()
     }
 

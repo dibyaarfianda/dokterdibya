@@ -151,7 +151,7 @@ fun LoginScreen(
                 leadingIcon = {
                     Icon(
                         Icons.Default.Email,
-                        contentDescription = null,
+                        contentDescription = "Email",
                         tint = TextSecondaryDark
                     )
                 },
@@ -187,7 +187,7 @@ fun LoginScreen(
                 leadingIcon = {
                     Icon(
                         Icons.Default.Lock,
-                        contentDescription = null,
+                        contentDescription = "Password",
                         tint = TextSecondaryDark
                     )
                 },
