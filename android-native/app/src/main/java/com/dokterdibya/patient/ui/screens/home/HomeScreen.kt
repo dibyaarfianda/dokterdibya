@@ -321,7 +321,7 @@ fun HomeScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.Person,
-                            contentDescription = null,
+                            contentDescription = "Selamat Datang",
                             tint = WebAccent,
                             modifier = Modifier.size(28.dp)
                         )
@@ -543,7 +543,7 @@ fun BirthCongratulationsCard(birthInfo: BirthInfo) {
                         ) {
                             Icon(
                                 imageVector = Icons.Default.ChildCare,
-                                contentDescription = null,
+                                contentDescription = "Foto bayi",
                                 tint = Purple,
                                 modifier = Modifier.size(48.dp)
                             )
@@ -725,7 +725,7 @@ fun AnnouncementsSection(
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Icon(
                                     imageVector = Icons.Default.KeyboardArrowDown,
-                                    contentDescription = null,
+                                    contentDescription = "Buka detail",
                                     tint = WebAccent,
                                     modifier = Modifier.size(18.dp)
                                 )
@@ -752,7 +752,7 @@ fun AnnouncementsSection(
                             Spacer(modifier = Modifier.width(4.dp))
                             Icon(
                                 imageVector = Icons.Default.KeyboardArrowUp,
-                                contentDescription = null,
+                                contentDescription = "Tutup detail",
                                 tint = TextSecondaryDark,
                                 modifier = Modifier.size(16.dp)
                             )
@@ -789,7 +789,7 @@ fun AnnouncementCard(
                 // Priority icon
                 Icon(
                     imageVector = priorityIcon,
-                    contentDescription = null,
+                    contentDescription = "Prioritas",
                     tint = priorityColor,
                     modifier = Modifier
                         .size(20.dp)
@@ -837,7 +837,7 @@ fun AnnouncementCard(
                 Spacer(modifier = Modifier.height(14.dp))
                 AsyncImage(
                     model = announcement.image_url,
-                    contentDescription = null,
+                    contentDescription = "Gambar pengumuman",
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(180.dp)
@@ -858,7 +858,7 @@ fun AnnouncementCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.Person,
-                        contentDescription = null,
+                        contentDescription = "Penulis",
                         tint = WebAccent,
                         modifier = Modifier.size(16.dp)
                     )
@@ -899,7 +899,7 @@ fun AnnouncementCard(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.CalendarToday,
-                            contentDescription = null,
+                            contentDescription = "Tanggal",
                             tint = TextSecondaryDark,
                             modifier = Modifier.size(14.dp)
                         )
@@ -943,7 +943,7 @@ fun MedicationsSection(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     painter = painterResource(id = R.drawable.vit),
-                    contentDescription = null,
+                    contentDescription = "Obat",
                     tint = Success,
                     modifier = Modifier.size(20.dp)
                 )
@@ -1010,7 +1010,7 @@ fun MedicationItem(medication: Medication) {
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.vit),
-                contentDescription = null,
+                contentDescription = medication.item_name ?: "Obat",
                 tint = if (medication.is_current == 1) Success else TextSecondaryDark,
                 modifier = Modifier.size(18.dp)
             )
@@ -1090,7 +1090,7 @@ fun PregnancyCard(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.ChildCare,
-                            contentDescription = null,
+                            contentDescription = "Bayi",
                             tint = Purple,
                             modifier = Modifier.size(20.dp)
                         )
@@ -1215,7 +1215,7 @@ fun PregnancyCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Lightbulb,
-                            contentDescription = null,
+                            contentDescription = "Tips",
                             tint = Warning,
                             modifier = Modifier.size(16.dp)
                         )
@@ -1254,7 +1254,7 @@ fun WelcomeMessageCard() {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.Favorite,
-                        contentDescription = null,
+                        contentDescription = "Selamat Datang",
                         tint = WebAccent,
                         modifier = Modifier.size(24.dp)
                     )
@@ -1444,7 +1444,7 @@ fun JourneyBookCard(onClick: () -> Unit) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             imageVector = Icons.Default.TouchApp,
-                            contentDescription = null,
+                            contentDescription = "Buka",
                             tint = GoldColor,
                             modifier = Modifier.size(16.dp)
                         )
@@ -1484,7 +1484,7 @@ fun ProfileIdentityCard(onEditIntake: () -> Unit) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     painter = painterResource(id = R.drawable.identitas),
-                    contentDescription = null,
+                    contentDescription = "Identitas",
                     tint = WebAccent,
                     modifier = Modifier.size(20.dp)
                 )
@@ -1512,7 +1512,7 @@ fun ProfileIdentityCard(onEditIntake: () -> Unit) {
             ) {
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
-                    contentDescription = null,
+                    contentDescription = "Lengkapi",
                     tint = Color.White,
                     modifier = Modifier.size(20.dp)
                 )
@@ -1603,7 +1603,7 @@ fun RuangMembacaSection(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         imageVector = Icons.Default.MenuBook,
-                        contentDescription = null,
+                        contentDescription = "Artikel",
                         tint = WebAccent,
                         modifier = Modifier.size(22.dp)
                     )
@@ -1635,7 +1635,7 @@ fun RuangMembacaSection(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Star,
-                            contentDescription = null,
+                            contentDescription = "Populer",
                             tint = Warning,
                             modifier = Modifier.size(14.dp)
                         )
@@ -1733,7 +1733,7 @@ fun ArticleCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.Article,
-                            contentDescription = null,
+                            contentDescription = "Artikel",
                             tint = WebAccent,
                             modifier = Modifier.size(32.dp)
                         )
@@ -1828,7 +1828,7 @@ fun KlinikPrivatMingguCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Default.CalendarMonth,
-                    contentDescription = null,
+                    contentDescription = "Jadwal",
                     tint = WebAccent,
                     modifier = Modifier.size(22.dp)
                 )
@@ -1858,7 +1858,7 @@ fun KlinikPrivatMingguCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.EventBusy,
-                        contentDescription = null,
+                        contentDescription = "Tidak ada jadwal",
                         tint = WebAccent,
                         modifier = Modifier.size(32.dp)
                     )
@@ -1884,7 +1884,7 @@ fun KlinikPrivatMingguCard(
                 ) {
                     Icon(
                         imageVector = Icons.Default.Add,
-                        contentDescription = null,
+                        contentDescription = "Tambah",
                         modifier = Modifier.size(18.dp)
                     )
                     Spacer(modifier = Modifier.width(8.dp))
@@ -1915,7 +1915,7 @@ fun JadwalDanLokasiCard(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Default.LocationOn,
-                    contentDescription = null,
+                    contentDescription = "Lokasi",
                     tint = WebAccent,
                     modifier = Modifier.size(22.dp)
                 )
@@ -1952,7 +1952,7 @@ fun JadwalDanLokasiCard(
                     ) {
                         Icon(
                             imageVector = Icons.Default.MedicalServices,
-                            contentDescription = null,
+                            contentDescription = "Rumah Sakit",
                             tint = WebAccent,
                             modifier = Modifier.size(24.dp)
                         )
@@ -1979,7 +1979,7 @@ fun JadwalDanLokasiCard(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 imageVector = Icons.Default.Schedule,
-                                contentDescription = null,
+                                contentDescription = "Jadwal",
                                 tint = WebAccent,
                                 modifier = Modifier.size(14.dp)
                             )
@@ -2061,7 +2061,7 @@ fun KalenderKesuburanCard(
                     ) {
                         Icon(
                             painter = painterResource(id = R.drawable.subur),
-                            contentDescription = null,
+                            contentDescription = "Kesuburan",
                             tint = Fertility,
                             modifier = Modifier.size(28.dp)
                         )

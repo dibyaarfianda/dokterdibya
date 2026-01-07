@@ -106,7 +106,8 @@ interface ApiService {
     @GET("api/articles")
     suspend fun getArticles(
         @Query("category") category: String? = null,
-        @Query("limit") limit: Int = 10
+        @Query("limit") limit: Int = 10,
+        @Query("offset") offset: Int = 0
     ): Response<ArticleListResponse>
 
     @GET("api/articles/{id}")

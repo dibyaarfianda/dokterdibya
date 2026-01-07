@@ -57,7 +57,7 @@ fun VisitHistoryScreen(
                             onBack()
                         }
                     }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -120,7 +120,7 @@ fun VisitListContent(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(
                     Icons.Default.Warning,
-                    contentDescription = null,
+                    contentDescription = "Error",
                     tint = Danger,
                     modifier = Modifier.size(48.dp)
                 )
@@ -147,7 +147,7 @@ fun VisitListContent(
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Icon(
                     painter = painterResource(id = R.drawable.erm),
-                    contentDescription = null,
+                    contentDescription = "Tidak ada riwayat",
                     tint = TextSecondaryDark,
                     modifier = Modifier.size(64.dp)
                 )
@@ -222,7 +222,7 @@ fun VisitCard(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 painter = painterResource(id = R.drawable.book),
-                                contentDescription = null,
+                                contentDescription = "Tanggal kunjungan",
                                 tint = TextPrimaryDark,
                                 modifier = Modifier.size(18.dp)
                             )
@@ -294,7 +294,7 @@ fun VisitCard(
                 )
                 Icon(
                     Icons.Default.ChevronRight,
-                    contentDescription = null,
+                    contentDescription = "Lihat detail",
                     tint = TextSecondaryDark,
                     modifier = Modifier.size(16.dp)
                 )
@@ -324,7 +324,7 @@ fun VisitDetailContent(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             painter = painterResource(id = R.drawable.erm),
-                            contentDescription = null,
+                            contentDescription = "Informasi",
                             tint = Accent,
                             modifier = Modifier.size(24.dp)
                         )
@@ -358,7 +358,7 @@ fun VisitDetailContent(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 Icons.Default.List,
-                                contentDescription = null,
+                                contentDescription = "Rincian",
                                 tint = Accent,
                                 modifier = Modifier.size(24.dp)
                             )
@@ -398,7 +398,7 @@ fun VisitDetailContent(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
                             Icons.Default.Payment,
-                            contentDescription = null,
+                            contentDescription = "Pembayaran",
                             tint = Accent,
                             modifier = Modifier.size(24.dp)
                         )
@@ -477,7 +477,7 @@ fun VisitDetailContent(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
                                 Icons.Default.Notes,
-                                contentDescription = null,
+                                contentDescription = "Catatan",
                                 tint = Accent,
                                 modifier = Modifier.size(24.dp)
                             )

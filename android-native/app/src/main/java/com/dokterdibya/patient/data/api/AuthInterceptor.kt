@@ -1,8 +1,6 @@
 package com.dokterdibya.patient.data.api
 
 import com.dokterdibya.patient.data.repository.TokenRepository
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.Response
 import javax.inject.Inject
@@ -16,19 +14,21 @@ class AuthInterceptor @Inject constructor(
     override fun intercept(chain: Interceptor.Chain): Response {
         val originalRequest = chain.request()
 
-        // Skip auth header for login endpoints
-        if (originalRequest.url.encodedPath.contains("google-auth-code")) {
+        // Skip auth header for login/public endpoints
+        val path = originalRequest.url.encodedPath
+        if (path.contains("google-auth-code") ||
+            path.contains("patient-login") ||
+            path.contains("registration-codes")) {
             return chain.proceed(originalRequest)
         }
 
-        val token = runBlocking {
-            tokenRepository.getToken().first()
-        }
+        // Use cached token (non-blocking) instead of runBlocking
+        // This prevents ANR by avoiding blocking the OkHttp thread
+        val token = tokenRepository.getCachedToken()
 
         return if (token != null) {
             val newRequest = originalRequest.newBuilder()
                 .addHeader("Authorization", "Bearer $token")
-                .addHeader("Cache-Control", "no-cache")
                 .build()
             chain.proceed(newRequest)
         } else {

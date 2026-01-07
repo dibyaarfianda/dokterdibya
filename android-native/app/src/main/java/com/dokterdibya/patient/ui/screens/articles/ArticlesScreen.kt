@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -35,6 +36,24 @@ fun ArticlesScreen(
     viewModel: ArticlesViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val listState = rememberLazyListState()
+
+    // Detect when to load more (infinite scroll)
+    val shouldLoadMore = remember {
+        derivedStateOf {
+            val lastVisibleItem = listState.layoutInfo.visibleItemsInfo.lastOrNull()
+                ?: return@derivedStateOf false
+            // Load more when user is 3 items from the end
+            lastVisibleItem.index >= uiState.articles.size - 3
+        }
+    }
+
+    // Load more when reaching bottom
+    LaunchedEffect(shouldLoadMore.value) {
+        if (shouldLoadMore.value && uiState.hasMorePages && !uiState.isLoadingMore) {
+            viewModel.loadMoreArticles()
+        }
+    }
 
     ThemedBackground {
     Scaffold(
@@ -48,7 +67,7 @@ fun ArticlesScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Back")
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -72,7 +91,7 @@ fun ArticlesScreen(
                 ) {
                     CircularProgressIndicator(color = Accent)
                 }
-            } else if (uiState.error != null) {
+            } else if (uiState.error != null && uiState.articles.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -80,7 +99,7 @@ fun ArticlesScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
                             Icons.Default.Warning,
-                            contentDescription = null,
+                            contentDescription = "Error",
                             tint = Danger,
                             modifier = Modifier.size(48.dp)
                         )
@@ -106,7 +125,7 @@ fun ArticlesScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         Icon(
                             painter = painterResource(id = R.drawable.ruangbaca),
-                            contentDescription = null,
+                            contentDescription = "Tidak ada artikel",
                             tint = TextSecondaryDark,
                             modifier = Modifier.size(64.dp)
                         )
@@ -120,6 +139,7 @@ fun ArticlesScreen(
                 }
             } else {
                 LazyColumn(
+                    state = listState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -136,6 +156,39 @@ fun ArticlesScreen(
                                 onNavigateToArticle(article.id)
                             }
                         )
+                    }
+
+                    // Loading indicator at bottom for pagination
+                    if (uiState.isLoadingMore) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(
+                                    color = Accent,
+                                    modifier = Modifier.size(24.dp),
+                                    strokeWidth = 2.dp
+                                )
+                            }
+                        }
+                    }
+
+                    // End of list indicator
+                    if (!uiState.hasMorePages && uiState.articles.isNotEmpty()) {
+                        item {
+                            Text(
+                                "Tidak ada artikel lagi",
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                color = TextSecondaryDark,
+                                fontSize = 12.sp,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
+                        }
                     }
                 }
             }
@@ -216,7 +269,7 @@ fun ArticleCard(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         painter = painterResource(id = R.drawable.temurs),
-                        contentDescription = null,
+                        contentDescription = "Tanggal",
                         tint = TextSecondaryDark,
                         modifier = Modifier.size(12.dp)
                     )

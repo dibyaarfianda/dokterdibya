@@ -29,13 +29,15 @@ class DokterDibyaApp : Application(), ImageLoaderFactory {
         return ImageLoader.Builder(this)
             .memoryCache {
                 MemoryCache.Builder(this)
-                    .maxSizePercent(0.25) // 25% of app memory
+                    // Reduced from 25% to 15% for better performance on low-end devices
+                    .maxSizePercent(0.15)
                     .build()
             }
             .diskCache {
                 DiskCache.Builder()
                     .directory(File(cacheDir, "image_cache"))
-                    .maxSizeBytes(50L * 1024 * 1024) // 50 MB
+                    // Reduced from 50MB to 30MB for storage efficiency
+                    .maxSizeBytes(30L * 1024 * 1024)
                     .build()
             }
             .components {
@@ -49,9 +51,24 @@ class DokterDibyaApp : Application(), ImageLoaderFactory {
 
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
-        // Clear image cache on low memory
-        if (level >= ComponentCallbacks2.TRIM_MEMORY_MODERATE) {
-            imageLoader?.memoryCache?.clear()
+        // More aggressive memory trimming for better performance
+        when {
+            level >= ComponentCallbacks2.TRIM_MEMORY_COMPLETE -> {
+                // System is under extreme memory pressure, clear everything
+                imageLoader?.memoryCache?.clear()
+            }
+            level >= ComponentCallbacks2.TRIM_MEMORY_MODERATE -> {
+                // System is under moderate pressure, clear cache
+                imageLoader?.memoryCache?.clear()
+            }
+            level >= ComponentCallbacks2.TRIM_MEMORY_BACKGROUND -> {
+                // App is in background, trim cache to weak references only
+                imageLoader?.memoryCache?.clear()
+            }
+            level >= ComponentCallbacks2.TRIM_MEMORY_UI_HIDDEN -> {
+                // UI is hidden, reduce cache size
+                // Note: Coil doesn't support partial trimming, so we clear on moderate+
+            }
         }
     }
 

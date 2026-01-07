@@ -1,7 +1,9 @@
 package com.dokterdibya.patient.ui.screens.documents
 
+import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
+import android.webkit.WebSettings
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -120,13 +122,47 @@ fun DocumentViewerScreen(
     }
 }
 
+/**
+ * Secure WebView client that prevents navigation to external URLs
+ */
+private class SecureWebViewClient : WebViewClient() {
+    override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
+        // Block all navigation - we only display static HTML content
+        return true
+    }
+
+    override fun shouldOverrideUrlLoading(view: WebView?, url: String?): Boolean {
+        // Block all navigation for older Android versions
+        return true
+    }
+}
+
+/**
+ * Sanitize HTML content to prevent XSS attacks
+ * Removes potentially dangerous tags and attributes
+ */
+private fun sanitizeHtml(content: String): String {
+    return content
+        .replace(Regex("<script[^>]*>.*?</script>", RegexOption.IGNORE_CASE), "")
+        .replace(Regex("<iframe[^>]*>.*?</iframe>", RegexOption.IGNORE_CASE), "")
+        .replace(Regex("<object[^>]*>.*?</object>", RegexOption.IGNORE_CASE), "")
+        .replace(Regex("<embed[^>]*>.*?</embed>", RegexOption.IGNORE_CASE), "")
+        .replace(Regex("<form[^>]*>.*?</form>", RegexOption.IGNORE_CASE), "")
+        .replace(Regex("on\\w+\\s*=", RegexOption.IGNORE_CASE), "data-blocked=")
+        .replace(Regex("javascript:", RegexOption.IGNORE_CASE), "blocked:")
+}
+
 @Composable
 fun DocumentContentView(content: String) {
+    // Sanitize content before display to prevent XSS
+    val sanitizedContent = sanitizeHtml(content)
+
     val htmlContent = """
         <!DOCTYPE html>
         <html>
         <head>
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data: https:;">
             <style>
                 body {
                     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -168,7 +204,7 @@ fun DocumentContentView(content: String) {
                     padding-left: 24px;
                 }
                 li { margin: 4px 0; }
-                a { color: #0091FF; }
+                a { color: #0091FF; pointer-events: none; }
                 hr {
                     border: none;
                     border-top: 1px solid #3a3a3a;
@@ -184,7 +220,7 @@ fun DocumentContentView(content: String) {
             </style>
         </head>
         <body>
-            $content
+            $sanitizedContent
         </body>
         </html>
     """.trimIndent()
@@ -193,10 +229,30 @@ fun DocumentContentView(content: String) {
         modifier = Modifier.fillMaxSize(),
         factory = { context ->
             WebView(context).apply {
+                // SECURITY: Disable JavaScript to prevent XSS attacks
                 settings.javaScriptEnabled = false
+
+                // SECURITY: Disable file and content access
+                settings.allowFileAccess = false
+                settings.allowContentAccess = false
+
+                // SECURITY: Disable geolocation
+                settings.setGeolocationEnabled(false)
+
+                // SECURITY: Disable DOM storage
+                settings.domStorageEnabled = false
+
+                // SECURITY: Disable database access
+                settings.databaseEnabled = false
+
+                // Display settings
                 settings.loadWithOverviewMode = true
                 settings.useWideViewPort = true
-                webViewClient = WebViewClient()
+                settings.mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+
+                // Use secure WebViewClient that blocks navigation
+                webViewClient = SecureWebViewClient()
+
                 setBackgroundColor(android.graphics.Color.parseColor("#0F0F1A"))
             }
         },
