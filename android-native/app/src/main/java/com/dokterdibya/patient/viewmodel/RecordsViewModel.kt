@@ -47,7 +47,7 @@ class RecordsViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isRefreshing = true)
 
-            val billingsResult = repository.getMyBillings()
+            val billingsResult = repository.getVisitHistory()
             val documentsResult = repository.getDocuments()
 
             billingsResult
@@ -90,7 +90,7 @@ class RecordsViewModel @Inject constructor(
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
             // Load billings as medical records
-            val billingsResult = repository.getMyBillings()
+            val billingsResult = repository.getVisitHistory()
             val documentsResult = repository.getDocuments()
 
             billingsResult
