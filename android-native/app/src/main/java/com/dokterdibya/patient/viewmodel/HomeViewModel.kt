@@ -68,6 +68,10 @@ class HomeViewModel @Inject constructor(
 
     private var patientId: String? = null
 
+    // Debounce refresh to prevent excessive API calls
+    private var lastRefreshTime: Long = 0
+    private val refreshDebounceMs: Long = 5000 // 5 seconds minimum between refreshes
+
     init {
         loadAllData()
     }
@@ -217,7 +221,19 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-    fun refresh() {
+    /**
+     * Refresh data with debouncing to prevent excessive API calls.
+     * Skips refresh if called within 5 seconds of the last refresh.
+     *
+     * @param force If true, ignores debounce and always refreshes
+     */
+    fun refresh(force: Boolean = false) {
+        val now = System.currentTimeMillis()
+        if (!force && (now - lastRefreshTime) < refreshDebounceMs) {
+            // Skip refresh - called too soon
+            return
+        }
+        lastRefreshTime = now
         loadAllData()
     }
 

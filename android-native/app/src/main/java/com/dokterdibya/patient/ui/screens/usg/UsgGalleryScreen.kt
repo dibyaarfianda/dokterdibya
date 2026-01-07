@@ -30,6 +30,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.hilt.navigation.compose.hiltViewModel
 import coil.compose.AsyncImage
+import com.dokterdibya.patient.ui.components.ErrorState
 import com.dokterdibya.patient.ui.components.ThemedBackground
 import com.dokterdibya.patient.ui.theme.*
 import com.dokterdibya.patient.viewmodel.UsgViewModel
@@ -90,31 +91,10 @@ fun UsgGalleryScreen(
                     CircularProgressIndicator(color = Accent)
                 }
             } else if (uiState.error != null) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            Icons.Default.Warning,
-                            contentDescription = "Error",
-                            tint = Danger,
-                            modifier = Modifier.size(48.dp)
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            uiState.error ?: "Terjadi kesalahan",
-                            color = TextSecondaryDark
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(
-                            onClick = { viewModel.loadUsgResults() },
-                            colors = ButtonDefaults.buttonColors(containerColor = Purple)
-                        ) {
-                            Text("Coba Lagi")
-                        }
-                    }
-                }
+                ErrorState(
+                    error = uiState.error ?: "Terjadi kesalahan",
+                    onRetry = { viewModel.loadUsgResults() }
+                )
             } else if (uiState.results.isEmpty()) {
                 Box(
                     modifier = Modifier.fillMaxSize(),

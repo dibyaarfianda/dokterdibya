@@ -4,6 +4,7 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.ComponentCallbacks2
+import android.content.pm.ApplicationInfo
 import android.media.AudioAttributes
 import android.media.RingtoneManager
 import android.os.Build
@@ -13,6 +14,7 @@ import coil.decode.SvgDecoder
 import coil.disk.DiskCache
 import coil.memory.MemoryCache
 import dagger.hilt.android.HiltAndroidApp
+import timber.log.Timber
 import java.io.File
 
 @HiltAndroidApp
@@ -22,7 +24,16 @@ class DokterDibyaApp : Application(), ImageLoaderFactory {
 
     override fun onCreate() {
         super.onCreate()
+        setupTimber()
         createNotificationChannels()
+    }
+
+    private fun setupTimber() {
+        val isDebug = (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        if (isDebug) {
+            Timber.plant(Timber.DebugTree())
+        }
+        // In production, you could add a CrashReportingTree for Crashlytics
     }
 
     override fun newImageLoader(): ImageLoader {

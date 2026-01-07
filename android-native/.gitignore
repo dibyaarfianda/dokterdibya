@@ -1,0 +1,23 @@
+# Android Studio / Gradle
+*.iml
+.gradle/
+/local.properties
+/.idea/
+.DS_Store
+/build/
+/captures
+.externalNativeBuild
+.cxx
+
+# Keystore credentials (NEVER commit)
+keystore.properties
+*.jks
+*.keystore
+
+# Generated files
+/app/build/
+/app/release/
+
+# Misc
+*.log
+*.tmp
