@@ -1198,22 +1198,13 @@ function generateMedicalResume(identitas, records, billingItems = { obat: [], ti
                 resume += `Diagnosis Sekunder:\n${diag.diagnosis_sekunder}\n\n`;
             }
 
-            // Show obstetric info if available from MEDIFY
-            if (diag.gravida !== undefined || diag.usia_kehamilan_minggu) {
-                let obsInfo = '';
-                if (diag.gravida !== undefined) {
-                    obsInfo += `G${diag.gravida}P${diag.para || 0}A${diag.abortus || 0}`;
-                    if (diag.anak_hidup !== undefined) obsInfo += ` (Anak hidup: ${diag.anak_hidup})`;
-                }
-                if (diag.usia_kehamilan_minggu) {
-                    if (obsInfo) obsInfo += ', ';
-                    obsInfo += `UK ${diag.usia_kehamilan_minggu}`;
-                    if (diag.usia_kehamilan_hari) obsInfo += ` ${diag.usia_kehamilan_hari}/7`;
-                    obsInfo += ' minggu';
-                }
-                if (obsInfo) {
-                    resume += `Status Obstetri: ${obsInfo}\n\n`;
-                }
+            // Show obstetric info if available from MEDIFY (only with valid data)
+            // Skip if gravida is null/undefined/0 - obstetric info should come from anamnesa, not diagnosis
+            if (diag.usia_kehamilan_minggu && diag.usia_kehamilan_minggu > 0) {
+                let obsInfo = `UK ${diag.usia_kehamilan_minggu}`;
+                if (diag.usia_kehamilan_hari) obsInfo += ` ${diag.usia_kehamilan_hari}/7`;
+                obsInfo += ' minggu';
+                resume += `Status Obstetri: ${obsInfo}\n\n`;
             }
 
             resume += '\n';

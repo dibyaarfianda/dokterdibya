@@ -253,14 +253,14 @@ function renderHistoryTable(history) {
 }
 
 /**
- * Start sync for a source (FAST SYNC - scrapes SIMRS once, matches all)
+ * Start sync for a source
  */
 async function startSync(source) {
     const btn = document.getElementById(`btn-sync-${source === 'rsia_melinda' ? 'melinda' : 'gambiran'}`);
     const statusContainer = document.getElementById('sync-status-container');
     const progressContainer = document.getElementById('batch-progress');
 
-    // Get date from input (fast sync uses single date)
+    // Get date from input
     const dateInput = document.getElementById('medify-date-start');
     const targetDate = dateInput?.value; // YYYY-MM-DD format
 
@@ -273,7 +273,7 @@ async function startSync(source) {
         weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
     });
 
-    if (!confirm(`Mulai FAST SYNC dari ${getSourceName(source)}?\n\nTanggal: ${dateText}\n\nProses akan:\n1. Login ke SIMRS sekali\n2. Ambil semua pasien Dr. Dibya pada tanggal tersebut\n3. Cocokkan dengan database kita\n4. Import CPPT untuk pasien yang cocok`)) {
+    if (!confirm(`Mulai Sync dari ${getSourceName(source)}?\n\nTanggal: ${dateText}`)) {
         return;
     }
 
@@ -286,43 +286,43 @@ async function startSync(source) {
         statusContainer.innerHTML = `
             <div class="alert alert-info">
                 <i class="fas fa-spinner fa-spin mr-2"></i>
-                <strong>Fast Sync ${getSourceName(source)}...</strong>
+                <strong>Sync ${getSourceName(source)}...</strong>
                 <p class="mb-0 mt-2">Login ke SIMRS & mencari pasien tanggal ${dateText}...</p>
             </div>
         `;
     }
 
     try {
-        const data = await apiRequest(`/medify-batch/fast-sync/${source}`, {
+        const data = await apiRequest(`/medify-batch/sync/${source}`, {
             method: 'POST',
             body: JSON.stringify({ date: targetDate })
         });
 
         if (data.success) {
             currentBatchId = data.batchId;
-            showToast('Fast Sync dimulai - scraping SIMRS...', 'success');
+            showToast('Sync dimulai...', 'success');
 
-            // Show progress UI for fast sync
+            // Show progress UI
             if (progressContainer) {
                 progressContainer.style.display = 'block';
                 progressContainer.innerHTML = `
                     <div class="card card-info">
                         <div class="card-header">
                             <h3 class="card-title">
-                                <i class="fas fa-bolt mr-2"></i>
-                                Fast Sync - ${getSourceName(source)}
+                                <i class="fas fa-sync-alt mr-2"></i>
+                                Sync - ${getSourceName(source)}
                             </h3>
                         </div>
                         <div class="card-body">
                             <div class="progress mb-3" style="height: 30px;">
-                                <div class="progress-bar progress-bar-striped progress-bar-animated bg-warning"
+                                <div class="progress-bar progress-bar-striped progress-bar-animated bg-info"
                                      role="progressbar" style="width: 100%"
                                      id="sync-progress-bar">
-                                    Scraping SIMRS...
+                                    Memproses...
                                 </div>
                             </div>
                             <p class="mb-0" id="sync-current-patient">
-                                <i class="fas fa-search mr-2"></i>Mencari pasien di SIMRS dan mencocokkan dengan database...
+                                <i class="fas fa-search mr-2"></i>Mencari pasien di SIMRS...
                             </p>
                         </div>
                     </div>
@@ -330,7 +330,7 @@ async function startSync(source) {
             }
 
             // Keep button disabled while syncing
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Fast Syncing...';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Syncing...';
 
             // Start polling for status
             if (!refreshInterval) {
@@ -369,56 +369,37 @@ function setupSocketListeners() {
     window.socket.on('medify_progress', (data) => {
         console.log('[MedifySync] Progress:', data);
 
-        // Update progress bar
         const progressBar = document.getElementById('sync-progress-bar');
         const currentPatient = document.getElementById('sync-current-patient');
+        const statusContainer = document.getElementById('sync-status-container');
 
+        // Update progress bar
         if (progressBar && data.current && data.total) {
             const percentage = Math.round((data.current / data.total) * 100);
             progressBar.style.width = `${percentage}%`;
             progressBar.textContent = `${data.current}/${data.total}`;
-
-            // Change color based on status
-            progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated';
-            if (data.status === 'success') {
-                progressBar.classList.add('bg-success');
-            } else if (data.status === 'failed' || data.status === 'skipped') {
-                progressBar.classList.add('bg-warning');
-            } else {
-                progressBar.classList.add('bg-info');
-            }
+            progressBar.className = 'progress-bar progress-bar-striped progress-bar-animated bg-info';
         }
 
-        if (currentPatient) {
-            let statusIcon = 'fa-spinner fa-spin';
-            let statusText = 'Memproses';
-
-            if (data.status === 'success') {
-                statusIcon = 'fa-check text-success';
-                statusText = 'Berhasil';
-            } else if (data.status === 'failed') {
-                statusIcon = 'fa-times text-danger';
-                statusText = 'Gagal';
-            } else if (data.status === 'skipped') {
-                statusIcon = 'fa-forward text-warning';
-                statusText = 'Dilewati';
-            }
-
-            currentPatient.innerHTML = `
-                <i class="fas ${statusIcon} mr-2"></i>
-                <strong>${statusText}:</strong> ${data.patientName}
-                ${data.error ? `<br><small class="text-muted ml-4">${data.error}</small>` : ''}
-            `;
+        // Update current status message
+        if (currentPatient && data.message) {
+            currentPatient.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>${data.message}`;
         }
 
-        // Update current job display
-        const statusContainer = document.getElementById('sync-status-container');
+        // Update status container
         if (statusContainer) {
             statusContainer.style.display = 'block';
+            let phaseText = 'Sync berjalan...';
+            if (data.phase === 'login') phaseText = 'Login...';
+            else if (data.phase === 'scrape') phaseText = 'Mengambil data SIMRS...';
+            else if (data.phase === 'matching') phaseText = 'Mencocokkan pasien...';
+            else if (data.phase === 'extract') phaseText = 'Mengekstrak rekam medis...';
+            else if (data.phase === 'complete') phaseText = 'Selesai!';
+
             statusContainer.innerHTML = `
                 <div class="alert alert-info">
                     <i class="fas fa-sync-alt fa-spin mr-2"></i>
-                    <strong>Sync berjalan...</strong>
+                    <strong>${phaseText}</strong>
                     ${data.current && data.total ? ` (${data.current}/${data.total})` : ''}
                 </div>
             `;
