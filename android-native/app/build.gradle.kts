@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -6,16 +9,23 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+// Load keystore properties from file (not committed to git)
+val keystorePropertiesFile = rootProject.file("keystore.properties")
+val keystoreProperties = Properties()
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+}
+
 android {
     namespace = "com.dokterdibya.patient"
     compileSdk = 34
 
     signingConfigs {
         create("release") {
-            storeFile = file("dokterdibya-release.jks")
-            storePassword = "dokterdibya2025"
-            keyAlias = "dokterdibya"
-            keyPassword = "dokterdibya2025"
+            storeFile = file(keystoreProperties.getProperty("storeFile", "dokterdibya-release.jks"))
+            storePassword = keystoreProperties.getProperty("storePassword", "")
+            keyAlias = keystoreProperties.getProperty("keyAlias", "dokterdibya")
+            keyPassword = keystoreProperties.getProperty("keyPassword", "")
         }
     }
 
@@ -99,8 +109,8 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
-    // Socket.IO (Real-time notifications)
-    implementation("io.socket:socket.io-client:2.1.0")
+    // Socket.IO (Real-time notifications) - upgraded from 2.1.0 for security
+    implementation("io.socket:socket.io-client:4.5.4")
 
     // Coil (Image Loading)
     implementation("io.coil-kt:coil-compose:2.5.0")
@@ -129,6 +139,9 @@ dependencies {
     // Firebase (Push Notifications)
     implementation(platform("com.google.firebase:firebase-bom:32.7.0"))
     implementation("com.google.firebase:firebase-messaging-ktx")
+
+    // Timber (Structured Logging)
+    implementation("com.jakewharton.timber:timber:5.0.1")
 
     // Accompanist (System UI Controller)
     implementation("com.google.accompanist:accompanist-systemuicontroller:0.32.0")
