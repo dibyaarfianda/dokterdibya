@@ -1,5 +1,29 @@
 # Project Rules - Dokter Dibya
 
+## CRITICAL: Verify Before Coding
+
+**ALWAYS verify against the actual codebase before writing ANY code.**
+
+Before using any method, class, API, or dependency:
+1. **Read the actual file** to confirm method names, signatures, and return types
+2. **Check build.gradle/package.json** for dependency versions before using features
+3. **Never assume** - if you're not 100% sure, read the file first
+
+**Examples of what to verify:**
+- Repository method names → Read the Repository file
+- API response structure → Read the ApiService/Model files
+- Compose API availability → Check BOM version in build.gradle.kts
+- JavaScript function names → Read the actual JS file
+
+**DO NOT:**
+- Assume method names based on similar patterns
+- Use APIs without checking dependency versions
+- Write code based on memory from previous sessions
+
+**This rule exists because:**
+- `getMyBillings()` vs `getVisitHistory()` - wrong method name caused build failure
+- `PullToRefreshBox` requires Material3 1.3.0+ but project uses BOM 2024.02.00
+
 ## Code Standards
 
 ### 1. Authentication Token
