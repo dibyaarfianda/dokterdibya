@@ -46,13 +46,21 @@ class PatientRepository @Inject constructor(
     private val articleDao: ArticleDao,
     private val notificationDao: NotificationDao,
     private val medicationDao: MedicationDao,
-    private val cacheMetadataDao: CacheMetadataDao
+    private val cacheMetadataDao: CacheMetadataDao,
+    private val profileDao: ProfileDao,
+    private val appointmentDao: AppointmentDao,
+    private val visitHistoryDao: VisitHistoryDao,
+    private val announcementDao: AnnouncementDao
 ) {
 
     // Cache expiry times
     private val articlesCacheExpiry = 24 * 60 * 60 * 1000L      // 24 hours
     private val notificationsCacheExpiry = 60 * 60 * 1000L     // 1 hour
     private val medicationsCacheExpiry = 12 * 60 * 60 * 1000L  // 12 hours
+    private val profileCacheExpiry = 24 * 60 * 60 * 1000L       // 24 hours
+    private val appointmentsCacheExpiry = 2 * 60 * 60 * 1000L   // 2 hours
+    private val visitHistoryCacheExpiry = 24 * 60 * 60 * 1000L  // 24 hours
+    private val announcementsCacheExpiry = 6 * 60 * 60 * 1000L  // 6 hours
 
     private suspend fun isCacheValid(key: String, expiryTime: Long): Boolean {
         val metadata = cacheMetadataDao.get(key) ?: return false
@@ -253,9 +261,17 @@ class PatientRepository @Inject constructor(
         articleDao.deleteAll()
         notificationDao.deleteAll()
         medicationDao.deleteAll()
+        profileDao.deleteAll()
+        appointmentDao.deleteAll()
+        visitHistoryDao.deleteAll()
+        announcementDao.deleteAll()
         cacheMetadataDao.delete("articles")
         cacheMetadataDao.delete("notifications")
         cacheMetadataDao.delete("medications")
+        cacheMetadataDao.delete("profile")
+        cacheMetadataDao.delete("appointments")
+        cacheMetadataDao.delete("visit_history")
+        cacheMetadataDao.delete("announcements")
     }
 
     /**
@@ -717,12 +733,78 @@ class PatientRepository @Inject constructor(
         return try {
             val response = apiService.getMyBillings()
             if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!.data)
+                val visits = response.body()!!.data
+                // Cache visit history
+                visitHistoryDao.deleteAll()
+                visitHistoryDao.insertAll(visits.map { billing ->
+                    VisitHistoryEntity(
+                        id = billing.id,
+                        billingNumber = billing.billing_number,
+                        billingDate = billing.billing_date,
+                        patientId = billing.patient_id,
+                        patientName = billing.patient_name,
+                        totalAmount = billing.total_amount,
+                        paidAmount = billing.paid_amount,
+                        paymentStatus = billing.payment_status,
+                        notes = billing.notes
+                    )
+                })
+                updateCacheTimestamp("visit_history")
+                Result.success(visits)
             } else {
                 Result.failure(Exception("Failed to get visit history"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            // Return cached data on network error
+            val cached = visitHistoryDao.getAllVisitHistoryOnce()
+            if (cached.isNotEmpty()) {
+                Result.success(cached.map { entity ->
+                    com.dokterdibya.patient.data.api.Billing(
+                        id = entity.id,
+                        billing_number = entity.billingNumber,
+                        billing_date = entity.billingDate,
+                        patient_id = entity.patientId,
+                        patient_name = entity.patientName,
+                        total_amount = entity.totalAmount,
+                        paid_amount = entity.paidAmount,
+                        payment_status = entity.paymentStatus,
+                        notes = entity.notes,
+                        subtotal = null,
+                        discount_amount = null,
+                        discount_percent = null,
+                        tax_amount = null,
+                        tax_percent = null,
+                        patient_record_id = null
+                    )
+                })
+            } else {
+                Result.failure(e)
+            }
+        }
+    }
+
+    /**
+     * Get cached visit history without network call
+     */
+    suspend fun getCachedVisitHistory(): List<com.dokterdibya.patient.data.api.Billing> {
+        return visitHistoryDao.getAllVisitHistoryOnce().map { entity ->
+            com.dokterdibya.patient.data.api.Billing(
+                id = entity.id,
+                billing_number = entity.billingNumber,
+                billing_date = entity.billingDate,
+                patient_id = entity.patientId,
+                patient_name = entity.patientName,
+                total_amount = entity.totalAmount,
+                paid_amount = entity.paidAmount,
+                payment_status = entity.paymentStatus,
+                notes = entity.notes,
+                subtotal = null,
+                discount_amount = null,
+                discount_percent = null,
+                tax_amount = null,
+                tax_percent = null,
+                patient_record_id = null
+            )
         }
     }
 
@@ -745,13 +827,31 @@ class PatientRepository @Inject constructor(
         return try {
             val response = apiService.getActiveAnnouncements(patientId)
             if (response.isSuccessful && response.body() != null) {
-                Result.success(response.body()!!.data)
+                val announcements = response.body()!!.data
+                // Cache announcements
+                announcementDao.deleteAll()
+                announcementDao.insertAll(announcements.map { AnnouncementEntity.fromAnnouncement(it) })
+                updateCacheTimestamp("announcements")
+                Result.success(announcements)
             } else {
                 Result.failure(Exception("Failed to get announcements"))
             }
         } catch (e: Exception) {
-            Result.failure(e)
+            // Return cached data on network error
+            val cached = announcementDao.getAllAnnouncementsOnce()
+            if (cached.isNotEmpty()) {
+                Result.success(cached.map { it.toAnnouncement() })
+            } else {
+                Result.failure(e)
+            }
         }
+    }
+
+    /**
+     * Get cached announcements without network call
+     */
+    suspend fun getCachedAnnouncements(): List<Announcement> {
+        return announcementDao.getAllAnnouncementsOnce().map { it.toAnnouncement() }
     }
 
     suspend fun toggleAnnouncementLike(announcementId: Int, patientId: String): Result<Pair<Boolean, Int>> {

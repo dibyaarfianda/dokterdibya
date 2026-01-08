@@ -32,6 +32,7 @@ import com.dokterdibya.patient.ui.screens.intro.IntroScreen
 import com.dokterdibya.patient.ui.screens.completeprofile.CompleteProfileScreen
 import com.dokterdibya.patient.ui.screens.webview.WebViewScreen
 import com.dokterdibya.patient.ui.screens.journeybook.JourneyBookScreen
+import com.dokterdibya.patient.ui.screens.intake.PatientIntakeScreen
 import java.net.URLDecoder
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
@@ -61,6 +62,7 @@ sealed class Screen(val route: String) {
     object Medications : Screen("medications")
     object Notifications : Screen("notifications")
     object JourneyBook : Screen("journey_book")
+    object PatientIntake : Screen("patient_intake")
     object WebView : Screen("webview/{url}/{title}") {
         fun createRoute(url: String, title: String): String {
             val encodedUrl = URLEncoder.encode(url, StandardCharsets.UTF_8.toString())
@@ -171,6 +173,9 @@ fun NavGraph(
                 },
                 onNavigateToCompleteProfile = {
                     navController.navigate(Screen.CompleteProfile.route)
+                },
+                onNavigateToPatientIntake = {
+                    navController.navigate(Screen.PatientIntake.route)
                 },
                 onLogout = {
                     navController.navigate(Screen.Login.route) {
@@ -308,6 +313,15 @@ fun NavGraph(
         composable(Screen.JourneyBook.route) {
             JourneyBookScreen(
                 onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.PatientIntake.route) {
+            PatientIntakeScreen(
+                onBack = { navController.popBackStack() },
+                onComplete = {
+                    navController.popBackStack()
+                }
             )
         }
 
