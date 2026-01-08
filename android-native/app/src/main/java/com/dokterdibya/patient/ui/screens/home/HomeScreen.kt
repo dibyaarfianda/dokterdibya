@@ -1,5 +1,7 @@
 package com.dokterdibya.patient.ui.screens.home
 
+import android.app.Activity
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -86,6 +88,11 @@ fun HomeScreen(
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
+    }
+
+    // Handle back button - exit app instead of navigating back to previous screens
+    BackHandler {
+        (context as? Activity)?.finish()
     }
 
     // Static floating bubble (no animation for performance with Haze)
