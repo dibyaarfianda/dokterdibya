@@ -836,6 +836,210 @@ router.get('/api/patients/overdue-pregnancies', verifyToken, async (req, res) =>
     }
 });
 
+// ==================== PREGNANCY DATA (Android App) ====================
+// IMPORTANT: This route MUST be before /api/patients/:id to avoid route matching issues
+
+// Baby size reference (40 weeks)
+const BABY_SIZES = {
+    4: { emoji: "🌱", size: "Biji Poppy", length: "0.1 cm" },
+    5: { emoji: "🫘", size: "Biji Wijen", length: "0.2 cm" },
+    6: { emoji: "🫛", size: "Biji Lentil", length: "0.4 cm" },
+    7: { emoji: "🫐", size: "Blueberry", length: "1.3 cm" },
+    8: { emoji: "🍇", size: "Raspberry", length: "1.6 cm" },
+    9: { emoji: "🫒", size: "Zaitun", length: "2.3 cm" },
+    10: { emoji: "🌰", size: "Kurma", length: "3.1 cm" },
+    11: { emoji: "🍋", size: "Jeruk Nipis", length: "4.1 cm" },
+    12: { emoji: "🍑", size: "Plum", length: "5.4 cm" },
+    13: { emoji: "🍋", size: "Lemon", length: "7.4 cm" },
+    14: { emoji: "🍊", size: "Jeruk", length: "8.7 cm" },
+    15: { emoji: "🍎", size: "Apel", length: "10.1 cm" },
+    16: { emoji: "🥑", size: "Alpukat", length: "11.6 cm" },
+    17: { emoji: "🥔", size: "Kentang", length: "13 cm" },
+    18: { emoji: "🫑", size: "Paprika", length: "14.2 cm" },
+    19: { emoji: "🥒", size: "Timun", length: "15.3 cm" },
+    20: { emoji: "🍌", size: "Pisang", length: "16.4 cm" },
+    21: { emoji: "🥕", size: "Wortel", length: "26.7 cm" },
+    22: { emoji: "🥬", size: "Sawi", length: "27.8 cm" },
+    23: { emoji: "🥭", size: "Mangga", length: "28.9 cm" },
+    24: { emoji: "🌽", size: "Jagung", length: "30 cm" },
+    25: { emoji: "🍆", size: "Terong", length: "34.6 cm" },
+    26: { emoji: "🥦", size: "Brokoli", length: "35.6 cm" },
+    27: { emoji: "🥬", size: "Kol", length: "36.6 cm" },
+    28: { emoji: "🍈", size: "Melon Kecil", length: "37.6 cm" },
+    29: { emoji: "🎃", size: "Labu Kecil", length: "38.6 cm" },
+    30: { emoji: "🥒", size: "Mentimun Besar", length: "39.9 cm" },
+    31: { emoji: "🥥", size: "Kelapa", length: "41.1 cm" },
+    32: { emoji: "🍍", size: "Nanas", length: "42.4 cm" },
+    33: { emoji: "🎃", size: "Labu", length: "43.7 cm" },
+    34: { emoji: "🍈", size: "Melon", length: "45 cm" },
+    35: { emoji: "🥬", size: "Selada Romaine", length: "46.2 cm" },
+    36: { emoji: "🥬", size: "Kol Besar", length: "47.4 cm" },
+    37: { emoji: "🥬", size: "Lobak Swiss", length: "48.6 cm" },
+    38: { emoji: "🍈", size: "Melon Besar", length: "49.8 cm" },
+    39: { emoji: "🍉", size: "Semangka Mini", length: "50.7 cm" },
+    40: { emoji: "🍉", size: "Semangka", length: "51.2 cm" }
+};
+
+// Weekly tips (milestone weeks)
+const PREGNANCY_TIPS = {
+    4: "Embrio mulai berkembang. Istirahat cukup dan konsumsi asam folat.",
+    8: "Jantung bayi sudah berdetak! Hindari rokok dan alkohol.",
+    12: "Risiko keguguran menurun. Saatnya umumkan kehamilan!",
+    16: "Bayi mulai bergerak. Anda mungkin merasakan tendangan pertama.",
+    20: "Separuh perjalanan! Saatnya USG detail anatomi bayi.",
+    24: "Bayi sudah bisa mendengar suara Anda. Ajak bicara!",
+    28: "Trimester ketiga dimulai. Persiapkan perlengkapan bayi.",
+    32: "Bayi sudah dalam posisi kepala di bawah. Ikuti kelas persalinan.",
+    36: "Bayi hampir siap lahir. Perhatikan tanda-tanda persalinan.",
+    40: "Selamat! Bayi Anda sudah full-term. Siap menyambut si kecil!"
+};
+
+// GET pregnancy data for logged-in patient (Android App)
+router.get('/api/patients/pregnancy-data', verifyPatientToken, async (req, res) => {
+    // Prevent browser caching - always fetch fresh data
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+    res.set('Pragma', 'no-cache');
+    res.set('Expires', '0');
+
+    try {
+        const patientId = req.patient.id;
+        console.log('[PREGNANCY_DEBUG] Endpoint called for patient:', patientId);
+
+        // Check if patient has given birth
+        const [birthRows] = await db.query(`
+            SELECT
+                baby_name,
+                DATE_FORMAT(birth_date, '%d %b %Y') as birth_date,
+                birth_time,
+                birth_weight,
+                birth_length,
+                photo_url,
+                photo_r2_key,
+                message as doctor_message
+            FROM birth_congratulations
+            WHERE patient_id = ? AND is_published = 1
+            ORDER BY created_at DESC
+            LIMIT 1
+        `, [patientId]);
+
+        if (birthRows.length > 0) {
+            const birth = birthRows[0];
+            console.log('[BIRTH_DEBUG] Found birth data for patient:', patientId, 'baby_name:', birth.baby_name);
+
+            // Regenerate signed URL if R2 key exists
+            let photoUrl = birth.photo_url;
+            if (birth.photo_r2_key) {
+                try {
+                    photoUrl = await r2Storage.getSignedDownloadUrl(birth.photo_r2_key, 3600);
+                } catch (r2Error) {
+                    console.error('Error generating signed URL:', r2Error);
+                }
+            }
+
+            return res.json({
+                success: true,
+                data: {
+                    is_pregnant: false,
+                    has_given_birth: true,
+                    birth_date: birth.birth_date,
+                    birth_time: birth.birth_time,
+                    baby_name: birth.baby_name,
+                    baby_weight: birth.birth_weight,
+                    baby_length: birth.birth_length,
+                    baby_photo_url: photoUrl,
+                    doctor_message: birth.doctor_message
+                }
+            });
+        }
+
+        // Get HPHT from latest obstetri record
+        const [obstetriRows] = await db.query(`
+            SELECT
+                JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) as hpht
+            FROM sunday_clinic_records scr
+            JOIN medical_records mr ON mr.mr_id COLLATE utf8mb4_general_ci = scr.mr_id COLLATE utf8mb4_general_ci
+                AND mr.record_type = 'anamnesa'
+            WHERE scr.patient_id = ?
+                AND scr.mr_category = 'obstetri'
+                AND JSON_EXTRACT(mr.record_data, '$.hpht') IS NOT NULL
+                AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != ''
+                AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != 'null'
+            ORDER BY scr.last_activity_at DESC
+            LIMIT 1
+        `, [patientId]);
+
+        if (obstetriRows.length > 0 && obstetriRows[0].hpht) {
+            const hpht = new Date(obstetriRows[0].hpht);
+
+            if (!isNaN(hpht.getTime())) {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const daysPregnant = Math.floor((today.getTime() - hpht.getTime()) / (24 * 60 * 60 * 1000));
+                const weeks = Math.floor(daysPregnant / 7);
+                const days = daysPregnant % 7;
+
+                // Calculate HPL (HPHT + 280 days)
+                const hplDate = new Date(hpht.getTime() + 280 * 24 * 60 * 60 * 1000);
+                const hplFormatted = `${hplDate.getFullYear()}-${String(hplDate.getMonth() + 1).padStart(2, '0')}-${String(hplDate.getDate()).padStart(2, '0')}`;
+
+                // Calculate trimester
+                let trimester = 1;
+                if (weeks >= 13 && weeks < 27) trimester = 2;
+                else if (weeks >= 27) trimester = 3;
+
+                // Calculate progress (0.0 - 1.0)
+                const progress = Math.min(daysPregnant / 280, 1.0);
+
+                // Only return as pregnant if <= 42 weeks
+                if (weeks <= 42) {
+                    // Get baby size for current week
+                    const babySize = BABY_SIZES[weeks] || BABY_SIZES[Math.min(weeks, 40)] || { emoji: "👶", size: "Bayi", length: "-" };
+
+                    // Get tip for closest milestone week
+                    const milestoneWeeks = [4, 8, 12, 16, 20, 24, 28, 32, 36, 40];
+                    const closestMilestone = milestoneWeeks.reduce((prev, curr) =>
+                        Math.abs(curr - weeks) < Math.abs(prev - weeks) ? curr : prev
+                    );
+                    const tip = PREGNANCY_TIPS[closestMilestone] || "";
+
+                    return res.json({
+                        success: true,
+                        data: {
+                            is_pregnant: true,
+                            has_given_birth: false,
+                            weeks: weeks,
+                            days: days,
+                            trimester: trimester,
+                            hpht: obstetriRows[0].hpht,
+                            hpl: hplFormatted,
+                            progress: progress,
+                            baby_size: babySize,
+                            tip: tip
+                        }
+                    });
+                }
+            }
+        }
+
+        // No pregnancy data
+        res.json({
+            success: true,
+            data: {
+                is_pregnant: false,
+                has_given_birth: false
+            }
+        });
+    } catch (error) {
+        console.error('Error fetching pregnancy data:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch pregnancy data',
+            error: error.message
+        });
+    }
+});
+
 // GET PATIENT BY ID (Protected)
 router.get('/api/patients/:id', verifyToken, async (req, res) => {
     try {
@@ -1220,207 +1424,6 @@ router.get('/api/patients/generate-id', async (req, res) => {
             success: false, 
             message: 'Failed to generate patient ID', 
             error: error.message 
-        });
-    }
-});
-
-// ==================== PREGNANCY DATA (Android App) ====================
-
-// Baby size reference (40 weeks)
-const BABY_SIZES = {
-    4: { emoji: "🌱", size: "Biji Poppy", length: "0.1 cm" },
-    5: { emoji: "🫘", size: "Biji Wijen", length: "0.2 cm" },
-    6: { emoji: "🫛", size: "Biji Lentil", length: "0.4 cm" },
-    7: { emoji: "🫐", size: "Blueberry", length: "1.3 cm" },
-    8: { emoji: "🍇", size: "Raspberry", length: "1.6 cm" },
-    9: { emoji: "🫒", size: "Zaitun", length: "2.3 cm" },
-    10: { emoji: "🌰", size: "Kurma", length: "3.1 cm" },
-    11: { emoji: "🍋", size: "Jeruk Nipis", length: "4.1 cm" },
-    12: { emoji: "🍑", size: "Plum", length: "5.4 cm" },
-    13: { emoji: "🍋", size: "Lemon", length: "7.4 cm" },
-    14: { emoji: "🍊", size: "Jeruk", length: "8.7 cm" },
-    15: { emoji: "🍎", size: "Apel", length: "10.1 cm" },
-    16: { emoji: "🥑", size: "Alpukat", length: "11.6 cm" },
-    17: { emoji: "🥔", size: "Kentang", length: "13 cm" },
-    18: { emoji: "🫑", size: "Paprika", length: "14.2 cm" },
-    19: { emoji: "🥒", size: "Timun", length: "15.3 cm" },
-    20: { emoji: "🍌", size: "Pisang", length: "16.4 cm" },
-    21: { emoji: "🥕", size: "Wortel", length: "26.7 cm" },
-    22: { emoji: "🥬", size: "Sawi", length: "27.8 cm" },
-    23: { emoji: "🥭", size: "Mangga", length: "28.9 cm" },
-    24: { emoji: "🌽", size: "Jagung", length: "30 cm" },
-    25: { emoji: "🍆", size: "Terong", length: "34.6 cm" },
-    26: { emoji: "🥦", size: "Brokoli", length: "35.6 cm" },
-    27: { emoji: "🥬", size: "Kol", length: "36.6 cm" },
-    28: { emoji: "🍈", size: "Melon Kecil", length: "37.6 cm" },
-    29: { emoji: "🎃", size: "Labu Kecil", length: "38.6 cm" },
-    30: { emoji: "🥒", size: "Mentimun Besar", length: "39.9 cm" },
-    31: { emoji: "🥥", size: "Kelapa", length: "41.1 cm" },
-    32: { emoji: "🍍", size: "Nanas", length: "42.4 cm" },
-    33: { emoji: "🎃", size: "Labu", length: "43.7 cm" },
-    34: { emoji: "🍈", size: "Melon", length: "45 cm" },
-    35: { emoji: "🥬", size: "Selada Romaine", length: "46.2 cm" },
-    36: { emoji: "🥬", size: "Kol Besar", length: "47.4 cm" },
-    37: { emoji: "🥬", size: "Lobak Swiss", length: "48.6 cm" },
-    38: { emoji: "🍈", size: "Melon Besar", length: "49.8 cm" },
-    39: { emoji: "🍉", size: "Semangka Mini", length: "50.7 cm" },
-    40: { emoji: "🍉", size: "Semangka", length: "51.2 cm" }
-};
-
-// Weekly tips (milestone weeks)
-const PREGNANCY_TIPS = {
-    4: "Embrio mulai berkembang. Istirahat cukup dan konsumsi asam folat.",
-    8: "Jantung bayi sudah berdetak! Hindari rokok dan alkohol.",
-    12: "Risiko keguguran menurun. Saatnya umumkan kehamilan!",
-    16: "Bayi mulai bergerak. Anda mungkin merasakan tendangan pertama.",
-    20: "Separuh perjalanan! Saatnya USG detail anatomi bayi.",
-    24: "Bayi sudah bisa mendengar suara Anda. Ajak bicara!",
-    28: "Trimester ketiga dimulai. Persiapkan perlengkapan bayi.",
-    32: "Bayi sudah dalam posisi kepala di bawah. Ikuti kelas persalinan.",
-    36: "Bayi hampir siap lahir. Perhatikan tanda-tanda persalinan.",
-    40: "Selamat! Bayi Anda sudah full-term. Siap menyambut si kecil!"
-};
-
-// GET pregnancy data for logged-in patient (Android App)
-router.get('/api/patients/pregnancy-data', verifyPatientToken, async (req, res) => {
-    // Prevent browser caching - always fetch fresh data
-    res.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
-    res.set('Pragma', 'no-cache');
-    res.set('Expires', '0');
-
-    try {
-        const patientId = req.patient.id;
-
-        // Check if patient has given birth
-        const [birthRows] = await db.query(`
-            SELECT
-                baby_name,
-                DATE_FORMAT(birth_date, '%d %b %Y') as birth_date,
-                birth_time,
-                birth_weight,
-                birth_length,
-                photo_url,
-                photo_r2_key,
-                message as doctor_message
-            FROM birth_congratulations
-            WHERE patient_id = ? AND is_published = 1
-            ORDER BY created_at DESC
-            LIMIT 1
-        `, [patientId]);
-
-        if (birthRows.length > 0) {
-            const birth = birthRows[0];
-
-            // Regenerate signed URL if R2 key exists
-            let photoUrl = birth.photo_url;
-            if (birth.photo_r2_key) {
-                try {
-                    photoUrl = await r2Storage.getSignedDownloadUrl(birth.photo_r2_key, 3600);
-                } catch (r2Error) {
-                    console.error('Error generating signed URL:', r2Error);
-                }
-            }
-
-            return res.json({
-                success: true,
-                data: {
-                    is_pregnant: false,
-                    has_given_birth: true,
-                    birth_date: birth.birth_date,
-                    birth_time: birth.birth_time,
-                    baby_name: birth.baby_name,
-                    baby_weight: birth.birth_weight,
-                    baby_length: birth.birth_length,
-                    baby_photo_url: photoUrl,
-                    doctor_message: birth.doctor_message
-                }
-            });
-        }
-
-        // Get HPHT from latest obstetri record
-        const [obstetriRows] = await db.query(`
-            SELECT
-                JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) as hpht
-            FROM sunday_clinic_records scr
-            JOIN medical_records mr ON mr.mr_id COLLATE utf8mb4_general_ci = scr.mr_id COLLATE utf8mb4_general_ci
-                AND mr.record_type = 'anamnesa'
-            WHERE scr.patient_id = ?
-                AND scr.mr_category = 'obstetri'
-                AND JSON_EXTRACT(mr.record_data, '$.hpht') IS NOT NULL
-                AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != ''
-                AND JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.hpht')) != 'null'
-            ORDER BY scr.last_activity_at DESC
-            LIMIT 1
-        `, [patientId]);
-
-        if (obstetriRows.length > 0 && obstetriRows[0].hpht) {
-            const hpht = new Date(obstetriRows[0].hpht);
-
-            if (!isNaN(hpht.getTime())) {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-
-                const daysPregnant = Math.floor((today.getTime() - hpht.getTime()) / (24 * 60 * 60 * 1000));
-                const weeks = Math.floor(daysPregnant / 7);
-                const days = daysPregnant % 7;
-
-                // Calculate HPL (HPHT + 280 days)
-                const hplDate = new Date(hpht.getTime() + 280 * 24 * 60 * 60 * 1000);
-                const hplFormatted = `${hplDate.getFullYear()}-${String(hplDate.getMonth() + 1).padStart(2, '0')}-${String(hplDate.getDate()).padStart(2, '0')}`;
-
-                // Calculate trimester
-                let trimester = 1;
-                if (weeks >= 13 && weeks < 27) trimester = 2;
-                else if (weeks >= 27) trimester = 3;
-
-                // Calculate progress (0.0 - 1.0)
-                const progress = Math.min(daysPregnant / 280, 1.0);
-
-                // Only return as pregnant if <= 42 weeks
-                if (weeks <= 42) {
-                    // Get baby size for current week
-                    const babySize = BABY_SIZES[weeks] || BABY_SIZES[Math.min(weeks, 40)] || { emoji: "👶", size: "Bayi", length: "-" };
-
-                    // Get tip for closest milestone week
-                    const milestoneWeeks = [4, 8, 12, 16, 20, 24, 28, 32, 36, 40];
-                    const closestMilestone = milestoneWeeks.reduce((prev, curr) =>
-                        Math.abs(curr - weeks) < Math.abs(prev - weeks) ? curr : prev
-                    );
-                    const tip = PREGNANCY_TIPS[closestMilestone] || "";
-
-                    return res.json({
-                        success: true,
-                        data: {
-                            is_pregnant: true,
-                            has_given_birth: false,
-                            weeks: weeks,
-                            days: days,
-                            trimester: trimester,
-                            hpht: obstetriRows[0].hpht,
-                            hpl: hplFormatted,
-                            progress: progress,
-                            baby_size: babySize,
-                            tip: tip
-                        }
-                    });
-                }
-            }
-        }
-
-        // No pregnancy data
-        res.json({
-            success: true,
-            data: {
-                is_pregnant: false,
-                has_given_birth: false
-            }
-        });
-    } catch (error) {
-        console.error('Error fetching pregnancy data:', error);
-        res.status(500).json({
-            success: false,
-            message: 'Failed to fetch pregnancy data',
-            error: error.message
         });
     }
 });
