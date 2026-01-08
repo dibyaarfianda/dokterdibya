@@ -120,8 +120,10 @@ class HomeViewModel @Inject constructor(
                 _uiState.value = _uiState.value.copy(usgCount = usgDocs.size)
             }
 
-            pregnancyDeferred.await().onSuccess { data ->
-                if (data.has_given_birth) {
+            pregnancyDeferred.await().fold(
+                onSuccess = { data ->
+                    timber.log.Timber.d("BIRTH_DEBUG: has_given_birth=${data.has_given_birth}, baby_name=${data.baby_name}")
+                    if (data.has_given_birth) {
                     _uiState.value = _uiState.value.copy(
                         hasGivenBirth = true,
                         isPregnant = false,
@@ -147,7 +149,11 @@ class HomeViewModel @Inject constructor(
                         pregnancyTip = data.tip
                     )
                 }
-            }
+                },
+                onFailure = { error ->
+                    timber.log.Timber.e("BIRTH_DEBUG: Failed to get pregnancy data: ${error.message}")
+                }
+            )
 
             medicationsDeferred.await().onSuccess { medications ->
                 _uiState.value = _uiState.value.copy(
