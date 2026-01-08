@@ -126,3 +126,107 @@ data class CacheMetadata(
     @PrimaryKey val key: String,
     val lastUpdated: Long = System.currentTimeMillis()
 )
+
+/**
+ * Profile entity for offline caching
+ */
+@Entity(tableName = "profiles")
+data class ProfileEntity(
+    @PrimaryKey val id: String,
+    val fullName: String,
+    val email: String?,
+    val phone: String?,
+    val birthDate: String?,
+    val photoUrl: String?,
+    val profilePicture: String?,
+    val isPregnant: Boolean,
+    val hpht: String?,
+    val hpl: String?,
+    val bloodType: String?,
+    val address: String?,
+    val emergencyContact: String?,
+    val cachedAt: Long = System.currentTimeMillis()
+)
+
+/**
+ * Appointment entity for offline caching
+ */
+@Entity(tableName = "appointments")
+data class AppointmentEntity(
+    @PrimaryKey val id: Int,
+    val patientId: String?,
+    val patientName: String?,
+    val appointmentDate: String,
+    val sessionLabel: String?,
+    val queueNumber: Int?,
+    val status: String,
+    val notes: String?,
+    val createdAt: String?,
+    val cachedAt: Long = System.currentTimeMillis()
+)
+
+/**
+ * Visit History entity for offline caching
+ */
+@Entity(tableName = "visit_history")
+data class VisitHistoryEntity(
+    @PrimaryKey val id: Int,
+    val billingNumber: String?,
+    val billingDate: String?,
+    val patientId: Int,
+    val patientName: String?,
+    val totalAmount: Double,
+    val paidAmount: Double?,
+    val paymentStatus: String?,
+    val notes: String?,
+    val cachedAt: Long = System.currentTimeMillis()
+)
+
+/**
+ * Announcement entity for offline caching
+ */
+@Entity(tableName = "announcements")
+data class AnnouncementEntity(
+    @PrimaryKey val id: Int,
+    val title: String,
+    val message: String,
+    val imageUrl: String?,
+    val formattedContent: String?,
+    val contentType: String?,
+    val createdByName: String?,
+    val priority: String?,
+    val createdAt: String?,
+    val likeCount: Int = 0,
+    val likedByMe: Boolean = false,
+    val cachedAt: Long = System.currentTimeMillis()
+) {
+    fun toAnnouncement() = com.dokterdibya.patient.data.api.Announcement(
+        id = id,
+        title = title,
+        message = message,
+        image_url = imageUrl,
+        formatted_content = formattedContent,
+        content_type = contentType,
+        created_by_name = createdByName,
+        priority = priority,
+        created_at = createdAt,
+        like_count = likeCount,
+        liked_by_me = likedByMe
+    )
+
+    companion object {
+        fun fromAnnouncement(announcement: com.dokterdibya.patient.data.api.Announcement) = AnnouncementEntity(
+            id = announcement.id,
+            title = announcement.title,
+            message = announcement.message,
+            imageUrl = announcement.image_url,
+            formattedContent = announcement.formatted_content,
+            contentType = announcement.content_type,
+            createdByName = announcement.created_by_name,
+            priority = announcement.priority,
+            createdAt = announcement.created_at,
+            likeCount = announcement.like_count,
+            likedByMe = announcement.liked_by_me
+        )
+    }
+}

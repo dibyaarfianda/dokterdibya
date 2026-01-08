@@ -49,4 +49,24 @@ object DatabaseModule {
     fun provideCacheMetadataDao(database: AppDatabase): CacheMetadataDao {
         return database.cacheMetadataDao()
     }
+
+    @Provides
+    fun provideProfileDao(database: AppDatabase): ProfileDao {
+        return database.profileDao()
+    }
+
+    @Provides
+    fun provideAppointmentDao(database: AppDatabase): AppointmentDao {
+        return database.appointmentDao()
+    }
+
+    @Provides
+    fun provideVisitHistoryDao(database: AppDatabase): VisitHistoryDao {
+        return database.visitHistoryDao()
+    }
+
+    @Provides
+    fun provideAnnouncementDao(database: AppDatabase): AnnouncementDao {
+        return database.announcementDao()
+    }
 }

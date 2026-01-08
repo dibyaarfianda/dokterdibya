@@ -22,9 +22,13 @@ import androidx.sqlite.db.SupportSQLiteDatabase
         ArticleEntity::class,
         NotificationEntity::class,
         MedicationEntity::class,
-        CacheMetadata::class
+        CacheMetadata::class,
+        ProfileEntity::class,
+        AppointmentEntity::class,
+        VisitHistoryEntity::class,
+        AnnouncementEntity::class
     ],
-    version = 1,
+    version = 2,
     exportSchema = true
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -32,6 +36,10 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun notificationDao(): NotificationDao
     abstract fun medicationDao(): MedicationDao
     abstract fun cacheMetadataDao(): CacheMetadataDao
+    abstract fun profileDao(): ProfileDao
+    abstract fun appointmentDao(): AppointmentDao
+    abstract fun visitHistoryDao(): VisitHistoryDao
+    abstract fun announcementDao(): AnnouncementDao
 
     companion object {
         const val DATABASE_NAME = "dokterdibya_patient_db"
@@ -40,30 +48,27 @@ abstract class AppDatabase : RoomDatabase() {
         const val CACHE_EXPIRY_ARTICLES = 24 * 60 * 60 * 1000L      // 24 hours
         const val CACHE_EXPIRY_NOTIFICATIONS = 60 * 60 * 1000L     // 1 hour
         const val CACHE_EXPIRY_MEDICATIONS = 12 * 60 * 60 * 1000L  // 12 hours
+        const val CACHE_EXPIRY_PROFILE = 24 * 60 * 60 * 1000L       // 24 hours
+        const val CACHE_EXPIRY_APPOINTMENTS = 2 * 60 * 60 * 1000L  // 2 hours
+        const val CACHE_EXPIRY_VISIT_HISTORY = 24 * 60 * 60 * 1000L // 24 hours
+        const val CACHE_EXPIRY_ANNOUNCEMENTS = 6 * 60 * 60 * 1000L  // 6 hours
 
         // Cache keys
         const val CACHE_KEY_ARTICLES = "articles"
         const val CACHE_KEY_NOTIFICATIONS = "notifications"
         const val CACHE_KEY_MEDICATIONS = "medications"
-
-        /**
-         * Example migration from version 1 to 2
-         * Uncomment and modify when adding new columns/tables
-         */
-        // val MIGRATION_1_2 = object : Migration(1, 2) {
-        //     override fun migrate(database: SupportSQLiteDatabase) {
-        //         // Example: Add new column
-        //         // database.execSQL("ALTER TABLE articles ADD COLUMN readAt INTEGER")
-        //     }
-        // }
+        const val CACHE_KEY_PROFILE = "profile"
+        const val CACHE_KEY_APPOINTMENTS = "appointments"
+        const val CACHE_KEY_VISIT_HISTORY = "visit_history"
+        const val CACHE_KEY_ANNOUNCEMENTS = "announcements"
 
         /**
          * List of all migrations for use in DatabaseModule
+         * Since we use fallbackToDestructiveMigration() for cache DB,
+         * migrations are optional but can be added for smoother upgrades.
          */
         val ALL_MIGRATIONS: Array<Migration> = arrayOf(
-            // Add migrations here as needed, e.g.:
-            // MIGRATION_1_2,
-            // MIGRATION_2_3,
+            // Add migrations here as needed
         )
     }
 }
