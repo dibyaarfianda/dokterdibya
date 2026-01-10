@@ -6446,35 +6446,36 @@ Contoh Markdown:
 <!-- Mobile Menu Functions - MUST be before the buttons -->
 <script>
 function openMobileMenu() {
-    console.log('openMobileMenu called');
-    var m = document.getElementById('mobile-more-menu');
-    if(m) {
-        // Force display with very obvious styles
-        m.setAttribute('style', 'display:block !important; position:fixed !important; top:0 !important; left:0 !important; right:0 !important; bottom:0 !important; z-index:9999999 !important; background:rgba(0,0,0,0.5) !important; visibility:visible !important; opacity:1 !important;');
+    // Remove existing if any
+    var existing = document.getElementById('dynamic-mobile-menu');
+    if(existing) existing.remove();
 
-        // Set content styles - white box at bottom
-        var content = m.querySelector('.mobile-menu-content');
-        if(content) {
-            content.setAttribute('style', 'display:block !important; position:absolute !important; bottom:0 !important; left:0 !important; right:0 !important; background:#ffffff !important; border-top-left-radius:20px !important; border-top-right-radius:20px !important; max-height:70vh !important; overflow-y:auto !important; box-shadow:0 -4px 20px rgba(0,0,0,0.3) !important; visibility:visible !important; opacity:1 !important; padding:20px !important;');
-        }
+    // Create menu dynamically with inline styles
+    var menu = document.createElement('div');
+    menu.id = 'dynamic-mobile-menu';
+    menu.innerHTML = '<div onclick="closeMobileMenu()" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:9999999;"></div>' +
+        '<div style="position:fixed;bottom:0;left:0;right:0;background:#fff;border-radius:20px 20px 0 0;max-height:70vh;overflow-y:auto;z-index:10000000;box-shadow:0 -4px 20px rgba(0,0,0,0.3);">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px;border-bottom:1px solid #eee;">' +
+        '<span style="font-weight:600;font-size:16px;color:#333;">Menu Lainnya</span>' +
+        '<button onclick="closeMobileMenu()" style="background:none;border:none;font-size:24px;color:#666;padding:4px 8px;">&times;</button>' +
+        '</div>' +
+        '<div style="padding:8px 0 16px 0;">' +
+        '<a href="#" onclick="closeMobileMenu();if(typeof showKelolaPengumumanPage===\'function\')showKelolaPengumumanPage();return false;" style="display:flex;align-items:center;gap:14px;padding:14px 20px;color:#333;text-decoration:none;font-size:14px;"><i class="fas fa-bullhorn" style="width:24px;font-size:18px;color:#0d6efd;text-align:center;"></i> Pengumuman</a>' +
+        '<a href="#" onclick="closeMobileMenu();if(typeof showKelolaJadwalPage===\'function\')showKelolaJadwalPage();return false;" style="display:flex;align-items:center;gap:14px;padding:14px 20px;color:#333;text-decoration:none;font-size:14px;"><i class="fas fa-calendar-alt" style="width:24px;font-size:18px;color:#0d6efd;text-align:center;"></i> Jadwal</a>' +
+        '<a href="#" onclick="closeMobileMenu();if(typeof showKelolaTindakanPage===\'function\')showKelolaTindakanPage();return false;" style="display:flex;align-items:center;gap:14px;padding:14px 20px;color:#333;text-decoration:none;font-size:14px;"><i class="fas fa-stethoscope" style="width:24px;font-size:18px;color:#0d6efd;text-align:center;"></i> Tindakan</a>' +
+        '<a href="#" onclick="closeMobileMenu();if(typeof showKelolaObatManagementPage===\'function\')showKelolaObatManagementPage();return false;" style="display:flex;align-items:center;gap:14px;padding:14px 20px;color:#333;text-decoration:none;font-size:14px;"><i class="fas fa-pills" style="width:24px;font-size:18px;color:#0d6efd;text-align:center;"></i> Obat</a>' +
+        '<a href="#" onclick="closeMobileMenu();if(typeof showKelolaRolesPage===\'function\')showKelolaRolesPage();return false;" style="display:flex;align-items:center;gap:14px;padding:14px 20px;color:#333;text-decoration:none;font-size:14px;"><i class="fas fa-user-shield" style="width:24px;font-size:18px;color:#0d6efd;text-align:center;"></i> Roles</a>' +
+        '<div style="height:1px;background:#eee;margin:8px 20px;"></div>' +
+        '<a href="#" onclick="closeMobileMenu();if(typeof handleLogout===\'function\')handleLogout();return false;" style="display:flex;align-items:center;gap:14px;padding:14px 20px;color:#dc3545;text-decoration:none;font-size:14px;"><i class="fas fa-sign-out-alt" style="width:24px;font-size:18px;color:#dc3545;text-align:center;"></i> Logout</a>' +
+        '</div></div>';
 
-        // Hide overlay (we're using container background instead)
-        var overlay = m.querySelector('.mobile-menu-overlay');
-        if(overlay) {
-            overlay.setAttribute('style', 'display:none !important;');
-        }
-
-        document.body.style.overflow='hidden';
-        console.log('Menu opened');
-    } else {
-        console.log('Menu element not found');
-        alert('Menu element not found!');
-    }
-    if(window.currentUser && window.currentUser.is_superadmin) { document.querySelectorAll('.superadmin-menu-item').forEach(function(e){e.classList.remove('d-none');}); }
+    document.body.appendChild(menu);
+    document.body.style.overflow = 'hidden';
 }
 function closeMobileMenu() {
-    var m = document.getElementById('mobile-more-menu');
-    if(m) { m.style.display='none'; m.classList.remove('mobile-menu-visible'); m.classList.add('mobile-menu-hidden'); document.body.style.overflow=''; }
+    var m = document.getElementById('dynamic-mobile-menu');
+    if(m) m.remove();
+    document.body.style.overflow = '';
 }
 function mobileNavClick(btn, action) {
     document.querySelectorAll('#mobile-action-bar button:not(.mobile-profile-btn)').forEach(function(b){b.classList.remove('active');});
