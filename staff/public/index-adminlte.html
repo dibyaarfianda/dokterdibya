@@ -6450,36 +6450,119 @@ function openMobileMenu() {
     var existing = document.getElementById('dynamic-mobile-menu');
     if(existing) existing.remove();
 
-    // Create container
+    // Create container with FLEXBOX to position content at bottom
     var container = document.createElement('div');
     container.id = 'dynamic-mobile-menu';
-    container.style.cssText = 'position:fixed !important;top:0 !important;left:0 !important;width:100% !important;height:100% !important;z-index:9999999 !important;';
+    container.style.position = 'fixed';
+    container.style.top = '0';
+    container.style.left = '0';
+    container.style.width = '100%';
+    container.style.height = '100%';
+    container.style.zIndex = '9999999';
+    container.style.display = 'flex';
+    container.style.flexDirection = 'column';
+    container.style.justifyContent = 'flex-end';
 
-    // Create overlay
+    // Create overlay as background
     var overlay = document.createElement('div');
-    overlay.style.cssText = 'position:absolute !important;top:0 !important;left:0 !important;width:100% !important;height:100% !important;background:rgba(0,0,0,0.5) !important;';
+    overlay.style.position = 'absolute';
+    overlay.style.top = '0';
+    overlay.style.left = '0';
+    overlay.style.width = '100%';
+    overlay.style.height = '100%';
+    overlay.style.background = 'rgba(0,0,0,0.5)';
+    overlay.style.zIndex = '1';
     overlay.onclick = closeMobileMenu;
 
-    // Create content panel
+    // Create content panel - NO position absolute, just flex child
     var content = document.createElement('div');
-    content.style.cssText = 'position:absolute !important;bottom:0 !important;left:0 !important;width:100% !important;background:#ffffff !important;border-top-left-radius:20px !important;border-top-right-radius:20px !important;max-height:70% !important;overflow-y:auto !important;box-shadow:0 -4px 20px rgba(0,0,0,0.3) !important;';
+    content.style.position = 'relative';
+    content.style.zIndex = '2';
+    content.style.width = '100%';
+    content.style.backgroundColor = '#ffffff';
+    content.style.borderTopLeftRadius = '20px';
+    content.style.borderTopRightRadius = '20px';
+    content.style.maxHeight = '70%';
+    content.style.overflowY = 'auto';
+    content.style.boxShadow = '0 -4px 20px rgba(0,0,0,0.3)';
 
     // Header
     var header = document.createElement('div');
-    header.style.cssText = 'display:flex !important;justify-content:space-between !important;align-items:center !important;padding:16px 20px !important;border-bottom:1px solid #eee !important;';
-    header.innerHTML = '<span style="font-weight:600 !important;font-size:16px !important;color:#333 !important;">Menu Lainnya</span><button onclick="closeMobileMenu()" style="background:none !important;border:none !important;font-size:24px !important;color:#666 !important;padding:4px 8px !important;">&times;</button>';
+    header.style.display = 'flex';
+    header.style.justifyContent = 'space-between';
+    header.style.alignItems = 'center';
+    header.style.padding = '16px 20px';
+    header.style.borderBottom = '1px solid #eee';
 
-    // Menu items
+    var title = document.createElement('span');
+    title.style.fontWeight = '600';
+    title.style.fontSize = '16px';
+    title.style.color = '#333';
+    title.textContent = 'Menu Lainnya';
+
+    var closeBtn = document.createElement('button');
+    closeBtn.style.background = 'none';
+    closeBtn.style.border = 'none';
+    closeBtn.style.fontSize = '24px';
+    closeBtn.style.color = '#666';
+    closeBtn.style.padding = '4px 8px';
+    closeBtn.innerHTML = '&times;';
+    closeBtn.onclick = closeMobileMenu;
+
+    header.appendChild(title);
+    header.appendChild(closeBtn);
+
+    // Menu items container
     var items = document.createElement('div');
-    items.style.cssText = 'padding:8px 0 16px 0 !important;';
-    items.innerHTML =
-        '<a href="#" onclick="closeMobileMenu();if(typeof showKelolaPengumumanPage===\'function\')showKelolaPengumumanPage();return false;" style="display:flex !important;align-items:center !important;gap:14px !important;padding:14px 20px !important;color:#333 !important;text-decoration:none !important;font-size:14px !important;"><i class="fas fa-bullhorn" style="width:24px !important;font-size:18px !important;color:#0d6efd !important;text-align:center !important;"></i> Pengumuman</a>' +
-        '<a href="#" onclick="closeMobileMenu();if(typeof showKelolaJadwalPage===\'function\')showKelolaJadwalPage();return false;" style="display:flex !important;align-items:center !important;gap:14px !important;padding:14px 20px !important;color:#333 !important;text-decoration:none !important;font-size:14px !important;"><i class="fas fa-calendar-alt" style="width:24px !important;font-size:18px !important;color:#0d6efd !important;text-align:center !important;"></i> Jadwal</a>' +
-        '<a href="#" onclick="closeMobileMenu();if(typeof showKelolaTindakanPage===\'function\')showKelolaTindakanPage();return false;" style="display:flex !important;align-items:center !important;gap:14px !important;padding:14px 20px !important;color:#333 !important;text-decoration:none !important;font-size:14px !important;"><i class="fas fa-stethoscope" style="width:24px !important;font-size:18px !important;color:#0d6efd !important;text-align:center !important;"></i> Tindakan</a>' +
-        '<a href="#" onclick="closeMobileMenu();if(typeof showKelolaObatManagementPage===\'function\')showKelolaObatManagementPage();return false;" style="display:flex !important;align-items:center !important;gap:14px !important;padding:14px 20px !important;color:#333 !important;text-decoration:none !important;font-size:14px !important;"><i class="fas fa-pills" style="width:24px !important;font-size:18px !important;color:#0d6efd !important;text-align:center !important;"></i> Obat</a>' +
-        '<a href="#" onclick="closeMobileMenu();if(typeof showKelolaRolesPage===\'function\')showKelolaRolesPage();return false;" style="display:flex !important;align-items:center !important;gap:14px !important;padding:14px 20px !important;color:#333 !important;text-decoration:none !important;font-size:14px !important;"><i class="fas fa-user-shield" style="width:24px !important;font-size:18px !important;color:#0d6efd !important;text-align:center !important;"></i> Roles</a>' +
-        '<div style="height:1px !important;background:#eee !important;margin:8px 20px !important;"></div>' +
-        '<a href="#" onclick="closeMobileMenu();if(typeof handleLogout===\'function\')handleLogout();return false;" style="display:flex !important;align-items:center !important;gap:14px !important;padding:14px 20px !important;color:#dc3545 !important;text-decoration:none !important;font-size:14px !important;"><i class="fas fa-sign-out-alt" style="width:24px !important;font-size:18px !important;color:#dc3545 !important;text-align:center !important;"></i> Logout</a>';
+    items.style.padding = '8px 0 16px 0';
+
+    var menuData = [
+        {icon: 'fa-bullhorn', text: 'Pengumuman', fn: 'showKelolaPengumumanPage', color: '#0d6efd'},
+        {icon: 'fa-calendar-alt', text: 'Jadwal', fn: 'showKelolaJadwalPage', color: '#0d6efd'},
+        {icon: 'fa-stethoscope', text: 'Tindakan', fn: 'showKelolaTindakanPage', color: '#0d6efd'},
+        {icon: 'fa-pills', text: 'Obat', fn: 'showKelolaObatManagementPage', color: '#0d6efd'},
+        {icon: 'fa-user-shield', text: 'Roles', fn: 'showKelolaRolesPage', color: '#0d6efd'},
+        {icon: 'divider'},
+        {icon: 'fa-sign-out-alt', text: 'Logout', fn: 'handleLogout', color: '#dc3545'}
+    ];
+
+    menuData.forEach(function(item) {
+        if (item.icon === 'divider') {
+            var divider = document.createElement('div');
+            divider.style.height = '1px';
+            divider.style.background = '#eee';
+            divider.style.margin = '8px 20px';
+            items.appendChild(divider);
+        } else {
+            var link = document.createElement('a');
+            link.href = '#';
+            link.style.display = 'flex';
+            link.style.alignItems = 'center';
+            link.style.gap = '14px';
+            link.style.padding = '14px 20px';
+            link.style.color = item.color === '#dc3545' ? '#dc3545' : '#333';
+            link.style.textDecoration = 'none';
+            link.style.fontSize = '14px';
+            link.onclick = function(e) {
+                e.preventDefault();
+                closeMobileMenu();
+                if (typeof window[item.fn] === 'function') window[item.fn]();
+            };
+
+            var icon = document.createElement('i');
+            icon.className = 'fas ' + item.icon;
+            icon.style.width = '24px';
+            icon.style.fontSize = '18px';
+            icon.style.color = item.color;
+            icon.style.textAlign = 'center';
+
+            var text = document.createTextNode(' ' + item.text);
+
+            link.appendChild(icon);
+            link.appendChild(text);
+            items.appendChild(link);
+        }
+    });
 
     content.appendChild(header);
     content.appendChild(items);
