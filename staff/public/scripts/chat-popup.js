@@ -52,7 +52,7 @@
   const chatHTML = `
     <div id="chat-popup-container">
       <!-- Floating Chat Button -->
-      <div id="chat-toggle-btn" class="chat-toggle-btn" aria-label="Buka Chat Tim" title="Buka Chat Tim">
+      <div id="chat-toggle-btn" class="chat-toggle-btn" onclick="window.toggleChatPopup && window.toggleChatPopup()" aria-label="Buka Chat Tim" title="Buka Chat Tim">
         <i class="fas fa-comments"></i>
         <span class="chat-badge" style="display:none;">0</span>
       </div>
@@ -73,7 +73,7 @@
             <button id="chat-clear-btn" class="chat-clear-btn" aria-label="Clear Chat" title="Clear Chat">
               <i class="fas fa-trash-alt"></i>
             </button>
-            <button id="chat-close-btn" class="chat-close-btn" aria-label="Tutup">
+            <button id="chat-close-btn" class="chat-close-btn" onclick="window.closeChatPopup && window.closeChatPopup()" aria-label="Tutup">
               <i class="fas fa-times"></i>
             </button>
           </div>
@@ -438,8 +438,8 @@
         // Load chat history
         await loadChatHistory();
 
-    // Toggle
-    toggleBtn.addEventListener('click', () => {
+    // Toggle function - exposed globally for WebView onclick compatibility
+    function handleToggleChat() {
       isChatOpen = !isChatOpen;
       chatBox.style.display = isChatOpen ? 'flex' : 'none';
       toggleBtn.style.display = isChatOpen ? 'none' : 'flex';
@@ -456,14 +456,26 @@
         // Check clear button visibility when chat opens
         checkClearButtonVisibility();
       }
-    });
+    }
 
-    // Close
-    closeBtn.addEventListener('click', () => {
+    // Expose toggle function globally for WebView onclick
+    window.toggleChatPopup = handleToggleChat;
+
+    // Toggle - also keep addEventListener as backup
+    toggleBtn.addEventListener('click', handleToggleChat);
+
+    // Close function - exposed globally for WebView onclick compatibility
+    function handleCloseChat() {
       isChatOpen = false;
       chatBox.style.display = 'none';
       toggleBtn.style.display = 'flex';
-    });
+    }
+
+    // Expose close function globally for WebView onclick
+    window.closeChatPopup = handleCloseChat;
+
+    // Close - also keep addEventListener as backup
+    closeBtn.addEventListener('click', handleCloseChat);
 
     // Send
     async function sendMessage() {
