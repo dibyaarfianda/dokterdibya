@@ -5,6 +5,9 @@ const state = {
     isLoading: false
 };
 
+// Expose state globally for WebView onclick handlers
+window._klinikPrivateState = state;
+
 const elements = {
     dateLabel: null,
     countBadge: null,
@@ -228,14 +231,11 @@ function renderAppointments(appointments) {
             <td>${complaint}</td>
             <td>${statusBadge}</td>
             <td class="text-center">
-                <button type="button" class="btn btn-sm btn-primary klinik-private-periksa-btn">
+                <button type="button" class="btn btn-sm btn-primary klinik-private-periksa-btn" onclick="window.handleKlinikPeriksa && window.handleKlinikPeriksa(${index})">
                     <i class="fas fa-stethoscope mr-1"></i>Periksa
                 </button>
             </td>
         `;
-
-        const actionBtn = tr.querySelector('.klinik-private-periksa-btn');
-        actionBtn.addEventListener('click', () => handlePeriksa(appointment));
 
         elements.tbody.appendChild(tr);
     });
@@ -251,6 +251,14 @@ async function handlePeriksa(appointment) {
     // Show category selection modal
     showCategoryModal(appointment);
 }
+
+// Expose handlePeriksa globally for WebView onclick - accepts index
+window.handleKlinikPeriksa = function(index) {
+    const appointment = window._klinikPrivateState.appointments[index];
+    if (appointment) {
+        handlePeriksa(appointment);
+    }
+};
 
 function showCategoryModal(appointment) {
     // Remove existing modal if any
