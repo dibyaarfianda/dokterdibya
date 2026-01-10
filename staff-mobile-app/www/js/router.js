@@ -30,7 +30,9 @@ class Router {
             queue: 'Antrian Hari Ini',
             patients: 'Cari Pasien',
             billing: 'Billing',
-            notifications: 'Notifikasi'
+            notifications: 'Notifikasi',
+            'sunday-clinic': 'Klinik',
+            'medical-record': 'Rekam Medis'
         };
         document.getElementById('page-title').textContent = titles[pageName] || pageName;
 

@@ -10,6 +10,8 @@ import { renderQueue } from './pages/queue.js';
 import { renderPatients } from './pages/patients.js';
 import { renderBilling } from './pages/billing.js';
 import { renderNotifications } from './pages/notifications.js';
+import { renderSundayClinic } from './pages/sunday-clinic.js';
+import { renderMedicalRecord } from './pages/medical-record.js';
 
 // ===== Global State =====
 const state = {
@@ -47,16 +49,36 @@ function showScreen(screenId) {
 // ===== Badge Updates =====
 async function updateBadges() {
     try {
-        // Notification count
-        const notifResponse = await api.getNotificationCount();
-        if (notifResponse.success) {
-            state.notifCount = notifResponse.count || 0;
-            const notifBadge = document.getElementById('notif-badge');
-            if (state.notifCount > 0) {
-                notifBadge.textContent = state.notifCount > 99 ? '99+' : state.notifCount;
-                notifBadge.style.display = 'flex';
-            } else {
-                notifBadge.style.display = 'none';
+        // Queue count badge
+        const queueResponse = await api.getTodayQueue();
+        if (queueResponse.success) {
+            const queue = queueResponse.data?.queue || queueResponse.queue || [];
+            const pendingCount = queue.filter(q => q.status === 'confirmed' || q.status === 'waiting' || q.status === 'arrived').length;
+            state.queueCount = pendingCount;
+            const queueBadge = document.getElementById('queue-badge');
+            if (queueBadge) {
+                if (pendingCount > 0) {
+                    queueBadge.textContent = pendingCount > 99 ? '99+' : pendingCount;
+                    queueBadge.style.display = 'flex';
+                } else {
+                    queueBadge.style.display = 'none';
+                }
+            }
+        }
+
+        // Billing count badge
+        const billingResponse = await api.getPendingBillings();
+        if (billingResponse.success) {
+            const pendingBillings = billingResponse.billings?.filter(b => !b.is_confirmed).length || 0;
+            state.pendingBillings = pendingBillings;
+            const billingBadge = document.getElementById('billing-badge');
+            if (billingBadge) {
+                if (pendingBillings > 0) {
+                    billingBadge.textContent = pendingBillings > 99 ? '99+' : pendingBillings;
+                    billingBadge.style.display = 'flex';
+                } else {
+                    billingBadge.style.display = 'none';
+                }
             }
         }
     } catch (error) {
@@ -134,6 +156,8 @@ function registerRoutes() {
     router.register('patients', renderPatients);
     router.register('billing', renderBilling);
     router.register('notifications', renderNotifications);
+    router.register('sunday-clinic', renderSundayClinic);
+    router.register('medical-record', renderMedicalRecord);
 }
 
 // ===== Setup Event Listeners =====
