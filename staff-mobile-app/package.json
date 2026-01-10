@@ -1,0 +1,25 @@
+{
+  "name": "dokterdibya-staff-mobile",
+  "version": "1.0.0",
+  "description": "Mobile admin panel for Dokter Dibya staff",
+  "main": "index.js",
+  "scripts": {
+    "build": "echo 'No build step needed for vanilla JS'",
+    "cap:sync": "npx cap sync",
+    "cap:open": "npx cap open android"
+  },
+  "keywords": ["capacitor", "mobile", "admin"],
+  "author": "Dokter Dibya",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "@capacitor/android": "^6.0.0",
+    "@capacitor/app": "^6.0.0",
+    "@capacitor/core": "^6.0.0",
+    "@capacitor/splash-screen": "^6.0.0",
+    "@capacitor/status-bar": "^6.0.0",
+    "@capacitor/share": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.0.0"
+  }
+}
