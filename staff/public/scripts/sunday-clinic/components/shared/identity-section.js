@@ -126,12 +126,16 @@ export default {
                 </div>
                 <div class="sc-card">
                     <h4>Data Utama</h4>
-                    <table class="table table-sm table-bordered">
+                    <table class="table table-sm table-bordered" style="table-layout: fixed; width: 100%;">
+                        <colgroup>
+                            <col style="width: 22%;">
+                            <col style="width: 78%;">
+                        </colgroup>
                         <tbody>
                             ${primaryRows.map(([label, value]) => `
                                 <tr>
-                                    <th style="width: 30%;">${label}</th>
-                                    <td>${value}</td>
+                                    <th style="font-size: 9px; padding: 4px 6px;">${label}</th>
+                                    <td style="font-size: 9px; padding: 4px 6px; word-break: break-word;">${value}</td>
                                 </tr>
                             `).join('')}
                         </tbody>

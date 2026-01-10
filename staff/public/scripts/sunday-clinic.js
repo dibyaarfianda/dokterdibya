@@ -8,10 +8,10 @@
  * Old file backed up as: sunday-clinic.js.backup
  */
 
-// Version 2.0.2 - queue dropdown fix
-import SundayClinicApp from './sunday-clinic/main.js?v=2.0.2';
-import apiClient from './sunday-clinic/utils/api-client.js?v=2.0.2';
-import stateManager from './sunday-clinic/utils/state-manager.js?v=2.0.2';
+// Version 2.1.7 - tighter label column
+import SundayClinicApp from './sunday-clinic/main.js?v=2.1.7';
+import apiClient from './sunday-clinic/utils/api-client.js?v=2.1.7';
+import stateManager from './sunday-clinic/utils/state-manager.js?v=2.1.7';
 import { initRealtimeSync } from './realtime-sync.js';
 
 // ============================================================================

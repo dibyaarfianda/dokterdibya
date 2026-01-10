@@ -3,7 +3,9 @@
   "appName": "Dokter Dibya Staff",
   "webDir": "www",
   "server": {
-    "androidScheme": "https"
+    "androidScheme": "https",
+    "url": "https://dokterdibya.com/staff/public/index-adminlte.html?mobile=1",
+    "cleartext": false
   },
   "plugins": {
     "SplashScreen": {

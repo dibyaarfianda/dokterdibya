@@ -2,14 +2,14 @@
 <html lang="id">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     <title>Klinik Private Minggu</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="/staff/public/styles/sunday-clinic.css?v=2.0.3">
+    <link rel="stylesheet" href="/staff/public/styles/sunday-clinic.css?v=2.3.5">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -297,13 +297,21 @@
     <script>
         // Cache version control - increment to force refresh
         (function() {
-            const SC_CACHE_VERSION = 'v2.0.3';
+            const SC_CACHE_VERSION = 'v2.1.7';
             const currentVersion = localStorage.getItem('sc_cache_version');
             if (currentVersion !== SC_CACHE_VERSION) {
                 console.log('[SundayClinic] Cache version changed:', currentVersion, '->', SC_CACHE_VERSION);
                 localStorage.setItem('sc_cache_version', SC_CACHE_VERSION);
                 if (currentVersion) {
-                    location.reload(true);
+                    // Clear caches if available
+                    if ('caches' in window) {
+                        caches.keys().then(names => names.forEach(name => caches.delete(name)));
+                    }
+                    // Force hard reload with cache bust timestamp
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('_cache', Date.now());
+                    window.location.replace(url.href);
+                    return;
                 }
             }
         })();
@@ -1011,36 +1019,297 @@ PLAN
     <!-- Global Chat Loader (must be after Socket.IO) -->
     <script src="/staff/public/scripts/global-chat-loader.js"></script>
 
-    <script type="module" src="/staff/public/scripts/sunday-clinic.js?v=2.0.3"></script>
+    <script type="module" src="/staff/public/scripts/sunday-clinic.js?v=2.1.7"></script>
     <!-- Planning helpers for tindakan and terapi modals -->
-    <script src="/staff/public/scripts/sunday-clinic/utils/planning-helpers.js?v=2.0.3"></script>
+    <script src="/staff/public/scripts/sunday-clinic/utils/planning-helpers.js?v=2.1.7"></script>
     <!-- Medical import from text files -->
-    <script type="module" src="/staff/public/scripts/sunday-clinic/utils/medical-import.js?v=2.0.3"></script>
+    <script type="module" src="/staff/public/scripts/sunday-clinic/utils/medical-import.js?v=2.1.7"></script>
     <script>
-        // Add click handler for sidebar navigation
-        document.addEventListener('DOMContentLoaded', function() {
-            const sidebarNav = document.querySelector('.main-sidebar .nav-sidebar');
-            if (sidebarNav) {
-                sidebarNav.addEventListener('click', function(event) {
-                    const target = event.target.closest('.sc-nav-link');
-                    if (target && target.dataset.section) {
-                        event.preventDefault();
-                        // The global handleSectionChange function from sunday-clinic.js
-                        if (window.handleSectionChange) {
-                            window.handleSectionChange(target.dataset.section);
+        // Mobile app mode detection and initialization
+        (function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const mobileFromUrl = urlParams.get('mobile') === '1';
+
+            // Persist mobile mode in sessionStorage so it survives refresh
+            if (mobileFromUrl) {
+                sessionStorage.setItem('sunday_clinic_mobile', '1');
+            }
+
+            // Check both URL param and sessionStorage
+            const isMobileApp = mobileFromUrl || sessionStorage.getItem('sunday_clinic_mobile') === '1';
+
+            if (isMobileApp) {
+                // Add mobile mode class immediately (before DOMContentLoaded for flash prevention)
+                document.documentElement.classList.add('mobile-app-mode');
+            }
+
+            document.addEventListener('DOMContentLoaded', function() {
+                // Mobile app mode setup
+                if (isMobileApp) {
+                    document.body.classList.add('mobile-app-mode');
+                    initMobileAppMode();
+                }
+
+                // Add click handler for sidebar navigation (both desktop and mobile)
+                const sidebarNav = document.querySelector('.main-sidebar .nav-sidebar');
+                if (sidebarNav) {
+                    sidebarNav.addEventListener('click', function(event) {
+                        const target = event.target.closest('.sc-nav-link');
+                        if (target && target.dataset.section) {
+                            event.preventDefault();
+                            handleSectionNavigation(target.dataset.section);
                         }
-                        // Update active state in sidebar
-                        document.querySelectorAll('.sc-nav-link').forEach(link => {
-                            link.classList.remove('active');
-                        });
-                        target.classList.add('active');
+                    });
+                }
+            });
+
+            // Common section navigation handler (syncs sidebar and footer nav)
+            function handleSectionNavigation(section) {
+                // Call the global handleSectionChange from sunday-clinic.js
+                if (window.handleSectionChange) {
+                    window.handleSectionChange(section);
+                }
+
+                // Update sidebar active state
+                document.querySelectorAll('.sc-nav-link').forEach(link => {
+                    link.classList.remove('active');
+                    if (link.dataset.section === section) {
+                        link.classList.add('active');
+                    }
+                });
+
+                // Update footer nav active state (mobile)
+                document.querySelectorAll('.mobile-section-nav .section-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.dataset.section === section) {
+                        btn.classList.add('active');
                     }
                 });
             }
-        });
+
+            // Initialize mobile app mode
+            function initMobileAppMode() {
+                // Add back button to header
+                const navbar = document.querySelector('.main-header .navbar-nav:first-child');
+                if (navbar) {
+                    const backBtn = document.createElement('button');
+                    backBtn.className = 'mobile-back-btn';
+                    backBtn.innerHTML = '<i class="fas fa-arrow-left"></i>';
+                    backBtn.onclick = function() {
+                        // Go to mobile admin panel
+                        window.location.href = '/staff/public/index-adminlte.html?mobile=1';
+                    };
+                    navbar.insertBefore(backBtn, navbar.firstChild);
+                }
+
+                // Footer nav click handlers
+                const footerBtns = document.querySelectorAll('.mobile-section-nav .section-btn');
+                footerBtns.forEach(btn => {
+                    btn.addEventListener('click', function() {
+                        const section = this.dataset.section;
+                        handleSectionNavigation(section);
+                    });
+                });
+            }
+
+            // Export function to update mobile nav visibility based on category/location
+            window.updateMobileNavVisibility = function(category, location) {
+                // Remove old classes
+                document.body.classList.remove(
+                    'category-obstetri', 'category-gyn_repro', 'category-gyn_special',
+                    'location-klinik_private', 'location-rsia_melinda',
+                    'location-rsud_gambiran', 'location-rs_bhayangkara'
+                );
+
+                // Add new classes
+                if (category) {
+                    document.body.classList.add(`category-${category}`);
+                }
+                if (location) {
+                    document.body.classList.add(`location-${location}`);
+                }
+            };
+
+            // Export to sync footer nav with current section
+            window.syncMobileNavSection = function(section) {
+                document.querySelectorAll('.mobile-section-nav .section-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.dataset.section === section) {
+                        btn.classList.add('active');
+                    }
+                });
+            };
+        })();
+    </script>
+
+    <!-- Queue Dropdown Handler -->
+    <script>
+        (function() {
+            // Load queue on dropdown open
+            const queueBtn = document.getElementById('btn-header-queue');
+            const queueList = document.getElementById('header-queue-list');
+            const queueCount = document.getElementById('header-queue-count');
+
+            if (queueBtn) {
+                queueBtn.addEventListener('click', loadHeaderQueue);
+            }
+
+            async function loadHeaderQueue() {
+                if (!queueList) return;
+
+                queueList.innerHTML = '<div class="text-center p-3"><i class="fas fa-spinner fa-spin"></i> Memuat...</div>';
+
+                try {
+                    const token = localStorage.getItem('vps_auth_token');
+                    const response = await fetch('/api/sunday-clinic/queue/today', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+
+                    const data = await response.json();
+                    if (!data.success) throw new Error(data.message);
+
+                    const queue = Array.isArray(data.data) ? data.data : [];
+                    if (queueCount) queueCount.textContent = queue.length;
+
+                    if (queue.length === 0) {
+                        queueList.innerHTML = '<div class="text-center text-muted p-3"><i class="fas fa-calendar-check"></i><br>Tidak ada antrian</div>';
+                        return;
+                    }
+
+                    queueList.innerHTML = queue.map(item => `
+                        <a href="#" class="dropdown-item queue-item"
+                           data-patient-id="${item.patient_id}"
+                           data-mr-id="${item.mr_id || ''}"
+                           data-category="${item.mr_category || 'obstetri'}"
+                           onclick="handleQueueItemClick(event, this)">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>${item.patient_name || 'Pasien'}</strong>
+                                    <br><small class="text-muted">${item.mr_id || 'Belum ada MR'} • ${(item.slot_time || '').substring(0, 5)}</small>
+                                </div>
+                                <span class="badge badge-${item.mr_id ? 'success' : 'warning'}">${item.mr_id ? 'Ada MR' : 'Baru'}</span>
+                            </div>
+                        </a>
+                    `).join('');
+
+                } catch (error) {
+                    console.error('Error loading queue:', error);
+                    queueList.innerHTML = '<div class="text-center text-danger p-3"><i class="fas fa-exclamation-triangle"></i><br>' + error.message + '</div>';
+                }
+            }
+
+            // Handle queue item click - like "Periksa" button
+            window.handleQueueItemClick = async function(event, element) {
+                event.preventDefault();
+
+                const patientId = element.dataset.patientId;
+                const existingMrId = element.dataset.mrId;
+                const category = element.dataset.category || 'obstetri';
+
+                // Close dropdown
+                $(element).closest('.dropdown-menu').removeClass('show');
+                $(element).closest('.dropdown').find('.dropdown-toggle').dropdown('toggle');
+
+                try {
+                    if (existingMrId) {
+                        // Already has MR - open it
+                        console.log('[Queue] Opening existing MR:', existingMrId);
+                        window.location.href = `/sunday-clinic/${existingMrId}/identity`;
+                    } else {
+                        // No MR yet - create new one (like "Periksa" button)
+                        console.log('[Queue] Creating new MR for patient:', patientId);
+
+                        // Show loading
+                        element.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Membuat MR...';
+
+                        const token = localStorage.getItem('vps_auth_token');
+                        const response = await fetch('/api/sunday-clinic/start-walk-in', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${token}`
+                            },
+                            body: JSON.stringify({
+                                patient_id: patientId,
+                                category: category,
+                                location: 'klinik_private'
+                            })
+                        });
+
+                        const result = await response.json();
+                        if (!result.success) throw new Error(result.message || 'Gagal membuat MR');
+
+                        const newMrId = result.data?.mrId;
+                        console.log('[Queue] Created new MR:', newMrId);
+
+                        // Navigate to the new MR
+                        window.location.href = `/sunday-clinic/${newMrId}/identity`;
+                    }
+                } catch (error) {
+                    console.error('[Queue] Error:', error);
+                    alert('Gagal: ' + error.message);
+                    loadHeaderQueue(); // Reload queue
+                }
+            };
+
+            // Load queue on page load
+            document.addEventListener('DOMContentLoaded', function() {
+                setTimeout(loadHeaderQueue, 500);
+            });
+        })();
     </script>
 
     <!-- Mobile Helper Script -->
     <script src="/staff/public/scripts/mobile-helper.js"></script>
+
+    <!-- Mobile App Mode Footer Navigation (visible only with ?mobile=1) -->
+    <nav class="mobile-section-nav" id="mobile-section-nav">
+        <div class="section-nav-scroll">
+            <button class="section-btn active" data-section="identitas">
+                <i class="fas fa-id-card"></i>
+                <span>Identitas</span>
+            </button>
+            <button class="section-btn" data-section="anamnesa">
+                <i class="fas fa-notes-medical"></i>
+                <span>Anamnesa</span>
+            </button>
+            <button class="section-btn" data-section="pemeriksaan">
+                <i class="fas fa-stethoscope"></i>
+                <span>Pem.Fisik</span>
+            </button>
+            <button class="section-btn obs-only" data-section="pemeriksaan-obstetri">
+                <i class="fas fa-baby"></i>
+                <span>Pem.Obs</span>
+            </button>
+            <button class="section-btn gyn-only" data-section="pemeriksaan-ginekologi">
+                <i class="fas fa-venus"></i>
+                <span>Pem.Gyn</span>
+            </button>
+            <button class="section-btn" data-section="usg">
+                <i class="fas fa-wave-square"></i>
+                <span>USG</span>
+            </button>
+            <button class="section-btn" data-section="penunjang">
+                <i class="fas fa-flask"></i>
+                <span>Penunjang</span>
+            </button>
+            <button class="section-btn" data-section="diagnosis">
+                <i class="fas fa-diagnoses"></i>
+                <span>Diagnosis</span>
+            </button>
+            <button class="section-btn" data-section="planning">
+                <i class="fas fa-clipboard-list"></i>
+                <span>Planning</span>
+            </button>
+            <button class="section-btn" data-section="resume-medis">
+                <i class="fas fa-file-medical"></i>
+                <span>Resume</span>
+            </button>
+            <button class="section-btn billing-only" data-section="tagihan">
+                <i class="fas fa-receipt"></i>
+                <span>Tagihan</span>
+            </button>
+        </div>
+    </nav>
 </body>
 </html>
