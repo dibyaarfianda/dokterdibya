@@ -1170,24 +1170,6 @@
                 return baseUrl + separator + 'mobile=1';
             };
 
-            // Debug: Add click indicator in mobile mode
-            if (isMobileApp) {
-                document.addEventListener('DOMContentLoaded', function() {
-                    // Create debug overlay
-                    var dbg = document.createElement('div');
-                    dbg.id = 'mobile-debug-indicator';
-                    dbg.style.cssText = 'position:fixed; bottom:80px; left:10px; background:#000; color:#0f0; padding:5px 10px; font-size:10px; z-index:9999999; border-radius:5px; font-family:monospace;';
-                    dbg.textContent = 'Mobile Mode: READY';
-                    document.body.appendChild(dbg);
-
-                    // Track all clicks
-                    document.addEventListener('click', function(e) {
-                        dbg.textContent = 'Click: ' + e.target.tagName + (e.target.id ? '#'+e.target.id : '') + ' @ ' + e.clientX + ',' + e.clientY;
-                        dbg.style.background = '#060';
-                        setTimeout(function() { dbg.style.background = '#000'; }, 300);
-                    }, true);
-                });
-            }
         })();
     </script>
 
@@ -6467,13 +6449,26 @@ function openMobileMenu() {
     console.log('openMobileMenu called');
     var m = document.getElementById('mobile-more-menu');
     if(m) {
-        m.style.cssText = 'display:block !important; position:fixed !important; top:0 !important; left:0 !important; right:0 !important; bottom:0 !important; z-index:999999 !important;';
-        m.classList.remove('mobile-menu-hidden');
-        m.classList.add('mobile-menu-visible');
+        // Force display with very obvious styles
+        m.setAttribute('style', 'display:block !important; position:fixed !important; top:0 !important; left:0 !important; right:0 !important; bottom:0 !important; z-index:9999999 !important; background:rgba(0,0,0,0.5) !important; visibility:visible !important; opacity:1 !important;');
+
+        // Set content styles - white box at bottom
+        var content = m.querySelector('.mobile-menu-content');
+        if(content) {
+            content.setAttribute('style', 'display:block !important; position:absolute !important; bottom:0 !important; left:0 !important; right:0 !important; background:#ffffff !important; border-top-left-radius:20px !important; border-top-right-radius:20px !important; max-height:70vh !important; overflow-y:auto !important; box-shadow:0 -4px 20px rgba(0,0,0,0.3) !important; visibility:visible !important; opacity:1 !important; padding:20px !important;');
+        }
+
+        // Hide overlay (we're using container background instead)
+        var overlay = m.querySelector('.mobile-menu-overlay');
+        if(overlay) {
+            overlay.setAttribute('style', 'display:none !important;');
+        }
+
         document.body.style.overflow='hidden';
         console.log('Menu opened');
     } else {
         console.log('Menu element not found');
+        alert('Menu element not found!');
     }
     if(window.currentUser && window.currentUser.is_superadmin) { document.querySelectorAll('.superadmin-menu-item').forEach(function(e){e.classList.remove('d-none');}); }
 }
@@ -6532,7 +6527,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
         <span class="icon-wrapper"><i class="fas fa-calendar-check"></i></span>
         <span>Janji</span>
     </button>
-    <button type="button" id="menu-debug-btn" onclick="this.style.background='red'; console.log('MENU CLICKED'); alert('Menu clicked'); openMobileMenu();">
+    <button type="button" onclick="openMobileMenu();">
         <span class="icon-wrapper"><i class="fas fa-bars"></i></span>
         <span>Menu</span>
     </button>
