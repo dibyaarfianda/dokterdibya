@@ -128,8 +128,8 @@ export default {
                     <h4>Data Utama</h4>
                     <table class="table table-sm table-bordered" style="table-layout: fixed; width: 100%;">
                         <colgroup>
-                            <col style="width: 22%;">
-                            <col style="width: 78%;">
+                            <col style="width: 40%;">
+                            <col style="width: 60%;">
                         </colgroup>
                         <tbody>
                             ${primaryRows.map(([label, value]) => `
