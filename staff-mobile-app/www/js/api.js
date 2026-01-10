@@ -196,6 +196,57 @@ class ApiClient {
     async markAnnouncementRead(id) {
         return this.post(`/api/staff-announcements/${id}/read`, {});
     }
+
+    // ===== Sunday Clinic Records =====
+    async getRecord(mrId) {
+        return this.get(`/api/sunday-clinic/records/${mrId}`);
+    }
+
+    async saveSection(mrId, section, data) {
+        return this.post(`/api/sunday-clinic/records/${mrId}/${section}`, data);
+    }
+
+    async startWalkIn(patientId, category, location, visitDate = null) {
+        const body = {
+            patient_id: patientId,
+            category: category,
+            location: location
+        };
+        if (visitDate) {
+            body.visit_date = visitDate;
+        }
+        return this.post('/api/sunday-clinic/start-walk-in', body);
+    }
+
+    async getDirectory(search) {
+        return this.get(`/api/sunday-clinic/directory?search=${encodeURIComponent(search)}`);
+    }
+
+    // ===== Billing Items =====
+    async saveBilling(mrId, items) {
+        return this.post(`/api/sunday-clinic/billing/${mrId}`, { items });
+    }
+
+    async addBillingObat(mrId, items) {
+        return this.post(`/api/sunday-clinic/billing/${mrId}/obat`, { items });
+    }
+
+    async deleteBillingItem(mrId, itemId) {
+        return this.delete(`/api/sunday-clinic/billing/${mrId}/items/id/${itemId}`);
+    }
+
+    // ===== Resume & PDF =====
+    async generateResume(mrId) {
+        return this.post(`/api/sunday-clinic/resume-medis/generate`, { mr_id: mrId });
+    }
+
+    async getResumePdf(mrId, patientId) {
+        return this.post(`/api/sunday-clinic/resume-medis/pdf`, { mr_id: mrId, patient_id: patientId });
+    }
+
+    async printInvoice(mrId) {
+        return this.post(`/api/sunday-clinic/billing/${mrId}/print-invoice`, {});
+    }
 }
 
 // Export singleton instance
