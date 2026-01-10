@@ -871,6 +871,55 @@ router.post('/records/:mrId/:section', verifyToken, async (req, res, next) => {
 
 // ==================== BILLING ENDPOINTS ====================
 
+// Get pending billings list (not confirmed or not paid)
+router.get('/billing/pending', verifyToken, async (req, res, next) => {
+    try {
+        // Get recent billings that are either:
+        // 1. Not yet confirmed (is_confirmed = 0)
+        // 2. Confirmed but not paid (is_confirmed = 1 AND payment_status != 'paid')
+        const [billings] = await db.query(
+            `SELECT
+                scb.id,
+                scb.mr_id,
+                scb.total_amount,
+                scb.is_confirmed,
+                scb.payment_status,
+                scb.created_at,
+                scr.patient_id,
+                COALESCE(p.full_name, sa.patient_name, scr.mr_id) as patient_name,
+                COALESCE(p.phone, sa.patient_phone) as patient_phone,
+                sa.appointment_date
+             FROM sunday_clinic_billings scb
+             LEFT JOIN sunday_clinic_records scr ON scr.mr_id = scb.mr_id
+             LEFT JOIN patients p ON p.id = scr.patient_id
+             LEFT JOIN sunday_appointments sa ON sa.id = scr.appointment_id
+             WHERE (scb.is_confirmed = 0 OR scb.payment_status != 'paid')
+               AND scb.total_amount > 0
+             ORDER BY scb.created_at DESC
+             LIMIT 50`
+        );
+
+        res.json({
+            success: true,
+            billings: billings.map(b => ({
+                id: b.id,
+                mr_id: b.mr_id,
+                patient_name: b.patient_name,
+                patient_phone: b.patient_phone,
+                total_amount: b.total_amount,
+                is_confirmed: !!b.is_confirmed,
+                payment_status: b.payment_status,
+                appointment_date: b.appointment_date,
+                created_at: b.created_at
+            }))
+        });
+
+    } catch (error) {
+        console.error('Error fetching pending billings:', error);
+        next(error);
+    }
+});
+
 // Get billing for a Sunday Clinic record
 router.get('/billing/:mrId', verifyToken, async (req, res, next) => {
     const normalizedMrId = normalizeMrId(req.params.mrId);

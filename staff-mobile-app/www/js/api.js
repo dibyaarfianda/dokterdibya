@@ -85,15 +85,27 @@ class ApiClient {
 
     // ===== Auth =====
     async login(email, password) {
-        const data = await this.post('/api/staff/login', { email, password });
-        if (data.success && data.token) {
-            this.setToken(data.token);
+        const response = await this.post('/api/auth/login', { email, password });
+        // Backend uses sendSuccess which wraps data: { success, message, data: { token, user } }
+        if (response.success && response.data?.token) {
+            this.setToken(response.data.token);
+            // Flatten response for easier consumption
+            return {
+                success: true,
+                token: response.data.token,
+                user: response.data.user
+            };
         }
-        return data;
+        return response;
     }
 
     async getMe() {
-        return this.get('/api/staff/me');
+        const response = await this.get('/api/auth/me');
+        // Backend wraps in data, flatten for easier consumption
+        if (response.success && response.data) {
+            return { success: true, user: response.data };
+        }
+        return response;
     }
 
     logout() {
@@ -102,7 +114,7 @@ class ApiClient {
 
     // ===== Dashboard =====
     async getDashboardStats() {
-        return this.get('/api/dashboard');
+        return this.get('/api/dashboard-stats');
     }
 
     // ===== Queue / Appointments =====
@@ -134,7 +146,12 @@ class ApiClient {
 
     // ===== Billing =====
     async getPendingBillings() {
-        return this.get('/api/sunday-clinic/billing/pending');
+        const response = await this.get('/api/sunday-clinic/billing/pending');
+        // Ensure we return billings array
+        if (response.success && response.billings) {
+            return response;
+        }
+        return { success: false, billings: [] };
     }
 
     async getBilling(mrId) {
@@ -168,7 +185,12 @@ class ApiClient {
 
     // ===== Staff Announcements =====
     async getStaffAnnouncements() {
-        return this.get('/api/staff-announcements');
+        const response = await this.get('/api/staff-announcements');
+        // Backend returns { success, data } but we need { success, announcements }
+        if (response.success && response.data) {
+            return { success: true, announcements: response.data };
+        }
+        return response;
     }
 
     async markAnnouncementRead(id) {

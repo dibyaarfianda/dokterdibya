@@ -96,22 +96,29 @@ export async function renderBilling(container) {
         renderBillingList(listContainer, filtered);
     }
 
-    // Load billings from today's queue
+    // Load pending billings
     try {
-        const response = await api.getTodayQueue();
+        const response = await api.getPendingBillings();
         if (response.success) {
-            // Transform queue items to billing format
-            allBillings = (response.queue || []).filter(q => q.mr_id).map(q => ({
-                mr_id: q.mr_id,
-                patient_name: q.patient_name,
-                patient_id: q.patient_id,
-                status: q.status,
-                is_confirmed: q.billing_confirmed || false,
-                is_paid: q.billing_paid || false,
-                total_amount: q.billing_total || 0,
-                appointment_time: q.appointment_time || q.time
+            allBillings = (response.billings || []).map(b => ({
+                mr_id: b.mr_id,
+                patient_name: b.patient_name,
+                patient_phone: b.patient_phone,
+                is_confirmed: b.is_confirmed,
+                is_paid: b.payment_status === 'paid',
+                payment_status: b.payment_status,
+                total_amount: b.total_amount || 0,
+                appointment_date: b.appointment_date,
+                created_at: b.created_at
             }));
             filterAndRender();
+        } else {
+            listContainer.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-file-invoice"></i>
+                    <p>Tidak ada billing pending</p>
+                </div>
+            `;
         }
     } catch (error) {
         listContainer.innerHTML = `
