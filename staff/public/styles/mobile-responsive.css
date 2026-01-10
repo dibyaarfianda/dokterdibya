@@ -796,6 +796,11 @@ body.mobile-app-mode #mobile-action-bar button.active .icon-wrapper {
     color: #ffffff;
 }
 
+/* Add padding for phone status bar (battery, time, etc) */
+body.mobile-app-mode {
+    padding-top: calc(24px + env(safe-area-inset-top, 0px)) !important;
+}
+
 /* Content padding for top nav */
 body.mobile-app-mode .content-wrapper {
     padding-top: 70px !important;

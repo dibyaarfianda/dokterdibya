@@ -1281,6 +1281,8 @@ body.mobile-app-mode {
     max-width: 100vw !important;
     width: 100vw !important;
     position: relative !important;
+    /* Add padding for phone status bar (battery, time, etc) */
+    padding-top: calc(24px + env(safe-area-inset-top, 0px)) !important;
 }
 
 body.mobile-app-mode,
