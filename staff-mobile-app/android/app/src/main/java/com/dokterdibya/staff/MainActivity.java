@@ -7,25 +7,47 @@ import android.webkit.WebViewClient;
 import android.webkit.WebChromeClient;
 import android.view.View;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 
 public class MainActivity extends AppCompatActivity {
     private WebView webView;
+    private SwipeRefreshLayout swipeRefresh;
     private static final String WEB_URL = "https://dokterdibya.com/staff/public/index-adminlte.html?mobile=1";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // Create WebView programmatically
+        // Create SwipeRefreshLayout
+        swipeRefresh = new SwipeRefreshLayout(this);
+
+        // Create WebView
         webView = new WebView(this);
-        setContentView(webView);
+
+        // Add WebView to SwipeRefreshLayout
+        swipeRefresh.addView(webView);
+        setContentView(swipeRefresh);
+
+        // Configure SwipeRefreshLayout
+        swipeRefresh.setColorSchemeResources(
+            android.R.color.holo_blue_bright,
+            android.R.color.holo_green_light,
+            android.R.color.holo_orange_light
+        );
+
+        swipeRefresh.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                webView.reload();
+            }
+        });
 
         // Configure WebView settings
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setDatabaseEnabled(true);
-        settings.setCacheMode(WebSettings.LOAD_DEFAULT);
+        settings.setCacheMode(WebSettings.LOAD_NO_CACHE); // No cache for dev
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
         settings.setLoadWithOverviewMode(true);
@@ -40,6 +62,12 @@ public class MainActivity extends AppCompatActivity {
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
                 view.loadUrl(url);
                 return true;
+            }
+
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                // Stop refresh animation when page loads
+                swipeRefresh.setRefreshing(false);
             }
         });
 
