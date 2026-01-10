@@ -806,7 +806,7 @@ body.mobile-app-mode .main-header {
     display: none !important;
 }
 
-/* Force 9px on ALL elements in mobile mode (same as Sunday Clinic) */
+/* Force 12px on ALL elements in mobile mode */
 body.mobile-app-mode * {
     font-size: 9px !important;
 }
@@ -873,14 +873,14 @@ body.mobile-app-mode textarea.form-control {
 }
 
 body.mobile-app-mode .btn {
-    min-height: 28px;
-    font-size: 9px !important;
+    min-height: 24px;
+    font-size: 10px !important;
     padding: 4px 8px !important;
 }
 
 body.mobile-app-mode .btn-sm {
-    min-height: 24px;
-    font-size: 8px !important;
+    min-height: 22px;
+    font-size: 9px !important;
     padding: 3px 6px !important;
 }
 
@@ -912,12 +912,12 @@ body.mobile-app-mode .far,
 body.mobile-app-mode .fab,
 body.mobile-app-mode i.fa,
 body.mobile-app-mode i[class*="fa-"] {
-    font-size: 12px !important;
+    font-size: 9px !important;
 }
 
 body.mobile-app-mode .small,
 body.mobile-app-mode small {
-    font-size: 8px !important;
+    font-size: 11px !important;
 }
 
 /* Table styles - ALLOW HORIZONTAL SCROLL */
@@ -990,7 +990,7 @@ body.mobile-app-mode .info-box {
 }
 
 body.mobile-app-mode .info-box-text {
-    font-size: 8px !important;
+    font-size: 11px !important;
 }
 
 body.mobile-app-mode .info-box-number {
@@ -1009,4 +1009,15 @@ body.mobile-app-mode .info-box-icon i {
 /* Mobile more menu in mobile-app-mode */
 body.mobile-app-mode #mobile-more-menu.mobile-menu-visible {
     display: block !important;
+}
+
+/* Chat bubble - push up above phone nav bar */
+body.mobile-app-mode #chat-toggle-btn,
+body.mobile-app-mode .chat-toggle-btn,
+body.mobile-app-mode [id*="chat-toggle"],
+body.mobile-app-mode [class*="chat-toggle"] {
+    bottom: 80px !important;
+    right: 16px !important;
+    position: fixed !important;
+    z-index: 9999 !important;
 }
