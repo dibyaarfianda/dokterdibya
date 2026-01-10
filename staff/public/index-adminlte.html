@@ -1169,6 +1169,25 @@
                 const separator = baseUrl.includes('?') ? '&' : '?';
                 return baseUrl + separator + 'mobile=1';
             };
+
+            // Debug: Add click indicator in mobile mode
+            if (isMobileApp) {
+                document.addEventListener('DOMContentLoaded', function() {
+                    // Create debug overlay
+                    var dbg = document.createElement('div');
+                    dbg.id = 'mobile-debug-indicator';
+                    dbg.style.cssText = 'position:fixed; bottom:80px; left:10px; background:#000; color:#0f0; padding:5px 10px; font-size:10px; z-index:9999999; border-radius:5px; font-family:monospace;';
+                    dbg.textContent = 'Mobile Mode: READY';
+                    document.body.appendChild(dbg);
+
+                    // Track all clicks
+                    document.addEventListener('click', function(e) {
+                        dbg.textContent = 'Click: ' + e.target.tagName + (e.target.id ? '#'+e.target.id : '') + ' @ ' + e.clientX + ',' + e.clientY;
+                        dbg.style.background = '#060';
+                        setTimeout(function() { dbg.style.background = '#000'; }, 300);
+                    }, true);
+                });
+            }
         })();
     </script>
 
@@ -6474,6 +6493,17 @@ body.mobile-app-mode .mobile-action-bar-force {
     display: flex !important;
     visibility: visible !important;
     opacity: 1 !important;
+    z-index: 999999 !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    pointer-events: auto !important;
+}
+body.mobile-app-mode .mobile-action-bar-force button {
+    pointer-events: auto !important;
+    cursor: pointer !important;
+    -webkit-tap-highlight-color: rgba(0,0,0,0.2) !important;
 }
 </style>
 
@@ -6502,14 +6532,14 @@ body.mobile-app-mode .mobile-action-bar-force {
         <span class="icon-wrapper"><i class="fas fa-calendar-check"></i></span>
         <span>Janji</span>
     </button>
-    <button type="button" onclick="openMobileMenu();">
+    <button type="button" id="menu-debug-btn" onclick="this.style.background='red'; console.log('MENU CLICKED'); alert('Menu clicked'); openMobileMenu();">
         <span class="icon-wrapper"><i class="fas fa-bars"></i></span>
         <span>Menu</span>
     </button>
 </div>
 
 <!-- Mobile More Menu Overlay -->
-<div id="mobile-more-menu" style="display:none;">
+<div id="mobile-more-menu" style="display:none; background:#fff;">
     <div class="mobile-menu-overlay" onclick="closeMobileMenu();"></div>
     <div class="mobile-menu-content">
         <div class="mobile-menu-header">

@@ -1,8 +1,9 @@
 package com.dokterdibya.staff;
 
 import android.os.Bundle;
-import android.view.MotionEvent;
+import android.util.Log;
 import android.view.View;
+import android.webkit.ConsoleMessage;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
@@ -22,10 +23,6 @@ public class MainActivity extends AppCompatActivity {
     private int statusBarHeight = 0;
     private int navBarHeight = 0;
 
-    // Touch tracking for horizontal scroll detection
-    private float startX = 0;
-    private float startY = 0;
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -39,30 +36,15 @@ public class MainActivity extends AppCompatActivity {
         // Create WebView
         webView = new WebView(this);
 
-        // Disable SwipeRefresh when scrolling horizontally
-        webView.setOnTouchListener(new View.OnTouchListener() {
+        // Simple touch handling - only disable swipe on horizontal scroll
+        // Using dispatchTouchEvent instead of OnTouchListener for better compatibility
+        swipeRefresh.setOnChildScrollUpCallback(new SwipeRefreshLayout.OnChildScrollUpCallback() {
             @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                switch (event.getAction()) {
-                    case MotionEvent.ACTION_DOWN:
-                        startX = event.getX();
-                        startY = event.getY();
-                        swipeRefresh.setEnabled(true);
-                        break;
-                    case MotionEvent.ACTION_MOVE:
-                        float deltaX = Math.abs(event.getX() - startX);
-                        float deltaY = Math.abs(event.getY() - startY);
-                        // If horizontal movement is greater, disable swipe refresh
-                        if (deltaX > deltaY && deltaX > 10) {
-                            swipeRefresh.setEnabled(false);
-                        }
-                        break;
-                    case MotionEvent.ACTION_UP:
-                    case MotionEvent.ACTION_CANCEL:
-                        swipeRefresh.setEnabled(true);
-                        break;
+            public boolean canChildScrollUp(SwipeRefreshLayout parent, View child) {
+                if (webView != null) {
+                    return webView.getScrollY() > 0;
                 }
-                return false; // Let WebView handle the touch
+                return false;
             }
         });
 
@@ -125,7 +107,19 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        webView.setWebChromeClient(new WebChromeClient());
+        // WebChromeClient with console logging
+        webView.setWebChromeClient(new WebChromeClient() {
+            @Override
+            public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
+                Log.d("WebViewConsole", consoleMessage.message() + " -- From line "
+                        + consoleMessage.lineNumber() + " of " + consoleMessage.sourceId());
+                return true;
+            }
+        });
+
+        // Clear cache to ensure latest web content
+        webView.clearCache(true);
+        webView.clearHistory();
 
         // Load the URL
         webView.loadUrl(WEB_URL);
