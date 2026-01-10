@@ -1443,10 +1443,15 @@ body.mobile-app-mode .mobile-section-nav {
     display: block;
 }
 
-/* Chat bubble - move up above footer nav */
+/* Chat bubble - move up above footer nav + phone nav bar */
 body.mobile-app-mode #chat-toggle-btn,
-body.mobile-app-mode .chat-toggle-btn {
-    bottom: calc(85px + env(safe-area-inset-bottom, 0)) !important;
+body.mobile-app-mode .chat-toggle-btn,
+body.mobile-app-mode [id*="chat-toggle"],
+body.mobile-app-mode [class*="chat-toggle"] {
+    bottom: 100px !important;
+    right: 12px !important;
+    position: fixed !important;
+    z-index: 1040 !important;
 }
 
 .section-nav-scroll {
