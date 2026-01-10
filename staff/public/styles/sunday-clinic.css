@@ -1493,6 +1493,34 @@ body.mobile-app-mode .chat-box * {
     pointer-events: auto !important;
 }
 
+/* CRITICAL: Override wildcard font-size for chat elements */
+body.mobile-app-mode #chat-popup-container,
+body.mobile-app-mode #chat-popup-container * {
+    font-size: inherit !important;
+}
+
+body.mobile-app-mode #chat-toggle-btn i,
+body.mobile-app-mode .chat-toggle-btn i {
+    font-size: 24px !important;
+}
+
+body.mobile-app-mode #chat-box,
+body.mobile-app-mode .chat-box {
+    font-size: 14px !important;
+}
+
+body.mobile-app-mode .chat-header {
+    font-size: 14px !important;
+}
+
+body.mobile-app-mode .chat-messages {
+    font-size: 13px !important;
+}
+
+body.mobile-app-mode .chat-input {
+    font-size: 14px !important;
+}
+
 .section-nav-scroll {
     display: flex;
     overflow-x: auto;
