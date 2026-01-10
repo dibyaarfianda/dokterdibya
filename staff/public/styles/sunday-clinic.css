@@ -1387,6 +1387,12 @@ body.mobile-app-mode .main-header {
     box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
+/* Style the back button (replaces hamburger) in mobile mode */
+body.mobile-app-mode .main-header .navbar-nav:first-child .nav-link {
+    font-size: 18px !important;
+    color: #333 !important;
+}
+
 body.mobile-app-mode .content-wrapper {
     padding-top: 60px !important; /* Space for fixed header */
 }

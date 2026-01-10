@@ -1103,20 +1103,15 @@ PLAN
 
             // Initialize mobile app mode
             function initMobileAppMode() {
-                // Add back button to header - on the RIGHT side
-                const navbarRight = document.querySelector('.main-header .navbar-nav.ml-auto');
-                if (navbarRight) {
-                    const backLi = document.createElement('li');
-                    backLi.className = 'nav-item';
-                    const backBtn = document.createElement('button');
-                    backBtn.className = 'mobile-back-btn btn btn-outline-secondary btn-sm';
-                    backBtn.innerHTML = '<i class="fas fa-arrow-left"></i> Kembali';
-                    backBtn.onclick = function() {
-                        // Go to mobile admin panel
+                // Add back button on LEFT (replace hamburger menu)
+                const hamburger = document.querySelector('.main-header [data-widget="pushmenu"]');
+                if (hamburger) {
+                    hamburger.innerHTML = '<i class="fas fa-arrow-left"></i>';
+                    hamburger.removeAttribute('data-widget');
+                    hamburger.onclick = function(e) {
+                        e.preventDefault();
                         window.location.href = '/staff/public/index-adminlte.html?mobile=1';
                     };
-                    backLi.appendChild(backBtn);
-                    navbarRight.appendChild(backLi);
                 }
 
                 // Footer nav click handlers
