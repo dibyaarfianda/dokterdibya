@@ -1485,6 +1485,19 @@ body.mobile-app-mode .chat-box {
     max-height: 480px !important;
     z-index: 100000 !important;
     pointer-events: auto !important;
+    background: #ffffff !important;
+    border-radius: 12px !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.2) !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+}
+
+/* When chat box is open (has inline display:flex) */
+body.mobile-app-mode #chat-box[style*="display: flex"],
+body.mobile-app-mode #chat-box[style*="display:flex"] {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 /* Chat box elements must be interactive */
