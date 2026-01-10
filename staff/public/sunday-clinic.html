@@ -1103,17 +1103,20 @@ PLAN
 
             // Initialize mobile app mode
             function initMobileAppMode() {
-                // Add back button to header
-                const navbar = document.querySelector('.main-header .navbar-nav:first-child');
-                if (navbar) {
+                // Add back button to header - on the RIGHT side
+                const navbarRight = document.querySelector('.main-header .navbar-nav.ml-auto');
+                if (navbarRight) {
+                    const backLi = document.createElement('li');
+                    backLi.className = 'nav-item';
                     const backBtn = document.createElement('button');
-                    backBtn.className = 'mobile-back-btn';
-                    backBtn.innerHTML = '<i class="fas fa-arrow-left"></i>';
+                    backBtn.className = 'mobile-back-btn btn btn-outline-secondary btn-sm';
+                    backBtn.innerHTML = '<i class="fas fa-arrow-left"></i> Kembali';
                     backBtn.onclick = function() {
                         // Go to mobile admin panel
                         window.location.href = '/staff/public/index-adminlte.html?mobile=1';
                     };
-                    navbar.insertBefore(backBtn, navbar.firstChild);
+                    backLi.appendChild(backBtn);
+                    navbarRight.appendChild(backLi);
                 }
 
                 // Footer nav click handlers
