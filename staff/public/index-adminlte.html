@@ -1121,8 +1121,44 @@
     </style>
 
         <!-- Mobile Responsive Styles -->
-        <link rel="stylesheet" href="styles/mobile-responsive.css">
+        <link rel="stylesheet" href="styles/mobile-responsive.css?v=2.0.2">
     
+    <!-- Mobile App Mode Detection -->
+    <script>
+        // Detect ?mobile=1 parameter and add mobile-app-mode class
+        (function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const isMobileApp = urlParams.get('mobile') === '1';
+
+            if (isMobileApp) {
+                // Add class immediately to prevent flash
+                document.documentElement.classList.add('mobile-app-mode');
+
+                // Also add to body when ready
+                if (document.body) {
+                    document.body.classList.add('mobile-app-mode');
+                } else {
+                    document.addEventListener('DOMContentLoaded', function() {
+                        document.body.classList.add('mobile-app-mode');
+                    });
+                }
+
+                // Store in sessionStorage to persist across page navigations
+                sessionStorage.setItem('mobileAppMode', '1');
+            } else if (sessionStorage.getItem('mobileAppMode') === '1') {
+                // Restore mobile mode from session
+                document.documentElement.classList.add('mobile-app-mode');
+                if (document.body) {
+                    document.body.classList.add('mobile-app-mode');
+                } else {
+                    document.addEventListener('DOMContentLoaded', function() {
+                        document.body.classList.add('mobile-app-mode');
+                    });
+                }
+            }
+        })();
+    </script>
+
     <!-- Global Debug Function for Appointments - DISABLED -->
     <script>
         // Set up debug function immediately in head (before DOM loads)
@@ -1438,8 +1474,7 @@
         window.TOKEN_KEY = 'vps_auth_token';
     </script>
 
-    <!-- Mobile Responsive CSS -->
-    <link rel="stylesheet" href="css/mobile-responsive.css">
+    <!-- Mobile Responsive CSS (using styles/ version with mobile-app-mode) -->
 
     <!-- Marked.js for Markdown support -->
     <script src="https://cdn.jsdelivr.net/npm/marked@11.0.0/marked.min.js"></script>

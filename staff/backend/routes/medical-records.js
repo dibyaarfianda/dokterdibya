@@ -739,14 +739,14 @@ function generateMedicalResume(identitas, records, billingItems = { obat: [], ti
     const patientName = identitas?.nama || 'PASIEN';
 
     // Header - Professional Format
-    resume += '═══════════════════════════════════════════════════════════════\n';
+    resume += '══════════════════════════════\n';
     resume += `                    RESUME MEDIS ${patientName.toUpperCase()}\n`;
-    resume += '═══════════════════════════════════════════════════════════════\n\n';
+    resume += '══════════════════════════════\n\n';
 
     // I. IDENTITAS PASIEN
     if (identitas && Object.keys(identitas).length > 0) {
         resume += 'I. IDENTITAS PASIEN\n';
-        resume += '──────────────────────────────────────────────────\n';
+        resume += '──────────────────────────────\n';
         if (identitas.nama) resume += `Nama               : ${identitas.nama}\n`;
         if (identitas.tanggal_lahir) resume += `Tanggal Lahir      : ${identitas.tanggal_lahir}\n`;
         if (identitas.umur) resume += `Usia               : ${identitas.umur} tahun\n`;
@@ -762,7 +762,7 @@ function generateMedicalResume(identitas, records, billingItems = { obat: [], ti
         
         if (hasData) {
             resume += 'II. ANAMNESA\n';
-            resume += '──────────────────────────────────────────────────\n';
+            resume += '──────────────────────────────\n';
             
             // Keluhan Utama
             if (anamnesa.keluhan_utama) {
@@ -823,7 +823,7 @@ function generateMedicalResume(identitas, records, billingItems = { obat: [], ti
 
         if (hasData) {
             resume += 'III. PEMERIKSAAN FISIK\n';
-            resume += '──────────────────────────────────────────────────\n';
+            resume += '──────────────────────────────\n';
 
             // Tanda Vital (support both form field names and MEDIFY field names)
             const tekananDarah = pe.tekanan_darah || pe.tensi;
@@ -876,7 +876,7 @@ function generateMedicalResume(identitas, records, billingItems = { obat: [], ti
         const obs = records.pemeriksaan_obstetri;
         if (obs.findings) {
             resume += 'IV. PEMERIKSAAN OBSTETRI\n';
-            resume += '──────────────────────────────────────────────────\n';
+            resume += '──────────────────────────────\n';
             resume += `${obs.findings}\n\n`;
         }
     }
@@ -888,7 +888,7 @@ function generateMedicalResume(identitas, records, billingItems = { obat: [], ti
 
         if (hasData) {
             resume += 'V. PEMERIKSAAN ULTRASONOGRAFI (USG)\n';
-            resume += '──────────────────────────────────────────────────\n';
+            resume += '──────────────────────────────\n';
 
             // Check if this is simple MEDIFY USG format (has hasil_usg or berat_janin)
             const isMedifyUSG = usg.hasil_usg || usg.berat_janin || (usg.presentasi && !usg.current_trimester);
@@ -1156,7 +1156,7 @@ function generateMedicalResume(identitas, records, billingItems = { obat: [], ti
 
         if (hasInterpretation || hasLabFindings || hasImagingFindings || hasOtherFindings) {
             resume += 'VI. PEMERIKSAAN PENUNJANG\n';
-            resume += '──────────────────────────────────────────────────\n';
+            resume += '──────────────────────────────\n';
 
             // AI interpretation from uploaded files
             if (hasInterpretation) {
@@ -1188,7 +1188,7 @@ function generateMedicalResume(identitas, records, billingItems = { obat: [], ti
 
         if (hasData) {
             resume += 'VII. DIAGNOSIS\n';
-            resume += '──────────────────────────────────────────────────\n';
+            resume += '──────────────────────────────\n';
 
             if (diagnosisUtama) {
                 resume += `Diagnosis Utama:\n${diagnosisUtama}\n\n`;
@@ -1219,7 +1219,7 @@ function generateMedicalResume(identitas, records, billingItems = { obat: [], ti
 
     if (hasPlanningData || hasTindakanBilling || hasObatBilling) {
         resume += 'VIII. RENCANA TATALAKSANA\n';
-        resume += '──────────────────────────────────────────────────\n';
+        resume += '──────────────────────────────\n';
 
         // Tindakan section: combine billing items + custom entries from textarea
         let tindakanContent = '';
@@ -1317,9 +1317,9 @@ function generateMedicalResume(identitas, records, billingItems = { obat: [], ti
     }
 
     // Footer
-    resume += '═══════════════════════════════════════════════════════════════\n';
+    resume += '══════════════════════════════\n';
     resume += 'Bila ada file USG dan Lab/Hasil Tes akan segera dikirimkan ke Portal Anda\n';
-    resume += '═══════════════════════════════════════════════════════════════\n';
+    resume += '══════════════════════════════\n';
 
     return resume;
 }

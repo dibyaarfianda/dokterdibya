@@ -2797,85 +2797,115 @@ router.post('/start-walk-in', verifyToken, async (req, res, next) => {
         // Import service
         const { generateCategoryBasedMrId } = require('../services/sundayClinicService');
 
-        // Get a connection for transaction
-        const conn = await db.getConnection();
+        // Retry logic for duplicate key errors (race condition on sequence)
+        const MAX_RETRIES = 3;
+        let lastError = null;
+        let mrId, sequence, folderPath;
 
-        try {
-            await conn.beginTransaction();
+        for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            const conn = await db.getConnection();
 
-            // Generate MR ID (only if no existing record)
-            const { mrId, sequence } = await generateCategoryBasedMrId(finalCategory, conn);
-            const folderPath = `sunday-clinic/${mrId.toLowerCase()}`;
+            try {
+                await conn.beginTransaction();
 
-            // Create the record with visit_location, import_source, and retrospective date if provided
-            // import_source values: simrs_gambiran, simrs_melinda, simrs_bhayangkara, or NULL for manual
-            await conn.query(
-                `INSERT INTO sunday_clinic_records
-                 (mr_id, mr_category, mr_sequence, patient_id, appointment_id, visit_location, import_source, folder_path, status, created_by, created_at)
-                 VALUES (?, ?, ?, ?, NULL, ?, ?, ?, 'draft', ?, ?)`,
-                [mrId, finalCategory, sequence, patient_id, finalLocation, import_source || null, folderPath, userId, visitDateTime]
-            );
+                // Generate MR ID (only if no existing record)
+                const result = await generateCategoryBasedMrId(finalCategory, conn);
+                mrId = result.mrId;
+                sequence = result.sequence;
+                folderPath = `sunday-clinic/${mrId.toLowerCase()}`;
 
-            // Create patient_mr_history if not exists
-            const [existingHistory] = await conn.query(
-                'SELECT id FROM patient_mr_history WHERE patient_id = ? AND mr_category = ? LIMIT 1',
-                [patient_id, finalCategory]
-            );
-
-            if (existingHistory.length === 0) {
+                // Create the record with visit_location, import_source, and retrospective date if provided
+                // import_source values: simrs_gambiran, simrs_melinda, simrs_bhayangkara, or NULL for manual
                 await conn.query(
-                    `INSERT INTO patient_mr_history
-                     (patient_id, mr_id, mr_category, first_visit_date, last_visit_date, visit_count)
-                     VALUES (?, ?, ?, ?, ?, 1)`,
-                    [patient_id, mrId, finalCategory, visitDateStr, visitDateStr]
+                    `INSERT INTO sunday_clinic_records
+                     (mr_id, mr_category, mr_sequence, patient_id, appointment_id, visit_location, import_source, folder_path, status, created_by, created_at)
+                     VALUES (?, ?, ?, ?, NULL, ?, ?, ?, 'draft', ?, ?)`,
+                    [mrId, finalCategory, sequence, patient_id, finalLocation, import_source || null, folderPath, userId, visitDateTime]
                 );
-            } else {
-                // For retrospective imports, only update if the visit date is more recent than existing last_visit_date
-                await conn.query(
-                    `UPDATE patient_mr_history
-                     SET last_visit_date = GREATEST(last_visit_date, ?), visit_count = visit_count + 1, updated_at = NOW()
-                     WHERE patient_id = ? AND mr_category = ?`,
-                    [visitDateStr, patient_id, finalCategory]
+
+                // Create patient_mr_history if not exists
+                const [existingHistory] = await conn.query(
+                    'SELECT id FROM patient_mr_history WHERE patient_id = ? AND mr_category = ? LIMIT 1',
+                    [patient_id, finalCategory]
                 );
+
+                if (existingHistory.length === 0) {
+                    await conn.query(
+                        `INSERT INTO patient_mr_history
+                         (patient_id, mr_id, mr_category, first_visit_date, last_visit_date, visit_count)
+                         VALUES (?, ?, ?, ?, ?, 1)`,
+                        [patient_id, mrId, finalCategory, visitDateStr, visitDateStr]
+                    );
+                } else {
+                    // For retrospective imports, only update if the visit date is more recent than existing last_visit_date
+                    await conn.query(
+                        `UPDATE patient_mr_history
+                         SET last_visit_date = GREATEST(last_visit_date, ?), visit_count = visit_count + 1, updated_at = NOW()
+                         WHERE patient_id = ? AND mr_category = ?`,
+                        [visitDateStr, patient_id, finalCategory]
+                    );
+                }
+
+                await conn.commit();
+                conn.release();
+                lastError = null;
+                break; // Success - exit retry loop
+
+            } catch (error) {
+                await conn.rollback();
+                conn.release();
+                lastError = error;
+
+                // Check if it's a duplicate key error (ER_DUP_ENTRY)
+                if (error.code === 'ER_DUP_ENTRY' && attempt < MAX_RETRIES) {
+                    logger.warn(`Duplicate key error on attempt ${attempt}, retrying...`, {
+                        sequence,
+                        error: error.message
+                    });
+                    // Sync counter before retry
+                    await db.query(`
+                        UPDATE sunday_clinic_mr_counters c
+                        SET c.current_sequence = (SELECT COALESCE(MAX(mr_sequence), 0) FROM sunday_clinic_records)
+                        WHERE c.category = 'unified'
+                    `);
+                    continue;
+                }
+                throw error; // Non-duplicate error or max retries reached
             }
+        }
 
-            await conn.commit();
+        if (lastError) {
+            throw lastError;
+        }
 
-            logger.info('Created walk-in visit record', {
+        logger.info('Created walk-in visit record', {
+            mrId,
+            patientId: patient_id,
+            patientName,
+            category: finalCategory,
+            location: finalLocation,
+            importSource: import_source || null,
+            visitDate: visitDateStr,
+            isRetrospective: !!is_retrospective,
+            createdBy: userId
+        });
+
+        res.json({
+            success: true,
+            message: is_retrospective ? 'Rekam medis retrospektif berhasil dibuat' : 'Kunjungan berhasil dibuat',
+            data: {
                 mrId,
-                patientId: patient_id,
-                patientName,
                 category: finalCategory,
                 location: finalLocation,
                 importSource: import_source || null,
+                patientId: patient_id,
+                patientName,
+                folderPath,
+                status: 'draft',
                 visitDate: visitDateStr,
-                isRetrospective: !!is_retrospective,
-                createdBy: userId
-            });
-
-            res.json({
-                success: true,
-                message: is_retrospective ? 'Rekam medis retrospektif berhasil dibuat' : 'Kunjungan berhasil dibuat',
-                data: {
-                    mrId,
-                    category: finalCategory,
-                    location: finalLocation,
-                    importSource: import_source || null,
-                    patientId: patient_id,
-                    patientName,
-                    folderPath,
-                    status: 'draft',
-                    visitDate: visitDateStr,
-                    isRetrospective: !!is_retrospective
-                }
-            });
-
-        } catch (error) {
-            await conn.rollback();
-            throw error;
-        } finally {
-            conn.release();
-        }
+                isRetrospective: !!is_retrospective
+            }
+        });
 
     } catch (error) {
         logger.error('Start walk-in visit error:', error);

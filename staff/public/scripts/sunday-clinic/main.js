@@ -117,6 +117,11 @@ class SundayClinicApp {
             // Update UI based on visit location (logo, billing visibility)
             this.updateUIForLocation();
 
+            // Update mobile nav visibility (for ?mobile=1 mode)
+            if (window.updateMobileNavVisibility) {
+                window.updateMobileNavVisibility(this.currentCategory, this.currentLocation);
+            }
+
             // Load template-specific components
             await this.loadComponents();
 
@@ -196,7 +201,7 @@ class SundayClinicApp {
     async loadComponents() {
         const componentPaths = this.getComponentPaths();
         // Hard version number - increment this to force reload
-        const COMPONENT_VERSION = '3.0.0';
+        const COMPONENT_VERSION = '3.0.3';
         const cacheBuster = `?v=${COMPONENT_VERSION}-${Date.now()}`;
 
         for (const { section, path } of componentPaths) {
@@ -1331,6 +1336,11 @@ class SundayClinicApp {
 
         // Re-render with only the selected section
         await this.render(section);
+
+        // Sync mobile footer nav (for ?mobile=1 mode)
+        if (window.syncMobileNavSection) {
+            window.syncMobileNavSection(section);
+        }
 
         // Scroll to top of content
         const content = document.getElementById('sunday-clinic-content');
