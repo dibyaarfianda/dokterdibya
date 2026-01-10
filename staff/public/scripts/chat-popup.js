@@ -6,6 +6,31 @@
 (function () {
   'use strict';
 
+  // ---------- EARLY STUB FUNCTIONS for WebView onclick compatibility ----------
+  // These will be replaced with real implementations after init
+  // This ensures onclick handlers work even before async init completes
+  let chatInitialized = false;
+  let pendingToggle = false;
+  let pendingClose = false;
+
+  window.toggleChatPopup = function() {
+    if (chatInitialized && window._realToggleChatPopup) {
+      window._realToggleChatPopup();
+    } else {
+      pendingToggle = true;
+      console.log('[ChatPopup] Toggle pending - not initialized yet');
+    }
+  };
+
+  window.closeChatPopup = function() {
+    if (chatInitialized && window._realCloseChatPopup) {
+      window._realCloseChatPopup();
+    } else {
+      pendingClose = true;
+      console.log('[ChatPopup] Close pending - not initialized yet');
+    }
+  };
+
   // ---------- UTIL: color per role + avatar ----------
   // Role ID constants (match backend constants/roles.js)
   const ROLE_IDS = {
@@ -458,8 +483,8 @@
       }
     }
 
-    // Expose toggle function globally for WebView onclick
-    window.toggleChatPopup = handleToggleChat;
+    // Store real toggle function and update the stub
+    window._realToggleChatPopup = handleToggleChat;
 
     // Toggle - also keep addEventListener as backup
     toggleBtn.addEventListener('click', handleToggleChat);
@@ -471,11 +496,25 @@
       toggleBtn.style.display = 'flex';
     }
 
-    // Expose close function globally for WebView onclick
-    window.closeChatPopup = handleCloseChat;
+    // Store real close function and update the stub
+    window._realCloseChatPopup = handleCloseChat;
 
     // Close - also keep addEventListener as backup
     closeBtn.addEventListener('click', handleCloseChat);
+
+    // Mark chat as initialized and handle any pending actions
+    chatInitialized = true;
+    console.log('[ChatPopup] Initialized - checking pending actions');
+    if (pendingToggle) {
+      console.log('[ChatPopup] Executing pending toggle');
+      pendingToggle = false;
+      handleToggleChat();
+    }
+    if (pendingClose) {
+      console.log('[ChatPopup] Executing pending close');
+      pendingClose = false;
+      handleCloseChat();
+    }
 
     // Send
     async function sendMessage() {
