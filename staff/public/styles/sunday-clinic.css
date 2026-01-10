@@ -1281,9 +1281,7 @@ body.mobile-app-mode {
     max-width: 100vw !important;
     width: 100vw !important;
     position: relative !important;
-    /* Add padding for phone status bar (battery, time) and bottom nav */
-    padding-top: calc(24px + env(safe-area-inset-top, 0px)) !important;
-    padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px)) !important;
+    /* Android WebView handles safe area via native padding */
 }
 
 body.mobile-app-mode,
@@ -1452,32 +1450,22 @@ body.mobile-app-mode .mobile-section-nav {
     display: block;
 }
 
-/* Chat popup container - move up above footer nav + phone nav bar */
+/* Chat popup container - above footer section nav */
 body.mobile-app-mode #chat-popup-container {
-    bottom: 100px !important;
+    bottom: 70px !important;
     right: 12px !important;
     z-index: 9999 !important;
-}
-
-/* Chat toggle button - relative to container */
-body.mobile-app-mode #chat-toggle-btn,
-body.mobile-app-mode .chat-toggle-btn,
-body.mobile-app-mode [id*="chat-toggle"],
-body.mobile-app-mode [class*="chat-toggle"] {
-    position: relative !important;
-    bottom: auto !important;
-    right: auto !important;
 }
 
 /* Chat box in Sunday Clinic mobile mode */
 body.mobile-app-mode #chat-box,
 body.mobile-app-mode .chat-box {
     position: fixed !important;
-    bottom: 100px !important;
+    bottom: 70px !important;
     right: 12px !important;
     width: calc(100vw - 24px) !important;
     max-width: 340px !important;
-    height: calc(100vh - 180px) !important;
+    height: calc(100vh - 140px) !important;
     max-height: 480px !important;
     z-index: 10000 !important;
 }

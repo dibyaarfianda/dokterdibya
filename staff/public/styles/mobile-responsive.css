@@ -796,11 +796,7 @@ body.mobile-app-mode #mobile-action-bar button.active .icon-wrapper {
     color: #ffffff;
 }
 
-/* Add padding for phone status bar (battery, time) and bottom nav */
-body.mobile-app-mode {
-    padding-top: calc(24px + env(safe-area-inset-top, 0px)) !important;
-    padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px)) !important;
-}
+/* Android WebView handles safe area via native padding - no CSS needed */
 
 /* Content padding for top nav */
 body.mobile-app-mode .content-wrapper {
@@ -1017,32 +1013,22 @@ body.mobile-app-mode #mobile-more-menu.mobile-menu-visible {
     display: block !important;
 }
 
-/* Chat popup container - push up above phone nav bar */
+/* Chat popup container in mobile mode */
 body.mobile-app-mode #chat-popup-container {
-    bottom: 80px !important;
+    bottom: 16px !important;
     right: 16px !important;
     z-index: 9999 !important;
 }
 
-/* Chat toggle button in mobile mode */
-body.mobile-app-mode #chat-toggle-btn,
-body.mobile-app-mode .chat-toggle-btn,
-body.mobile-app-mode [id*="chat-toggle"],
-body.mobile-app-mode [class*="chat-toggle"] {
-    position: relative !important;
-    bottom: auto !important;
-    right: auto !important;
-}
-
-/* Chat box in mobile mode - full screen minus nav bars */
+/* Chat box in mobile mode */
 body.mobile-app-mode #chat-box,
 body.mobile-app-mode .chat-box {
     position: fixed !important;
-    bottom: 80px !important;
+    bottom: 16px !important;
     right: 16px !important;
     width: calc(100vw - 32px) !important;
     max-width: 340px !important;
-    height: calc(100vh - 160px) !important;
+    height: calc(100vh - 100px) !important;
     max-height: 480px !important;
     z-index: 10000 !important;
 }
