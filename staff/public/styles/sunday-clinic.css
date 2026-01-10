@@ -1455,14 +1455,22 @@ body.mobile-app-mode #chat-popup-container {
     position: fixed !important;
     bottom: 70px !important;
     right: 12px !important;
-    z-index: 9999 !important;
+    z-index: 99998 !important;
     display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
 }
 
-/* Chat toggle button - ensure visible */
+/* Chat toggle button - ensure visible and clickable */
 body.mobile-app-mode #chat-toggle-btn,
 body.mobile-app-mode .chat-toggle-btn {
     display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+    cursor: pointer !important;
+    -webkit-tap-highlight-color: rgba(0,0,0,0.2) !important;
 }
 
 /* Chat box in Sunday Clinic mobile mode */
@@ -1475,7 +1483,14 @@ body.mobile-app-mode .chat-box {
     max-width: 340px !important;
     height: calc(100vh - 140px) !important;
     max-height: 480px !important;
-    z-index: 10000 !important;
+    z-index: 100000 !important;
+    pointer-events: auto !important;
+}
+
+/* Chat box elements must be interactive */
+body.mobile-app-mode #chat-box *,
+body.mobile-app-mode .chat-box * {
+    pointer-events: auto !important;
 }
 
 .section-nav-scroll {
