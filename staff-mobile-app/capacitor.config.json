@@ -1,6 +1,6 @@
 {
   "appId": "com.dokterdibya.staff",
-  "appName": "Dokter Dibya Staff",
+  "appName": "DB Staff",
   "webDir": "www",
   "server": {
     "androidScheme": "https",
