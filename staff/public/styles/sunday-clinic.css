@@ -1376,7 +1376,19 @@ body.mobile-app-mode .header-queue-list .dropdown-item {
 }
 
 body.mobile-app-mode .main-header {
+    display: block !important; /* Override mobile-responsive.css hiding */
     padding: 8px 12px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1050;
+    background: #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+body.mobile-app-mode .content-wrapper {
+    padding-top: 60px !important; /* Space for fixed header */
 }
 
 body.mobile-app-mode .main-header .navbar-nav:first-child {
