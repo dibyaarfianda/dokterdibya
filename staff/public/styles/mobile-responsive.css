@@ -1114,19 +1114,29 @@ body.mobile-app-mode #mobile-more-menu .mobile-menu-items a i {
 /* Chat popup container in mobile mode */
 body.mobile-app-mode #chat-popup-container {
     position: fixed !important;
-    bottom: 16px !important;
-    right: 16px !important;
-    z-index: 9999 !important;
+    bottom: 20px !important;
+    right: 20px !important;
+    z-index: 99998 !important;
     display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
 }
 
 /* Chat toggle button - ensure visible */
 body.mobile-app-mode #chat-toggle-btn,
 body.mobile-app-mode .chat-toggle-btn {
     display: flex !important;
-    position: relative !important;
-    bottom: auto !important;
-    right: auto !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 50px !important;
+    height: 50px !important;
+    background: linear-gradient(135deg, #007BFF 0%, #007BFF 100%) !important;
+    border-radius: 50% !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: white !important;
+    font-size: 20px !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
 }
 
 /* Chat box in mobile mode */
