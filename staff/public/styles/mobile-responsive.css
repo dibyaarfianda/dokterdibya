@@ -924,44 +924,71 @@ body.mobile-app-mode small {
 
 /* Table styles - ALLOW HORIZONTAL SCROLL */
 body.mobile-app-mode .table-responsive {
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
+    overflow-x: scroll !important;
+    -webkit-overflow-scrolling: touch !important;
+    touch-action: pan-x pan-y !important;
 }
 
 body.mobile-app-mode .table {
     table-layout: auto !important;
     width: auto !important;
     min-width: 100%;
-    font-size: 9px !important;
+    font-size: 8px !important;
 }
 
 body.mobile-app-mode .table td,
 body.mobile-app-mode .table th {
-    padding: 4px 6px !important;
-    font-size: 9px !important;
+    padding: 3px 5px !important;
+    font-size: 8px !important;
     white-space: nowrap !important;
     vertical-align: middle;
+    font-weight: 400 !important;
 }
 
 body.mobile-app-mode .table th {
-    min-width: 50px;
+    min-width: 40px;
+    font-weight: 500 !important;
+}
+
+/* Badges in tables - smaller */
+body.mobile-app-mode .table .badge {
+    font-size: 7px !important;
+    font-weight: 400 !important;
+    padding: 2px 5px !important;
+}
+
+/* Buttons in tables - smaller */
+body.mobile-app-mode .table .btn {
+    font-size: 7px !important;
+    font-weight: 400 !important;
+    padding: 2px 6px !important;
+    min-height: 18px !important;
+}
+
+/* Time slot badges */
+body.mobile-app-mode .badge-info,
+body.mobile-app-mode .badge-primary,
+body.mobile-app-mode .badge-success,
+body.mobile-app-mode .badge-warning {
+    font-size: 7px !important;
+    font-weight: 400 !important;
 }
 
 /* Allow certain columns to wrap */
 body.mobile-app-mode .table td.wrap-text,
 body.mobile-app-mode .table .wrap-column {
     white-space: normal !important;
-    min-width: 80px;
-    max-width: 150px;
+    min-width: 60px;
+    max-width: 120px;
 }
 
-/* Allow horizontal scroll for tables only */
+/* Body scroll - allow table horizontal scroll */
 body.mobile-app-mode {
     overflow-x: hidden !important;
 }
 
 body.mobile-app-mode .content-wrapper {
-    overflow-x: hidden !important;
+    overflow-x: visible !important;
 }
 
 /* Text outside tables can wrap */
