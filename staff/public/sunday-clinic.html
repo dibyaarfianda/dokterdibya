@@ -290,8 +290,8 @@
         }
     </style>
 
-    <!-- Mobile Responsive CSS -->
-    <link rel="stylesheet" href="/staff/public/css/mobile-responsive.css">
+    <!-- Mobile Responsive CSS (with mobile-app-mode styles) -->
+    <link rel="stylesheet" href="/staff/public/styles/mobile-responsive.css">
 </head>
 <body class="hold-transition sidebar-mini">
     <script>
@@ -1030,18 +1030,34 @@ PLAN
             const urlParams = new URLSearchParams(window.location.search);
             const mobileFromUrl = urlParams.get('mobile') === '1';
 
-            // Persist mobile mode in sessionStorage so it survives refresh
+            // Persist mobile mode in sessionStorage (use both keys for cross-page consistency)
             if (mobileFromUrl) {
                 sessionStorage.setItem('sunday_clinic_mobile', '1');
+                sessionStorage.setItem('mobileAppMode', '1');
             }
 
-            // Check both URL param and sessionStorage
-            const isMobileApp = mobileFromUrl || sessionStorage.getItem('sunday_clinic_mobile') === '1';
+            // Check URL param or sessionStorage (check both keys)
+            const isMobileApp = mobileFromUrl ||
+                sessionStorage.getItem('sunday_clinic_mobile') === '1' ||
+                sessionStorage.getItem('mobileAppMode') === '1';
 
             if (isMobileApp) {
                 // Add mobile mode class immediately (before DOMContentLoaded for flash prevention)
                 document.documentElement.classList.add('mobile-app-mode');
             }
+
+            // Global helpers for mobile mode
+            window.isMobileAppMode = function() {
+                return sessionStorage.getItem('mobileAppMode') === '1' ||
+                       sessionStorage.getItem('sunday_clinic_mobile') === '1' ||
+                       document.body.classList.contains('mobile-app-mode');
+            };
+
+            window.buildMobileUrl = function(baseUrl) {
+                if (!window.isMobileAppMode()) return baseUrl;
+                const separator = baseUrl.includes('?') ? '&' : '?';
+                return baseUrl + separator + 'mobile=1';
+            };
 
             document.addEventListener('DOMContentLoaded', function() {
                 // Mobile app mode setup

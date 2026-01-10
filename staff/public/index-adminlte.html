@@ -1156,6 +1156,19 @@
                     });
                 }
             }
+
+            // Global helper to check mobile mode and build URLs
+            window.isMobileAppMode = function() {
+                return sessionStorage.getItem('mobileAppMode') === '1' ||
+                       document.body.classList.contains('mobile-app-mode');
+            };
+
+            // Helper to add mobile=1 to URL if in mobile mode
+            window.buildMobileUrl = function(baseUrl) {
+                if (!window.isMobileAppMode()) return baseUrl;
+                const separator = baseUrl.includes('?') ? '&' : '?';
+                return baseUrl + separator + 'mobile=1';
+            };
         })();
     </script>
 

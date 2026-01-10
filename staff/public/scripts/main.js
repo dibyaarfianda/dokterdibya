@@ -709,7 +709,8 @@ function renderHospitalAppointmentsTable(appointments, hospitalName, hospitalCol
 // Start hospital examination - navigate to sunday-clinic with patient info
 function startHospitalExam(appointmentId, patientId, patientName) {
     // Navigate to sunday-clinic page with patient info
-    window.location.href = `sunday-clinic.html?patient=${patientId}&appointment=${appointmentId}&location=${currentHospitalLocation}`;
+    const baseUrl = `sunday-clinic.html?patient=${patientId}&appointment=${appointmentId}&location=${currentHospitalLocation}`;
+    window.location.href = window.buildMobileUrl ? window.buildMobileUrl(baseUrl) : baseUrl;
 }
 
 function getStatusBadge(status) {
@@ -2410,8 +2411,15 @@ function openSundayClinicViewer() {
         return;
     }
 
-    const targetUrl = `/sunday-clinic/${encodeURIComponent(slug)}/identitas`;
-    window.open(targetUrl, '_blank', 'noopener');
+    let targetUrl = `/sunday-clinic/${encodeURIComponent(slug)}/identitas`;
+    targetUrl = window.buildMobileUrl ? window.buildMobileUrl(targetUrl) : targetUrl;
+
+    // In mobile app mode, navigate in same window (WebView doesn't handle new tabs well)
+    if (window.isMobileAppMode && window.isMobileAppMode()) {
+        window.location.href = targetUrl;
+    } else {
+        window.open(targetUrl, '_blank', 'noopener');
+    }
 }
 
 function openSundayClinicWithMrId(mrId) {
@@ -2426,8 +2434,15 @@ function openSundayClinicWithMrId(mrId) {
         return;
     }
 
-    const targetUrl = `/sunday-clinic/${encodeURIComponent(slug)}/identitas`;
-    window.open(targetUrl, '_blank', 'noopener');
+    let targetUrl = `/sunday-clinic/${encodeURIComponent(slug)}/identitas`;
+    targetUrl = window.buildMobileUrl ? window.buildMobileUrl(targetUrl) : targetUrl;
+
+    // In mobile app mode, navigate in same window
+    if (window.isMobileAppMode && window.isMobileAppMode()) {
+        window.location.href = targetUrl;
+    } else {
+        window.open(targetUrl, '_blank', 'noopener');
+    }
 }
 
 function bindSundayClinicLauncher() {
