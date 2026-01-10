@@ -1395,7 +1395,7 @@ body.mobile-app-mode .main-header .navbar-nav:first-child .nav-link {
 }
 
 body.mobile-app-mode .content-wrapper {
-    padding-top: 60px !important; /* Space for fixed header */
+    padding-top: 110px !important; /* Space for fixed header (2 rows: title + search/queue) */
 }
 
 body.mobile-app-mode .main-header .navbar-nav:first-child {
@@ -1460,6 +1460,9 @@ body.mobile-app-mode #chat-popup-container {
     visibility: visible !important;
     opacity: 1 !important;
     pointer-events: auto !important;
+    /* Don't create containing block for fixed children */
+    transform: none !important;
+    will-change: auto !important;
 }
 
 /* Chat toggle button - ensure visible and clickable */
@@ -1468,33 +1471,64 @@ body.mobile-app-mode .chat-toggle-btn {
     display: flex !important;
     visibility: visible !important;
     opacity: 1 !important;
+    width: 50px !important;
+    height: 50px !important;
+    background: linear-gradient(135deg, #007BFF 0%, #007BFF 100%) !important;
+    border-radius: 50% !important;
+    align-items: center !important;
+    justify-content: center !important;
+    color: white !important;
+    font-size: 20px !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
     pointer-events: auto !important;
     cursor: pointer !important;
     -webkit-tap-highlight-color: rgba(0,0,0,0.2) !important;
 }
 
-/* Chat box in Sunday Clinic mobile mode */
+/* Chat box in Sunday Clinic mobile mode - use explicit dimensions */
 body.mobile-app-mode #chat-box,
 body.mobile-app-mode .chat-box {
     position: fixed !important;
-    bottom: 70px !important;
-    right: 12px !important;
-    width: calc(100vw - 24px) !important;
-    max-width: 340px !important;
-    height: calc(100vh - 140px) !important;
-    max-height: 480px !important;
+    top: 10% !important;
+    left: 5% !important;
+    width: 90% !important;
+    height: 65% !important;
+    max-width: none !important;
+    max-height: none !important;
     z-index: 100000 !important;
     pointer-events: auto !important;
     background: #ffffff !important;
     border-radius: 12px !important;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.2) !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3) !important;
     flex-direction: column !important;
     overflow: hidden !important;
+    border: 1px solid #ddd !important;
+    padding-bottom: 8px !important;
 }
 
-/* When chat box is open (has inline display:flex) */
+/* Chat input container spacing */
+body.mobile-app-mode .chat-input-container {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    padding: 12px !important;
+    flex-shrink: 0 !important;
+    background: #fff !important;
+}
+
+/* Chat box OPEN state - using class instead of attribute selector */
+body.mobile-app-mode #chat-box.chat-open,
+body.mobile-app-mode .chat-box.chat-open {
+    display: flex !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+}
+
+/* Also keep attribute selector as fallback */
 body.mobile-app-mode #chat-box[style*="display: flex"],
-body.mobile-app-mode #chat-box[style*="display:flex"] {
+body.mobile-app-mode #chat-box[style*="display:flex"],
+body.mobile-app-mode #chat-box[style*="flex"] {
     display: flex !important;
     visibility: visible !important;
     opacity: 1 !important;
@@ -1532,6 +1566,32 @@ body.mobile-app-mode .chat-messages {
 
 body.mobile-app-mode .chat-input {
     font-size: 14px !important;
+    flex: 1 1 0 !important;
+    min-width: 0 !important; /* Allow flex item to shrink below content size */
+    max-width: none !important;
+}
+
+/* Send button fix - prevent wildcard from shrinking it */
+body.mobile-app-mode .chat-send-btn,
+body.mobile-app-mode #chat-send-btn {
+    width: 40px !important;
+    height: 40px !important;
+    min-width: 40px !important;
+    min-height: 40px !important;
+    border-radius: 50% !important;
+    flex-shrink: 0 !important;
+    flex-grow: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow: visible !important;
+    padding: 0 !important;
+}
+
+body.mobile-app-mode .chat-send-btn i,
+body.mobile-app-mode #chat-send-btn i {
+    font-size: 16px !important;
+    line-height: 1 !important;
 }
 
 .section-nav-scroll {
@@ -1996,9 +2056,11 @@ body.mobile-app-mode .sc-card-header {
     padding: 5px 6px;
 }
 
-/* Content wrapper padding */
+/* Content wrapper padding - don't override padding-top! */
 body.mobile-app-mode .content-wrapper {
-    padding: 8px !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+    /* padding-top is set to 110px above for header space */
 }
 
 /* Prevent any overflow */

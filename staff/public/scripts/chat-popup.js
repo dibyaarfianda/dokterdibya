@@ -291,11 +291,68 @@
     async function initChatPopup() {
         console.log('[ChatPopup] initChatPopup called, readyState:', document.readyState);
         console.log('[ChatPopup] window.auth:', window.auth);
-        
-        // Wait for auth to be ready
+
+        // ALWAYS inject HTML/CSS first so toggle button exists (for WebView compatibility)
+        // Inject CSS
+        console.log('[ChatPopup] Injecting CSS...');
+        document.head.insertAdjacentHTML('beforeend', chatCSS);
+
+        // Inject HTML
+        document.body.insertAdjacentHTML('beforeend', chatHTML);
+
+        // Set up basic toggle handlers IMMEDIATELY (for WebView onclick compatibility)
+        const toggleBtn = document.getElementById('chat-toggle-btn');
+        const closeBtn = document.getElementById('chat-close-btn');
+        const chatBox = document.getElementById('chat-box');
+
+        let isChatOpenBasic = false;
+
+        // Basic toggle that works without auth
+        function basicToggle() {
+            isChatOpenBasic = !isChatOpenBasic;
+            // Use both inline style AND class for WebView compatibility
+            if (isChatOpenBasic) {
+                chatBox.style.display = 'flex';
+                chatBox.classList.add('chat-open');
+                toggleBtn.style.display = 'none';
+            } else {
+                chatBox.style.display = 'none';
+                chatBox.classList.remove('chat-open');
+                toggleBtn.style.display = 'flex';
+            }
+            console.log('[ChatPopup] Basic toggle - isChatOpen:', isChatOpenBasic);
+        }
+
+        function basicClose() {
+            isChatOpenBasic = false;
+            chatBox.style.display = 'none';
+            chatBox.classList.remove('chat-open');
+            toggleBtn.style.display = 'flex';
+            console.log('[ChatPopup] Basic close');
+        }
+
+        // Set these as the real functions initially
+        window._realToggleChatPopup = basicToggle;
+        window._realCloseChatPopup = basicClose;
+        chatInitialized = true;
+        console.log('[ChatPopup] Basic handlers ready, chatInitialized=true');
+
+        // Handle any pending actions from before init
+        if (pendingToggle) {
+            console.log('[ChatPopup] Executing pending toggle (basic)');
+            pendingToggle = false;
+            basicToggle();
+        }
+        if (pendingClose) {
+            console.log('[ChatPopup] Executing pending close (basic)');
+            pendingClose = false;
+            basicClose();
+        }
+
+        // Now wait for auth to enable full features
         let user = window.auth?.currentUser;
         console.log('[ChatPopup] Initial user:', user);
-        
+
         // If auth not ready, wait for it
         if (!user) {
             console.log('[ChatPopup] User not ready, waiting...');
@@ -307,7 +364,7 @@
                         resolve();
                     }
                 }, 100);
-                
+
                 // Timeout after 10 seconds
                 setTimeout(() => {
                     console.warn('[ChatPopup] Auth wait timeout');
@@ -315,26 +372,20 @@
                     resolve();
                 }, 10000);
             });
-            
+
             user = window.auth?.currentUser;
             console.log('[ChatPopup] User after wait:', user);
         }
-        
+
         // Check if user has chat permission (all roles have permission by default)
         if (!user || !user.role) {
-            console.warn('[ChatPopup] Chat not initialized: User not authenticated', user);
+            console.warn('[ChatPopup] Chat features limited: User not authenticated', user);
+            // Chat toggle still works, but no real-time features
             return;
         }
 
-        // All users have chat access
-        console.log('[ChatPopup] ✅ Initializing chat for user:', user.role, user);
-
-        // Inject CSS
-        console.log('[ChatPopup] Injecting CSS...');
-        document.head.insertAdjacentHTML('beforeend', chatCSS);
-
-        // Inject HTML
-        document.body.insertAdjacentHTML('beforeend', chatHTML);
+        // All users have chat access - enable full features
+        console.log('[ChatPopup] ✅ Enabling full chat for user:', user.role, user);
 
         // Check if Socket.IO is available (should be created by global-chat-loader)
         if (!window.socket) {
@@ -359,11 +410,8 @@
             document.body.appendChild(incomingAudioEl);
         }
 
-        // Get elements
-        const toggleBtn = document.getElementById('chat-toggle-btn');
-        const closeBtn = document.getElementById('chat-close-btn');
+        // Get additional elements (toggleBtn, closeBtn, chatBox already defined above)
         const clearBtn = document.getElementById('chat-clear-btn');
-        const chatBox = document.getElementById('chat-box');
         const chatInput = document.getElementById('chat-input');
         const sendBtn = document.getElementById('chat-send-btn');
     const messagesContainer = document.getElementById('chat-messages');
@@ -372,7 +420,8 @@
     const incomingAudio = document.getElementById('chat-incoming-sound');
         const onlineNamesEl = document.getElementById('online-names');
 
-  let isChatOpen = false;
+  // isChatOpenBasic already defined above - reuse it
+  let isChatOpen = isChatOpenBasic;
   let isHistoryLoading = false;
   let lastSender = null; // Track last message sender for avatar grouping
   const userPhotoCache = new Map();
@@ -466,55 +515,44 @@
     // Toggle function - exposed globally for WebView onclick compatibility
     function handleToggleChat() {
       isChatOpen = !isChatOpen;
-      chatBox.style.display = isChatOpen ? 'flex' : 'none';
-      toggleBtn.style.display = isChatOpen ? 'none' : 'flex';
+      // Use both inline style AND class for WebView compatibility
       if (isChatOpen) {
-        chatInput.focus();
+        chatBox.style.display = 'flex';
+        chatBox.classList.add('chat-open');
+        toggleBtn.style.display = 'none';
         chatBadge.style.display = 'none';
         chatBadge.textContent = '0';
         // Mark all messages as read
         markMessagesAsRead();
-        // Scroll to bottom to show recent messages
+        // Delay focus and scroll to ensure chat box is rendered first
         setTimeout(() => {
           messagesContainer.scrollTop = messagesContainer.scrollHeight;
-        }, 50);
+          // Focus input after box is visible (prevents keyboard appearing before box)
+          if (chatInput) chatInput.focus();
+        }, 100);
         // Check clear button visibility when chat opens
         checkClearButtonVisibility();
+      } else {
+        chatBox.style.display = 'none';
+        chatBox.classList.remove('chat-open');
+        toggleBtn.style.display = 'flex';
       }
     }
 
-    // Store real toggle function and update the stub
+    // Upgrade the toggle function with full features (badge, scroll, etc.)
     window._realToggleChatPopup = handleToggleChat;
-
-    // Toggle - also keep addEventListener as backup
-    toggleBtn.addEventListener('click', handleToggleChat);
+    console.log('[ChatPopup] Upgraded toggle handler with full features');
 
     // Close function - exposed globally for WebView onclick compatibility
     function handleCloseChat() {
       isChatOpen = false;
       chatBox.style.display = 'none';
+      chatBox.classList.remove('chat-open');
       toggleBtn.style.display = 'flex';
     }
 
-    // Store real close function and update the stub
+    // Upgrade the close function
     window._realCloseChatPopup = handleCloseChat;
-
-    // Close - also keep addEventListener as backup
-    closeBtn.addEventListener('click', handleCloseChat);
-
-    // Mark chat as initialized and handle any pending actions
-    chatInitialized = true;
-    console.log('[ChatPopup] Initialized - checking pending actions');
-    if (pendingToggle) {
-      console.log('[ChatPopup] Executing pending toggle');
-      pendingToggle = false;
-      handleToggleChat();
-    }
-    if (pendingClose) {
-      console.log('[ChatPopup] Executing pending close');
-      pendingClose = false;
-      handleCloseChat();
-    }
 
     // Send
     async function sendMessage() {

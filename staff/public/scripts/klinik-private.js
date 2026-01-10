@@ -193,7 +193,7 @@ function renderAppointments(appointments) {
     elements.tableWrapper.classList.remove('d-none');
     elements.emptyState.classList.add('d-none');
 
-    appointments.forEach(appointment => {
+    appointments.forEach((appointment, index) => {
         const tr = document.createElement('tr');
         // Format slot time for first column
         const time = appointment.time || '-';
