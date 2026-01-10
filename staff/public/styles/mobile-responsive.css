@@ -1042,9 +1042,20 @@ body.mobile-app-mode #mobile-more-menu.mobile-menu-visible {
 
 /* Chat popup container in mobile mode */
 body.mobile-app-mode #chat-popup-container {
+    position: fixed !important;
     bottom: 16px !important;
     right: 16px !important;
     z-index: 9999 !important;
+    display: block !important;
+}
+
+/* Chat toggle button - ensure visible */
+body.mobile-app-mode #chat-toggle-btn,
+body.mobile-app-mode .chat-toggle-btn {
+    display: flex !important;
+    position: relative !important;
+    bottom: auto !important;
+    right: auto !important;
 }
 
 /* Chat box in mobile mode */
