@@ -369,7 +369,7 @@ class SundayClinicApp {
     updateHeaderTitle() {
         const state = stateManager.getState();
         const patientData = state.patientData;
-        const patientName = patientData?.full_name || patientData?.name || '';
+        const patientName = patientData?.fullName || patientData?.full_name || patientData?.name || '';
 
         const staffNameDisplay = document.getElementById('staff-name-display');
         if (staffNameDisplay && patientName) {
