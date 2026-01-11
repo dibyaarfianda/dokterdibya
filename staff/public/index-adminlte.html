@@ -7746,7 +7746,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
                     : '';
                 const escapedName = (patient.full_name || '').replace(/'/g, "\\'");
                 const mrIdCell = patient.mr_id
-                    ? `<a href="sunday-clinic.html?patient=${patient.id}&mr=${patient.mr_id}" class="text-primary" title="Buka Rekam Medis">${patient.mr_id}</a>${locationBadge}`
+                    ? `<a href="sunday-clinic.html?patient=${patient.id}&mr=${patient.mr_id}" class="text-primary" title="Buka Rekam Medis">${patient.mr_id.toUpperCase()}</a>${locationBadge}`
                     : `<span class="text-muted">-</span>`;
 
                 // HPL column with color coding for obstetri patients
@@ -8011,7 +8011,7 @@ body.mobile-app-mode .mobile-action-bar-force button {
                     : '';
                 const escapedName = (patient.full_name || '').replace(/'/g, "\\'");
                 const mrIdCell = patient.mr_id
-                    ? `<a href="sunday-clinic.html?patient=${patient.id}&mr=${patient.mr_id}" class="text-primary" title="Buka Rekam Medis"><small>${patient.mr_id}</small></a>${locationBadge}`
+                    ? `<a href="sunday-clinic.html?patient=${patient.id}&mr=${patient.mr_id}" class="text-primary" title="Buka Rekam Medis"><small>${patient.mr_id.toUpperCase()}</small></a>${locationBadge}`
                     : `<span class="text-muted">-</span>`;
 
                 // HPL column with color coding for obstetri patients
@@ -8624,7 +8624,7 @@ Apakah Anda yakin ingin melanjutkan?`;
                                     return `
                                         <tr>
                                             <td>
-                                                <strong class="text-primary">${record.mr_id || '-'}</strong>
+                                                <strong class="text-primary">${record.mr_id ? record.mr_id.toUpperCase() : '-'}</strong>
                                             </td>
                                             <td>${visitDate}</td>
                                             <td><small>${record.location_short || record.visit_location || '-'}</small></td>
