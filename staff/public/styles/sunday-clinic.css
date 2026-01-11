@@ -2335,3 +2335,27 @@ body.mobile-app-mode [class*="resume"] {
     max-width: 100% !important;
     overflow-x: hidden !important;
 }
+
+/* ==================== HIDE UI ELEMENTS ==================== */
+
+/* Hide location badge (RSIA Melinda, etc) */
+#location-context-badge {
+    display: none !important;
+}
+
+/* Hide all category badges, MR ID, Draft/Finalized, edit and delete buttons */
+#sunday-clinic-header .mb-3.d-flex.align-items-center {
+    display: none !important;
+}
+
+/* Hide Import, Bulk, and Riwayat buttons in header */
+.main-header .btn-group button[onclick*="Import"],
+.main-header .btn-group button[onclick*="Bulk"],
+#btn-toggle-patient-sidebar {
+    display: none !important;
+}
+
+/* Hide the entire button group if it contains Import/Bulk */
+.main-header .nav-item .btn-group {
+    display: none !important;
+}
