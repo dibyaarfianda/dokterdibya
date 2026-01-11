@@ -290,23 +290,48 @@
             border-color: #0d6efd;
         }
 
-        /* CRITICAL: Force visibility for mobile sidebar collapse */
-        body.mobile-app-mode .patient-sidebar-section #history-content {
+        /* CRITICAL: Disable collapse in mobile - always show history */
+        body.mobile-app-mode .patient-sidebar-section .collapse {
             display: block !important;
             visibility: visible !important;
             height: auto !important;
+            max-height: none !important;
             overflow: visible !important;
         }
 
-        body.mobile-app-mode .patient-sidebar-section .visit-history-list {
+        body.mobile-app-mode #history-content,
+        body.mobile-app-mode #history-content.collapse,
+        body.mobile-app-mode #history-content.show {
+            display: flex !important;
+            flex-direction: column !important;
+            flex: 1 !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+            height: auto !important;
+        }
+
+        body.mobile-app-mode .visit-history-list {
             display: block !important;
             visibility: visible !important;
             opacity: 1 !important;
+            min-height: 100px !important;
         }
 
-        body.mobile-app-mode .patient-sidebar-section .visit-card {
+        body.mobile-app-mode .visit-card {
             display: block !important;
             visibility: visible !important;
+            opacity: 1 !important;
+            margin-bottom: 8px !important;
+        }
+
+        /* Disable toggle in mobile mode */
+        body.mobile-app-mode .patient-sidebar-section .section-header[data-toggle] {
+            pointer-events: none !important;
+            cursor: default !important;
+        }
+
+        body.mobile-app-mode .patient-sidebar-section .toggle-icon {
+            display: none !important;
         }
     </style>
 </head>
@@ -314,7 +339,7 @@
     <script>
         // Cache version control - increment to force refresh
         (function() {
-            const SC_CACHE_VERSION = 'v2.2.0';
+            const SC_CACHE_VERSION = 'v2.2.1';
             const currentVersion = localStorage.getItem('sc_cache_version');
             if (currentVersion !== SC_CACHE_VERSION) {
                 console.log('[SundayClinic] Cache version changed:', currentVersion, '->', SC_CACHE_VERSION);
