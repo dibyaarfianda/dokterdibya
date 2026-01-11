@@ -99,6 +99,9 @@ class SundayClinicApp {
             // Load into state manager
             await stateManager.loadRecord(response.data);
 
+            // Update header with patient name
+            this.updateHeaderTitle();
+
             // Get category and location
             this.currentMrId = mrId;
             this.currentCategory = response.data.record.mr_category ||
@@ -311,6 +314,7 @@ class SundayClinicApp {
 
     /**
      * Render category badge
+     * Order: MR ID → Category → Edit → Delete
      */
     renderCategoryBadge() {
         const categoryLabels = {
@@ -325,41 +329,52 @@ class SundayClinicApp {
         const userRole = window.currentStaffIdentity?.role || '';
         const isDokter = userRole === 'dokter' || userRole === 'superadmin';
 
-        // Get record status from state
+        // Get record ID from state
         const state = stateManager.getState();
-        const recordStatus = state.recordData?.record?.status || state.recordData?.status || 'draft';
-        const isDraft = recordStatus === 'draft';
         const recordId = state.recordData?.record?.id || state.recordData?.id || null;
 
-        // Edit category button
+        // Edit category button (badge style)
         const editCategoryBtn = `
-            <button class="btn btn-sm btn-outline-secondary ml-2" onclick="window.SundayClinicApp.editCategory(${recordId})" title="Ubah Kategori">
+            <span class="badge badge-secondary badge-lg ml-2" onclick="window.SundayClinicApp.editCategory(${recordId})"
+                  style="cursor: pointer;" title="Ubah Kategori">
                 <i class="fas fa-pencil-alt"></i>
-            </button>
+            </span>
         `;
 
-        // Delete button only for dokter and draft records
+        // Delete button (badge style) - only for dokter
         const deleteBtn = isDokter ? `
-            <button class="btn btn-sm btn-outline-danger ml-2" onclick="window.SundayClinicApp.deleteMedicalRecord('${this.currentMrId}')" title="Hapus Rekam Medis ${isDraft ? '' : '(Finalized - butuh konfirmasi ekstra)'}">
+            <span class="badge badge-danger badge-lg ml-2" onclick="window.SundayClinicApp.deleteMedicalRecord('${this.currentMrId}')"
+                  style="cursor: pointer;" title="Hapus Rekam Medis">
                 <i class="fas fa-trash"></i>
-            </button>
+            </span>
         ` : '';
 
         return `
             <div class="mb-3 d-flex align-items-center">
-                <span class="badge badge-${category.color} badge-lg">
-                    <i class="fas fa-tag"></i> ${category.label}
-                </span>
-                ${editCategoryBtn}
-                <span class="badge badge-secondary badge-lg ml-2">
+                <span class="badge badge-dark badge-lg">
                     ${this.currentMrId}
                 </span>
-                <span class="badge badge-${isDraft ? 'warning' : 'success'} badge-lg ml-2">
-                    <i class="fas fa-${isDraft ? 'edit' : 'check-circle'}"></i> ${isDraft ? 'Draft' : 'Finalized'}
+                <span class="badge badge-${category.color} badge-lg ml-2">
+                    ${category.label}
                 </span>
+                ${editCategoryBtn}
                 ${deleteBtn}
             </div>
         `;
+    }
+
+    /**
+     * Update header with patient name
+     */
+    updateHeaderTitle() {
+        const state = stateManager.getState();
+        const patientData = state.patientData;
+        const patientName = patientData?.full_name || patientData?.name || '';
+
+        const staffNameDisplay = document.getElementById('staff-name-display');
+        if (staffNameDisplay && patientName) {
+            staffNameDisplay.textContent = patientName;
+        }
     }
 
     /**
