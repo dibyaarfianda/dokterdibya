@@ -1940,10 +1940,8 @@ async function applyBulkImport() {
         showImportPreview(selectedItems[0]);
         $('#import-medical-modal').modal('show');
     } else {
-        // Multiple items - show confirmation for batch save
-        if (confirm(`Akan menyimpan ${selectedItems.length} catatan medis ke database. Lanjutkan?`)) {
-            await saveBulkRecords(selectedItems);
-        }
+        // Multiple items - batch save directly
+        await saveBulkRecords(selectedItems);
     }
 }
 

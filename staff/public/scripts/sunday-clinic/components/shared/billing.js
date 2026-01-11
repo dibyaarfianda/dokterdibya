@@ -1169,9 +1169,6 @@ export default {
                                 return;
                             }
 
-                            if (!confirm('Konfirmasi tagihan ini? Setelah dikonfirmasi, tagihan tidak dapat diubah.')) {
-                                return;
-                            }
 
                             try {
                                 const token = window.getToken?.();
@@ -1360,9 +1357,6 @@ export default {
                     const markPaidBtn = document.getElementById('btn-mark-paid');
                     if (markPaidBtn) {
                         markPaidBtn.addEventListener('click', async function() {
-                            if (!confirm('Tandai tagihan ini sebagai LUNAS?\n\nStok obat akan otomatis dikurangi dari inventory.')) {
-                                return;
-                            }
 
                             try {
                                 const token = window.getToken?.();

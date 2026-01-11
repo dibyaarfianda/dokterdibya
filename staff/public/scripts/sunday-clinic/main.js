@@ -1934,10 +1934,9 @@ class SundayClinicApp {
      * Navigate to different record
      */
     async navigate(mrId) {
-        // Check for unsaved changes
+        // Allow navigation without confirmation
         if (stateManager.hasUnsavedChanges()) {
-            const confirmed = confirm('You have unsaved changes. Continue anyway?');
-            if (!confirmed) return;
+            stateManager.set('isDirty', false);
         }
 
         // Clear state and load new record
@@ -2226,10 +2225,6 @@ window.markExaminationCompleted = async () => {
         return;
     }
 
-    // Confirm action
-    if (!confirm('Tandai pasien ini sudah selesai diperiksa?')) {
-        return;
-    }
 
     const btn = document.getElementById('btn-mark-completed');
     if (btn) {

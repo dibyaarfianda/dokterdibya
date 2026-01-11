@@ -585,8 +585,8 @@ class PatientHistorySidebar {
         const isDirty = stateManager.get('isDirty');
 
         if (isDirty) {
-            const confirmed = confirm('Ada perubahan yang belum disimpan. Lanjutkan tanpa menyimpan?');
-            if (!confirmed) return;
+            // Allow switching without confirmation
+            stateManager.set('isDirty', false);
         }
 
         if (mrId) {
