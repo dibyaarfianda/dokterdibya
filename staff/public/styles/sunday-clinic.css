@@ -1675,7 +1675,10 @@ body.mobile-app-mode .current-patient-info .patient-meta {
 body.mobile-app-mode .visit-card {
     font-size: 9px !important;
     margin-bottom: 8px !important;
-    overflow: hidden !important;
+    overflow: visible !important;
+    display: block !important;
+    opacity: 1 !important;
+    visibility: visible !important;
 }
 
 body.mobile-app-mode .visit-card * {
@@ -1718,6 +1721,26 @@ body.mobile-app-mode .visit-history-list {
     padding: 6px 8px !important;
     max-height: calc(100vh - 250px) !important;
     overflow-x: hidden !important;
+    overflow-y: auto !important;
+}
+
+/* Ensure collapse is visible in mobile */
+body.mobile-app-mode .collapse.show,
+body.mobile-app-mode #history-content.show {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    height: auto !important;
+    max-height: none !important;
+}
+
+/* Flex-grow for collapse content */
+body.mobile-app-mode #history-content.flex-grow-1 {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    min-height: 200px !important;
 }
 
 body.mobile-app-mode .visit-card-body {
@@ -1778,9 +1801,17 @@ body.mobile-app-mode .patient-sidebar-footer small {
     overflow-wrap: break-word !important;
 }
 
-/* Patient sidebar section mobile - prevent cropping */
+/* Patient sidebar section mobile - allow content to show */
 body.mobile-app-mode .patient-sidebar-section {
-    overflow: hidden !important;
+    overflow: visible !important;
+}
+
+/* Ensure flex-grow for visit history section */
+body.mobile-app-mode .patient-sidebar-section.flex-grow-1 {
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 0 !important;
 }
 
 .section-nav-scroll {
