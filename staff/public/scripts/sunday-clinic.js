@@ -399,9 +399,7 @@ function setupEventListeners() {
     const logo = document.getElementById('sidebar-logo');
     if (logo) {
         logo.addEventListener('click', () => {
-            if (confirm('Keluar dari Klinik Privat Minggu?')) {
-                window.location.href = '/staff/public/index-adminlte.html';
-            }
+            window.location.href = '/staff/public/index-adminlte.html';
         });
     }
 
