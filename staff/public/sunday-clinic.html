@@ -9,8 +9,8 @@
     <title>Klinik Private Minggu</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
-    <link rel="stylesheet" href="/staff/public/styles/mobile-responsive.css">
-    <link rel="stylesheet" href="/staff/public/styles/sunday-clinic.css?v=2.3.6">
+    <link rel="stylesheet" href="/staff/public/styles/mobile-responsive.css?v=3.0.2">
+    <link rel="stylesheet" href="/staff/public/styles/sunday-clinic.css?v=2.4.0">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -289,13 +289,32 @@
             background-color: #e7f1ff;
             border-color: #0d6efd;
         }
+
+        /* CRITICAL: Force visibility for mobile sidebar collapse */
+        body.mobile-app-mode .patient-sidebar-section #history-content {
+            display: block !important;
+            visibility: visible !important;
+            height: auto !important;
+            overflow: visible !important;
+        }
+
+        body.mobile-app-mode .patient-sidebar-section .visit-history-list {
+            display: block !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+
+        body.mobile-app-mode .patient-sidebar-section .visit-card {
+            display: block !important;
+            visibility: visible !important;
+        }
     </style>
 </head>
 <body class="hold-transition sidebar-mini">
     <script>
         // Cache version control - increment to force refresh
         (function() {
-            const SC_CACHE_VERSION = 'v2.1.7';
+            const SC_CACHE_VERSION = 'v2.2.0';
             const currentVersion = localStorage.getItem('sc_cache_version');
             if (currentVersion !== SC_CACHE_VERSION) {
                 console.log('[SundayClinic] Cache version changed:', currentVersion, '->', SC_CACHE_VERSION);
