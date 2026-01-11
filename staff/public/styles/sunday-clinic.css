@@ -1801,6 +1801,18 @@ body.mobile-app-mode .patient-sidebar-footer small {
     overflow-wrap: break-word !important;
 }
 
+/* Identity table mobile styles */
+body.mobile-app-mode .identity-table .identity-label {
+    font-size: 9px !important;
+    padding: 4px 6px !important;
+}
+
+body.mobile-app-mode .identity-table .identity-value {
+    font-size: 9px !important;
+    padding: 4px 6px !important;
+    word-break: break-word !important;
+}
+
 /* Patient sidebar section mobile - allow content to show */
 body.mobile-app-mode .patient-sidebar-section {
     overflow: visible !important;
