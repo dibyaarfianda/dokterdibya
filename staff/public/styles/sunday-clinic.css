@@ -1305,8 +1305,16 @@ body.mobile-app-mode .main-sidebar {
     display: none !important;
 }
 
+/* Patient history sidebar - mobile overlay mode */
 body.mobile-app-mode .patient-history-sidebar {
-    display: none !important;
+    width: 100% !important;
+    max-width: 100vw !important;
+    z-index: 9999 !important; /* Above everything else */
+    transform: translateX(100%) !important; /* Hidden by default */
+}
+
+body.mobile-app-mode .patient-history-sidebar.open {
+    transform: translateX(0) !important; /* Slide in when open */
 }
 
 /* Content area full width - no margins */
@@ -1340,9 +1348,16 @@ body.mobile-app-mode .card {
 
 /* Simplified mobile header - hide unnecessary items */
 body.mobile-app-mode .main-header .btn-group,
-body.mobile-app-mode .main-header #btn-toggle-patient-sidebar,
 body.mobile-app-mode .main-header .datetime-display {
     display: none !important;
+}
+
+/* Show patient history toggle button in mobile */
+body.mobile-app-mode .main-header #btn-toggle-patient-sidebar {
+    display: inline-flex !important;
+    font-size: 9px !important;
+    padding: 4px 8px !important;
+    min-width: auto !important;
 }
 
 /* Show Antrian button on mobile */
@@ -1592,6 +1607,81 @@ body.mobile-app-mode .chat-send-btn i,
 body.mobile-app-mode #chat-send-btn i {
     font-size: 16px !important;
     line-height: 1 !important;
+}
+
+/* ==================== PATIENT SIDEBAR MOBILE STYLES ==================== */
+
+/* Sidebar header mobile */
+body.mobile-app-mode .patient-sidebar-header {
+    padding: 12px 15px !important;
+    font-size: 14px !important;
+}
+
+body.mobile-app-mode .patient-sidebar-header h5 {
+    font-size: 14px !important;
+}
+
+/* Current patient info mobile */
+body.mobile-app-mode .current-patient-info {
+    font-size: 12px !important;
+    padding: 12px 15px !important;
+}
+
+body.mobile-app-mode .current-patient-info strong {
+    font-size: 13px !important;
+}
+
+/* Visit cards mobile */
+body.mobile-app-mode .visit-card {
+    font-size: 12px !important;
+}
+
+body.mobile-app-mode .visit-card-header {
+    padding: 12px 14px !important;
+    min-height: 56px !important;
+}
+
+body.mobile-app-mode .visit-mr {
+    font-size: 13px !important;
+}
+
+body.mobile-app-mode .visit-date {
+    font-size: 11px !important;
+}
+
+body.mobile-app-mode .location-badge {
+    font-size: 10px !important;
+    padding: 3px 8px !important;
+}
+
+body.mobile-app-mode .visit-card-body {
+    font-size: 11px !important;
+    padding: 10px 14px !important;
+}
+
+body.mobile-app-mode .visit-card-body .btn {
+    font-size: 11px !important;
+    padding: 6px 12px !important;
+}
+
+/* Section headers mobile */
+body.mobile-app-mode .patient-sidebar-section .section-header {
+    font-size: 12px !important;
+    padding: 10px 15px !important;
+}
+
+/* Sidebar footer mobile */
+body.mobile-app-mode .patient-sidebar-footer {
+    padding: 12px 15px !important;
+}
+
+body.mobile-app-mode .patient-sidebar-footer .btn {
+    font-size: 11px !important;
+    padding: 8px 12px !important;
+}
+
+body.mobile-app-mode .patient-sidebar-footer small {
+    font-size: 10px !important;
 }
 
 .section-nav-scroll {
