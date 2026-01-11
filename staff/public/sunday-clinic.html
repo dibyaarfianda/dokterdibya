@@ -339,7 +339,7 @@
     <script>
         // Cache version control - increment to force refresh
         (function() {
-            const SC_CACHE_VERSION = 'v2.2.5';
+            const SC_CACHE_VERSION = 'v2.2.6';
             const currentVersion = localStorage.getItem('sc_cache_version');
             if (currentVersion !== SC_CACHE_VERSION) {
                 console.log('[SundayClinic] Cache version changed:', currentVersion, '->', SC_CACHE_VERSION);
@@ -372,34 +372,6 @@
                 </li>
             </ul>
             <ul class="navbar-nav ml-auto align-items-center">
-                <li class="nav-item d-none d-sm-inline-block mr-2">
-                    <span class="nav-link datetime-display" style="
-    width: 212px;
-    padding-right: 0;
-    height: 31px;
-">
-                        <i class="far fa-calendar-alt mr-1"></i>
-                        <span id="date-display"></span>
-                    </span>
-                </li>
-                <li class="nav-item d-none d-sm-inline-block mr-3">
-                    <span class="nav-link datetime-display" style="
-    width: 132px;
-    padding-right: 0px;
-    padding-left: 0px;
-    height: 31px;
-">
-                        <i class="far fa-clock mr-1"></i>
-                        <span id="time-display"></span>
-                    </span>
-                </li>
-                <!-- Search Button -->
-                <li class="nav-item mr-2">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-header-search" title="Cari Pasien (Ctrl+K)">
-                        <i class="fas fa-search"></i>
-                        <span class="d-none d-md-inline ml-1">Cari</span>
-                    </button>
-                </li>
                 <!-- Queue Button with Dropdown -->
                 <li class="nav-item dropdown mr-2">
                     <button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-toggle="dropdown" id="btn-header-queue" title="Antrian Hari Ini">
@@ -432,10 +404,39 @@
                     </div>
                 </li>
                 <!-- Patient History Toggle -->
-                <li class="nav-item">
+                <li class="nav-item mr-2">
                     <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-toggle-patient-sidebar" title="Riwayat Pasien Aktif">
                         <i class="fas fa-history"></i>
                         <span class="d-none d-lg-inline ml-1">Riwayat</span>
+                    </button>
+                </li>
+                <!-- Date and Time Display -->
+                <li class="nav-item d-none d-sm-inline-block mr-2">
+                    <span class="nav-link datetime-display" style="
+    width: 212px;
+    padding-right: 0;
+    height: 31px;
+">
+                        <i class="far fa-calendar-alt mr-1"></i>
+                        <span id="date-display"></span>
+                    </span>
+                </li>
+                <li class="nav-item d-none d-sm-inline-block mr-3">
+                    <span class="nav-link datetime-display" style="
+    width: 132px;
+    padding-right: 0px;
+    padding-left: 0px;
+    height: 31px;
+">
+                        <i class="far fa-clock mr-1"></i>
+                        <span id="time-display"></span>
+                    </span>
+                </li>
+                <!-- Search Button -->
+                <li class="nav-item">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-header-search" title="Cari Pasien (Ctrl+K)">
+                        <i class="fas fa-search"></i>
+                        <span class="d-none d-md-inline ml-1">Cari</span>
                     </button>
                 </li>
             </ul>
