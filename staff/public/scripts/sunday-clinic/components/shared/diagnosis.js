@@ -180,7 +180,7 @@ export default {
                 <div class="sc-card">
                     <div class="mb-3">
                         <label class="font-weight-bold">Diagnosis Utama</label>
-                        <textarea class="form-control" id="diagnosis-utama" name="diagnosis_utama" rows="1"
+                        <textarea class="form-control" id="diagnosis-utama" name="diagnosis_utama" rows="5"
                                   placeholder="Masukkan diagnosis utama">${escapeHtml(diagnosisData.diagnosis_utama)}</textarea>
                     </div>
                     <div class="mb-3">
