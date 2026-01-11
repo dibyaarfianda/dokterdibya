@@ -1611,121 +1611,176 @@ body.mobile-app-mode #chat-send-btn i {
 
 /* ==================== PATIENT SIDEBAR MOBILE STYLES ==================== */
 
+/* Sidebar container - full width, no overflow */
+body.mobile-app-mode .patient-sidebar-header,
+body.mobile-app-mode .patient-sidebar-body,
+body.mobile-app-mode .patient-sidebar-footer {
+    box-sizing: border-box !important;
+    width: 100% !important;
+    overflow-x: hidden !important;
+}
+
 /* Sidebar header mobile */
 body.mobile-app-mode .patient-sidebar-header {
-    padding: 10px 12px !important;
-    font-size: 13px !important;
+    padding: 8px 10px !important;
+    font-size: 11px !important;
 }
 
 body.mobile-app-mode .patient-sidebar-header h5 {
-    font-size: 13px !important;
+    font-size: 11px !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
+    margin: 0 !important;
+}
+
+body.mobile-app-mode .patient-sidebar-header .btn {
+    padding: 2px 6px !important;
+    font-size: 11px !important;
 }
 
 /* Sidebar body mobile - ensure proper scrolling */
 body.mobile-app-mode .patient-sidebar-body {
     overflow-y: auto !important;
+    overflow-x: hidden !important;
     -webkit-overflow-scrolling: touch !important;
 }
 
 /* Current patient info mobile */
 body.mobile-app-mode .current-patient-info {
-    font-size: 11px !important;
-    padding: 10px 12px !important;
+    font-size: 9px !important;
+    padding: 8px 10px !important;
+    overflow: hidden !important;
+}
+
+body.mobile-app-mode .current-patient-info * {
+    max-width: 100% !important;
+    overflow-wrap: break-word !important;
+    word-wrap: break-word !important;
 }
 
 body.mobile-app-mode .current-patient-info strong {
-    font-size: 12px !important;
+    font-size: 10px !important;
 }
 
 body.mobile-app-mode .current-patient-info .patient-name {
-    font-size: 13px !important;
-    word-wrap: break-word !important;
-    overflow-wrap: break-word !important;
+    font-size: 11px !important;
 }
 
 body.mobile-app-mode .current-patient-info .patient-meta {
-    font-size: 11px !important;
-    word-wrap: break-word !important;
+    font-size: 9px !important;
 }
 
 /* Visit cards mobile */
 body.mobile-app-mode .visit-card {
-    font-size: 11px !important;
-    margin-bottom: 10px !important;
+    font-size: 9px !important;
+    margin-bottom: 8px !important;
+    overflow: hidden !important;
+}
+
+body.mobile-app-mode .visit-card * {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
 }
 
 body.mobile-app-mode .visit-card-header {
-    padding: 10px 12px !important;
+    padding: 8px 10px !important;
     min-height: auto !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+}
+
+body.mobile-app-mode .visit-card-header > div:first-child {
+    flex: 1 !important;
+    min-width: 0 !important;
 }
 
 body.mobile-app-mode .visit-mr {
-    font-size: 12px !important;
-    word-wrap: break-word !important;
+    font-size: 10px !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
 }
 
 body.mobile-app-mode .visit-date {
-    font-size: 10px !important;
+    font-size: 9px !important;
 }
 
 body.mobile-app-mode .location-badge {
-    font-size: 9px !important;
-    padding: 2px 6px !important;
+    font-size: 8px !important;
+    padding: 2px 4px !important;
     white-space: nowrap !important;
+    flex-shrink: 0 !important;
 }
 
 body.mobile-app-mode .visit-history-list {
-    padding: 8px 10px !important;
-    max-height: calc(100vh - 280px) !important;
+    padding: 6px 8px !important;
+    max-height: calc(100vh - 250px) !important;
+    overflow-x: hidden !important;
 }
 
 body.mobile-app-mode .visit-card-body {
-    font-size: 11px !important;
-    padding: 10px 14px !important;
+    font-size: 9px !important;
+    padding: 8px 10px !important;
 }
 
 body.mobile-app-mode .visit-card-body .btn {
-    font-size: 11px !important;
-    padding: 6px 12px !important;
+    font-size: 9px !important;
+    padding: 4px 8px !important;
 }
 
 /* Section headers mobile */
 body.mobile-app-mode .patient-sidebar-section .section-header {
-    font-size: 11px !important;
-    padding: 8px 12px !important;
-    word-wrap: break-word !important;
+    font-size: 10px !important;
+    padding: 6px 10px !important;
+    overflow: hidden !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
 }
 
-body.mobile-app-mode .patient-sidebar-section .section-header span {
-    word-wrap: break-word !important;
+body.mobile-app-mode .patient-sidebar-section .section-header > span:first-of-type {
+    flex: 1 !important;
+    min-width: 0 !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
 }
 
 body.mobile-app-mode .patient-sidebar-section .section-header .badge {
-    font-size: 10px !important;
-    padding: 2px 6px !important;
+    font-size: 9px !important;
+    padding: 2px 5px !important;
+    flex-shrink: 0 !important;
+}
+
+body.mobile-app-mode .patient-sidebar-section .section-header .toggle-icon {
+    flex-shrink: 0 !important;
+    margin-left: 0 !important;
 }
 
 /* Sidebar footer mobile */
 body.mobile-app-mode .patient-sidebar-footer {
-    padding: 10px 12px !important;
+    padding: 8px 10px !important;
     border-top: 1px solid #dee2e6 !important;
 }
 
 body.mobile-app-mode .patient-sidebar-footer .btn {
-    font-size: 10px !important;
-    padding: 6px 10px !important;
+    font-size: 9px !important;
+    padding: 5px 8px !important;
+    white-space: normal !important;
+    line-height: 1.2 !important;
 }
 
 body.mobile-app-mode .patient-sidebar-footer small {
-    font-size: 9px !important;
+    font-size: 8px !important;
+    display: block !important;
+    overflow-wrap: break-word !important;
 }
 
 /* Patient sidebar section mobile - prevent cropping */
 body.mobile-app-mode .patient-sidebar-section {
-    overflow: visible !important;
+    overflow: hidden !important;
 }
 
 .section-nav-scroll {
