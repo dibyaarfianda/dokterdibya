@@ -2343,10 +2343,7 @@ body.mobile-app-mode [class*="resume"] {
     display: none !important;
 }
 
-/* Hide all category badges, MR ID, Draft/Finalized, edit and delete buttons */
-#sunday-clinic-header .mb-3.d-flex.align-items-center {
-    display: none !important;
-}
+/* Show updated badge layout (removed old rule that hid badges) */
 
 /* Hide Import, Bulk, and Riwayat buttons in header */
 .main-header .btn-group button[onclick*="Import"],
