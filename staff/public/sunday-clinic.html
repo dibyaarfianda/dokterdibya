@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
     <link rel="stylesheet" href="/staff/public/styles/mobile-responsive.css?v=3.0.2">
-    <link rel="stylesheet" href="/staff/public/styles/sunday-clinic.css?v=2.4.4">
+    <link rel="stylesheet" href="/staff/public/styles/sunday-clinic.css?v=20260111193043">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -337,23 +337,82 @@
 </head>
 <body class="hold-transition sidebar-mini">
     <script>
+        // CRITICAL: Unregister service worker immediately
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                registrations.forEach(reg => {
+                    console.log('[SW] Force unregistering service worker');
+                    reg.unregister();
+                });
+            });
+        }
+
         // Cache version control - increment to force refresh
         (function() {
-            const SC_CACHE_VERSION = 'v2.3.1';
+            const SC_CACHE_VERSION = 'v20260111193043';
             const currentVersion = localStorage.getItem('sc_cache_version');
             if (currentVersion !== SC_CACHE_VERSION) {
                 console.log('[SundayClinic] Cache version changed:', currentVersion, '->', SC_CACHE_VERSION);
-                localStorage.setItem('sc_cache_version', SC_CACHE_VERSION);
+
                 if (currentVersion) {
-                    // Clear caches if available
+                    // Show update notification
+                    const notification = document.createElement('div');
+                    notification.style.cssText = `
+                        position: fixed;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        background: #fff;
+                        padding: 30px 40px;
+                        border-radius: 12px;
+                        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+                        z-index: 99999;
+                        text-align: center;
+                        font-family: Arial, sans-serif;
+                    `;
+                    notification.innerHTML = `
+                        <div style="font-size: 24px; margin-bottom: 15px;">
+                            <i class="fas fa-sync-alt fa-spin" style="color: #007bff;"></i>
+                        </div>
+                        <h3 style="margin: 0 0 10px 0; font-size: 18px; color: #333;">Memperbarui Aplikasi</h3>
+                        <p style="margin: 0; color: #666; font-size: 14px;">Membersihkan cache lama...</p>
+                    `;
+                    document.body.appendChild(notification);
+
+                    console.log('[SundayClinic] Clearing all caches and reloading...');
+
+                    // Clear all caches
                     if ('caches' in window) {
-                        caches.keys().then(names => names.forEach(name => caches.delete(name)));
+                        caches.keys().then(names => {
+                            console.log('[SundayClinic] Deleting caches:', names);
+                            return Promise.all(names.map(name => caches.delete(name)));
+                        });
                     }
-                    // Force hard reload with cache bust timestamp
-                    const url = new URL(window.location.href);
-                    url.searchParams.set('_cache', Date.now());
-                    window.location.replace(url.href);
+
+                    // Unregister service worker to force fresh install
+                    if ('serviceWorker' in navigator) {
+                        navigator.serviceWorker.getRegistrations().then(registrations => {
+                            registrations.forEach(reg => {
+                                console.log('[SundayClinic] Unregistering service worker');
+                                reg.unregister();
+                            });
+                        });
+                    }
+
+                    // Update notification text and reload
+                    setTimeout(() => {
+                        notification.querySelector('p').textContent = 'Memuat ulang aplikasi...';
+                        setTimeout(() => {
+                            localStorage.setItem('sc_cache_version', SC_CACHE_VERSION);
+                            const url = new URL(window.location.href);
+                            url.searchParams.set('_v', Date.now());
+                            window.location.replace(url.href);
+                        }, 300);
+                    }, 800);
                     return;
+                } else {
+                    // First time load
+                    localStorage.setItem('sc_cache_version', SC_CACHE_VERSION);
                 }
             }
         })();
@@ -390,26 +449,6 @@
                         </div>
                     </div>
                 </li>
-                <!-- Import/Bulk Buttons -->
-                <li class="nav-item mr-2">
-                    <div class="btn-group" role="group">
-                        <button type="button" class="btn btn-outline-info btn-sm" onclick="window.openImportModal()" title="Import satu file">
-                            <i class="fas fa-file-import mr-1"></i>
-                            <span class="d-none d-md-inline">Import</span>
-                        </button>
-                        <button type="button" class="btn btn-outline-success btn-sm" onclick="window.openBulkImportModal()" title="Bulk import multiple file">
-                            <i class="fas fa-file-upload"></i>
-                            <span class="d-none d-lg-inline ml-1">Bulk</span>
-                        </button>
-                    </div>
-                </li>
-                <!-- Patient History Toggle -->
-                <li class="nav-item mr-2">
-                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-toggle-patient-sidebar" title="Riwayat Pasien Aktif">
-                        <i class="fas fa-history"></i>
-                        <span class="d-none d-lg-inline ml-1">Riwayat</span>
-                    </button>
-                </li>
                 <!-- Date and Time Display -->
                 <li class="nav-item d-none d-sm-inline-block mr-2">
                     <span class="nav-link datetime-display" style="
@@ -421,7 +460,7 @@
                         <span id="date-display"></span>
                     </span>
                 </li>
-                <li class="nav-item d-none d-sm-inline-block mr-3">
+                <li class="nav-item d-none d-sm-inline-block mr-2">
                     <span class="nav-link datetime-display" style="
     width: 132px;
     padding-right: 0px;
@@ -433,11 +472,31 @@
                     </span>
                 </li>
                 <!-- Search Button -->
-                <li class="nav-item">
+                <li class="nav-item mr-2">
                     <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-header-search" title="Cari Pasien (Ctrl+K)">
                         <i class="fas fa-search"></i>
                         <span class="d-none d-md-inline ml-1">Cari</span>
                     </button>
+                </li>
+                <!-- Patient History Toggle -->
+                <li class="nav-item mr-2">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-toggle-patient-sidebar" title="Riwayat Pasien Aktif">
+                        <i class="fas fa-history"></i>
+                        <span class="d-none d-lg-inline ml-1">Riwayat</span>
+                    </button>
+                </li>
+                <!-- Import/Bulk Buttons (Hidden by CSS) -->
+                <li class="nav-item mr-2">
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-outline-info btn-sm" onclick="window.openImportModal()" title="Import satu file">
+                            <i class="fas fa-file-import mr-1"></i>
+                            <span class="d-none d-md-inline">Import</span>
+                        </button>
+                        <button type="button" class="btn btn-outline-success btn-sm" onclick="window.openBulkImportModal()" title="Bulk import multiple file">
+                            <i class="fas fa-file-upload"></i>
+                            <span class="d-none d-lg-inline ml-1">Bulk</span>
+                        </button>
+                    </div>
                 </li>
             </ul>
         </nav>
@@ -1062,11 +1121,11 @@ PLAN
     <!-- Global Chat Loader (must be after Socket.IO) -->
     <script src="/staff/public/scripts/global-chat-loader.js"></script>
 
-    <script type="module" src="/staff/public/scripts/sunday-clinic.js?v=2.1.7"></script>
+    <script type="module" src="/staff/public/scripts/sunday-clinic.js?v=20260111193043"></script>
     <!-- Planning helpers for tindakan and terapi modals -->
-    <script src="/staff/public/scripts/sunday-clinic/utils/planning-helpers.js?v=2.1.7"></script>
+    <script src="/staff/public/scripts/sunday-clinic/utils/planning-helpers.js?v=20260111193043"></script>
     <!-- Medical import from text files -->
-    <script type="module" src="/staff/public/scripts/sunday-clinic/utils/medical-import.js?v=2.1.7"></script>
+    <script type="module" src="/staff/public/scripts/sunday-clinic/utils/medical-import.js?v=20260111193043"></script>
     <script>
         // Mobile app mode detection and initialization
         (function() {
@@ -1120,6 +1179,38 @@ PLAN
                         }
                     });
                 }
+
+                // CRITICAL: Version check - force reload if old cached version loaded
+                setTimeout(() => {
+                    const expectedVersion = '20260111193043';
+                    const loadedVersion = window.PATIENT_SIDEBAR_VERSION;
+
+                    console.log('[CACHE] Version check - Expected:', expectedVersion, 'Loaded:', loadedVersion);
+
+                    if (!loadedVersion || loadedVersion !== expectedVersion) {
+                        console.warn('[CACHE] ❌ Old version detected!');
+
+                        // Check if we already attempted reload
+                        const reloadKey = 'sc_force_reload_' + expectedVersion;
+                        const attemptedReload = sessionStorage.getItem(reloadKey);
+
+                        if (!attemptedReload) {
+                            console.log('[CACHE] 🔄 Forcing hard reload to get fresh version...');
+                            sessionStorage.setItem(reloadKey, '1');
+
+                            // Force hard reload bypassing all caches
+                            setTimeout(() => {
+                                window.location.reload(true);
+                            }, 500);
+                        } else {
+                            console.error('[CACHE] ⚠️ Reload attempted but still getting old version.');
+                            console.error('[CACHE] Please open DevTools, go to Application > Service Workers, and click "Unregister"');
+                            alert('Cache stubborn! Please:\n1. Open DevTools (F12)\n2. Go to Application tab\n3. Click "Service Workers"\n4. Click "Unregister"\n5. Refresh page');
+                        }
+                    } else {
+                        console.log('[CACHE] ✅ Correct version loaded:', loadedVersion);
+                    }
+                }, 2000);
             });
 
             // Common section navigation handler (syncs sidebar and footer nav)
@@ -1233,20 +1324,21 @@ PLAN
                         return;
                     }
 
-                    queueList.innerHTML = queue.map(item => `
-                        <a href="#" class="dropdown-item queue-item"
-                           data-patient-id="${item.patient_id}"
-                           data-mr-id="${item.mr_id || ''}"
-                           data-category="${item.mr_category || 'obstetri'}"
-                           onclick="handleQueueItemClick(event, this)">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <strong>${item.patient_name || 'Pasien'}</strong>
-                                    <br><small class="text-muted">${item.mr_id || 'Belum ada MR'} • ${(item.slot_time || '').substring(0, 5)}</small>
-                                </div>
-                                <span class="badge badge-${item.mr_id ? 'success' : 'warning'}">${item.mr_id ? 'Ada MR' : 'Baru'}</span>
+                    queueList.innerHTML = queue.map((item, index) => `
+                        <div class="header-queue-item"
+                             data-patient-id="${item.patient_id}"
+                             data-mr-id="${item.mr_id || ''}"
+                             data-appointment-id="${item.id || ''}"
+                             onclick="handleQueueItemClick(event, this)">
+                            <span class="queue-number">${index + 1}</span>
+                            <div class="queue-info">
+                                <div class="queue-name">${item.patient_name || 'Pasien'}</div>
+                                <div class="queue-meta">${(item.slot_time || '').substring(0, 5)} • ${(item.chief_complaint || '-').substring(0, 30)}${(item.chief_complaint && item.chief_complaint.length > 30) ? '...' : ''}</div>
                             </div>
-                        </a>
+                            <div class="queue-status">
+                                ${item.mr_id ? '<i class="fas fa-check-circle text-success" title="Sudah ada rekam medis"></i>' : '<i class="far fa-circle text-muted" title="Belum diisi"></i>'}
+                            </div>
+                        </div>
                     `).join('');
 
                 } catch (error) {

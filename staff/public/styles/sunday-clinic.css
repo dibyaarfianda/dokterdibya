@@ -835,6 +835,21 @@ textarea,
     border-bottom: 1px solid #dee2e6;
 }
 
+.patient-sidebar-section.flex-grow-1 {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+/* Collapse wrapper inside flex-grow section - also needs to stretch */
+.patient-sidebar-section .collapse.flex-grow-1 {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
 .patient-sidebar-section .section-header {
     padding: 12px 15px;
     background: #f8f9fa;
@@ -972,9 +987,10 @@ textarea,
 
 /* Visit History Cards */
 .visit-history-list {
-    max-height: calc(100vh - 480px);
+    flex: 1;
     overflow-y: auto;
     padding: 10px 12px;
+    min-height: 0;
 }
 
 .visit-card {
