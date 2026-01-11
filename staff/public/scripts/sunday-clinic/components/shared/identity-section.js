@@ -125,7 +125,6 @@ export default {
                     <h3>Identitas Pasien</h3>
                 </div>
                 <div class="sc-card">
-                    <h4>Data Utama</h4>
                     <table class="table table-sm table-bordered identity-table" style="table-layout: fixed; width: 100%;">
                         <colgroup>
                             <col style="width: 40%;">
