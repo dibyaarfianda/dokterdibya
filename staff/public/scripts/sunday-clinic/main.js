@@ -352,7 +352,7 @@ class SundayClinicApp {
         return `
             <div class="mb-3 d-flex align-items-center">
                 <span class="badge badge-dark badge-lg">
-                    ${this.currentMrId}
+                    ${this.currentMrId.toUpperCase()}
                 </span>
                 <span class="badge badge-${category.color} badge-lg ml-2">
                     ${category.label}

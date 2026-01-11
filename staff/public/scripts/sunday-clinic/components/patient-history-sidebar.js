@@ -518,7 +518,7 @@ class PatientHistorySidebar {
                 <div class="visit-card" data-mr-id="${visit.mr_id}">
                     <div class="visit-card-header" data-toggle="collapse" data-target="#visit-detail-${index}">
                         <div>
-                            <div class="visit-mr">${visit.mr_id}</div>
+                            <div class="visit-mr">${visit.mr_id.toUpperCase()}</div>
                             <div class="visit-date">${this.formatDate(visit.visit_date)}</div>
                         </div>
                         <div class="d-flex align-items-center">
