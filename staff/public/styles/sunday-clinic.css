@@ -2350,10 +2350,9 @@ body.mobile-app-mode [class*="resume"] {
 
 /* Show updated badge layout (removed old rule that hid badges) */
 
-/* Hide Import, Bulk, and Riwayat buttons in header */
+/* Hide Import and Bulk buttons in header (keep Riwayat visible) */
 .main-header .btn-group button[onclick*="Import"],
-.main-header .btn-group button[onclick*="Bulk"],
-#btn-toggle-patient-sidebar {
+.main-header .btn-group button[onclick*="Bulk"] {
     display: none !important;
 }
 
