@@ -15,6 +15,11 @@ h1, h2, h3, h4, h5, h6, p, span, div, a, input, select, textarea, table, th, td 
     font-family: var(--font-family-base) !important;
 }
 
+/* Badges - regular font weight instead of bold */
+.badge {
+    font-weight: 400 !important;
+}
+
 /* Sidebar navigation styles - match AdminLTE exactly */
 .sidebar .nav-sidebar .nav-link {
     font-size: 14px !important;
