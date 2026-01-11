@@ -1,6 +1,7 @@
 /**
  * Patient History Sidebar Component
  * Provides patient navigation, visit history, and data copy functionality
+ * @version 20260111193043
  */
 
 import apiClient from '../utils/api-client.js';
@@ -942,5 +943,8 @@ const patientSidebar = new PatientHistorySidebar();
 
 // Expose to window for onclick handlers
 window.patientSidebar = patientSidebar;
+
+// Version marker for cache detection
+window.PATIENT_SIDEBAR_VERSION = '20260111193043';
 
 export default patientSidebar;

@@ -869,3 +869,55 @@ Before saying "Flutter admin is complete", must analyze:
 - List ALL features found
 - Check each feature exists in target implementation
 - Report what's missing BEFORE claiming completion
+
+### 24. Duplicate UI Rendering Code (Sunday Clinic Queue Dropdown)
+
+**Problem:** Cache-resistant UI bug caused by duplicate rendering code in multiple locations.
+
+**Root Cause:**
+The queue dropdown ("Antrian Hari Ini") was rendered by TWO different places:
+1. `staff/public/scripts/sunday-clinic/components/patient-history-sidebar.js` (renderQueue method, line 280-316)
+2. `staff/public/sunday-clinic.html` (inline JavaScript, line 1327-1342)
+
+**What Happened:**
+- User reported queue dropdown showing old style with "Ada MR" / "Baru" badges
+- Expected: Numbered circles (1, 2, 3...) with checkmark icons
+- We fixed patient-history-sidebar.js and tried extensive cache-busting (service worker unregistration, nginx no-cache headers, version bumps)
+- Browser confirmed loading fresh JS file (window.PATIENT_SIDEBAR_VERSION correct)
+- But dropdown STILL showed old badges!
+- Reason: The HTML file had duplicate inline code that was never updated
+
+**The Bug (sunday-clinic.html:1338):**
+```javascript
+// OLD - showing badges
+<span class="badge badge-${item.mr_id ? 'success' : 'warning'}">
+    ${item.mr_id ? 'Ada MR' : 'Baru'}
+</span>
+```
+
+**The Fix:**
+```javascript
+// NEW - numbered circles with icons
+<span class="queue-number">${index + 1}</span>
+<div class="queue-info">
+    <div class="queue-name">${item.patient_name}</div>
+    <div class="queue-meta">${slot_time} • ${chief_complaint}</div>
+</div>
+<div class="queue-status">
+    ${item.mr_id
+        ? '<i class="fas fa-check-circle text-success"></i>'
+        : '<i class="far fa-circle text-muted"></i>'}
+</div>
+```
+
+**Lesson Learned:**
+When a UI element doesn't update after cache clearing and fresh file verification:
+1. **Search for duplicate rendering code** - UI might be rendered in multiple places
+2. **Check inline JavaScript** in HTML files, not just external JS modules
+3. **Use browser console** to inspect actual rendered HTML: `document.getElementById('element').innerHTML`
+4. **Grep for unique text** from the old UI (e.g., "Ada MR") to find all rendering locations
+
+**Prevention:**
+- Avoid duplicating UI rendering logic between ES modules and inline scripts
+- If using inline JS for initial render, ensure it uses same code patterns as modules
+- Document which file is responsible for rendering each UI component

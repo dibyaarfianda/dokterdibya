@@ -4,9 +4,9 @@
  * Updated: Real-time friendly for service hours
  */
 
-const CACHE_NAME = 'dokterdibya-staff-v28';
-const STATIC_CACHE = 'static-v26';
-const DYNAMIC_CACHE = 'dynamic-v26';
+const CACHE_NAME = 'dokterdibya-staff-v32';
+const STATIC_CACHE = 'static-v30';
+const DYNAMIC_CACHE = 'dynamic-v30';
 
 // Static assets to cache on install (only UI assets, not data)
 const STATIC_ASSETS = [
@@ -68,16 +68,16 @@ self.addEventListener('activate', (event) => {
   console.log('[SW] Activating service worker...');
   event.waitUntil(
     caches.keys().then((cacheNames) => {
+      console.log('[SW] Found caches:', cacheNames);
+      // Delete ALL caches to force fresh reload
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE) {
-            console.log('[SW] Deleting old cache:', cacheName);
-            return caches.delete(cacheName);
-          }
+          console.log('[SW] Deleting cache:', cacheName);
+          return caches.delete(cacheName);
         })
       );
     }).then(() => {
-      console.log('[SW] Taking control of clients');
+      console.log('[SW] All caches cleared, claiming clients');
       return self.clients.claim();
     })
   );
