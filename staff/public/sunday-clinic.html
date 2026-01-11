@@ -339,7 +339,7 @@
     <script>
         // Cache version control - increment to force refresh
         (function() {
-            const SC_CACHE_VERSION = 'v2.2.9';
+            const SC_CACHE_VERSION = 'v2.3.0';
             const currentVersion = localStorage.getItem('sc_cache_version');
             if (currentVersion !== SC_CACHE_VERSION) {
                 console.log('[SundayClinic] Cache version changed:', currentVersion, '->', SC_CACHE_VERSION);
@@ -1124,9 +1124,6 @@ PLAN
 
             // Common section navigation handler (syncs sidebar and footer nav)
             function handleSectionNavigation(section) {
-                // Scroll to top of page
-                window.scrollTo(0, 0);
-
                 // Call the global handleSectionChange from sunday-clinic.js
                 if (window.handleSectionChange) {
                     window.handleSectionChange(section);

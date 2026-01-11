@@ -1356,12 +1356,6 @@ class SundayClinicApp {
         if (window.syncMobileNavSection) {
             window.syncMobileNavSection(section);
         }
-
-        // Scroll to top of content
-        const content = document.getElementById('sunday-clinic-content');
-        if (content) {
-            content.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
     }
 
     /**
