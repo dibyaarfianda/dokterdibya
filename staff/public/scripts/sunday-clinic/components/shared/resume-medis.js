@@ -36,19 +36,12 @@ export default {
         }
 
         return `
-            <div class="card mb-3" id="resume-medis-card">
-                <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0">
-                        <i class="fas fa-file-medical-alt"></i> Resume Medis
-                    </h5>
-                    <div>
-                        ${savedResume ? '<span class="badge badge-light"><i class="fas fa-check"></i> Tersimpan</span>' : ''}
-                        ${hasSentDocuments ? '<span class="badge badge-success ml-2 sent-badge"><i class="fas fa-paper-plane"></i> Sudah dikirim</span>' : ''}
-                        ${isCompleted ? '<span class="badge badge-info ml-2"><i class="fas fa-clipboard-check"></i> Selesai Diperiksa</span>' : ''}
-                    </div>
+            <div class="sc-section" id="resume-medis-card">
+                <div class="sc-section-header">
+                    <h3>Resume Medis</h3>
                 </div>
                 ${metaHtml}
-                <div class="card-body">
+                <div class="sc-card">
                     ${this.renderResumeContent(savedResume, isGenerating)}
 
                     <div class="d-flex justify-content-between align-items-center mt-4 flex-wrap">
