@@ -358,8 +358,9 @@ router.get('/api/patients', verifyToken, async (req, res) => {
             return {
                 ...patient,
                 whatsapp: patient.whatsapp || patient.phone || null,
-                // Priority: anamnesa_datetime (from medical_records) > last_visit > actual_last_visit
-                last_visit: patient.anamnesa_datetime || patient.last_visit || patient.actual_last_visit || patient.last_visit_date || null,
+                // Only use anamnesa_datetime - actual examination date from anamnesa section
+                // Do NOT fallback to booking dates as those can be in the future
+                last_visit: patient.anamnesa_datetime || null,
                 resume_status,
                 hpl,
                 days_pregnant,
@@ -602,8 +603,9 @@ router.get('/api/patients/search/advanced', verifyToken, async (req, res) => {
             return {
                 ...patient,
                 whatsapp: patient.whatsapp || patient.phone || null,
-                // Priority: anamnesa_datetime (from medical_records) > last_visit > actual_last_visit
-                last_visit: patient.anamnesa_datetime || patient.last_visit || patient.actual_last_visit || null,
+                // Only use anamnesa_datetime - actual examination date from anamnesa section
+                // Do NOT fallback to booking dates as those can be in the future
+                last_visit: patient.anamnesa_datetime || null,
                 last_visit_type,
                 hpl,
                 days_pregnant,
