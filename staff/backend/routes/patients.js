@@ -165,7 +165,13 @@ router.get('/api/patients', verifyToken, async (req, res) => {
                  ORDER BY scr.last_activity_at DESC LIMIT 1) as visit_location,
                 (SELECT scr.mr_category FROM sunday_clinic_records scr
                  WHERE scr.patient_id = p.id
-                 ORDER BY scr.last_activity_at DESC LIMIT 1) as last_visit_type
+                 ORDER BY scr.last_activity_at DESC LIMIT 1) as last_visit_type,
+                (SELECT JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.record_datetime'))
+                 FROM medical_records mr
+                 WHERE mr.patient_id COLLATE utf8mb4_unicode_ci = p.id COLLATE utf8mb4_unicode_ci
+                 AND mr.record_type = 'anamnesa'
+                 AND JSON_EXTRACT(mr.record_data, '$.record_datetime') IS NOT NULL
+                 ORDER BY mr.created_at DESC LIMIT 1) as anamnesa_datetime
                 FROM patients p`;
 
             if (search) {
@@ -352,7 +358,8 @@ router.get('/api/patients', verifyToken, async (req, res) => {
             return {
                 ...patient,
                 whatsapp: patient.whatsapp || patient.phone || null,
-                last_visit: patient.last_visit || patient.actual_last_visit || patient.last_visit_date || null,
+                // Priority: anamnesa_datetime (from medical_records) > last_visit > actual_last_visit
+                last_visit: patient.anamnesa_datetime || patient.last_visit || patient.actual_last_visit || patient.last_visit_date || null,
                 resume_status,
                 hpl,
                 days_pregnant,
@@ -424,7 +431,13 @@ router.get('/api/patients/search/advanced', verifyToken, async (req, res) => {
                 scr.mr_id,
                 u.email,
                 (SELECT MAX(sa.appointment_date) FROM sunday_appointments sa
-                 WHERE sa.patient_id = p.id AND sa.status IN ('completed','confirmed')) as actual_last_visit
+                 WHERE sa.patient_id = p.id AND sa.status IN ('completed','confirmed')) as actual_last_visit,
+                (SELECT JSON_UNQUOTE(JSON_EXTRACT(mr.record_data, '$.record_datetime'))
+                 FROM medical_records mr
+                 WHERE mr.patient_id COLLATE utf8mb4_unicode_ci = p.id COLLATE utf8mb4_unicode_ci
+                 AND mr.record_type = 'anamnesa'
+                 AND JSON_EXTRACT(mr.record_data, '$.record_datetime') IS NOT NULL
+                 ORDER BY mr.created_at DESC LIMIT 1) as anamnesa_datetime
             FROM patients p
             LEFT JOIN sunday_clinic_records scr ON p.id = scr.patient_id
             LEFT JOIN users u ON p.id = u.new_id
@@ -589,7 +602,8 @@ router.get('/api/patients/search/advanced', verifyToken, async (req, res) => {
             return {
                 ...patient,
                 whatsapp: patient.whatsapp || patient.phone || null,
-                last_visit: patient.last_visit || patient.actual_last_visit || null,
+                // Priority: anamnesa_datetime (from medical_records) > last_visit > actual_last_visit
+                last_visit: patient.anamnesa_datetime || patient.last_visit || patient.actual_last_visit || null,
                 last_visit_type,
                 hpl,
                 days_pregnant,
