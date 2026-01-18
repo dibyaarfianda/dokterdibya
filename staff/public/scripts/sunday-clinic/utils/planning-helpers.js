@@ -5,23 +5,71 @@
  * - Tindakan (procedures) selection with modal
  * - Terapi (medications) selection with Latin prescription formatting
  * - Billing integration for selected items
+ *
+ * VERSION: 2026-01-18-v3
  */
 
 // ============================================================================
 // GLOBAL STATE
 // ============================================================================
 
+window.PLANNING_HELPERS_VERSION = '2026-01-18-v4';
+console.log('[Planning Helpers] Loaded version:', window.PLANNING_HELPERS_VERSION);
+
 window.availableTindakanList = null;
 window.selectedObatForPrescription = null;
+
+// Simple loading state helper for modal
+function showLoadingStatus(modalBody, status) {
+    if (!modalBody) return;
+    modalBody.innerHTML = `
+        <div class="text-center py-4">
+            <div style="color: #666;">${status}</div>
+        </div>
+    `;
+}
 
 // ============================================================================
 // TINDAKAN FUNCTIONS
 // ============================================================================
 
 async function openTindakanModal() {
+    console.log('[Planning v4] openTindakanModal called');
+
+    // Show loading indicator in modal body first
+    const modalBody = document.getElementById('tindakan-modal-body');
+    console.log('[Planning v4] modalBody found:', !!modalBody);
+
+    if (modalBody) {
+        showLoadingStatus(modalBody, '<i class="fas fa-spinner fa-spin"></i> Memuat data tindakan...');
+    } else {
+        console.error('[Planning v4] tindakan-modal-body NOT FOUND!');
+        alert('ERROR: Modal body element not found!');
+        return;
+    }
+
+    // Try to show modal immediately so user sees loading state
     try {
+        if (typeof $ !== 'undefined' && $('#tindakan-modal').length) {
+            $('#tindakan-modal').modal('show');
+        }
+    } catch (e) {
+        console.error('[Planning] Error showing modal:', e);
+        showLoadingStatus(modalBody, 'Error showing modal: ' + e.message, '#ffcccb');
+    }
+
+    try {
+        showLoadingStatus(modalBody, '<i class="fas fa-key"></i> Mendapatkan token...');
+
         const token = await window.getToken();
-        if (!token) return;
+        console.log('[Planning v4] Token retrieved:', !!token);
+        if (!token) {
+            showLoadingStatus(modalBody, '<i class="fas fa-exclamation-triangle"></i> Sesi habis. Silakan login ulang.', '#ffcccb');
+            return;
+        }
+
+        showLoadingStatus(modalBody, '<i class="fas fa-spinner fa-spin"></i> Mengambil data tindakan dari server...');
+        console.log('[Planning v4] Fetching tindakan data...');
 
         const response = await fetch('/api/tindakan?active=true', {
             headers: {
@@ -29,23 +77,38 @@ async function openTindakanModal() {
             }
         });
 
-        if (!response.ok) throw new Error('Failed to fetch tindakan');
+        console.log('[Planning v4] Response status:', response.status);
+        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 
         const result = await response.json();
         const tindakanList = result.data || result;
+        console.log('[Planning v4] Tindakan loaded:', tindakanList.length, 'items');
+
+        showLoadingStatus(modalBody, `<i class="fas fa-check"></i> Diterima ${tindakanList.length} tindakan, memproses...`);
 
         // Filter out ADMINISTRATIF category
         const filteredTindakan = tindakanList.filter(item => item.category !== 'ADMINISTRATIF');
+        console.log('[Planning v4] After filter:', filteredTindakan.length, 'items');
+
+        if (filteredTindakan.length === 0) {
+            showLoadingStatus(modalBody, '<i class="fas fa-info-circle"></i> Tidak ada data tindakan tersedia.', '#cce5ff');
+            return;
+        }
 
         // Show modal with tindakan list
         showTindakanModal(filteredTindakan);
 
     } catch (error) {
-        console.error('Error loading tindakan:', error);
+        console.error('[Planning v4] Error loading tindakan:', error);
+        const errorMsg = 'Gagal memuat data tindakan: ' + error.message;
+
+        // Show error in modal body with debug info
+        showLoadingStatus(modalBody, `<i class="fas fa-exclamation-triangle"></i> ${errorMsg}`, '#ffcccb');
+
         if (typeof showError === 'function') {
-            showError('Gagal memuat data tindakan: ' + error.message);
-        } else {
-            window.showToast('error', 'Gagal memuat data tindakan: ' + error.message);
+            showError(errorMsg);
+        } else if (window.showToast) {
+            window.showToast('error', errorMsg);
         }
     }
 }
@@ -91,7 +154,7 @@ function showTindakanModal(tindakanList) {
                 const escapedName = escapeHtml(item.name || '');
                 const escapedCode = escapeHtml(item.code || '');
                 html += `
-                    <div class="col-3 mb-2">
+                    <div class="col-6 col-md-3 mb-2">
                         <div class="tindakan-item" data-tindakan-id="${item.id || ''}">
                             <div class="custom-control custom-checkbox">
                                 <input type="checkbox" class="custom-control-input tindakan-checkbox"
@@ -554,9 +617,51 @@ async function renderTindakanItemsList() {
 // ============================================================================
 
 async function openTerapiModal() {
+    console.log('[Planning v4] openTerapiModal called');
+
+    // Show loading indicator in modal body first
+    const modalBody = document.getElementById('terapi-modal-body');
+    console.log('[Planning v4] terapi modalBody found:', !!modalBody);
+
+    // Helper for table row loading messages
+    const showTerapiLoading = (msg) => {
+        if (modalBody) {
+            modalBody.innerHTML = `<tr><td colspan="5" class="text-center py-3">
+                <div style="color: #666;">${msg}</div>
+            </td></tr>`;
+        }
+    };
+
+    if (modalBody) {
+        showTerapiLoading('<i class="fas fa-spinner fa-spin"></i> Memuat data obat...');
+    } else {
+        console.error('[Planning v4] terapi-modal-body NOT FOUND!');
+        alert('ERROR: Terapi modal body element not found!');
+        return;
+    }
+
+    // Try to show modal immediately so user sees loading state
     try {
+        if (typeof $ !== 'undefined' && $('#terapi-modal').length) {
+            $('#terapi-modal').modal('show');
+        }
+    } catch (e) {
+        console.error('[Planning] Error showing modal:', e);
+        showTerapiLoading('Error showing modal: ' + e.message, '#ffcccb');
+    }
+
+    try {
+        showTerapiLoading('<i class="fas fa-key"></i> Mendapatkan token...');
+
         const token = await window.getToken();
-        if (!token) return;
+        console.log('[Planning v4] Token retrieved:', !!token);
+        if (!token) {
+            showTerapiLoading('<i class="fas fa-exclamation-triangle"></i> Sesi habis. Silakan login ulang.', '#ffcccb');
+            return;
+        }
+
+        showTerapiLoading('<i class="fas fa-spinner fa-spin"></i> Mengambil data obat dari server...');
+        console.log('[Planning v4] Fetching obat data...');
 
         const response = await fetch('/api/obat?active=true', {
             headers: {
@@ -564,20 +669,34 @@ async function openTerapiModal() {
             }
         });
 
-        if (!response.ok) throw new Error('Failed to fetch obat');
+        console.log('[Planning v4] Response status:', response.status);
+        if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 
         const result = await response.json();
         const obatList = result.data || result;
+        console.log('[Planning v4] Obat loaded:', obatList.length, 'items');
+
+        showTerapiLoading(`<i class="fas fa-check"></i> Diterima ${obatList.length} obat, memproses...`);
+
+        if (obatList.length === 0) {
+            showTerapiLoading('<i class="fas fa-info-circle"></i> Tidak ada data obat tersedia.', '#cce5ff');
+            return;
+        }
 
         // Show modal with obat list
         showTerapiModal(obatList);
 
     } catch (error) {
-        console.error('Error loading obat:', error);
+        console.error('[Planning v4] Error loading obat:', error);
+        const errorMsg = 'Gagal memuat data obat: ' + error.message;
+
+        // Show error in modal body with debug info
+        showTerapiLoading(`<i class="fas fa-exclamation-triangle"></i> ${errorMsg}`, '#ffcccb');
+
         if (typeof showError === 'function') {
-            showError('Gagal memuat data obat: ' + error.message);
-        } else {
-            window.showToast('error', 'Gagal memuat data obat: ' + error.message);
+            showError(errorMsg);
+        } else if (window.showToast) {
+            window.showToast('error', errorMsg);
         }
     }
 }

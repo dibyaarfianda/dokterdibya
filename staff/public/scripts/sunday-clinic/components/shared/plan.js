@@ -261,10 +261,12 @@ export default {
                         <textarea class="form-control" id="planning-tindakan" rows="2"
                                   placeholder="Tulis tindakan manual di sini (untuk tindakan yang tidak ada di daftar)...">${escapeHtml(planData.tindakan)}</textarea>
                         <div class="mt-2">
-                            <button type="button" class="btn btn-sm btn-outline-primary mr-2" id="btn-input-tindakan">
+                            <button type="button" class="btn btn-sm btn-outline-primary mr-2" id="btn-input-tindakan"
+                                    onclick="$('#tindakan-modal').modal('show');if(window.openTindakanModal)window.openTindakanModal();">
                                 <i class="fas fa-plus-circle mr-1"></i>Input Tindakan
                             </button>
-                            <button type="button" class="btn btn-sm btn-outline-danger" id="btn-reset-tindakan">
+                            <button type="button" class="btn btn-sm btn-outline-danger" id="btn-reset-tindakan"
+                                    onclick="if(window.resetTindakan){window.resetTindakan()}else{alert('Fungsi belum siap');}">
                                 <i class="fas fa-trash mr-1"></i>Hapus Semua
                             </button>
                         </div>
@@ -282,10 +284,12 @@ export default {
                         <textarea class="form-control" id="planning-terapi" rows="3"
                                   placeholder="Tulis resep manual di sini (untuk obat/vitamin yang tidak ada di daftar)...">${escapeHtml(planData.terapi)}</textarea>
                         <div class="mt-2">
-                            <button type="button" class="btn btn-sm btn-outline-primary mr-2" id="btn-input-terapi">
+                            <button type="button" class="btn btn-sm btn-outline-primary mr-2" id="btn-input-terapi"
+                                    onclick="$('#terapi-modal').modal('show');if(window.openTerapiModal)window.openTerapiModal();">
                                 <i class="fas fa-plus-circle mr-1"></i>Input Terapi
                             </button>
-                            <button type="button" class="btn btn-sm btn-outline-danger" id="btn-reset-terapi">
+                            <button type="button" class="btn btn-sm btn-outline-danger" id="btn-reset-terapi"
+                                    onclick="if(window.resetTerapi){window.resetTerapi()}else{alert('Fungsi belum siap');}">
                                 <i class="fas fa-trash mr-1"></i>Hapus Semua
                             </button>
                         </div>
