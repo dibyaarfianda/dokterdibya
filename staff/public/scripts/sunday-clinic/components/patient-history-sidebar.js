@@ -590,8 +590,8 @@ class PatientHistorySidebar {
         }
 
         if (mrId) {
-            // Navigate to existing MR
-            window.location.href = `/staff/public/sunday-clinic.html?mr=${mrId}`;
+            // Navigate to existing MR (with cache-bust for mobile)
+            window.location.href = `/staff/public/sunday-clinic.html?mr=${mrId}&_cb=${Date.now()}`;
         } else if (appointmentId) {
             // Need to create MR from appointment - open directory
             this.openDirectory(patientId);
@@ -606,7 +606,7 @@ class PatientHistorySidebar {
      */
     openPatientFromSearch(patientId, mrId) {
         if (mrId) {
-            window.location.href = `/staff/public/sunday-clinic.html?mr=${mrId}`;
+            window.location.href = `/staff/public/sunday-clinic.html?mr=${mrId}&_cb=${Date.now()}`;
         } else {
             this.openDirectory(patientId);
         }

@@ -709,7 +709,8 @@ function renderHospitalAppointmentsTable(appointments, hospitalName, hospitalCol
 // Start hospital examination - navigate to sunday-clinic with patient info
 function startHospitalExam(appointmentId, patientId, patientName) {
     // Navigate to sunday-clinic page with patient info
-    const baseUrl = `sunday-clinic.html?patient=${patientId}&appointment=${appointmentId}&location=${currentHospitalLocation}`;
+    // Add cache-bust timestamp for mobile WebView
+    const baseUrl = `sunday-clinic.html?patient=${patientId}&appointment=${appointmentId}&location=${currentHospitalLocation}&_cb=${Date.now()}`;
     window.location.href = window.buildMobileUrl ? window.buildMobileUrl(baseUrl) : baseUrl;
 }
 

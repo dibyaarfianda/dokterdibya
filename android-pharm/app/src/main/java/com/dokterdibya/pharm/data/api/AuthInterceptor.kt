@@ -1,5 +1,6 @@
 package com.dokterdibya.pharm.data.api
 
+import com.dokterdibya.pharm.data.repository.AuthState
 import com.dokterdibya.pharm.data.repository.TokenRepository
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
@@ -10,7 +11,8 @@ import javax.inject.Singleton
 
 @Singleton
 class AuthInterceptor @Inject constructor(
-    private val tokenRepository: TokenRepository
+    private val tokenRepository: TokenRepository,
+    private val authState: AuthState
 ) : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
@@ -45,7 +47,7 @@ class AuthInterceptor @Inject constructor(
             result
         }
 
-        return if (token != null) {
+        val response = if (token != null) {
             android.util.Log.d("AuthInterceptor", "Adding token to request: ${token.take(20)}...")
             val newRequest = originalRequest.newBuilder()
                 .addHeader("Authorization", "Bearer $token")
@@ -56,5 +58,18 @@ class AuthInterceptor @Inject constructor(
             android.util.Log.e("AuthInterceptor", "Token is null after 5s! Path: $path")
             chain.proceed(originalRequest)
         }
+
+        // Check for 401 Unauthorized - token expired or invalid
+        if (response.code == 401) {
+            android.util.Log.e("AuthInterceptor", "Got 401 Unauthorized! Triggering logout.")
+
+            // Clear token and notify app to navigate to login
+            runBlocking {
+                tokenRepository.clearAll()
+            }
+            authState.notifyTokenExpired("Sesi Anda telah berakhir. Silakan login kembali.")
+        }
+
+        return response
     }
 }

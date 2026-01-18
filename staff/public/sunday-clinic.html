@@ -6,6 +6,25 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
+    <!-- VERSION CHECK - Forces reload if cached version is old -->
+    <script>
+        (function() {
+            var PAGE_VERSION = '20260118v5';
+            var storedVersion = localStorage.getItem('sunday_clinic_version');
+
+            // If version mismatch, force reload with cache bust
+            if (storedVersion && storedVersion !== PAGE_VERSION) {
+                console.log('[Cache] Version mismatch! Stored:', storedVersion, 'Current:', PAGE_VERSION);
+                localStorage.setItem('sunday_clinic_version', PAGE_VERSION);
+                // Add timestamp to force reload
+                var url = new URL(window.location.href);
+                url.searchParams.set('_cb', Date.now());
+                window.location.replace(url.toString());
+            } else {
+                localStorage.setItem('sunday_clinic_version', PAGE_VERSION);
+            }
+        })();
+    </script>
     <title>Klinik Private Minggu</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/css/adminlte.min.css">
@@ -1009,8 +1028,9 @@ PLAN
                 <div class="modal-body">
                     <input type="text" id="tindakan-search" class="form-control mb-3" placeholder="Cari tindakan...">
                     <div id="tindakan-modal-body">
-                        <div class="text-center py-3">
-                            <i class="fas fa-spinner fa-spin"></i> Memuat data...
+                        <div class="text-center py-4">
+                            <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+                            <p class="mt-2 text-muted">Memuat...</p>
                         </div>
                     </div>
                 </div>
@@ -1030,6 +1050,34 @@ PLAN
             </div>
         </div>
     </div>
+
+    <!-- Inline modal content initializer - runs when modal shows -->
+    <script>
+        (function() {
+            // Wait for jQuery and Bootstrap
+            var checkReady = setInterval(function() {
+                if (typeof $ !== 'undefined' && $.fn.modal) {
+                    clearInterval(checkReady);
+
+                    // Tindakan modal show event - show loading if JS not ready
+                    $('#tindakan-modal').on('show.bs.modal', function() {
+                        var body = document.getElementById('tindakan-modal-body');
+                        if (body && !window._tindakanModalInitialized) {
+                            body.innerHTML = '<div class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x text-primary"></i><p class="mt-2 text-muted">Memuat data tindakan...</p></div>';
+                        }
+                    });
+
+                    // Terapi modal show event - show loading if JS not ready
+                    $('#terapi-modal').on('show.bs.modal', function() {
+                        var body = document.getElementById('terapi-modal-body');
+                        if (body && !window._terapiModalInitialized) {
+                            body.innerHTML = '<tr><td colspan="5" class="text-center py-3"><i class="fas fa-spinner fa-spin text-success"></i> Memuat data obat...</td></tr>';
+                        }
+                    });
+                }
+            }, 100);
+        })();
+    </script>
 
     <!-- Terapi/Obat Selection Modal -->
     <div class="modal fade" id="terapi-modal" tabindex="-1" role="dialog" aria-labelledby="terapiModalLabel" aria-hidden="true">
@@ -1063,8 +1111,8 @@ PLAN
                             </thead>
                             <tbody id="terapi-modal-body">
                                 <tr>
-                                    <td colspan="5" class="text-center">
-                                        <i class="fas fa-spinner fa-spin"></i> Memuat data...
+                                    <td colspan="5" class="text-center py-3">
+                                        <i class="fas fa-spinner fa-spin text-muted"></i> Memuat...
                                     </td>
                                 </tr>
                             </tbody>
@@ -1121,9 +1169,48 @@ PLAN
     <!-- Global Chat Loader (must be after Socket.IO) -->
     <script src="/staff/public/scripts/global-chat-loader.js"></script>
 
-    <script type="module" src="/staff/public/scripts/sunday-clinic.js?v=20260111193043"></script>
-    <!-- Planning helpers for tindakan and terapi modals -->
-    <script src="/staff/public/scripts/sunday-clinic/utils/planning-helpers.js?v=20260111193043"></script>
+    <script type="module" src="/staff/public/scripts/sunday-clinic.js?v=20260118v4"></script>
+    <!-- Planning helpers for tindakan and terapi modals - DYNAMIC LOAD TO BUST CACHE -->
+    <script>
+        (function() {
+            // Global debug function
+            window.checkPlanningStatus = function() {
+                console.log('=== PLANNING DEBUG ===');
+                console.log('PLANNING_HELPERS_VERSION:', window.PLANNING_HELPERS_VERSION || 'NOT LOADED');
+                console.log('openTindakanModal:', typeof window.openTindakanModal);
+                console.log('openTerapiModal:', typeof window.openTerapiModal);
+                console.log('tindakan-modal-body:', document.getElementById('tindakan-modal-body') ? 'EXISTS' : 'MISSING');
+                console.log('terapi-modal-body:', document.getElementById('terapi-modal-body') ? 'EXISTS' : 'MISSING');
+                console.log('jQuery:', typeof $ !== 'undefined' ? 'LOADED' : 'MISSING');
+                console.log('======================');
+                return {
+                    version: window.PLANNING_HELPERS_VERSION,
+                    openTindakanModal: typeof window.openTindakanModal,
+                    openTerapiModal: typeof window.openTerapiModal
+                };
+            };
+
+            var script = document.createElement('script');
+            var timestamp = Date.now();
+            script.src = '/staff/public/scripts/sunday-clinic/utils/planning-helpers.js?v=' + timestamp;
+            script.onload = function() {
+                console.log('[CACHE BUST] planning-helpers.js loaded fresh at', timestamp);
+                console.log('[CACHE BUST] Version:', window.PLANNING_HELPERS_VERSION);
+            };
+            script.onerror = function() {
+                console.error('[CACHE BUST] Failed to load planning-helpers.js');
+                alert('Gagal memuat planning-helpers.js! Silakan refresh halaman.');
+            };
+            document.head.appendChild(script);
+
+            // Timeout fallback - if script not loaded in 5 seconds, show warning
+            setTimeout(function() {
+                if (!window.openTindakanModal) {
+                    console.error('[CACHE BUST] planning-helpers.js NOT LOADED after 5 seconds!');
+                }
+            }, 5000);
+        })();
+    </script>
     <!-- Medical import from text files -->
     <script type="module" src="/staff/public/scripts/sunday-clinic/utils/medical-import.js?v=20260111193043"></script>
     <script>

@@ -4,8 +4,10 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.webkit.ConsoleMessage;
+import android.webkit.CookieManager;
 import android.webkit.WebChromeClient;
 import android.webkit.WebSettings;
+import android.webkit.WebStorage;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import androidx.appcompat.app.AppCompatActivity;
@@ -14,6 +16,7 @@ import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
+import java.io.File;
 
 public class MainActivity extends AppCompatActivity {
     private WebView webView;
@@ -117,12 +120,30 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Clear cache to ensure latest web content
+        // AGGRESSIVE cache clearing - clear ALL WebView data
+        Log.d("DBStaff", "Clearing all WebView caches...");
+
+        // 1. Clear WebView cache
         webView.clearCache(true);
         webView.clearHistory();
+        webView.clearFormData();
 
-        // Load the URL
-        webView.loadUrl(WEB_URL);
+        // 2. NOTE: Don't clear WebStorage as it contains auth tokens in localStorage
+        // WebStorage.getInstance().deleteAllData();  // This would log user out!
+
+        // 3. Clear all cookies
+        CookieManager cookieManager = CookieManager.getInstance();
+        cookieManager.removeAllCookies(null);
+        cookieManager.flush();
+
+        // 4. Delete WebView cache directories manually
+        clearWebViewCache();
+
+        Log.d("DBStaff", "Cache clearing complete, loading URL with timestamp...");
+
+        // Load the URL with cache-busting timestamp
+        String urlWithCacheBust = WEB_URL + "&_cb=" + System.currentTimeMillis();
+        webView.loadUrl(urlWithCacheBust);
     }
 
     @Override
@@ -132,5 +153,55 @@ public class MainActivity extends AppCompatActivity {
         } else {
             super.onBackPressed();
         }
+    }
+
+    /**
+     * Manually delete WebView cache directories
+     * This ensures all cached files are removed, not just the in-memory cache
+     */
+    private void clearWebViewCache() {
+        try {
+            // Delete app cache directory
+            File cacheDir = getCacheDir();
+            if (cacheDir != null && cacheDir.isDirectory()) {
+                deleteDir(cacheDir);
+                Log.d("DBStaff", "Deleted cache dir: " + cacheDir.getAbsolutePath());
+            }
+
+            // Delete WebView-specific cache in app_webview directory
+            File appWebviewDir = new File(getApplicationInfo().dataDir, "app_webview");
+            if (appWebviewDir.exists() && appWebviewDir.isDirectory()) {
+                deleteDir(appWebviewDir);
+                Log.d("DBStaff", "Deleted app_webview dir: " + appWebviewDir.getAbsolutePath());
+            }
+
+            // Delete code_cache
+            File codeCacheDir = new File(getApplicationInfo().dataDir, "code_cache");
+            if (codeCacheDir.exists() && codeCacheDir.isDirectory()) {
+                deleteDir(codeCacheDir);
+                Log.d("DBStaff", "Deleted code_cache dir: " + codeCacheDir.getAbsolutePath());
+            }
+
+        } catch (Exception e) {
+            Log.e("DBStaff", "Error clearing WebView cache: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Recursively delete a directory and all its contents
+     */
+    private boolean deleteDir(File dir) {
+        if (dir != null && dir.isDirectory()) {
+            String[] children = dir.list();
+            if (children != null) {
+                for (String child : children) {
+                    boolean success = deleteDir(new File(dir, child));
+                    if (!success) {
+                        return false;
+                    }
+                }
+            }
+        }
+        return dir != null && dir.delete();
     }
 }
