@@ -1,0 +1,174 @@
+/**
+ * Service Worker for Dokter Dibya Patient Portal PWA
+ * Provides offline support and caching
+ */
+
+const CACHE_NAME = 'dokterdibya-patient-v1';
+const OFFLINE_URL = '/offline.html';
+
+// Files to cache immediately on install
+const PRECACHE_FILES = [
+  '/',
+  '/patient-dashboard.html',
+  '/patient-login.html',
+  '/offline.html',
+  '/images/dibya-logo.png',
+  '/images/pwa-icons/icon-192x192.png',
+  'https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap',
+  'https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css',
+  'https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css'
+];
+
+// Install event - cache essential files
+self.addEventListener('install', (event) => {
+  console.log('[SW] Installing service worker...');
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then((cache) => {
+        console.log('[SW] Caching essential files');
+        return cache.addAll(PRECACHE_FILES);
+      })
+      .then(() => {
+        console.log('[SW] Skip waiting');
+        return self.skipWaiting();
+      })
+      .catch((error) => {
+        console.error('[SW] Cache failed:', error);
+      })
+  );
+});
+
+// Activate event - clean old caches
+self.addEventListener('activate', (event) => {
+  console.log('[SW] Activating service worker...');
+  event.waitUntil(
+    caches.keys()
+      .then((cacheNames) => {
+        return Promise.all(
+          cacheNames.map((cacheName) => {
+            if (cacheName !== CACHE_NAME) {
+              console.log('[SW] Deleting old cache:', cacheName);
+              return caches.delete(cacheName);
+            }
+          })
+        );
+      })
+      .then(() => {
+        console.log('[SW] Claiming clients');
+        return self.clients.claim();
+      })
+  );
+});
+
+// Fetch event - network first, fallback to cache
+self.addEventListener('fetch', (event) => {
+  const { request } = event;
+  const url = new URL(request.url);
+
+  // Skip non-GET requests
+  if (request.method !== 'GET') {
+    return;
+  }
+
+  // Skip API calls - always fetch from network
+  if (url.pathname.startsWith('/api/')) {
+    return;
+  }
+
+  // For navigation requests (HTML pages)
+  if (request.mode === 'navigate') {
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          // Clone and cache successful responses
+          if (response.ok) {
+            const responseClone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(request, responseClone);
+            });
+          }
+          return response;
+        })
+        .catch(() => {
+          // Offline - try cache, then offline page
+          return caches.match(request)
+            .then((cachedResponse) => {
+              return cachedResponse || caches.match(OFFLINE_URL);
+            });
+        })
+    );
+    return;
+  }
+
+  // For other assets (CSS, JS, images) - cache first, network fallback
+  event.respondWith(
+    caches.match(request)
+      .then((cachedResponse) => {
+        if (cachedResponse) {
+          // Return cached version, but also update cache in background
+          fetch(request).then((response) => {
+            if (response.ok) {
+              caches.open(CACHE_NAME).then((cache) => {
+                cache.put(request, response);
+              });
+            }
+          }).catch(() => {});
+          return cachedResponse;
+        }
+
+        // Not in cache - fetch from network
+        return fetch(request)
+          .then((response) => {
+            if (response.ok) {
+              const responseClone = response.clone();
+              caches.open(CACHE_NAME).then((cache) => {
+                cache.put(request, responseClone);
+              });
+            }
+            return response;
+          });
+      })
+  );
+});
+
+// Handle push notifications (for future use)
+self.addEventListener('push', (event) => {
+  if (!event.data) return;
+
+  const data = event.data.json();
+  const options = {
+    body: data.body || 'Notifikasi baru dari Dokter Dibya',
+    icon: '/images/pwa-icons/icon-192x192.png',
+    badge: '/images/pwa-icons/icon-72x72.png',
+    vibrate: [100, 50, 100],
+    data: {
+      url: data.url || '/patient-dashboard.html'
+    }
+  };
+
+  event.waitUntil(
+    self.registration.showNotification(data.title || 'Dokter Dibya', options)
+  );
+});
+
+// Handle notification click
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || '/patient-dashboard.html';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true })
+      .then((clientList) => {
+        // If app is already open, focus it
+        for (const client of clientList) {
+          if (client.url.includes('dokterdibya') && 'focus' in client) {
+            return client.focus();
+          }
+        }
+        // Otherwise open new window
+        if (clients.openWindow) {
+          return clients.openWindow(url);
+        }
+      })
+  );
+});
