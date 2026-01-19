@@ -8,6 +8,8 @@
  * 2. Medications (Resep)
  * 3. Follow-up Schedule
  * 4. Patient Education & Advice
+ *
+ * VERSION: 2026-01-19-v6-fix-modal-show
  */
 
 export default {
@@ -262,7 +264,7 @@ export default {
                                   placeholder="Tulis tindakan manual di sini (untuk tindakan yang tidak ada di daftar)...">${escapeHtml(planData.tindakan)}</textarea>
                         <div class="mt-2">
                             <button type="button" class="btn btn-sm btn-outline-primary mr-2" id="btn-input-tindakan"
-                                    onclick="$('#tindakan-modal').modal('show');if(window.openTindakanModal)window.openTindakanModal();">
+                                    onclick="if(window.openTindakanModal)window.openTindakanModal();else alert('Fungsi belum siap');">
                                 <i class="fas fa-plus-circle mr-1"></i>Input Tindakan
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-danger" id="btn-reset-tindakan"
@@ -285,7 +287,7 @@ export default {
                                   placeholder="Tulis resep manual di sini (untuk obat/vitamin yang tidak ada di daftar)...">${escapeHtml(planData.terapi)}</textarea>
                         <div class="mt-2">
                             <button type="button" class="btn btn-sm btn-outline-primary mr-2" id="btn-input-terapi"
-                                    onclick="$('#terapi-modal').modal('show');if(window.openTerapiModal)window.openTerapiModal();">
+                                    onclick="if(window.openTerapiModal)window.openTerapiModal();else alert('Fungsi belum siap');">
                                 <i class="fas fa-plus-circle mr-1"></i>Input Terapi
                             </button>
                             <button type="button" class="btn btn-sm btn-outline-danger" id="btn-reset-terapi"
