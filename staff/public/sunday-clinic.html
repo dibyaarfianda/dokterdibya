@@ -251,18 +251,21 @@
         }
 
         /* Sticky Modal Footer - buttons always visible */
+        /* CRITICAL: Use fixed px instead of vh - WebView calculates vh as 0 */
         #tindakan-modal .modal-content,
         #terapi-modal .modal-content,
         #cara-pakai-modal .modal-content {
-            display: flex;
-            flex-direction: column;
-            max-height: 85vh;
+            display: flex !important;
+            flex-direction: column !important;
+            max-height: 600px !important;
+            min-height: 400px !important;
         }
         #tindakan-modal .modal-body,
         #terapi-modal .modal-body,
         #cara-pakai-modal .modal-body {
-            flex: 1;
-            overflow-y: auto;
+            flex: 1 1 auto !important;
+            overflow-y: auto !important;
+            min-height: 250px !important;
         }
         #tindakan-modal .modal-footer,
         #terapi-modal .modal-footer,
@@ -310,14 +313,18 @@
         }
 
         /* Modal body scrollable area - ensure content is visible */
+        /* CRITICAL: Use fixed px instead of vh - WebView calculates vh incorrectly */
         #tindakan-modal-body {
-            max-height: 50vh;
-            overflow-y: auto;
-            min-height: 200px;
+            max-height: 400px !important;
+            min-height: 200px !important;
+            height: auto !important;
+            overflow-y: auto !important;
         }
         #terapi-modal-body {
-            max-height: 50vh;
-            overflow-y: auto;
+            max-height: 400px !important;
+            min-height: 200px !important;
+            height: auto !important;
+            overflow-y: auto !important;
         }
 
         /* CRITICAL: Disable collapse in mobile - always show history */
