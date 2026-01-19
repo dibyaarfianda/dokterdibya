@@ -10,7 +10,11 @@ import android.webkit.WebSettings;
 import android.webkit.WebStorage;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebResourceResponse;
 import androidx.appcompat.app.AppCompatActivity;
+import java.util.HashMap;
+import java.util.Map;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
@@ -29,6 +33,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // CRITICAL: Clear ALL cache directories BEFORE creating WebView
+        Log.d("DBStaff", "=== PRE-WEBVIEW CACHE CLEARING ===");
+        clearAllCacheDirectories();
 
         // Enable edge-to-edge display
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
@@ -81,12 +89,13 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        // Configure WebView settings
+        // Configure WebView settings - AGGRESSIVE NO-CACHE
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
-        settings.setDomStorageEnabled(true);
-        settings.setDatabaseEnabled(true);
-        settings.setCacheMode(WebSettings.LOAD_NO_CACHE); // No cache for dev
+        settings.setDomStorageEnabled(true);  // Keep for localStorage (auth tokens)
+        settings.setDatabaseEnabled(false);   // Disable database cache
+        settings.setCacheMode(WebSettings.LOAD_NO_CACHE); // Always fetch from network
+        settings.setAppCacheEnabled(false);   // Disable app cache completely
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
         settings.setLoadWithOverviewMode(true);
@@ -95,11 +104,22 @@ public class MainActivity extends AppCompatActivity {
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
 
-        // Handle navigation within WebView
+        // Force no caching
+        settings.setCacheMode(WebSettings.LOAD_NO_CACHE);
+        Log.d("DBStaff", "WebView cache mode set to LOAD_NO_CACHE");
+
+        // Handle navigation within WebView - with cache-busting
         webView.setWebViewClient(new WebViewClient() {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                view.loadUrl(url);
+                // Add cache-busting timestamp to all URLs
+                String cacheBustedUrl = url;
+                if (url.contains("dokterdibya.com")) {
+                    String separator = url.contains("?") ? "&" : "?";
+                    cacheBustedUrl = url + separator + "_cb=" + System.currentTimeMillis();
+                }
+                Log.d("DBStaff", "Loading URL: " + cacheBustedUrl);
+                view.loadUrl(cacheBustedUrl);
                 return true;
             }
 
@@ -107,6 +127,13 @@ public class MainActivity extends AppCompatActivity {
             public void onPageFinished(WebView view, String url) {
                 // Stop refresh animation when page loads
                 swipeRefresh.setRefreshing(false);
+                Log.d("DBStaff", "Page finished: " + url);
+            }
+
+            @Override
+            public void onPageStarted(WebView view, String url, android.graphics.Bitmap favicon) {
+                super.onPageStarted(view, url, favicon);
+                Log.d("DBStaff", "Page started: " + url);
             }
         });
 
@@ -156,8 +183,50 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Manually delete WebView cache directories
-     * This ensures all cached files are removed, not just the in-memory cache
+     * Clear ALL cache directories BEFORE WebView is created
+     * This is the nuclear option - clears everything
+     */
+    private void clearAllCacheDirectories() {
+        try {
+            String dataDir = getApplicationInfo().dataDir;
+
+            // List of ALL directories that might contain cached web content
+            String[] cacheDirs = {
+                "cache",           // General app cache
+                "app_webview",     // WebView data (includes HTTP cache)
+                "code_cache",      // Compiled code cache
+                "app_webview/Cache",
+                "app_webview/GPUCache",
+                "app_webview/blob_storage",
+                "app_webview/Service Worker",
+                "app_webview/IndexedDB",
+                "databases"        // WebView databases
+            };
+
+            for (String dirName : cacheDirs) {
+                File dir = new File(dataDir, dirName);
+                if (dir.exists()) {
+                    boolean deleted = deleteDir(dir);
+                    Log.d("DBStaff", "Delete " + dirName + ": " + (deleted ? "OK" : "FAILED"));
+                }
+            }
+
+            // Also clear using getCacheDir() which might be different
+            File cacheDir = getCacheDir();
+            if (cacheDir != null && cacheDir.exists()) {
+                deleteDir(cacheDir);
+                Log.d("DBStaff", "Deleted getCacheDir: " + cacheDir.getAbsolutePath());
+            }
+
+            Log.d("DBStaff", "=== PRE-WEBVIEW CACHE CLEARING COMPLETE ===");
+
+        } catch (Exception e) {
+            Log.e("DBStaff", "Error in clearAllCacheDirectories: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Manually delete WebView cache directories (called after WebView created)
      */
     private void clearWebViewCache() {
         try {
