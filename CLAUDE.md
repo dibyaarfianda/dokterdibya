@@ -921,3 +921,37 @@ When a UI element doesn't update after cache clearing and fresh file verificatio
 - Avoid duplicating UI rendering logic between ES modules and inline scripts
 - If using inline JS for initial render, ensure it uses same code patterns as modules
 - Document which file is responsible for rendering each UI component
+
+### 25. WebView CSS vh Units Don't Work
+
+**Problem:** Android WebView calculates `vh` (viewport height) units incorrectly, often as 0 or very small values.
+
+**Symptoms:**
+- Modal bodies collapse to 0 height
+- Elements with `max-height: 50vh` appear "squeezed"
+- Content renders correctly in browser but not in WebView app
+
+**Root Cause:**
+WebView doesn't reliably report viewport height, causing CSS `vh` units to calculate incorrectly.
+
+**Solution:**
+Replace all `vh` units with fixed pixel values:
+
+```css
+/* WRONG - WebView calculates vh as 0 */
+.modal-content { max-height: 85vh; }
+.modal-body { max-height: 50vh; }
+
+/* CORRECT - Use fixed pixels */
+.modal-content { max-height: 600px !important; min-height: 400px !important; }
+.modal-body { max-height: 400px !important; min-height: 250px !important; }
+```
+
+**In JavaScript, use cssText with !important:**
+```javascript
+container.style.cssText = 'min-height: 250px !important; max-height: 400px !important; height: auto !important; overflow-y: auto !important;';
+```
+
+**Files affected:**
+- `staff/public/sunday-clinic.html` (CSS at lines 253-266, 313-321)
+- `staff/public/scripts/sunday-clinic/utils/planning-helpers.js`
