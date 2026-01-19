@@ -13,11 +13,11 @@
 // GLOBAL STATE
 // ============================================================================
 
-window.PLANNING_HELPERS_VERSION = '2026-01-19-v7-mutation-debug';
+window.PLANNING_HELPERS_VERSION = '2026-01-19-v8-css-debug';
 console.log('[Planning Helpers] Loaded version:', window.PLANNING_HELPERS_VERSION);
 
 // Debug marker - lime-green indicator for visual verification
-console.log('%c[Planning v7] LOADED - mutation debug', 'background: lime; color: black; padding: 2px 8px; font-weight: bold;');
+console.log('%c[Planning v8] LOADED - mutation debug', 'background: lime; color: black; padding: 2px 8px; font-weight: bold;');
 
 // Add visible debug marker in DOM (only in development/debug)
 document.addEventListener('DOMContentLoaded', function() {
@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const marker = document.createElement('div');
         marker.id = 'planning-version-marker';
         marker.style.cssText = 'position:fixed;bottom:5px;right:5px;background:lime;color:black;padding:2px 8px;font-size:10px;z-index:99999;border-radius:3px;font-family:monospace;';
-        marker.textContent = 'Planning v7';
+        marker.textContent = 'Planning v8';
         marker.title = 'planning-helpers.js version ' + window.PLANNING_HELPERS_VERSION;
         document.body?.appendChild(marker);
 
@@ -60,11 +60,11 @@ function showLoadingStatus(modalBody, status) {
 // ============================================================================
 
 async function openTindakanModal() {
-    console.log('[Planning v7] openTindakanModal called');
+    console.log('[Planning v8] openTindakanModal called');
 
     // Prevent multiple concurrent calls
     if (window._tindakanModalLoading) {
-        console.log('[Planning v7] Already loading tindakan, skipping duplicate call');
+        console.log('[Planning v8] Already loading tindakan, skipping duplicate call');
         return;
     }
     window._tindakanModalLoading = true;
@@ -74,12 +74,12 @@ async function openTindakanModal() {
 
     // Show loading indicator in modal body first
     const modalBody = document.getElementById('tindakan-modal-body');
-    console.log('[Planning v7] modalBody found:', !!modalBody);
+    console.log('[Planning v8] modalBody found:', !!modalBody);
 
     if (modalBody) {
         showLoadingStatus(modalBody, '<i class="fas fa-spinner fa-spin"></i> Memuat data tindakan...');
     } else {
-        console.error('[Planning v7] tindakan-modal-body NOT FOUND!');
+        console.error('[Planning v8] tindakan-modal-body NOT FOUND!');
         alert('ERROR: Modal body element not found!');
         return;
     }
@@ -98,14 +98,14 @@ async function openTindakanModal() {
         showLoadingStatus(modalBody, '<i class="fas fa-key"></i> Mendapatkan token...');
 
         const token = await window.getToken();
-        console.log('[Planning v7] Token retrieved:', !!token);
+        console.log('[Planning v8] Token retrieved:', !!token);
         if (!token) {
             showLoadingStatus(modalBody, '<i class="fas fa-exclamation-triangle"></i> Sesi habis. Silakan login ulang.', '#ffcccb');
             return;
         }
 
         showLoadingStatus(modalBody, '<i class="fas fa-spinner fa-spin"></i> Mengambil data tindakan dari server...');
-        console.log('[Planning v7] Fetching tindakan data...');
+        console.log('[Planning v8] Fetching tindakan data...');
 
         const response = await fetch('/api/tindakan?active=true', {
             headers: {
@@ -113,18 +113,18 @@ async function openTindakanModal() {
             }
         });
 
-        console.log('[Planning v7] Response status:', response.status);
+        console.log('[Planning v8] Response status:', response.status);
         if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 
         const result = await response.json();
         const tindakanList = result.data || result;
-        console.log('[Planning v7] Tindakan loaded:', tindakanList.length, 'items');
+        console.log('[Planning v8] Tindakan loaded:', tindakanList.length, 'items');
 
         showLoadingStatus(modalBody, `<i class="fas fa-check"></i> Diterima ${tindakanList.length} tindakan, memproses...`);
 
         // Filter out ADMINISTRATIF category
         const filteredTindakan = tindakanList.filter(item => item.category !== 'ADMINISTRATIF');
-        console.log('[Planning v7] After filter:', filteredTindakan.length, 'items');
+        console.log('[Planning v8] After filter:', filteredTindakan.length, 'items');
 
         if (filteredTindakan.length === 0) {
             showLoadingStatus(modalBody, '<i class="fas fa-info-circle"></i> Tidak ada data tindakan tersedia.', '#cce5ff');
@@ -138,7 +138,7 @@ async function openTindakanModal() {
 
     } catch (error) {
         window._tindakanModalLoading = false;
-        console.error('[Planning v7] Error loading tindakan:', error);
+        console.error('[Planning v8] Error loading tindakan:', error);
         const errorMsg = 'Gagal memuat data tindakan: ' + error.message;
 
         // Show error in modal body with debug info
@@ -153,16 +153,16 @@ async function openTindakanModal() {
 }
 
 function showTindakanModal(tindakanList) {
-    console.log('[Planning v7] showTindakanModal called with', tindakanList?.length, 'items');
+    console.log('[Planning v8] showTindakanModal called with', tindakanList?.length, 'items');
 
     const modal = document.getElementById('tindakan-modal');
     const container = document.getElementById('tindakan-modal-body');
     const searchInput = document.getElementById('tindakan-search');
 
-    console.log('[Planning v7] Elements found:', { modal: !!modal, container: !!container, searchInput: !!searchInput });
+    console.log('[Planning v8] Elements found:', { modal: !!modal, container: !!container, searchInput: !!searchInput });
 
     if (!modal || !container) {
-        console.error('[Planning v7] MISSING ELEMENTS! modal:', !!modal, 'container:', !!container);
+        console.error('[Planning v8] MISSING ELEMENTS! modal:', !!modal, 'container:', !!container);
         alert('ERROR: Modal elements not found!');
         return;
     }
@@ -225,21 +225,31 @@ function showTindakanModal(tindakanList) {
             html = '<div class="text-center text-muted py-3">Tidak ada tindakan ditemukan</div>';
         }
 
-        console.log('[Planning v7] Rendering', Object.keys(byCategory).length, 'categories, HTML length:', html.length);
+        console.log('[Planning v8] Rendering', Object.keys(byCategory).length, 'categories, HTML length:', html.length);
         container.innerHTML = html;
-        console.log('[Planning v7] Container innerHTML set, children:', container.children.length);
+        console.log('[Planning v8] Container innerHTML set, children:', container.children.length);
+
+        // DEBUG: Force visibility with inline styles
+        container.style.cssText = 'min-height:300px !important; display:block !important; visibility:visible !important; opacity:1 !important; background:yellow !important;';
+        console.log('[Planning v8] Container computed style:', window.getComputedStyle(container).display, window.getComputedStyle(container).visibility, window.getComputedStyle(container).height);
+
+        // DEBUG: Log first child details
+        if (container.firstElementChild) {
+            console.log('[Planning v8] First child tag:', container.firstElementChild.tagName, 'class:', container.firstElementChild.className);
+            console.log('[Planning v8] First child visible:', window.getComputedStyle(container.firstElementChild).display);
+        }
 
         // DEBUG: Watch for content being cleared
         if (!window._tindakanMutationObserver) {
             window._tindakanMutationObserver = new MutationObserver((mutations) => {
-                console.log('[Planning v7] MUTATION DETECTED! children now:', container.children.length);
-                console.log('[Planning v7] Mutation details:', mutations.map(m => m.type).join(', '));
+                console.log('[Planning v8] MUTATION DETECTED! children now:', container.children.length);
+                console.log('[Planning v8] Mutation details:', mutations.map(m => m.type).join(', '));
                 if (container.children.length <= 1) {
-                    console.error('[Planning v7] CONTENT WAS CLEARED! Stack:', new Error().stack);
+                    console.error('[Planning v8] CONTENT WAS CLEARED! Stack:', new Error().stack);
                 }
             });
             window._tindakanMutationObserver.observe(container, { childList: true, subtree: true });
-            console.log('[Planning v7] MutationObserver attached');
+            console.log('[Planning v8] MutationObserver attached');
         }
 
         // Add click handler to each item container (for better UX)
@@ -679,11 +689,11 @@ async function renderTindakanItemsList() {
 // ============================================================================
 
 async function openTerapiModal() {
-    console.log('[Planning v7] openTerapiModal called');
+    console.log('[Planning v8] openTerapiModal called');
 
     // Prevent multiple concurrent calls
     if (window._terapiModalLoading) {
-        console.log('[Planning v7] Already loading terapi, skipping duplicate call');
+        console.log('[Planning v8] Already loading terapi, skipping duplicate call');
         return;
     }
     window._terapiModalLoading = true;
@@ -693,7 +703,7 @@ async function openTerapiModal() {
 
     // Show loading indicator in modal body first
     const modalBody = document.getElementById('terapi-modal-body');
-    console.log('[Planning v7] terapi modalBody found:', !!modalBody);
+    console.log('[Planning v8] terapi modalBody found:', !!modalBody);
 
     // Helper for table row loading messages
     const showTerapiLoading = (msg) => {
@@ -707,7 +717,7 @@ async function openTerapiModal() {
     if (modalBody) {
         showTerapiLoading('<i class="fas fa-spinner fa-spin"></i> Memuat data obat...');
     } else {
-        console.error('[Planning v7] terapi-modal-body NOT FOUND!');
+        console.error('[Planning v8] terapi-modal-body NOT FOUND!');
         alert('ERROR: Terapi modal body element not found!');
         return;
     }
@@ -726,14 +736,14 @@ async function openTerapiModal() {
         showTerapiLoading('<i class="fas fa-key"></i> Mendapatkan token...');
 
         const token = await window.getToken();
-        console.log('[Planning v7] Token retrieved:', !!token);
+        console.log('[Planning v8] Token retrieved:', !!token);
         if (!token) {
             showTerapiLoading('<i class="fas fa-exclamation-triangle"></i> Sesi habis. Silakan login ulang.', '#ffcccb');
             return;
         }
 
         showTerapiLoading('<i class="fas fa-spinner fa-spin"></i> Mengambil data obat dari server...');
-        console.log('[Planning v7] Fetching obat data...');
+        console.log('[Planning v8] Fetching obat data...');
 
         const response = await fetch('/api/obat?active=true', {
             headers: {
@@ -741,12 +751,12 @@ async function openTerapiModal() {
             }
         });
 
-        console.log('[Planning v7] Response status:', response.status);
+        console.log('[Planning v8] Response status:', response.status);
         if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
 
         const result = await response.json();
         const obatList = result.data || result;
-        console.log('[Planning v7] Obat loaded:', obatList.length, 'items');
+        console.log('[Planning v8] Obat loaded:', obatList.length, 'items');
 
         showTerapiLoading(`<i class="fas fa-check"></i> Diterima ${obatList.length} obat, memproses...`);
 
@@ -762,7 +772,7 @@ async function openTerapiModal() {
 
     } catch (error) {
         window._terapiModalLoading = false;
-        console.error('[Planning v7] Error loading obat:', error);
+        console.error('[Planning v8] Error loading obat:', error);
         const errorMsg = 'Gagal memuat data obat: ' + error.message;
 
         // Show error in modal body with debug info
@@ -777,16 +787,16 @@ async function openTerapiModal() {
 }
 
 function showTerapiModal(obatList) {
-    console.log('[Planning v7] showTerapiModal called with', obatList?.length, 'items');
+    console.log('[Planning v8] showTerapiModal called with', obatList?.length, 'items');
 
     const modal = document.getElementById('terapi-modal');
     const tbody = document.getElementById('terapi-modal-body');
     const searchInput = document.getElementById('obat-search');
 
-    console.log('[Planning v7] Elements check - modal:', !!modal, 'tbody:', !!tbody, 'searchInput:', !!searchInput);
+    console.log('[Planning v8] Elements check - modal:', !!modal, 'tbody:', !!tbody, 'searchInput:', !!searchInput);
 
     if (!modal || !tbody) {
-        console.error('[Planning v7] MISSING ELEMENTS! modal:', !!modal, 'tbody:', !!tbody);
+        console.error('[Planning v8] MISSING ELEMENTS! modal:', !!modal, 'tbody:', !!tbody);
         return;
     }
 
@@ -798,7 +808,7 @@ function showTerapiModal(obatList) {
 
     // Render function - called on initial load and search filter
     function renderObatTable(filterText = '') {
-        console.log('[Planning v7] renderObatTable called, filter:', filterText, 'obatList.length:', obatList?.length);
+        console.log('[Planning v8] renderObatTable called, filter:', filterText, 'obatList.length:', obatList?.length);
         const filter = filterText.toLowerCase();
 
         // Save current state of ALL visible checkboxes before clearing
@@ -855,9 +865,9 @@ function showTerapiModal(obatList) {
     }
 
     // Initial render
-    console.log('[Planning v7] About to call renderObatTable...');
+    console.log('[Planning v8] About to call renderObatTable...');
     renderObatTable();
-    console.log('[Planning v7] renderObatTable done, tbody.children:', tbody.children.length);
+    console.log('[Planning v8] renderObatTable done, tbody.children:', tbody.children.length);
 
     // Add select all functionality
     const selectAllCheckbox = document.getElementById('select-all-obat');
