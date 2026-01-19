@@ -95,7 +95,7 @@ public class MainActivity extends AppCompatActivity {
         settings.setDomStorageEnabled(true);  // Keep for localStorage (auth tokens)
         settings.setDatabaseEnabled(false);   // Disable database cache
         settings.setCacheMode(WebSettings.LOAD_NO_CACHE); // Always fetch from network
-        settings.setAppCacheEnabled(false);   // Disable app cache completely
+        // Note: setAppCacheEnabled is deprecated and removed in newer Android versions
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
         settings.setLoadWithOverviewMode(true);
