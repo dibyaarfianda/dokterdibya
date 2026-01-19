@@ -12286,9 +12286,27 @@ function handleNotifPageClick(link) {
 window.handleNotifPageClick = handleNotifPageClick;
 </script>
 
-<!-- PWA Service Worker Registration -->
+<!-- PWA Service Worker Registration - Gated for Web Only -->
 <script>
-if ('serviceWorker' in navigator) {
+// Detect if running in native Capacitor/WebView app
+window.isNativePlatform = function() {
+    // Check for Capacitor
+    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        return true;
+    }
+    // Check for mobile=1 URL param (staff native app uses this)
+    if (new URLSearchParams(window.location.search).get('mobile') === '1') {
+        return true;
+    }
+    // Check for Android WebView user agent
+    if (/Android.*wv/.test(navigator.userAgent)) {
+        return true;
+    }
+    return false;
+};
+
+// Service Worker registration - WEB ONLY (skip on native)
+if ('serviceWorker' in navigator && !window.isNativePlatform()) {
     window.addEventListener('load', () => {
         navigator.serviceWorker.register('/staff/public/sw.js')
             .then((registration) => {
@@ -12330,6 +12348,29 @@ if ('serviceWorker' in navigator) {
     navigator.serviceWorker.addEventListener('controllerchange', () => {
         console.log('[PWA] Controller changed');
     });
+} else if (window.isNativePlatform()) {
+    // Native app: Skip SW and clean up any existing registrations
+    console.log('[Native] Skipping Service Worker registration (native platform detected)');
+
+    // Unregister any existing service workers
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+            registrations.forEach(registration => {
+                registration.unregister();
+                console.log('[Native] Unregistered SW:', registration.scope);
+            });
+        });
+    }
+
+    // Clear Cache API storage on native
+    if ('caches' in window) {
+        caches.keys().then(cacheNames => {
+            cacheNames.forEach(cacheName => {
+                caches.delete(cacheName);
+                console.log('[Native] Deleted cache:', cacheName);
+            });
+        });
+    }
 }
 
 // PWA Cache Control Functions - Use these for smooth real-time operation
