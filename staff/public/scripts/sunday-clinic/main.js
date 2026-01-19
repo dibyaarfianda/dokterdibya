@@ -793,14 +793,8 @@ class SundayClinicApp {
             resetTerapi: typeof window.resetTerapi
         });
 
-        if (inputTindakanBtn && window.openTindakanModal) {
-            console.log('[SundayClinic] Attaching openTindakanModal listener');
-            inputTindakanBtn.addEventListener('click', window.openTindakanModal);
-        }
-        if (inputTerapiBtn && window.openTerapiModal) {
-            console.log('[SundayClinic] Attaching openTerapiModal listener');
-            inputTerapiBtn.addEventListener('click', window.openTerapiModal);
-        }
+        // Note: openTindakanModal and openTerapiModal are now called via onclick in plan.js template
+        // No need to add addEventListener here (was causing duplicate calls)
         if (resetTindakanBtn && window.resetTindakan) {
             console.log('[SundayClinic] Attaching resetTindakan listener');
             resetTindakanBtn.addEventListener('click', window.resetTindakan);
