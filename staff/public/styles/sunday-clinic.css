@@ -1744,10 +1744,13 @@ body.mobile-app-mode .location-badge {
 }
 
 body.mobile-app-mode .visit-history-list {
-    padding: 10px 12px !important;
-    max-height: calc(100vh - 220px) !important;
+    padding: 12px 14px !important;
+    max-height: none !important;
+    min-height: 300px !important;
+    height: auto !important;
     overflow-x: hidden !important;
-    overflow-y: auto !important;
+    overflow-y: visible !important;
+    flex: 1 1 auto !important;
 }
 
 /* Ensure collapse is visible in mobile */
@@ -1761,12 +1764,16 @@ body.mobile-app-mode #history-content.show {
 }
 
 /* Flex-grow for collapse content */
-body.mobile-app-mode #history-content.flex-grow-1 {
+body.mobile-app-mode #history-content.flex-grow-1,
+body.mobile-app-mode #history-content {
     flex: 1 1 auto !important;
     display: flex !important;
     flex-direction: column !important;
-    overflow-y: auto !important;
-    min-height: 200px !important;
+    overflow-y: visible !important;
+    overflow-x: hidden !important;
+    min-height: 400px !important;
+    height: auto !important;
+    max-height: none !important;
 }
 
 body.mobile-app-mode .visit-card-body {
@@ -1845,6 +1852,7 @@ body.mobile-app-mode .identity-table .identity-value {
 /* Patient sidebar section mobile - allow content to show */
 body.mobile-app-mode .patient-sidebar-section {
     overflow: visible !important;
+    height: auto !important;
 }
 
 /* Ensure flex-grow for visit history section */
@@ -1852,7 +1860,9 @@ body.mobile-app-mode .patient-sidebar-section.flex-grow-1 {
     flex: 1 1 auto !important;
     display: flex !important;
     flex-direction: column !important;
-    min-height: 0 !important;
+    min-height: 400px !important;
+    height: auto !important;
+    max-height: none !important;
 }
 
 .section-nav-scroll {
