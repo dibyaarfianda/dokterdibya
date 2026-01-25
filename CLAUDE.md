@@ -955,3 +955,46 @@ container.style.cssText = 'min-height: 250px !important; max-height: 400px !impo
 **Files affected:**
 - `staff/public/sunday-clinic.html` (CSS at lines 253-266, 313-321)
 - `staff/public/scripts/sunday-clinic/utils/planning-helpers.js`
+
+### 26. Patient Password Reset
+
+**CRITICAL: Patient credentials are stored in TWO tables:**
+
+| Table | Column | Purpose |
+|-------|--------|---------|
+| `patients` | `password` | Legacy/unused |
+| `users` | `password_hash` | **Actual login check** |
+
+**The login endpoint `/api/auth/patient-login` checks `users.password_hash`, NOT `patients.password`.**
+
+**Always update the `users` table for password changes:**
+
+```sql
+-- WRONG - This won't work for login!
+UPDATE patients SET password = '...' WHERE email = '...';
+
+-- CORRECT - This is what login checks
+UPDATE users SET password_hash = '...' WHERE email = '...';
+```
+
+**Use the helper script:**
+
+```bash
+# Reset patient password
+/var/www/dokterdibya/scripts/reset-patient-password.sh patient@email.com newpassword123
+```
+
+**Manual method:**
+
+```bash
+# 1. Generate bcrypt hash
+cd /var/www/dokterdibya/staff/backend
+node -e "console.log(require('bcryptjs').hashSync('newpassword123', 10))"
+
+# 2. Update users table (NOT patients table!)
+mysql -u root dibyaklinik -e "UPDATE users SET password_hash = '\$2b\$10\$...' WHERE email = 'patient@email.com';"
+```
+
+**Why two tables?**
+- `patients` table: Patient profile data (name, birth_date, medical info)
+- `users` table: Authentication data for ALL users (staff + patients), with `user_type` column to distinguish
