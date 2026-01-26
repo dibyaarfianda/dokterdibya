@@ -33,7 +33,6 @@ import com.dokterdibya.patient.data.model.ExistingIntake
 import com.dokterdibya.patient.data.local.*
 import com.dokterdibya.patient.data.api.NetworkException
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.first
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import retrofit2.Response
 import okhttp3.MultipartBody
@@ -134,8 +133,8 @@ class PatientRepository @Inject constructor(
             var lastResponse: Response<AuthResponse>? = null
             
             // Retrieve the saved registration code (if any)
-            val savedRegistrationCode = tokenRepository.getRegistrationCode().first()
-            android.util.Log.d("GoogleLogin", "Starting Google login with auth code length: ${authCode.length}, registrationCode: ${savedRegistrationCode?.let { "present" } ?: "none"}")
+            val savedRegistrationCode = tokenRepository.getCachedRegistrationCode()
+            android.util.Log.d("GoogleLogin", "Starting Google login with auth code length: ${authCode.length}, registrationCode: ${savedRegistrationCode?.let { "present (${it.length} chars)" } ?: "none"}")
             
             // Retry up to 3 times with exponential backoff
             for (attempt in 1..3) {
@@ -160,6 +159,7 @@ class PatientRepository @Inject constructor(
                             }
                             // Clear the registration code after successful login
                             tokenRepository.saveRegistrationCode("")
+                            android.util.Log.d("GoogleLogin", "Login successful, registration code cleared")
                         }
                         return Result.success(authResponse)
                     } else if (response.code() >= 500) {
@@ -176,8 +176,9 @@ class PatientRepository @Inject constructor(
                         continue
                     } else {
                         // Client error - don't retry
+                        val errorBody = response.errorBody()?.string()
                         val errorMsg = response.message() ?: "Login failed"
-                        android.util.Log.e("GoogleLogin", "Client error (${response.code()}): $errorMsg")
+                        android.util.Log.e("GoogleLogin", "Client error (${response.code()}): $errorMsg, body: $errorBody")
                         return Result.failure(Exception(errorMsg))
                     }
                 } catch (e: Exception) {
