@@ -1094,7 +1094,39 @@ function generateMedicalResume(identitas, records, billingItems = { obat: [], ti
             if (currentTrimester === 'second' && usg.trimester_2) trimesterData = usg.trimester_2;
             if (currentTrimester === 'third' && usg.trimester_3) trimesterData = usg.trimester_3;
             if (currentTrimester === 'screening' && usg.screening) trimesterData = usg.screening;
-            
+
+            // Trimester 1 specific fields: Jumlah Embrio, Implantasi
+            if (trimesterData.embryo_count) {
+                const embryoMap = {
+                    'not_visible': 'Belum Tampak',
+                    'single': 'Tunggal',
+                    'multiple': 'Multipel'
+                };
+                resume += `Jumlah Embrio: ${embryoMap[trimesterData.embryo_count] || trimesterData.embryo_count}\n`;
+            }
+
+            // Trimester 2/3 field: Jumlah Janin (fetus_count)
+            if (trimesterData.fetus_count) {
+                const fetusMap = {
+                    'single': 'Tunggal',
+                    'multiple': 'Multipel'
+                };
+                resume += `Jumlah Janin: ${fetusMap[trimesterData.fetus_count] || trimesterData.fetus_count}\n`;
+            }
+
+            if (trimesterData.implantation) {
+                const implantMap = {
+                    'intrauterine': 'Intrauterine',
+                    'ectopic': 'Ektopik'
+                };
+                resume += `Implantasi: ${implantMap[trimesterData.implantation] || trimesterData.implantation}\n`;
+            }
+
+            // Gestational Sac (GS) for Trimester 1
+            if (trimesterData.gs) {
+                resume += `Kantung Kehamilan (GS): ${trimesterData.gs} minggu\n`;
+            }
+
             // Biometri Janin
             const biometri = [];
             // Check both crl and crl_cm (different field names in different components)
@@ -1115,15 +1147,63 @@ function generateMedicalResume(identitas, records, billingItems = { obat: [], ti
             if (trimesterData.heart_rate) resume += `Denyut Jantung Janin (DJJ): ${trimesterData.heart_rate} bpm\n`;
             if (trimesterData.efw) resume += `Estimasi Berat Janin (EFW): ${trimesterData.efw} gram\n`;
             if (trimesterData.edd) resume += `Hari Perkiraan Lahir (EDD): ${trimesterData.edd}\n`;
+            if (trimesterData.lmp) resume += `HPHT/LMP: ${trimesterData.lmp}\n`;
             if (trimesterData.ga_weeks) resume += `Usia Kehamilan: ${trimesterData.ga_weeks} minggu\n`;
-            if (trimesterData.placenta) resume += `Lokasi Plasenta: ${trimesterData.placenta}\n`;
-            if (trimesterData.afi) resume += `Amniotic Fluid Index (AFI): ${trimesterData.afi} cm\n`;
+
+            // Nuchal Translucency for Trimester 1
+            if (trimesterData.nt) resume += `Nuchal Translucency (NT): ${trimesterData.nt} mm\n`;
+
+            // Fetus position for Trimester 2/3
+            if (trimesterData.fetus_lie) {
+                const lieMap = { 'longitudinal': 'Longitudinal', 'transverse': 'Melintang', 'oblique': 'Oblique' };
+                resume += `Letak Janin: ${lieMap[trimesterData.fetus_lie] || trimesterData.fetus_lie}\n`;
+            }
+            if (trimesterData.presentation) {
+                const presentMap = { 'cephalic': 'Kepala', 'breech': 'Sungsang', 'shoulder': 'Bahu' };
+                resume += `Presentasi: ${presentMap[trimesterData.presentation] || trimesterData.presentation}\n`;
+            }
+
+            // Gender
             if (trimesterData.gender && currentTrimester !== 'screening') {
                 const genderMap = { 'male': 'Laki-laki', 'female': 'Perempuan' };
                 resume += `Jenis Kelamin: ${genderMap[trimesterData.gender] || trimesterData.gender}\n`;
             }
-            
-            if (usg.notes) {
+
+            // Placenta
+            if (trimesterData.placenta) {
+                const placentaMap = { 'anterior': 'Anterior', 'posterior': 'Posterior', 'fundus': 'Fundus', 'lateral': 'Lateral' };
+                resume += `Lokasi Plasenta: ${placentaMap[trimesterData.placenta] || trimesterData.placenta}\n`;
+            }
+            if (trimesterData.placenta_previa) resume += `Plasenta Previa: ${trimesterData.placenta_previa}\n`;
+            if (trimesterData.afi) resume += `Amniotic Fluid Index (AFI): ${trimesterData.afi} cm\n`;
+
+            // Trimester 3 specific: Membrane Sweep
+            if (trimesterData.membrane_sweep && trimesterData.membrane_sweep !== 'no') {
+                const sweepMap = { 'successful': 'Berhasil', 'failed': 'Gagal' };
+                resume += `Membrane Sweep: ${sweepMap[trimesterData.membrane_sweep] || trimesterData.membrane_sweep}\n`;
+            }
+
+            // Trimester 3 specific: Contraception plan
+            if (trimesterData.contraception && Array.isArray(trimesterData.contraception) && trimesterData.contraception.length > 0) {
+                const contraMap = {
+                    'steril': 'MOW/Steril',
+                    'iud': 'IUD CU',
+                    'iud_mirena': 'IUD Mirena',
+                    'implant': 'Implan',
+                    'injection': 'Suntik',
+                    'pill': 'Pil KB',
+                    'condom': 'Kondom',
+                    'vasectomy': 'MOP/Vasektomi',
+                    'none': 'Tidak ada'
+                };
+                const contraNames = trimesterData.contraception.map(c => contraMap[c] || c).join(', ');
+                resume += `Rencana KB: ${contraNames}\n`;
+            }
+
+            // Catatan per-trimester or general notes
+            if (trimesterData.notes) {
+                resume += `\nCatatan:\n${trimesterData.notes}\n`;
+            } else if (usg.notes) {
                 resume += `\nCatatan Tambahan:\n${usg.notes}\n`;
             }
             resume += '\n';
