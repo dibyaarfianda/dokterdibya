@@ -852,13 +852,25 @@
                         document.getElementById('loading-overlay').classList.add('hidden');
                         showError('login-error', data.message || 'Login gagal');
                         return;
+                    } else {
+                        // User cancelled native sign-in (result is null/empty)
+                        console.log('Native sign-in cancelled by user');
+                        return; // Don't fallback to web
                     }
                 } catch (e) {
-                    console.log('Native failed, using web:', e.message);
+                    console.log('Native sign-in error:', e.message);
+                    // Check if user cancelled (common error codes/messages)
+                    const msg = (e.message || '').toLowerCase();
+                    if (msg.includes('cancel') || msg.includes('12501') || msg.includes('user denied') || msg.includes('popup_closed')) {
+                        console.log('User cancelled - not falling back to web');
+                        return; // Don't fallback to web when user cancels
+                    }
+                    // Only fallback to web for actual errors (network issues, etc.)
+                    console.log('Actual error - falling back to web OAuth');
                 }
             }
 
-            // Fallback to web OAuth
+            // Fallback to web OAuth (only for non-cancel errors or when native not available)
             console.log('Using web OAuth...');
             const redirectUri = encodeURIComponent('https://dokterdibya.com/mobile-google-callback.html');
             const scope = encodeURIComponent('email profile');
@@ -950,10 +962,21 @@
                         document.getElementById('loading-overlay').classList.add('hidden');
                         showError('regcode-error', data.message || 'Registrasi gagal');
                         return;
+                    } else {
+                        // User cancelled native sign-in
+                        console.log('Native sign-in cancelled by user');
+                        return; // Don't fallback to web
                     }
                 } catch (e) {
-                    console.log('Native failed, using web:', e.message);
+                    console.log('Native sign-in error:', e.message);
                     document.getElementById('loading-overlay').classList.add('hidden');
+                    // Check if user cancelled
+                    const msg = (e.message || '').toLowerCase();
+                    if (msg.includes('cancel') || msg.includes('12501') || msg.includes('user denied') || msg.includes('popup_closed')) {
+                        console.log('User cancelled - not falling back to web');
+                        return; // Don't fallback to web when user cancels
+                    }
+                    console.log('Actual error - falling back to web OAuth');
                 }
             }
 
