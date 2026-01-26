@@ -499,6 +499,10 @@
                     <span style="font-weight: 500;">Masuk dengan Google</span>
                 </button>
 
+                <div class="footer-links" style="margin-top: 24px;">
+                    <p class="footer-text">Belum punya akun? <a href="#" onclick="showPage('page-regcode')">Daftar</a></p>
+                </div>
+
                 <!-- Hidden form for fallback compatibility -->
                 <form id="login-form" style="display: none;">
                     <input type="email" id="login-email">
@@ -609,14 +613,14 @@
             </div>
         </div>
 
-        <!-- REGISTRATION CODE PAGE (for new Google Sign-In users) -->
+        <!-- REGISTRATION CODE PAGE - Step 1: Validate Code -->
         <div class="page" id="page-regcode">
-            <button class="back-btn" onclick="cancelGoogleRegistration()">
+            <button class="back-btn" onclick="showPage('page-login')">
                 <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
             </button>
 
             <div class="logo-section" style="padding-top: 60px;">
-                <div class="app-name">Kode Registrasi</div>
+                <div class="app-name">Daftar Baru</div>
                 <div class="app-tagline">Masukkan kode registrasi untuk mendaftar</div>
             </div>
 
@@ -626,29 +630,56 @@
                     <span id="regcode-error-text">Kode tidak valid</span>
                 </div>
 
-                <div style="background: rgba(0, 102, 255, 0.1); border: 1px solid rgba(0, 102, 255, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
-                    <p style="font-size: 14px; color: var(--text-muted); margin: 0;">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--primary)" style="vertical-align: middle; margin-right: 8px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
-                        Pendaftaran baru memerlukan kode registrasi. Hubungi admin klinik untuk mendapatkan kode.
-                    </p>
-                </div>
-
-                <form id="regcode-form">
-                    <div class="input-group">
-                        <label class="input-label">Kode Registrasi</label>
-                        <div class="input-wrapper">
-                            <input type="text" id="regcode-input" placeholder="Masukkan 6 karakter kode" required maxlength="6" style="text-transform: uppercase; letter-spacing: 2px; text-align: center; font-size: 20px; font-weight: 600;">
-                            <svg class="input-icon" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
-                        </div>
+                <!-- Step 1: Code Input -->
+                <div id="regcode-step1">
+                    <div style="background: rgba(0, 102, 255, 0.1); border: 1px solid rgba(0, 102, 255, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                        <p style="font-size: 14px; color: var(--text-muted); margin: 0;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--primary)" style="vertical-align: middle; margin-right: 8px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                            Pendaftaran baru memerlukan kode registrasi. Hubungi admin klinik untuk mendapatkan kode.
+                        </p>
                     </div>
 
-                    <button type="submit" class="btn btn-primary" id="btn-regcode" style="margin-top: 16px;">
-                        <span>Daftar dengan Kode</span>
+                    <form id="regcode-form">
+                        <div class="input-group">
+                            <label class="input-label">Kode Registrasi</label>
+                            <div class="input-wrapper">
+                                <input type="text" id="regcode-input" placeholder="Masukkan 6 karakter kode" required maxlength="6" style="text-transform: uppercase; letter-spacing: 2px; text-align: center; font-size: 20px; font-weight: 600;">
+                                <svg class="input-icon" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" id="btn-validate-code" style="margin-top: 16px;">
+                            <span>Validasi Kode</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Step 2: Code Valid - Show Google Sign-In -->
+                <div id="regcode-step2" style="display: none;">
+                    <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                        <p style="font-size: 14px; color: #10b981; margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#10b981"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                            <span>Kode valid! Lanjutkan dengan Google untuk mendaftar.</span>
+                        </p>
+                    </div>
+
+                    <button type="button" class="btn btn-google-large" id="btn-google-register" onclick="registerWithGoogle()" style="width: 100%; padding: 16px 24px; font-size: 16px; border-radius: 12px; background: white; color: #333; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; gap: 12px; cursor: pointer; transition: all 0.2s;">
+                        <svg width="24" height="24" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                        </svg>
+                        <span style="font-weight: 500;">Daftar dengan Google</span>
                     </button>
-                </form>
+
+                    <button type="button" class="btn btn-secondary" onclick="resetRegCodePage()" style="margin-top: 12px;">
+                        <span>Gunakan Kode Lain</span>
+                    </button>
+                </div>
 
                 <div class="footer-links">
-                    <p class="footer-text">Sudah punya akun? <a href="#" onclick="cancelGoogleRegistration()">Kembali</a></p>
+                    <p class="footer-text">Sudah punya akun? <a href="#" onclick="showPage('page-login')">Masuk</a></p>
                 </div>
             </div>
         </div>
@@ -749,7 +780,7 @@
         // Google Sign-In - Native (fast) with web fallback
         const GOOGLE_WEB_CLIENT_ID = '738335602560-52as846lk2oo78fr38a86elu8888m7eh.apps.googleusercontent.com';
         let googleAuthReady = false;
-        let pendingGoogleIdToken = null; // Store ID token while waiting for registration code
+        let validatedRegCode = null; // Store validated registration code for new user registration
 
         // Initialize GoogleAuth on app start
         (async function initGoogleAuth() {
@@ -806,12 +837,11 @@
                             return;
                         }
 
-                        // Check if registration code is required (new patient)
+                        // Check if registration code is required (new patient trying to login)
                         if (data.code_required) {
-                            console.log('Registration code required for new patient');
-                            pendingGoogleIdToken = result.authentication.idToken;
+                            console.log('New patient - need to register first');
                             document.getElementById('loading-overlay').classList.add('hidden');
-                            showPage('page-regcode');
+                            showError('login-error', 'Akun belum terdaftar. Silakan klik "Daftar" untuk membuat akun baru.');
                             return;
                         }
 
@@ -832,54 +862,103 @@
             window.open(googleAuthUrl, '_system');
         };
 
-        // Cancel Google registration and go back to login
-        window.cancelGoogleRegistration = function() {
-            pendingGoogleIdToken = null;
-            showPage('page-login');
-        };
-
-        // Submit Google registration with code
-        window.submitGoogleWithCode = async function(code) {
-            if (!pendingGoogleIdToken) {
-                showError('regcode-error', 'Sesi expired. Silakan login dengan Google lagi.');
-                return;
-            }
-
-            const regcodeBtn = document.getElementById('btn-regcode');
-            regcodeBtn.disabled = true;
-            regcodeBtn.innerHTML = '<div class="spinner"></div>';
+        // Validate registration code before Google Sign-In
+        window.validateRegCode = async function(code) {
+            const btn = document.getElementById('btn-validate-code');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div>';
+            document.getElementById('regcode-error').classList.remove('show');
 
             try {
-                const res = await fetch(`${API_BASE}/api/patients/auth/google`, {
+                const res = await fetch(`${API_BASE}/api/registration-codes/validate`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        idToken: pendingGoogleIdToken,
-                        registration_code: code.toUpperCase().trim()
-                    })
+                    body: JSON.stringify({ code: code.toUpperCase().trim() })
                 });
                 const data = await res.json();
 
-                if (res.ok && data.token) {
-                    localStorage.setItem('vps_auth_token', data.token);
-                    if (data.user) localStorage.setItem('patient_user', JSON.stringify(data.user));
-                    localStorage.setItem('auth_provider', 'google');
-                    localStorage.setItem('from_mobile_app', 'true');
-                    pendingGoogleIdToken = null;
-                    let url = `${DASHBOARD_URL}?token=${encodeURIComponent(data.token)}`;
-                    const user = localStorage.getItem('patient_user');
-                    if (user) url += `&user=${encodeURIComponent(user)}`;
-                    window.location.href = url;
-                    return;
+                if (res.ok && data.success) {
+                    // Code is valid - store it and show step 2
+                    validatedRegCode = code.toUpperCase().trim();
+                    document.getElementById('regcode-step1').style.display = 'none';
+                    document.getElementById('regcode-step2').style.display = 'block';
+                    console.log('Registration code validated:', validatedRegCode);
+                } else {
+                    showError('regcode-error', data.message || 'Kode registrasi tidak valid');
                 }
-
-                showError('regcode-error', data.message || 'Kode registrasi tidak valid');
             } catch (err) {
                 showError('regcode-error', 'Tidak dapat terhubung ke server');
             }
 
-            regcodeBtn.disabled = false;
-            regcodeBtn.innerHTML = '<span>Daftar dengan Kode</span>';
+            btn.disabled = false;
+            btn.innerHTML = '<span>Validasi Kode</span>';
+        };
+
+        // Reset registration code page to step 1
+        window.resetRegCodePage = function() {
+            validatedRegCode = null;
+            document.getElementById('regcode-input').value = '';
+            document.getElementById('regcode-step1').style.display = 'block';
+            document.getElementById('regcode-step2').style.display = 'none';
+            document.getElementById('regcode-error').classList.remove('show');
+        };
+
+        // Register with Google (uses pre-validated code)
+        window.registerWithGoogle = async function() {
+            if (!validatedRegCode) {
+                showError('regcode-error', 'Kode registrasi belum divalidasi');
+                resetRegCodePage();
+                return;
+            }
+
+            // Try native Google Sign-In first
+            if (googleAuthReady) {
+                try {
+                    console.log('Using native Google Sign-In for registration...');
+                    const result = await window.Capacitor.Plugins.GoogleAuth.signIn();
+
+                    if (result && result.authentication && result.authentication.idToken) {
+                        showLoading();
+                        const res = await fetch(`${API_BASE}/api/patients/auth/google`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                idToken: result.authentication.idToken,
+                                registration_code: validatedRegCode
+                            })
+                        });
+                        const data = await res.json();
+
+                        if (res.ok && data.token) {
+                            localStorage.setItem('vps_auth_token', data.token);
+                            if (data.user) localStorage.setItem('patient_user', JSON.stringify(data.user));
+                            localStorage.setItem('auth_provider', 'google');
+                            localStorage.setItem('from_mobile_app', 'true');
+                            validatedRegCode = null;
+                            let url = `${DASHBOARD_URL}?token=${encodeURIComponent(data.token)}`;
+                            const user = localStorage.getItem('patient_user');
+                            if (user) url += `&user=${encodeURIComponent(user)}`;
+                            window.location.href = url;
+                            return;
+                        }
+
+                        document.getElementById('loading-overlay').classList.add('hidden');
+                        showError('regcode-error', data.message || 'Registrasi gagal');
+                        return;
+                    }
+                } catch (e) {
+                    console.log('Native failed, using web:', e.message);
+                    document.getElementById('loading-overlay').classList.add('hidden');
+                }
+            }
+
+            // Fallback to web OAuth (code will be passed via callback)
+            console.log('Using web OAuth for registration...');
+            localStorage.setItem('pending_reg_code', validatedRegCode);
+            const redirectUri = encodeURIComponent('https://dokterdibya.com/mobile-google-callback.html');
+            const scope = encodeURIComponent('email profile');
+            const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_WEB_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent`;
+            window.open(googleAuthUrl, '_system');
         };
 
         // Show loading overlay and hide intro
@@ -1185,7 +1264,7 @@
             setLoading('btn-forgot', false);
         });
 
-        // REGISTRATION CODE (for Google Sign-In new users)
+        // REGISTRATION CODE - Validate code first, then Google Sign-In
         document.getElementById('regcode-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             document.getElementById('regcode-error').classList.remove('show');
@@ -1197,7 +1276,7 @@
                 return;
             }
 
-            await submitGoogleWithCode(code);
+            await validateRegCode(code);
         });
     </script>
 </body>
