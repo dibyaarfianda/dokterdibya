@@ -810,17 +810,17 @@
             }
         })();
 
-        window.loginWithGoogle = async function() {
+        window.loginWithGoogle = async function(isRetry = false) {
             // Try native Google Sign-In first (fast, single tap)
             if (googleAuthReady) {
                 try {
-                    // Sign out first to clear stale session (fixes "first tap fails" issue)
+                    // Sign out first to clear stale session
                     try {
                         await window.Capacitor.Plugins.GoogleAuth.signOut();
-                        await new Promise(r => setTimeout(r, 300)); // Small delay for cleanup
+                        await new Promise(r => setTimeout(r, isRetry ? 500 : 300));
                     } catch (e) { /* ignore */ }
 
-                    console.log('Using native Google Sign-In...');
+                    console.log('Using native Google Sign-In...', isRetry ? '(retry)' : '');
                     const result = await window.Capacitor.Plugins.GoogleAuth.signIn();
 
                     if (result && result.authentication && result.authentication.idToken) {
@@ -853,6 +853,13 @@
                             document.getElementById('loading-overlay').classList.add('hidden');
                             showError('login-error', 'Akun belum terdaftar. Silakan klik "Daftar" untuk membuat akun baru.');
                             return;
+                        }
+
+                        // Auto-retry once if auth failed (stale token issue)
+                        if (!isRetry && data.message && data.message.includes('gagal')) {
+                            console.log('Auth failed, auto-retrying...');
+                            document.getElementById('loading-overlay').classList.add('hidden');
+                            return loginWithGoogle(true);
                         }
 
                         document.getElementById('loading-overlay').classList.add('hidden');
@@ -926,7 +933,7 @@
         };
 
         // Register with Google (uses pre-validated code)
-        window.registerWithGoogle = async function() {
+        window.registerWithGoogle = async function(isRetry = false) {
             if (!validatedRegCode) {
                 showError('regcode-error', 'Kode registrasi belum divalidasi');
                 resetRegCodePage();
@@ -936,13 +943,13 @@
             // Try native Google Sign-In first
             if (googleAuthReady) {
                 try {
-                    // Sign out first to clear stale session (fixes "first tap fails" issue)
+                    // Sign out first to clear stale session
                     try {
                         await window.Capacitor.Plugins.GoogleAuth.signOut();
-                        await new Promise(r => setTimeout(r, 300)); // Small delay for cleanup
+                        await new Promise(r => setTimeout(r, isRetry ? 500 : 300));
                     } catch (e) { /* ignore */ }
 
-                    console.log('Using native Google Sign-In for registration...');
+                    console.log('Using native Google Sign-In for registration...', isRetry ? '(retry)' : '');
                     const result = await window.Capacitor.Plugins.GoogleAuth.signIn();
 
                     if (result && result.authentication && result.authentication.idToken) {
@@ -969,6 +976,13 @@
                             if (user) url += `&user=${encodeURIComponent(user)}`;
                             window.location.href = url;
                             return;
+                        }
+
+                        // Auto-retry once if auth failed (stale token issue)
+                        if (!isRetry && data.message && data.message.includes('gagal')) {
+                            console.log('Auth failed, auto-retrying...');
+                            document.getElementById('loading-overlay').classList.add('hidden');
+                            return registerWithGoogle(true);
                         }
 
                         document.getElementById('loading-overlay').classList.add('hidden');
