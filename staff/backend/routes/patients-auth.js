@@ -398,6 +398,8 @@ router.post('/auth/google', async (req, res) => {
         const registrationCode = req.body.registration_code || req.body.registrationCode;
         const appVersion = req.body.app_version;
 
+        console.log(`[GOOGLE-AUTH] Request received - hasIdToken: ${!!req.body.idToken}, hasCredential: ${!!req.body.credential}, appVersion: ${appVersion}, regCode: ${registrationCode || 'none'}`);
+
         // Minimum app version required for new registrations (must have registration code flow)
         const MIN_APP_VERSION = '1.0.3';
 
@@ -455,6 +457,20 @@ router.post('/auth/google', async (req, res) => {
             // NEW PATIENT
             isNewPatient = true;
 
+            // Check if this is a mobile app request (uses idToken, not credential from web)
+            const isMobileApp = req.body.idToken && !req.body.credential;
+
+            // CRITICAL: Old mobile apps that don't send app_version cannot register new patients
+            // They must update to v1.0.3+ which has the registration code flow
+            if (isMobileApp && !appVersion) {
+                logger.warn(`Old mobile app without version tried to register new patient: ${email}`);
+                return res.status(400).json({
+                    message: 'Versi aplikasi sudah tidak didukung. Silakan update aplikasi ke versi terbaru.',
+                    update_required: true,
+                    min_version: MIN_APP_VERSION
+                });
+            }
+
             // Version check for mobile app - old versions cannot register new patients
             if (appVersion) {
                 // Compare semantic versions (e.g., "1.0.2" vs "1.0.3")
@@ -483,12 +499,14 @@ router.post('/auth/google', async (req, res) => {
 
             // Check if registration code is required (from settings)
             const codeRequired = await isRegistrationCodeRequired();
+            console.log(`[GOOGLE-AUTH] New patient ${email} - codeRequired: ${codeRequired}, registrationCode: ${registrationCode || 'none'}, appVersion: ${appVersion || 'none'}`);
 
             let validCode = null;
 
             if (codeRequired) {
                 // Registration code is required
                 if (!registrationCode) {
+                    console.log(`[GOOGLE-AUTH] Blocking new patient ${email} - no registration code provided`);
                     return res.status(400).json({
                         message: 'Kode registrasi diperlukan untuk pendaftaran baru. Hubungi klinik untuk mendapatkan kode.',
                         code_required: true,
@@ -628,8 +646,8 @@ router.post('/auth/google', async (req, res) => {
 // Google OAuth Code Exchange (for mobile app)
 router.post('/google-auth-code', async (req, res) => {
     try {
-        const { code, redirectUri } = req.body;
-        console.log('[GOOGLE-AUTH] Received request with code length:', code?.length || 0);
+        const { code, redirectUri, registration_code: registrationCode } = req.body;
+        console.log('[GOOGLE-AUTH-CODE] Received request with code length:', code?.length || 0, 'regCode:', registrationCode || 'none');
 
         if (!code) {
             console.log('[GOOGLE-AUTH] No code provided');
@@ -698,9 +716,50 @@ router.post('/google-auth-code', async (req, res) => {
             patient.email_verified = 1;
             patient.photo_url = picture;
         } else {
+            // NEW PATIENT - Check registration code requirement
+            const codeRequired = await isRegistrationCodeRequired();
+            console.log('[GOOGLE-AUTH-CODE] New patient', email, '- codeRequired:', codeRequired, 'registrationCode:', registrationCode || 'none');
+
+            if (codeRequired) {
+                if (!registrationCode) {
+                    console.log('[GOOGLE-AUTH-CODE] Blocking new patient', email, '- no registration code provided');
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Kode registrasi diperlukan untuk pendaftaran baru.',
+                        code_required: true,
+                        is_new_patient: true
+                    });
+                }
+
+                // Validate registration code
+                const [codes] = await db.query(
+                    `SELECT * FROM registration_codes
+                     WHERE code = ? AND is_active = 1 AND (expires_at IS NULL OR expires_at > NOW())
+                     AND (max_uses IS NULL OR current_uses < max_uses)`,
+                    [registrationCode]
+                );
+
+                if (codes.length === 0) {
+                    console.log('[GOOGLE-AUTH-CODE] Invalid registration code:', registrationCode);
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Kode registrasi tidak valid atau sudah kadaluarsa.',
+                        code_required: true,
+                        is_new_patient: true
+                    });
+                }
+
+                // Increment usage count
+                await db.query(
+                    'UPDATE registration_codes SET current_uses = current_uses + 1 WHERE id = ?',
+                    [codes[0].id]
+                );
+                console.log('[GOOGLE-AUTH-CODE] Registration code validated:', registrationCode);
+            }
+
             // Create new patient
             const medicalRecordId = await generateUniqueMedicalRecordId();
-            console.log('[GOOGLE-AUTH] Creating new patient:', medicalRecordId, 'for email:', email);
+            console.log('[GOOGLE-AUTH-CODE] Creating new patient:', medicalRecordId, 'for email:', email);
 
             await db.query(
                 `INSERT INTO patients (id, full_name, email, google_id, photo_url, email_verified, registration_date, status)
@@ -716,7 +775,7 @@ router.post('/google-auth-code', async (req, res) => {
                 google_id: googleId,
                 photo_url: picture
             };
-            console.log('[GOOGLE-AUTH] Patient created successfully');
+            console.log('[GOOGLE-AUTH-CODE] Patient created successfully');
         }
 
         // Generate JWT token
