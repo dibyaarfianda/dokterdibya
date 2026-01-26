@@ -757,8 +757,9 @@
 
     <!-- Main app script -->
     <script>
+        const APP_VERSION = '1.0.3';
         console.log('=== DOKTERDIBYA MOBILE APP LOADED ===');
-        console.log('Version: 1.0.2 - Debug build');
+        console.log('Version:', APP_VERSION);
 
         const API_BASE = 'https://dokterdibya.com';
         const DASHBOARD_URL = 'https://dokterdibya.com/patient-dashboard.html';
@@ -821,7 +822,10 @@
                         const res = await fetch(`${API_BASE}/api/patients/auth/google`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ idToken: result.authentication.idToken })
+                            body: JSON.stringify({
+                                idToken: result.authentication.idToken,
+                                app_version: APP_VERSION
+                            })
                         });
                         const data = await res.json();
 
@@ -924,7 +928,8 @@
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 idToken: result.authentication.idToken,
-                                registration_code: validatedRegCode
+                                registration_code: validatedRegCode,
+                                app_version: APP_VERSION
                             })
                         });
                         const data = await res.json();
