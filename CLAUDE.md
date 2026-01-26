@@ -967,34 +967,41 @@ container.style.cssText = 'min-height: 250px !important; max-height: 400px !impo
 
 **The login endpoint `/api/auth/patient-login` checks `users.password_hash`, NOT `patients.password`.**
 
-**Always update the `users` table for password changes:**
+**USE THE CENTRALIZED SERVICE:**
 
-```sql
--- WRONG - This won't work for login!
-UPDATE patients SET password = '...' WHERE email = '...';
+When updating patient passwords in code, ALWAYS use `PatientPasswordService`:
 
--- CORRECT - This is what login checks
-UPDATE users SET password_hash = '...' WHERE email = '...';
+```javascript
+const PatientPasswordService = require('../services/PatientPasswordService');
+
+// Option 1: With plain password (will hash automatically)
+await PatientPasswordService.hashAndUpdatePassword({
+    patientId: patient.id,      // or use email
+    email: patient.email,       // optional if patientId provided
+    plainPassword: 'newpassword123'
+});
+
+// Option 2: With pre-hashed password
+await PatientPasswordService.updatePassword({
+    patientId: patient.id,
+    hashedPassword: hashedPassword
+});
 ```
 
-**Use the helper script:**
+**NEVER do this:**
+```javascript
+// WRONG - Only updates one table!
+await db.query('UPDATE patients SET password = ? WHERE id = ?', [hash, id]);
+```
+
+**For manual/CLI password reset, use the helper script:**
 
 ```bash
-# Reset patient password
 /var/www/dokterdibya/scripts/reset-patient-password.sh patient@email.com newpassword123
-```
-
-**Manual method:**
-
-```bash
-# 1. Generate bcrypt hash
-cd /var/www/dokterdibya/staff/backend
-node -e "console.log(require('bcryptjs').hashSync('newpassword123', 10))"
-
-# 2. Update users table (NOT patients table!)
-mysql -u root dibyaklinik -e "UPDATE users SET password_hash = '\$2b\$10\$...' WHERE email = 'patient@email.com';"
 ```
 
 **Why two tables?**
 - `patients` table: Patient profile data (name, birth_date, medical info)
 - `users` table: Authentication data for ALL users (staff + patients), with `user_type` column to distinguish
+
+**Service location:** `staff/backend/services/PatientPasswordService.js`

@@ -11,6 +11,7 @@ const cache = require('../utils/cache');
 const { deletePatientWithRelations } = require('../services/patientDeletion');
 const r2Storage = require('../services/r2Storage');
 const logger = require('../utils/logger');
+const PatientPasswordService = require('../services/PatientPasswordService');
 const { ROLE_NAMES, isSuperadminRole } = require('../constants/roles');
 
 // Configure multer for profile photo upload (memory storage for R2)
@@ -860,18 +861,16 @@ router.post('/set-password', verifyToken, async (req, res) => {
             });
         }
         
-        // Hash password
-        const hashedPassword = await bcrypt.hash(password, 10);
-        
-        // Update patient password
-        await db.query(
-            'UPDATE patients SET password = ?, updated_at = NOW() WHERE id = ?',
-            [hashedPassword, req.user.id]
-        );
-        
-        res.json({ 
+        // Update password in BOTH tables using centralized service
+        await PatientPasswordService.hashAndUpdatePassword({
+            patientId: req.user.id,
+            email: req.user.email,
+            plainPassword: password
+        });
+
+        res.json({
             success: true,
-            message: 'Password berhasil diatur. Anda sekarang dapat login dengan email dan password.' 
+            message: 'Password berhasil diatur. Anda sekarang dapat login dengan email dan password.'
         });
         
     } catch (error) {
@@ -942,18 +941,16 @@ router.post('/change-password', verifyToken, async (req, res) => {
             });
         }
         
-        // Hash new password
-        const hashedPassword = await bcrypt.hash(new_password, 10);
-        
-        // Update password
-        await db.query(
-            'UPDATE patients SET password = ?, updated_at = NOW() WHERE id = ?',
-            [hashedPassword, req.user.id]
-        );
-        
-        res.json({ 
+        // Update password in BOTH tables using centralized service
+        await PatientPasswordService.hashAndUpdatePassword({
+            patientId: req.user.id,
+            email: req.user.email,
+            plainPassword: new_password
+        });
+
+        res.json({
             success: true,
-            message: 'Password berhasil diubah' 
+            message: 'Password berhasil diubah'
         });
         
     } catch (error) {
@@ -1710,7 +1707,8 @@ router.post('/reset-password', async (req, res) => {
         // Hash new password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Update password and clear reset token
+        // Update password in BOTH tables (patients AND users)
+        // IMPORTANT: Login checks users.password_hash, not patients.password!
         await db.query(
             `UPDATE patients
              SET password = ?, reset_token = NULL, reset_token_expires = NULL, updated_at = NOW()
@@ -1718,7 +1716,15 @@ router.post('/reset-password', async (req, res) => {
             [hashedPassword, patient.id]
         );
 
-        console.log(`Password reset successful for patient: ${patient.email} (ID: ${patient.id})`);
+        // Also update users table - this is what login actually checks!
+        await db.query(
+            `UPDATE users
+             SET password_hash = ?, updated_at = NOW()
+             WHERE email = ? AND user_type = 'patient'`,
+            [hashedPassword, email]
+        );
+
+        console.log(`Password reset successful for patient: ${patient.email} (ID: ${patient.id}) - Updated both patients and users tables`);
 
         res.json({
             success: true,

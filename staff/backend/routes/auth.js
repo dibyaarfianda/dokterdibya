@@ -13,6 +13,7 @@ const logger = require('../utils/logger');
 const { deletePatientWithRelations, deletePatientByEmail } = require('../services/patientDeletion');
 const { ROLE_IDS, isSuperadminRole } = require('../constants/roles');
 const activityLogger = require('../services/activityLogger');
+const PatientPasswordService = require('../services/PatientPasswordService');
 
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || '7d';
 
@@ -795,15 +796,12 @@ router.post('/api/auth/reset-password', asyncHandler(async (req, res) => {
         throw new AppError('Invalid or expired token.', HTTP_STATUS.BAD_REQUEST);
     }
 
-    // 3. Hash the new password
-    const newPasswordHash = await bcrypt.hash(newPassword, 10);
-
-    // 4. Update the patient's password
+    // 3. Update patient password in BOTH tables using centralized service
     try {
-        await db.query(
-            'UPDATE patients SET password = ? WHERE id = ?',
-            [newPasswordHash, patientId]
-        );
+        await PatientPasswordService.hashAndUpdatePassword({
+            patientId: patientId,
+            plainPassword: newPassword
+        });
     } catch (dbError) {
         handleDatabaseError(dbError);
     }

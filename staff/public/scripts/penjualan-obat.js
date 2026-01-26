@@ -110,27 +110,82 @@ function renderPage() {
     const container = document.getElementById('penjualan-obat-page');
     if (!container) return;
 
+    // Get current month date range as default
+    const now = new Date();
+    const firstDayOfMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
     container.innerHTML = `
         <div class="container-fluid">
-            <!-- Header with New Sale Button -->
+            <!-- Header with New Sale Button and Filters -->
             <div class="row mb-3">
                 <div class="col-12">
-                    <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
                         <button class="btn btn-primary" id="btn-new-obat-sale">
                             <i class="fas fa-plus"></i> Penjualan Baru
                         </button>
-                        <div class="d-flex gap-2">
-                            <select class="form-control" id="filter-status" style="width: 180px;">
+                        <div class="d-flex gap-2 flex-wrap align-items-center">
+                            <div class="input-group" style="width: auto;">
+                                <div class="input-group-prepend">
+                                    <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+                                </div>
+                                <input type="date" class="form-control" id="filter-date-from" value="${firstDayOfMonth}" style="width: 140px;">
+                                <div class="input-group-prepend input-group-append">
+                                    <span class="input-group-text">s/d</span>
+                                </div>
+                                <input type="date" class="form-control" id="filter-date-to" value="${today}" style="width: 140px;">
+                            </div>
+                            <select class="form-control" id="filter-status" style="width: 150px;">
                                 <option value="">Semua Status</option>
                                 <option value="draft">Draft</option>
                                 <option value="payment_pending">Payment Pending</option>
                                 <option value="paid">Paid</option>
                             </select>
-                            <select class="form-control" id="filter-hospital" style="width: 180px;">
+                            <select class="form-control" id="filter-hospital" style="width: 150px;">
                                 <option value="">Semua RS</option>
                                 ${HOSPITALS.map(h => `<option value="${h.value}">${h.label}</option>`).join('')}
                             </select>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Cards -->
+            <div class="row mb-3">
+                <div class="col-md-3 col-sm-6">
+                    <div class="small-box bg-success">
+                        <div class="inner">
+                            <h4 id="summary-paid">Rp 0</h4>
+                            <p>Total Lunas</p>
+                        </div>
+                        <div class="icon"><i class="fas fa-check-circle"></i></div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="small-box bg-warning">
+                        <div class="inner">
+                            <h4 id="summary-pending">Rp 0</h4>
+                            <p>Total Pending</p>
+                        </div>
+                        <div class="icon"><i class="fas fa-clock"></i></div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="small-box bg-info">
+                        <div class="inner">
+                            <h4 id="summary-draft">Rp 0</h4>
+                            <p>Total Draft</p>
+                        </div>
+                        <div class="icon"><i class="fas fa-file-alt"></i></div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-sm-6">
+                    <div class="small-box bg-primary">
+                        <div class="inner">
+                            <h4 id="summary-total">Rp 0</h4>
+                            <p>Grand Total</p>
+                        </div>
+                        <div class="icon"><i class="fas fa-calculator"></i></div>
                     </div>
                 </div>
             </div>
@@ -140,7 +195,7 @@ function renderPage() {
                 <div class="col-12">
                     <div class="card">
                         <div class="card-header">
-                            <h3 class="card-title">Daftar Penjualan Obat</h3>
+                            <h3 class="card-title">Daftar Penjualan Obat <span id="sales-count" class="badge badge-secondary ml-2">0</span></h3>
                         </div>
                         <div class="card-body table-responsive p-0">
                             <table class="table table-hover table-striped" id="obat-sales-table">
@@ -295,6 +350,8 @@ function setupEventListeners() {
     // Filter changes
     document.getElementById('filter-status')?.addEventListener('change', loadSales);
     document.getElementById('filter-hospital')?.addEventListener('change', loadSales);
+    document.getElementById('filter-date-from')?.addEventListener('change', loadSales);
+    document.getElementById('filter-date-to')?.addEventListener('change', loadSales);
 
     // Add obat item
     document.getElementById('btn-add-obat-item')?.addEventListener('click', addObatItemRow);
@@ -319,13 +376,24 @@ async function loadSales() {
     try {
         const status = document.getElementById('filter-status')?.value || '';
         const hospital = document.getElementById('filter-hospital')?.value || '';
+        const dateFrom = document.getElementById('filter-date-from')?.value || '';
+        const dateTo = document.getElementById('filter-date-to')?.value || '';
 
-        let endpoint = '/obat-sales?';
+        let endpoint = '/obat-sales?limit=10000&';
         if (status) endpoint += `status=${status}&`;
         if (hospital) endpoint += `hospital_source=${hospital}&`;
+        if (dateFrom) endpoint += `date_from=${dateFrom}&`;
+        if (dateTo) endpoint += `date_to=${dateTo}&`;
 
         const data = await apiRequest(endpoint);
         currentSales = data.data || [];
+
+        // Update summary cards
+        updateSummary(currentSales);
+
+        // Update sales count
+        const countEl = document.getElementById('sales-count');
+        if (countEl) countEl.textContent = currentSales.length;
 
         if (currentSales.length === 0) {
             tbody.innerHTML = `
@@ -383,7 +451,38 @@ async function loadSales() {
                 </td>
             </tr>
         `;
+        updateSummary([]);
     }
+}
+
+// Update summary cards
+function updateSummary(sales) {
+    let totalPaid = 0;
+    let totalPending = 0;
+    let totalDraft = 0;
+
+    sales.forEach(sale => {
+        const amount = parseFloat(sale.total) || 0;
+        if (sale.status === 'paid') {
+            totalPaid += amount;
+        } else if (sale.status === 'payment_pending' || sale.status === 'confirmed') {
+            totalPending += amount;
+        } else if (sale.status === 'draft') {
+            totalDraft += amount;
+        }
+    });
+
+    const grandTotal = totalPaid + totalPending + totalDraft;
+
+    const paidEl = document.getElementById('summary-paid');
+    const pendingEl = document.getElementById('summary-pending');
+    const draftEl = document.getElementById('summary-draft');
+    const totalEl = document.getElementById('summary-total');
+
+    if (paidEl) paidEl.textContent = formatRupiah(totalPaid);
+    if (pendingEl) pendingEl.textContent = formatRupiah(totalPending);
+    if (draftEl) draftEl.textContent = formatRupiah(totalDraft);
+    if (totalEl) totalEl.textContent = formatRupiah(grandTotal);
 }
 
 // Get status badge HTML
