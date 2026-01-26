@@ -33,6 +33,7 @@ import com.dokterdibya.patient.data.model.ExistingIntake
 import com.dokterdibya.patient.data.local.*
 import com.dokterdibya.patient.data.api.NetworkException
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import retrofit2.Response
 import okhttp3.MultipartBody
@@ -132,13 +133,20 @@ class PatientRepository @Inject constructor(
             var lastException: Exception? = null
             var lastResponse: Response<AuthResponse>? = null
             
-            android.util.Log.d("GoogleLogin", "Starting Google login with auth code length: ${authCode.length}")
+            // Retrieve the saved registration code (if any)
+            val savedRegistrationCode = tokenRepository.getRegistrationCode().first()
+            android.util.Log.d("GoogleLogin", "Starting Google login with auth code length: ${authCode.length}, registrationCode: ${savedRegistrationCode?.let { "present" } ?: "none"}")
             
             // Retry up to 3 times with exponential backoff
             for (attempt in 1..3) {
                 try {
                     android.util.Log.d("GoogleLogin", "Attempt $attempt/3")
-                    val response = apiService.googleAuth(GoogleAuthRequest(code = authCode))
+                    val response = apiService.googleAuth(
+                        GoogleAuthRequest(
+                            code = authCode,
+                            registration_code = savedRegistrationCode
+                        )
+                    )
                     lastResponse = response
                     
                     if (response.isSuccessful && response.body() != null) {
@@ -150,6 +158,8 @@ class PatientRepository @Inject constructor(
                             authResponse.patientData?.let { patient ->
                                 tokenRepository.saveUserInfo(patient.name, patient.email ?: "")
                             }
+                            // Clear the registration code after successful login
+                            tokenRepository.saveRegistrationCode("")
                         }
                         return Result.success(authResponse)
                     } else if (response.code() >= 500) {

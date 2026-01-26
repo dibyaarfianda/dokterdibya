@@ -1,5 +1,6 @@
 package com.dokterdibya.patient.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dokterdibya.patient.data.repository.PatientRepository
@@ -63,6 +64,10 @@ class RegistrationCodeViewModel @Inject constructor(
 
             patientRepository.validateRegistrationCode(code).fold(
                 onSuccess = {
+                    // Save the registration code for later use with Google Sign-In
+                    tokenRepository.saveRegistrationCode(code)
+                    android.util.Log.d("RegistrationCodeViewModel", "Registration code validated and saved")
+                    
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         isValid = true,
