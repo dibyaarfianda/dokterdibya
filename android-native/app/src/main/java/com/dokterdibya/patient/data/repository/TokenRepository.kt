@@ -33,13 +33,18 @@ class TokenRepository @Inject constructor(
     @Volatile
     private var cachedToken: String? = null
 
+    // Cached registration code for synchronous access
+    @Volatile
+    private var cachedRegistrationCode: String? = null
+
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     init {
-        // Initialize cached token from DataStore
+        // Initialize cached token and registration code from DataStore
         scope.launch {
             context.dataStore.data.collect { preferences ->
                 cachedToken = preferences[TOKEN_KEY]
+                cachedRegistrationCode = preferences[REGISTRATION_CODE_KEY]
             }
         }
     }
@@ -101,7 +106,11 @@ class TokenRepository @Inject constructor(
         context.dataStore.edit { preferences ->
             preferences[REGISTRATION_CODE_KEY] = code
         }
+        // Update cache
+        cachedRegistrationCode = code
     }
+
+    fun getCachedRegistrationCode(): String? = cachedRegistrationCode
 
     fun getRegistrationCode(): Flow<String?> {
         return context.dataStore.data.map { preferences ->
