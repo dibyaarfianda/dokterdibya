@@ -448,51 +448,61 @@ router.post('/auth/google', async (req, res) => {
             }
             patient.email_verified = 1;
         } else {
-            // NEW PATIENT - Require registration code
+            // NEW PATIENT
             isNewPatient = true;
 
-            if (!registrationCode) {
-                return res.status(400).json({
-                    message: 'Kode registrasi diperlukan untuk pendaftaran baru. Hubungi klinik untuk mendapatkan kode.',
-                    code_required: true,
-                    is_new_patient: true
-                });
-            }
+            // Check if registration code is required (from settings)
+            const codeRequired = await isRegistrationCodeRequired();
 
-            // Validate registration code
-            const normalizedCode = registrationCode.toUpperCase().trim();
-            const [validCodes] = await db.query(
-                `SELECT * FROM registration_codes
-                 WHERE code = ? AND status = 'active' AND expires_at > NOW()`,
-                [normalizedCode]
-            );
+            let validCode = null;
 
-            if (validCodes.length === 0) {
-                // Check if code exists but expired/used
-                const [expiredCodes] = await db.query(
-                    'SELECT * FROM registration_codes WHERE code = ?',
+            if (codeRequired) {
+                // Registration code is required
+                if (!registrationCode) {
+                    return res.status(400).json({
+                        message: 'Kode registrasi diperlukan untuk pendaftaran baru. Hubungi klinik untuk mendapatkan kode.',
+                        code_required: true,
+                        is_new_patient: true
+                    });
+                }
+
+                // Validate registration code
+                const normalizedCode = registrationCode.toUpperCase().trim();
+                const [validCodes] = await db.query(
+                    `SELECT * FROM registration_codes
+                     WHERE code = ? AND status = 'active' AND expires_at > NOW()`,
                     [normalizedCode]
                 );
 
-                if (expiredCodes.length > 0) {
-                    const existingCode = expiredCodes[0];
-                    if (existingCode.status === 'used') {
-                        return res.status(400).json({
-                            message: 'Kode registrasi sudah digunakan',
-                            code_required: true
-                        });
-                    } else if (new Date(existingCode.expires_at) < new Date()) {
-                        return res.status(400).json({
-                            message: 'Kode registrasi sudah kadaluarsa',
-                            code_required: true
-                        });
+                if (validCodes.length === 0) {
+                    // Check if code exists but expired/used
+                    const [expiredCodes] = await db.query(
+                        'SELECT * FROM registration_codes WHERE code = ?',
+                        [normalizedCode]
+                    );
+
+                    if (expiredCodes.length > 0) {
+                        const existingCode = expiredCodes[0];
+                        if (existingCode.status === 'used') {
+                            return res.status(400).json({
+                                message: 'Kode registrasi sudah digunakan',
+                                code_required: true
+                            });
+                        } else if (new Date(existingCode.expires_at) < new Date()) {
+                            return res.status(400).json({
+                                message: 'Kode registrasi sudah kadaluarsa',
+                                code_required: true
+                            });
+                        }
                     }
+
+                    return res.status(400).json({
+                        message: 'Kode registrasi tidak valid',
+                        code_required: true
+                    });
                 }
 
-                return res.status(400).json({
-                    message: 'Kode registrasi tidak valid',
-                    code_required: true
-                });
+                validCode = validCodes[0];
             }
 
             // Create new patient with medical record ID
@@ -504,18 +514,17 @@ router.post('/auth/google', async (req, res) => {
                 [medicalRecordId, name, email, googleId, picture]
             );
 
-            // Mark non-public registration code as used
-            const regCode = validCodes[0];
-            if (!regCode.is_public) {
+            // Mark non-public registration code as used (if code was required and provided)
+            if (validCode && !validCode.is_public) {
                 await db.query(
                     `UPDATE registration_codes
                      SET status = 'used', used_at = NOW(), used_by_patient_id = ?
                      WHERE id = ?`,
-                    [medicalRecordId, regCode.id]
+                    [medicalRecordId, validCode.id]
                 );
             }
 
-            console.log(`New Google patient registered: ${email} with code ${normalizedCode}`);
+            console.log(`New Google patient registered: ${email}${validCode ? ` with code ${validCode.code}` : ' (no code required)'}`);
 
             patient = {
                 id: medicalRecordId,
