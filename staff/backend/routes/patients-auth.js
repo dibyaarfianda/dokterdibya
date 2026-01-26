@@ -395,6 +395,7 @@ router.post('/auth/google', async (req, res) => {
     try {
         // Accept both 'credential' (web) and 'idToken' (mobile native) field names
         const idToken = req.body.credential || req.body.idToken;
+        const registrationCode = req.body.registration_code || req.body.registrationCode;
 
         if (!idToken) {
             return res.status(400).json({ message: 'Token tidak ditemukan' });
@@ -408,22 +409,23 @@ router.post('/auth/google', async (req, res) => {
             idToken: idToken,
             audience: [GOOGLE_CLIENT_ID, ANDROID_CLIENT_ID]
         });
-        
+
         const payload = ticket.getPayload();
         const { email, name, sub: googleId, picture } = payload;
-        
+
         // Check if patient exists
         const [existingPatients] = await db.query(
             'SELECT * FROM patients WHERE email = ?',
             [email]
         );
-        
+
         let patient;
-        
+        let isNewPatient = false;
+
         if (existingPatients.length > 0) {
             // Update Google ID if not set
             patient = existingPatients[0];
-            
+
             // Generate medical record ID if not exists
             if (!patient.id) {
                 const medicalRecordId = await generateUniqueMedicalRecordId();
@@ -446,15 +448,75 @@ router.post('/auth/google', async (req, res) => {
             }
             patient.email_verified = 1;
         } else {
+            // NEW PATIENT - Require registration code
+            isNewPatient = true;
+
+            if (!registrationCode) {
+                return res.status(400).json({
+                    message: 'Kode registrasi diperlukan untuk pendaftaran baru. Hubungi klinik untuk mendapatkan kode.',
+                    code_required: true,
+                    is_new_patient: true
+                });
+            }
+
+            // Validate registration code
+            const normalizedCode = registrationCode.toUpperCase().trim();
+            const [validCodes] = await db.query(
+                `SELECT * FROM registration_codes
+                 WHERE code = ? AND status = 'active' AND expires_at > NOW()`,
+                [normalizedCode]
+            );
+
+            if (validCodes.length === 0) {
+                // Check if code exists but expired/used
+                const [expiredCodes] = await db.query(
+                    'SELECT * FROM registration_codes WHERE code = ?',
+                    [normalizedCode]
+                );
+
+                if (expiredCodes.length > 0) {
+                    const existingCode = expiredCodes[0];
+                    if (existingCode.status === 'used') {
+                        return res.status(400).json({
+                            message: 'Kode registrasi sudah digunakan',
+                            code_required: true
+                        });
+                    } else if (new Date(existingCode.expires_at) < new Date()) {
+                        return res.status(400).json({
+                            message: 'Kode registrasi sudah kadaluarsa',
+                            code_required: true
+                        });
+                    }
+                }
+
+                return res.status(400).json({
+                    message: 'Kode registrasi tidak valid',
+                    code_required: true
+                });
+            }
+
             // Create new patient with medical record ID
             const medicalRecordId = await generateUniqueMedicalRecordId();
-            
+
             const [result] = await db.query(
-                `INSERT INTO patients (id, full_name, email, google_id, photo_url, email_verified, registration_date, status) 
+                `INSERT INTO patients (id, full_name, email, google_id, photo_url, email_verified, registration_date, status)
                  VALUES (?, ?, ?, ?, ?, 1, NOW(), 'active')`,
                 [medicalRecordId, name, email, googleId, picture]
             );
-            
+
+            // Mark non-public registration code as used
+            const regCode = validCodes[0];
+            if (!regCode.is_public) {
+                await db.query(
+                    `UPDATE registration_codes
+                     SET status = 'used', used_at = NOW(), used_by_patient_id = ?
+                     WHERE id = ?`,
+                    [medicalRecordId, regCode.id]
+                );
+            }
+
+            console.log(`New Google patient registered: ${email} with code ${normalizedCode}`);
+
             patient = {
                 id: medicalRecordId,
                 medical_record_id: medicalRecordId,
@@ -480,9 +542,30 @@ router.post('/auth/google', async (req, res) => {
             { expiresIn: JWT_EXPIRES_IN }
         );
         
+        // Ensure user record exists in users table for new patients
+        if (isNewPatient) {
+            const [existingUser] = await db.query(
+                'SELECT id FROM users WHERE email = ?',
+                [patient.email]
+            );
+
+            if (existingUser.length === 0) {
+                await db.query(
+                    `INSERT INTO users (email, name, user_type, password_hash, created_at)
+                     VALUES (?, ?, 'patient', '', NOW())`,
+                    [patient.email, patient.full_name]
+                );
+            }
+        }
+
+        // Check if profile is incomplete (needs phone/birth_date)
+        const needsProfileCompletion = !patient.phone || !patient.birth_date;
+
         res.json({
-            message: 'Login dengan Google berhasil',
+            message: isNewPatient ? 'Pendaftaran dengan Google berhasil' : 'Login dengan Google berhasil',
             token,
+            is_new_patient: isNewPatient,
+            needs_profile_completion: needsProfileCompletion,
             user: {
                 id: patient.id,
                 medicalRecordId: patient.id,
@@ -496,7 +579,7 @@ router.post('/auth/google', async (req, res) => {
                 role: 'patient'
             }
         });
-        
+
     } catch (error) {
         console.error('Google auth error:', error);
         res.status(401).json({ message: 'Autentikasi Google gagal' });

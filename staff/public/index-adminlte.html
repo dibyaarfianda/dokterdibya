@@ -1810,6 +1810,13 @@
                         </a>
                     </li>
 
+                    <li class="nav-item dokter-only d-none" id="nav-patient-activity">
+                        <a href="#" class="nav-link" onclick="showPatientActivityPage(); return false;">
+                            <i class="nav-icon fas fa-user-check"></i>
+                            <p>Aktivitas Pasien</p>
+                        </a>
+                    </li>
+
                     <li class="nav-item dokter-only d-none" id="nav-booking-settings">
                         <a href="#" class="nav-link" onclick="showBookingSettingsPage(); return false;">
                             <i class="nav-icon fas fa-calendar-day"></i>
@@ -5890,6 +5897,128 @@ Contoh Markdown:
                     </div>
                 </div>
 
+                <!-- PATIENT ACTIVITY PAGE -->
+                <div id="patient-activity-page" class="d-none">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h3 class="card-title"><i class="fas fa-user-check mr-2"></i>Aktivitas Pasien</h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-tool" onclick="loadPatientActivity()">
+                                            <i class="fas fa-sync-alt"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Summary Stats -->
+                                    <div class="row mb-4">
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-info">
+                                                <div class="inner">
+                                                    <h3 id="pa-stat-appointments">0</h3>
+                                                    <p>Booking (30 hari)</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-calendar-check"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-success">
+                                                <div class="inner">
+                                                    <h3 id="pa-stat-intakes">0</h3>
+                                                    <p>Intake Forms (30 hari)</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-file-medical"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-warning">
+                                                <div class="inner">
+                                                    <h3 id="pa-stat-registrations">0</h3>
+                                                    <p>Registrasi Baru (30 hari)</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-user-plus"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-primary">
+                                                <div class="inner">
+                                                    <h3 id="pa-stat-total-patients">0</h3>
+                                                    <p>Total Pasien Terdaftar</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-users"></i></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Filters -->
+                                    <div class="row mb-3">
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label>Tipe Aktivitas</label>
+                                                <select class="form-control" id="pa-filter-type" onchange="loadPatientActivity()">
+                                                    <option value="">Semua</option>
+                                                    <option value="booking">Booking</option>
+                                                    <option value="intake">Intake Form</option>
+                                                    <option value="registration">Registrasi</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label>Dari Tanggal</label>
+                                                <input type="date" class="form-control" id="pa-filter-from" onchange="loadPatientActivity()">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label>Sampai Tanggal</label>
+                                                <input type="date" class="form-control" id="pa-filter-to" onchange="loadPatientActivity()">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="form-group">
+                                                <label>Cari Nama/Email</label>
+                                                <input type="text" class="form-control" id="pa-filter-search" placeholder="Ketik untuk mencari..." onkeyup="debouncePatientActivitySearch()">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Activity Table -->
+                                    <div class="table-responsive">
+                                        <table class="table table-hover table-striped">
+                                            <thead>
+                                                <tr>
+                                                    <th style="width:160px">Waktu</th>
+                                                    <th style="width:180px">Pasien</th>
+                                                    <th style="width:120px">Tipe</th>
+                                                    <th>Detail</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody id="patient-activity-body">
+                                                <tr>
+                                                    <td colspan="4" class="text-center text-muted py-4">
+                                                        <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                                                        <p class="mb-0">Memuat data...</p>
+                                                    </td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    <!-- Pagination -->
+                                    <div class="d-flex justify-content-between align-items-center mt-3">
+                                        <div class="text-muted small" id="patient-activity-pagination-info">Menampilkan 0 dari 0</div>
+                                        <nav>
+                                            <ul class="pagination pagination-sm mb-0" id="patient-activity-pagination"></ul>
+                                        </nav>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- NOTIFICATIONS PAGE -->
                 <div id="notifications-page" class="d-none">
                     <div class="row">
@@ -9161,6 +9290,141 @@ Apakah Anda yakin ingin melanjutkan?`;
             console.error('Load staff activity filters error:', error);
         }
     }
+
+    // ============================================
+    // Patient Activity Functions
+    // ============================================
+    let patientActivityPage = 0;
+    const patientActivityLimit = 50;
+    let patientActivitySearchTimeout = null;
+
+    window.showPatientActivityPage = function() {
+        // Hide all pages
+        document.querySelectorAll('[id$="-page"]').forEach(page => page.classList.add('d-none'));
+
+        // Show patient activity page
+        document.getElementById('patient-activity-page').classList.remove('d-none');
+
+        // Update active nav
+        document.querySelectorAll('.nav-link').forEach(link => link.classList.remove('active'));
+        document.querySelector('#nav-patient-activity .nav-link')?.classList.add('active');
+
+        // Hide floating panel
+        const floatingPanel = document.getElementById('floating-kelola-pasien');
+        if (floatingPanel) {
+            floatingPanel.classList.add('d-none');
+        }
+
+        // Set default date range (last 30 days)
+        const today = new Date();
+        const thirtyDaysAgo = new Date(today);
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+        document.getElementById('pa-filter-from').value = thirtyDaysAgo.toISOString().split('T')[0];
+        document.getElementById('pa-filter-to').value = today.toISOString().split('T')[0];
+
+        // Load data
+        loadPatientActivity();
+    };
+
+    window.debouncePatientActivitySearch = function() {
+        clearTimeout(patientActivitySearchTimeout);
+        patientActivitySearchTimeout = setTimeout(() => loadPatientActivity(), 500);
+    };
+
+    window.loadPatientActivity = async function(page = 0) {
+        patientActivityPage = page;
+        const tbody = document.getElementById('patient-activity-body');
+
+        tbody.innerHTML = '<tr><td colspan="4" class="text-center py-4"><i class="fas fa-spinner fa-spin fa-2x mb-2"></i><p class="mb-0">Memuat data...</p></td></tr>';
+
+        try {
+            const token = localStorage.getItem('vps_auth_token');
+            const typeFilter = document.getElementById('pa-filter-type')?.value || '';
+            const fromDate = document.getElementById('pa-filter-from')?.value || '';
+            const toDate = document.getElementById('pa-filter-to')?.value || '';
+            const search = document.getElementById('pa-filter-search')?.value || '';
+
+            let url = `/api/patient-activity?limit=${patientActivityLimit}&offset=${page * patientActivityLimit}`;
+            if (typeFilter) url += `&type=${encodeURIComponent(typeFilter)}`;
+            if (fromDate) url += `&from=${fromDate}`;
+            if (toDate) url += `&to=${toDate}`;
+            if (search) url += `&search=${encodeURIComponent(search)}`;
+
+            const response = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (!response.ok) throw new Error('Failed to load patient activity');
+
+            const result = await response.json();
+            const data = result.data || [];
+            const stats = result.stats || {};
+
+            // Update stats
+            document.getElementById('pa-stat-appointments').textContent = stats.appointments || 0;
+            document.getElementById('pa-stat-intakes').textContent = stats.intakes || 0;
+            document.getElementById('pa-stat-registrations').textContent = stats.registrations || 0;
+            document.getElementById('pa-stat-total-patients').textContent = stats.totalPatients || 0;
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" class="text-center text-muted py-4"><i class="fas fa-inbox fa-2x mb-2"></i><p class="mb-0">Tidak ada aktivitas pasien</p></td></tr>';
+                document.getElementById('patient-activity-pagination-info').textContent = 'No data';
+                document.getElementById('patient-activity-pagination').innerHTML = '';
+                return;
+            }
+
+            tbody.innerHTML = data.map(d => {
+                const date = new Date(d.timestamp);
+                const dateStr = date.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+                const timeStr = date.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+                let typeBadge = '<span class="badge badge-secondary">' + d.type + '</span>';
+                if (d.type === 'booking') {
+                    typeBadge = '<span class="badge badge-info"><i class="fas fa-calendar-check mr-1"></i>Booking</span>';
+                } else if (d.type === 'intake') {
+                    typeBadge = '<span class="badge badge-success"><i class="fas fa-file-medical mr-1"></i>Intake</span>';
+                } else if (d.type === 'registration') {
+                    typeBadge = '<span class="badge badge-warning"><i class="fas fa-user-plus mr-1"></i>Registrasi</span>';
+                }
+
+                return `<tr>
+                    <td><small>${dateStr}<br><span class="text-muted">${timeStr}</span></small></td>
+                    <td><strong>${d.patient_name || '-'}</strong><br><small class="text-muted">${d.patient_email || d.patient_phone || '-'}</small></td>
+                    <td>${typeBadge}</td>
+                    <td><small>${d.details || '-'}</small></td>
+                </tr>`;
+            }).join('');
+
+            // Pagination info
+            const total = result.count || data.length;
+            const start = page * patientActivityLimit + 1;
+            const end = Math.min((page + 1) * patientActivityLimit, total);
+            document.getElementById('patient-activity-pagination-info').textContent = `Showing ${start}-${end} of ${total}`;
+
+            // Pagination buttons
+            const totalPages = Math.ceil(total / patientActivityLimit);
+            const paginationEl = document.getElementById('patient-activity-pagination');
+            let paginationHtml = '';
+            if (page > 0) {
+                paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="loadPatientActivity(${page - 1}); return false;">Prev</a></li>`;
+            }
+            for (let i = 0; i < totalPages && i < 5; i++) {
+                const startPage = Math.max(0, page - 2);
+                const pageNum = startPage + i;
+                if (pageNum >= totalPages) break;
+                paginationHtml += `<li class="page-item ${pageNum === page ? 'active' : ''}"><a class="page-link" href="#" onclick="loadPatientActivity(${pageNum}); return false;">${pageNum + 1}</a></li>`;
+            }
+            if (page < totalPages - 1) {
+                paginationHtml += `<li class="page-item"><a class="page-link" href="#" onclick="loadPatientActivity(${page + 1}); return false;">Next</a></li>`;
+            }
+            paginationEl.innerHTML = paginationHtml;
+
+        } catch (error) {
+            console.error('Load patient activity error:', error);
+            tbody.innerHTML = '<tr><td colspan="4" class="text-center text-danger py-4"><i class="fas fa-exclamation-triangle fa-2x mb-2"></i><p class="mb-0">Gagal memuat data</p></td></tr>';
+        }
+    };
 
     // ============================================
     // Supplier Management Functions
