@@ -804,8 +804,11 @@
                     await window.Capacitor.Plugins.GoogleAuth.initialize(initOptions);
 
                     // Clear any stale session at startup (fixes "first tap fails" issue)
+                    // Need delay to ensure Google's internal state is ready
                     try {
+                        await new Promise(r => setTimeout(r, 500)); // Wait for Google to be ready
                         await window.Capacitor.Plugins.GoogleAuth.signOut();
+                        await new Promise(r => setTimeout(r, 300)); // Wait for cleanup
                         console.log('Cleared stale Google session at startup');
                     } catch (e) { /* ignore */ }
 
