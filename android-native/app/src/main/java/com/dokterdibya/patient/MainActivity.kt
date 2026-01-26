@@ -181,8 +181,21 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun signInWithGoogle() {
-        // Sign out first to allow account selection
-        googleSignInClient.signOut().addOnCompleteListener {
+        // Check if already signed in - if yes, sign out first for account selection
+        // If no, directly show sign-in (faster, no race condition)
+        val currentAccount = GoogleSignIn.getLastSignedInAccount(this)
+        
+        if (currentAccount != null) {
+            // User previously signed in - sign out first to allow account selection
+            Log.d(TAG, "Existing Google account found, signing out first for re-selection")
+            googleSignInClient.signOut().addOnCompleteListener {
+                Log.d(TAG, "Sign out complete, launching sign-in")
+                val signInIntent = googleSignInClient.signInIntent
+                googleSignInLauncher.launch(signInIntent)
+            }
+        } else {
+            // No previous sign-in - launch directly (avoids race condition)
+            Log.d(TAG, "No existing Google account, launching sign-in directly")
             val signInIntent = googleSignInClient.signInIntent
             googleSignInLauncher.launch(signInIntent)
         }
