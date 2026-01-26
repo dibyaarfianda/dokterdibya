@@ -396,6 +396,10 @@ router.post('/auth/google', async (req, res) => {
         // Accept both 'credential' (web) and 'idToken' (mobile native) field names
         const idToken = req.body.credential || req.body.idToken;
         const registrationCode = req.body.registration_code || req.body.registrationCode;
+        const appVersion = req.body.app_version;
+
+        // Minimum app version required for new registrations (must have registration code flow)
+        const MIN_APP_VERSION = '1.0.3';
 
         if (!idToken) {
             return res.status(400).json({ message: 'Token tidak ditemukan' });
@@ -450,6 +454,32 @@ router.post('/auth/google', async (req, res) => {
         } else {
             // NEW PATIENT
             isNewPatient = true;
+
+            // Version check for mobile app - old versions cannot register new patients
+            if (appVersion) {
+                // Compare semantic versions (e.g., "1.0.2" vs "1.0.3")
+                const compareVersions = (v1, v2) => {
+                    const parts1 = v1.split('.').map(Number);
+                    const parts2 = v2.split('.').map(Number);
+                    for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
+                        const p1 = parts1[i] || 0;
+                        const p2 = parts2[i] || 0;
+                        if (p1 < p2) return -1;
+                        if (p1 > p2) return 1;
+                    }
+                    return 0;
+                };
+
+                if (compareVersions(appVersion, MIN_APP_VERSION) < 0) {
+                    logger.warn(`Old app version ${appVersion} tried to register new patient: ${email}`);
+                    return res.status(400).json({
+                        message: 'Versi aplikasi sudah tidak didukung. Silakan update aplikasi ke versi terbaru.',
+                        update_required: true,
+                        min_version: MIN_APP_VERSION,
+                        current_version: appVersion
+                    });
+                }
+            }
 
             // Check if registration code is required (from settings)
             const codeRequired = await isRegistrationCodeRequired();
