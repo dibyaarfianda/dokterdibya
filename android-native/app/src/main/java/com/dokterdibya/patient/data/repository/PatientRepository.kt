@@ -32,6 +32,7 @@ import com.dokterdibya.patient.data.model.MyIntakeResponse
 import com.dokterdibya.patient.data.model.ExistingIntake
 import com.dokterdibya.patient.data.local.*
 import com.dokterdibya.patient.data.api.NetworkException
+import kotlinx.coroutines.delay
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import retrofit2.Response
 import okhttp3.MultipartBody
@@ -128,21 +129,65 @@ class PatientRepository @Inject constructor(
 
     suspend fun googleLogin(authCode: String): Result<AuthResponse> {
         return try {
-            val response = apiService.googleAuth(GoogleAuthRequest(code = authCode))
-            if (response.isSuccessful && response.body() != null) {
-                val authResponse = response.body()!!
-                if (authResponse.success && authResponse.token != null) {
-                    tokenRepository.saveToken(authResponse.token)
-                    // Use patientData helper to get user from either 'user' or 'patient' field
-                    authResponse.patientData?.let { patient ->
-                        tokenRepository.saveUserInfo(patient.name, patient.email ?: "")
+            var lastException: Exception? = null
+            var lastResponse: Response<AuthResponse>? = null
+            
+            android.util.Log.d("GoogleLogin", "Starting Google login with auth code length: ${authCode.length}")
+            
+            // Retry up to 3 times with exponential backoff
+            for (attempt in 1..3) {
+                try {
+                    android.util.Log.d("GoogleLogin", "Attempt $attempt/3")
+                    val response = apiService.googleAuth(GoogleAuthRequest(code = authCode))
+                    lastResponse = response
+                    
+                    if (response.isSuccessful && response.body() != null) {
+                        val authResponse = response.body()!!
+                        android.util.Log.d("GoogleLogin", "Success response received: ${authResponse.success}")
+                        if (authResponse.success && authResponse.token != null) {
+                            tokenRepository.saveToken(authResponse.token)
+                            // Use patientData helper to get user from either 'user' or 'patient' field
+                            authResponse.patientData?.let { patient ->
+                                tokenRepository.saveUserInfo(patient.name, patient.email ?: "")
+                            }
+                        }
+                        return Result.success(authResponse)
+                    } else if (response.code() >= 500) {
+                        // Server error - retry
+                        val errorMsg = "Server error: ${response.code()}"
+                        lastException = Exception(errorMsg)
+                        android.util.Log.w("GoogleLogin", errorMsg)
+                        if (attempt < 3) {
+                            // Exponential backoff: 500ms, 1000ms, 2000ms
+                            val delayTime = (500L * attempt).coerceAtMost(2000L)
+                            android.util.Log.d("GoogleLogin", "Retrying in ${delayTime}ms")
+                            delay(delayTime)
+                        }
+                        continue
+                    } else {
+                        // Client error - don't retry
+                        val errorMsg = response.message() ?: "Login failed"
+                        android.util.Log.e("GoogleLogin", "Client error (${response.code()}): $errorMsg")
+                        return Result.failure(Exception(errorMsg))
+                    }
+                } catch (e: Exception) {
+                    lastException = e
+                    android.util.Log.e("GoogleLogin", "Exception on attempt $attempt", e)
+                    if (attempt < 3) {
+                        // Exponential backoff before retry
+                        val delayTime = (500L * attempt).coerceAtMost(2000L)
+                        android.util.Log.d("GoogleLogin", "Retrying in ${delayTime}ms after exception")
+                        delay(delayTime)
                     }
                 }
-                Result.success(authResponse)
-            } else {
-                Result.failure(Exception(response.message() ?: "Login failed"))
             }
+            
+            // All retries failed
+            val finalError = lastException ?: Exception(lastResponse?.message() ?: "Login failed after retries")
+            android.util.Log.e("GoogleLogin", "All retries exhausted", finalError)
+            Result.failure(finalError)
         } catch (e: Exception) {
+            android.util.Log.e("GoogleLogin", "Unexpected error", e)
             Result.failure(e)
         }
     }
