@@ -51,7 +51,9 @@ data class PatientResponse(
 data class GoogleAuthRequest(
     val code: String,
     @SerializedName("redirect_uri")
-    val redirectUri: String = ""  // Empty for Android app
+    val redirectUri: String = "",  // Empty for Android app
+    @SerializedName("registration_code")
+    val registration_code: String? = null  // Optional registration code for new users
 )
 
 data class EmailLoginRequest(
