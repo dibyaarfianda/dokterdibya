@@ -815,7 +815,10 @@
             if (googleAuthReady) {
                 try {
                     // Sign out first to clear stale session (fixes "first tap fails" issue)
-                    try { await window.Capacitor.Plugins.GoogleAuth.signOut(); } catch (e) { /* ignore */ }
+                    try {
+                        await window.Capacitor.Plugins.GoogleAuth.signOut();
+                        await new Promise(r => setTimeout(r, 300)); // Small delay for cleanup
+                    } catch (e) { /* ignore */ }
 
                     console.log('Using native Google Sign-In...');
                     const result = await window.Capacitor.Plugins.GoogleAuth.signIn();
@@ -934,7 +937,10 @@
             if (googleAuthReady) {
                 try {
                     // Sign out first to clear stale session (fixes "first tap fails" issue)
-                    try { await window.Capacitor.Plugins.GoogleAuth.signOut(); } catch (e) { /* ignore */ }
+                    try {
+                        await window.Capacitor.Plugins.GoogleAuth.signOut();
+                        await new Promise(r => setTimeout(r, 300)); // Small delay for cleanup
+                    } catch (e) { /* ignore */ }
 
                     console.log('Using native Google Sign-In for registration...');
                     const result = await window.Capacitor.Plugins.GoogleAuth.signIn();
