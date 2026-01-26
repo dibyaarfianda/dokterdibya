@@ -360,6 +360,10 @@ app.use('/api/notifications', notificationsRoutes);
 const patientNotificationsRoutes = require('./routes/patient-notifications');
 app.use('/api/patient-notifications', patientNotificationsRoutes);
 
+// Patient Activity routes (aggregated patient activities for admin dashboard)
+const patientActivityRoutes = require('./routes/patient-activity');
+app.use('/api/patient-activity', patientActivityRoutes);
+
 // Registration Codes routes (for patient registration control)
 const registrationCodesRoutes = require('./routes/registration-codes');
 app.use('/api/registration-codes', registrationCodesRoutes);
