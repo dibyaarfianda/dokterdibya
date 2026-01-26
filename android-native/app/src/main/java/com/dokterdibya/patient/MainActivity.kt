@@ -67,17 +67,28 @@ class MainActivity : ComponentActivity() {
             // Send auth code to backend
             account.serverAuthCode?.let { authCode ->
                 Log.d(TAG, "Sending auth code to backend, length: ${authCode.length}")
-                authViewModel?.handleGoogleAuthCode(authCode)
+                // Ensure viewmodel is not null before calling
+                if (authViewModel != null) {
+                    authViewModel?.handleGoogleAuthCode(authCode)
+                } else {
+                    Log.e(TAG, "AuthViewModel is null, cannot handle auth code")
+                }
             } ?: run {
                 Log.e(TAG, "No server auth code received")
                 authViewModel?.setError("Gagal mendapatkan auth code. Coba lagi.")
             }
         } catch (e: ApiException) {
             Log.e(TAG, "Google sign in ApiException: ${e.statusCode}", e)
-            authViewModel?.setError("Login Google gagal: ${e.statusCode}")
+            val errorMsg = when (e.statusCode) {
+                12501 -> "Sign in dibatalkan oleh pengguna"  // USER_CANCELED
+                12500 -> "Sign in error"                      // SIGN_IN_CURRENTLY_IN_PROGRESS
+                else -> "Google authentication failed: ${e.statusCode}"
+            }
+            Log.e(TAG, "Setting error: $errorMsg")
+            authViewModel?.setError(errorMsg)
         } catch (e: Exception) {
             Log.e(TAG, "Google sign in exception", e)
-            authViewModel?.setError("Login gagal: ${e.message}")
+            authViewModel?.setError("Terjadi kesalahan: ${e.message}")
         }
     }
 
@@ -181,23 +192,24 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun signInWithGoogle() {
-        // Check if already signed in - if yes, sign out first for account selection
-        // If no, directly show sign-in (faster, no race condition)
-        val currentAccount = GoogleSignIn.getLastSignedInAccount(this)
+        Log.d(TAG, "Starting Google sign-in process")
         
-        if (currentAccount != null) {
-            // User previously signed in - sign out first to allow account selection
-            Log.d(TAG, "Existing Google account found, signing out first for re-selection")
-            googleSignInClient.signOut().addOnCompleteListener {
-                Log.d(TAG, "Sign out complete, launching sign-in")
+        // Clear any previous error messages before attempting new sign-in
+        authViewModel?.clearError()
+        
+        // Perform sign-out first to clear any cached sessions
+        googleSignInClient.signOut().addOnCompleteListener { task ->
+            Log.d(TAG, "SignOut task completed. Success: ${task.isSuccessful}")
+            
+            // Launch sign-in regardless of signOut result
+            try {
                 val signInIntent = googleSignInClient.signInIntent
+                Log.d(TAG, "Launching Google sign-in intent")
                 googleSignInLauncher.launch(signInIntent)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error launching sign-in intent", e)
+                authViewModel?.setError("Error launching Google sign-in: ${e.message}")
             }
-        } else {
-            // No previous sign-in - launch directly (avoids race condition)
-            Log.d(TAG, "No existing Google account, launching sign-in directly")
-            val signInIntent = googleSignInClient.signInIntent
-            googleSignInLauncher.launch(signInIntent)
         }
     }
 
