@@ -779,8 +779,10 @@
         }
 
         // Google Sign-In - Native (fast) with web fallback
-        const GOOGLE_WEB_CLIENT_ID = '738335602560-52as846lk2oo78fr38a86elu8888m7eh.apps.googleusercontent.com';
+        const GOOGLE_WEB_CLIENT_ID = '738335602560-5napmglm15g8jr5c1j0ienc9v8ptnsnt.apps.googleusercontent.com';
         let googleAuthReady = false;
+        let firstLoginRetry = false;
+        let firstRegisterRetry = false;
         let validatedRegCode = null; // Store validated registration code for new user registration
 
         // Initialize GoogleAuth on app start
@@ -804,12 +806,14 @@
                     await window.Capacitor.Plugins.GoogleAuth.initialize(initOptions);
 
                     // Clear any stale session at startup (fixes "first tap fails" issue)
-                    // Need delay to ensure Google's internal state is ready
+                    // Increase wait times slightly to ensure internal state settles
                     try {
-                        await new Promise(r => setTimeout(r, 500)); // Wait for Google to be ready
+                        const t0 = performance.now();
+                        await new Promise(r => setTimeout(r, 1000)); // Wait for Google to be ready
                         await window.Capacitor.Plugins.GoogleAuth.signOut();
-                        await new Promise(r => setTimeout(r, 300)); // Wait for cleanup
-                        console.log('Cleared stale Google session at startup');
+                        await new Promise(r => setTimeout(r, 500)); // Wait for cleanup
+                        const t1 = performance.now();
+                        console.log('Startup Google session cleanup done in', Math.round(t1 - t0), 'ms');
                     } catch (e) { /* ignore */ }
 
                     googleAuthReady = true;
@@ -828,6 +832,7 @@
                     const result = await window.Capacitor.Plugins.GoogleAuth.signIn();
 
                     if (result && result.authentication && result.authentication.idToken) {
+                        console.log('Native sign-in succeeded, sending to backend');
                         showLoading();
                         const res = await fetch(`${API_BASE}/api/patients/auth/google`, {
                             method: 'POST',
@@ -838,8 +843,10 @@
                             })
                         });
                         const data = await res.json();
+                        console.log('Backend response:', res.status, data);
 
                         if (res.ok && data.token) {
+                            console.log('Login successful, redirecting...');
                             localStorage.setItem('vps_auth_token', data.token);
                             if (data.user) localStorage.setItem('patient_user', JSON.stringify(data.user));
                             localStorage.setItem('auth_provider', 'google');
@@ -860,7 +867,9 @@
                         }
 
                         document.getElementById('loading-overlay').classList.add('hidden');
-                        showError('login-error', data.message || 'Login gagal');
+                        const errorMsg = data.message || (data.error ? data.error : 'Login gagal');
+                        console.log('Backend error: ' + errorMsg);
+                        showError('login-error', errorMsg);
                         return;
                     } else {
                         // User cancelled native sign-in (result is null/empty)
@@ -868,12 +877,66 @@
                         return; // Don't fallback to web
                     }
                 } catch (e) {
-                    console.log('Native sign-in error:', e.message);
+                    console.log('Native sign-in error: ' + e.message);
                     // Check if user cancelled (common error codes/messages)
                     const msg = (e.message || '').toLowerCase();
                     if (msg.includes('cancel') || msg.includes('12501') || msg.includes('user denied') || msg.includes('popup_closed')) {
                         console.log('User cancelled - not falling back to web');
                         return; // Don't fallback to web when user cancels
+                    }
+                    // Attempt a one-time native retry before falling back to web
+                    if (!firstLoginRetry) {
+                        try {
+                            firstLoginRetry = true;
+                            console.log('Retrying native Google Sign-In after cleanup...');
+                            // Ensure clean state
+                            await window.Capacitor.Plugins.GoogleAuth.signOut();
+                            await new Promise(r => setTimeout(r, 600));
+                            const retryResult = await window.Capacitor.Plugins.GoogleAuth.signIn();
+                            console.log('Retry sign-in result: ' + (retryResult && retryResult.authentication ? 'success' : 'empty'));
+                            if (retryResult && retryResult.authentication && retryResult.authentication.idToken) {
+                                console.log('Retry succeeded, sending to backend');
+                                showLoading();
+                                const res = await fetch(`${API_BASE}/api/patients/auth/google`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        idToken: retryResult.authentication.idToken,
+                                        app_version: APP_VERSION
+                                    })
+                                });
+                                const data = await res.json();
+                                console.log('Retry backend response:', res.status, data);
+                                if (res.ok && data.token) {
+                                    console.log('Retry login successful, redirecting...');
+                                    localStorage.setItem('vps_auth_token', data.token);
+                                    if (data.user) localStorage.setItem('patient_user', JSON.stringify(data.user));
+                                    localStorage.setItem('auth_provider', 'google');
+                                    localStorage.setItem('from_mobile_app', 'true');
+                                    let url = `${DASHBOARD_URL}?token=${encodeURIComponent(data.token)}`;
+                                    const user = localStorage.getItem('patient_user');
+                                    if (user) url += `&user=${encodeURIComponent(user)}`;
+                                    window.location.href = url;
+                                    return;
+                                }
+                                // Registration code needed
+                                if (data.code_required) {
+                                    console.log('New patient - need to register first (after retry)');
+                                    document.getElementById('loading-overlay').classList.add('hidden');
+                                    showError('login-error', 'Akun belum terdaftar. Silakan klik "Daftar" untuk membuat akun baru.');
+                                    return;
+                                }
+                                document.getElementById('loading-overlay').classList.add('hidden');
+                                const errorMsg = data.message || (data.error ? data.error : 'Login gagal');
+                                console.log('Retry backend error: ' + errorMsg);
+                                showError('login-error', errorMsg);
+                                return;
+                            } else {
+                                console.log('Retry sign-in result empty, will fallback to web');
+                            }
+                        } catch (retryErr) {
+                            console.log('Native retry failed: ' + retryErr.message);
+                        }
                     }
                     // Only fallback to web for actual errors (network issues, etc.)
                     console.log('Actual error - falling back to web OAuth');
@@ -940,10 +1003,11 @@
             // Try native Google Sign-In first
             if (googleAuthReady) {
                 try {
-                    console.log('Using native Google Sign-In for registration...');
+                    console.log('Using native Google Sign-In for registration, code=' + validatedRegCode);
                     const result = await window.Capacitor.Plugins.GoogleAuth.signIn();
 
                     if (result && result.authentication && result.authentication.idToken) {
+                        console.log('Native sign-in succeeded, sending to backend with code=' + validatedRegCode);
                         showLoading();
                         const res = await fetch(`${API_BASE}/api/patients/auth/google`, {
                             method: 'POST',
@@ -955,8 +1019,10 @@
                             })
                         });
                         const data = await res.json();
+                        console.log('Backend response:', res.status, data);
 
                         if (res.ok && data.token) {
+                            console.log('Registration successful, redirecting...');
                             localStorage.setItem('vps_auth_token', data.token);
                             if (data.user) localStorage.setItem('patient_user', JSON.stringify(data.user));
                             localStorage.setItem('auth_provider', 'google');
@@ -970,21 +1036,71 @@
                         }
 
                         document.getElementById('loading-overlay').classList.add('hidden');
-                        showError('regcode-error', data.message || 'Registrasi gagal');
+                        const errorMsg = data.message || (data.error ? data.error : 'Registrasi gagal');
+                        console.log('Backend error: ' + errorMsg);
+                        showError('regcode-error', errorMsg);
                         return;
                     } else {
                         // User cancelled native sign-in
-                        console.log('Native sign-in cancelled by user');
+                        console.log('Native sign-in cancelled by user - result empty');
                         return; // Don't fallback to web
                     }
                 } catch (e) {
-                    console.log('Native sign-in error:', e.message);
+                    console.log('Native sign-in error: ' + e.message + ', code=' + validatedRegCode);
                     document.getElementById('loading-overlay').classList.add('hidden');
                     // Check if user cancelled
                     const msg = (e.message || '').toLowerCase();
                     if (msg.includes('cancel') || msg.includes('12501') || msg.includes('user denied') || msg.includes('popup_closed')) {
                         console.log('User cancelled - not falling back to web');
                         return; // Don't fallback to web when user cancels
+                    }
+                    // Attempt a one-time native retry before falling back to web
+                    if (!firstRegisterRetry) {
+                        try {
+                            firstRegisterRetry = true;
+                            console.log('Retrying native Google Sign-In for registration after cleanup, code=' + validatedRegCode);
+                            await window.Capacitor.Plugins.GoogleAuth.signOut();
+                            await new Promise(r => setTimeout(r, 600));
+                            const retryResult = await window.Capacitor.Plugins.GoogleAuth.signIn();
+                            console.log('Retry sign-in result: ' + (retryResult && retryResult.authentication ? 'success' : 'empty'));
+                            if (retryResult && retryResult.authentication && retryResult.authentication.idToken) {
+                                console.log('Retry succeeded, sending to backend with code=' + validatedRegCode);
+                                showLoading();
+                                const res = await fetch(`${API_BASE}/api/patients/auth/google`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                        idToken: retryResult.authentication.idToken,
+                                        registration_code: validatedRegCode,
+                                        app_version: APP_VERSION
+                                    })
+                                });
+                                const data = await res.json();
+                                console.log('Retry backend response:', res.status, data);
+                                if (res.ok && data.token) {
+                                    console.log('Retry registration successful, redirecting...');
+                                    localStorage.setItem('vps_auth_token', data.token);
+                                    if (data.user) localStorage.setItem('patient_user', JSON.stringify(data.user));
+                                    localStorage.setItem('auth_provider', 'google');
+                                    localStorage.setItem('from_mobile_app', 'true');
+                                    validatedRegCode = null;
+                                    let url = `${DASHBOARD_URL}?token=${encodeURIComponent(data.token)}`;
+                                    const user = localStorage.getItem('patient_user');
+                                    if (user) url += `&user=${encodeURIComponent(user)}`;
+                                    window.location.href = url;
+                                    return;
+                                }
+                                document.getElementById('loading-overlay').classList.add('hidden');
+                                const errorMsg = data.message || (data.error ? data.error : 'Registrasi gagal');
+                                console.log('Retry backend error: ' + errorMsg);
+                                showError('regcode-error', errorMsg);
+                                return;
+                            } else {
+                                console.log('Retry sign-in result empty, will fallback to web');
+                            }
+                        } catch (retryErr) {
+                            console.log('Native registration retry failed: ' + retryErr.message);
+                        }
                     }
                     console.log('Actual error - falling back to web OAuth');
                 }
