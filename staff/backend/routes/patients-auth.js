@@ -407,13 +407,14 @@ router.post('/auth/google', async (req, res) => {
             return res.status(400).json({ message: 'Token tidak ditemukan' });
         }
 
-        // Android client ID for native sign-in
+        // Android client IDs for native sign-in
         const ANDROID_CLIENT_ID = '738335602560-5napmglm15g8jr5c1j0ienc9v8ptnsnt.apps.googleusercontent.com';
+        const ANDROID_CLIENT_ID_CAPACITOR = '738335602560-s5mgu5cgu40gc70uciegqtkckug1lg62.apps.googleusercontent.com';
 
-        // Verify Google token - accept both Web and Android client IDs
+        // Verify Google token - accept Web and all Android client IDs
         const ticket = await googleClient.verifyIdToken({
             idToken: idToken,
-            audience: [GOOGLE_CLIENT_ID, ANDROID_CLIENT_ID]
+            audience: [GOOGLE_CLIENT_ID, ANDROID_CLIENT_ID, ANDROID_CLIENT_ID_CAPACITOR]
         });
 
         const payload = ticket.getPayload();
