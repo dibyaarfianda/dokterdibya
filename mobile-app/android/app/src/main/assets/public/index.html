@@ -1004,11 +1004,16 @@
             if (googleAuthReady) {
                 try {
                     console.log('Using native Google Sign-In for registration, code=' + validatedRegCode);
-                    // Pre-emptive signOut to clear any stale session (fixes first-tap failure)
+                    // Aggressive cleanup to clear stale session from login attempt
+                    // Double signOut with longer delays to force fresh token
                     try {
+                        console.log('Clearing Google session before registration...');
                         await window.Capacitor.Plugins.GoogleAuth.signOut();
-                        await new Promise(r => setTimeout(r, 300));
-                    } catch (e) { /* ignore */ }
+                        await new Promise(r => setTimeout(r, 500));
+                        await window.Capacitor.Plugins.GoogleAuth.signOut();
+                        await new Promise(r => setTimeout(r, 500));
+                        console.log('Google session cleared');
+                    } catch (e) { console.log('SignOut error (ignored):', e.message); }
                     const result = await window.Capacitor.Plugins.GoogleAuth.signIn();
 
                     if (result && result.authentication && result.authentication.idToken) {

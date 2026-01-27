@@ -103,13 +103,18 @@ class TokenRepository @Inject constructor(
     // ==================== Registration Code ====================
 
     suspend fun saveRegistrationCode(code: String) {
+        // Update cache immediately (synchronous) before DataStore write
+        cachedRegistrationCode = code
         context.dataStore.edit { preferences ->
             preferences[REGISTRATION_CODE_KEY] = code
         }
-        // Update cache
-        cachedRegistrationCode = code
     }
 
+    /**
+     * Get cached registration code synchronously
+     * If cache is empty (init block hasn't finished), we still return what we have
+     * as saveRegistrationCode() updates cache immediately before DataStore write
+     */
     fun getCachedRegistrationCode(): String? = cachedRegistrationCode
 
     fun getRegistrationCode(): Flow<String?> {
@@ -119,6 +124,8 @@ class TokenRepository @Inject constructor(
     }
 
     suspend fun clearRegistrationCode() {
+        // Clear cache immediately (synchronous)
+        cachedRegistrationCode = null
         context.dataStore.edit { preferences ->
             preferences.remove(REGISTRATION_CODE_KEY)
         }
