@@ -1004,6 +1004,11 @@
             if (googleAuthReady) {
                 try {
                     console.log('Using native Google Sign-In for registration, code=' + validatedRegCode);
+                    // Pre-emptive signOut to clear any stale session (fixes first-tap failure)
+                    try {
+                        await window.Capacitor.Plugins.GoogleAuth.signOut();
+                        await new Promise(r => setTimeout(r, 300));
+                    } catch (e) { /* ignore */ }
                     const result = await window.Capacitor.Plugins.GoogleAuth.signIn();
 
                     if (result && result.authentication && result.authentication.idToken) {
