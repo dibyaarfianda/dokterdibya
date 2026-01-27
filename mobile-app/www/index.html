@@ -784,6 +784,7 @@
         let firstLoginRetry = false;
         let firstRegisterRetry = false;
         let validatedRegCode = null; // Store validated registration code for new user registration
+        let loginFlowAborted = false; // Flag to abort login flow when registration starts
 
         // Initialize GoogleAuth on app start
         (async function initGoogleAuth() {
@@ -825,6 +826,8 @@
         })();
 
         window.loginWithGoogle = async function() {
+            // Reset abort flag when starting fresh login
+            loginFlowAborted = false;
             // Try native Google Sign-In first (fast, single tap)
             if (googleAuthReady) {
                 try {
@@ -888,11 +891,21 @@
                     if (!firstLoginRetry) {
                         try {
                             firstLoginRetry = true;
+                            // Check if user switched to registration flow
+                            if (loginFlowAborted) {
+                                console.log('Login flow aborted - user switched to registration');
+                                return;
+                            }
                             console.log('Retrying native Google Sign-In after cleanup...');
                             // Ensure clean state
                             await window.Capacitor.Plugins.GoogleAuth.signOut();
                             await new Promise(r => setTimeout(r, 600));
                             const retryResult = await window.Capacitor.Plugins.GoogleAuth.signIn();
+                            // Check again after signIn (user might have switched to registration)
+                            if (loginFlowAborted) {
+                                console.log('Login flow aborted after signIn - user switched to registration');
+                                return;
+                            }
                             console.log('Retry sign-in result: ' + (retryResult && retryResult.authentication ? 'success' : 'empty'));
                             if (retryResult && retryResult.authentication && retryResult.authentication.idToken) {
                                 console.log('Retry succeeded, sending to backend');
@@ -994,6 +1007,9 @@
 
         // Register with Google (uses pre-validated code)
         window.registerWithGoogle = async function() {
+            // Abort any pending login flow to prevent race conditions
+            loginFlowAborted = true;
+
             if (!validatedRegCode) {
                 showError('regcode-error', 'Kode registrasi belum divalidasi');
                 resetRegCodePage();
