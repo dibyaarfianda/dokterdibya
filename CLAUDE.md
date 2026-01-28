@@ -1005,3 +1005,33 @@ await db.query('UPDATE patients SET password = ? WHERE id = ?', [hash, id]);
 - `users` table: Authentication data for ALL users (staff + patients), with `user_type` column to distinguish
 
 **Service location:** `staff/backend/services/PatientPasswordService.js`
+
+### 27. Session Log - 28 Januari 2026
+
+**Capacitor Mobile App - Google Sign-In Registration Fix**
+
+1. **Issue:** Google Sign-In untuk registrasi pasien baru gagal dengan error "Autentikasi Google gagal"
+
+2. **Root Causes (Multiple):**
+
+   **A. serverClientId salah (capacitor.config.ts & index.html)**
+   - `serverClientId` harus menggunakan **Web** client ID, bukan Android client ID
+   - Web client ID: `738335602560-52as846lk2oo78fr38a86elu8888m7eh.apps.googleusercontent.com`
+   - Token yang diissue Google akan punya `aud` (audience) = serverClientId
+   - Backend memverifikasi token dengan memeriksa audience
+
+   **B. Database error: Unknown column 'id' in users table**
+   - Tabel `users` menggunakan `new_id` sebagai primary key, BUKAN `id`
+   - Query `SELECT id FROM users` gagal
+   - Fixed dengan menggunakan `new_id` dan patient's medical record ID
+
+3. **Files Modified:**
+   - `mobile-app/capacitor.config.ts` - serverClientId → Web client ID
+   - `mobile-app/www/index.html` - GOOGLE_WEB_CLIENT_ID → Web client ID
+   - `staff/backend/routes/patients-auth.js` - Fix users table query
+
+4. **Key Learnings:**
+   - Google Sign-In `serverClientId` = audience di ID token = HARUS Web client ID
+   - Android client ID (dari google-services.json) hanya untuk native sign-in flow
+   - Selalu tambah debug logging saat troubleshoot auth errors
+   - Error message "Autentikasi Google gagal" bisa dari token verification ATAU dari catch block lain (database error)
