@@ -697,6 +697,27 @@
         <div class="toast" id="toast"></div>
     </div>
 
+    <!-- Extract token from URL for mobile app -->
+    <script>
+        (function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tokenFromUrl = urlParams.get('token');
+            if (tokenFromUrl) {
+                console.log('[Intake] Token received from URL, storing in localStorage');
+                localStorage.setItem('vps_auth_token', tokenFromUrl);
+                localStorage.setItem('from_mobile_app', 'true');
+            }
+            const userFromUrl = urlParams.get('user');
+            if (userFromUrl) {
+                try {
+                    localStorage.setItem('patient_user', decodeURIComponent(userFromUrl));
+                } catch (e) {
+                    console.error('[Intake] Failed to store user data:', e);
+                }
+            }
+        })();
+    </script>
+
     <!-- Load patient profile data -->
     <script>
         // Auto-fill patient data from profile
@@ -1231,7 +1252,14 @@
                     const successMsg = isUpdate ? 'Data berhasil diperbarui!' : 'Data berhasil dikirim!';
                     showToast(successMsg);
                     setTimeout(() => {
-                        window.location.href = '/patient-dashboard.html';
+                        // Get token for redirect (preserve auth for mobile app)
+                        const redirectToken = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+                        let dashboardUrl = '/patient-dashboard.html';
+                        if (redirectToken) {
+                            dashboardUrl += '?token=' + encodeURIComponent(redirectToken);
+                        }
+                        console.log('[Intake] Redirecting to dashboard:', dashboardUrl);
+                        window.location.href = dashboardUrl;
                     }, 2000);
                 } else {
                     const error = await response.json();
