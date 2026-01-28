@@ -186,7 +186,12 @@
         // If accessed from mobile app context, redirect to app
         const urlParams = new URLSearchParams(window.location.search);
         const referrer = document.referrer;
-        if (referrer && referrer.includes('patient-dashboard.html') && referrer.includes('token=')) {
+        const fromMobile = localStorage.getItem('from_mobile_app') === 'true';
+
+        // Check multiple indicators for mobile app context
+        if (fromMobile || (referrer && referrer.includes('dokterdibya.com') && referrer.includes('token='))) {
+            console.log('[Login] Detected mobile app context, redirecting to app');
+            localStorage.removeItem('from_mobile_app');
             window.location.href = 'dokterdibya://logout';
         }
 

@@ -2273,9 +2273,14 @@
         if (!token || !user.id) {
             // Not authenticated, redirect to login
             console.log('[DASHBOARD] Not authenticated, redirecting to login');
-            // Check if from mobile app
+            // Check if from mobile app (via URL param OR localStorage flag)
             const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.has('token')) {
+            const fromMobile = urlParams.has('token') || localStorage.getItem('from_mobile_app') === 'true';
+            const isCapacitor = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+
+            if (fromMobile || isCapacitor) {
+                console.log('[DASHBOARD] From mobile app, using deep link to return to app');
+                localStorage.removeItem('from_mobile_app');
                 window.location.href = 'dokterdibya://logout';
             } else {
                 window.location.href = '/patient-login.html';
@@ -2315,7 +2320,12 @@
 
                 // Check if profile is completed, redirect if not
                 if (profile.profile_completed !== 1) {
-                    window.location.href = '/complete-profile.html';
+                    const fromMobile = localStorage.getItem('from_mobile_app') === 'true';
+                    let completeUrl = '/complete-profile.html';
+                    if (fromMobile && token) {
+                        completeUrl += '?token=' + encodeURIComponent(token);
+                    }
+                    window.location.href = completeUrl;
                     return;
                 }
 

@@ -263,6 +263,19 @@
         </div>
     </div>
 
+    <!-- Extract token from URL for mobile app -->
+    <script>
+        (function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const tokenFromUrl = urlParams.get('token');
+            if (tokenFromUrl) {
+                console.log('[Complete Profile] Token received from URL, storing in localStorage');
+                localStorage.setItem('vps_auth_token', tokenFromUrl);
+                localStorage.setItem('from_mobile_app', 'true');
+            }
+        })();
+    </script>
+
     <script>
         // Create floating bubbles animation
         function createBubbles() {

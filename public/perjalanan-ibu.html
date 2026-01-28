@@ -383,7 +383,15 @@
             const user = JSON.parse(localStorage.getItem('patient_user') || '{}');
 
             if (!token || !user.id) {
-                window.location.href = '/index.html#masuk';
+                // Check if from mobile app
+                const fromMobile = localStorage.getItem('from_mobile_app') === 'true';
+                if (fromMobile) {
+                    console.log('[Perjalanan Ibu] From mobile app, redirecting to app login');
+                    localStorage.removeItem('from_mobile_app');
+                    window.location.href = 'dokterdibya://logout';
+                } else {
+                    window.location.href = '/patient-login.html';
+                }
                 return;
             }
         })();

@@ -616,7 +616,7 @@
     <!-- Main Content -->
     <div class="main-content">
         <div class="container">
-            <button class="btn-back" onclick="window.location.href='patient-dashboard.html'">
+            <button class="btn-back" onclick="smartRedirectToDashboard()">
                 <i class="fa fa-arrow-left"></i> Kembali ke Dashboard
             </button>
             
@@ -643,12 +643,32 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
     <script>
         const API_URL = 'http://localhost:3001';
-        
+
+        // Smart redirect helpers for mobile app compatibility
+        function smartRedirectToLogin() {
+            const fromMobile = localStorage.getItem('from_mobile_app') === 'true';
+            if (fromMobile) {
+                localStorage.removeItem('from_mobile_app');
+                window.location.href = 'dokterdibya://logout';
+            } else {
+                window.location.href = '/patient-login.html';
+            }
+        }
+
+        function smartRedirectToDashboard() {
+            const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+            let url = '/patient-dashboard.html';
+            if (token) {
+                url += '?token=' + encodeURIComponent(token);
+            }
+            window.location.href = url;
+        }
+
         // Check authentication
         const patientData = JSON.parse(localStorage.getItem('patientData') || '{}');
-        
+
         if (!patientData.id) {
-            window.location.href = 'index.html';
+            smartRedirectToLogin();
         }
 
         // Format currency
@@ -1227,7 +1247,7 @@
             e.preventDefault();
             localStorage.removeItem('patientData');
             localStorage.removeItem('patient_token');
-            window.location.href = 'index.html';
+            smartRedirectToLogin();
         });
 
         // Load data on page load
