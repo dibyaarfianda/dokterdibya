@@ -1630,6 +1630,193 @@
             color: #ec4899;
             font-weight: 600;
         }
+        /* Kick History Modal */
+        .kick-history-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 9999;
+            animation: fadeIn 0.2s ease;
+        }
+        .kick-history-modal.active {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .kick-history-content {
+            background: linear-gradient(135deg, #1a1a2e 0%, #3d1f47 50%, #1a1a2e 100%);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow: hidden;
+            border: 1px solid rgba(236, 72, 153, 0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+        .kick-history-header {
+            background: linear-gradient(135deg, #ec4899 0%, #be185d 100%);
+            padding: 18px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .kick-history-header h3 {
+            margin: 0;
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .kick-history-close {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        .kick-history-close:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        .kick-history-body {
+            padding: 15px 20px;
+            max-height: 55vh;
+            overflow-y: auto;
+        }
+        .kick-history-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: background 0.2s;
+        }
+        .kick-history-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+        }
+        .kick-history-date {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .kick-history-date .date-text {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .kick-history-delete {
+            background: none;
+            border: none;
+            color: rgba(239, 68, 68, 0.7);
+            cursor: pointer;
+            padding: 4px 8px;
+            font-size: 12px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .kick-history-delete:hover {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+        }
+        .kick-history-stats {
+            display: flex;
+            gap: 20px;
+        }
+        .kick-history-stat {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .kick-history-stat i {
+            color: #ec4899;
+            font-size: 14px;
+        }
+        .kick-history-stat .value {
+            font-size: 18px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+        .kick-history-stat .label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .kick-history-empty {
+            text-align: center;
+            padding: 40px 20px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+        .kick-history-empty i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+        .kick-history-loading {
+            text-align: center;
+            padding: 40px 20px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        .kick-history-pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            padding: 15px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .kick-history-pagination button {
+            background: rgba(236, 72, 153, 0.2);
+            border: 1px solid rgba(236, 72, 153, 0.5);
+            color: #ec4899;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        .kick-history-pagination button:hover:not(:disabled) {
+            background: rgba(236, 72, 153, 0.4);
+        }
+        .kick-history-pagination button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .kick-history-pagination .page-info {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .kick-status-badge {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+        .kick-status-badge.completed {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+        .kick-status-badge.active {
+            background: rgba(236, 72, 153, 0.2);
+            color: #ec4899;
+        }
     </style>
 </head>
 <body>
@@ -1931,6 +2118,30 @@
                             <i class="fa fa-history"></i> Lihat Riwayat Lengkap
                         </a>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kick History Modal -->
+        <div class="kick-history-modal" id="kick-history-modal">
+            <div class="kick-history-content">
+                <div class="kick-history-header">
+                    <h3><i class="fa fa-history"></i> Riwayat Kick Counter</h3>
+                    <button class="kick-history-close" onclick="closeKickHistory()">
+                        <i class="fa fa-times"></i>
+                    </button>
+                </div>
+                <div class="kick-history-body" id="kick-history-body">
+                    <!-- Content will be loaded by JavaScript -->
+                </div>
+                <div class="kick-history-pagination" id="kick-history-pagination" style="display: none;">
+                    <button id="kick-history-prev" onclick="loadKickHistoryPage(currentKickHistoryPage - 1)">
+                        <i class="fa fa-chevron-left"></i> Sebelumnya
+                    </button>
+                    <span class="page-info" id="kick-history-page-info">Halaman 1 dari 1</span>
+                    <button id="kick-history-next" onclick="loadKickHistoryPage(currentKickHistoryPage + 1)">
+                        Berikutnya <i class="fa fa-chevron-right"></i>
+                    </button>
                 </div>
             </div>
         </div>
@@ -3223,10 +3434,221 @@
             `;
         }
 
+        // ==================== KICK HISTORY ====================
+        let currentKickHistoryPage = 1;
+        let totalKickHistoryPages = 1;
+
         function showKickHistory() {
-            // For now, just show an alert. Can be expanded to modal later.
-            alert('Fitur riwayat lengkap akan segera hadir!');
+            const modal = document.getElementById('kick-history-modal');
+            if (modal) {
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                loadKickHistoryPage(1);
+            }
         }
+
+        function closeKickHistory() {
+            const modal = document.getElementById('kick-history-modal');
+            if (modal) {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+
+        async function loadKickHistoryPage(page) {
+            const token = getAuthToken();
+            if (!token) return;
+
+            const body = document.getElementById('kick-history-body');
+            const pagination = document.getElementById('kick-history-pagination');
+
+            // Show loading
+            body.innerHTML = `
+                <div class="kick-history-loading">
+                    <i class="fa fa-spinner fa-spin fa-2x"></i>
+                    <p style="margin-top: 10px;">Memuat riwayat...</p>
+                </div>
+            `;
+
+            try {
+                const response = await fetch(`/api/kick-counter/history?page=${page}&limit=10&_t=${Date.now()}`, {
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error(result.message || 'Gagal memuat riwayat');
+                }
+
+                currentKickHistoryPage = result.pagination.page;
+                totalKickHistoryPages = result.pagination.totalPages;
+
+                if (result.sessions.length === 0) {
+                    body.innerHTML = `
+                        <div class="kick-history-empty">
+                            <i class="fa fa-hand-pointer-o"></i>
+                            <p>Belum ada riwayat kick counter</p>
+                            <p style="font-size: 12px;">Mulai hitung gerakan bayi Anda!</p>
+                        </div>
+                    `;
+                    pagination.style.display = 'none';
+                    return;
+                }
+
+                // Render sessions
+                let html = '';
+                result.sessions.forEach(session => {
+                    const sessionDate = new Date(session.session_date);
+                    const startTime = session.start_time ? new Date(session.start_time) : null;
+                    const endTime = session.end_time ? new Date(session.end_time) : null;
+
+                    const dateStr = sessionDate.toLocaleDateString('id-ID', {
+                        weekday: 'long',
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                    });
+
+                    const timeStr = startTime
+                        ? startTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+                        : '-';
+
+                    const endTimeStr = endTime
+                        ? endTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+                        : 'Berlangsung';
+
+                    const durationStr = session.duration_minutes > 0
+                        ? `${session.duration_minutes} menit`
+                        : '< 1 menit';
+
+                    const statusClass = session.status === 'completed' ? 'completed' : 'active';
+                    const statusText = session.status === 'completed' ? 'Selesai' : 'Aktif';
+
+                    html += `
+                        <div class="kick-history-item" data-session-id="${session.id}">
+                            <div class="kick-history-date">
+                                <div class="date-text">
+                                    <i class="fa fa-calendar"></i>
+                                    ${dateStr}
+                                </div>
+                                ${session.status === 'completed' ? `
+                                    <button class="kick-history-delete" onclick="deleteKickSession(${session.id})" title="Hapus sesi">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                ` : ''}
+                            </div>
+                            <div class="kick-history-stats">
+                                <div class="kick-history-stat">
+                                    <i class="fa fa-hand-pointer-o"></i>
+                                    <div>
+                                        <div class="value">${session.kick_count}</div>
+                                        <div class="label">Gerakan</div>
+                                    </div>
+                                </div>
+                                <div class="kick-history-stat">
+                                    <i class="fa fa-clock-o"></i>
+                                    <div>
+                                        <div class="value" style="font-size: 14px;">${timeStr} - ${endTimeStr}</div>
+                                        <div class="label">${durationStr}</div>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span class="kick-status-badge ${statusClass}">${statusText}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                body.innerHTML = html;
+
+                // Update pagination
+                if (totalKickHistoryPages > 1) {
+                    pagination.style.display = 'flex';
+                    document.getElementById('kick-history-page-info').textContent =
+                        `Halaman ${currentKickHistoryPage} dari ${totalKickHistoryPages}`;
+                    document.getElementById('kick-history-prev').disabled = currentKickHistoryPage <= 1;
+                    document.getElementById('kick-history-next').disabled = currentKickHistoryPage >= totalKickHistoryPages;
+                } else {
+                    pagination.style.display = 'none';
+                }
+
+            } catch (error) {
+                console.error('Error loading kick history:', error);
+                body.innerHTML = `
+                    <div class="kick-history-empty">
+                        <i class="fa fa-exclamation-triangle" style="color: #ef4444;"></i>
+                        <p>Gagal memuat riwayat</p>
+                        <p style="font-size: 12px;">${error.message}</p>
+                    </div>
+                `;
+                pagination.style.display = 'none';
+            }
+        }
+
+        async function deleteKickSession(sessionId) {
+            if (!confirm('Hapus sesi ini? Data tidak dapat dikembalikan.')) {
+                return;
+            }
+
+            const token = getAuthToken();
+            if (!token) return;
+
+            try {
+                const response = await fetch(`/api/kick-counter/session/${sessionId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                });
+                const result = await response.json();
+
+                if (!result.success) {
+                    throw new Error(result.message || 'Gagal menghapus sesi');
+                }
+
+                // Remove from DOM with animation
+                const item = document.querySelector(`.kick-history-item[data-session-id="${sessionId}"]`);
+                if (item) {
+                    item.style.opacity = '0';
+                    item.style.transform = 'translateX(-20px)';
+                    item.style.transition = 'all 0.3s ease';
+                    setTimeout(() => {
+                        item.remove();
+                        // If no more items, reload page
+                        const remaining = document.querySelectorAll('.kick-history-item');
+                        if (remaining.length === 0) {
+                            loadKickHistoryPage(currentKickHistoryPage > 1 ? currentKickHistoryPage - 1 : 1);
+                        }
+                    }, 300);
+                }
+
+                // Refresh the main kick counter display
+                loadKickCounter();
+
+            } catch (error) {
+                console.error('Error deleting kick session:', error);
+                alert('Gagal menghapus: ' + error.message);
+            }
+        }
+
+        // Close modal when clicking outside
+        document.addEventListener('click', function(e) {
+            const modal = document.getElementById('kick-history-modal');
+            if (modal && e.target === modal) {
+                closeKickHistory();
+            }
+        });
+
+        // Close modal with Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeKickHistory();
+            }
+        });
 
         // ==================== MEDICATIONS ====================
         function getCustomMedications() {
