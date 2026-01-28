@@ -370,9 +370,14 @@ router.post('/login', async (req, res) => {
             { expiresIn: JWT_EXPIRES_IN }
         );
         
+        // Check if intake form is completed
+        const intakeCompleted = patient.intake_completed === 1;
+
         res.json({
             message: 'Login berhasil',
+            success: true,
             token,
+            intake_completed: intakeCompleted,
             user: {
                 id: patient.id,
                 medicalRecordId: patient.id,
@@ -380,10 +385,11 @@ router.post('/login', async (req, res) => {
                 fullname: patient.full_name,  // For frontend compatibility
                 email: patient.email,
                 phone: patient.phone,
+                intake_completed: intakeCompleted,
                 role: 'patient'
             }
         });
-        
+
     } catch (error) {
         console.error('Login error:', error);
         res.status(500).json({ message: 'Terjadi kesalahan saat login' });
@@ -631,11 +637,15 @@ router.post('/auth/google', async (req, res) => {
         // Check if profile is incomplete (needs phone/birth_date)
         const needsProfileCompletion = !patient.phone || !patient.birth_date;
 
+        // Check if intake form is completed
+        const intakeCompleted = patient.intake_completed === 1;
+
         res.json({
             message: isNewPatient ? 'Pendaftaran dengan Google berhasil' : 'Login dengan Google berhasil',
             token,
             is_new_patient: isNewPatient,
             needs_profile_completion: needsProfileCompletion,
+            intake_completed: intakeCompleted,
             user: {
                 id: patient.id,
                 medicalRecordId: patient.id,
@@ -646,6 +656,7 @@ router.post('/auth/google', async (req, res) => {
                 photo_url: patient.photo_url,
                 email_verified: 1,
                 google_id: patient.google_id || googleId,
+                intake_completed: intakeCompleted,
                 role: 'patient'
             }
         });
