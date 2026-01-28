@@ -3846,6 +3846,7 @@
                 if (typeof loadArticles === 'function') promises.push(loadArticles());
                 if (typeof updateNotificationBadge === 'function') promises.push(updateNotificationBadge());
                 if (typeof loadHospitalSchedules === 'function') promises.push(loadHospitalSchedules());
+                if (typeof loadAnnouncements === 'function') promises.push(loadAnnouncements());
 
                 try {
                     await Promise.allSettled(promises);
