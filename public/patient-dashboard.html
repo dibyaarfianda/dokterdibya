@@ -3510,10 +3510,18 @@
         let totalKickHistoryPages = 1;
 
         function showKickHistory() {
+            console.log('[KickHistory] showKickHistory called');
             const modal = document.getElementById('kick-history-modal');
+            const body = document.getElementById('kick-history-body');
+            console.log('[KickHistory] modal:', modal, 'body:', body);
             if (modal) {
                 modal.classList.add('active');
                 document.body.style.overflow = 'hidden';
+                // Immediately show loading in body
+                if (body) {
+                    body.innerHTML = '<div style="padding: 20px; text-align: center; color: white;"><i class="fa fa-spinner fa-spin fa-2x"></i><p style="margin-top: 10px;">Loading...</p></div>';
+                }
+                console.log('[KickHistory] Calling loadKickHistoryPage(1)');
                 loadKickHistoryPage(1);
             }
         }
@@ -3527,42 +3535,51 @@
         }
 
         async function loadKickHistoryPage(page) {
+            console.log('[KickHistory] loadKickHistoryPage called with page:', page);
             const body = document.getElementById('kick-history-body');
             const pagination = document.getElementById('kick-history-pagination');
+            console.log('[KickHistory] body element:', body);
 
             if (!body) {
                 console.error('[KickHistory] Body element not found');
+                alert('Error: Body element not found');
                 return;
             }
 
             // Show loading immediately
+            console.log('[KickHistory] Setting loading HTML');
             body.innerHTML = `
-                <div class="kick-history-loading">
-                    <i class="fa fa-spinner fa-spin fa-2x"></i>
-                    <p style="margin-top: 10px;">Memuat riwayat...</p>
+                <div class="kick-history-loading" style="padding: 30px; text-align: center;">
+                    <i class="fa fa-spinner fa-spin fa-2x" style="color: white;"></i>
+                    <p style="margin-top: 10px; color: white;">Memuat riwayat...</p>
                 </div>
             `;
+            console.log('[KickHistory] Loading HTML set, body.innerHTML length:', body.innerHTML.length);
 
             const token = getAuthToken();
+            console.log('[KickHistory] Token exists:', !!token);
             if (!token) {
                 body.innerHTML = `
-                    <div class="kick-history-empty">
-                        <i class="fa fa-exclamation-triangle" style="color: #ef4444;"></i>
-                        <p>Sesi login tidak valid</p>
-                        <p style="font-size: 12px;">Silakan refresh halaman</p>
+                    <div class="kick-history-empty" style="padding: 30px; text-align: center;">
+                        <i class="fa fa-exclamation-triangle" style="color: #ef4444; font-size: 32px;"></i>
+                        <p style="color: white; margin-top: 10px;">Sesi login tidak valid</p>
+                        <p style="font-size: 12px; color: rgba(255,255,255,0.7);">Silakan refresh halaman</p>
                     </div>
                 `;
                 return;
             }
 
             try {
+                console.log('[KickHistory] Fetching history...');
                 const response = await fetch(`/api/kick-counter/history?page=${page}&limit=10&_t=${Date.now()}`, {
                     headers: {
                         'Authorization': 'Bearer ' + token,
                         'Cache-Control': 'no-cache'
                     }
                 });
+                console.log('[KickHistory] Response status:', response.status);
                 const result = await response.json();
+                console.log('[KickHistory] Result:', result);
 
                 if (!result.success) {
                     throw new Error(result.message || 'Gagal memuat riwayat');
@@ -3570,13 +3587,14 @@
 
                 currentKickHistoryPage = result.pagination.page;
                 totalKickHistoryPages = result.pagination.totalPages;
+                console.log('[KickHistory] Sessions count:', result.sessions.length);
 
                 if (result.sessions.length === 0) {
                     body.innerHTML = `
-                        <div class="kick-history-empty">
-                            <i class="fa fa-hand-pointer-o"></i>
-                            <p>Belum ada riwayat kick counter</p>
-                            <p style="font-size: 12px;">Mulai hitung gerakan bayi Anda!</p>
+                        <div class="kick-history-empty" style="padding: 30px; text-align: center;">
+                            <i class="fa fa-hand-pointer-o" style="font-size: 48px; color: rgba(255,255,255,0.3);"></i>
+                            <p style="color: white; margin-top: 15px;">Belum ada riwayat kick counter</p>
+                            <p style="font-size: 12px; color: rgba(255,255,255,0.7);">Mulai hitung gerakan bayi Anda!</p>
                         </div>
                     `;
                     pagination.style.display = 'none';
@@ -3662,12 +3680,12 @@
                 }
 
             } catch (error) {
-                console.error('Error loading kick history:', error);
+                console.error('[KickHistory] Error:', error);
                 body.innerHTML = `
-                    <div class="kick-history-empty">
-                        <i class="fa fa-exclamation-triangle" style="color: #ef4444;"></i>
-                        <p>Gagal memuat riwayat</p>
-                        <p style="font-size: 12px;">${error.message}</p>
+                    <div class="kick-history-empty" style="padding: 30px; text-align: center;">
+                        <i class="fa fa-exclamation-triangle" style="color: #ef4444; font-size: 32px;"></i>
+                        <p style="color: white; margin-top: 10px;">Gagal memuat riwayat</p>
+                        <p style="font-size: 12px; color: rgba(255,255,255,0.7);">${error.message}</p>
                     </div>
                 `;
                 pagination.style.display = 'none';
