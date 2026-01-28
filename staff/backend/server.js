@@ -145,6 +145,7 @@ const patientRecordsRoutes = require('./routes/patient-records');
 const billingsRoutes = require('./routes/billings');
 const visitInvoicesRoutes = require('./routes/visit-invoices');
 const aiRoutes = require('./routes/ai');
+const kickCounterRoutes = require('./routes/kick-counter');
 
 // Pass Socket.io to routes
 chatRoutes.setSocketIO(io);
@@ -184,6 +185,7 @@ const PATIENT_ALLOWED_ROUTES = [
     '/api/usg-photos',         // USG photos access
     '/api/practice-schedules', // Practice schedules for all locations
     '/api/registration-codes', // Registration code validation (for new patients)
+    '/api/kick-counter',       // Kick counter for fetal movement tracking
 ];
 
 app.use('/api', (req, res, next) => {
@@ -339,6 +341,9 @@ app.use('/api/visit-invoices', visitInvoicesRoutes);
 
 // AI routes (Smart Triage, Summary, Chatbot)
 app.use('/', aiRoutes);
+
+// Kick Counter routes (fetal movement tracking)
+app.use('/api/kick-counter', kickCounterRoutes);
 
 // Role Management routes
 const rolesRoutes = require('./routes/roles');

@@ -1450,6 +1450,186 @@
             from { transform: translateX(0); opacity: 1; }
             to { transform: translateX(100%); opacity: 0; }
         }
+
+        /* ==================== KICK COUNTER STYLES ==================== */
+        .kick-button {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%);
+            border: none;
+            color: white;
+            font-size: 48px;
+            cursor: pointer;
+            box-shadow: 0 10px 40px rgba(236, 72, 153, 0.4);
+            transition: transform 0.1s, box-shadow 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 15px auto;
+        }
+        .kick-button:hover {
+            box-shadow: 0 15px 50px rgba(236, 72, 153, 0.5);
+        }
+        .kick-button:active {
+            transform: scale(0.95);
+            box-shadow: 0 5px 20px rgba(236, 72, 153, 0.6);
+        }
+        .kick-button.pulse {
+            animation: kickPulse 0.3s ease-out;
+        }
+        @keyframes kickPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+        .kick-counter-display {
+            text-align: center;
+            margin: 15px 0;
+        }
+        .kick-count {
+            font-size: 56px;
+            font-weight: 700;
+            color: #ec4899;
+            line-height: 1;
+            margin-top: 10px;
+        }
+        .kick-timer {
+            font-size: 20px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 5px;
+            font-family: 'Courier New', monospace;
+        }
+        .kick-start-btn {
+            background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%);
+            border: none;
+            color: white;
+            padding: 14px 28px;
+            border-radius: 25px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 5px 20px rgba(236, 72, 153, 0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .kick-start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(236, 72, 153, 0.4);
+        }
+        .kick-end-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            margin-top: 15px;
+            transition: background 0.2s;
+        }
+        .kick-end-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        .kick-alert {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            border-radius: 10px;
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+        .kick-alert i {
+            color: #ef4444;
+            font-size: 20px;
+            margin-top: 2px;
+        }
+        .kick-alert strong {
+            color: #ef4444;
+        }
+        .kick-chart-bars {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            height: 100px;
+            padding: 10px 5px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        .kick-chart-bar-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+        .kick-chart-bar {
+            width: 24px;
+            background: linear-gradient(to top, #ec4899, #f472b6);
+            border-radius: 4px 4px 0 0;
+            min-height: 4px;
+            position: relative;
+            transition: height 0.3s ease;
+        }
+        .kick-chart-bar.low {
+            background: linear-gradient(to top, #ef4444, #f87171);
+        }
+        .kick-chart-bar.today {
+            box-shadow: 0 0 10px rgba(236, 72, 153, 0.5);
+        }
+        .kick-chart-value {
+            position: absolute;
+            top: -18px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.8);
+            font-weight: 600;
+        }
+        .kick-chart-label {
+            font-size: 9px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 6px;
+            text-transform: uppercase;
+        }
+        .kick-summary-stats {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+            padding: 10px 0;
+        }
+        .kick-summary-stat {
+            flex: 1;
+        }
+        .kick-summary-stat .value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #ec4899;
+        }
+        .kick-summary-stat .label {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 2px;
+        }
+        .kick-session-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-bottom: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+        }
+        .kick-session-card .time {
+            color: rgba(255, 255, 255, 0.6);
+        }
+        .kick-session-card .count {
+            color: #ec4899;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -1699,6 +1879,57 @@
                                 <strong style="color: #d4af37;">Klik untuk membuka</strong> buku interaktif perjalanan kehamilan Anda
                             </p>
                         </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Kick Counter Section -->
+        <div class="row" id="kick-counter-row" style="margin-bottom: 30px; display: none;">
+            <div class="col-md-12">
+                <div class="dashboard-card" id="kick-counter-card" style="background: linear-gradient(135deg, #1a1a2e 0%, #3d1f47 50%, #1a1a2e 100%); border: 1px solid rgba(236, 72, 153, 0.3); position: relative; overflow: hidden;">
+                    <!-- Decorative elements -->
+                    <div style="position: absolute; top: 10px; right: 10px; font-size: 60px; opacity: 0.1; color: #ec4899;">
+                        <i class="fa fa-heartbeat"></i>
+                    </div>
+
+                    <h3 style="margin-bottom: 15px;">
+                        <i class="fa fa-hand-pointer-o" style="color: #ec4899;"></i> Kick Counter
+                        <span style="font-size: 12px; color: rgba(255,255,255,0.6); font-weight: normal; margin-left: 10px;">Hitung Gerakan Bayi</span>
+                    </h3>
+
+                    <p class="text-muted" style="font-size: 12px; margin-bottom: 20px;">
+                        Minimal 10 gerakan dalam 2 jam adalah normal. Catat gerakan bayi Anda setiap hari.
+                    </p>
+
+                    <!-- Main Counter Area -->
+                    <div id="kick-counter-main" style="position: relative; z-index: 1;">
+                        <!-- Will be populated by JavaScript -->
+                        <div style="text-align: center; padding: 20px;">
+                            <p style="margin-bottom: 15px; color: rgba(255,255,255,0.7);">
+                                Mulai sesi untuk menghitung gerakan bayi
+                            </p>
+                            <button class="kick-start-btn" onclick="startKickSession()">
+                                <i class="fa fa-play"></i> Mulai Menghitung
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Today's Summary -->
+                    <div id="kick-counter-today" style="margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255,255,255,0.1);">
+                        <!-- Today's stats will be populated by JS -->
+                    </div>
+
+                    <!-- Weekly Chart -->
+                    <div id="kick-counter-chart" style="margin-top: 20px;">
+                        <!-- Chart will be rendered here -->
+                    </div>
+
+                    <!-- History Link -->
+                    <div style="text-align: center; margin-top: 15px;">
+                        <a href="#" onclick="showKickHistory(); return false;" style="color: #ec4899; font-size: 13px; text-decoration: none;">
+                            <i class="fa fa-history"></i> Lihat Riwayat Lengkap
+                        </a>
                     </div>
                 </div>
             </div>
@@ -2291,6 +2522,8 @@
             loadUserProfile();
             // Load pregnancy tracker
             loadPregnancyTracker();
+            // Load kick counter (fetal movement tracking)
+            loadKickCounter();
             // Load medications
             loadMedications();
             // Load health articles
@@ -2730,6 +2963,269 @@
                 console.error('Error loading pregnancy tracker:', error);
                 trackerRow.style.display = 'none';
             }
+        }
+
+        // ==================== KICK COUNTER ====================
+        let activeKickSession = null;
+        let kickTimer = null;
+        let kickElapsedSeconds = 0;
+
+        async function loadKickCounter() {
+            const kickRow = document.getElementById('kick-counter-row');
+            if (!kickRow) return;
+
+            try {
+                const response = await fetch('/api/kick-counter/today', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    // Show kick counter section (only for pregnant patients)
+                    kickRow.style.display = 'block';
+
+                    // Find active session
+                    activeKickSession = result.sessions?.find(s => s.status === 'active') || null;
+
+                    renderKickCounter(result);
+                    loadKickStats();
+                }
+            } catch (error) {
+                console.error('Error loading kick counter:', error);
+                // Hide if API fails (patient might not be pregnant)
+                kickRow.style.display = 'none';
+            }
+        }
+
+        function renderKickCounter(data) {
+            const container = document.getElementById('kick-counter-main');
+            const todayContainer = document.getElementById('kick-counter-today');
+
+            // Show alert if needed
+            let alertHtml = '';
+            if (data.alert) {
+                alertHtml = `
+                    <div class="kick-alert">
+                        <i class="fa fa-exclamation-triangle"></i>
+                        <div>
+                            <strong>Perhatian!</strong>
+                            <p style="margin: 5px 0 0; font-size: 12px; color: rgba(255,255,255,0.8);">
+                                ${data.alert_message || 'Gerakan bayi hari ini kurang dari 10 kali. Hubungi dokter jika khawatir.'}
+                            </p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            if (activeKickSession) {
+                // Show active session with kick button
+                container.innerHTML = alertHtml + `
+                    <div class="kick-counter-display">
+                        <button class="kick-button" onclick="recordKick()" id="kick-btn">
+                            <i class="fa fa-hand-pointer-o"></i>
+                        </button>
+                        <div class="kick-count" id="kick-count">${activeKickSession.kick_count}</div>
+                        <div class="kick-timer" id="kick-timer">00:00</div>
+                        <button class="kick-end-btn" onclick="endKickSession()">
+                            <i class="fa fa-stop"></i> Selesai Menghitung
+                        </button>
+                    </div>
+                `;
+                startKickTimer();
+            } else {
+                // Show start button
+                container.innerHTML = alertHtml + `
+                    <div style="text-align: center; padding: 20px;">
+                        <p style="margin-bottom: 15px; color: rgba(255,255,255,0.7);">
+                            Mulai sesi untuk menghitung gerakan bayi
+                        </p>
+                        <button class="kick-start-btn" onclick="startKickSession()">
+                            <i class="fa fa-play"></i> Mulai Menghitung
+                        </button>
+                    </div>
+                `;
+            }
+
+            // Render today's summary
+            if (data.summary) {
+                todayContainer.innerHTML = `
+                    <div class="kick-summary-stats">
+                        <div class="kick-summary-stat">
+                            <div class="value">${data.summary.total_kicks}</div>
+                            <div class="label">Gerakan Hari Ini</div>
+                        </div>
+                        <div class="kick-summary-stat">
+                            <div class="value">${data.summary.total_sessions}</div>
+                            <div class="label">Sesi</div>
+                        </div>
+                        <div class="kick-summary-stat">
+                            <div class="value">${data.summary.avg_per_session}</div>
+                            <div class="label">Rata-rata/Sesi</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        async function startKickSession() {
+            try {
+                const response = await fetch('/api/kick-counter/session', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    activeKickSession = result.session;
+                    kickElapsedSeconds = 0;
+                    loadKickCounter();
+                } else {
+                    alert(result.message || 'Gagal memulai sesi');
+                }
+            } catch (error) {
+                console.error('Error starting kick session:', error);
+            }
+        }
+
+        async function recordKick() {
+            if (!activeKickSession) return;
+
+            const button = document.getElementById('kick-btn');
+
+            // Visual feedback
+            button.classList.add('pulse');
+            setTimeout(() => button.classList.remove('pulse'), 300);
+
+            // Haptic feedback (mobile)
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+
+            try {
+                const response = await fetch('/api/kick-counter/kick', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ session_id: activeKickSession.id })
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    document.getElementById('kick-count').textContent = result.session.kick_count;
+                    activeKickSession.kick_count = result.session.kick_count;
+                }
+            } catch (error) {
+                console.error('Error recording kick:', error);
+            }
+        }
+
+        async function endKickSession() {
+            if (!activeKickSession) return;
+
+            try {
+                const response = await fetch(`/api/kick-counter/session/${activeKickSession.id}/end`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    stopKickTimer();
+                    activeKickSession = null;
+                    loadKickCounter();
+                }
+            } catch (error) {
+                console.error('Error ending kick session:', error);
+            }
+        }
+
+        function startKickTimer() {
+            if (!activeKickSession) return;
+
+            // Calculate elapsed time from session start
+            const startTime = new Date(activeKickSession.start_time);
+            kickElapsedSeconds = Math.floor((Date.now() - startTime.getTime()) / 1000);
+
+            updateKickTimerDisplay();
+            kickTimer = setInterval(() => {
+                kickElapsedSeconds++;
+                updateKickTimerDisplay();
+            }, 1000);
+        }
+
+        function stopKickTimer() {
+            if (kickTimer) {
+                clearInterval(kickTimer);
+                kickTimer = null;
+            }
+        }
+
+        function updateKickTimerDisplay() {
+            const timerEl = document.getElementById('kick-timer');
+            if (!timerEl) return;
+
+            const minutes = Math.floor(kickElapsedSeconds / 60);
+            const seconds = kickElapsedSeconds % 60;
+            timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        async function loadKickStats() {
+            try {
+                const response = await fetch('/api/kick-counter/stats', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const result = await response.json();
+
+                if (result.success && result.stats.week) {
+                    renderKickChart(result.stats.week);
+                }
+            } catch (error) {
+                console.error('Error loading kick stats:', error);
+            }
+        }
+
+        function renderKickChart(weekData) {
+            const chartContainer = document.getElementById('kick-counter-chart');
+            if (!chartContainer || !weekData || weekData.length === 0) return;
+
+            const maxKicks = Math.max(...weekData.map(d => d.kicks), 30);
+            const today = new Date().toISOString().split('T')[0];
+
+            let barsHtml = '<div class="kick-chart-bars">';
+            weekData.forEach(day => {
+                const height = maxKicks > 0 ? (day.kicks / maxKicks) * 100 : 0;
+                const dayDate = new Date(day.date);
+                const dayName = dayDate.toLocaleDateString('id-ID', { weekday: 'short' });
+                const isLow = day.kicks > 0 && day.kicks < 10;
+                const isToday = day.date === today;
+
+                barsHtml += `
+                    <div class="kick-chart-bar-wrapper">
+                        <div class="kick-chart-bar ${isLow ? 'low' : ''} ${isToday ? 'today' : ''}" style="height: ${Math.max(height, 4)}%;">
+                            ${day.kicks > 0 ? `<span class="kick-chart-value">${day.kicks}</span>` : ''}
+                        </div>
+                        <span class="kick-chart-label">${dayName}</span>
+                    </div>
+                `;
+            });
+            barsHtml += '</div>';
+
+            chartContainer.innerHTML = `
+                <h4 style="font-size: 13px; margin-bottom: 10px; color: rgba(255,255,255,0.8);">
+                    <i class="fa fa-bar-chart" style="color: #ec4899;"></i> Grafik 7 Hari Terakhir
+                </h4>
+                ${barsHtml}
+            `;
+        }
+
+        function showKickHistory() {
+            // For now, just show an alert. Can be expanded to modal later.
+            alert('Fitur riwayat lengkap akan segera hadir!');
         }
 
         // ==================== MEDICATIONS ====================
