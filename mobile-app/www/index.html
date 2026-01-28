@@ -779,7 +779,8 @@
         }
 
         // Google Sign-In - Native (fast) with web fallback
-        const GOOGLE_WEB_CLIENT_ID = '738335602560-5napmglm15g8jr5c1j0ienc9v8ptnsnt.apps.googleusercontent.com';
+        // IMPORTANT: This must be the WEB client ID (used as serverClientId for token audience)
+        const GOOGLE_WEB_CLIENT_ID = '738335602560-52as846lk2oo78fr38a86elu8888m7eh.apps.googleusercontent.com';
         let googleAuthReady = false;
         let firstLoginRetry = false;
         let firstRegisterRetry = false;
