@@ -4259,6 +4259,8 @@
                    sessionStorage.getItem('vps_auth_token') ||
                    localStorage.getItem('patient_token');
         }
+        // Alias for compatibility
+        const getAuthToken = getToken;
 
         // Check if user has liked an article
         async function checkArticleLikeStatus(articleId, likeCount) {
