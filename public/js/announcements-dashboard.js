@@ -460,3 +460,6 @@ style.textContent = `
     }
 `;
 document.head.appendChild(style);
+
+// Export for pull-to-refresh
+window.loadAnnouncements = loadAnnouncements;
