@@ -1880,6 +1880,32 @@
             overflow: hidden;
             touch-action: none;
         }
+
+        /* Performance: Reduce animations on mobile for smoother experience */
+        @media (max-width: 768px) {
+            *, *::before, *::after {
+                animation-duration: 0.1s !important;
+                animation-delay: 0s !important;
+                transition-duration: 0.1s !important;
+                transition-delay: 0s !important;
+            }
+            /* Keep essential animations but faster */
+            .fa-spin {
+                animation-duration: 1s !important;
+            }
+            /* Disable parallax and heavy transforms */
+            .parallax, [data-parallax] {
+                transform: none !important;
+            }
+        }
+
+        /* Prefer reduced motion for accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
     </style>
 </head>
 <body>
@@ -2125,7 +2151,7 @@
                     <div style="position: relative; z-index: 1; padding: 25px; display: flex; align-items: center; gap: 30px; flex-wrap: wrap;">
                         <!-- Book Image -->
                         <div style="flex-shrink: 0;">
-                            <img src="/images/dokter-dibya-book/thumb-book.jpeg" alt="Perjalanan menjadi Ibu" style="width: 120px; height: auto; object-fit: contain; border-radius: 8px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4); border: 2px solid rgba(212, 175, 55, 0.3);">
+                            <img loading="lazy" src="/images/dokter-dibya-book/thumb-book.jpeg" alt="Perjalanan menjadi Ibu" style="width: 120px; height: auto; object-fit: contain; border-radius: 8px; box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4); border: 2px solid rgba(212, 175, 55, 0.3);">
                         </div>
 
                         <!-- Text Content -->
@@ -2761,7 +2787,7 @@
             const urlToken = urlParams.get('token');
             const urlUser = urlParams.get('user');
             if (urlToken) {
-                console.log('[DASHBOARD] Token received from URL (from mobile app), saving...');
+                // Token received from URL
                 localStorage.setItem('vps_auth_token', urlToken);
                 // Mark that user came from mobile app
                 localStorage.setItem('from_mobile_app', 'true');
@@ -2779,27 +2805,19 @@
         const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
         const user = JSON.parse(localStorage.getItem('patient_user') || '{}');
 
-        console.log('[DASHBOARD] Auth check - token:', token ? 'EXISTS' : 'MISSING');
-        console.log('[DASHBOARD] Auth check - user:', user);
-        console.log('[DASHBOARD] Auth check - user.id:', user.id);
-
         if (!token || !user.id) {
             // Not authenticated, redirect to login
-            console.log('[DASHBOARD] Not authenticated, redirecting to login');
-            // Check if from mobile app (via URL param OR localStorage flag)
             const urlParams = new URLSearchParams(window.location.search);
             const fromMobile = urlParams.has('token') || localStorage.getItem('from_mobile_app') === 'true';
             const isCapacitor = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
 
             if (fromMobile || isCapacitor) {
-                console.log('[DASHBOARD] From mobile app, using deep link to return to app');
                 localStorage.removeItem('from_mobile_app');
                 window.location.href = 'dokterdibya://logout';
             } else {
                 window.location.href = '/patient-login.html';
             }
         } else {
-            console.log('[DASHBOARD] Authenticated, loading profile...');
             // Load user profile
             loadUserProfile();
             // Load pregnancy tracker
@@ -2846,7 +2864,6 @@
 
                 // Check if intake form is completed, redirect if not
                 if (profile.intake_completed !== 1) {
-                    console.log('[DASHBOARD] Intake not completed, redirecting to intake form');
                     // Check if from mobile app - preserve token in URL for intake form
                     const fromMobile = localStorage.getItem('from_mobile_app') === 'true';
                     if (fromMobile) {
@@ -3829,8 +3846,6 @@
 
             // Refresh all data function
             async function refreshAllData() {
-                console.log('[PTR] Refreshing all data...');
-
                 // Haptic feedback if available
                 if (navigator.vibrate) {
                     navigator.vibrate(30);
@@ -3848,12 +3863,7 @@
                 if (typeof loadHospitalSchedules === 'function') promises.push(loadHospitalSchedules());
                 if (typeof loadAnnouncements === 'function') promises.push(loadAnnouncements());
 
-                try {
-                    await Promise.allSettled(promises);
-                    console.log('[PTR] Refresh complete');
-                } catch (error) {
-                    console.error('[PTR] Refresh error:', error);
-                }
+                await Promise.allSettled(promises);
             }
 
             // Make refreshAllData available globally
@@ -4949,8 +4959,8 @@
             });
         }
 
-        // Check reminders every minute
-        setInterval(checkMedicationReminders, 60000);
+        // Check reminders every 5 minutes (reduced from 60s for performance)
+        setInterval(checkMedicationReminders, 300000);
         // Also check on page load
         if ('Notification' in window && Notification.permission === 'granted') {
             checkMedicationReminders();
@@ -5299,34 +5309,23 @@
             }
 
             waitForSocket((sock) => {
-                console.log('[PatientDashboard] Setting up real-time updates');
-
                 // Listen for booking status updates
                 sock.on('booking:update', (data) => {
-                    console.log('[PatientDashboard] Booking updated:', data);
-                    // Reload booking status to reflect changes
                     loadBookingStatus();
-                    // Show notification
                     showBookingNotification(`Status booking Anda telah diupdate: ${data.booking?.status || 'diperbarui'}`, 'info');
                 });
 
                 // Listen for booking cancellations
                 sock.on('booking:cancel', (data) => {
-                    console.log('[PatientDashboard] Booking cancelled:', data);
                     loadBookingStatus();
                     showBookingNotification('Booking Anda telah dibatalkan', 'warning');
                 });
 
                 // Listen for new notifications
                 sock.on('notification:new', (data) => {
-                    console.log('[PatientDashboard] New notification:', data);
-                    // Update notification badge
                     updateNotificationBadge();
-                    // Show toast notification
                     showBookingNotification(data.notification?.title || 'Notifikasi baru', 'info');
                 });
-
-                console.log('[PatientDashboard] Real-time updates enabled');
             });
         }
 
@@ -5948,7 +5947,6 @@
 
             // If no changes, just close the modal
             if (!hasChanges) {
-                console.log('No changes detected, closing modal');
                 $('#profileModal').modal('hide');
                 return;
             }
@@ -6301,7 +6299,7 @@
                     <div class="ultrasound-item ${glowClass}" style="position: relative;">
                         ${img.isNew ? '<span class="new-badge" style="position: absolute; top: 8px; right: 8px; background: #28e97f; color: #000; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; z-index: 3;">BARU</span>' : ''}
                         ${isThumbnail ? '<span class="thumbnail-badge" style="position: absolute; top: 8px; left: 8px; background: #ffd700; color: #000; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; z-index: 3;"><i class="fa fa-star"></i> THUMBNAIL</span>' : ''}
-                        <img src="${img.url}"
+                        <img loading="lazy" src="${img.url}"
                              alt="USG ${formattedDate}"
                              onclick="viewUsgAndMarkViewed(${img.id}, '${img.url}', '${formattedDate}', '${safeNotes}', this.parentElement)"
                              style="cursor: pointer;"
@@ -6549,7 +6547,7 @@
                              style="position: relative;"
                              onclick="openLabResultAndMarkViewed(${lab.id}, '${lab.url}', this)">
                             ${isImage(lab.fileType) ? `
-                                <img src="${lab.url}" alt="${lab.title}" class="lab-thumb" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
+                                <img loading="lazy" src="${lab.url}" alt="${lab.title}" class="lab-thumb" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
                                 <div class="lab-thumb" style="display: none; align-items: center; justify-content: center;">
                                     <i class="fa fa-file-text-o" style="font-size: 40px; color: #28a7e9;"></i>
                                 </div>
@@ -7778,8 +7776,8 @@
         // Initialize notifications on page load
         document.addEventListener('DOMContentLoaded', function() {
             updateNotificationBadge();
-            // Poll for notifications every 60 seconds
-            setInterval(updateNotificationBadge, 60000);
+            // Poll for notifications every 5 minutes (reduced from 60s for performance)
+            setInterval(updateNotificationBadge, 300000);
         });
 
         // Update notification badge count
@@ -8141,20 +8139,13 @@
         // Register service worker for PWA functionality
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
-                    .then((registration) => {
-                        console.log('[PWA] Service Worker registered:', registration.scope);
-                    })
-                    .catch((error) => {
-                        console.error('[PWA] Service Worker registration failed:', error);
-                    });
+                navigator.serviceWorker.register('/sw.js').catch(() => {});
             });
         }
 
         // Handle iOS standalone mode (Add to Home Screen)
         if (window.navigator.standalone === true) {
             document.body.classList.add('ios-standalone');
-            console.log('[PWA] Running in iOS standalone mode');
         }
     </script>
 </body>
