@@ -763,6 +763,26 @@
 
         const API_BASE = 'https://dokterdibya.com';
         const DASHBOARD_URL = 'https://dokterdibya.com/patient-dashboard.html';
+        const INTAKE_URL = 'https://dokterdibya.com/patient-intake.html';
+
+        // Helper: Get redirect URL based on intake completion status
+        function getPostLoginUrl(data, token) {
+            const userJson = data.user ? JSON.stringify(data.user) : localStorage.getItem('patient_user');
+            let baseUrl;
+
+            // If intake not completed, redirect to intake form
+            if (data.intake_completed === false || (data.user && !data.user.intake_completed)) {
+                console.log('[Redirect] Intake not completed, redirecting to intake form');
+                baseUrl = INTAKE_URL;
+            } else {
+                console.log('[Redirect] Intake completed, redirecting to dashboard');
+                baseUrl = DASHBOARD_URL;
+            }
+
+            let url = `${baseUrl}?token=${encodeURIComponent(token)}`;
+            if (userJson) url += `&user=${encodeURIComponent(userJson)}`;
+            return url;
+        }
 
         // Check for logout flag - clear all auth data
         const urlParams = new URLSearchParams(window.location.search);
@@ -877,15 +897,12 @@
                         console.log('[Login #' + myOperationId + '] Backend response:', res.status, data);
 
                         if (res.ok && data.token) {
-                            console.log('[Login #' + myOperationId + '] Login successful, redirecting...');
+                            console.log('[Login #' + myOperationId + '] Login successful, checking intake status...');
                             localStorage.setItem('vps_auth_token', data.token);
                             if (data.user) localStorage.setItem('patient_user', JSON.stringify(data.user));
                             localStorage.setItem('auth_provider', 'google');
                             localStorage.setItem('from_mobile_app', 'true');
-                            let url = `${DASHBOARD_URL}?token=${encodeURIComponent(data.token)}`;
-                            const user = localStorage.getItem('patient_user');
-                            if (user) url += `&user=${encodeURIComponent(user)}`;
-                            window.location.href = url;
+                            window.location.href = getPostLoginUrl(data, data.token);
                             return;
                         }
 
@@ -976,15 +993,12 @@
 
                                 console.log('[Login #' + myOperationId + '] Retry backend response:', res.status, data);
                                 if (res.ok && data.token) {
-                                    console.log('[Login #' + myOperationId + '] Retry login successful, redirecting...');
+                                    console.log('[Login #' + myOperationId + '] Retry login successful, checking intake status...');
                                     localStorage.setItem('vps_auth_token', data.token);
                                     if (data.user) localStorage.setItem('patient_user', JSON.stringify(data.user));
                                     localStorage.setItem('auth_provider', 'google');
                                     localStorage.setItem('from_mobile_app', 'true');
-                                    let url = `${DASHBOARD_URL}?token=${encodeURIComponent(data.token)}`;
-                                    const user = localStorage.getItem('patient_user');
-                                    if (user) url += `&user=${encodeURIComponent(user)}`;
-                                    window.location.href = url;
+                                    window.location.href = getPostLoginUrl(data, data.token);
                                     return;
                                 }
                                 // Registration code needed
@@ -1111,16 +1125,14 @@
                         console.log('[Register #' + myOperationId + '] Backend response:', res.status, data);
 
                         if (res.ok && data.token) {
-                            console.log('[Register #' + myOperationId + '] Registration successful, redirecting...');
+                            console.log('[Register #' + myOperationId + '] Registration successful, redirecting to intake form...');
                             localStorage.setItem('vps_auth_token', data.token);
                             if (data.user) localStorage.setItem('patient_user', JSON.stringify(data.user));
                             localStorage.setItem('auth_provider', 'google');
                             localStorage.setItem('from_mobile_app', 'true');
                             validatedRegCode = null;
-                            let url = `${DASHBOARD_URL}?token=${encodeURIComponent(data.token)}`;
-                            const user = localStorage.getItem('patient_user');
-                            if (user) url += `&user=${encodeURIComponent(user)}`;
-                            window.location.href = url;
+                            // New registrations always go to intake form
+                            window.location.href = getPostLoginUrl(data, data.token);
                             return;
                         }
 
@@ -1167,16 +1179,13 @@
                                 const data = await res.json();
                                 console.log('[Register #' + myOperationId + '] Retry backend response:', res.status, data);
                                 if (res.ok && data.token) {
-                                    console.log('[Register #' + myOperationId + '] Retry registration successful, redirecting...');
+                                    console.log('[Register #' + myOperationId + '] Retry registration successful, redirecting to intake...');
                                     localStorage.setItem('vps_auth_token', data.token);
                                     if (data.user) localStorage.setItem('patient_user', JSON.stringify(data.user));
                                     localStorage.setItem('auth_provider', 'google');
                                     localStorage.setItem('from_mobile_app', 'true');
                                     validatedRegCode = null;
-                                    let url = `${DASHBOARD_URL}?token=${encodeURIComponent(data.token)}`;
-                                    const user = localStorage.getItem('patient_user');
-                                    if (user) url += `&user=${encodeURIComponent(user)}`;
-                                    window.location.href = url;
+                                    window.location.href = getPostLoginUrl(data, data.token);
                                     return;
                                 }
                                 document.getElementById('loading-overlay').classList.add('hidden');
@@ -1252,14 +1261,22 @@
                         if (userJson) {
                             localStorage.setItem('patient_user', userJson);
                         }
-                        console.log('Token saved from deep link, redirecting...');
+                        console.log('Token saved from deep link, checking intake status...');
                         localStorage.setItem('from_mobile_app', 'true');
-                        // Pass token and user in URL so web dashboard can access it
-                        let dashboardUrl = `${DASHBOARD_URL}?token=${encodeURIComponent(token)}`;
-                        if (userJson) {
-                            dashboardUrl += `&user=${encodeURIComponent(userJson)}`;
-                        }
-                        window.location.href = dashboardUrl;
+
+                        // Parse user to check intake status
+                        let user = null;
+                        try {
+                            user = userJson ? JSON.parse(userJson) : null;
+                        } catch (e) { console.log('Could not parse user JSON'); }
+
+                        // Construct data object for getPostLoginUrl
+                        const data = {
+                            token: token,
+                            intake_completed: user ? user.intake_completed : false,
+                            user: user
+                        };
+                        window.location.href = getPostLoginUrl(data, token);
                     }
                 }
             } catch (e) {
@@ -1321,14 +1338,23 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
-                    // Pass token in URL - dashboard is different origin, can't access our localStorage
-                    localStorage.setItem('from_mobile_app', 'true');
-                    const user = localStorage.getItem('patient_user');
-                    let url = `${DASHBOARD_URL}?token=${encodeURIComponent(token)}`;
+                    const profileResponse = await res.json();
+                    const user = profileResponse.user || profileResponse;
+                    console.log('Profile fetched, intake_completed:', user.intake_completed);
+
+                    // Update stored user data with fresh profile
                     if (user) {
-                        url += `&user=${encodeURIComponent(user)}`;
+                        localStorage.setItem('patient_user', JSON.stringify(user));
                     }
-                    window.location.href = url;
+
+                    localStorage.setItem('from_mobile_app', 'true');
+
+                    // Check intake status and redirect accordingly
+                    const data = {
+                        intake_completed: user.intake_completed,
+                        user: user
+                    };
+                    window.location.href = getPostLoginUrl(data, token);
                 } else {
                     // Token invalid, clear and show login
                     localStorage.removeItem('vps_auth_token');
@@ -1418,9 +1444,9 @@
                         localStorage.setItem('patient_user', JSON.stringify(data.user));
                     }
 
-                    // Redirect to dashboard
+                    // Redirect based on intake completion status
                     localStorage.setItem('from_mobile_app', 'true');
-                    window.location.href = DASHBOARD_URL;
+                    window.location.href = getPostLoginUrl(data, data.token);
                 } else {
                     showError('login-error', data.message || 'Email atau password salah');
                 }
@@ -1464,13 +1490,14 @@
                 const data = await res.json();
 
                 if (res.ok && data.success) {
-                    // Auto login after register
+                    // Auto login after register - redirect to intake form
                     localStorage.setItem('vps_auth_token', data.token);
                     if (data.user) {
                         localStorage.setItem('patient_user', JSON.stringify(data.user));
                     }
                     localStorage.setItem('from_mobile_app', 'true');
-                    window.location.href = DASHBOARD_URL;
+                    // New registrations always need intake form
+                    window.location.href = getPostLoginUrl(data, data.token);
                 } else {
                     showError('register-error', data.message || 'Gagal mendaftar. Silakan coba lagi.');
                 }

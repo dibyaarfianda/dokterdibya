@@ -2319,6 +2319,19 @@
                     return;
                 }
 
+                // Check if intake form is completed, redirect if not
+                if (profile.intake_completed !== 1) {
+                    console.log('[DASHBOARD] Intake not completed, redirecting to intake form');
+                    // Check if from mobile app - preserve token in URL for intake form
+                    const fromMobile = localStorage.getItem('from_mobile_app') === 'true';
+                    if (fromMobile) {
+                        window.location.href = '/patient-intake.html?token=' + encodeURIComponent(token);
+                    } else {
+                        window.location.href = '/patient-intake.html';
+                    }
+                    return;
+                }
+
                 // Update UI with profile data
                 document.getElementById('profile-name').textContent = profile.fullname;
                 document.getElementById('profile-email').textContent = profile.email;
