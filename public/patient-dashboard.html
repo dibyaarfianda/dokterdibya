@@ -1817,9 +1817,78 @@
             background: rgba(236, 72, 153, 0.2);
             color: #ec4899;
         }
+        /* Pull to Refresh */
+        .ptr-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 9998;
+            display: flex;
+            justify-content: center;
+            pointer-events: none;
+            padding-top: env(safe-area-inset-top, 0px);
+        }
+        .ptr-indicator {
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 102, 255, 0.9);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0, 102, 255, 0.4);
+            transform: translateY(-50px) scale(0.5);
+            opacity: 0;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+        .ptr-indicator.visible {
+            opacity: 1;
+            transform: translateY(10px) scale(1);
+        }
+        .ptr-indicator.refreshing {
+            transform: translateY(10px) scale(1);
+            opacity: 1;
+        }
+        .ptr-indicator i {
+            color: white;
+            font-size: 18px;
+            transition: transform 0.2s ease;
+        }
+        .ptr-indicator.refreshing i {
+            animation: ptr-spin 0.8s linear infinite;
+        }
+        @keyframes ptr-spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .ptr-indicator .ptr-arrow {
+            display: block;
+        }
+        .ptr-indicator .ptr-spinner {
+            display: none;
+        }
+        .ptr-indicator.refreshing .ptr-arrow {
+            display: none;
+        }
+        .ptr-indicator.refreshing .ptr-spinner {
+            display: block;
+        }
+        body.ptr-active {
+            overflow: hidden;
+            touch-action: none;
+        }
     </style>
 </head>
 <body>
+    <!-- Pull to Refresh Indicator -->
+    <div class="ptr-container" id="ptr-container">
+        <div class="ptr-indicator" id="ptr-indicator">
+            <i class="fa fa-arrow-down ptr-arrow"></i>
+            <i class="fa fa-refresh ptr-spinner"></i>
+        </div>
+    </div>
+
     <!-- Background Animation -->
     <div class="bg-animation" id="bgAnimation"></div>
 
@@ -3649,6 +3718,133 @@
                 closeKickHistory();
             }
         });
+
+        // ==================== PULL TO REFRESH ====================
+        (function initPullToRefresh() {
+            const ptrContainer = document.getElementById('ptr-container');
+            const ptrIndicator = document.getElementById('ptr-indicator');
+            if (!ptrContainer || !ptrIndicator) return;
+
+            let startY = 0;
+            let currentY = 0;
+            let isPulling = false;
+            let isRefreshing = false;
+            const threshold = 80; // pixels to pull before refresh triggers
+            const maxPull = 120;
+
+            // Check if we're at the top of the page
+            function isAtTop() {
+                return window.scrollY <= 0;
+            }
+
+            // Check if touch target is scrollable element
+            function isScrollableElement(el) {
+                while (el && el !== document.body) {
+                    const style = window.getComputedStyle(el);
+                    const overflowY = style.overflowY;
+                    if ((overflowY === 'auto' || overflowY === 'scroll') && el.scrollHeight > el.clientHeight) {
+                        return el.scrollTop > 0;
+                    }
+                    el = el.parentElement;
+                }
+                return false;
+            }
+
+            document.addEventListener('touchstart', function(e) {
+                if (isRefreshing) return;
+                if (!isAtTop()) return;
+                if (isScrollableElement(e.target)) return;
+
+                startY = e.touches[0].clientY;
+                isPulling = true;
+            }, { passive: true });
+
+            document.addEventListener('touchmove', function(e) {
+                if (!isPulling || isRefreshing) return;
+                if (!isAtTop()) {
+                    isPulling = false;
+                    ptrIndicator.classList.remove('visible');
+                    return;
+                }
+
+                currentY = e.touches[0].clientY;
+                const pullDistance = Math.min(currentY - startY, maxPull);
+
+                if (pullDistance > 20) {
+                    document.body.classList.add('ptr-active');
+                    ptrIndicator.classList.add('visible');
+
+                    // Scale indicator based on pull distance
+                    const progress = Math.min(pullDistance / threshold, 1);
+                    const translateY = 10 + (pullDistance * 0.3);
+                    const scale = 0.5 + (progress * 0.5);
+                    const rotation = progress * 180;
+
+                    ptrIndicator.style.transform = `translateY(${translateY}px) scale(${scale})`;
+                    ptrIndicator.querySelector('.ptr-arrow').style.transform = `rotate(${rotation}deg)`;
+                }
+            }, { passive: true });
+
+            document.addEventListener('touchend', function(e) {
+                if (!isPulling || isRefreshing) return;
+
+                const pullDistance = currentY - startY;
+                document.body.classList.remove('ptr-active');
+
+                if (pullDistance >= threshold && isAtTop()) {
+                    // Trigger refresh
+                    isRefreshing = true;
+                    ptrIndicator.classList.add('refreshing');
+                    ptrIndicator.style.transform = 'translateY(10px) scale(1)';
+
+                    refreshAllData().then(() => {
+                        setTimeout(() => {
+                            ptrIndicator.classList.remove('refreshing', 'visible');
+                            ptrIndicator.style.transform = '';
+                            isRefreshing = false;
+                        }, 500);
+                    });
+                } else {
+                    ptrIndicator.classList.remove('visible');
+                    ptrIndicator.style.transform = '';
+                }
+
+                isPulling = false;
+                startY = 0;
+                currentY = 0;
+            }, { passive: true });
+
+            // Refresh all data function
+            async function refreshAllData() {
+                console.log('[PTR] Refreshing all data...');
+
+                // Haptic feedback if available
+                if (navigator.vibrate) {
+                    navigator.vibrate(30);
+                }
+
+                const promises = [];
+
+                // Refresh main data
+                if (typeof loadUserProfile === 'function') promises.push(loadUserProfile());
+                if (typeof loadPregnancyTracker === 'function') promises.push(loadPregnancyTracker());
+                if (typeof loadKickCounter === 'function') promises.push(loadKickCounter());
+                if (typeof loadBookingStatus === 'function') promises.push(loadBookingStatus());
+                if (typeof loadArticles === 'function') promises.push(loadArticles());
+                if (typeof updateNotificationBadge === 'function') promises.push(updateNotificationBadge());
+                if (typeof loadHospitalSchedules === 'function') promises.push(loadHospitalSchedules());
+
+                try {
+                    await Promise.allSettled(promises);
+                    console.log('[PTR] Refresh complete');
+                } catch (error) {
+                    console.error('[PTR] Refresh error:', error);
+                }
+            }
+
+            // Make refreshAllData available globally
+            window.refreshAllData = refreshAllData;
+        })();
 
         // ==================== MEDICATIONS ====================
         function getCustomMedications() {
