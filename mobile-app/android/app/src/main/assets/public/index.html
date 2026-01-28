@@ -834,6 +834,12 @@
                     console.log('Using native Google Sign-In...');
                     const result = await window.Capacitor.Plugins.GoogleAuth.signIn();
 
+                    // Check if user navigated away during signIn
+                    if (loginFlowAborted) {
+                        console.log('Login flow aborted after signIn');
+                        return;
+                    }
+
                     if (result && result.authentication && result.authentication.idToken) {
                         console.log('Native sign-in succeeded, sending to backend');
                         showLoading();
@@ -908,6 +914,11 @@
                             }
                             console.log('Retry sign-in result: ' + (retryResult && retryResult.authentication ? 'success' : 'empty'));
                             if (retryResult && retryResult.authentication && retryResult.authentication.idToken) {
+                                // Check abort flag before sending to backend
+                                if (loginFlowAborted) {
+                                    console.log('Login flow aborted before backend call');
+                                    return;
+                                }
                                 console.log('Retry succeeded, sending to backend');
                                 showLoading();
                                 const res = await fetch(`${API_BASE}/api/patients/auth/google`, {
@@ -1288,6 +1299,16 @@
             document.getElementById(pageId).classList.add('active');
             // Clear errors
             document.querySelectorAll('.error-message').forEach(e => e.classList.remove('show'));
+            // Abort login flow when navigating to registration page
+            if (pageId === 'page-regcode') {
+                loginFlowAborted = true;
+                console.log('Navigated to registration - login flow aborted');
+            }
+            // Reset abort flag when going back to login
+            if (pageId === 'page-login') {
+                loginFlowAborted = false;
+                console.log('Navigated to login - abort flag reset');
+            }
         };
 
         // Toggle Password Visibility
