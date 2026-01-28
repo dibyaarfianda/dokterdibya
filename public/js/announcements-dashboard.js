@@ -18,24 +18,16 @@ function initializeSocket() {
     
     socket = io(socketUrl);
 
-    socket.on('connect', () => {
-        console.log('Socket connected for announcements');
-    });
+    socket.on('connect', () => {});
 
     // Listen for new announcements
     socket.on('announcement:new', (announcement) => {
-        console.log('New announcement received:', announcement);
-        // Reload announcements to show the new one
         loadAnnouncements();
-        
-        // Show notification
         showNotification(announcement);
     });
 
     // Listen for updated announcements
-    socket.on('announcement:updated', (announcement) => {
-        console.log('Announcement updated:', announcement);
-        // Reload announcements to reflect changes
+    socket.on('announcement:updated', () => {
         loadAnnouncements();
     });
 }
