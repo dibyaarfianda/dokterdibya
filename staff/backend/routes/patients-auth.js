@@ -411,6 +411,17 @@ router.post('/auth/google', async (req, res) => {
         const ANDROID_CLIENT_ID = '738335602560-5napmglm15g8jr5c1j0ienc9v8ptnsnt.apps.googleusercontent.com';
         const ANDROID_CLIENT_ID_CAPACITOR = '738335602560-s5mgu5cgu40gc70uciegqtkckug1lg62.apps.googleusercontent.com';
 
+        // DEBUG: Decode token to see its audience (without verification)
+        try {
+            const tokenParts = idToken.split('.');
+            const payload = JSON.parse(Buffer.from(tokenParts[1], 'base64').toString());
+            console.log('[GOOGLE-AUTH] Token audience (aud):', payload.aud);
+            console.log('[GOOGLE-AUTH] Token azp:', payload.azp);
+            console.log('[GOOGLE-AUTH] Expected audiences:', [GOOGLE_CLIENT_ID, ANDROID_CLIENT_ID, ANDROID_CLIENT_ID_CAPACITOR]);
+        } catch (e) {
+            console.log('[GOOGLE-AUTH] Could not decode token for debug:', e.message);
+        }
+
         // Verify Google token - accept Web and all Android client IDs
         const ticket = await googleClient.verifyIdToken({
             idToken: idToken,
@@ -603,15 +614,16 @@ router.post('/auth/google', async (req, res) => {
         // Ensure user record exists in users table for new patients
         if (isNewPatient) {
             const [existingUser] = await db.query(
-                'SELECT id FROM users WHERE email = ?',
+                'SELECT new_id FROM users WHERE email = ?',
                 [patient.email]
             );
 
             if (existingUser.length === 0) {
+                // Use patient's medical record ID as user ID (they're linked)
                 await db.query(
-                    `INSERT INTO users (email, name, user_type, password_hash, created_at)
-                     VALUES (?, ?, 'patient', '', NOW())`,
-                    [patient.email, patient.full_name]
+                    `INSERT INTO users (new_id, email, name, user_type, password_hash, created_at)
+                     VALUES (?, ?, ?, 'patient', '', NOW())`,
+                    [patient.id, patient.email, patient.full_name]
                 );
             }
         }
@@ -639,8 +651,9 @@ router.post('/auth/google', async (req, res) => {
         });
 
     } catch (error) {
-        console.error('Google auth error:', error);
-        res.status(401).json({ message: 'Autentikasi Google gagal' });
+        console.error('[GOOGLE-AUTH] Error:', error.message);
+        console.error('[GOOGLE-AUTH] Full error:', error);
+        res.status(401).json({ message: 'Autentikasi Google gagal', debug: error.message });
     }
 });
 
