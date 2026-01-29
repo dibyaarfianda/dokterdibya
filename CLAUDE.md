@@ -24,6 +24,20 @@ Before using any method, class, API, or dependency:
 - `getMyBillings()` vs `getVisitHistory()` - wrong method name caused build failure
 - `PullToRefreshBox` requires Material3 1.3.0+ but project uses BOM 2024.02.00
 
+## CRITICAL: Git Commits
+
+**NEVER add "Co-Authored-By" line in commit messages.** Just write the commit message without any co-author attribution.
+
+```bash
+# CORRECT
+git commit -m "Fix animation bug on mobile"
+
+# WRONG - DO NOT DO THIS
+git commit -m "Fix animation bug on mobile
+
+Co-Authored-By: Claude..."
+```
+
 ## Code Standards
 
 ### 1. Authentication Token
@@ -1062,3 +1076,30 @@ Selesai. Perubahan sudah diterapkan.
 ```
 
 **Why:** User needs visual feedback that work is happening, otherwise they might think the connection is frozen.
+
+### 29. Session Log - 30 Januari 2026
+
+**Staff Dashboard Navbar & Registration Code Fix**
+
+1. **Navbar User Name, Role, dan Avatar tidak muncul**
+   - **Root cause:** Kode update navbar di `initializeApp()` (index-adminlte.html) tidak reliable
+   - **Fix:** Pindahkan update navbar ke `updateWelcomeCard()` di `main.js`
+   - Fetch roles dari `/api/users/${user.id}/roles` untuk mendapatkan `display_name`
+   - Tambah update avatar di fungsi yang sama
+   - File: `staff/public/scripts/main.js` (lines 2642-2685)
+
+2. **Kode Registrasi tidak muncul di Dashboard**
+   - **Root cause:** ES module (`<script type="module">`) tidak bisa akses `loadDashboardCurrentCode` tanpa prefix `window.`
+   - **Fix:** Ubah `typeof loadDashboardCurrentCode` → `typeof window.loadDashboardCurrentCode`
+   - File: `staff/public/index-adminlte.html` (line 7153)
+   - **Lesson:** Dalam ES module, fungsi global harus diakses via `window.functionName`
+
+3. **Error: `setPageTitle is not defined`**
+   - **Root cause:** `window.setPageTitle = setPageTitle` tapi fungsi `setPageTitle` tidak ada
+   - **Fix:** Tambah definisi fungsi `setPageTitle(title)` sebelum assignment ke window
+   - File: `staff/public/scripts/main.js` (line 4492)
+
+**Pattern yang perlu diingat:**
+- ES modules punya scope terpisah, akses global function via `window.`
+- Selalu pastikan fungsi sudah didefinisikan sebelum di-assign ke `window`
+- Untuk navbar update yang reliable, lakukan di `updateWelcomeCard()` yang dipanggil dari `onAuthStateChanged`

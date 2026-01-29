@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a1a1a">
+    <title>Rekam Medis Saya - dokterDIBYA</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
+    <link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
+
+    <!-- Fonts & Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Shared Styles -->
+    <link rel="stylesheet" href="/styles/patient-portal.css">
+
+    <style>
+        /* Filter Tabs */
+        .filter-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+
+        .filter-tab {
+            flex-shrink: 0;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-tab.active {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border-color: #3b82f6;
+            color: white;
+        }
+
+        .filter-tab:hover:not(.active) {
+            background: rgba(59, 130, 246, 0.2);
+        }
+
+        /* Document Card */
+        .doc-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            margin-bottom: 12px;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+
+        .doc-card:hover {
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+        }
+
+        .doc-card-inner {
+            display: flex;
+            gap: 12px;
+            padding: 15px;
+        }
+
+        .doc-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .doc-icon.resume { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+        .doc-icon.other { background: linear-gradient(135deg, #6b7280, #4b5563); }
+
+        .doc-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .doc-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 3px;
+        }
+
+        .doc-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .doc-location {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            flex-shrink: 0;
+            margin-left: 8px;
+        }
+
+        .doc-location.klinik { background: rgba(40, 167, 233, 0.2); color: #28a7e9; }
+        .doc-location.melinda { background: rgba(236, 72, 153, 0.2); color: #ec4899; }
+        .doc-location.gambiran { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .doc-location.bhayangkara { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+
+        .doc-date {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .new-badge {
+            background: #28e97f;
+            color: #000;
+            font-size: 10px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-left: 8px;
+        }
+
+        .doc-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .doc-btn {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .doc-btn.view-btn {
+            background: rgba(59, 130, 246, 0.2);
+            border: 1px solid rgba(59, 130, 246, 0.5);
+            color: #3b82f6;
+        }
+
+        .doc-btn.download-btn {
+            background: rgba(16, 185, 129, 0.2);
+            border: 1px solid rgba(16, 185, 129, 0.5);
+            color: #10b981;
+        }
+
+        .doc-btn:hover {
+            transform: translateY(-1px);
+        }
+
+        /* Stats */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .stat-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .stat-box .value {
+            font-size: 20px;
+            font-weight: 700;
+            color: #3b82f6;
+        }
+
+        .stat-box .label {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 2px;
+        }
+
+        /* Preview Modal */
+        .preview-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 9999;
+            flex-direction: column;
+        }
+
+        .preview-modal.active {
+            display: flex;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: rgba(26, 26, 46, 0.95);
+        }
+
+        .preview-header h3 {
+            font-size: 14px;
+            color: white;
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            margin-right: 15px;
+        }
+
+        .preview-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .preview-body {
+            flex: 1;
+            overflow: auto;
+            padding: 20px;
+        }
+
+        .preview-body img {
+            max-width: 100%;
+            border-radius: 8px;
+        }
+
+        .preview-body iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        .preview-footer {
+            padding: 15px 20px;
+            background: rgba(26, 26, 46, 0.95);
+        }
+
+        .preview-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .preview-actions button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-download {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            border: none;
+            color: white;
+        }
+
+        .btn-share {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        /* Resume Medis Content */
+        .resume-content {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            color: white;
+            line-height: 1.8;
+        }
+
+        .resume-content h4 {
+            color: #8b5cf6;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .resume-content p {
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .resume-loading {
+            text-align: center;
+            padding: 40px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .resume-loading i {
+            font-size: 32px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navbar -->
+    <nav class="nav-bar">
+        <div class="nav-left">
+            <button class="back-btn" onclick="history.back()">
+                <i class="fa fa-chevron-left"></i>
+            </button>
+            <h1 class="page-title">Rekam Medis Saya</h1>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="content">
+        <!-- Loading State -->
+        <div class="loading" id="loading-state">
+            <i class="fa fa-spinner fa-spin"></i>
+            <span>Memuat dokumen...</span>
+        </div>
+
+        <!-- Content (hidden until loaded) -->
+        <div id="content-wrapper" style="display: none;">
+            <!-- Stats -->
+            <div class="stats-row">
+                <div class="stat-box">
+                    <div class="value" id="stat-resume">0</div>
+                    <div class="label">Resume Medis</div>
+                </div>
+            </div>
+
+            <!-- Documents List -->
+            <div id="doc-list">
+                <!-- Documents will be populated -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <a href="/patient-menu.html" class="nav-item">
+            <i class="fa fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="/notifikasi.html" class="nav-item">
+            <i class="fa fa-bell"></i>
+            <span>Notifikasi</span>
+        </a>
+        <a href="/profil.html" class="nav-item">
+            <i class="fa fa-user"></i>
+            <span>Profil</span>
+        </a>
+    </nav>
+
+    <!-- Preview Modal -->
+    <div class="preview-modal" id="preview-modal">
+        <div class="preview-header">
+            <h3 id="preview-title">Dokumen</h3>
+            <button class="preview-close" onclick="closePreview()">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+        <div class="preview-body" id="preview-body">
+            <!-- Content will be loaded -->
+        </div>
+        <div class="preview-footer">
+            <div class="preview-actions">
+                <button class="btn-download" id="btn-download" onclick="downloadFile()">
+                    <i class="fa fa-download"></i> Download
+                </button>
+                <button class="btn-share" onclick="shareFile()">
+                    <i class="fa fa-share-alt"></i> Bagikan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <script type="module">
+        import { getToken, checkAuth, apiRequest, showToast, formatDate, showEmptyState, escapeHtml } from '/scripts/patient-utils.js';
+
+        // State
+        let allDocuments = [];
+        let filteredDocuments = [];
+        let currentFilter = 'all';
+        let currentDoc = null;
+
+        // Make functions globally available
+        window.filterByType = filterByType;
+        window.viewDocument = viewDocument;
+        window.closePreview = closePreview;
+        window.downloadFile = downloadFile;
+        window.shareFile = shareFile;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async function() {
+            if (!checkAuth()) return;
+
+            await loadDocuments();
+
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('content-wrapper').style.display = 'block';
+        });
+
+        // Load Documents
+        async function loadDocuments() {
+            try {
+                const data = await apiRequest('/api/patient-documents/my-documents');
+
+                if (data && data.success && data.documents) {
+                    // Filter to only show resume_medis
+                    allDocuments = data.documents.filter(doc =>
+                        doc.document_type === 'resume_medis'
+                    );
+
+                    // Sort by date descending
+                    allDocuments.sort((a, b) => new Date(b.published_at || b.created_at) - new Date(a.published_at || a.created_at));
+
+                    // Update stats
+                    const resumeCount = allDocuments.length;
+                    document.getElementById('stat-resume').textContent = resumeCount;
+
+                    // Set filtered documents
+                    filteredDocuments = [...allDocuments];
+                    renderDocList();
+                } else {
+                    renderDocList();
+                }
+            } catch (error) {
+                console.error('Error loading documents:', error);
+                showToast('Gagal memuat dokumen', 'error');
+            }
+        }
+
+        // Filter by type
+        function filterByType(type) {
+            currentFilter = type;
+
+            // Update tabs
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.type === type);
+            });
+
+            // Filter documents
+            if (type === 'all') {
+                filteredDocuments = [...allDocuments];
+            } else {
+                filteredDocuments = allDocuments.filter(doc => doc.document_type === type);
+            }
+
+            renderDocList();
+        }
+
+        // Render document list
+        function renderDocList() {
+            const list = document.getElementById('doc-list');
+
+            if (filteredDocuments.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa fa-folder-open-o"></i>
+                        <p>Belum ada dokumen</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const typeIcons = {
+                'resume_medis': { icon: 'fa-file-text-o', class: 'resume', label: 'Resume Medis' }
+            };
+
+            const locationMap = {
+                'klinik_private': { name: 'Klinik Privat', class: 'klinik' },
+                'rsia_melinda': { name: 'RSIA Melinda', class: 'melinda' },
+                'rsud_gambiran': { name: 'RSUD Gambiran', class: 'gambiran' },
+                'rs_bhayangkara': { name: 'RS Bhayangkara', class: 'bhayangkara' }
+            };
+
+            list.innerHTML = filteredDocuments.map((doc, index) => {
+                const date = new Date(doc.published_at || doc.created_at);
+                const dateStr = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+                const isNew = !doc.first_viewed_at;
+                const typeInfo = typeIcons[doc.document_type] || { icon: 'fa-file-o', class: 'other', label: 'Dokumen' };
+                const location = locationMap[doc.visit_location] || { name: '', class: '' };
+
+                return `
+                    <div class="doc-card">
+                        <div class="doc-card-inner">
+                            <div class="doc-icon ${typeInfo.class}">
+                                <i class="fa ${typeInfo.icon}"></i>
+                            </div>
+                            <div class="doc-info">
+                                <div class="doc-header">
+                                    <span class="doc-title">
+                                        ${escapeHtml(doc.title || typeInfo.label)}
+                                        ${isNew ? '<span class="new-badge">BARU</span>' : ''}
+                                    </span>
+                                    ${location.name ? `<span class="doc-location ${location.class}">${location.name}</span>` : ''}
+                                </div>
+                                <div class="doc-date">
+                                    <i class="fa fa-calendar"></i> ${dateStr}
+                                </div>
+                                <div class="doc-actions">
+                                    <button class="doc-btn view-btn" onclick="viewDocument(${index})">
+                                        <i class="fa fa-eye"></i> Lihat
+                                    </button>
+                                    ${doc.file_url ? `
+                                        <button class="doc-btn download-btn" onclick="downloadFile(${index})">
+                                            <i class="fa fa-download"></i> Unduh
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // View document
+        async function viewDocument(index) {
+            currentDoc = filteredDocuments[index];
+
+            document.getElementById('preview-modal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            document.getElementById('preview-title').textContent = currentDoc.title || 'Dokumen';
+
+            const previewBody = document.getElementById('preview-body');
+            const btnDownload = document.getElementById('btn-download');
+
+            // Check document type
+            if (currentDoc.document_type === 'resume_medis' && (!currentDoc.file_url || currentDoc.file_url.startsWith('resume:'))) {
+                // Load resume medis content from API
+                previewBody.innerHTML = `
+                    <div class="resume-loading">
+                        <i class="fa fa-spinner fa-spin"></i>
+                        <p>Memuat resume medis...</p>
+                    </div>
+                `;
+                btnDownload.style.display = 'none';
+
+                try {
+                    const data = await apiRequest(`/api/patient-documents/${currentDoc.id}/content`);
+
+                    if (data && data.success && data.document) {
+                        const content = data.document.content || '';
+                        previewBody.innerHTML = `
+                            <div class="resume-content">
+                                ${content.replace(/\n/g, '<br>')}
+                            </div>
+                        `;
+                    } else {
+                        previewBody.innerHTML = `
+                            <div class="resume-loading">
+                                <i class="fa fa-exclamation-triangle" style="color: #ef4444;"></i>
+                                <p>Gagal memuat resume medis</p>
+                            </div>
+                        `;
+                    }
+                } catch (e) {
+                    previewBody.innerHTML = `
+                        <div class="resume-loading">
+                            <i class="fa fa-exclamation-triangle" style="color: #ef4444;"></i>
+                            <p>Gagal memuat resume medis</p>
+                        </div>
+                    `;
+                }
+            } else if (currentDoc.file_url) {
+                const fileType = getFileType(currentDoc.file_url);
+                btnDownload.style.display = 'flex';
+
+                if (fileType === 'image') {
+                    previewBody.innerHTML = `<img src="${currentDoc.file_url}" alt="${escapeHtml(currentDoc.title || 'Document')}">`;
+                } else if (fileType === 'pdf') {
+                    previewBody.innerHTML = `
+                        <div class="resume-loading">
+                            <i class="fa fa-file-pdf-o" style="color: #ef4444;"></i>
+                            <p>File PDF</p>
+                            <p style="font-size: 12px; margin-top: 5px;">Klik Download untuk membuka</p>
+                        </div>
+                    `;
+                } else {
+                    previewBody.innerHTML = `
+                        <div class="resume-loading">
+                            <i class="fa fa-file-o"></i>
+                            <p>Preview tidak tersedia</p>
+                            <p style="font-size: 12px; margin-top: 5px;">Klik Download untuk membuka</p>
+                        </div>
+                    `;
+                }
+            } else {
+                btnDownload.style.display = 'none';
+                previewBody.innerHTML = `
+                    <div class="resume-loading">
+                        <i class="fa fa-file-o"></i>
+                        <p>Dokumen tidak tersedia</p>
+                    </div>
+                `;
+            }
+
+            // Mark as viewed
+            if (!currentDoc.first_viewed_at) {
+                try {
+                    await apiRequest(`/api/patient-documents/${currentDoc.id}/view`, { method: 'POST' });
+                    currentDoc.first_viewed_at = new Date().toISOString();
+                    renderDocList();
+                } catch (e) {
+                    console.error('Error marking viewed:', e);
+                }
+            }
+        }
+
+        // Get file type
+        function getFileType(url) {
+            if (!url) return 'unknown';
+            const ext = url.split('.').pop().toLowerCase().split('?')[0];
+            if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'image';
+            if (ext === 'pdf') return 'pdf';
+            return 'unknown';
+        }
+
+        // Close preview
+        function closePreview() {
+            document.getElementById('preview-modal').classList.remove('active');
+            document.body.style.overflow = '';
+            currentDoc = null;
+        }
+
+        // Download file
+        function downloadFile(index) {
+            const doc = index !== undefined ? filteredDocuments[index] : currentDoc;
+            if (!doc || !doc.file_url) return;
+
+            window.open(doc.file_url, '_blank');
+        }
+
+        // Share file
+        async function shareFile() {
+            if (!currentDoc || !currentDoc.file_url) return;
+
+            if (navigator.share) {
+                try {
+                    await navigator.share({
+                        title: currentDoc.title || 'Dokumen',
+                        url: currentDoc.file_url
+                    });
+                } catch (e) {
+                    if (e.name !== 'AbortError') {
+                        copyToClipboard(currentDoc.file_url);
+                    }
+                }
+            } else {
+                copyToClipboard(currentDoc.file_url);
+            }
+        }
+
+        // Copy to clipboard
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showToast('Link berhasil disalin', 'success');
+            }).catch(() => {
+                showToast('Gagal menyalin link', 'error');
+            });
+        }
+
+        // Keyboard
+        document.addEventListener('keydown', function(e) {
+            if (!document.getElementById('preview-modal').classList.contains('active')) return;
+            if (e.key === 'Escape') closePreview();
+        });
+    </script>
+</body>
+</html>

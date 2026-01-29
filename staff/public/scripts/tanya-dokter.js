@@ -17,10 +17,10 @@
      * Show Tanya Dokter page
      */
     window.showTanyaDokterPage = function() {
-        hideAllPages();
+        if (typeof hideAllPages === 'function') hideAllPages();
         document.getElementById('tanya-dokter-page').classList.remove('d-none');
-        setActiveNav('nav-tanya-dokter');
-        setPageTitle('Tanya dr. Dibya');
+        if (typeof setActiveNav === 'function') setActiveNav('nav-tanya-dokter');
+        if (typeof setPageTitle === 'function') setPageTitle('Tanya dr. Dibya');
         loadTanyaDokterQuestions();
     };
 
@@ -217,7 +217,7 @@
             const data = await response.json();
 
             if (data.success) {
-                renderThreadModal(data.question, data.replies || []);
+                renderThreadModal(data.question, data.question.replies || []);
             } else {
                 throw new Error(data.message || 'Failed to load thread');
             }

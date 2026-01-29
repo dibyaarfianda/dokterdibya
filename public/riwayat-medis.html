@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Riwayat Medis - dokterDIBYA</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #303030 100%);
+            min-height: 100vh;
+            color: #ffffff;
+            padding-bottom: 80px;
+        }
+
+        /* Navbar */
+        .nav-bar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            padding-top: max(15px, env(safe-area-inset-top));
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .page-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #a855f7;
+        }
+
+        .nav-right .action-btn {
+            background: linear-gradient(135deg, #a855f7, #8b5cf6);
+            border: none;
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        /* Main Content */
+        .content {
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Info Box */
+        .info-box {
+            background: rgba(168, 85, 247, 0.15);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-box p {
+            font-size: 13px;
+            color: #ccc;
+            margin: 0;
+        }
+
+        .info-box i {
+            color: #a855f7;
+            margin-right: 8px;
+        }
+
+        /* Documents Grid */
+        .documents-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        .upload-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-radius: 12px;
+            padding: 15px;
+            position: relative;
+            transition: all 0.3s;
+        }
+
+        .upload-card:hover {
+            border-color: rgba(168, 85, 247, 0.5);
+            transform: translateY(-2px);
+        }
+
+        .upload-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: linear-gradient(135deg, #a855f7, #8b5cf6);
+            color: #fff;
+            font-size: 10px;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+
+        .upload-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            margin-bottom: 12px;
+        }
+
+        .upload-icon.usg {
+            background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(168, 85, 247, 0.2));
+            color: #ec4899;
+        }
+
+        .upload-icon.lab {
+            background: linear-gradient(135deg, rgba(40, 167, 233, 0.2), rgba(59, 130, 246, 0.2));
+            color: #28a7e9;
+        }
+
+        .upload-icon.other {
+            background: rgba(255, 255, 255, 0.1);
+            color: #888;
+        }
+
+        .upload-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .upload-meta {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 5px;
+        }
+
+        .upload-meta i {
+            width: 16px;
+            margin-right: 5px;
+        }
+
+        .upload-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 12px;
+        }
+
+        .upload-actions button {
+            flex: 1;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .view-btn {
+            background: rgba(168, 85, 247, 0.2);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            color: #a855f7;
+        }
+
+        .view-btn:hover {
+            background: rgba(168, 85, 247, 0.3);
+        }
+
+        .delete-btn {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+        }
+
+        .delete-btn:hover {
+            background: rgba(239, 68, 68, 0.25);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .empty-state i {
+            font-size: 60px;
+            margin-bottom: 20px;
+            color: #a855f7;
+            opacity: 0.5;
+        }
+
+        .empty-state p {
+            font-size: 15px;
+            margin-bottom: 20px;
+        }
+
+        .empty-state button {
+            background: linear-gradient(135deg, #a855f7, #8b5cf6);
+            border: none;
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        /* Loading State */
+        .loading {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 60px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .loading i {
+            margin-right: 10px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 10px 0;
+            padding-bottom: max(10px, env(safe-area-inset-bottom));
+            background: rgba(26, 26, 46, 0.98);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-size: 12px;
+            padding: 8px 20px;
+            transition: color 0.3s;
+        }
+
+        .nav-item.active,
+        .nav-item:hover {
+            color: #a855f7;
+        }
+
+        .nav-item i {
+            font-size: 20px;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            z-index: 9999;
+            animation: slideDown 0.3s ease;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .toast.success { background: #10b981; }
+        .toast.error { background: #ef4444; }
+        .toast.info { background: #28a7e9; }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translate(-50%, -20px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+
+        /* Upload Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 450px;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid rgba(168, 85, 247, 0.2);
+        }
+
+        .modal-header h3 {
+            font-size: 18px;
+            color: #a855f7;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: #a855f7;
+            margin-bottom: 8px;
+        }
+
+        .form-group select,
+        .form-group input[type="text"],
+        .form-group input[type="date"] {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-group select option {
+            background: #1a1a2e;
+            color: #fff;
+        }
+
+        .form-group small {
+            display: block;
+            color: #888;
+            font-size: 11px;
+            margin-top: 5px;
+        }
+
+        .dropzone {
+            border: 2px dashed rgba(168, 85, 247, 0.4);
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .dropzone:hover {
+            border-color: rgba(168, 85, 247, 0.6);
+            background: rgba(168, 85, 247, 0.05);
+        }
+
+        .dropzone.dragover {
+            border-color: #a855f7;
+            background: rgba(168, 85, 247, 0.1);
+        }
+
+        .dropzone i {
+            font-size: 40px;
+            color: #a855f7;
+            margin-bottom: 10px;
+        }
+
+        .dropzone p {
+            color: #888;
+            margin: 0;
+            font-size: 14px;
+        }
+
+        .dropzone small {
+            color: #666;
+            font-size: 12px;
+        }
+
+        .file-preview {
+            display: none;
+            margin-top: 10px;
+            padding: 12px;
+            background: rgba(168, 85, 247, 0.1);
+            border-radius: 8px;
+        }
+
+        .file-preview.active {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .file-preview .file-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-preview .file-info i {
+            color: #a855f7;
+        }
+
+        .file-preview .remove-file {
+            background: none;
+            border: none;
+            color: #ef4444;
+            cursor: pointer;
+        }
+
+        .error-box {
+            display: none;
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 15px;
+            color: #ff6b6b;
+            font-size: 13px;
+        }
+
+        .progress-box {
+            display: none;
+            margin-bottom: 15px;
+        }
+
+        .progress-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #a855f7, #8b5cf6);
+            width: 0%;
+            transition: width 0.3s;
+        }
+
+        .progress-text {
+            color: #a855f7;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            padding: 20px;
+            border-top: 1px solid rgba(168, 85, 247, 0.2);
+        }
+
+        .modal-footer button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .btn-cancel {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+        }
+
+        .btn-upload {
+            background: linear-gradient(135deg, #a855f7, #8b5cf6);
+            border: none;
+            color: #fff;
+        }
+
+        .btn-upload:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Responsive */
+        @media (max-width: 400px) {
+            .content { padding: 15px; }
+            .upload-card { padding: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navbar -->
+    <nav class="nav-bar">
+        <div class="nav-left">
+            <button class="back-btn" onclick="history.back()">
+                <i class="fa fa-chevron-left"></i>
+            </button>
+            <h1 class="page-title"><i class="fa fa-history"></i> Riwayat Medis</h1>
+        </div>
+        <div class="nav-right">
+            <button class="action-btn" onclick="openUploadModal()">
+                <i class="fa fa-cloud-upload"></i> Upload
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="content">
+        <!-- Info Box -->
+        <div class="info-box">
+            <p><i class="fa fa-info-circle"></i> Upload hasil USG, lab, atau dokumen medis Anda sebelum menggunakan aplikasi ini</p>
+        </div>
+
+        <!-- Documents Container -->
+        <div id="documents-container">
+            <div class="loading">
+                <i class="fa fa-spinner fa-spin"></i> Memuat riwayat...
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <a href="/patient-menu.html" class="nav-item">
+            <i class="fa fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="/notifikasi.html" class="nav-item">
+            <i class="fa fa-bell"></i>
+            <span>Notifikasi</span>
+        </a>
+        <a href="/profil.html" class="nav-item">
+            <i class="fa fa-user"></i>
+            <span>Profil</span>
+        </a>
+    </nav>
+
+    <!-- Upload Modal -->
+    <div class="modal-overlay" id="uploadModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fa fa-cloud-upload"></i> Upload Dokumen</h3>
+                <button class="modal-close" onclick="closeUploadModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="uploadForm">
+                    <div class="form-group">
+                        <label>Jenis Dokumen *</label>
+                        <select id="docType" required>
+                            <option value="">Pilih jenis dokumen...</option>
+                            <option value="patient_usg">Hasil USG</option>
+                            <option value="patient_lab">Hasil Laboratorium</option>
+                            <option value="patient_other">Dokumen Lainnya</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Judul Dokumen *</label>
+                        <input type="text" id="docTitle" placeholder="Contoh: USG Trimester 1" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Tanggal Dokumen Asli</label>
+                        <input type="date" id="docDate">
+                        <small>Tanggal ketika dokumen asli dibuat (opsional)</small>
+                    </div>
+
+                    <div class="form-group">
+                        <label>File Dokumen *</label>
+                        <div class="dropzone" id="dropzone">
+                            <i class="fa fa-cloud-upload"></i>
+                            <p>Klik atau seret file ke sini</p>
+                            <small>Maks. 10MB - Format: JPEG, PNG, PDF</small>
+                        </div>
+                        <input type="file" id="fileInput" accept="image/jpeg,image/png,application/pdf" style="display: none;">
+                        <div class="file-preview" id="filePreview">
+                            <div class="file-info">
+                                <i class="fa fa-file"></i>
+                                <span id="fileName"></span>
+                            </div>
+                            <button type="button" class="remove-file" onclick="clearFile()">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="error-box" id="errorBox">
+                        <i class="fa fa-exclamation-circle"></i> <span id="errorText"></span>
+                    </div>
+
+                    <div class="progress-box" id="progressBox">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progressFill"></div>
+                        </div>
+                        <div class="progress-text">Mengupload...</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="closeUploadModal()">Batal</button>
+                <button type="button" class="btn-upload" id="uploadBtn" onclick="submitUpload()">
+                    <i class="fa fa-upload"></i> Upload
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <script type="module">
+        import { getToken, checkAuth, apiRequest, showToast, formatDate } from '/scripts/patient-utils.js';
+
+        // Check authentication
+        if (!checkAuth()) {
+            // checkAuth will redirect to login
+        }
+
+        let selectedFile = null;
+
+        // Load documents on page load
+        loadDocuments();
+
+        // Setup dropzone
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+
+        dropzone.addEventListener('click', () => fileInput.click());
+
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('dragover');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('dragover');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/png', 'application/pdf'];
+            if (!validTypes.includes(file.type)) {
+                showToast('Format file tidak didukung. Gunakan JPEG, PNG, atau PDF.', 'error');
+                return;
+            }
+
+            // Validate file size (10MB)
+            if (file.size > 10 * 1024 * 1024) {
+                showToast('Ukuran file maksimal 10MB', 'error');
+                return;
+            }
+
+            selectedFile = file;
+            document.getElementById('fileName').textContent = file.name;
+            document.getElementById('filePreview').classList.add('active');
+            dropzone.style.display = 'none';
+        }
+
+        window.clearFile = function() {
+            selectedFile = null;
+            fileInput.value = '';
+            document.getElementById('filePreview').classList.remove('active');
+            dropzone.style.display = 'block';
+        };
+
+        window.openUploadModal = function() {
+            document.getElementById('uploadModal').classList.add('active');
+            document.getElementById('uploadForm').reset();
+            clearFile();
+            document.getElementById('errorBox').style.display = 'none';
+            document.getElementById('progressBox').style.display = 'none';
+        };
+
+        window.closeUploadModal = function() {
+            document.getElementById('uploadModal').classList.remove('active');
+        };
+
+        window.submitUpload = async function() {
+            const docType = document.getElementById('docType').value;
+            const title = document.getElementById('docTitle').value.trim();
+            const originalDate = document.getElementById('docDate').value;
+            const errorBox = document.getElementById('errorBox');
+            const errorText = document.getElementById('errorText');
+            const progressBox = document.getElementById('progressBox');
+            const uploadBtn = document.getElementById('uploadBtn');
+
+            // Validate
+            if (!docType) {
+                errorText.textContent = 'Pilih jenis dokumen';
+                errorBox.style.display = 'block';
+                return;
+            }
+
+            if (!title) {
+                errorText.textContent = 'Masukkan judul dokumen';
+                errorBox.style.display = 'block';
+                return;
+            }
+
+            if (!selectedFile) {
+                errorText.textContent = 'Pilih file untuk diupload';
+                errorBox.style.display = 'block';
+                return;
+            }
+
+            // Show progress
+            errorBox.style.display = 'none';
+            progressBox.style.display = 'block';
+            uploadBtn.disabled = true;
+
+            try {
+                const token = getToken();
+                const formData = new FormData();
+                formData.append('file', selectedFile);
+                formData.append('documentType', docType);
+                formData.append('title', title);
+                if (originalDate) {
+                    formData.append('originalDate', originalDate);
+                }
+
+                // Simulate progress
+                let progress = 0;
+                const progressFill = document.getElementById('progressFill');
+                const progressInterval = setInterval(() => {
+                    progress += 10;
+                    if (progress <= 90) {
+                        progressFill.style.width = progress + '%';
+                    }
+                }, 200);
+
+                const response = await fetch('/api/patient-documents/patient-upload', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: formData
+                });
+
+                clearInterval(progressInterval);
+                progressFill.style.width = '100%';
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || 'Upload gagal');
+                }
+
+                // Success
+                closeUploadModal();
+                showToast('Dokumen berhasil diupload!', 'success');
+                loadDocuments();
+
+            } catch (error) {
+                console.error('Upload error:', error);
+                errorText.textContent = error.message || 'Terjadi kesalahan saat upload';
+                errorBox.style.display = 'block';
+            } finally {
+                progressBox.style.display = 'none';
+                document.getElementById('progressFill').style.width = '0%';
+                uploadBtn.disabled = false;
+            }
+        };
+
+        async function loadDocuments() {
+            const container = document.getElementById('documents-container');
+
+            try {
+                const data = await apiRequest('/api/patient-documents/my-uploads');
+
+                if (!data || !data.success || !data.documents || data.documents.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fa fa-cloud-upload"></i>
+                            <p>Belum ada dokumen yang diupload</p>
+                            <button onclick="openUploadModal()">
+                                <i class="fa fa-plus"></i> Upload Dokumen
+                            </button>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = `<div class="documents-grid">${data.documents.map(renderDocCard).join('')}</div>`;
+
+            } catch (error) {
+                console.error('Error loading documents:', error);
+                container.innerHTML = '<div class="empty-state"><p>Gagal memuat riwayat</p></div>';
+            }
+        }
+
+        function renderDocCard(doc) {
+            const iconClass = getIconClass(doc.document_type);
+            const iconName = getIconName(doc.document_type);
+            const uploadDate = formatDate(doc.created_at);
+            const originalDate = doc.original_date ? formatDate(doc.original_date) : null;
+
+            return `
+                <div class="upload-card" data-id="${doc.id}">
+                    <span class="upload-badge">Riwayat</span>
+                    <div class="upload-icon ${iconClass}">
+                        <i class="fa ${iconName}"></i>
+                    </div>
+                    <div class="upload-title">${escapeHtml(doc.title)}</div>
+                    <div class="upload-meta">
+                        <i class="fa fa-clock-o"></i> Diupload: ${uploadDate}
+                    </div>
+                    ${originalDate ? `<div class="upload-meta"><i class="fa fa-calendar-check-o"></i> Dokumen asli: ${originalDate}</div>` : ''}
+                    <div class="upload-actions">
+                        <button class="view-btn" onclick="viewDocument('${escapeHtml(doc.file_url || '')}', '${escapeHtml(doc.title)}')">
+                            <i class="fa fa-eye"></i> Lihat
+                        </button>
+                        <button class="delete-btn" onclick="deleteDocument(${doc.id})">
+                            <i class="fa fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function getIconClass(type) {
+            const map = {
+                'patient_usg': 'usg',
+                'patient_lab': 'lab',
+                'patient_other': 'other'
+            };
+            return map[type] || 'other';
+        }
+
+        function getIconName(type) {
+            const map = {
+                'patient_usg': 'fa-heartbeat',
+                'patient_lab': 'fa-flask',
+                'patient_other': 'fa-file-o'
+            };
+            return map[type] || 'fa-file-o';
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        window.viewDocument = function(fileUrl, title) {
+            if (!fileUrl) {
+                showToast('File tidak tersedia', 'error');
+                return;
+            }
+            window.open(fileUrl, '_blank');
+        };
+
+        window.deleteDocument = async function(docId) {
+            if (!confirm('Apakah Anda yakin ingin menghapus dokumen ini?')) {
+                return;
+            }
+
+            try {
+                const token = getToken();
+                const response = await fetch(`/api/patient-documents/my-uploads/${docId}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    throw new Error(data.message || 'Gagal menghapus');
+                }
+
+                showToast('Dokumen berhasil dihapus', 'success');
+                loadDocuments();
+
+            } catch (error) {
+                console.error('Delete error:', error);
+                showToast(error.message || 'Gagal menghapus dokumen', 'error');
+            }
+        };
+    </script>
+</body>
+</html>

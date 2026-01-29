@@ -903,11 +903,11 @@
                     <div class="user-role">Pasien</div>
                 </div>
                 <div class="dropdown-menu-custom" id="user-dropdown">
-                    <a href="/patient-dashboard.html#profile-section">
+                    <a href="/profil.html">
                         <i class="fa fa-edit"></i>
                         <span>Edit Profil</span>
                     </a>
-                    <a href="/patient-dashboard.html#profile-section">
+                    <a href="/profil.html#settings">
                         <i class="fa fa-cog"></i>
                         <span>Setting</span>
                     </a>
@@ -1441,10 +1441,10 @@
                 icon: 'fa-file-text-o',
                 color: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
                 items: [
-                    { icon: 'fa-picture-o', label: 'Album USG', href: '/patient-dashboard.html#usg-section' },
-                    { icon: 'fa-flask', label: 'Hasil Lab', href: '/patient-dashboard.html#lab-section' },
-                    { icon: 'fa-folder-open', label: 'Rekam Medis Saya', href: '/patient-dashboard.html#documents-section' },
-                    { icon: 'fa-history', label: 'Riwayat Medis', href: '/patient-dashboard.html#patient-uploads-section' }
+                    { icon: 'fa-picture-o', label: 'Album USG', href: '/album-usg.html' },
+                    { icon: 'fa-flask', label: 'Hasil Lab', href: '/hasil-lab.html' },
+                    { icon: 'fa-folder-open', label: 'Rekam Medis Saya', href: '/dokumen-medis.html' },
+                    { icon: 'fa-history', label: 'Riwayat Medis', href: '/riwayat-medis.html' }
                 ]
             },
             'kesehatan': {
@@ -1452,9 +1452,9 @@
                 icon: 'fa-heartbeat',
                 color: 'linear-gradient(135deg, #ec4899, #be185d)',
                 items: [
-                    { icon: 'fa-hand-paper-o', label: 'Kick Counter', href: '/patient-dashboard.html#kick-counter' },
-                    { icon: 'fa-line-chart', label: 'Pregnancy Tracker', href: '/patient-dashboard.html#pregnancy-tracker-row' },
-                    { icon: 'fa-medkit', label: 'Jadwal Vitamin', href: '/patient-dashboard.html#medications-section' }
+                    { icon: 'fa-hand-paper-o', label: 'Kick Counter', href: '/kick-counter.html' },
+                    { icon: 'fa-line-chart', label: 'Pregnancy Tracker', href: '/pregnancy-tracker.html' },
+                    { icon: 'fa-medkit', label: 'Jadwal Vitamin', href: '/jadwal-vitamin.html' }
                 ]
             },
             'jadwal': {
@@ -1462,9 +1462,9 @@
                 icon: 'fa-calendar',
                 color: 'linear-gradient(135deg, #10b981, #059669)',
                 items: [
-                    { icon: 'fa-calendar-check-o', label: 'Booking Klinik', href: '/patient-dashboard.html#booking-status' },
-                    { icon: 'fa-hospital-o', label: 'Jadwal RS', href: '/patient-dashboard.html#hospital-booking-section' },
-                    { icon: 'fa-stethoscope', label: 'Riwayat Kunjungan', href: '/patient-dashboard.html#visits-history-section' }
+                    { icon: 'fa-calendar-check-o', label: 'Booking Klinik', href: '/booking-klinik.html' },
+                    { icon: 'fa-hospital-o', label: 'Jadwal RS', href: '/jadwal-rs.html' },
+                    { icon: 'fa-stethoscope', label: 'Riwayat Kunjungan', href: '/riwayat-kunjungan.html' }
                 ]
             },
             'edukasi': {
@@ -1472,7 +1472,7 @@
                 icon: 'fa-book',
                 color: 'linear-gradient(135deg, #f59e0b, #d97706)',
                 items: [
-                    { icon: 'fa-book', label: 'Ruang Membaca', href: '/patient-dashboard.html#articles-section' },
+                    { icon: 'fa-book', label: 'Ruang Membaca', href: '/artikel.html' },
                     { icon: 'fa-heart', label: 'Perjalanan Ibu', href: '/perjalanan-ibu.html' }
                 ]
             },
@@ -1481,9 +1481,9 @@
                 icon: 'fa-comments',
                 color: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
                 items: [
-                    { icon: 'fa-question-circle', label: 'Ajukan Pertanyaan', href: '/patient-dashboard.html#tanya-dokter-ask' },
-                    { icon: 'fa-history', label: 'Riwayat Tanya Jawab', href: '/patient-dashboard.html#tanya-dokter-history' },
-                    { icon: 'fa-star', label: 'Upgrade Premium', href: '/patient-dashboard.html#tanya-dokter-premium' }
+                    { icon: 'fa-question-circle', label: 'Ajukan Pertanyaan', href: '/tanya-dokter.html#ask' },
+                    { icon: 'fa-history', label: 'Riwayat Tanya Jawab', href: '/tanya-dokter.html#history' },
+                    { icon: 'fa-star', label: 'Upgrade Premium', href: '/tanya-dokter.html#premium' }
                 ]
             },
             'bantuan': {
@@ -1491,7 +1491,7 @@
                 icon: 'fa-question-circle',
                 color: 'linear-gradient(135deg, #6b7280, #4b5563)',
                 items: [
-                    { icon: 'fa-question', label: 'FAQ', href: '/patient-dashboard.html' },
+                    { icon: 'fa-question', label: 'FAQ', href: '/bantuan.html' },
                     { icon: 'fa-whatsapp', label: 'Hubungi Kami', href: 'https://wa.me/6281234567890' }
                 ]
             }
@@ -1535,7 +1535,7 @@
         function navigateTo(section) {
             // Notifikasi langsung redirect, yang lain buka bottom sheet
             if (section === 'notifikasi') {
-                window.location.href = '/patient-dashboard.html#notifications';
+                window.location.href = '/notifikasi.html';
             } else {
                 openBottomSheet(section);
             }

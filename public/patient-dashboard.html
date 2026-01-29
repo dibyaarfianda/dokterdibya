@@ -2483,10 +2483,10 @@
 
                 <!-- ====== TANYA DR. DIBYA SECTIONS ====== -->
 
-                <!-- Tanya dr. Dibya - Ajukan Pertanyaan (HIDDEN) -->
+                <!-- Tanya dr. Dibya - Tanya Dokter (HIDDEN) -->
                 <div class="dashboard-card" id="tanya-dokter-ask" style="display: none; margin-bottom: 20px;">
                     <h3 class="collapsible-header collapsed" id="tanya-ask-header" onclick="toggleCard('tanya-ask')">
-                        <span><i class="fa fa-question-circle"></i> Ajukan Pertanyaan</span>
+                        <span><i class="fa fa-question-circle"></i> Tanya Dokter</span>
                         <i class="fa fa-chevron-right toggle-icon" id="tanya-ask-toggle-icon"></i>
                     </h3>
                     <div class="collapsible-content collapsed" id="tanya-ask-content">
@@ -2556,24 +2556,26 @@
                     </div>
                 </div>
 
-                <!-- Tanya dr. Dibya - Upgrade Premium (HIDDEN) -->
-                <div class="dashboard-card" id="tanya-dokter-premium" style="display: none; margin-bottom: 20px; background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(109, 40, 217, 0.15)); border: 1px solid rgba(139, 92, 246, 0.3);">
-                    <h3 class="collapsible-header" id="tanya-premium-header" onclick="toggleCard('tanya-premium')">
+                <!-- ====== END TANYA DOKTER SECTIONS ====== -->
+
+                <!-- ====== UPGRADE PREMIUM SECTION (HIDDEN) ====== -->
+                <div class="dashboard-card" id="upgrade-premium-card" style="display: none; margin-bottom: 20px; background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(109, 40, 217, 0.15)); border: 1px solid rgba(139, 92, 246, 0.3);">
+                    <h3 class="collapsible-header" id="premium-header" onclick="toggleCard('premium')">
                         <span><i class="fa fa-star" style="color: #f59e0b;"></i> Upgrade Premium</span>
-                        <i class="fa fa-chevron-down toggle-icon" id="tanya-premium-toggle-icon"></i>
+                        <i class="fa fa-chevron-down toggle-icon" id="premium-toggle-icon"></i>
                     </h3>
-                    <div class="collapsible-content" id="tanya-premium-content">
-                        <p style="color: #ccc; font-size: 13px; margin-bottom: 20px;">Dapatkan lebih banyak kesempatan bertanya dengan berlangganan Premium!</p>
+                    <div class="collapsible-content" id="premium-content">
+                        <p style="color: #ccc; font-size: 13px; margin-bottom: 20px;">Dapatkan akses ke fitur eksklusif dengan berlangganan Premium!</p>
 
                         <!-- Current Status -->
-                        <div id="tanya-current-status" style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                        <div id="premium-current-status" style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 15px; margin-bottom: 20px;">
                             <div style="font-size: 12px; color: #888; margin-bottom: 5px;">Status Langganan Saat Ini</div>
-                            <div id="tanya-current-tier" style="font-size: 16px; font-weight: 600; color: #fff;">Gratis</div>
-                            <div id="tanya-current-quota" style="font-size: 12px; color: #28a7e9;">1 pertanyaan / minggu</div>
+                            <div id="premium-current-tier" style="font-size: 16px; font-weight: 600; color: #fff;">Gratis</div>
+                            <div id="premium-current-quota" style="font-size: 12px; color: #28a7e9;">Fitur dasar</div>
                         </div>
 
                         <!-- Tier Cards -->
-                        <div id="tanya-tier-list" style="display: grid; gap: 12px;">
+                        <div id="premium-tier-list" style="display: grid; gap: 12px;">
                             <!-- First Class -->
                             <div class="tier-card" data-tier="first_class" onclick="selectTier('first_class')" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px; cursor: pointer; transition: all 0.2s;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
@@ -2601,14 +2603,13 @@
                                     <span style="font-weight: 600; color: #fff;">VIP</span>
                                     <span style="background: linear-gradient(135deg, #ffd700, #daa520); color: #333; padding: 3px 8px; border-radius: 12px; font-size: 10px;">GOLD</span>
                                 </div>
-                                <div style="font-size: 13px; color: #ccc; margin-bottom: 5px;">10 pertanyaan / minggu + Bonus fitur eksklusif</div>
+                                <div style="font-size: 13px; color: #ccc; margin-bottom: 5px;">10 pertanyaan / minggu + Tanya dr. Dibya & Dokter Pediatri</div>
                                 <div style="font-size: 18px; font-weight: 700; color: #28a7e9;">Rp 200.000<span style="font-size: 12px; font-weight: 400; color: #888;">/bulan</span></div>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <!-- ====== END TANYA DR. DIBYA SECTIONS ====== -->
+                <!-- ====== END UPGRADE PREMIUM SECTION ====== -->
 
                 <!-- 5. Identitas Pribadi (moved to right column) -->
                 <div class="dashboard-card" id="identity-section" style="margin-bottom: 20px;">
@@ -7515,6 +7516,47 @@
             });
         }
 
+        // Handle hash navigation for Tanya dr. Dibya sections
+        function handleTanyaHash() {
+            const hash = window.location.hash;
+            if (!hash) return;
+
+            const tanyaSections = {
+                '#tanya-dokter-ask': 'tanya-ask',
+                '#tanya-dokter-history': 'tanya-history',
+                '#tanya-dokter-premium': 'tanya-premium'
+            };
+
+            const cardId = tanyaSections[hash];
+            if (cardId) {
+                // Show the parent section
+                const sectionId = hash.replace('#', '');
+                const section = document.getElementById(sectionId);
+                if (section) {
+                    section.style.display = 'block';
+
+                    // Expand the card
+                    const content = document.getElementById(cardId + '-content');
+                    const icon = document.getElementById(cardId + '-toggle-icon');
+                    const header = document.getElementById(cardId + '-header');
+
+                    if (content && content.classList.contains('collapsed')) {
+                        content.classList.remove('collapsed');
+                        if (icon) {
+                            icon.classList.remove('fa-chevron-right');
+                            icon.classList.add('fa-chevron-down');
+                        }
+                        if (header) header.classList.remove('collapsed');
+                    }
+
+                    // Scroll to section
+                    setTimeout(() => {
+                        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 300);
+                }
+            }
+        }
+
         // Initialize Tanya dr. Dibya on page load
         document.addEventListener('DOMContentLoaded', function() {
             // Load quota, doctors, and history when page loads
@@ -7522,7 +7564,13 @@
                 loadTanyaQuotaInfo();
                 loadAvailableDoctors();
                 loadTanyaHistory();
+
+                // Handle hash navigation
+                handleTanyaHash();
             }, 500);
+
+            // Listen for hash changes
+            window.addEventListener('hashchange', handleTanyaHash);
         });
 
         // ==================== END TANYA DR. DIBYA FUNCTIONS ====================

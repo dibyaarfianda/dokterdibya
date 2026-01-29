@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a1a1a">
+    <title>Kick Counter - dokterDIBYA</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
+    <link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
+
+    <!-- Fonts & Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Shared Styles -->
+    <link rel="stylesheet" href="/styles/patient-portal.css">
+
+    <style>
+        /* Page-specific styles for Kick Counter */
+        .kick-counter-card {
+            background: linear-gradient(135deg, #1a1a2e 0%, #3d1f47 50%, #1a1a2e 100%);
+            border: 1px solid rgba(236, 72, 153, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .kick-counter-card::before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 200px;
+            height: 200px;
+            background: radial-gradient(circle, rgba(236, 72, 153, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .kick-counter-card h3 {
+            color: #ec4899;
+        }
+
+        .kick-button {
+            width: 160px;
+            height: 160px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%);
+            border: none;
+            color: white;
+            font-size: 56px;
+            cursor: pointer;
+            box-shadow: 0 10px 40px rgba(236, 72, 153, 0.4);
+            transition: transform 0.1s, box-shadow 0.1s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 20px auto;
+        }
+
+        .kick-button:hover {
+            box-shadow: 0 15px 50px rgba(236, 72, 153, 0.5);
+        }
+
+        .kick-button:active {
+            transform: scale(0.95);
+            box-shadow: 0 5px 20px rgba(236, 72, 153, 0.6);
+        }
+
+        .kick-button.pulse {
+            animation: kickPulse 0.3s ease-out;
+        }
+
+        @keyframes kickPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+            100% { transform: scale(1); }
+        }
+
+        .kick-counter-display {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .kick-count {
+            font-size: 72px;
+            font-weight: 700;
+            color: #ec4899;
+            line-height: 1;
+            margin-top: 15px;
+        }
+
+        .kick-label {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 5px;
+        }
+
+        .kick-timer {
+            font-size: 24px;
+            color: rgba(255, 255, 255, 0.8);
+            margin-top: 10px;
+            font-family: 'Courier New', monospace;
+            padding: 8px 16px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            display: inline-block;
+        }
+
+        .kick-start-btn {
+            background: linear-gradient(135deg, #ec4899 0%, #f472b6 100%);
+            border: none;
+            color: white;
+            padding: 16px 32px;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 5px 20px rgba(236, 72, 153, 0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .kick-start-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(236, 72, 153, 0.4);
+        }
+
+        .kick-end-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background 0.2s;
+        }
+
+        .kick-end-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .kick-alert {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .kick-alert i {
+            color: #ef4444;
+            font-size: 22px;
+            margin-top: 2px;
+        }
+
+        .kick-alert strong {
+            color: #ef4444;
+        }
+
+        .kick-summary-stats {
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+            padding: 20px 0;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 20px;
+        }
+
+        .kick-summary-stat {
+            flex: 1;
+        }
+
+        .kick-summary-stat .value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #ec4899;
+        }
+
+        .kick-summary-stat .label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-top: 4px;
+        }
+
+        /* Weekly Chart */
+        .kick-chart-section {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .kick-chart-title {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .kick-chart-title i {
+            color: #ec4899;
+        }
+
+        .kick-chart-bars {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            height: 120px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+        }
+
+        .kick-chart-bar-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            flex: 1;
+        }
+
+        .kick-chart-bar {
+            width: 28px;
+            background: linear-gradient(to top, #ec4899, #f472b6);
+            border-radius: 4px 4px 0 0;
+            min-height: 4px;
+            position: relative;
+            transition: height 0.3s ease;
+        }
+
+        .kick-chart-bar.low {
+            background: linear-gradient(to top, #ef4444, #f87171);
+        }
+
+        .kick-chart-bar.today {
+            box-shadow: 0 0 15px rgba(236, 72, 153, 0.5);
+        }
+
+        .kick-chart-value {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 600;
+        }
+
+        .kick-chart-label {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 8px;
+            text-transform: uppercase;
+        }
+
+        /* History Section */
+        .history-section {
+            margin-top: 25px;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .history-header h4 {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .history-header h4 i {
+            color: #ec4899;
+        }
+
+        .history-header a {
+            color: #ec4899;
+            font-size: 12px;
+            text-decoration: none;
+        }
+
+        .kick-session-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .kick-session-card .session-info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .kick-session-card .time {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .kick-session-card .duration {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .kick-session-card .count {
+            color: #ec4899;
+            font-weight: 700;
+            font-size: 20px;
+        }
+
+        /* Info Card */
+        .info-card {
+            background: rgba(236, 72, 153, 0.1);
+            border: 1px solid rgba(236, 72, 153, 0.2);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .info-card p {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.8);
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .info-card strong {
+            color: #ec4899;
+        }
+
+        /* History Modal */
+        .history-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.9);
+            z-index: 9999;
+        }
+
+        .history-modal.active {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .history-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: rgba(26, 26, 46, 0.95);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .history-modal-header h3 {
+            font-size: 16px;
+            color: #ec4899;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .history-modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .history-modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .history-day-group {
+            margin-bottom: 20px;
+        }
+
+        .history-day-header {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .history-pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: rgba(26, 26, 46, 0.95);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .history-pagination button {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 13px;
+        }
+
+        .history-pagination button:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+        }
+
+        .history-pagination .page-info {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navbar -->
+    <nav class="nav-bar">
+        <div class="nav-left">
+            <button class="back-btn" onclick="history.back()">
+                <i class="fa fa-chevron-left"></i>
+            </button>
+            <h1 class="page-title">Kick Counter</h1>
+        </div>
+        <div class="nav-right">
+            <button class="nav-action-btn" onclick="showFullHistory()">
+                <i class="fa fa-history"></i>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="content">
+        <!-- Loading State -->
+        <div class="loading" id="loading-state">
+            <i class="fa fa-spinner fa-spin"></i>
+            <span>Memuat...</span>
+        </div>
+
+        <!-- Content (hidden until loaded) -->
+        <div id="content-wrapper" style="display: none;">
+            <!-- Info Card -->
+            <div class="info-card">
+                <p><i class="fa fa-info-circle" style="color: #ec4899;"></i> <strong>Minimal 10 gerakan dalam 2 jam</strong> adalah normal. Catat gerakan bayi Anda setiap hari untuk memantau kesehatannya.</p>
+            </div>
+
+            <!-- Main Kick Counter Card -->
+            <div class="card kick-counter-card">
+                <!-- Alert Container -->
+                <div id="kick-alert-container"></div>
+
+                <!-- Main Counter Area -->
+                <div id="kick-counter-main">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+
+                <!-- Today's Summary -->
+                <div id="kick-summary">
+                    <!-- Summary stats will be populated -->
+                </div>
+            </div>
+
+            <!-- Weekly Chart -->
+            <div class="card">
+                <div class="kick-chart-section" style="border-top: none; margin-top: 0; padding-top: 0;">
+                    <div class="kick-chart-title">
+                        <i class="fa fa-bar-chart"></i>
+                        <span>Statistik Minggu Ini</span>
+                    </div>
+                    <div id="kick-chart">
+                        <div class="loading">
+                            <i class="fa fa-spinner fa-spin"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Sessions -->
+            <div class="card history-section">
+                <div class="history-header">
+                    <h4><i class="fa fa-clock-o"></i> Sesi Terakhir</h4>
+                    <a href="#" onclick="showFullHistory(); return false;">Lihat Semua</a>
+                </div>
+                <div id="recent-sessions">
+                    <!-- Recent sessions will be populated -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <a href="/patient-menu.html" class="nav-item">
+            <i class="fa fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="/notifikasi.html" class="nav-item">
+            <i class="fa fa-bell"></i>
+            <span>Notifikasi</span>
+        </a>
+        <a href="/profil.html" class="nav-item">
+            <i class="fa fa-user"></i>
+            <span>Profil</span>
+        </a>
+    </nav>
+
+    <!-- History Modal -->
+    <div class="history-modal" id="history-modal">
+        <div class="history-modal-header">
+            <h3><i class="fa fa-history"></i> Riwayat Kick Counter</h3>
+            <button class="history-modal-close" onclick="closeHistoryModal()">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+        <div class="history-modal-body" id="history-modal-body">
+            <!-- History content -->
+        </div>
+        <div class="history-pagination" id="history-pagination" style="display: none;">
+            <button onclick="loadHistoryPage(currentHistoryPage - 1)" id="prev-page-btn">
+                <i class="fa fa-chevron-left"></i> Sebelumnya
+            </button>
+            <span class="page-info" id="page-info">Halaman 1 dari 1</span>
+            <button onclick="loadHistoryPage(currentHistoryPage + 1)" id="next-page-btn">
+                Berikutnya <i class="fa fa-chevron-right"></i>
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <script type="module">
+        import { getToken, checkAuth, apiRequest, showToast, formatDate, formatTime, showLoading, showEmptyState } from '/scripts/patient-utils.js';
+
+        // State
+        let activeSession = null;
+        let kickTimer = null;
+        let elapsedSeconds = 0;
+        let currentHistoryPage = 1;
+        let totalHistoryPages = 1;
+
+        // Make functions available globally
+        window.startKickSession = startKickSession;
+        window.recordKick = recordKick;
+        window.endKickSession = endKickSession;
+        window.showFullHistory = showFullHistory;
+        window.closeHistoryModal = closeHistoryModal;
+        window.loadHistoryPage = loadHistoryPage;
+        window.currentHistoryPage = currentHistoryPage;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async function() {
+            if (!checkAuth()) return;
+
+            await loadKickCounter();
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('content-wrapper').style.display = 'block';
+        });
+
+        // Load Kick Counter Data
+        async function loadKickCounter() {
+            try {
+                const result = await apiRequest('/api/kick-counter/today');
+
+                if (result && result.success) {
+                    // Find active session
+                    activeSession = result.sessions?.find(s => s.status === 'active') || null;
+
+                    renderKickCounter(result);
+                    loadKickStats();
+                    loadRecentSessions();
+                } else {
+                    // Not a pregnant patient or error
+                    document.getElementById('content-wrapper').innerHTML = `
+                        <div class="empty-state">
+                            <i class="fa fa-info-circle"></i>
+                            <p>Fitur Kick Counter hanya tersedia untuk pasien yang sedang dalam program kehamilan.</p>
+                            <a href="/patient-menu.html" class="btn-secondary" style="margin-top: 15px; display: inline-block;">
+                                <i class="fa fa-arrow-left"></i> Kembali ke Menu
+                            </a>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading kick counter:', error);
+                showToast('Gagal memuat data', 'error');
+            }
+        }
+
+        // Render Main Counter
+        function renderKickCounter(data) {
+            const container = document.getElementById('kick-counter-main');
+            const alertContainer = document.getElementById('kick-alert-container');
+            const summaryContainer = document.getElementById('kick-summary');
+
+            // Show alert if needed
+            if (data.alert) {
+                alertContainer.innerHTML = `
+                    <div class="kick-alert">
+                        <i class="fa fa-exclamation-triangle"></i>
+                        <div>
+                            <strong>Perhatian!</strong>
+                            <p style="margin: 5px 0 0; font-size: 13px; color: rgba(255,255,255,0.8);">
+                                ${data.alert_message || 'Gerakan bayi hari ini kurang dari 10 kali. Hubungi dokter jika khawatir.'}
+                            </p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                alertContainer.innerHTML = '';
+            }
+
+            if (activeSession) {
+                // Show active session with kick button
+                container.innerHTML = `
+                    <div class="kick-counter-display">
+                        <button class="kick-button" onclick="recordKick()" id="kick-btn">
+                            <i class="fa fa-hand-pointer-o"></i>
+                        </button>
+                        <div class="kick-count" id="kick-count">${activeSession.kick_count}</div>
+                        <div class="kick-label">gerakan</div>
+                        <div class="kick-timer" id="kick-timer">00:00</div>
+                        <button class="kick-end-btn" onclick="endKickSession()">
+                            <i class="fa fa-stop"></i> Selesai Menghitung
+                        </button>
+                    </div>
+                `;
+                startKickTimer();
+            } else {
+                // Show start button
+                container.innerHTML = `
+                    <div style="text-align: center; padding: 30px 0;">
+                        <i class="fa fa-hand-pointer-o" style="font-size: 48px; color: rgba(236, 72, 153, 0.5); margin-bottom: 20px;"></i>
+                        <p style="margin-bottom: 20px; color: rgba(255,255,255,0.7);">
+                            Tekan tombol untuk mulai menghitung gerakan bayi
+                        </p>
+                        <button class="kick-start-btn" onclick="startKickSession()">
+                            <i class="fa fa-play"></i> Mulai Menghitung
+                        </button>
+                    </div>
+                `;
+            }
+
+            // Render summary
+            if (data.summary) {
+                summaryContainer.innerHTML = `
+                    <div class="kick-summary-stats">
+                        <div class="kick-summary-stat">
+                            <div class="value">${data.summary.total_kicks}</div>
+                            <div class="label">Gerakan Hari Ini</div>
+                        </div>
+                        <div class="kick-summary-stat">
+                            <div class="value">${data.summary.total_sessions}</div>
+                            <div class="label">Sesi</div>
+                        </div>
+                        <div class="kick-summary-stat">
+                            <div class="value">${data.summary.avg_per_session}</div>
+                            <div class="label">Rata-rata/Sesi</div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Start Kick Session
+        async function startKickSession() {
+            try {
+                const result = await apiRequest('/api/kick-counter/session', {
+                    method: 'POST'
+                });
+
+                if (result && result.success) {
+                    activeSession = result.session;
+                    elapsedSeconds = 0;
+                    loadKickCounter();
+                    showToast('Sesi dimulai', 'success');
+                } else {
+                    showToast(result?.message || 'Gagal memulai sesi', 'error');
+                }
+            } catch (error) {
+                console.error('Error starting session:', error);
+                showToast('Gagal memulai sesi', 'error');
+            }
+        }
+
+        // Record Kick
+        async function recordKick() {
+            if (!activeSession) return;
+
+            const button = document.getElementById('kick-btn');
+
+            // Visual feedback
+            button.classList.add('pulse');
+            setTimeout(() => button.classList.remove('pulse'), 300);
+
+            // Haptic feedback (mobile)
+            if (navigator.vibrate) {
+                navigator.vibrate(50);
+            }
+
+            try {
+                const result = await apiRequest('/api/kick-counter/kick', {
+                    method: 'POST',
+                    body: JSON.stringify({ session_id: activeSession.id })
+                });
+
+                if (result && result.success) {
+                    document.getElementById('kick-count').textContent = result.session.kick_count;
+                    activeSession.kick_count = result.session.kick_count;
+                }
+            } catch (error) {
+                console.error('Error recording kick:', error);
+            }
+        }
+
+        // End Kick Session
+        async function endKickSession() {
+            if (!activeSession) return;
+
+            try {
+                const result = await apiRequest(`/api/kick-counter/session/${activeSession.id}/end`, {
+                    method: 'PUT'
+                });
+
+                if (result && result.success) {
+                    stopKickTimer();
+                    activeSession = null;
+                    loadKickCounter();
+                    showToast('Sesi selesai', 'success');
+                }
+            } catch (error) {
+                console.error('Error ending session:', error);
+                showToast('Gagal mengakhiri sesi', 'error');
+            }
+        }
+
+        // Timer Functions
+        function startKickTimer() {
+            if (!activeSession) return;
+
+            const startTime = new Date(activeSession.start_time);
+            elapsedSeconds = Math.floor((Date.now() - startTime.getTime()) / 1000);
+
+            updateTimerDisplay();
+            kickTimer = setInterval(() => {
+                elapsedSeconds++;
+                updateTimerDisplay();
+            }, 1000);
+        }
+
+        function stopKickTimer() {
+            if (kickTimer) {
+                clearInterval(kickTimer);
+                kickTimer = null;
+            }
+        }
+
+        function updateTimerDisplay() {
+            const timerEl = document.getElementById('kick-timer');
+            if (!timerEl) return;
+
+            const minutes = Math.floor(elapsedSeconds / 60);
+            const seconds = elapsedSeconds % 60;
+            timerEl.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+
+        // Load Weekly Stats
+        async function loadKickStats() {
+            try {
+                const result = await apiRequest('/api/kick-counter/stats');
+
+                if (result && result.success && result.stats.week) {
+                    renderKickChart(result.stats.week);
+                }
+            } catch (error) {
+                console.error('Error loading stats:', error);
+            }
+        }
+
+        // Render Weekly Chart
+        function renderKickChart(weekData) {
+            const container = document.getElementById('kick-chart');
+            if (!container || !weekData || weekData.length === 0) {
+                container.innerHTML = '<div class="empty-state"><p>Belum ada data</p></div>';
+                return;
+            }
+
+            const maxKicks = Math.max(...weekData.map(d => d.kicks), 30);
+            const today = new Date().toISOString().split('T')[0];
+
+            let barsHtml = '<div class="kick-chart-bars">';
+            weekData.forEach(day => {
+                const height = maxKicks > 0 ? (day.kicks / maxKicks) * 100 : 0;
+                const dayDate = new Date(day.date);
+                const dayName = dayDate.toLocaleDateString('id-ID', { weekday: 'short' });
+                const isLow = day.kicks > 0 && day.kicks < 10;
+                const isToday = day.date === today;
+
+                barsHtml += `
+                    <div class="kick-chart-bar-wrapper">
+                        <div class="kick-chart-bar ${isLow ? 'low' : ''} ${isToday ? 'today' : ''}" style="height: ${Math.max(height, 4)}%;">
+                            ${day.kicks > 0 ? `<span class="kick-chart-value">${day.kicks}</span>` : ''}
+                        </div>
+                        <span class="kick-chart-label">${dayName}</span>
+                    </div>
+                `;
+            });
+            barsHtml += '</div>';
+
+            container.innerHTML = barsHtml;
+        }
+
+        // Load Recent Sessions
+        async function loadRecentSessions() {
+            const container = document.getElementById('recent-sessions');
+
+            try {
+                const result = await apiRequest('/api/kick-counter/history?limit=5');
+
+                if (result && result.success && result.sessions && result.sessions.length > 0) {
+                    container.innerHTML = result.sessions.map(session => {
+                        const startTime = new Date(session.start_time);
+                        const timeStr = startTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                        const dateStr = startTime.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+                        const duration = session.duration_minutes ? `${session.duration_minutes} menit` : '-';
+
+                        return `
+                            <div class="kick-session-card">
+                                <div class="session-info">
+                                    <span class="time">${dateStr}, ${timeStr}</span>
+                                    <span class="duration">${duration}</span>
+                                </div>
+                                <span class="count">${session.kick_count}</span>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    container.innerHTML = '<p style="text-align: center; color: rgba(255,255,255,0.5); font-size: 13px;">Belum ada riwayat sesi</p>';
+                }
+            } catch (error) {
+                console.error('Error loading recent sessions:', error);
+            }
+        }
+
+        // History Modal Functions
+        async function showFullHistory() {
+            document.getElementById('history-modal').classList.add('active');
+            document.body.style.overflow = 'hidden';
+            currentHistoryPage = 1;
+            window.currentHistoryPage = 1;
+            await loadHistoryPage(1);
+        }
+
+        function closeHistoryModal() {
+            document.getElementById('history-modal').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        async function loadHistoryPage(page) {
+            if (page < 1) return;
+
+            const container = document.getElementById('history-modal-body');
+            container.innerHTML = '<div class="loading"><i class="fa fa-spinner fa-spin"></i><span>Memuat...</span></div>';
+
+            try {
+                const result = await apiRequest(`/api/kick-counter/history?page=${page}&limit=10`);
+
+                if (result && result.success) {
+                    if (!result.sessions || result.sessions.length === 0) {
+                        container.innerHTML = `
+                            <div class="empty-state">
+                                <i class="fa fa-inbox"></i>
+                                <p>Belum ada riwayat kick counter</p>
+                            </div>
+                        `;
+                        document.getElementById('history-pagination').style.display = 'none';
+                        return;
+                    }
+
+                    // Group by date
+                    const grouped = {};
+                    result.sessions.forEach(session => {
+                        const date = new Date(session.start_time);
+                        const dateKey = date.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+                        if (!grouped[dateKey]) grouped[dateKey] = [];
+                        grouped[dateKey].push(session);
+                    });
+
+                    let html = '';
+                    Object.keys(grouped).forEach(dateKey => {
+                        html += `
+                            <div class="history-day-group">
+                                <div class="history-day-header">${dateKey}</div>
+                                ${grouped[dateKey].map(session => {
+                                    const startTime = new Date(session.start_time);
+                                    const timeStr = startTime.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+                                    const duration = session.duration_minutes ? `${session.duration_minutes} menit` : '-';
+
+                                    return `
+                                        <div class="kick-session-card">
+                                            <div class="session-info">
+                                                <span class="time">${timeStr}</span>
+                                                <span class="duration">${duration}</span>
+                                            </div>
+                                            <span class="count">${session.kick_count}</span>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        `;
+                    });
+
+                    container.innerHTML = html;
+
+                    // Update pagination
+                    currentHistoryPage = page;
+                    window.currentHistoryPage = page;
+                    totalHistoryPages = result.pagination?.totalPages || 1;
+
+                    document.getElementById('page-info').textContent = `Halaman ${page} dari ${totalHistoryPages}`;
+                    document.getElementById('prev-page-btn').disabled = page <= 1;
+                    document.getElementById('next-page-btn').disabled = page >= totalHistoryPages;
+                    document.getElementById('history-pagination').style.display = totalHistoryPages > 1 ? 'flex' : 'none';
+                }
+            } catch (error) {
+                console.error('Error loading history:', error);
+                container.innerHTML = `
+                    <div class="empty-state error-state">
+                        <i class="fa fa-exclamation-triangle"></i>
+                        <p>Gagal memuat riwayat</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
