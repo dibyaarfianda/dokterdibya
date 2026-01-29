@@ -1627,6 +1627,15 @@
                             </p>
                         </a>
                     </li>
+                    <li class="nav-item" id="nav-tanya-dokter">
+                        <a href="#" class="nav-link" onclick="showTanyaDokterPage(); return false;">
+                            <i class="nav-icon fas fa-comments" style="color: #8b5cf6;"></i>
+                            <p>
+                                Tanya dr. Dibya
+                                <span class="badge badge-danger right d-none" id="badge-tanya-dokter">0</span>
+                            </p>
+                        </a>
+                    </li>
 
                     <!-- KLINIK -->
                     <li class="nav-header">KLINIK</li>
@@ -6191,6 +6200,118 @@ Contoh Markdown:
                     </div>
                 </div>
 
+                <!-- TANYA DR. DIBYA PAGE -->
+                <div id="tanya-dokter-page" class="d-none">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white;">
+                                    <h3 class="card-title mb-0"><i class="fas fa-comments mr-2"></i>Tanya dr. Dibya - Q&A Pasien</h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-sm btn-light" onclick="loadTanyaDokterQuestions()">
+                                            <i class="fas fa-sync-alt"></i> Refresh
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Stats Cards -->
+                                    <div class="row mb-4">
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-warning">
+                                                <div class="inner">
+                                                    <h3 id="tanya-stat-open">0</h3>
+                                                    <p>Menunggu Jawaban</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-clock"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-info">
+                                                <div class="inner">
+                                                    <h3 id="tanya-stat-answered">0</h3>
+                                                    <p>Sudah Dijawab</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-reply"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-success">
+                                                <div class="inner">
+                                                    <h3 id="tanya-stat-closed">0</h3>
+                                                    <p>Selesai</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-check-circle"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-secondary">
+                                                <div class="inner">
+                                                    <h3 id="tanya-stat-total">0</h3>
+                                                    <p>Total Pertanyaan</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-comments"></i></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Filter Tabs -->
+                                    <ul class="nav nav-tabs mb-3" id="tanya-tabs">
+                                        <li class="nav-item">
+                                            <a class="nav-link active" href="#" data-filter="all" onclick="filterTanyaQuestions('all'); return false;">
+                                                <i class="fas fa-list mr-1"></i> Semua
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="#" data-filter="open" onclick="filterTanyaQuestions('open'); return false;">
+                                                <i class="fas fa-clock mr-1"></i> Menunggu
+                                                <span class="badge badge-warning" id="tanya-tab-open-badge">0</span>
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="#" data-filter="answered" onclick="filterTanyaQuestions('answered'); return false;">
+                                                <i class="fas fa-reply mr-1"></i> Dijawab
+                                            </a>
+                                        </li>
+                                        <li class="nav-item">
+                                            <a class="nav-link" href="#" data-filter="closed" onclick="filterTanyaQuestions('closed'); return false;">
+                                                <i class="fas fa-check-circle mr-1"></i> Selesai
+                                            </a>
+                                        </li>
+                                    </ul>
+
+                                    <!-- Questions List -->
+                                    <div id="tanya-questions-list">
+                                        <div class="text-center py-4 text-muted">
+                                            <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                                            <p>Memuat pertanyaan...</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tanya Dokter Thread Modal -->
+                <div class="modal fade" id="tanyaThreadModal" tabindex="-1" role="dialog" aria-hidden="true">
+                    <div class="modal-dialog modal-lg" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white;">
+                                <h5 class="modal-title"><i class="fas fa-comments mr-2"></i>Detail Tanya Jawab</h5>
+                                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body" id="tanya-thread-content" style="max-height: 60vh; overflow-y: auto;">
+                                <!-- Thread content loaded dynamically -->
+                            </div>
+                            <div class="modal-footer" id="tanya-thread-footer">
+                                <!-- Reply form for dokter only -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Shared Summary (movable) -->
                 <div id="total-summary-container" class="d-none bg-light border-top" style="position:sticky; bottom:0; z-index:1000;">
                     <div class="container-fluid py-3">
@@ -9833,6 +9954,9 @@ Apakah Anda yakin ingin melanjutkan?`;
 
  <!-- Chat Popup Widget -->
  <script src="./scripts/chat-popup.js"></script>
+
+ <!-- Tanya dr. Dibya -->
+ <script src="./scripts/tanya-dokter.js"></script>
 
 </div><!-- /.wrapper -->
 

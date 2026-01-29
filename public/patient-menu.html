@@ -72,18 +72,28 @@
         .nav-actions {
             display: flex;
             align-items: center;
-            gap: 15px;
+            gap: 10px;
         }
 
         .notification-bell {
             position: relative;
             cursor: pointer;
             padding: 8px;
+            transition: transform 0.3s ease;
+        }
+
+        .notification-bell:hover {
+            transform: scale(1.1);
         }
 
         .notification-bell i {
             font-size: 20px;
             color: rgba(255, 255, 255, 0.8);
+            transition: color 0.3s;
+        }
+
+        .notification-bell:hover i {
+            color: #28a7e9;
         }
 
         .notification-badge {
@@ -103,80 +113,425 @@
             display: none;
         }
 
-        /* Profile Summary */
-        .profile-summary {
+        /* User Avatar in Navbar */
+        .user-avatar-nav {
+            position: relative;
             display: flex;
             align-items: center;
-            gap: 15px;
-            padding: 20px;
-            margin: 15px;
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border-radius: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            gap: 10px;
+            cursor: pointer;
+            padding: 6px 10px;
+            border-radius: 25px;
+            transition: background 0.3s;
         }
 
-        .profile-avatar {
-            width: 60px;
-            height: 60px;
+        .user-avatar-nav:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .avatar-circle {
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             background: linear-gradient(135deg, #0066FF 0%, #00D4FF 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 22px;
+            font-size: 14px;
             font-weight: 600;
-            flex-shrink: 0;
-            box-shadow: 0 4px 15px rgba(0, 102, 255, 0.3);
             overflow: hidden;
         }
 
-        .profile-avatar img {
+        .avatar-circle img {
             width: 100%;
             height: 100%;
             object-fit: cover;
         }
 
-        .profile-info {
-            flex: 1;
-            min-width: 0;
+        .user-info-nav {
+            display: none;
         }
 
-        .profile-info h2 {
-            font-size: 17px;
+        @media (min-width: 400px) {
+            .user-info-nav {
+                display: block;
+            }
+            .user-info-nav .user-name {
+                font-size: 13px;
+                font-weight: 600;
+                color: #ffffff;
+                max-width: 100px;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+            .user-info-nav .user-role {
+                font-size: 10px;
+                color: rgba(255, 255, 255, 0.6);
+            }
+        }
+
+        /* Dropdown Menu */
+        .dropdown-menu-custom {
+            position: absolute;
+            top: calc(100% + 5px);
+            right: 0;
+            background: rgba(40, 40, 40, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            min-width: 180px;
+            padding: 8px 0;
+            display: none;
+            z-index: 200;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
+        .dropdown-menu-custom.show {
+            display: block;
+        }
+
+        .dropdown-menu-custom a {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 15px;
+            color: #ffffff;
+            text-decoration: none;
+            font-size: 13px;
+            transition: background 0.2s;
+        }
+
+        .dropdown-menu-custom a:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: #28a7e9;
+        }
+
+        .dropdown-menu-custom a i {
+            width: 18px;
+            text-align: center;
+        }
+
+        .dropdown-menu-custom a.logout {
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            margin-top: 4px;
+        }
+
+        .dropdown-menu-custom a.logout:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: #ef4444;
+        }
+
+        /* Content Container */
+        .content-container {
+            padding: 15px;
+        }
+
+        /* Dashboard Card (Collapsible) */
+        .dashboard-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 15px;
+            transition: all 0.2s ease;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(40, 167, 233, 0.3);
+            border-color: #28a7e9;
+        }
+
+        .dashboard-card h3 {
+            font-size: 16px;
             font-weight: 600;
-            margin-bottom: 4px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
 
-        .profile-info p {
+        .dashboard-card h3 i {
+            color: #28a7e9;
+        }
+
+        /* Collapsible Styles */
+        .collapsible-header {
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .collapsible-header .toggle-icon {
+            transition: transform 0.3s ease;
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .collapsible-header:hover .toggle-icon {
+            color: #28a7e9;
+        }
+
+        .collapsible-content {
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            max-height: 2000px;
+            opacity: 1;
+        }
+
+        .collapsible-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+            padding: 0;
+            margin: 0;
+        }
+
+        .collapsible-header.collapsed .toggle-icon {
+            transform: rotate(-90deg);
+        }
+
+        /* Welcome Message Content */
+        .welcome-content {
+            line-height: 1.9;
+            color: #e0e0e0;
+            font-size: 14px;
+            font-weight: 400;
+        }
+
+        .welcome-content p {
+            margin-bottom: 15px;
+        }
+
+        .welcome-content strong {
+            color: #28a7e9;
+            font-weight: 600;
+        }
+
+        /* Announcements */
+        .announcement-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-left: 3px solid #f59e0b;
+        }
+
+        .announcement-item h4 {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .announcement-item p {
             font-size: 12px;
             color: rgba(255, 255, 255, 0.7);
+            margin: 0;
         }
 
-        .profile-info .pregnancy-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-            background: rgba(236, 72, 153, 0.2);
-            border: 1px solid rgba(236, 72, 153, 0.3);
-            padding: 4px 10px;
-            border-radius: 20px;
-            font-size: 11px;
-            color: #f472b6;
-            margin-top: 6px;
-        }
-
-        .profile-info .pregnancy-badge i {
+        .announcement-item .announcement-date {
             font-size: 10px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 8px;
+        }
+
+        /* Pregnancy Tracker */
+        .pregnancy-tracker-card {
+            background: linear-gradient(135deg, #1a1a2e 0%, #2d1b4e 50%, #1a1a2e 100%);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .pregnancy-tracker-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 20px rgba(168, 85, 247, 0.4);
+            border-color: #a855f7;
+        }
+
+        .pregnancy-tracker-card::before {
+            content: '';
+            position: absolute;
+            top: -50px;
+            right: -50px;
+            width: 150px;
+            height: 150px;
+            background: radial-gradient(circle, rgba(168, 85, 247, 0.2) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+
+        .pregnancy-tracker-card h3 {
+            color: #a855f7;
+        }
+
+        .pregnancy-tracker-card h3 i {
+            color: #a855f7;
+        }
+
+        .tracker-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .tracker-week {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .week-number {
+            font-size: 48px;
+            font-weight: 700;
+            color: #a855f7;
+            line-height: 1;
+        }
+
+        .week-label {
+            font-size: 14px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-top: 5px;
+        }
+
+        .tracker-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .tracker-info-item {
+            background: rgba(168, 85, 247, 0.1);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .tracker-info-item .label {
+            font-size: 10px;
+            color: rgba(255, 255, 255, 0.6);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+        }
+
+        .tracker-info-item .value {
+            font-size: 14px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        /* Birth Congratulations Card */
+        .birth-congrats-card {
+            background: rgba(168, 85, 247, 0.05);
+            border: none;
+            position: relative;
+            overflow: visible;
+            transition: all 0.2s ease;
+        }
+
+        .birth-congrats-card:hover {
+            transform: translateY(-3px);
+            background: rgba(168, 85, 247, 0.1);
+            box-shadow: 0 8px 25px rgba(168, 85, 247, 0.3);
+        }
+
+        .birth-corner-accent {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            z-index: 10;
+        }
+
+        #birth-corner-tl { top: 0; left: 0; border-top: 3px solid #a855f7; border-left: 3px solid #a855f7; }
+        #birth-corner-tr { top: 0; right: 0; border-top: 3px solid #a855f7; border-right: 3px solid #a855f7; }
+        #birth-corner-bl { bottom: 0; left: 0; border-bottom: 3px solid #a855f7; border-left: 3px solid #a855f7; }
+        #birth-corner-br { bottom: 0; right: 0; border-bottom: 3px solid #a855f7; border-right: 3px solid #a855f7; }
+
+        .birth-header {
+            margin-bottom: 15px;
+        }
+
+        .birth-header h2 {
+            color: #a855f7;
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .birth-header h2 i {
+            margin-right: 8px;
+        }
+
+        .birth-content {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .birth-photo {
+            width: 120px;
+            height: 120px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 25px rgba(168, 85, 247, 0.3);
+            border: 3px solid rgba(168, 85, 247, 0.5);
+            flex-shrink: 0;
+            cursor: pointer;
+        }
+
+        .birth-photo img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .birth-details {
+            flex: 1;
+            min-width: 180px;
+        }
+
+        .birth-details h3 {
+            color: #a855f7;
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .birth-details-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .birth-detail-box {
+            padding: 10px;
+            border-radius: 8px;
+            background: rgba(30, 30, 40, 0.9);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+        }
+
+        .birth-detail-label {
+            color: #9ca3af;
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+
+        .birth-detail-value {
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 12px;
         }
 
         /* Menu Container */
         .menu-container {
-            padding: 0 15px 20px;
+            padding: 0 0 20px;
         }
 
         /* Menu Grid - 2 columns */
@@ -211,6 +566,16 @@
             background: linear-gradient(135deg, rgba(255,255,255,0.05) 0%, transparent 100%);
             opacity: 0;
             transition: opacity 0.2s ease;
+        }
+
+        .menu-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(40, 167, 233, 0.3);
+            border-color: #28a7e9;
+        }
+
+        .menu-card:hover::before {
+            opacity: 1;
         }
 
         .menu-card:active {
@@ -270,7 +635,7 @@
 
         /* Quick Status */
         .quick-status {
-            padding: 0 15px 20px;
+            margin-bottom: 15px;
         }
 
         .status-card {
@@ -371,6 +736,10 @@
             .menu-card h3 {
                 font-size: 13px;
             }
+            .birth-photo {
+                width: 100px;
+                height: 100px;
+            }
         }
 
         /* Prefers reduced motion */
@@ -379,6 +748,120 @@
                 animation: none !important;
                 transition: none !important;
             }
+        }
+
+        /* Bottom Sheet Overlay */
+        .bottom-sheet-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .bottom-sheet-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Bottom Sheet Container */
+        .bottom-sheet {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(30, 30, 35, 0.98);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top-left-radius: 20px;
+            border-top-right-radius: 20px;
+            padding: 0 0 env(safe-area-inset-bottom);
+            z-index: 1001;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .bottom-sheet.active {
+            transform: translateY(0);
+        }
+
+        /* Drag Handle */
+        .bottom-sheet-handle {
+            width: 40px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 2px;
+            margin: 12px auto;
+        }
+
+        /* Bottom Sheet Header */
+        .bottom-sheet-header {
+            padding: 0 20px 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .bottom-sheet-header .sheet-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            color: white;
+        }
+
+        .bottom-sheet-header h3 {
+            font-size: 18px;
+            font-weight: 600;
+            color: #ffffff;
+            margin: 0;
+        }
+
+        /* Bottom Sheet Menu Items */
+        .bottom-sheet-menu {
+            padding: 10px 0;
+        }
+
+        .sheet-menu-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            color: #ffffff;
+            text-decoration: none;
+            transition: background 0.2s;
+        }
+
+        .sheet-menu-item:hover,
+        .sheet-menu-item:active {
+            background: rgba(255, 255, 255, 0.08);
+        }
+
+        .sheet-menu-item i.menu-icon {
+            width: 24px;
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-right: 15px;
+        }
+
+        .sheet-menu-item span {
+            flex: 1;
+            font-size: 15px;
+        }
+
+        .sheet-menu-item .arrow {
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 12px;
         }
     </style>
 </head>
@@ -394,6 +877,30 @@
                 <i class="fa fa-bell-o"></i>
                 <span class="notification-badge" id="notif-badge">0</span>
             </div>
+            <div class="user-avatar-nav" onclick="toggleDropdown(event)">
+                <div class="avatar-circle" id="user-avatar">
+                    <img id="user-avatar-img" src="" alt="" style="display: none;">
+                    <span id="user-avatar-initials">--</span>
+                </div>
+                <div class="user-info-nav">
+                    <div class="user-name" id="user-name-nav">Loading...</div>
+                    <div class="user-role">Pasien</div>
+                </div>
+                <div class="dropdown-menu-custom" id="user-dropdown">
+                    <a href="/patient-dashboard.html#profile-section">
+                        <i class="fa fa-edit"></i>
+                        <span>Edit Profil</span>
+                    </a>
+                    <a href="/patient-dashboard.html#profile-section">
+                        <i class="fa fa-cog"></i>
+                        <span>Setting</span>
+                    </a>
+                    <a href="#" onclick="logout(event)" class="logout">
+                        <i class="fa fa-sign-out"></i>
+                        <span>Log out</span>
+                    </a>
+                </div>
+            </div>
         </div>
     </nav>
 
@@ -406,99 +913,141 @@
 
         <!-- Content (hidden until loaded) -->
         <div id="content-wrapper" style="display: none;">
-            <!-- Profile Summary -->
-            <div class="profile-summary">
-                <div class="profile-avatar" id="profile-avatar">
-                    <span id="avatar-initials">--</span>
-                </div>
-                <div class="profile-info">
-                    <h2 id="profile-name">Loading...</h2>
-                    <p id="profile-email">-</p>
-                    <div class="pregnancy-badge" id="pregnancy-badge" style="display: none;">
-                        <i class="fa fa-heart"></i>
-                        <span id="pregnancy-info">-</span>
-                    </div>
-                </div>
-            </div>
+            <div class="content-container">
 
-            <!-- Quick Status (Active Booking) -->
-            <div class="quick-status" id="quick-status" style="display: none;">
-                <div class="status-card" id="booking-status-card">
-                    <div class="status-icon">
-                        <i class="fa fa-calendar-check-o"></i>
-                    </div>
-                    <div class="status-info">
-                        <h4 id="booking-status-title">Booking Aktif</h4>
-                        <p id="booking-status-desc">-</p>
+                <!-- Selamat Datang (Collapsed by default) -->
+                <div class="dashboard-card" id="welcome-card">
+                    <h3 class="collapsible-header collapsed" onclick="toggleCard('welcome')">
+                        <span><i class="fa fa-heart"></i> Selamat Datang</span>
+                        <i class="fa fa-chevron-right toggle-icon" id="welcome-toggle-icon"></i>
+                    </h3>
+                    <div class="collapsible-content collapsed" id="welcome-content">
+                        <div class="welcome-content">
+                            <p>Halaman ini adalah ruang khusus bagi Anda — tempat saya membantu Anda, memantau kehamilan atau kesehatan kandungan Anda secara berkala dan privat. Semua catatan dan informasi di sini bersifat <strong>rahasia</strong>.</p>
+                            <p>Adanya <strong><span style="color: #ffffff;">dokter</span><span style="color: #0066FF;">DIBYA</span></strong> berawal dari keinginan sederhana saya, yaitu agar setiap pasien bisa tetap terhubung dengan dokter pilihannya, tanpa batasan rumah sakit, tempat, atau waktu.</p>
+                            <p style="margin-top: 20px; text-align: right; color: #28a7e9;">
+                                <strong style="font-weight: 500;">Salam hangat,</strong><br>
+                                <strong style="font-size: 16px; font-weight: 600;">dokter Anda</strong>
+                            </p>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Menu Grid -->
-            <div class="menu-container">
-                <div class="menu-grid">
-                    <!-- Card 1: Rekam Medis -->
-                    <div class="menu-card" onclick="navigateTo('rekam-medis')">
-                        <div class="menu-icon" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">
-                            <i class="fa fa-file-text-o"></i>
+                <!-- Pengumuman (Collapsed by default) -->
+                <div class="dashboard-card" id="announcements-card">
+                    <h3 class="collapsible-header collapsed" onclick="toggleCard('announcements')">
+                        <span><i class="fa fa-bullhorn"></i> Pengumuman</span>
+                        <i class="fa fa-chevron-right toggle-icon" id="announcements-toggle-icon"></i>
+                    </h3>
+                    <div class="collapsible-content collapsed" id="announcements-content">
+                        <div id="announcements-container">
+                            <div style="text-align: center; padding: 15px; color: #999;">
+                                <i class="fa fa-spinner fa-spin"></i>
+                                <p style="margin-top: 8px; font-size: 12px;">Memuat pengumuman...</p>
+                            </div>
                         </div>
-                        <h3>Rekam Medis</h3>
-                        <p>USG, Lab, Riwayat</p>
-                    </div>
-
-                    <!-- Card 2: Kesehatan -->
-                    <div class="menu-card" onclick="navigateTo('kesehatan')">
-                        <div class="menu-icon" style="background: linear-gradient(135deg, #ec4899, #be185d);">
-                            <i class="fa fa-heartbeat"></i>
-                        </div>
-                        <h3>Kesehatan</h3>
-                        <p>Kick Counter, Tracker</p>
-                    </div>
-
-                    <!-- Card 3: Jadwal -->
-                    <div class="menu-card" onclick="navigateTo('jadwal')">
-                        <div class="menu-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
-                            <i class="fa fa-calendar"></i>
-                        </div>
-                        <h3>Jadwal</h3>
-                        <p>Booking, Jadwal RS</p>
-                    </div>
-
-                    <!-- Card 4: Informasi -->
-                    <div class="menu-card" onclick="navigateTo('informasi')">
-                        <div class="menu-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
-                            <i class="fa fa-book"></i>
-                        </div>
-                        <h3>Informasi</h3>
-                        <p>Artikel, Pengumuman</p>
-                    </div>
-
-                    <!-- Card 5: Akun -->
-                    <div class="menu-card" onclick="navigateTo('akun')">
-                        <div class="menu-icon" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9);">
-                            <i class="fa fa-user-circle-o"></i>
-                        </div>
-                        <h3>Akun</h3>
-                        <p>Profil, Pengaturan</p>
-                    </div>
-
-                    <!-- Card 6: Bantuan -->
-                    <div class="menu-card" onclick="navigateTo('bantuan')">
-                        <div class="menu-icon" style="background: linear-gradient(135deg, #6b7280, #4b5563);">
-                            <i class="fa fa-question-circle"></i>
-                        </div>
-                        <h3>Bantuan</h3>
-                        <p>FAQ, Kontak</p>
                     </div>
                 </div>
-            </div>
 
-            <!-- Version Footer -->
-            <div class="version-footer">
-                <p>dokterDIBYA Patient Portal v2.0</p>
+                <!-- Pregnancy Tracker / Birth Congratulations -->
+                <div id="pregnancy-section" style="display: none;">
+                    <!-- Will be filled by JS -->
+                </div>
+
+                <!-- Quick Status (Active Booking) -->
+                <div class="quick-status" id="quick-status" style="display: none;">
+                    <div class="status-card" id="booking-status-card">
+                        <div class="status-icon">
+                            <i class="fa fa-calendar-check-o"></i>
+                        </div>
+                        <div class="status-info">
+                            <h4 id="booking-status-title">Booking Aktif</h4>
+                            <p id="booking-status-desc">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Menu Grid -->
+                <div class="menu-container">
+                    <div class="menu-grid">
+                        <!-- Card 1: Resume Medis -->
+                        <div class="menu-card" onclick="navigateTo('rekam-medis')">
+                            <div class="menu-icon" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">
+                                <i class="fa fa-file-text-o"></i>
+                            </div>
+                            <h3>Resume Medis</h3>
+                            <p>USG, Lab, Riwayat</p>
+                        </div>
+
+                        <!-- Card 2: Aplikasi -->
+                        <div class="menu-card" onclick="navigateTo('kesehatan')">
+                            <div class="menu-icon" style="background: linear-gradient(135deg, #ec4899, #be185d);">
+                                <i class="fa fa-heartbeat"></i>
+                            </div>
+                            <h3>Aplikasi</h3>
+                            <p>Kick Counter, Tracker</p>
+                        </div>
+
+                        <!-- Card 3: Jadwal -->
+                        <div class="menu-card" onclick="navigateTo('jadwal')">
+                            <div class="menu-icon" style="background: linear-gradient(135deg, #10b981, #059669);">
+                                <i class="fa fa-calendar"></i>
+                            </div>
+                            <h3>Jadwal</h3>
+                            <p>Booking, Jadwal RS</p>
+                        </div>
+
+                        <!-- Card 4: Edukasi -->
+                        <div class="menu-card" onclick="navigateTo('edukasi')">
+                            <div class="menu-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                                <i class="fa fa-book"></i>
+                            </div>
+                            <h3>Edukasi</h3>
+                            <p>Ruang Membaca, Perjalanan Ibu</p>
+                        </div>
+
+                        <!-- Card 5: Tanya dr. Dibya -->
+                        <div class="menu-card" onclick="navigateTo('tanya-dokter')">
+                            <div class="menu-icon" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9);">
+                                <i class="fa fa-comments"></i>
+                            </div>
+                            <h3>Tanya dr. Dibya</h3>
+                            <p>Tanya Jawab Privat</p>
+                        </div>
+
+                        <!-- Card 6: Bantuan -->
+                        <div class="menu-card" onclick="navigateTo('bantuan')">
+                            <div class="menu-icon" style="background: linear-gradient(135deg, #6b7280, #4b5563);">
+                                <i class="fa fa-question-circle"></i>
+                            </div>
+                            <h3>Bantuan</h3>
+                            <p>FAQ, Kontak</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Version Footer -->
+                <div class="version-footer">
+                    <p>dokterDIBYA Patient Portal v2.0</p>
+                </div>
             </div>
         </div>
     </main>
+
+    <!-- Bottom Sheet Overlay -->
+    <div class="bottom-sheet-overlay" id="sheet-overlay" onclick="closeBottomSheet()"></div>
+
+    <!-- Bottom Sheet -->
+    <div class="bottom-sheet" id="bottom-sheet">
+        <div class="bottom-sheet-handle"></div>
+        <div class="bottom-sheet-header">
+            <div class="sheet-icon" id="sheet-icon"></div>
+            <h3 id="sheet-title">Menu</h3>
+        </div>
+        <div class="bottom-sheet-menu" id="sheet-menu">
+            <!-- Menu items will be injected by JS -->
+        </div>
+    </div>
 
     <script>
         // ==================== AUTHENTICATION ====================
@@ -540,6 +1089,8 @@
             // Authenticated, load data
             loadProfile();
             loadNotificationCount();
+            loadAnnouncements();
+            loadPregnancySection();
             checkActiveBooking();
         });
 
@@ -558,24 +1109,25 @@
                 if (data.success && data.profile) {
                     const profile = data.profile;
 
-                    // Update name
-                    document.getElementById('profile-name').textContent = profile.fullname || 'Pasien';
-                    document.getElementById('profile-email').textContent = profile.email || '-';
+                    // Update navbar
+                    document.getElementById('user-name-nav').textContent = profile.fullname || 'Pasien';
 
                     // Set avatar
                     if (profile.profile_picture) {
-                        document.getElementById('profile-avatar').innerHTML =
-                            `<img src="${profile.profile_picture}" alt="Profile" onerror="this.parentElement.innerHTML='<span>${getInitials(profile.fullname)}</span>'">`;
+                        const avatarImg = document.getElementById('user-avatar-img');
+                        avatarImg.src = profile.profile_picture;
+                        avatarImg.style.display = 'block';
+                        avatarImg.onerror = function() {
+                            this.style.display = 'none';
+                            document.getElementById('user-avatar-initials').textContent = getInitials(profile.fullname);
+                        };
+                        document.getElementById('user-avatar-initials').style.display = 'none';
                     } else {
-                        document.getElementById('avatar-initials').textContent = getInitials(profile.fullname);
+                        document.getElementById('user-avatar-initials').textContent = getInitials(profile.fullname);
                     }
 
-                    // Pregnancy info
-                    if (profile.gestational_age && profile.gestational_age > 0) {
-                        document.getElementById('pregnancy-badge').style.display = 'inline-flex';
-                        document.getElementById('pregnancy-info').textContent =
-                            `Usia Kehamilan: ${profile.gestational_age} minggu`;
-                    }
+                    // Store gestational age for pregnancy tracker
+                    window.patientGestationalAge = profile.gestational_age;
 
                     // Show content
                     document.getElementById('loading-state').style.display = 'none';
@@ -584,7 +1136,6 @@
                     throw new Error('Failed to load profile');
                 }
             } catch (error) {
-                console.error('Error loading profile:', error);
                 // Still show content with default values
                 document.getElementById('loading-state').style.display = 'none';
                 document.getElementById('content-wrapper').style.display = 'block';
@@ -598,6 +1149,41 @@
                 .join('')
                 .substring(0, 2)
                 .toUpperCase();
+        }
+
+        // ==================== DROPDOWN ====================
+        function toggleDropdown(event) {
+            event.stopPropagation();
+            const dropdown = document.getElementById('user-dropdown');
+            dropdown.classList.toggle('show');
+        }
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(event) {
+            const dropdown = document.getElementById('user-dropdown');
+            const avatarNav = document.querySelector('.user-avatar-nav');
+            if (!avatarNav.contains(event.target)) {
+                dropdown.classList.remove('show');
+            }
+        });
+
+        // ==================== COLLAPSIBLE ====================
+        function toggleCard(cardId) {
+            const content = document.getElementById(cardId + '-content');
+            const header = content.previousElementSibling;
+            const icon = document.getElementById(cardId + '-toggle-icon');
+
+            if (content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                header.classList.remove('collapsed');
+                icon.classList.remove('fa-chevron-right');
+                icon.classList.add('fa-chevron-down');
+            } else {
+                content.classList.add('collapsed');
+                header.classList.add('collapsed');
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-right');
+            }
         }
 
         // ==================== NOTIFICATIONS ====================
@@ -617,6 +1203,185 @@
             } catch (error) {
                 // Silently fail
             }
+        }
+
+        // ==================== ANNOUNCEMENTS ====================
+        async function loadAnnouncements() {
+            const token = getToken();
+            const container = document.getElementById('announcements-container');
+
+            try {
+                const response = await fetch('/api/announcements?limit=3', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const data = await response.json();
+
+                if (data.success && data.announcements && data.announcements.length > 0) {
+                    container.innerHTML = data.announcements.map(a => {
+                        const date = new Date(a.created_at);
+                        const dateStr = date.toLocaleDateString('id-ID', {
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric'
+                        });
+                        return `
+                            <div class="announcement-item">
+                                <h4>${escapeHtml(a.title)}</h4>
+                                <p>${escapeHtml(truncateText(a.content, 100))}</p>
+                                <div class="announcement-date"><i class="fa fa-clock-o"></i> ${dateStr}</div>
+                            </div>
+                        `;
+                    }).join('');
+                } else {
+                    container.innerHTML = '<p style="text-align: center; color: #666; font-size: 12px;">Tidak ada pengumuman terbaru</p>';
+                }
+            } catch (error) {
+                container.innerHTML = '<p style="text-align: center; color: #666; font-size: 12px;">Gagal memuat pengumuman</p>';
+            }
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function truncateText(text, maxLength) {
+            if (!text) return '';
+            if (text.length <= maxLength) return text;
+            return text.substring(0, maxLength) + '...';
+        }
+
+        // ==================== PREGNANCY SECTION ====================
+        async function loadPregnancySection() {
+            const token = getToken();
+            const section = document.getElementById('pregnancy-section');
+
+            try {
+                // First check for birth congratulations
+                const birthResponse = await fetch('/api/patient/birth-congratulations', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (birthResponse.ok) {
+                    const birthResult = await birthResponse.json();
+                    if (birthResult.success && birthResult.data) {
+                        // Show birth congratulations
+                        renderBirthCongratulations(birthResult.data);
+                        return;
+                    }
+                }
+
+                // If no birth data, check pregnancy tracker
+                const trackerResponse = await fetch('/api/patients/pregnancy-tracker', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+
+                if (trackerResponse.ok) {
+                    const trackerResult = await trackerResponse.json();
+                    if (trackerResult.success && trackerResult.data && trackerResult.data.gestational_age > 0) {
+                        renderPregnancyTracker(trackerResult.data);
+                    }
+                }
+            } catch (error) {
+                // Silently fail
+            }
+        }
+
+        function renderPregnancyTracker(data) {
+            const section = document.getElementById('pregnancy-section');
+            section.style.display = 'block';
+
+            const hplDate = data.hpl ? new Date(data.hpl).toLocaleDateString('id-ID', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric'
+            }) : '-';
+
+            const trimester = data.gestational_age <= 12 ? '1' : (data.gestational_age <= 28 ? '2' : '3');
+
+            section.innerHTML = `
+                <div class="dashboard-card pregnancy-tracker-card">
+                    <h3>
+                        <i class="fa fa-heartbeat"></i> Pregnancy Tracker
+                    </h3>
+                    <div class="tracker-content">
+                        <div class="tracker-week">
+                            <div class="week-number">${data.gestational_age}</div>
+                            <div class="week-label">Minggu Kehamilan</div>
+                        </div>
+                        <div class="tracker-info">
+                            <div class="tracker-info-item">
+                                <div class="label">Trimester</div>
+                                <div class="value">${trimester}</div>
+                            </div>
+                            <div class="tracker-info-item">
+                                <div class="label">HPL</div>
+                                <div class="value">${hplDate}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderBirthCongratulations(data) {
+            const section = document.getElementById('pregnancy-section');
+            section.style.display = 'block';
+
+            const birthDate = data.birth_date ? new Date(data.birth_date).toLocaleDateString('id-ID', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            }) : '-';
+
+            let birthTime = '-';
+            if (data.birth_time) {
+                const timeParts = data.birth_time.split(':');
+                birthTime = timeParts[0] + ':' + timeParts[1] + ' WIB';
+            }
+
+            section.innerHTML = `
+                <div class="dashboard-card birth-congrats-card">
+                    <div class="birth-corner-accent" id="birth-corner-tl"></div>
+                    <div class="birth-corner-accent" id="birth-corner-tr"></div>
+                    <div class="birth-corner-accent" id="birth-corner-bl"></div>
+                    <div class="birth-corner-accent" id="birth-corner-br"></div>
+
+                    <div class="birth-header">
+                        <h2><i class="fa fa-heart"></i> Selamat atas Kelahiran Buah Hati!</h2>
+                    </div>
+
+                    <div class="birth-content">
+                        ${data.photo_url ? `
+                        <div class="birth-photo" onclick="window.open('${data.photo_url}', '_blank')">
+                            <img src="${data.photo_url}" alt="Foto Bayi">
+                        </div>
+                        ` : ''}
+                        <div class="birth-details">
+                            <h3>${escapeHtml(data.baby_name || 'Baby')}</h3>
+                            <div class="birth-details-grid">
+                                <div class="birth-detail-box">
+                                    <div class="birth-detail-label">Tanggal Lahir</div>
+                                    <div class="birth-detail-value">${birthDate}</div>
+                                </div>
+                                <div class="birth-detail-box">
+                                    <div class="birth-detail-label">Jam</div>
+                                    <div class="birth-detail-value">${birthTime}</div>
+                                </div>
+                                <div class="birth-detail-box">
+                                    <div class="birth-detail-label">Berat</div>
+                                    <div class="birth-detail-value">${data.birth_weight || '-'}</div>
+                                </div>
+                                <div class="birth-detail-box">
+                                    <div class="birth-detail-label">Panjang</div>
+                                    <div class="birth-detail-value">${data.birth_length || '-'}</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
 
         // ==================== ACTIVE BOOKING ====================
@@ -653,40 +1418,116 @@
             }
         }
 
+        // ==================== BOTTOM SHEET MENU DATA ====================
+        const menuData = {
+            'rekam-medis': {
+                title: 'Resume Medis',
+                icon: 'fa-file-text-o',
+                color: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                items: [
+                    { icon: 'fa-picture-o', label: 'Album USG', href: '/patient-dashboard.html#usg-section' },
+                    { icon: 'fa-flask', label: 'Hasil Lab', href: '/patient-dashboard.html#lab-section' },
+                    { icon: 'fa-folder-open', label: 'Rekam Medis Saya', href: '/patient-dashboard.html#documents-section' },
+                    { icon: 'fa-history', label: 'Riwayat Medis', href: '/patient-dashboard.html#patient-uploads-section' }
+                ]
+            },
+            'kesehatan': {
+                title: 'Aplikasi',
+                icon: 'fa-heartbeat',
+                color: 'linear-gradient(135deg, #ec4899, #be185d)',
+                items: [
+                    { icon: 'fa-hand-paper-o', label: 'Kick Counter', href: '/patient-dashboard.html#kick-counter' },
+                    { icon: 'fa-line-chart', label: 'Pregnancy Tracker', href: '/patient-dashboard.html#pregnancy-tracker-row' },
+                    { icon: 'fa-medkit', label: 'Jadwal Vitamin', href: '/patient-dashboard.html#medications-section' }
+                ]
+            },
+            'jadwal': {
+                title: 'Jadwal',
+                icon: 'fa-calendar',
+                color: 'linear-gradient(135deg, #10b981, #059669)',
+                items: [
+                    { icon: 'fa-calendar-check-o', label: 'Booking Klinik', href: '/patient-dashboard.html#booking-status' },
+                    { icon: 'fa-hospital-o', label: 'Jadwal RS', href: '/patient-dashboard.html#hospital-booking-section' },
+                    { icon: 'fa-stethoscope', label: 'Riwayat Kunjungan', href: '/patient-dashboard.html#visits-history-section' }
+                ]
+            },
+            'edukasi': {
+                title: 'Edukasi',
+                icon: 'fa-book',
+                color: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                items: [
+                    { icon: 'fa-book', label: 'Ruang Membaca', href: '/patient-dashboard.html#articles-section' },
+                    { icon: 'fa-heart', label: 'Perjalanan Ibu', href: '/perjalanan-ibu.html' }
+                ]
+            },
+            'tanya-dokter': {
+                title: 'Tanya dr. Dibya',
+                icon: 'fa-comments',
+                color: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
+                items: [
+                    { icon: 'fa-question-circle', label: 'Ajukan Pertanyaan', href: '/patient-dashboard.html#tanya-dokter-ask' },
+                    { icon: 'fa-history', label: 'Riwayat Tanya Jawab', href: '/patient-dashboard.html#tanya-dokter-history' },
+                    { icon: 'fa-star', label: 'Upgrade Premium', href: '/patient-dashboard.html#tanya-dokter-premium' }
+                ]
+            },
+            'bantuan': {
+                title: 'Bantuan',
+                icon: 'fa-question-circle',
+                color: 'linear-gradient(135deg, #6b7280, #4b5563)',
+                items: [
+                    { icon: 'fa-question', label: 'FAQ', href: '/patient-dashboard.html' },
+                    { icon: 'fa-whatsapp', label: 'Hubungi Kami', href: 'https://wa.me/6281234567890' }
+                ]
+            }
+        };
+
+        // ==================== BOTTOM SHEET FUNCTIONS ====================
+        function openBottomSheet(category) {
+            const data = menuData[category];
+            if (!data) return;
+
+            // Set header
+            document.getElementById('sheet-icon').innerHTML = '<i class="fa ' + data.icon + '"></i>';
+            document.getElementById('sheet-icon').style.background = data.color;
+            document.getElementById('sheet-title').textContent = data.title;
+
+            // Build menu items
+            let menuHtml = '';
+            data.items.forEach(function(item) {
+                menuHtml += '<a href="' + item.href + '" class="sheet-menu-item">' +
+                    '<i class="fa ' + item.icon + ' menu-icon"></i>' +
+                    '<span>' + item.label + '</span>' +
+                    '<i class="fa fa-chevron-right arrow"></i>' +
+                '</a>';
+            });
+
+            document.getElementById('sheet-menu').innerHTML = menuHtml;
+
+            // Show sheet
+            document.getElementById('sheet-overlay').classList.add('active');
+            document.getElementById('bottom-sheet').classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeBottomSheet() {
+            document.getElementById('sheet-overlay').classList.remove('active');
+            document.getElementById('bottom-sheet').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
         // ==================== NAVIGATION ====================
         function navigateTo(section) {
-            // Navigate to dashboard with section hash
-            // The dashboard will scroll to the relevant section
-            switch(section) {
-                case 'rekam-medis':
-                    window.location.href = '/patient-dashboard.html#usg-section';
-                    break;
-                case 'kesehatan':
-                    window.location.href = '/patient-dashboard.html#kick-counter';
-                    break;
-                case 'jadwal':
-                    window.location.href = '/patient-dashboard.html#booking-status';
-                    break;
-                case 'informasi':
-                    window.location.href = '/patient-dashboard.html#articles-section';
-                    break;
-                case 'akun':
-                    window.location.href = '/patient-dashboard.html#profile-section';
-                    break;
-                case 'bantuan':
-                    // For now, go to dashboard
-                    window.location.href = '/patient-dashboard.html';
-                    break;
-                case 'notifikasi':
-                    window.location.href = '/patient-dashboard.html#notifications';
-                    break;
-                default:
-                    window.location.href = '/patient-dashboard.html';
+            // Notifikasi langsung redirect, yang lain buka bottom sheet
+            if (section === 'notifikasi') {
+                window.location.href = '/patient-dashboard.html#notifications';
+            } else {
+                openBottomSheet(section);
             }
         }
 
         // ==================== LOGOUT ====================
-        function logout() {
+        function logout(event) {
+            if (event) event.preventDefault();
             localStorage.removeItem('vps_auth_token');
             sessionStorage.removeItem('vps_auth_token');
             localStorage.removeItem('patient_token');

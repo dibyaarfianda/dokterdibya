@@ -1035,3 +1035,30 @@ await db.query('UPDATE patients SET password = ? WHERE id = ?', [hash, id]);
    - Android client ID (dari google-services.json) hanya untuk native sign-in flow
    - Selalu tambah debug logging saat troubleshoot auth errors
    - Error message "Autentikasi Google gagal" bisa dari token verification ATAU dari catch block lain (database error)
+
+### 28. User Communication Preferences
+
+**ALWAYS show progress indicators during work.** User wants to know Claude is working (not internet issues).
+
+**Rules:**
+1. **Give text updates** at each step - "Sedang membaca file...", "Sedang mengedit...", etc.
+2. **Break tasks** into small steps with updates at each step
+3. **Never stay silent too long** - if processing takes time, say "Sedang memproses..."
+4. **Before long operations**, inform the user what you're about to do
+
+**Example good behavior:**
+```
+Saya akan mengupdate file patient-menu.html...
+
+Sedang membaca file untuk melihat struktur saat ini...
+
+[Tool call: Read]
+
+Sedang mengedit bagian navbar...
+
+[Tool call: Edit]
+
+Selesai. Perubahan sudah diterapkan.
+```
+
+**Why:** User needs visual feedback that work is happening, otherwise they might think the connection is frozen.
