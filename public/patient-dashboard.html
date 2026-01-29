@@ -189,6 +189,32 @@
             transform: rotate(-90deg);
         }
 
+        /* Tanya dr. Dibya Styles */
+        .tier-card:hover {
+            border-color: #28a7e9 !important;
+            transform: translateY(-2px);
+        }
+
+        .tanya-thread:hover {
+            border-color: #8b5cf6 !important;
+            background: rgba(139, 92, 246, 0.1) !important;
+        }
+
+        #tanya-image-preview {
+            position: relative;
+        }
+
+        #tanya-question-text:focus {
+            border-color: #8b5cf6;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+        }
+
+        .payment-option:hover {
+            border-color: #28a7e9 !important;
+            background: rgba(40, 167, 233, 0.1) !important;
+        }
+
         /* Alert */
         .alert-info-custom {
             background: rgba(40, 167, 233, 0.15);
@@ -2426,6 +2452,135 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- ====== TANYA DR. DIBYA SECTIONS ====== -->
+
+                <!-- Tanya dr. Dibya - Ajukan Pertanyaan (HIDDEN) -->
+                <div class="dashboard-card" id="tanya-dokter-ask" style="display: none; margin-bottom: 20px;">
+                    <h3 class="collapsible-header collapsed" id="tanya-ask-header" onclick="toggleCard('tanya-ask')">
+                        <span><i class="fa fa-question-circle"></i> Ajukan Pertanyaan</span>
+                        <i class="fa fa-chevron-right toggle-icon" id="tanya-ask-toggle-icon"></i>
+                    </h3>
+                    <div class="collapsible-content collapsed" id="tanya-ask-content">
+                        <div id="tanya-quota-info" style="margin-bottom: 15px;">
+                            <div style="background: rgba(40, 167, 233, 0.15); border-radius: 8px; padding: 12px; border: 1px solid rgba(40, 167, 233, 0.3);">
+                                <i class="fa fa-info-circle" style="color: #28a7e9;"></i>
+                                <span id="tanya-quota-text" style="font-size: 13px;">Memuat kuota...</span>
+                            </div>
+                        </div>
+
+                        <!-- Form Pertanyaan -->
+                        <div id="tanya-form-container">
+                            <form id="tanya-question-form" onsubmit="submitQuestion(event)">
+                                <div class="form-group">
+                                    <label style="color: #ccc; font-size: 13px;">Pilih Dokter <span style="color: #ef4444;">*</span></label>
+                                    <select id="tanya-doctor-select" class="form-control" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 8px; padding: 10px;" required>
+                                        <option value="" style="background: #1a1a2e;">Memuat daftar dokter...</option>
+                                    </select>
+                                </div>
+                                <div class="form-group">
+                                    <label style="color: #ccc; font-size: 13px;">Pertanyaan Anda <span style="color: #ef4444;">*</span></label>
+                                    <textarea id="tanya-question-text" class="form-control" rows="4" placeholder="Tuliskan pertanyaan Anda..." style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff; border-radius: 8px;" required></textarea>
+                                    <small style="color: #888; font-size: 11px;">Maksimal 1000 karakter</small>
+                                </div>
+                                <div class="form-group">
+                                    <label style="color: #ccc; font-size: 13px;">Lampiran (opsional)</label>
+                                    <input type="file" id="tanya-question-image" accept="image/*" style="display: none;">
+                                    <button type="button" onclick="document.getElementById('tanya-question-image').click()" class="btn" style="background: rgba(255,255,255,0.1); border: 1px dashed rgba(255,255,255,0.3); color: #ccc; width: 100%;">
+                                        <i class="fa fa-camera"></i> Tambah Foto
+                                    </button>
+                                    <div id="tanya-image-preview" style="margin-top: 10px; display: none;">
+                                        <img id="tanya-preview-img" style="max-width: 100%; max-height: 200px; border-radius: 8px;">
+                                        <button type="button" onclick="removeQuestionImage()" style="position: absolute; top: 5px; right: 5px; background: rgba(0,0,0,0.5); border: none; color: white; border-radius: 50%; width: 25px; height: 25px;">
+                                            <i class="fa fa-times"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <button type="submit" id="tanya-submit-btn" class="btn btn-primary" style="width: 100%; background: linear-gradient(135deg, #8b5cf6, #6d28d9); border: none; padding: 12px; border-radius: 8px; font-weight: 600;">
+                                    <i class="fa fa-paper-plane"></i> Kirim Pertanyaan
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Tidak bisa bertanya (kuota habis / ada thread open) -->
+                        <div id="tanya-blocked-container" style="display: none; text-align: center; padding: 20px;">
+                            <i class="fa fa-clock-o" style="font-size: 40px; color: #f59e0b; margin-bottom: 15px;"></i>
+                            <p id="tanya-blocked-message" style="color: #ccc; margin-bottom: 15px;">Anda memiliki pertanyaan yang belum dijawab.</p>
+                            <a href="#tanya-dokter-history" onclick="toggleCard('tanya-history')" class="btn" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #fff;">
+                                <i class="fa fa-history"></i> Lihat Riwayat
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tanya dr. Dibya - Riwayat Tanya Jawab (HIDDEN) -->
+                <div class="dashboard-card" id="tanya-dokter-history" style="display: none; margin-bottom: 20px;">
+                    <h3 class="collapsible-header collapsed" id="tanya-history-header" onclick="toggleCard('tanya-history')">
+                        <span><i class="fa fa-history"></i> Riwayat Tanya Jawab</span>
+                        <i class="fa fa-chevron-right toggle-icon" id="tanya-history-toggle-icon"></i>
+                    </h3>
+                    <div class="collapsible-content collapsed" id="tanya-history-content">
+                        <div id="tanya-history-container">
+                            <div style="text-align: center; padding: 20px; color: #888;">
+                                <i class="fa fa-spinner fa-spin"></i> Memuat riwayat...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Tanya dr. Dibya - Upgrade Premium (HIDDEN) -->
+                <div class="dashboard-card" id="tanya-dokter-premium" style="display: none; margin-bottom: 20px; background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(109, 40, 217, 0.15)); border: 1px solid rgba(139, 92, 246, 0.3);">
+                    <h3 class="collapsible-header" id="tanya-premium-header" onclick="toggleCard('tanya-premium')">
+                        <span><i class="fa fa-star" style="color: #f59e0b;"></i> Upgrade Premium</span>
+                        <i class="fa fa-chevron-down toggle-icon" id="tanya-premium-toggle-icon"></i>
+                    </h3>
+                    <div class="collapsible-content" id="tanya-premium-content">
+                        <p style="color: #ccc; font-size: 13px; margin-bottom: 20px;">Dapatkan lebih banyak kesempatan bertanya dengan berlangganan Premium!</p>
+
+                        <!-- Current Status -->
+                        <div id="tanya-current-status" style="background: rgba(0,0,0,0.2); border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                            <div style="font-size: 12px; color: #888; margin-bottom: 5px;">Status Langganan Saat Ini</div>
+                            <div id="tanya-current-tier" style="font-size: 16px; font-weight: 600; color: #fff;">Gratis</div>
+                            <div id="tanya-current-quota" style="font-size: 12px; color: #28a7e9;">1 pertanyaan / minggu</div>
+                        </div>
+
+                        <!-- Tier Cards -->
+                        <div id="tanya-tier-list" style="display: grid; gap: 12px;">
+                            <!-- First Class -->
+                            <div class="tier-card" data-tier="first_class" onclick="selectTier('first_class')" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px; cursor: pointer; transition: all 0.2s;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <span style="font-weight: 600; color: #fff;">First-Class</span>
+                                    <span style="background: linear-gradient(135deg, #cd7f32, #8b4513); color: #fff; padding: 3px 8px; border-radius: 12px; font-size: 10px;">BRONZE</span>
+                                </div>
+                                <div style="font-size: 13px; color: #ccc; margin-bottom: 5px;">3 pertanyaan / minggu</div>
+                                <div style="font-size: 18px; font-weight: 700; color: #28a7e9;">Rp 50.000<span style="font-size: 12px; font-weight: 400; color: #888;">/bulan</span></div>
+                            </div>
+
+                            <!-- Executive -->
+                            <div class="tier-card" data-tier="executive" onclick="selectTier('executive')" style="background: rgba(255,255,255,0.05); border: 2px solid #28a7e9; border-radius: 12px; padding: 15px; cursor: pointer; transition: all 0.2s; position: relative;">
+                                <div style="position: absolute; top: -10px; right: 15px; background: #28a7e9; color: #fff; padding: 3px 10px; border-radius: 10px; font-size: 10px; font-weight: 600;">POPULER</div>
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <span style="font-weight: 600; color: #fff;">Executive-Class</span>
+                                    <span style="background: linear-gradient(135deg, #c0c0c0, #808080); color: #333; padding: 3px 8px; border-radius: 12px; font-size: 10px;">SILVER</span>
+                                </div>
+                                <div style="font-size: 13px; color: #ccc; margin-bottom: 5px;">5 pertanyaan / minggu</div>
+                                <div style="font-size: 18px; font-weight: 700; color: #28a7e9;">Rp 100.000<span style="font-size: 12px; font-weight: 400; color: #888;">/bulan</span></div>
+                            </div>
+
+                            <!-- VIP -->
+                            <div class="tier-card" data-tier="vip" onclick="selectTier('vip')" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px; cursor: pointer; transition: all 0.2s;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                                    <span style="font-weight: 600; color: #fff;">VIP</span>
+                                    <span style="background: linear-gradient(135deg, #ffd700, #daa520); color: #333; padding: 3px 8px; border-radius: 12px; font-size: 10px;">GOLD</span>
+                                </div>
+                                <div style="font-size: 13px; color: #ccc; margin-bottom: 5px;">10 pertanyaan / minggu + Bonus fitur eksklusif</div>
+                                <div style="font-size: 18px; font-weight: 700; color: #28a7e9;">Rp 200.000<span style="font-size: 12px; font-weight: 400; color: #888;">/bulan</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ====== END TANYA DR. DIBYA SECTIONS ====== -->
 
                 <!-- 5. Identitas Pribadi (moved to right column) -->
                 <div class="dashboard-card" id="identity-section" style="margin-bottom: 20px;">
@@ -4889,10 +5044,15 @@
             hideAddMedicationForm();
             loadMedications();
 
+            // Schedule Capacitor LocalNotifications if available
+            if (reminder && typeof scheduleMedicationNotifications === 'function') {
+                scheduleMedicationNotifications();
+            }
+
             // Show confirmation
             if (reminder) {
-                const times = getReminderTimesForFrequency(frequency);
-                alert(`${name} berhasil ditambahkan!\nPengingat: ${times}`);
+                const displayTimes = reminderTimes.length > 0 ? reminderTimes.join(', ') : getReminderTimesForFrequency(frequency);
+                alert(`${name} berhasil ditambahkan!\nPengingat aktif: ${displayTimes}`);
             }
         }
 
@@ -4915,6 +5075,11 @@
                 if (meds[index].reminder && 'Notification' in window) {
                     Notification.requestPermission();
                 }
+
+                // Reschedule Capacitor LocalNotifications
+                if (typeof scheduleMedicationNotifications === 'function') {
+                    scheduleMedicationNotifications();
+                }
             }
         }
 
@@ -4925,10 +5090,20 @@
             meds.splice(index, 1);
             saveCustomMedications(meds);
             loadMedications();
+
+            // Reschedule Capacitor LocalNotifications (will remove deleted med's notifications)
+            if (typeof scheduleMedicationNotifications === 'function') {
+                scheduleMedicationNotifications();
+            }
         }
 
-        // Check medication reminders
+        // Check medication reminders (for web browser - when page is open)
         function checkMedicationReminders() {
+            // Skip if running in Capacitor (uses LocalNotifications instead)
+            if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.LocalNotifications) {
+                return;
+            }
+
             const meds = getCustomMedications().filter(m => m.reminder);
             if (meds.length === 0) return;
 
@@ -4936,8 +5111,8 @@
             const currentTime = now.getHours().toString().padStart(2, '0') + ':' +
                                now.getMinutes().toString().padStart(2, '0');
 
-            // Get reminder times based on frequency
-            const reminderSchedule = {
+            // Default reminder times based on frequency
+            const defaultSchedule = {
                 1: ['08:00'],
                 2: ['08:00', '20:00'],
                 3: ['08:00', '14:00', '20:00'],
@@ -4945,13 +5120,17 @@
             };
 
             meds.forEach(med => {
-                const times = reminderSchedule[med.frequency] || ['08:00'];
+                // Use custom times if available, otherwise use defaults
+                const times = (med.reminderTimes && med.reminderTimes.length > 0)
+                    ? med.reminderTimes
+                    : (defaultSchedule[med.frequency] || ['08:00']);
+
                 if (times.includes(currentTime)) {
                     if (Notification.permission === 'granted') {
-                        new Notification('Waktunya Minum Obat!', {
-                            body: med.name,
-                            icon: '/images/logo.png',
-                            tag: 'med-' + med.id,
+                        new Notification('💊 Waktunya Minum Obat!', {
+                            body: `${med.name} - ${med.quantity} ${med.unit}`,
+                            icon: '/images/dibya-logo.png',
+                            tag: 'med-' + med.id + '-' + currentTime,
                             requireInteraction: true
                         });
                     }
@@ -4959,12 +5138,129 @@
             });
         }
 
-        // Check reminders every 5 minutes (reduced from 60s for performance)
-        setInterval(checkMedicationReminders, 300000);
+        // Check reminders every minute for more accurate timing
+        setInterval(checkMedicationReminders, 60000);
         // Also check on page load
         if ('Notification' in window && Notification.permission === 'granted') {
             checkMedicationReminders();
         }
+
+        // ====== CAPACITOR LOCAL NOTIFICATIONS ======
+        // Schedule medication reminders using Capacitor LocalNotifications (for mobile app)
+        async function scheduleMedicationNotifications() {
+            // Check if running in Capacitor
+            if (!window.Capacitor || !window.Capacitor.Plugins || !window.Capacitor.Plugins.LocalNotifications) {
+                console.log('[MedReminder] Not running in Capacitor, skipping LocalNotifications');
+                return;
+            }
+
+            const LocalNotifications = window.Capacitor.Plugins.LocalNotifications;
+
+            try {
+                // Request permission first
+                const permResult = await LocalNotifications.requestPermissions();
+                if (permResult.display !== 'granted') {
+                    console.log('[MedReminder] Notification permission not granted');
+                    return;
+                }
+
+                // Cancel all existing medication notifications
+                const pending = await LocalNotifications.getPending();
+                const medNotifIds = pending.notifications
+                    .filter(n => n.id >= 10000 && n.id < 20000) // Med notifications use IDs 10000-19999
+                    .map(n => ({ id: n.id }));
+                if (medNotifIds.length > 0) {
+                    await LocalNotifications.cancel({ notifications: medNotifIds });
+                }
+
+                // Get medications with reminders enabled
+                const meds = getCustomMedications().filter(m => m.reminder);
+                if (meds.length === 0) {
+                    console.log('[MedReminder] No medications with reminders');
+                    return;
+                }
+
+                const notifications = [];
+                const now = new Date();
+
+                meds.forEach((med, medIndex) => {
+                    // Use custom times or default based on frequency
+                    const times = med.reminderTimes && med.reminderTimes.length > 0
+                        ? med.reminderTimes
+                        : getReminderTimesForFrequency(med.frequency).split(', ');
+
+                    times.forEach((time, timeIndex) => {
+                        const [hours, minutes] = time.split(':').map(Number);
+
+                        // Schedule for next 7 days
+                        for (let day = 0; day < 7; day++) {
+                            const scheduleDate = new Date(now);
+                            scheduleDate.setDate(scheduleDate.getDate() + day);
+                            scheduleDate.setHours(hours, minutes, 0, 0);
+
+                            // Skip if time has passed today
+                            if (scheduleDate <= now) continue;
+
+                            const notifId = 10000 + (medIndex * 100) + (timeIndex * 10) + day;
+
+                            notifications.push({
+                                id: notifId,
+                                title: '💊 Waktunya Minum Obat!',
+                                body: `${med.name} - ${med.quantity} ${med.unit}`,
+                                schedule: { at: scheduleDate },
+                                sound: 'default',
+                                smallIcon: 'ic_stat_notify',
+                                largeIcon: 'ic_launcher',
+                                channelId: 'medication-reminders',
+                                extra: { medId: med.id, medName: med.name }
+                            });
+                        }
+                    });
+                });
+
+                if (notifications.length > 0) {
+                    // Capacitor limits to 64 pending notifications, take first 60
+                    const limitedNotifs = notifications.slice(0, 60);
+                    await LocalNotifications.schedule({ notifications: limitedNotifs });
+                    console.log(`[MedReminder] Scheduled ${limitedNotifs.length} notifications`);
+                }
+            } catch (error) {
+                console.error('[MedReminder] Error scheduling notifications:', error);
+            }
+        }
+
+        // Create notification channel for Android (required for Android 8+)
+        async function createMedicationNotificationChannel() {
+            if (!window.Capacitor || !window.Capacitor.Plugins || !window.Capacitor.Plugins.LocalNotifications) {
+                return;
+            }
+
+            const LocalNotifications = window.Capacitor.Plugins.LocalNotifications;
+
+            try {
+                await LocalNotifications.createChannel({
+                    id: 'medication-reminders',
+                    name: 'Pengingat Obat',
+                    description: 'Notifikasi pengingat minum obat/vitamin',
+                    importance: 5, // Max importance
+                    visibility: 1, // Public
+                    sound: 'default',
+                    vibration: true,
+                    lights: true
+                });
+                console.log('[MedReminder] Notification channel created');
+            } catch (error) {
+                console.error('[MedReminder] Error creating channel:', error);
+            }
+        }
+
+        // Initialize Capacitor notifications on load
+        if (window.Capacitor && window.Capacitor.Plugins) {
+            createMedicationNotificationChannel();
+            // Schedule notifications after a short delay to ensure meds are loaded
+            setTimeout(scheduleMedicationNotifications, 3000);
+        }
+        // ====== END CAPACITOR LOCAL NOTIFICATIONS ======
 
         async function loadBookingStatus() {
             const container = document.getElementById('booking-status-container');
@@ -6654,6 +6950,554 @@
             };
             document.body.appendChild(modal);
         }
+
+        // ==================== TANYA DR. DIBYA FUNCTIONS ====================
+
+        // Load quota info and determine if user can ask
+        async function loadTanyaQuotaInfo() {
+            try {
+                const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+                if (!token) return;
+
+                const response = await fetch('/api/patient-questions/can-ask', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    // Update quota text
+                    const quotaText = document.getElementById('tanya-quota-text');
+                    if (quotaText) {
+                        const tier = data.tier || 'free';
+                        const tierNames = { 'free': 'Gratis', 'first_class': 'First-Class', 'executive': 'Executive-Class', 'vip': 'VIP' };
+                        quotaText.innerHTML = `Paket: <strong>${tierNames[tier] || 'Gratis'}</strong> | Sisa: <strong>${data.remaining}/${data.limit}</strong> pertanyaan minggu ini`;
+                    }
+
+                    // Update current status in premium section
+                    const currentTier = document.getElementById('tanya-current-tier');
+                    const currentQuota = document.getElementById('tanya-current-quota');
+                    if (currentTier) {
+                        const tierNames = { 'free': 'Gratis', 'first_class': 'Premium First-Class', 'executive': 'Premium Executive-Class', 'vip': 'Premium VIP' };
+                        currentTier.textContent = tierNames[data.tier] || 'Gratis';
+                    }
+                    if (currentQuota) {
+                        currentQuota.textContent = `${data.limit} pertanyaan / minggu`;
+                    }
+
+                    // Show/hide form or blocked message
+                    const formContainer = document.getElementById('tanya-form-container');
+                    const blockedContainer = document.getElementById('tanya-blocked-container');
+                    const blockedMessage = document.getElementById('tanya-blocked-message');
+
+                    if (data.canAsk) {
+                        formContainer.style.display = 'block';
+                        blockedContainer.style.display = 'none';
+                    } else {
+                        formContainer.style.display = 'none';
+                        blockedContainer.style.display = 'block';
+                        blockedMessage.textContent = data.reason || 'Anda tidak bisa bertanya saat ini.';
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load quota info:', error);
+            }
+        }
+
+        // Load available doctors for dropdown
+        async function loadAvailableDoctors() {
+            try {
+                const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+                if (!token) return;
+
+                const select = document.getElementById('tanya-doctor-select');
+                if (!select) return;
+
+                const response = await fetch('/api/doctors/available', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    if (data.success && data.doctors && data.doctors.length > 0) {
+                        select.innerHTML = '<option value="" style="background: #1a1a2e;">-- Pilih Dokter --</option>';
+
+                        data.doctors.forEach(doc => {
+                            const option = document.createElement('option');
+                            option.value = doc.id;
+                            option.textContent = `${doc.name}${doc.label ? ' - ' + doc.label : ''}`;
+                            option.style.background = '#1a1a2e';
+                            select.appendChild(option);
+                        });
+
+                        // Auto-select if only one doctor
+                        if (data.doctors.length === 1) {
+                            select.value = data.doctors[0].id;
+                        }
+                    } else {
+                        select.innerHTML = '<option value="" style="background: #1a1a2e;">Tidak ada dokter tersedia</option>';
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to load available doctors:', error);
+                const select = document.getElementById('tanya-doctor-select');
+                if (select) {
+                    select.innerHTML = '<option value="" style="background: #1a1a2e;">Gagal memuat daftar dokter</option>';
+                }
+            }
+        }
+
+        // Submit new question
+        async function submitQuestion(event) {
+            event.preventDefault();
+
+            const submitBtn = document.getElementById('tanya-submit-btn');
+            const questionText = document.getElementById('tanya-question-text').value.trim();
+            const doctorSelect = document.getElementById('tanya-doctor-select');
+            const doctorId = doctorSelect ? doctorSelect.value : '';
+            const imageInput = document.getElementById('tanya-question-image');
+
+            if (!doctorId) {
+                alert('Silakan pilih dokter terlebih dahulu');
+                return;
+            }
+
+            if (!questionText) {
+                alert('Silakan tulis pertanyaan Anda');
+                return;
+            }
+
+            if (questionText.length > 1000) {
+                alert('Pertanyaan maksimal 1000 karakter');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Mengirim...';
+
+            try {
+                const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+
+                const formData = new FormData();
+                formData.append('question_text', questionText);
+                formData.append('doctor_id', doctorId);
+
+                if (imageInput.files && imageInput.files[0]) {
+                    formData.append('image', imageInput.files[0]);
+                }
+
+                const response = await fetch('/api/patient-questions', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Clear form
+                    document.getElementById('tanya-question-text').value = '';
+                    document.getElementById('tanya-question-image').value = '';
+                    removeQuestionImage();
+
+                    // Show success
+                    alert('Pertanyaan berhasil dikirim! Dokter akan menjawab dalam waktu dekat.');
+
+                    // Reload quota and history
+                    loadTanyaQuotaInfo();
+                    loadTanyaHistory();
+                } else {
+                    alert(data.message || 'Gagal mengirim pertanyaan');
+                }
+            } catch (error) {
+                console.error('Failed to submit question:', error);
+                alert('Terjadi kesalahan. Silakan coba lagi.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa fa-paper-plane"></i> Kirim Pertanyaan';
+            }
+        }
+
+        // Remove question image preview
+        function removeQuestionImage() {
+            document.getElementById('tanya-question-image').value = '';
+            document.getElementById('tanya-image-preview').style.display = 'none';
+        }
+
+        // Preview question image
+        document.addEventListener('DOMContentLoaded', function() {
+            const imageInput = document.getElementById('tanya-question-image');
+            if (imageInput) {
+                imageInput.addEventListener('change', function(e) {
+                    if (e.target.files && e.target.files[0]) {
+                        const reader = new FileReader();
+                        reader.onload = function(ev) {
+                            document.getElementById('tanya-preview-img').src = ev.target.result;
+                            document.getElementById('tanya-image-preview').style.display = 'block';
+                        };
+                        reader.readAsDataURL(e.target.files[0]);
+                    }
+                });
+            }
+        });
+
+        // Load Q&A history
+        async function loadTanyaHistory() {
+            try {
+                const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+                if (!token) return;
+
+                const container = document.getElementById('tanya-history-container');
+                if (!container) return;
+
+                const response = await fetch('/api/patient-questions', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+
+                    if (!data.questions || data.questions.length === 0) {
+                        container.innerHTML = `
+                            <div style="text-align: center; padding: 30px; color: #888;">
+                                <i class="fa fa-comments-o" style="font-size: 40px; margin-bottom: 15px;"></i>
+                                <p>Belum ada riwayat tanya jawab</p>
+                            </div>
+                        `;
+                        return;
+                    }
+
+                    container.innerHTML = data.questions.map(q => {
+                        const statusColors = {
+                            'open': '#f59e0b',
+                            'answered': '#10b981',
+                            'closed': '#6b7280'
+                        };
+                        const statusLabels = {
+                            'open': 'Menunggu Jawaban',
+                            'answered': 'Sudah Dijawab',
+                            'closed': 'Selesai'
+                        };
+                        const date = new Date(q.created_at);
+                        const dateStr = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+                        return `
+                            <div class="tanya-thread" onclick="openTanyaThread('${q.id}')" style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; margin-bottom: 12px; cursor: pointer; border: 1px solid rgba(255,255,255,0.1); transition: all 0.2s;">
+                                <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                                    <span style="background: ${statusColors[q.status]}; color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 10px; font-weight: 600;">${statusLabels[q.status]}</span>
+                                    <span style="font-size: 11px; color: #888;">${dateStr}</span>
+                                </div>
+                                <p style="color: #fff; font-size: 14px; margin: 0; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${escapeHtml(q.question_text)}</p>
+                                ${q.reply_count > 0 ? `<div style="margin-top: 10px; font-size: 12px; color: #28a7e9;"><i class="fa fa-reply"></i> ${q.reply_count} balasan</div>` : ''}
+                            </div>
+                        `;
+                    }).join('');
+                }
+            } catch (error) {
+                console.error('Failed to load tanya history:', error);
+            }
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Open thread detail
+        async function openTanyaThread(questionId) {
+            try {
+                const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+
+                const response = await fetch(`/api/patient-questions/${questionId}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const q = data.question;
+                    const replies = data.replies || [];
+
+                    // Build modal
+                    const modal = document.createElement('div');
+                    modal.className = 'tanya-thread-modal';
+                    modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10000; overflow-y: auto; padding: 20px;';
+
+                    const statusColors = { 'open': '#f59e0b', 'answered': '#10b981', 'closed': '#6b7280' };
+                    const statusLabels = { 'open': 'Menunggu Jawaban', 'answered': 'Sudah Dijawab', 'closed': 'Selesai' };
+                    const date = new Date(q.created_at);
+                    const dateStr = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+                    // Get doctor name from question data
+                    const doctorName = q.doctor_name || 'Dokter';
+
+                    let repliesHtml = replies.map(r => {
+                        const rDate = new Date(r.created_at);
+                        const rDateStr = rDate.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+                        const isDoctor = r.sender_type === 'doctor';
+                        const senderName = r.sender_name || (isDoctor ? doctorName : 'Anda');
+
+                        return `
+                            <div style="display: flex; ${isDoctor ? 'flex-direction: row' : 'flex-direction: row-reverse'}; margin-bottom: 15px;">
+                                <div style="max-width: 80%; padding: 12px 15px; border-radius: 15px; ${isDoctor ? 'background: linear-gradient(135deg, #8b5cf6, #6d28d9); border-bottom-left-radius: 5px;' : 'background: rgba(255,255,255,0.1); border-bottom-right-radius: 5px;'}">
+                                    <div style="font-size: 11px; color: ${isDoctor ? 'rgba(255,255,255,0.7)' : '#888'}; margin-bottom: 5px;">
+                                        ${isDoctor ? '<i class="fa fa-user-md"></i> ' + escapeHtml(senderName) : '<i class="fa fa-user"></i> Anda'} • ${rDateStr}
+                                    </div>
+                                    <p style="margin: 0; color: #fff; font-size: 14px; line-height: 1.5; white-space: pre-wrap;">${escapeHtml(r.message)}</p>
+                                    ${r.image_url ? `<img src="${r.image_url}" style="max-width: 100%; max-height: 200px; margin-top: 10px; border-radius: 8px; cursor: pointer;" onclick="window.open('${r.image_url}', '_blank')">` : ''}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    modal.innerHTML = `
+                        <div style="max-width: 600px; margin: 0 auto;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                                <h3 style="color: #fff; margin: 0;"><i class="fa fa-comments"></i> Tanya Jawab</h3>
+                                <button onclick="this.closest('.tanya-thread-modal').remove()" style="background: none; border: none; color: #fff; font-size: 24px; cursor: pointer;">&times;</button>
+                            </div>
+
+                            <!-- Original Question -->
+                            <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 15px; margin-bottom: 20px; border-left: 3px solid #8b5cf6;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                    <span style="background: ${statusColors[q.status]}; color: #fff; padding: 3px 10px; border-radius: 12px; font-size: 10px; font-weight: 600;">${statusLabels[q.status]}</span>
+                                    <span style="font-size: 11px; color: #888;">${dateStr}</span>
+                                </div>
+                                <p style="color: #fff; font-size: 14px; margin: 0; line-height: 1.6; white-space: pre-wrap;">${escapeHtml(q.question_text)}</p>
+                                ${q.image_url ? `<img src="${q.image_url}" style="max-width: 100%; max-height: 300px; margin-top: 15px; border-radius: 8px; cursor: pointer;" onclick="window.open('${q.image_url}', '_blank')">` : ''}
+                            </div>
+
+                            <!-- Replies -->
+                            <div style="margin-bottom: 20px;">
+                                ${repliesHtml || '<div style="text-align: center; padding: 20px; color: #888;"><i class="fa fa-clock-o"></i> Menunggu balasan dari dokter...</div>'}
+                            </div>
+
+                            ${q.status === 'closed' ? '<div style="text-align: center; padding: 15px; background: rgba(107, 114, 128, 0.2); border-radius: 8px; color: #9ca3af;"><i class="fa fa-check-circle"></i> Percakapan ini sudah ditutup</div>' : ''}
+                        </div>
+                    `;
+
+                    document.body.appendChild(modal);
+
+                    // Close on background click
+                    modal.onclick = function(e) {
+                        if (e.target === modal) modal.remove();
+                    };
+                }
+            } catch (error) {
+                console.error('Failed to open thread:', error);
+            }
+        }
+
+        // Select subscription tier
+        function selectTier(tier) {
+            // Highlight selected tier
+            document.querySelectorAll('.tier-card').forEach(card => {
+                card.style.borderColor = card.dataset.tier === tier ? '#28a7e9' : 'rgba(255,255,255,0.1)';
+                card.style.background = card.dataset.tier === tier ? 'rgba(40, 167, 233, 0.15)' : 'rgba(255,255,255,0.05)';
+            });
+
+            // Show payment method selection
+            showPaymentMethodSheet(tier);
+        }
+
+        // Show payment method bottom sheet
+        function showPaymentMethodSheet(tier) {
+            const tierPrices = { 'first_class': 50000, 'executive': 100000, 'vip': 200000 };
+            const tierNames = { 'first_class': 'First-Class', 'executive': 'Executive-Class', 'vip': 'VIP' };
+
+            const sheet = document.createElement('div');
+            sheet.className = 'payment-method-sheet';
+            sheet.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; display: flex; align-items: flex-end;';
+
+            sheet.innerHTML = `
+                <div style="background: #1e1e23; width: 100%; border-top-left-radius: 20px; border-top-right-radius: 20px; padding: 20px; max-height: 80vh; overflow-y: auto;">
+                    <div style="width: 40px; height: 4px; background: rgba(255,255,255,0.3); border-radius: 2px; margin: 0 auto 20px;"></div>
+                    <h3 style="color: #fff; margin-bottom: 5px;">Pilih Metode Pembayaran</h3>
+                    <p style="color: #888; font-size: 13px; margin-bottom: 20px;">Paket ${tierNames[tier]} - <strong style="color: #28a7e9;">Rp ${tierPrices[tier].toLocaleString('id-ID')}/bulan</strong></p>
+
+                    <div id="payment-methods" style="display: grid; gap: 12px;">
+                        <div class="payment-option" data-method="gopay" onclick="selectPaymentMethod('gopay')" style="display: flex; align-items: center; gap: 15px; padding: 15px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; cursor: pointer;">
+                            <div style="width: 40px; height: 40px; background: #00AA13; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700;">G</div>
+                            <span style="flex: 1; color: #fff;">GoPay</span>
+                            <input type="radio" name="payment_method" value="gopay" style="accent-color: #28a7e9;">
+                        </div>
+
+                        <div class="payment-option" data-method="ovo" onclick="selectPaymentMethod('ovo')" style="display: flex; align-items: center; gap: 15px; padding: 15px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; cursor: pointer;">
+                            <div style="width: 40px; height: 40px; background: #4C3494; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700;">O</div>
+                            <span style="flex: 1; color: #fff;">OVO</span>
+                            <input type="radio" name="payment_method" value="ovo" style="accent-color: #28a7e9;">
+                        </div>
+
+                        <div class="payment-option" data-method="bank_transfer_bca" onclick="selectPaymentMethod('bank_transfer_bca')" style="display: flex; align-items: center; gap: 15px; padding: 15px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; cursor: pointer;">
+                            <div style="width: 40px; height: 40px; background: #005596; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700;">BCA</div>
+                            <span style="flex: 1; color: #fff;">Transfer Bank BCA</span>
+                            <input type="radio" name="payment_method" value="bank_transfer_bca" style="accent-color: #28a7e9;">
+                        </div>
+
+                        <div class="payment-option" data-method="credit_card" onclick="selectPaymentMethod('credit_card')" style="display: flex; align-items: center; gap: 15px; padding: 15px; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; cursor: pointer;">
+                            <div style="width: 40px; height: 40px; background: #333; border-radius: 8px; display: flex; align-items: center; justify-content: center;"><i class="fa fa-credit-card" style="color: #fff;"></i></div>
+                            <span style="flex: 1; color: #fff;">Kartu Kredit</span>
+                            <input type="radio" name="payment_method" value="credit_card" style="accent-color: #28a7e9;">
+                        </div>
+                    </div>
+
+                    <button id="proceed-payment-btn" onclick="proceedToPayment('${tier}')" disabled style="width: 100%; margin-top: 20px; padding: 15px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); border: none; border-radius: 12px; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer; opacity: 0.5;">
+                        <i class="fa fa-lock"></i> Lanjutkan Pembayaran
+                    </button>
+
+                    <button onclick="this.closest('.payment-method-sheet').remove()" style="width: 100%; margin-top: 10px; padding: 12px; background: transparent; border: 1px solid rgba(255,255,255,0.2); border-radius: 12px; color: #888; font-size: 14px; cursor: pointer;">
+                        Batal
+                    </button>
+                </div>
+            `;
+
+            document.body.appendChild(sheet);
+
+            // Close on background click
+            sheet.onclick = function(e) {
+                if (e.target === sheet) sheet.remove();
+            };
+        }
+
+        // Select payment method
+        let selectedPaymentMethod = null;
+        function selectPaymentMethod(method) {
+            selectedPaymentMethod = method;
+
+            // Update UI
+            document.querySelectorAll('.payment-option').forEach(opt => {
+                opt.style.borderColor = opt.dataset.method === method ? '#28a7e9' : 'rgba(255,255,255,0.1)';
+                opt.querySelector('input').checked = opt.dataset.method === method;
+            });
+
+            // Enable proceed button
+            const btn = document.getElementById('proceed-payment-btn');
+            btn.disabled = false;
+            btn.style.opacity = '1';
+        }
+
+        // Proceed to payment
+        async function proceedToPayment(tier) {
+            if (!selectedPaymentMethod) {
+                alert('Pilih metode pembayaran terlebih dahulu');
+                return;
+            }
+
+            const btn = document.getElementById('proceed-payment-btn');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Memproses...';
+
+            try {
+                const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+
+                const response = await fetch('/api/tanya-subscriptions/subscribe', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        tier: tier,
+                        payment_method: selectedPaymentMethod
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Close sheet
+                    document.querySelector('.payment-method-sheet')?.remove();
+
+                    // Show payment instructions
+                    showPaymentInstructions(data.payment);
+                } else {
+                    alert(data.message || 'Gagal membuat pembayaran');
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa fa-lock"></i> Lanjutkan Pembayaran';
+                }
+            } catch (error) {
+                console.error('Payment error:', error);
+                alert('Terjadi kesalahan. Silakan coba lagi.');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa fa-lock"></i> Lanjutkan Pembayaran';
+            }
+        }
+
+        // Show payment instructions
+        function showPaymentInstructions(payment) {
+            const modal = document.createElement('div');
+            modal.className = 'payment-instructions-modal';
+            modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 10001; overflow-y: auto; padding: 20px;';
+
+            modal.innerHTML = `
+                <div style="max-width: 500px; margin: 0 auto; background: #1e1e23; border-radius: 16px; padding: 25px;">
+                    <div style="text-align: center; margin-bottom: 25px;">
+                        <i class="fa fa-check-circle" style="font-size: 50px; color: #10b981;"></i>
+                        <h3 style="color: #fff; margin: 15px 0 5px;">Pembayaran Dibuat</h3>
+                        <p style="color: #888; font-size: 13px;">Selesaikan pembayaran sebelum ${payment.expired_at_formatted}</p>
+                    </div>
+
+                    <div style="background: rgba(255,255,255,0.05); border-radius: 12px; padding: 20px; margin-bottom: 20px;">
+                        <div style="text-align: center; margin-bottom: 15px;">
+                            <div style="font-size: 12px; color: #888;">Total Pembayaran</div>
+                            <div style="font-size: 28px; font-weight: 700; color: #28a7e9;">Rp ${payment.amount.toLocaleString('id-ID')}</div>
+                        </div>
+
+                        ${payment.va_number ? `
+                        <div style="background: rgba(0,0,0,0.3); border-radius: 8px; padding: 15px; text-align: center;">
+                            <div style="font-size: 11px; color: #888; margin-bottom: 5px;">Nomor Virtual Account BCA</div>
+                            <div style="font-size: 20px; font-weight: 600; color: #fff; letter-spacing: 2px;">${payment.va_number}</div>
+                            <button onclick="copyToClipboard('${payment.va_number}')" style="margin-top: 10px; padding: 8px 15px; background: rgba(40, 167, 233, 0.2); border: none; border-radius: 6px; color: #28a7e9; font-size: 12px; cursor: pointer;">
+                                <i class="fa fa-copy"></i> Salin
+                            </button>
+                        </div>
+                        ` : ''}
+                    </div>
+
+                    <div style="background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.3); border-radius: 12px; padding: 15px; margin-bottom: 20px;">
+                        <h4 style="color: #f59e0b; margin: 0 0 10px; font-size: 14px;"><i class="fa fa-info-circle"></i> Cara Bayar</h4>
+                        <p style="color: #ccc; font-size: 13px; margin: 0; line-height: 1.8; white-space: pre-wrap;">${payment.instructions}</p>
+                    </div>
+
+                    <button onclick="this.closest('.payment-instructions-modal').remove(); loadTanyaQuotaInfo();" style="width: 100%; padding: 15px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); border: none; border-radius: 12px; color: #fff; font-size: 16px; font-weight: 600; cursor: pointer;">
+                        Selesai
+                    </button>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+        }
+
+        // Copy to clipboard
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Nomor VA berhasil disalin!');
+            }).catch(() => {
+                // Fallback
+                const input = document.createElement('input');
+                input.value = text;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                alert('Nomor VA berhasil disalin!');
+            });
+        }
+
+        // Initialize Tanya dr. Dibya on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load quota, doctors, and history when page loads
+            setTimeout(() => {
+                loadTanyaQuotaInfo();
+                loadAvailableDoctors();
+                loadTanyaHistory();
+            }, 500);
+        });
+
+        // ==================== END TANYA DR. DIBYA FUNCTIONS ====================
 
         // Update section glow effect
         function updateSectionGlow(sectionId, hasNew) {
