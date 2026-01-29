@@ -939,8 +939,14 @@
                     </h3>
                     <div class="collapsible-content collapsed" id="welcome-content">
                         <div class="welcome-content">
-                            <p>Halaman ini adalah ruang khusus bagi Anda — tempat saya membantu Anda, memantau kehamilan atau kesehatan kandungan Anda secara berkala dan privat. Semua catatan dan informasi di sini bersifat <strong>rahasia</strong>.</p>
-                            <p>Adanya <strong><span style="color: #ffffff;">dokter</span><span style="color: #0066FF;">DIBYA</span></strong> berawal dari keinginan sederhana saya, yaitu agar setiap pasien bisa tetap terhubung dengan dokter pilihannya, tanpa batasan rumah sakit, tempat, atau waktu.</p>
+                            <p>Halaman ini adalah ruang khusus bagi Anda — tempat saya membantu Anda, memantau kehamilan atau kesehatan kandungan Anda secara berkala dan privat. Semua catatan dan informasi di sini bersifat <strong>rahasia</strong>. Mohon untuk tidak membagikan halaman rekam medis kepada orang selain keluarga inti/ keluarga yang dipercaya. Karena itulah keamanan sistem ini menjadi prioritas saya dengan menerapkan proteksi berlapis dan enkripsi untuk mencegah peretasan.</p>
+
+                            <p>Adanya <strong><span style="color: #ffffff;">dokter</span><span style="color: #0066FF;">DIBYA</span></strong> berawal dari keinginan <i>sederhana</i> saya, yaitu agar setiap pasien bisa tetap terhubung dengan dokter pilihannya, tanpa batasan rumah sakit, tempat, atau waktu. Update selalu dengan perubahan jadwal dari saya, reminding jadwal kontrol, booking slot dengan mudah, dan bahkan kedepan bukan tidak mungkin konsultasi secara online dengan jadwal yang disepakati!</p>
+
+                            <p>Walaupun demikian saya paham, banyak tantangan dan kesulitan dalam memulai hal baru. Tapi saya percaya, langkah kecil ini bisa membawa perubahan besar menuju pelayanan berkesinambungan dari dokter favorit Anda. Sebelum kita memulai perjalanan ini, mohon mengisi data pribadi dan riwayat medis, data kehamilan, masalah kandungan, riwayat KB. Besar harapan saya, Anda mengisi dengan lengkap sehingga dapat menjadi modalitas bagi saya dalam pemilihan terapi dan layanan terbaik untuk Anda.</p>
+
+                            <p>Terima kasih telah menjadi bagian dari <strong>"modern therapy without boundary"</strong> — pendampingan dan terapi berkelanjutan, di mana pun dan kapan pun Anda membutuhkannya.</p>
+
                             <p style="margin-top: 20px; text-align: right; color: #28a7e9;">
                                 <strong style="font-weight: 500;">Salam hangat,</strong><br>
                                 <strong style="font-size: 16px; font-weight: 600;">dokter Anda</strong>
@@ -1223,17 +1229,17 @@
 
         // ==================== ANNOUNCEMENTS ====================
         async function loadAnnouncements() {
-            const token = getToken();
             const container = document.getElementById('announcements-container');
 
             try {
-                const response = await fetch('/api/announcements?limit=3', {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
+                // Use public endpoint same as patient-dashboard
+                const response = await fetch('/api/announcements/active');
                 const data = await response.json();
 
-                if (data.success && data.announcements && data.announcements.length > 0) {
-                    container.innerHTML = data.announcements.map(a => {
+                if (data.success && data.data && data.data.length > 0) {
+                    // Show max 3 announcements
+                    const announcements = data.data.slice(0, 3);
+                    container.innerHTML = announcements.map(a => {
                         const date = new Date(a.created_at);
                         const dateStr = date.toLocaleDateString('id-ID', {
                             day: 'numeric',
@@ -1243,7 +1249,7 @@
                         return `
                             <div class="announcement-item">
                                 <h4>${escapeHtml(a.title)}</h4>
-                                <p>${escapeHtml(truncateText(a.content, 100))}</p>
+                                <p>${escapeHtml(truncateText(a.message, 100))}</p>
                                 <div class="announcement-date"><i class="fa fa-clock-o"></i> ${dateStr}</div>
                             </div>
                         `;

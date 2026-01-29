@@ -351,6 +351,57 @@
                 <div class="profile-id" id="profile-id">ID: -</div>
             </div>
 
+            <!-- Welcome Message -->
+            <div class="info-card welcome-card" id="welcome-card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(40, 167, 233, 0.1), rgba(0, 102, 255, 0.1)); border: 1px solid rgba(40, 167, 233, 0.3);">
+                <h3 style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin: 0 0 15px 0; color: #28a7e9; font-size: 16px;" onclick="toggleWelcomeMessage()">
+                    <span><i class="fa fa-heart" style="margin-right: 8px;"></i> Selamat Datang</span>
+                    <i class="fa fa-chevron-down" id="welcome-toggle-icon" style="transition: transform 0.3s;"></i>
+                </h3>
+                <div id="welcome-content" style="line-height: 1.9; color: #e0e0e0; font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 400;">
+                    <p>Halaman ini adalah ruang khusus bagi Anda — tempat saya membantu Anda, memantau kehamilan atau kesehatan kandungan Anda secara berkala dan privat. Semua catatan dan informasi di sini bersifat <strong style="color: #28a7e9; font-weight: 600;">rahasia</strong>. Mohon untuk tidak membagikan halaman rekam medis kepada orang selain keluarga inti/ keluarga yang dipercaya. Karena itulah keamanan sistem ini menjadi prioritas saya dengan menerapkan proteksi berlapis dan enkripsi untuk mencegah peretasan.</p>
+
+                    <p style="margin-top: 12px;">Adanya <strong style="font-weight: 600;"><span style="color: #ffffff;">dokter</span><span style="color: #0066FF;">DIBYA</span></strong> berawal dari keinginan <i>sederhana</i> saya, yaitu agar setiap pasien bisa tetap terhubung dengan dokter pilihannya, tanpa batasan rumah sakit, tempat, atau waktu. Update selalu dengan perubahan jadwal dari saya, reminding jadwal kontrol, booking slot dengan mudah, dan bahkan kedepan bukan tidak mungkin konsultasi secara online dengan jadwal yang disepakati!</p>
+
+                    <p style="margin-top: 12px;">Walaupun demikian saya paham, banyak tantangan dan kesulitan dalam memulai hal baru. Tapi saya percaya, langkah kecil ini bisa membawa perubahan besar menuju pelayanan berkesinambungan dari dokter favorit Anda. Sebelum kita memulai perjalanan ini, mohon mengisi data pribadi dan riwayat medis, data kehamilan, masalah kandungan, riwayat KB. Besar harapan saya, Anda mengisi dengan lengkap sehingga dapat menjadi modalitas bagi saya dalam pemilihan terapi dan layanan terbaik untuk Anda.</p>
+
+                    <p style="margin-top: 15px;">Terima kasih telah menjadi bagian dari <strong style="color: #28a7e9; font-weight: 600;">"modern therapy without boundary"</strong> — pendampingan dan terapi berkelanjutan, di mana pun dan kapan pun Anda membutuhkannya.</p>
+
+                    <p style="margin-top: 20px; text-align: right; color: #28a7e9;">
+                        <strong style="font-weight: 500;">Salam hangat,</strong><br>
+                        <strong style="font-size: 16px; font-weight: 600;">dokter Anda</strong>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Birth Congratulations Card - Hidden by default -->
+            <div class="info-card" id="birth-congrats-card" style="display: none; margin-bottom: 20px; background: transparent; border: 2px solid rgba(168, 85, 247, 0.5); position: relative;">
+                <h3 style="color: #a855f7; font-size: 16px; margin: 0 0 15px 0;">
+                    <i class="fa fa-heart" style="margin-right: 8px;"></i>
+                    Selamat atas Kelahiran Buah Hati!
+                </h3>
+                <p style="color: #888; font-size: 12px; margin-bottom: 15px;" id="birth-congrats-doctor"></p>
+
+                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-start;">
+                    <!-- Photo -->
+                    <div id="birth-photo-container" style="width: 100px; height: 100px; border-radius: 12px; overflow: hidden; border: 2px solid rgba(168, 85, 247, 0.5); flex-shrink: 0;">
+                        <img id="birth-photo" src="" alt="Foto Kelahiran" style="width: 100%; height: 100%; object-fit: cover;">
+                    </div>
+
+                    <!-- Details -->
+                    <div style="flex: 1; min-width: 180px;">
+                        <h4 id="birth-baby-name" style="color: #a855f7; font-size: 18px; font-weight: 600; margin: 0 0 8px 0;"></h4>
+                        <div style="display: grid; gap: 6px; font-size: 12px; color: #9ca3af;">
+                            <div><i class="fa fa-calendar" style="width: 16px;"></i> <span id="birth-date">-</span></div>
+                            <div><i class="fa fa-clock-o" style="width: 16px;"></i> <span id="birth-time">-</span></div>
+                            <div><i class="fa fa-balance-scale" style="width: 16px;"></i> <span id="birth-weight">-</span> gram</div>
+                            <div><i class="fa fa-arrows-v" style="width: 16px;"></i> <span id="birth-length">-</span> cm</div>
+                        </div>
+                    </div>
+                </div>
+
+                <p id="birth-message" style="margin-top: 15px; font-style: italic; color: #d1d5db; font-size: 13px; border-top: 1px solid rgba(168, 85, 247, 0.2); padding-top: 15px;"></p>
+            </div>
+
             <!-- Basic Info -->
             <div class="info-card">
                 <div class="info-row">
@@ -514,6 +565,7 @@
         window.toggleNotifications = toggleNotifications;
         window.showAbout = showAbout;
         window.logout = logout;
+        window.toggleWelcomeMessage = toggleWelcomeMessage;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async function() {
@@ -527,6 +579,7 @@
             }
 
             await loadProfile();
+            await loadBirthCongratulations();
 
             // Setup avatar upload
             document.getElementById('avatar-input').addEventListener('change', handleAvatarUpload);
@@ -535,17 +588,88 @@
             document.getElementById('content-wrapper').style.display = 'block';
         });
 
+        // Toggle welcome message
+        let welcomeExpanded = true;
+        function toggleWelcomeMessage() {
+            const content = document.getElementById('welcome-content');
+            const icon = document.getElementById('welcome-toggle-icon');
+            welcomeExpanded = !welcomeExpanded;
+
+            if (welcomeExpanded) {
+                content.style.display = 'block';
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                content.style.display = 'none';
+                icon.style.transform = 'rotate(-90deg)';
+            }
+        }
+
+        // Load birth congratulations
+        async function loadBirthCongratulations() {
+            try {
+                const data = await apiRequest('/api/patient/birth-congratulations');
+
+                if (!data || !data.success || !data.data) return;
+
+                const birthData = data.data;
+                const card = document.getElementById('birth-congrats-card');
+                if (!card) return;
+
+                // Fill data
+                document.getElementById('birth-baby-name').textContent = birthData.baby_name || 'Baby';
+                document.getElementById('birth-congrats-doctor').textContent = 'Dari ' + (birthData.doctor_name || 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.');
+
+                // Format date
+                if (birthData.birth_date) {
+                    const birthDate = new Date(birthData.birth_date);
+                    document.getElementById('birth-date').textContent = birthDate.toLocaleDateString('id-ID', {
+                        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+                    });
+                }
+
+                // Format time
+                if (birthData.birth_time) {
+                    const timeParts = birthData.birth_time.split(':');
+                    document.getElementById('birth-time').textContent = timeParts[0] + ':' + timeParts[1] + ' WIB';
+                }
+
+                document.getElementById('birth-weight').textContent = birthData.birth_weight || '-';
+                document.getElementById('birth-length').textContent = birthData.birth_length || '-';
+                document.getElementById('birth-message').textContent = birthData.message || 'Selamat atas kelahiran buah hati Anda!';
+
+                // Photo
+                if (birthData.photo_url) {
+                    document.getElementById('birth-photo').src = birthData.photo_url;
+                }
+
+                // Show card
+                card.style.display = 'block';
+
+            } catch (error) {
+                console.log('Birth congratulations not available');
+            }
+        }
+
         // Load Profile
         async function loadProfile() {
             try {
                 const data = await apiRequest('/api/patients/profile');
+                console.log('[PROFIL] API response:', data);
 
-                if (data && data.success && data.profile) {
-                    profileData = data.profile;
+                // Handle response - API returns { user: {...} } without success field
+                if (data && data.user) {
+                    profileData = data.user;
+                    console.log('[PROFIL] Profile loaded:', profileData.fullname || profileData.full_name);
                     renderProfile();
+                } else if (data && data.success === false) {
+                    console.error('[PROFIL] API error:', data.message);
+                    showToast(data.message || 'Gagal memuat profil', 'error');
+                } else {
+                    console.error('[PROFIL] No user data in response');
+                    showToast('Profil tidak ditemukan', 'error');
                 }
             } catch (error) {
-                console.error('Error loading profile:', error);
+                console.error('[PROFIL] Exception:', error);
                 showToast('Gagal memuat profil', 'error');
             }
         }
@@ -554,17 +678,20 @@
         function renderProfile() {
             if (!profileData) return;
 
+            const name = profileData.fullname || profileData.full_name || '-';
+
             // Name & ID
-            document.getElementById('profile-name').textContent = profileData.fullname || '-';
+            document.getElementById('profile-name').textContent = name;
             document.getElementById('profile-id').textContent = `ID: ${profileData.patient_id || profileData.id || '-'}`;
 
             // Avatar
-            if (profileData.profile_picture) {
-                document.getElementById('avatar-img').src = profileData.profile_picture;
-                document.getElementById('avatar-img').style.display = 'block';
+            if (profileData.profile_picture || profileData.photo_url) {
+                const avatarImg = document.getElementById('avatar-img');
+                avatarImg.src = profileData.profile_picture || profileData.photo_url;
+                avatarImg.style.display = 'block';
                 document.getElementById('avatar-initials').style.display = 'none';
             } else {
-                document.getElementById('avatar-initials').textContent = getInitials(profileData.fullname);
+                document.getElementById('avatar-initials').textContent = getInitials(name);
             }
 
             // Info
@@ -617,7 +744,7 @@
             }
 
             try {
-                const data = await apiRequest('/api/patients/profile', {
+                const data = await apiRequest('/api/patients/profile/me', {
                     method: 'PUT',
                     body: JSON.stringify({ fullname: name, email, phone })
                 });
