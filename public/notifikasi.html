@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a1a1a">
+    <title>Notifikasi - dokterDIBYA</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
+    <link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
+
+    <!-- Fonts & Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Shared Styles -->
+    <link rel="stylesheet" href="/styles/patient-portal.css">
+
+    <style>
+        /* Notification Card */
+        .notif-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            margin-bottom: 10px;
+            overflow: hidden;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .notif-card:hover {
+            border-color: #28a7e9;
+        }
+
+        .notif-card.unread {
+            background: rgba(40, 167, 233, 0.1);
+            border-color: rgba(40, 167, 233, 0.3);
+        }
+
+        .notif-card-inner {
+            display: flex;
+            gap: 12px;
+            padding: 15px;
+        }
+
+        .notif-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .notif-icon.info { background: rgba(40, 167, 233, 0.2); color: #28a7e9; }
+        .notif-icon.success { background: rgba(16, 185, 129, 0.2); color: #10b981; }
+        .notif-icon.warning { background: rgba(245, 158, 11, 0.2); color: #f59e0b; }
+        .notif-icon.reply { background: rgba(139, 92, 246, 0.2); color: #8b5cf6; }
+        .notif-icon.booking { background: rgba(236, 72, 153, 0.2); color: #ec4899; }
+        .notif-icon.document { background: rgba(59, 130, 246, 0.2); color: #3b82f6; }
+
+        .notif-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .notif-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+            margin-bottom: 3px;
+        }
+
+        .notif-message {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .notif-time {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .unread-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #28a7e9;
+            flex-shrink: 0;
+        }
+
+        /* Filter Tabs */
+        .filter-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .filter-tab {
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .filter-tab.active {
+            background: linear-gradient(135deg, #28a7e9, #0066FF);
+            border-color: #28a7e9;
+            color: white;
+        }
+
+        .filter-tab:hover:not(.active) {
+            background: rgba(40, 167, 233, 0.2);
+        }
+
+        /* Header Actions */
+        .header-action {
+            font-size: 13px;
+            color: #28a7e9;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        /* Date Group */
+        .date-group {
+            margin-bottom: 5px;
+        }
+
+        .date-header {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navbar -->
+    <nav class="nav-bar">
+        <div class="nav-left">
+            <button class="back-btn" onclick="history.back()">
+                <i class="fa fa-chevron-left"></i>
+            </button>
+            <h1 class="page-title">Notifikasi</h1>
+        </div>
+        <div class="nav-right">
+            <span class="header-action" onclick="markAllRead()">Tandai Semua Dibaca</span>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="content">
+        <!-- Loading State -->
+        <div class="loading" id="loading-state">
+            <i class="fa fa-spinner fa-spin"></i>
+            <span>Memuat notifikasi...</span>
+        </div>
+
+        <!-- Content (hidden until loaded) -->
+        <div id="content-wrapper" style="display: none;">
+            <!-- Filter Tabs -->
+            <div class="filter-tabs">
+                <div class="filter-tab active" data-filter="all" onclick="filterNotif('all')">
+                    Semua <span id="count-all"></span>
+                </div>
+                <div class="filter-tab" data-filter="unread" onclick="filterNotif('unread')">
+                    Belum Dibaca <span id="count-unread"></span>
+                </div>
+            </div>
+
+            <!-- Notifications List -->
+            <div id="notif-list">
+                <!-- Notifications will be populated -->
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <a href="/patient-menu.html" class="nav-item">
+            <i class="fa fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="/notifikasi.html" class="nav-item active">
+            <i class="fa fa-bell"></i>
+            <span>Notifikasi</span>
+        </a>
+        <a href="/profil.html" class="nav-item">
+            <i class="fa fa-user"></i>
+            <span>Profil</span>
+        </a>
+    </nav>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <script type="module">
+        import { getToken, checkAuth, apiRequest, showToast, formatRelativeTime, showEmptyState, escapeHtml } from '/scripts/patient-utils.js';
+
+        // State
+        let allNotifications = [];
+        let currentFilter = 'all';
+
+        // Make functions globally available
+        window.filterNotif = filterNotif;
+        window.markAllRead = markAllRead;
+        window.openNotification = openNotification;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async function() {
+            if (!checkAuth()) return;
+
+            await loadNotifications();
+
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('content-wrapper').style.display = 'block';
+        });
+
+        // Load Notifications
+        async function loadNotifications() {
+            try {
+                const data = await apiRequest('/api/patient-notifications');
+
+                if (data && data.success && data.notifications) {
+                    allNotifications = data.notifications;
+
+                    // Update counts
+                    const unreadCount = allNotifications.filter(n => !n.read_at).length;
+                    document.getElementById('count-all').textContent = `(${allNotifications.length})`;
+                    document.getElementById('count-unread').textContent = `(${unreadCount})`;
+
+                    renderNotifications();
+                } else {
+                    renderNotifications();
+                }
+            } catch (error) {
+                console.error('Error loading notifications:', error);
+                showToast('Gagal memuat notifikasi', 'error');
+            }
+        }
+
+        // Filter notifications
+        function filterNotif(filter) {
+            currentFilter = filter;
+
+            document.querySelectorAll('.filter-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.filter === filter);
+            });
+
+            renderNotifications();
+        }
+
+        // Render notifications
+        function renderNotifications() {
+            const list = document.getElementById('notif-list');
+
+            let notifications = [...allNotifications];
+            if (currentFilter === 'unread') {
+                notifications = notifications.filter(n => !n.read_at);
+            }
+
+            if (notifications.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa fa-bell-slash-o"></i>
+                        <p>${currentFilter === 'unread' ? 'Tidak ada notifikasi yang belum dibaca' : 'Belum ada notifikasi'}</p>
+                    </div>
+                `;
+                return;
+            }
+
+            // Group by date
+            const grouped = {};
+            notifications.forEach(notif => {
+                const date = new Date(notif.created_at);
+                const dateKey = getDateKey(date);
+                if (!grouped[dateKey]) grouped[dateKey] = [];
+                grouped[dateKey].push(notif);
+            });
+
+            let html = '';
+            Object.keys(grouped).forEach(dateKey => {
+                html += `
+                    <div class="date-group">
+                        <div class="date-header">${dateKey}</div>
+                        ${grouped[dateKey].map(notif => renderNotifCard(notif)).join('')}
+                    </div>
+                `;
+            });
+
+            list.innerHTML = html;
+        }
+
+        // Get date key for grouping
+        function getDateKey(date) {
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            if (date.toDateString() === today.toDateString()) {
+                return 'Hari Ini';
+            } else if (date.toDateString() === yesterday.toDateString()) {
+                return 'Kemarin';
+            } else {
+                return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+            }
+        }
+
+        // Render single notification card
+        function renderNotifCard(notif) {
+            const isUnread = !notif.read_at;
+            const iconInfo = getNotifIcon(notif.type);
+            const timeStr = formatRelativeTime(notif.created_at);
+
+            return `
+                <div class="notif-card ${isUnread ? 'unread' : ''}" onclick="openNotification('${notif.id}', '${notif.type}', '${escapeHtml(JSON.stringify(notif.data || {}))}')">
+                    <div class="notif-card-inner">
+                        <div class="notif-icon ${iconInfo.class}">
+                            <i class="fa ${iconInfo.icon}"></i>
+                        </div>
+                        <div class="notif-content">
+                            <div class="notif-title">${escapeHtml(notif.title)}</div>
+                            <div class="notif-message">${escapeHtml(notif.message)}</div>
+                            <div class="notif-time">
+                                <i class="fa fa-clock-o"></i> ${timeStr}
+                            </div>
+                        </div>
+                        ${isUnread ? '<div class="unread-dot"></div>' : ''}
+                    </div>
+                </div>
+            `;
+        }
+
+        // Get notification icon
+        function getNotifIcon(type) {
+            const iconMap = {
+                'question_reply': { icon: 'fa-reply', class: 'reply' },
+                'thread_closed': { icon: 'fa-check-circle', class: 'success' },
+                'booking_confirmed': { icon: 'fa-calendar-check-o', class: 'booking' },
+                'booking_cancelled': { icon: 'fa-calendar-times-o', class: 'warning' },
+                'new_document': { icon: 'fa-file-o', class: 'document' },
+                'new_usg': { icon: 'fa-picture-o', class: 'document' },
+                'new_lab': { icon: 'fa-flask', class: 'document' },
+                'announcement': { icon: 'fa-bullhorn', class: 'info' },
+                'reminder': { icon: 'fa-bell', class: 'warning' }
+            };
+            return iconMap[type] || { icon: 'fa-bell', class: 'info' };
+        }
+
+        // Open notification
+        async function openNotification(id, type, dataStr) {
+            // Mark as read
+            try {
+                await apiRequest(`/api/patient-notifications/${id}/read`, { method: 'POST' });
+
+                // Update local state
+                const notif = allNotifications.find(n => n.id == id);
+                if (notif) notif.read_at = new Date().toISOString();
+
+                // Update counts
+                const unreadCount = allNotifications.filter(n => !n.read_at).length;
+                document.getElementById('count-unread').textContent = `(${unreadCount})`;
+
+                renderNotifications();
+            } catch (e) {
+                console.error('Error marking read:', e);
+            }
+
+            // Navigate based on type
+            let data = {};
+            try { data = JSON.parse(dataStr); } catch (e) {}
+
+            switch (type) {
+                case 'question_reply':
+                case 'thread_closed':
+                    window.location.href = `/tanya-dokter.html#history`;
+                    break;
+                case 'booking_confirmed':
+                case 'booking_cancelled':
+                    window.location.href = '/booking-klinik.html';
+                    break;
+                case 'new_document':
+                case 'new_usg':
+                    window.location.href = '/album-usg.html';
+                    break;
+                case 'new_lab':
+                    window.location.href = '/hasil-lab.html';
+                    break;
+                default:
+                    // Stay on page
+                    break;
+            }
+        }
+
+        // Mark all as read
+        async function markAllRead() {
+            try {
+                await apiRequest('/api/patient-notifications/read-all', { method: 'POST' });
+
+                // Update local state
+                allNotifications.forEach(n => {
+                    if (!n.read_at) n.read_at = new Date().toISOString();
+                });
+
+                // Update counts
+                document.getElementById('count-unread').textContent = '(0)';
+
+                renderNotifications();
+                showToast('Semua notifikasi ditandai sudah dibaca', 'success');
+            } catch (e) {
+                console.error('Error marking all read:', e);
+                showToast('Gagal menandai notifikasi', 'error');
+            }
+        }
+    </script>
+</body>
+</html>

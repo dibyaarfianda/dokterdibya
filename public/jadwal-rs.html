@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Jadwal RS - dokterDIBYA</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #303030 100%);
+            min-height: 100vh;
+            color: #ffffff;
+            padding-bottom: 80px;
+        }
+
+        /* Navbar */
+        .nav-bar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            padding-top: max(15px, env(safe-area-inset-top));
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .page-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #28a7e9;
+        }
+
+        /* Main Content */
+        .content {
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: #28a7e9;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Appointment Cards */
+        .appointment-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-left: 4px solid #28a7e9;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+        }
+
+        .appointment-card .hospital-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .appointment-card .status {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+            margin-bottom: 10px;
+        }
+
+        .status.confirmed {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+        }
+
+        .status.pending {
+            background: rgba(245, 158, 11, 0.2);
+            color: #f59e0b;
+        }
+
+        .appointment-card .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 13px;
+        }
+
+        .appointment-card .detail-row:last-child {
+            border-bottom: none;
+        }
+
+        .appointment-card .detail-label {
+            color: #888;
+        }
+
+        .appointment-card .detail-value {
+            color: #fff;
+            font-weight: 500;
+        }
+
+        .appointment-card .notes {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            font-size: 12px;
+            color: #ccc;
+        }
+
+        /* Schedule Cards */
+        .schedule-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s;
+        }
+
+        .schedule-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .schedule-card.inactive {
+            opacity: 0.6;
+        }
+
+        .schedule-info {
+            flex: 1;
+        }
+
+        .schedule-info .hospital-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .schedule-info .hospital-name i {
+            color: #28a7e9;
+        }
+
+        .schedule-info .date {
+            font-size: 13px;
+            color: #ccc;
+            margin-bottom: 3px;
+        }
+
+        .schedule-info .time {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .schedule-info .inactive-note {
+            font-size: 11px;
+            color: #f59e0b;
+            margin-top: 5px;
+        }
+
+        .book-btn {
+            background: linear-gradient(135deg, #28a7e9, #0066ff);
+            border: none;
+            color: #fff;
+            padding: 10px 18px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .book-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .book-btn:disabled {
+            background: #555;
+            color: #999;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .empty-state i {
+            font-size: 50px;
+            margin-bottom: 15px;
+            color: #28a7e9;
+            opacity: 0.5;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .loading i {
+            margin-right: 8px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 10px 0;
+            padding-bottom: max(10px, env(safe-area-inset-bottom));
+            background: rgba(26, 26, 46, 0.98);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-size: 12px;
+            padding: 8px 20px;
+            transition: color 0.3s;
+        }
+
+        .nav-item.active,
+        .nav-item:hover {
+            color: #28a7e9;
+        }
+
+        .nav-item i {
+            font-size: 20px;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            z-index: 9999;
+            animation: slideDown 0.3s ease;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .toast.success { background: #10b981; }
+        .toast.error { background: #ef4444; }
+        .toast.info { background: #28a7e9; }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translate(-50%, -20px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #1a1a2e 0%, #2d2d2d 100%);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            width: 100%;
+            max-width: 450px;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            background: linear-gradient(135deg, #28a7e9, #0066ff);
+            padding: 20px;
+            position: relative;
+        }
+
+        .modal-header h3 {
+            font-size: 18px;
+            color: #fff;
+            margin: 0;
+        }
+
+        .modal-close {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .booking-info {
+            background: rgba(40, 167, 233, 0.1);
+            border-left: 4px solid #28a7e9;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .booking-info .date {
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 5px;
+        }
+
+        .booking-info .hospital {
+            font-size: 13px;
+            color: #aaa;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: #fff;
+            margin-bottom: 8px;
+            font-weight: 500;
+        }
+
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-group select option {
+            background: #1a1a2e;
+            color: #fff;
+        }
+
+        .form-group textarea {
+            min-height: 80px;
+            resize: vertical;
+        }
+
+        .info-box {
+            background: rgba(16, 185, 129, 0.1);
+            border-left: 4px solid #10b981;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #6ee7b7;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            padding: 15px 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .modal-footer button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .btn-cancel {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+        }
+
+        .btn-confirm {
+            background: linear-gradient(135deg, #28a7e9, #0066ff);
+            border: none;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        /* Responsive */
+        @media (max-width: 400px) {
+            .content { padding: 15px; }
+            .schedule-card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .book-btn { width: 100%; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navbar -->
+    <nav class="nav-bar">
+        <div class="nav-left">
+            <button class="back-btn" onclick="history.back()">
+                <i class="fa fa-chevron-left"></i>
+            </button>
+            <h1 class="page-title"><i class="fa fa-hospital-o"></i> Jadwal RS</h1>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="content">
+        <!-- My Appointments Section -->
+        <div id="my-appointments-section" style="display: none;">
+            <h3 class="section-title">
+                <i class="fa fa-calendar-check-o"></i> Janji Temu Anda
+            </h3>
+            <div id="my-appointments-container"></div>
+        </div>
+
+        <!-- Available Schedules Section -->
+        <div id="schedules-section">
+            <h3 class="section-title">
+                <i class="fa fa-hospital-o"></i> Jadwal Tersedia
+            </h3>
+            <div id="schedules-container">
+                <div class="loading">
+                    <i class="fa fa-spinner fa-spin"></i> Memuat jadwal...
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <a href="/patient-menu.html" class="nav-item">
+            <i class="fa fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="/notifikasi.html" class="nav-item">
+            <i class="fa fa-bell"></i>
+            <span>Notifikasi</span>
+        </a>
+        <a href="/profil.html" class="nav-item">
+            <i class="fa fa-user"></i>
+            <span>Profil</span>
+        </a>
+    </nav>
+
+    <!-- Booking Modal -->
+    <div class="modal-overlay" id="bookingModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fa fa-hospital-o"></i> <span id="modal-hospital-name">Booking</span></h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="booking-info">
+                    <div class="date" id="modal-date">-</div>
+                    <div class="hospital" id="modal-hospital-detail">-</div>
+                </div>
+
+                <div class="form-group">
+                    <label>Jenis Konsultasi</label>
+                    <select id="consultation-type">
+                        <option value="obstetri">Kehamilan (Obstetri)</option>
+                        <option value="gyn_repro">Program Hamil (Reproduksi)</option>
+                        <option value="gyn_special">Ginekologi Umum</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Keluhan / Tujuan Konsultasi (opsional)</label>
+                    <textarea id="complaint" placeholder="Contoh: Kontrol kehamilan rutin, USG, dll..."></textarea>
+                </div>
+
+                <div class="info-box">
+                    <i class="fa fa-check-circle"></i> Booking akan langsung terkonfirmasi
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeModal()">Batal</button>
+                <button class="btn-confirm" id="btn-confirm" onclick="submitBooking()">
+                    <i class="fa fa-check"></i> Konfirmasi
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <script type="module">
+        import { getToken, checkAuth, showToast, formatDate } from '/scripts/patient-utils.js';
+
+        // Check auth
+        if (!checkAuth()) {
+            // Redirect handled by checkAuth
+        }
+
+        const token = getToken();
+        let bookingData = null;
+
+        // Load data on page load
+        loadData();
+
+        async function loadData() {
+            try {
+                const [schedulesRes, appointmentsRes] = await Promise.all([
+                    fetch('/api/hospital-appointments/schedules', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    }),
+                    fetch('/api/hospital-appointments/patient', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    })
+                ]);
+
+                const schedulesData = await schedulesRes.json();
+                const appointmentsData = appointmentsRes.ok ? await appointmentsRes.json() : { appointments: [] };
+
+                if (!schedulesData.showHospitalBooking) {
+                    document.getElementById('schedules-container').innerHTML = `
+                        <div class="empty-state">
+                            <i class="fa fa-calendar-o"></i>
+                            <p>Jadwal RS tidak tersedia saat ini</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                renderAppointments(appointmentsData.appointments || []);
+                renderSchedules(schedulesData.schedules || []);
+
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('schedules-container').innerHTML = `
+                    <div class="empty-state">
+                        <p>Gagal memuat jadwal</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderAppointments(appointments) {
+            const section = document.getElementById('my-appointments-section');
+            const container = document.getElementById('my-appointments-container');
+
+            // Filter upcoming appointments
+            const upcoming = appointments
+                .filter(apt => !apt.isPast && apt.status !== 'cancelled' && apt.status !== 'completed')
+                .sort((a, b) => new Date(a.appointment_date) - new Date(b.appointment_date));
+
+            if (upcoming.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+            container.innerHTML = upcoming.map(apt => {
+                const statusClass = apt.status === 'confirmed' ? 'confirmed' : 'pending';
+                const statusLabel = apt.status === 'confirmed' ? 'Dikonfirmasi' : 'Menunggu Konfirmasi';
+
+                return `
+                    <div class="appointment-card" style="border-left-color: ${apt.hospitalColor || '#28a7e9'};">
+                        <div class="hospital-name">${escapeHtml(apt.hospitalName || apt.location)}</div>
+                        <span class="status ${statusClass}">${statusLabel}</span>
+                        <div class="detail-row">
+                            <span class="detail-label">Tanggal</span>
+                            <span class="detail-value">${apt.dateFormatted}</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Jam</span>
+                            <span class="detail-value">${apt.time} WIB</span>
+                        </div>
+                        <div class="detail-row">
+                            <span class="detail-label">Tipe</span>
+                            <span class="detail-value">${apt.appointment_type || 'Konsultasi'}</span>
+                        </div>
+                        ${apt.complaint ? `
+                            <div class="notes">
+                                <strong>Keluhan:</strong> ${escapeHtml(apt.complaint)}
+                            </div>
+                        ` : ''}
+                        ${apt.notes ? `
+                            <div class="notes">
+                                <strong>Catatan:</strong> ${escapeHtml(apt.notes)}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderSchedules(schedules) {
+            const container = document.getElementById('schedules-container');
+
+            if (!schedules || schedules.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa fa-calendar-o"></i>
+                        <p>Tidak ada jadwal tersedia minggu ini</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = schedules.map(schedule => {
+                const isActive = schedule.isActive !== false;
+                const date = new Date(schedule.date);
+                const dateStr = date.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' });
+
+                return `
+                    <div class="schedule-card ${isActive ? '' : 'inactive'}">
+                        <div class="schedule-info">
+                            <div class="hospital-name">
+                                <i class="fa fa-${schedule.hospitalIcon || 'hospital-o'}" style="color: ${schedule.hospitalColor || '#28a7e9'};"></i>
+                                ${escapeHtml(schedule.hospitalName)}
+                            </div>
+                            <div class="date">
+                                <i class="fa fa-calendar"></i> ${dateStr}
+                            </div>
+                            <div class="time">
+                                <i class="fa fa-clock-o"></i> ${schedule.startTime} - ${schedule.endTime} WIB
+                            </div>
+                            ${!isActive ? '<div class="inactive-note"><i class="fa fa-info-circle"></i> Jadwal tidak tersedia minggu ini</div>' : ''}
+                        </div>
+                        <button class="book-btn" ${isActive ? `onclick="openBookingModal('${schedule.date}', '${schedule.location}', '${escapeHtml(schedule.hospitalName)}', '${dateStr}')"` : 'disabled'}>
+                            <i class="fa fa-${isActive ? 'calendar-plus-o' : 'ban'}"></i>
+                            ${isActive ? 'Booking' : 'Tidak Tersedia'}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        window.openBookingModal = function(date, location, hospitalName, formatted) {
+            bookingData = { date, location, hospitalName, formatted };
+
+            document.getElementById('modal-hospital-name').textContent = `Booking ${hospitalName}`;
+            document.getElementById('modal-date').textContent = formatted;
+            document.getElementById('modal-hospital-detail').textContent = hospitalName;
+            document.getElementById('consultation-type').value = 'obstetri';
+            document.getElementById('complaint').value = '';
+
+            document.getElementById('bookingModal').classList.add('active');
+        };
+
+        window.closeModal = function() {
+            document.getElementById('bookingModal').classList.remove('active');
+            bookingData = null;
+        };
+
+        window.submitBooking = async function() {
+            if (!bookingData) return;
+
+            const btn = document.getElementById('btn-confirm');
+            const consultationType = document.getElementById('consultation-type').value;
+            const complaint = document.getElementById('complaint').value;
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Memproses...';
+
+            try {
+                const response = await fetch('/api/hospital-appointments/book', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        date: bookingData.date,
+                        location: bookingData.location,
+                        complaint: complaint,
+                        consultation_category: consultationType
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.message || 'Gagal membuat booking');
+                }
+
+                closeModal();
+                showToast(`Booking berhasil! ${data.details.hospital} - ${data.details.date}`, 'success');
+
+                // Reload data
+                loadData();
+
+            } catch (error) {
+                console.error('Error:', error);
+                showToast(error.message, 'error');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa fa-check"></i> Konfirmasi';
+            }
+        };
+    </script>
+</body>
+</html>

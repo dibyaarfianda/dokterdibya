@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Pregnancy Tracker - dokterDIBYA</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #2d1b4e 50%, #1a1a2e 100%);
+            min-height: 100vh;
+            color: #ffffff;
+            padding-bottom: 80px;
+        }
+
+        /* Navbar */
+        .nav-bar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            padding-top: max(15px, env(safe-area-inset-top));
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(168, 85, 247, 0.2);
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .page-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #a855f7;
+        }
+
+        /* Main Content */
+        .content {
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Week Counter Hero */
+        .week-hero {
+            text-align: center;
+            padding: 30px 20px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-radius: 20px;
+            margin-bottom: 20px;
+        }
+
+        .baby-emoji {
+            font-size: 80px;
+            line-height: 1;
+            margin-bottom: 15px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .baby-size {
+            font-size: 14px;
+            color: #ccc;
+            margin-bottom: 20px;
+        }
+
+        .baby-size strong {
+            color: #a855f7;
+            font-size: 18px;
+            display: block;
+            margin-top: 5px;
+        }
+
+        .baby-size .length {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+
+        .week-counter {
+            font-size: 56px;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1;
+        }
+
+        .week-counter .label {
+            font-size: 24px;
+            color: #a855f7;
+        }
+
+        .week-counter .days {
+            font-size: 20px;
+            color: #888;
+        }
+
+        .trimester-info {
+            color: #888;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        /* Progress Bar */
+        .progress-section {
+            margin: 25px 0;
+        }
+
+        .progress-labels {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 8px;
+        }
+
+        .progress-bar-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            height: 12px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #a855f7 0%, #ec4899 100%);
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s;
+        }
+
+        /* Stats Cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-radius: 15px;
+            padding: 18px;
+            text-align: center;
+        }
+
+        .stat-card.hpl {
+            background: rgba(168, 85, 247, 0.15);
+            border-color: rgba(168, 85, 247, 0.3);
+        }
+
+        .stat-card.countdown {
+            background: rgba(236, 72, 153, 0.15);
+            border-color: rgba(236, 72, 153, 0.3);
+        }
+
+        .stat-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .stat-card.hpl .stat-label { color: #a855f7; }
+        .stat-card.countdown .stat-label { color: #ec4899; }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        /* Tip Card */
+        .tip-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(168, 85, 247, 0.2);
+            border-left: 4px solid #a855f7;
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 20px;
+        }
+
+        .tip-title {
+            color: #a855f7;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tip-content {
+            color: #e0e0e0;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        /* Development Card */
+        .dev-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 18px;
+            margin-bottom: 20px;
+        }
+
+        .dev-title {
+            color: #ec4899;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .dev-list {
+            list-style: none;
+        }
+
+        .dev-list li {
+            color: #ccc;
+            font-size: 13px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .dev-list li:last-child {
+            border-bottom: none;
+        }
+
+        .dev-list li i {
+            color: #a855f7;
+            width: 20px;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .action-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            padding: 18px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            text-decoration: none;
+            color: #fff;
+            transition: all 0.3s;
+        }
+
+        .action-btn:hover {
+            background: rgba(168, 85, 247, 0.2);
+            border-color: #a855f7;
+        }
+
+        .action-btn i {
+            font-size: 24px;
+            color: #a855f7;
+        }
+
+        .action-btn span {
+            font-size: 12px;
+            color: #ccc;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .empty-state i {
+            font-size: 60px;
+            margin-bottom: 20px;
+            color: #a855f7;
+            opacity: 0.5;
+        }
+
+        .empty-state p {
+            font-size: 15px;
+            margin-bottom: 20px;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 80px;
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .loading i {
+            margin-right: 8px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 10px 0;
+            padding-bottom: max(10px, env(safe-area-inset-bottom));
+            background: rgba(26, 26, 46, 0.98);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(168, 85, 247, 0.2);
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-size: 12px;
+            padding: 8px 20px;
+            transition: color 0.3s;
+        }
+
+        .nav-item.active,
+        .nav-item:hover {
+            color: #a855f7;
+        }
+
+        .nav-item i {
+            font-size: 20px;
+        }
+
+        /* Responsive */
+        @media (max-width: 400px) {
+            .content { padding: 15px; }
+            .week-counter { font-size: 48px; }
+            .baby-emoji { font-size: 60px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navbar -->
+    <nav class="nav-bar">
+        <div class="nav-left">
+            <button class="back-btn" onclick="history.back()">
+                <i class="fa fa-chevron-left"></i>
+            </button>
+            <h1 class="page-title"><i class="fa fa-heartbeat"></i> Pregnancy Tracker</h1>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="content" id="main-content">
+        <div class="loading">
+            <i class="fa fa-spinner fa-spin"></i> Memuat data...
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <a href="/patient-menu.html" class="nav-item">
+            <i class="fa fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="/notifikasi.html" class="nav-item">
+            <i class="fa fa-bell"></i>
+            <span>Notifikasi</span>
+        </a>
+        <a href="/profil.html" class="nav-item">
+            <i class="fa fa-user"></i>
+            <span>Profil</span>
+        </a>
+    </nav>
+
+    <script type="module">
+        import { getToken, checkAuth, formatDate } from '/scripts/patient-utils.js';
+
+        // Check auth
+        if (!checkAuth()) {
+            // Redirect handled by checkAuth
+        }
+
+        const token = getToken();
+
+        // Load pregnancy data
+        loadPregnancyData();
+
+        async function loadPregnancyData() {
+            const container = document.getElementById('main-content');
+
+            try {
+                const response = await fetch('/api/patients/pregnancy-tracker', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                const result = await response.json();
+
+                if (!result.success || !result.data) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fa fa-child"></i>
+                            <p>Data kehamilan belum tersedia</p>
+                            <p style="font-size: 13px; color: #888;">Hubungi dokter Anda untuk mengaktifkan fitur ini</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                const data = result.data;
+                renderPregnancyTracker(data);
+
+            } catch (error) {
+                console.error('Error:', error);
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fa fa-exclamation-triangle"></i>
+                        <p>Gagal memuat data</p>
+                    </div>
+                `;
+            }
+        }
+
+        function renderPregnancyTracker(data) {
+            const container = document.getElementById('main-content');
+
+            container.innerHTML = `
+                <!-- Week Counter Hero -->
+                <div class="week-hero">
+                    <div class="baby-emoji">${data.babySize.emoji}</div>
+                    <div class="baby-size">
+                        Ukuran bayi seperti
+                        <strong>${data.babySize.size}</strong>
+                        <div class="length">~${data.babySize.length}</div>
+                    </div>
+                    <div class="week-counter">
+                        ${data.weeksPregnant}<span class="label"> minggu</span>
+                        <span class="days">${data.daysExtra} hari</span>
+                    </div>
+                    <div class="trimester-info">
+                        Trimester ${data.trimester} • Progress ${data.progressPercent}%
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="progress-section">
+                        <div class="progress-labels">
+                            <span>0 minggu</span>
+                            <span>40 minggu</span>
+                        </div>
+                        <div class="progress-bar-container">
+                            <div class="progress-fill" style="width: ${data.progressPercent}%;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card hpl">
+                        <div class="stat-label">HPL (USG)</div>
+                        <div class="stat-value">${data.eddFormatted}</div>
+                    </div>
+                    <div class="stat-card countdown">
+                        <div class="stat-label">Countdown</div>
+                        <div class="stat-value">
+                            <i class="fa fa-clock-o"></i> ${data.daysUntilEdd} hari
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Weekly Tip -->
+                <div class="tip-card">
+                    <div class="tip-title">
+                        <i class="fa fa-lightbulb-o"></i> Tips Minggu Ini
+                    </div>
+                    <div class="tip-content">
+                        ${data.tip}
+                    </div>
+                </div>
+
+                <!-- Baby Development -->
+                ${data.developments ? `
+                    <div class="dev-card">
+                        <div class="dev-title">
+                            <i class="fa fa-child"></i> Perkembangan Bayi Minggu ${data.weeksPregnant}
+                        </div>
+                        <ul class="dev-list">
+                            ${data.developments.map(dev => `
+                                <li><i class="fa fa-check-circle"></i> ${dev}</li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                ` : ''}
+
+                <!-- Quick Actions -->
+                <div class="quick-actions">
+                    <a href="/kick-counter.html" class="action-btn">
+                        <i class="fa fa-hand-o-up"></i>
+                        <span>Kick Counter</span>
+                    </a>
+                    <a href="/album-usg.html" class="action-btn">
+                        <i class="fa fa-picture-o"></i>
+                        <span>Album USG</span>
+                    </a>
+                    <a href="/jadwal-vitamin.html" class="action-btn">
+                        <i class="fa fa-medkit"></i>
+                        <span>Jadwal Vitamin</span>
+                    </a>
+                    <a href="/tanya-dokter.html" class="action-btn">
+                        <i class="fa fa-comments"></i>
+                        <span>Tanya Dokter</span>
+                    </a>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

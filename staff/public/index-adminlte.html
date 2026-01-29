@@ -1439,7 +1439,7 @@
     <script>
         // Force clear cache on first load
         (function() {
-            const CACHE_VERSION = 'v44'; // Increment this to force refresh - MEDIFY sync improvements
+            const CACHE_VERSION = 'v61'; // Increment this to force refresh - Added patientActivity to pages object
             const currentVersion = localStorage.getItem('cache_version');
 
             if (currentVersion !== CACHE_VERSION) {
@@ -1483,6 +1483,18 @@
 
     <!-- Global Auth Helper - ALWAYS AVAILABLE -->
     <script>
+        // Global logout function - must be defined before onclick handlers
+        window.doLogout = function() {
+            console.log('[LOGOUT] Clearing tokens...');
+            localStorage.removeItem('vps_auth_token');
+            sessionStorage.removeItem('vps_auth_token');
+            localStorage.removeItem('must_change_password');
+            localStorage.removeItem('cache_version');
+            if (window.auth) window.auth.currentUser = null;
+            console.log('[LOGOUT] Redirecting to login...');
+            window.location.href = '/staff/public/login.html';
+        };
+
         // Define getAuthToken globally so it's available everywhere
         // This prevents "getAuthToken is not defined" errors in inline scripts
         window.getAuthToken = function() {
@@ -1564,9 +1576,9 @@
                         <i class="fas fa-user-cog mr-2"></i> Profile Settings
                     </a>
                     <div class="dropdown-divider" id="navbar-divider"></div>
-                    <a href="#" class="dropdown-item" id="navbar-logout-btn">
+                    <button type="button" class="dropdown-item" id="navbar-logout-btn" onclick="localStorage.removeItem('vps_auth_token');sessionStorage.removeItem('vps_auth_token');localStorage.removeItem('cache_version');window.location.replace('/staff/public/login.html');">
                         <i class="fas fa-sign-out-alt mr-2"></i> Logout
-                    </a>
+                    </button>
                 </div>
             </li>
         </ul>
@@ -7054,14 +7066,47 @@ body.mobile-app-mode .mobile-action-bar-force button {
     
     // Wait for auth to initialize before checking state
     const { initAuth: initAuthLib, fetchMe } = await import('./scripts/vps-auth-v2.js?v=' + v);
+    console.log('[DEBUG] Before initAuthLib, auth.currentUser:', auth.currentUser);
     await initAuthLib(); // Wait for auth initialization to complete
-    
+    console.log('[DEBUG] After initAuthLib, auth.currentUser:', auth.currentUser);
+    console.log('[DEBUG] Full auth object:', JSON.stringify(auth, null, 2));
+
     // Now check authentication
     const user = auth.currentUser; // Use the already set currentUser
+    console.log('[AUTH CHECK] user object:', user);
+    console.log('[AUTH CHECK] user properties:', user ? { id: user.id, name: user.name, email: user.email, role: user.role, role_display_name: user.role_display_name } : 'null');
+    console.log('[AUTH CHECK] Full user JSON:', user ? JSON.stringify(user) : 'null');
+
     if (!user) {
         // Not logged in, redirect to login page
         window.location.replace('login.html');
     } else {
+        // IMMEDIATE navbar update - before anything else can fail
+        const navName = document.getElementById('navbar-user-name');
+        const navRole = document.getElementById('navbar-user-role');
+        console.log('[NAVBAR EARLY] Elements found:', { navName: !!navName, navRole: !!navRole });
+        console.log('[NAVBAR EARLY] Before update - name:', navName?.textContent, 'role:', navRole?.textContent);
+        console.log('[NAVBAR EARLY] User values - name:', user.name, 'email:', user.email, 'role:', user.role, 'role_display_name:', user.role_display_name);
+
+        const newName = user.name || user.email || 'Unknown User';
+        const newRole = user.role_display_name || user.role || 'Staff';
+        console.log('[NAVBAR EARLY] Will set - name:', newName, 'role:', newRole);
+
+        if (navName) {
+            navName.textContent = newName;
+            console.log('[NAVBAR EARLY] After set name, actual value:', navName.textContent);
+        }
+        if (navRole) {
+            navRole.textContent = newRole;
+            console.log('[NAVBAR EARLY] After set role, actual value:', navRole.textContent);
+        }
+
+        // Verify after 100ms
+        setTimeout(() => {
+            console.log('[NAVBAR CHECK 100ms] name:', document.getElementById('navbar-user-name')?.textContent);
+            console.log('[NAVBAR CHECK 100ms] role:', document.getElementById('navbar-user-role')?.textContent);
+        }, 100);
+
         // User is logged in, initialize app
         initializeApp(user);
     }
@@ -7076,9 +7121,18 @@ body.mobile-app-mode .mobile-action-bar-force button {
 
         // Initialize feature areas
         try {
-            initAuth();
+            initAuth(user); // Pass user to avoid module instance mismatch
         } catch (error) {
             console.error('❌ Error initializing auth UI:', error);
+        }
+
+        // Direct navbar update (bypass auth.js module issues)
+        if (user) {
+            const navName = document.getElementById('navbar-user-name');
+            const navRole = document.getElementById('navbar-user-role');
+            if (navName) navName.textContent = user.name || user.email || 'User';
+            if (navRole) navRole.textContent = user.role_display_name || user.role || 'Staff';
+            console.log('[NAVBAR] Updated directly:', user.name, user.role);
         }
 
         try {
@@ -7096,8 +7150,18 @@ body.mobile-app-mode .mobile-action-bar-force button {
 
         // Load current registration code for dashboard
         try {
-            if (typeof loadDashboardCurrentCode === 'function') {
-                loadDashboardCurrentCode();
+            console.log('[REG CODE] Checking window.loadDashboardCurrentCode:', typeof window.loadDashboardCurrentCode);
+            if (typeof window.loadDashboardCurrentCode === 'function') {
+                console.log('[REG CODE] Calling loadDashboardCurrentCode...');
+                window.loadDashboardCurrentCode();
+            } else {
+                console.log('[REG CODE] Function not found, will retry in 500ms');
+                setTimeout(() => {
+                    console.log('[REG CODE RETRY] Checking again:', typeof window.loadDashboardCurrentCode);
+                    if (typeof window.loadDashboardCurrentCode === 'function') {
+                        window.loadDashboardCurrentCode();
+                    }
+                }, 500);
             }
         } catch (error) {
             console.error('❌ Error loading dashboard code:', error);
@@ -11443,25 +11507,36 @@ async function generatePublicCode() {
 
 // Update dashboard code display
 function updateDashboardCodeDisplay(code, expiresAt) {
+    console.log('[REG CODE] updateDashboardCodeDisplay called with:', code);
     const el = document.getElementById('dashboard-current-code');
+    console.log('[REG CODE] Element found:', !!el, el);
     if (el && code) {
         el.textContent = code;
+        console.log('[REG CODE] Element updated to:', el.textContent);
+    } else {
+        console.log('[REG CODE] Element not found or code is empty');
     }
 }
 
 // Load current code for dashboard on page load
 async function loadDashboardCurrentCode() {
+    console.log('[REG CODE] loadDashboardCurrentCode called');
     try {
         const token = localStorage.getItem('vps_auth_token');
+        console.log('[REG CODE] Token exists:', !!token);
         const response = await fetch('/api/registration-codes/public', {
             headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await response.json();
+        console.log('[REG CODE] API response:', data);
         if (data.success && data.code) {
+            console.log('[REG CODE] Updating display with code:', data.code);
             updateDashboardCodeDisplay(data.code, data.expires_at);
+        } else {
+            console.log('[REG CODE] No active code in response');
         }
     } catch (e) {
-        console.log('No active public code');
+        console.error('[REG CODE] Error:', e);
     }
 }
 

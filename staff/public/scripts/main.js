@@ -101,6 +101,7 @@ function initPages() {
     pages.penjualanObat = grab('penjualan-obat-page');
     pages.bulkUploadUSG = grab('bulk-upload-usg-page');
     pages.medifySync = grab('medify-sync-page');
+    pages.patientActivity = grab('patient-activity-page');
 }
 function loadExternalPage(containerId, htmlFile, options = {}) {
     const { forceReload = false } = options;
@@ -2648,6 +2649,24 @@ async function updateWelcomeCard(user) {
         }
     }
 
+    // Update navbar avatar
+    const navbarAvatar = document.getElementById('navbar-user-avatar');
+    const navbarAvatarPlaceholder = document.getElementById('navbar-user-avatar-placeholder');
+    const photoURL = user.photo_url || null;
+
+    if (photoURL && navbarAvatar) {
+        navbarAvatar.src = photoURL;
+        navbarAvatar.style.display = 'block';
+        if (navbarAvatarPlaceholder) navbarAvatarPlaceholder.style.display = 'none';
+    } else {
+        if (navbarAvatar) navbarAvatar.style.display = 'none';
+        if (navbarAvatarPlaceholder) {
+            navbarAvatarPlaceholder.style.display = 'flex';
+            navbarAvatarPlaceholder.style.alignItems = 'center';
+            navbarAvatarPlaceholder.style.justifyContent = 'center';
+        }
+    }
+
     // Update daily greeting
     updateDailyGreeting(user.id);
 
@@ -4471,4 +4490,10 @@ window.startHospitalExam = startHospitalExam;
 // Utility functions used by external modules (tanya-dokter.js, etc)
 window.hideAllPages = hideAllPages;
 // window.setActiveNav = setActiveNav; // Defined in patient-utils.js, not here
+
+// Simple function to set page title
+function setPageTitle(title) {
+    const titleEl = document.getElementById('page-title');
+    if (titleEl) titleEl.textContent = title;
+}
 window.setPageTitle = setPageTitle;

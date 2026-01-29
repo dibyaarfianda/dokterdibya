@@ -1,0 +1,1163 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a1a1a">
+    <title>Tanya dr. Dibya - dokterDIBYA</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
+    <link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
+
+    <!-- Fonts & Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Shared Styles -->
+    <link rel="stylesheet" href="/styles/patient-portal.css">
+
+    <style>
+        /* Page-specific styles for Tanya dr. Dibya */
+        .tanya-card {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(109, 40, 217, 0.15));
+            border: 1px solid rgba(139, 92, 246, 0.3);
+        }
+
+        .tanya-card h3 {
+            color: #8b5cf6;
+        }
+
+        /* Tabs */
+        .tanya-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+
+        .tanya-tab {
+            flex-shrink: 0;
+            padding: 10px 18px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tanya-tab.active {
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            border-color: #8b5cf6;
+            color: white;
+        }
+
+        .tanya-tab:hover:not(.active) {
+            background: rgba(139, 92, 246, 0.2);
+            border-color: rgba(139, 92, 246, 0.5);
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            margin-bottom: 8px;
+        }
+
+        .form-group label .required {
+            color: #ef4444;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: white;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #8b5cf6;
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+        }
+
+        .form-control::placeholder {
+            color: rgba(255, 255, 255, 0.4);
+        }
+
+        select.form-control {
+            cursor: pointer;
+        }
+
+        select.form-control option {
+            background: #1a1a2e;
+            color: white;
+        }
+
+        textarea.form-control {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .char-count {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-top: 5px;
+        }
+
+        /* Image Upload */
+        .image-upload-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px dashed rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+            color: rgba(255, 255, 255, 0.6);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .image-upload-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: rgba(139, 92, 246, 0.5);
+        }
+
+        .image-preview {
+            position: relative;
+            margin-top: 12px;
+            display: none;
+        }
+
+        .image-preview img {
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 10px;
+        }
+
+        .image-preview .remove-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.7);
+            border: none;
+            color: white;
+            cursor: pointer;
+        }
+
+        /* Submit Button */
+        .submit-btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(139, 92, 246, 0.4);
+        }
+
+        .submit-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Quota Info */
+        .quota-info {
+            background: rgba(139, 92, 246, 0.15);
+            border: 1px solid rgba(139, 92, 246, 0.3);
+            border-radius: 10px;
+            padding: 12px 15px;
+            margin-bottom: 20px;
+            font-size: 13px;
+        }
+
+        .quota-info i {
+            color: #8b5cf6;
+            margin-right: 8px;
+        }
+
+        /* Blocked Message */
+        .blocked-container {
+            text-align: center;
+            padding: 30px 20px;
+        }
+
+        .blocked-container i {
+            font-size: 48px;
+            color: #f59e0b;
+            margin-bottom: 15px;
+        }
+
+        .blocked-container p {
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 20px;
+        }
+
+        /* Thread List */
+        .thread-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .thread-card:hover {
+            border-color: #8b5cf6;
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .thread-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .thread-status {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .thread-status.open { background: #f59e0b; }
+        .thread-status.answered { background: #10b981; }
+        .thread-status.closed { background: #6b7280; }
+
+        .thread-date {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .thread-question {
+            color: white;
+            font-size: 14px;
+            line-height: 1.5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .thread-replies {
+            margin-top: 10px;
+            font-size: 12px;
+            color: #8b5cf6;
+        }
+
+        /* Tier Cards */
+        .current-tier-box {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+
+        .current-tier-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.5);
+            margin-bottom: 5px;
+        }
+
+        .current-tier-name {
+            font-size: 18px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .current-tier-quota {
+            font-size: 13px;
+            color: #8b5cf6;
+            margin-top: 3px;
+        }
+
+        .tier-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .tier-card:hover {
+            border-color: #8b5cf6;
+            transform: translateY(-2px);
+        }
+
+        .tier-card.popular {
+            border: 2px solid #8b5cf6;
+            position: relative;
+        }
+
+        .tier-card.popular::before {
+            content: 'POPULER';
+            position: absolute;
+            top: -10px;
+            right: 15px;
+            background: #8b5cf6;
+            color: white;
+            padding: 3px 10px;
+            border-radius: 10px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .tier-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+
+        .tier-name {
+            font-weight: 600;
+            color: white;
+        }
+
+        .tier-badge {
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 600;
+        }
+
+        .tier-badge.bronze { background: linear-gradient(135deg, #cd7f32, #8b4513); color: white; }
+        .tier-badge.silver { background: linear-gradient(135deg, #c0c0c0, #808080); color: #333; }
+        .tier-badge.gold { background: linear-gradient(135deg, #ffd700, #daa520); color: #333; }
+
+        .tier-quota {
+            font-size: 13px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 5px;
+        }
+
+        .tier-price {
+            font-size: 20px;
+            font-weight: 700;
+            color: #8b5cf6;
+        }
+
+        .tier-price span {
+            font-size: 12px;
+            font-weight: 400;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        /* Thread Modal */
+        .thread-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 9999;
+            flex-direction: column;
+        }
+
+        .thread-modal.active {
+            display: flex;
+        }
+
+        .thread-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: rgba(26, 26, 46, 0.95);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .thread-modal-header h3 {
+            font-size: 16px;
+            color: #8b5cf6;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .thread-modal-close {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 8px;
+        }
+
+        .thread-modal-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .thread-modal-footer {
+            padding: 15px 20px;
+            background: rgba(26, 26, 46, 0.95);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Message Bubbles */
+        .message-bubble {
+            display: flex;
+            margin-bottom: 15px;
+        }
+
+        .message-bubble.patient {
+            flex-direction: row-reverse;
+        }
+
+        .message-content {
+            max-width: 80%;
+            padding: 12px 15px;
+            border-radius: 15px;
+        }
+
+        .message-bubble.doctor .message-content {
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            border-bottom-left-radius: 5px;
+        }
+
+        .message-bubble.patient .message-content {
+            background: rgba(255, 255, 255, 0.1);
+            border-bottom-right-radius: 5px;
+        }
+
+        .message-sender {
+            font-size: 11px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 5px;
+        }
+
+        .message-text {
+            color: white;
+            font-size: 14px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .message-image {
+            max-width: 100%;
+            max-height: 200px;
+            margin-top: 10px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        /* Original Question Box */
+        .original-question {
+            background: rgba(139, 92, 246, 0.1);
+            border-left: 4px solid #8b5cf6;
+            padding: 15px;
+            border-radius: 0 12px 12px 0;
+            margin-bottom: 20px;
+        }
+
+        .original-question-label {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 8px;
+        }
+
+        .original-question-text {
+            color: white;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        /* Reply Form */
+        .reply-form {
+            display: flex;
+            gap: 10px;
+        }
+
+        .reply-form textarea {
+            flex: 1;
+            padding: 10px 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            color: white;
+            font-size: 14px;
+            font-family: inherit;
+            resize: none;
+            max-height: 80px;
+        }
+
+        .reply-form textarea:focus {
+            outline: none;
+            border-color: #8b5cf6;
+        }
+
+        .reply-form button {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+            border: none;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        .reply-form button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        /* Content Sections */
+        .content-section {
+            display: none;
+        }
+
+        .content-section.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navbar -->
+    <nav class="nav-bar">
+        <div class="nav-left">
+            <button class="back-btn" onclick="history.back()">
+                <i class="fa fa-chevron-left"></i>
+            </button>
+            <h1 class="page-title">Tanya dr. Dibya</h1>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="content">
+        <!-- Loading State -->
+        <div class="loading" id="loading-state">
+            <i class="fa fa-spinner fa-spin"></i>
+            <span>Memuat...</span>
+        </div>
+
+        <!-- Content (hidden until loaded) -->
+        <div id="content-wrapper" style="display: none;">
+            <!-- Tabs -->
+            <div class="tanya-tabs">
+                <div class="tanya-tab active" data-section="ask" onclick="switchSection('ask')">
+                    <i class="fa fa-question-circle"></i> Tanya
+                </div>
+                <div class="tanya-tab" data-section="history" onclick="switchSection('history')">
+                    <i class="fa fa-history"></i> Riwayat
+                </div>
+                <div class="tanya-tab" data-section="premium" onclick="switchSection('premium')">
+                    <i class="fa fa-star"></i> Premium
+                </div>
+            </div>
+
+            <!-- Section: Ask Question -->
+            <div class="content-section active" id="section-ask">
+                <div class="card tanya-card">
+                    <!-- Quota Info -->
+                    <div class="quota-info">
+                        <i class="fa fa-info-circle"></i>
+                        <span id="quota-text">Memuat kuota...</span>
+                    </div>
+
+                    <!-- Question Form -->
+                    <div id="form-container">
+                        <form id="question-form" onsubmit="submitQuestion(event)">
+                            <div class="form-group">
+                                <label>Pilih Dokter <span class="required">*</span></label>
+                                <select id="doctor-select" class="form-control" required>
+                                    <option value="">Memuat daftar dokter...</option>
+                                </select>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Pertanyaan Anda <span class="required">*</span></label>
+                                <textarea id="question-text" class="form-control" placeholder="Tuliskan pertanyaan Anda secara detail..." required></textarea>
+                                <div class="char-count"><span id="char-count">0</span>/1000 karakter</div>
+                            </div>
+
+                            <div class="form-group">
+                                <label>Lampiran (opsional)</label>
+                                <input type="file" id="question-image" accept="image/*" style="display: none;">
+                                <button type="button" class="image-upload-btn" onclick="document.getElementById('question-image').click()">
+                                    <i class="fa fa-camera"></i> Tambah Foto
+                                </button>
+                                <div class="image-preview" id="image-preview">
+                                    <img id="preview-img" src="">
+                                    <button type="button" class="remove-btn" onclick="removeImage()">
+                                        <i class="fa fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="submit-btn" id="submit-btn">
+                                <i class="fa fa-paper-plane"></i> Kirim Pertanyaan
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Blocked Message -->
+                    <div id="blocked-container" class="blocked-container" style="display: none;">
+                        <i class="fa fa-clock-o"></i>
+                        <p id="blocked-message">Anda memiliki pertanyaan yang belum dijawab.</p>
+                        <button class="btn-secondary" onclick="switchSection('history')">
+                            <i class="fa fa-history"></i> Lihat Riwayat
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section: History -->
+            <div class="content-section" id="section-history">
+                <div id="history-container">
+                    <div class="loading">
+                        <i class="fa fa-spinner fa-spin"></i>
+                        <span>Memuat riwayat...</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section: Premium -->
+            <div class="content-section" id="section-premium">
+                <div class="card tanya-card">
+                    <p style="color: rgba(255,255,255,0.7); font-size: 14px; margin-bottom: 20px;">
+                        Dapatkan lebih banyak kesempatan bertanya dengan berlangganan Premium!
+                    </p>
+
+                    <!-- Current Status -->
+                    <div class="current-tier-box">
+                        <div class="current-tier-label">Status Langganan Saat Ini</div>
+                        <div class="current-tier-name" id="current-tier">Gratis</div>
+                        <div class="current-tier-quota" id="current-quota">1 pertanyaan / minggu</div>
+                    </div>
+
+                    <!-- Tier Options -->
+                    <div id="tier-list">
+                        <!-- First Class -->
+                        <div class="tier-card" onclick="selectTier('first_class')">
+                            <div class="tier-header">
+                                <span class="tier-name">First-Class</span>
+                                <span class="tier-badge bronze">BRONZE</span>
+                            </div>
+                            <div class="tier-quota">3 pertanyaan / minggu</div>
+                            <div class="tier-price">Rp 50.000<span>/bulan</span></div>
+                        </div>
+
+                        <!-- Executive -->
+                        <div class="tier-card popular" onclick="selectTier('executive')">
+                            <div class="tier-header">
+                                <span class="tier-name">Executive-Class</span>
+                                <span class="tier-badge silver">SILVER</span>
+                            </div>
+                            <div class="tier-quota">5 pertanyaan / minggu</div>
+                            <div class="tier-price">Rp 100.000<span>/bulan</span></div>
+                        </div>
+
+                        <!-- VIP -->
+                        <div class="tier-card" onclick="selectTier('vip')">
+                            <div class="tier-header">
+                                <span class="tier-name">VIP</span>
+                                <span class="tier-badge gold">GOLD</span>
+                            </div>
+                            <div class="tier-quota">10 pertanyaan / minggu + Bonus fitur eksklusif</div>
+                            <div class="tier-price">Rp 200.000<span>/bulan</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <a href="/patient-menu.html" class="nav-item">
+            <i class="fa fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="/notifikasi.html" class="nav-item">
+            <i class="fa fa-bell"></i>
+            <span>Notifikasi</span>
+        </a>
+        <a href="/profil.html" class="nav-item">
+            <i class="fa fa-user"></i>
+            <span>Profil</span>
+        </a>
+    </nav>
+
+    <!-- Thread Modal -->
+    <div class="thread-modal" id="thread-modal">
+        <div class="thread-modal-header">
+            <h3><i class="fa fa-comments"></i> Detail Percakapan</h3>
+            <button class="thread-modal-close" onclick="closeThreadModal()">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+        <div class="thread-modal-body" id="thread-modal-body">
+            <!-- Thread content -->
+        </div>
+        <div class="thread-modal-footer" id="thread-modal-footer">
+            <!-- Reply form -->
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <script type="module">
+        import { getToken, checkAuth, apiRequest, showToast, formatDate, showLoading, showEmptyState, escapeHtml } from '/scripts/patient-utils.js';
+
+        // State
+        let currentSection = 'ask';
+        let currentQuestionId = null;
+
+        // Make functions globally available
+        window.switchSection = switchSection;
+        window.submitQuestion = submitQuestion;
+        window.removeImage = removeImage;
+        window.openThread = openThread;
+        window.closeThreadModal = closeThreadModal;
+        window.sendReply = sendReply;
+        window.selectTier = selectTier;
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', async function() {
+            if (!checkAuth()) return;
+
+            // Setup character counter
+            const textarea = document.getElementById('question-text');
+            textarea.addEventListener('input', function() {
+                const count = this.value.length;
+                document.getElementById('char-count').textContent = count;
+                if (count > 1000) {
+                    this.value = this.value.substring(0, 1000);
+                    document.getElementById('char-count').textContent = 1000;
+                }
+            });
+
+            // Setup image preview
+            document.getElementById('question-image').addEventListener('change', handleImageSelect);
+
+            // Handle hash navigation
+            handleHash();
+            window.addEventListener('hashchange', handleHash);
+
+            // Load initial data
+            await Promise.all([
+                loadQuotaInfo(),
+                loadDoctors(),
+                loadHistory()
+            ]);
+
+            document.getElementById('loading-state').style.display = 'none';
+            document.getElementById('content-wrapper').style.display = 'block';
+        });
+
+        // Handle hash navigation
+        function handleHash() {
+            const hash = window.location.hash;
+            if (hash === '#ask') switchSection('ask');
+            else if (hash === '#history') switchSection('history');
+            else if (hash === '#premium') switchSection('premium');
+        }
+
+        // Switch section
+        function switchSection(section) {
+            currentSection = section;
+
+            // Update tabs
+            document.querySelectorAll('.tanya-tab').forEach(tab => {
+                tab.classList.toggle('active', tab.dataset.section === section);
+            });
+
+            // Update content
+            document.querySelectorAll('.content-section').forEach(sec => {
+                sec.classList.remove('active');
+            });
+            document.getElementById(`section-${section}`).classList.add('active');
+
+            // Load data if needed
+            if (section === 'history') {
+                loadHistory();
+            }
+        }
+
+        // Load quota info
+        async function loadQuotaInfo() {
+            try {
+                const data = await apiRequest('/api/patient-questions/can-ask');
+
+                if (data) {
+                    const tierNames = { 'free': 'Gratis', 'first_class': 'First-Class', 'executive': 'Executive-Class', 'vip': 'VIP' };
+                    const tier = data.tier || 'free';
+
+                    // Update quota text
+                    document.getElementById('quota-text').innerHTML =
+                        `Paket: <strong>${tierNames[tier]}</strong> | Sisa: <strong>${data.remaining}/${data.limit}</strong> pertanyaan minggu ini`;
+
+                    // Update premium section
+                    document.getElementById('current-tier').textContent = tierNames[tier];
+                    document.getElementById('current-quota').textContent = `${data.limit} pertanyaan / minggu`;
+
+                    // Show/hide form
+                    if (data.canAsk) {
+                        document.getElementById('form-container').style.display = 'block';
+                        document.getElementById('blocked-container').style.display = 'none';
+                    } else {
+                        document.getElementById('form-container').style.display = 'none';
+                        document.getElementById('blocked-container').style.display = 'block';
+                        document.getElementById('blocked-message').textContent = data.reason || 'Anda tidak bisa bertanya saat ini.';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading quota:', error);
+            }
+        }
+
+        // Load doctors
+        async function loadDoctors() {
+            try {
+                const data = await apiRequest('/api/doctors/available');
+                const select = document.getElementById('doctor-select');
+
+                if (data && data.success && data.doctors && data.doctors.length > 0) {
+                    select.innerHTML = '<option value="">-- Pilih Dokter --</option>';
+
+                    data.doctors.forEach(doc => {
+                        const option = document.createElement('option');
+                        option.value = doc.id;
+                        option.textContent = `${doc.name}${doc.label ? ' - ' + doc.label : ''}`;
+                        select.appendChild(option);
+                    });
+
+                    // Auto-select if only one
+                    if (data.doctors.length === 1) {
+                        select.value = data.doctors[0].id;
+                    }
+                } else {
+                    select.innerHTML = '<option value="">Tidak ada dokter tersedia</option>';
+                }
+            } catch (error) {
+                console.error('Error loading doctors:', error);
+                document.getElementById('doctor-select').innerHTML = '<option value="">Gagal memuat daftar dokter</option>';
+            }
+        }
+
+        // Handle image selection
+        function handleImageSelect(e) {
+            if (e.target.files && e.target.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(ev) {
+                    document.getElementById('preview-img').src = ev.target.result;
+                    document.getElementById('image-preview').style.display = 'block';
+                };
+                reader.readAsDataURL(e.target.files[0]);
+            }
+        }
+
+        // Remove image
+        function removeImage() {
+            document.getElementById('question-image').value = '';
+            document.getElementById('image-preview').style.display = 'none';
+        }
+
+        // Submit question
+        async function submitQuestion(event) {
+            event.preventDefault();
+
+            const submitBtn = document.getElementById('submit-btn');
+            const questionText = document.getElementById('question-text').value.trim();
+            const doctorId = document.getElementById('doctor-select').value;
+            const imageInput = document.getElementById('question-image');
+
+            if (!doctorId) {
+                showToast('Silakan pilih dokter', 'error');
+                return;
+            }
+
+            if (!questionText) {
+                showToast('Silakan tulis pertanyaan Anda', 'error');
+                return;
+            }
+
+            if (questionText.length > 1000) {
+                showToast('Pertanyaan maksimal 1000 karakter', 'error');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Mengirim...';
+
+            try {
+                const token = getToken();
+                const formData = new FormData();
+                formData.append('question_text', questionText);
+                formData.append('doctor_id', doctorId);
+
+                if (imageInput.files && imageInput.files[0]) {
+                    formData.append('image', imageInput.files[0]);
+                }
+
+                const response = await fetch('/api/patient-questions', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}` },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Clear form
+                    document.getElementById('question-text').value = '';
+                    document.getElementById('char-count').textContent = '0';
+                    removeImage();
+
+                    showToast('Pertanyaan berhasil dikirim!', 'success');
+
+                    // Reload quota and history
+                    loadQuotaInfo();
+                    loadHistory();
+
+                    // Switch to history
+                    setTimeout(() => switchSection('history'), 1500);
+                } else {
+                    showToast(data.message || 'Gagal mengirim pertanyaan', 'error');
+                }
+            } catch (error) {
+                console.error('Error submitting:', error);
+                showToast('Terjadi kesalahan', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="fa fa-paper-plane"></i> Kirim Pertanyaan';
+            }
+        }
+
+        // Load history
+        async function loadHistory() {
+            const container = document.getElementById('history-container');
+
+            try {
+                const data = await apiRequest('/api/patient-questions');
+
+                if (!data || !data.questions || data.questions.length === 0) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <i class="fa fa-comments-o"></i>
+                            <p>Belum ada riwayat tanya jawab</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                container.innerHTML = data.questions.map(q => {
+                    const statusLabels = { 'open': 'Menunggu', 'answered': 'Dijawab', 'closed': 'Selesai' };
+                    const date = new Date(q.created_at);
+                    const dateStr = date.toLocaleDateString('id-ID', {
+                        day: 'numeric', month: 'short', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit'
+                    });
+
+                    return `
+                        <div class="thread-card" onclick="openThread('${q.id}')">
+                            <div class="thread-header">
+                                <span class="thread-status ${q.status}">${statusLabels[q.status]}</span>
+                                <span class="thread-date">${dateStr}</span>
+                            </div>
+                            <p class="thread-question">${escapeHtml(q.question_text)}</p>
+                            ${q.reply_count > 0 ? `<div class="thread-replies"><i class="fa fa-reply"></i> ${q.reply_count} balasan</div>` : ''}
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error loading history:', error);
+                container.innerHTML = `
+                    <div class="empty-state error-state">
+                        <i class="fa fa-exclamation-triangle"></i>
+                        <p>Gagal memuat riwayat</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Open thread modal
+        async function openThread(questionId) {
+            currentQuestionId = questionId;
+            const modal = document.getElementById('thread-modal');
+            const body = document.getElementById('thread-modal-body');
+            const footer = document.getElementById('thread-modal-footer');
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+
+            body.innerHTML = '<div class="loading"><i class="fa fa-spinner fa-spin"></i><span>Memuat...</span></div>';
+            footer.innerHTML = '';
+
+            try {
+                const data = await apiRequest(`/api/patient-questions/${questionId}`);
+
+                if (data && data.success) {
+                    const q = data.question;
+                    const replies = data.replies || [];
+                    const doctorName = q.doctor_name || 'Dokter';
+
+                    // Build messages
+                    let messagesHtml = replies.map(r => {
+                        const rDate = new Date(r.created_at);
+                        const rDateStr = rDate.toLocaleDateString('id-ID', {
+                            day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit'
+                        });
+                        const isDoctor = r.sender_type === 'doctor';
+                        const senderName = r.sender_name || (isDoctor ? doctorName : 'Anda');
+
+                        return `
+                            <div class="message-bubble ${isDoctor ? 'doctor' : 'patient'}">
+                                <div class="message-content">
+                                    <div class="message-sender">
+                                        ${isDoctor ? '<i class="fa fa-user-md"></i> ' + escapeHtml(senderName) : '<i class="fa fa-user"></i> Anda'} - ${rDateStr}
+                                    </div>
+                                    <p class="message-text">${escapeHtml(r.message)}</p>
+                                    ${r.image_url ? `<img src="${r.image_url}" class="message-image" onclick="window.open('${r.image_url}', '_blank')">` : ''}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+
+                    if (replies.length === 0) {
+                        messagesHtml = `
+                            <div class="empty-state">
+                                <i class="fa fa-clock-o"></i>
+                                <p>Menunggu jawaban dari dokter</p>
+                            </div>
+                        `;
+                    }
+
+                    // Status badge
+                    const statusLabels = { 'open': 'Menunggu', 'answered': 'Dijawab', 'closed': 'Selesai' };
+
+                    body.innerHTML = `
+                        <div style="margin-bottom: 15px;">
+                            <span class="thread-status ${q.status}">${statusLabels[q.status]}</span>
+                        </div>
+                        <div class="original-question">
+                            <div class="original-question-label">Pertanyaan Anda</div>
+                            <p class="original-question-text">${escapeHtml(q.question_text)}</p>
+                            ${q.image_url ? `<img src="${q.image_url}" class="message-image" style="margin-top: 10px;" onclick="window.open('${q.image_url}', '_blank')">` : ''}
+                        </div>
+                        <div style="margin-bottom: 10px; font-size: 13px; color: rgba(255,255,255,0.6);">
+                            <i class="fa fa-user-md"></i> Dokter: <strong style="color: #8b5cf6;">${escapeHtml(doctorName)}</strong>
+                        </div>
+                        ${messagesHtml}
+                    `;
+
+                    // Footer with reply form (if not closed)
+                    if (q.status === 'closed') {
+                        footer.innerHTML = `
+                            <div style="text-align: center; color: rgba(255,255,255,0.5);">
+                                <i class="fa fa-check-circle" style="color: #10b981;"></i> Percakapan ini sudah selesai
+                            </div>
+                        `;
+                    } else {
+                        footer.innerHTML = `
+                            <div class="reply-form">
+                                <textarea id="reply-text" placeholder="Tulis balasan..." rows="1"></textarea>
+                                <button onclick="sendReply()"><i class="fa fa-paper-plane"></i></button>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading thread:', error);
+                body.innerHTML = `
+                    <div class="empty-state error-state">
+                        <i class="fa fa-exclamation-triangle"></i>
+                        <p>Gagal memuat percakapan</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Close thread modal
+        function closeThreadModal() {
+            document.getElementById('thread-modal').classList.remove('active');
+            document.body.style.overflow = '';
+            currentQuestionId = null;
+        }
+
+        // Send reply
+        async function sendReply() {
+            if (!currentQuestionId) return;
+
+            const textarea = document.getElementById('reply-text');
+            const message = textarea.value.trim();
+
+            if (!message) {
+                showToast('Silakan tulis balasan', 'error');
+                return;
+            }
+
+            try {
+                const data = await apiRequest(`/api/patient-questions/${currentQuestionId}/reply`, {
+                    method: 'POST',
+                    body: JSON.stringify({ message })
+                });
+
+                if (data && data.success) {
+                    textarea.value = '';
+                    openThread(currentQuestionId); // Refresh
+                    loadHistory();
+                } else {
+                    showToast(data?.message || 'Gagal mengirim balasan', 'error');
+                }
+            } catch (error) {
+                console.error('Error sending reply:', error);
+                showToast('Terjadi kesalahan', 'error');
+            }
+        }
+
+        // Select tier (placeholder - would integrate with payment)
+        function selectTier(tier) {
+            const tierNames = { 'first_class': 'First-Class', 'executive': 'Executive-Class', 'vip': 'VIP' };
+            showToast(`Fitur pembayaran ${tierNames[tier]} akan segera hadir`, 'info');
+        }
+    </script>
+</body>
+</html>

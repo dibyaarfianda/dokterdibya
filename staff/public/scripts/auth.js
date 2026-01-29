@@ -1,19 +1,31 @@
-import { auth, onAuthStateChanged, signOut } from './vps-auth-v2.js';
+// No imports needed - hardcode token key to avoid module instance issues
+const TOKEN_KEY = 'vps_auth_token';
 
 function $(id) { return document.getElementById(id); }
 
-// Global logout function for mobile menu
-window.handleLogout = async function() {
-    try {
-        await signOut();
-    } catch(e) {
-        console.error('Logout error:', e);
-        // Force redirect to login even if error
-        localStorage.removeItem('authToken');
-        localStorage.removeItem('currentUser');
-        window.location.href = '/staff/public/login.html';
+// Direct logout function - clear tokens and redirect
+function doLogout() {
+    console.log('[AUTH] doLogout called');
+
+    // Clear all auth tokens
+    localStorage.removeItem(TOKEN_KEY);
+    sessionStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem('must_change_password');
+    localStorage.removeItem('cache_version'); // Force cache refresh on next login
+
+    // Clear window.auth if exists
+    if (window.auth) {
+        window.auth.currentUser = null;
     }
-};
+
+    console.log('[AUTH] Tokens cleared, redirecting to login...');
+
+    // Redirect to login
+    window.location.href = '/staff/public/login.html';
+}
+
+// Global logout function for mobile menu
+window.handleLogout = doLogout;
 
 // Role ID constants (match backend constants/roles.js)
 const ROLE_IDS = {
@@ -168,17 +180,21 @@ async function setAuthUI(user) {
 // Login form is now in separate login.html page
 
 function bindLogout() {
-    const logoutBtn = $('navbar-logout-btn');
-    if (!logoutBtn) return;
-    logoutBtn.addEventListener('click', async (e) => {
-        e.preventDefault();
-        try { await signOut(); } catch(e) {}
-    });
+    // Logout is now handled by onclick in HTML with direct href to login.html
+    // No need for JavaScript event listener
 }
 
-export function initAuth() {
+export function initAuth(userFromCaller) {
     bindLogout();
-    onAuthStateChanged((user) => setAuthUI(user));
+    // Accept user from caller (index-adminlte.html passes it) or fallback to window.auth
+    // This avoids module instance mismatch issues with cache-busted imports
+    const user = userFromCaller || window.auth?.currentUser;
+    console.log('[AUTH UI] initAuth called, user:', user?.id, user?.name);
+    if (user) {
+        setAuthUI(user);
+    } else {
+        console.warn('[AUTH UI] No user available for setAuthUI');
+    }
 }
 
 

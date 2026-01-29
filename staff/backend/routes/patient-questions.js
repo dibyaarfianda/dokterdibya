@@ -403,14 +403,14 @@ router.get('/staff/all', verifyToken, async (req, res) => {
         }
 
         if (search) {
-            whereClause += ' AND (p.name LIKE ? OR pq.question_text LIKE ?)';
+            whereClause += ' AND (p.full_name LIKE ? OR pq.question_text LIKE ?)';
             params.push(`%${search}%`, `%${search}%`);
         }
 
         // Get questions with patient info, subscription tier, and doctor info
         const [questions] = await db.query(
             `SELECT pq.*,
-                    p.name as patient_name,
+                    p.full_name as patient_name,
                     p.birth_date,
                     COALESCE(ts.tier, 'free') as subscription_tier,
                     u.name as doctor_name,
@@ -485,7 +485,7 @@ router.get('/staff/:id', verifyToken, async (req, res) => {
 
         const [questions] = await db.query(
             `SELECT pq.*,
-                    p.name as patient_name,
+                    p.full_name as patient_name,
                     p.birth_date,
                     p.phone,
                     p.email,
@@ -516,7 +516,7 @@ router.get('/staff/:id', verifyToken, async (req, res) => {
             `SELECT qr.*,
                     CASE
                         WHEN qr.sender_type = 'doctor' THEN ?
-                        ELSE (SELECT name FROM patients WHERE id = qr.sender_id)
+                        ELSE (SELECT full_name FROM patients WHERE id = qr.sender_id)
                     END as sender_name
              FROM question_replies qr
              WHERE qr.question_id = ?
@@ -602,7 +602,8 @@ router.post('/staff/:id/reply', verifyToken, requireDokter, upload.single('image
         const question = questions[0];
 
         // Check if current user is assigned doctor or superadmin
-        if (!currentUser.is_superadmin && question.assigned_doctor_id !== currentUser.new_id) {
+        const currentUserId = currentUser.new_id || currentUser.id;
+        if (!currentUser.is_superadmin && question.assigned_doctor_id !== currentUserId) {
             return res.status(403).json({
                 success: false,
                 message: 'Anda tidak dapat membalas pertanyaan ini. Pertanyaan ditujukan untuk dokter lain.'
@@ -629,11 +630,12 @@ router.post('/staff/:id/reply', verifyToken, requireDokter, upload.single('image
             imageUrl = uploadResult.key;
         }
 
-        // Insert reply using new_id (not id)
+        // Insert reply - use new_id if available, fallback to id
+        const senderId = currentUser.new_id || currentUser.id;
         await db.query(
             `INSERT INTO question_replies (question_id, sender_type, sender_id, message, image_url, created_at)
              VALUES (?, 'doctor', ?, ?, ?, NOW())`,
-            [questionId, currentUser.new_id, message.trim(), imageUrl]
+            [questionId, senderId, message.trim(), imageUrl]
         );
 
         // Update question status to answered
@@ -695,7 +697,8 @@ router.post('/staff/:id/close', verifyToken, requireDokter, async (req, res) => 
         const question = questions[0];
 
         // Check if current user is assigned doctor or superadmin
-        if (!currentUser.is_superadmin && question.assigned_doctor_id !== currentUser.new_id) {
+        const currentUserId = currentUser.new_id || currentUser.id;
+        if (!currentUser.is_superadmin && question.assigned_doctor_id !== currentUserId) {
             return res.status(403).json({
                 success: false,
                 message: 'Anda tidak dapat menutup pertanyaan ini. Pertanyaan ditujukan untuk dokter lain.'
