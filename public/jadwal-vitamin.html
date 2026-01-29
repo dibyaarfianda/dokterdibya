@@ -1,0 +1,907 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>Jadwal Vitamin - dokterDIBYA</title>
+
+    <!-- Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #303030 100%);
+            min-height: 100vh;
+            color: #ffffff;
+            padding-bottom: 80px;
+        }
+
+        /* Navbar */
+        .nav-bar {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            padding-top: max(15px, env(safe-area-inset-top));
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: #ffffff;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 8px 12px;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .page-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #10b981;
+        }
+
+        /* Main Content */
+        .content {
+            padding: 20px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Add Button */
+        .add-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            border-radius: 14px;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+
+        .add-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.4);
+        }
+
+        /* Section Title */
+        .section-title {
+            font-size: 12px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            margin-top: 25px;
+        }
+
+        .section-title:first-of-type {
+            margin-top: 0;
+        }
+
+        /* Medication Card */
+        .med-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 14px;
+            padding: 15px;
+            margin-bottom: 12px;
+            transition: all 0.3s;
+        }
+
+        .med-card:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .med-card.doctor {
+            border-color: rgba(255, 255, 255, 0.15);
+        }
+
+        .med-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .med-info {
+            flex: 1;
+        }
+
+        .med-name {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+
+        .med-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .med-icon i {
+            color: #fff;
+            font-size: 14px;
+        }
+
+        .med-icon.doctor {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+        }
+
+        .med-qty {
+            font-size: 12px;
+            font-weight: 500;
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.15);
+            padding: 2px 8px;
+            border-radius: 8px;
+        }
+
+        .med-schedule {
+            font-size: 13px;
+            color: #888;
+            margin-left: 42px;
+        }
+
+        .med-schedule i {
+            margin-right: 6px;
+        }
+
+        .med-reminder {
+            color: #28a7e9;
+            margin-left: 10px;
+        }
+
+        .med-reminder.off {
+            color: #888;
+        }
+
+        .med-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .action-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .action-btn.reminder {
+            background: linear-gradient(135deg, #28a7e9, #0066ff);
+            color: #fff;
+            box-shadow: 0 2px 8px rgba(40, 167, 233, 0.3);
+        }
+
+        .action-btn.reminder.off {
+            background: rgba(255, 255, 255, 0.1);
+            color: #888;
+            box-shadow: none;
+        }
+
+        .action-btn.delete {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+        }
+
+        .action-btn.delete:hover {
+            background: rgba(239, 68, 68, 0.25);
+        }
+
+        /* Prescription Card */
+        .prescription-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            padding: 15px;
+            margin-bottom: 12px;
+        }
+
+        .prescription-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 10px;
+        }
+
+        .prescription-header .doc-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .prescription-header .doc-icon i {
+            color: #fff;
+            font-size: 10px;
+        }
+
+        .prescription-list {
+            list-style: none;
+        }
+
+        .prescription-list li {
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 14px;
+            color: #ccc;
+        }
+
+        .prescription-list li:last-child {
+            border-bottom: none;
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .empty-state i {
+            font-size: 50px;
+            margin-bottom: 15px;
+            color: #10b981;
+            opacity: 0.5;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 10px 0;
+            padding-bottom: max(10px, env(safe-area-inset-bottom));
+            background: rgba(26, 26, 46, 0.98);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            color: rgba(255, 255, 255, 0.6);
+            text-decoration: none;
+            font-size: 12px;
+            padding: 8px 20px;
+            transition: color 0.3s;
+        }
+
+        .nav-item.active,
+        .nav-item:hover {
+            color: #10b981;
+        }
+
+        .nav-item i {
+            font-size: 20px;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 24px;
+            border-radius: 8px;
+            color: #fff;
+            font-size: 14px;
+            z-index: 9999;
+            animation: slideDown 0.3s ease;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .toast.success { background: #10b981; }
+        .toast.error { background: #ef4444; }
+        .toast.info { background: #28a7e9; }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translate(-50%, -20px); }
+            to { opacity: 1; transform: translate(-50%, 0); }
+        }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            -webkit-backdrop-filter: blur(5px);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: rgba(26, 26, 46, 0.95);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            border-radius: 20px;
+            width: 100%;
+            max-width: 400px;
+            overflow: hidden;
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid rgba(16, 185, 129, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            font-size: 18px;
+            color: #10b981;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: #888;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 13px;
+            color: #10b981;
+            margin-bottom: 8px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            color: #fff;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-group select option {
+            background: #1a1a2e;
+            color: #fff;
+        }
+
+        .form-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .form-row .form-group {
+            flex: 1;
+        }
+
+        .reminder-toggle {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 15px;
+            background: rgba(40, 167, 233, 0.1);
+            border-radius: 12px;
+            cursor: pointer;
+        }
+
+        .reminder-toggle input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            accent-color: #28a7e9;
+        }
+
+        .reminder-toggle label {
+            color: #ccc;
+            font-size: 13px;
+            cursor: pointer;
+        }
+
+        .reminder-toggle i {
+            color: #28a7e9;
+        }
+
+        .time-inputs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .time-inputs input {
+            flex: 1;
+            min-width: 100px;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            padding: 20px;
+            border-top: 1px solid rgba(16, 185, 129, 0.2);
+        }
+
+        .modal-footer button {
+            flex: 1;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-cancel {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #fff;
+        }
+
+        .btn-save {
+            background: linear-gradient(135deg, #10b981, #059669);
+            border: none;
+            color: #fff;
+        }
+
+        /* Responsive */
+        @media (max-width: 400px) {
+            .content { padding: 15px; }
+            .med-card { padding: 12px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Top Navbar -->
+    <nav class="nav-bar">
+        <div class="nav-left">
+            <button class="back-btn" onclick="history.back()">
+                <i class="fa fa-chevron-left"></i>
+            </button>
+            <h1 class="page-title"><i class="fa fa-medkit"></i> Jadwal Vitamin</h1>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="content">
+        <!-- Add Button -->
+        <button class="add-btn" onclick="openAddModal()">
+            <i class="fa fa-plus-circle"></i> Tambah Obat/Vitamin
+        </button>
+
+        <!-- My Medications -->
+        <div id="my-meds-section" style="display: none;">
+            <h3 class="section-title">Obat Saya</h3>
+            <div id="my-meds-container"></div>
+        </div>
+
+        <!-- Doctor Prescriptions -->
+        <div id="prescriptions-section" style="display: none;">
+            <h3 class="section-title">Resep dari Dokter</h3>
+            <div id="prescriptions-container"></div>
+        </div>
+
+        <!-- Empty State -->
+        <div id="empty-state" class="empty-state" style="display: none;">
+            <i class="fa fa-medkit"></i>
+            <p>Belum ada jadwal vitamin atau obat</p>
+        </div>
+    </main>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <a href="/patient-menu.html" class="nav-item">
+            <i class="fa fa-home"></i>
+            <span>Home</span>
+        </a>
+        <a href="/notifikasi.html" class="nav-item">
+            <i class="fa fa-bell"></i>
+            <span>Notifikasi</span>
+        </a>
+        <a href="/profil.html" class="nav-item">
+            <i class="fa fa-user"></i>
+            <span>Profil</span>
+        </a>
+    </nav>
+
+    <!-- Add Modal -->
+    <div class="modal-overlay" id="addModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fa fa-plus-circle"></i> Tambah Obat</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Nama Obat *</label>
+                    <input type="text" id="med-name" placeholder="Contoh: Asam Folat">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Jumlah</label>
+                        <input type="number" id="med-qty" min="1" value="1">
+                    </div>
+                    <div class="form-group">
+                        <label>Satuan</label>
+                        <select id="med-unit">
+                            <option value="tablet">Tablet</option>
+                            <option value="kapsul">Kapsul</option>
+                            <option value="strip">Strip</option>
+                            <option value="botol">Botol</option>
+                            <option value="sachet">Sachet</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Frekuensi</label>
+                    <select id="med-freq" onchange="updateTimeInputs()">
+                        <option value="1">1x sehari</option>
+                        <option value="2">2x sehari</option>
+                        <option value="3">3x sehari</option>
+                        <option value="4">4x sehari</option>
+                    </select>
+                </div>
+                <div class="reminder-toggle">
+                    <input type="checkbox" id="med-reminder" checked>
+                    <i class="fa fa-bell"></i>
+                    <label for="med-reminder">Ingatkan saya minum obat</label>
+                </div>
+                <div class="time-inputs" id="time-inputs">
+                    <div class="form-group">
+                        <label>Waktu 1</label>
+                        <input type="time" id="time-1" value="08:00">
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-cancel" onclick="closeModal()">Batal</button>
+                <button class="btn-save" onclick="saveMedication()">
+                    <i class="fa fa-check"></i> Simpan
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toast-container"></div>
+
+    <script type="module">
+        import { getToken, checkAuth, showToast } from '/scripts/patient-utils.js';
+
+        // Check auth
+        if (!checkAuth()) {
+            // Redirect handled by checkAuth
+        }
+
+        const token = getToken();
+        const STORAGE_KEY = 'custom_medications';
+
+        // ========== DEFINE FUNCTIONS FIRST ==========
+
+        function getMedications() {
+            return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        }
+
+        function saveMedications(meds) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(meds));
+        }
+
+        function getReminderTimes(frequency, customTimes) {
+            const defaultTimes = {
+                1: ['08:00'],
+                2: ['08:00', '20:00'],
+                3: ['08:00', '14:00', '20:00'],
+                4: ['06:00', '12:00', '18:00', '22:00']
+            };
+            const times = customTimes || defaultTimes[frequency] || ['08:00'];
+            return times.join(', ');
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function updateTimeInputs() {
+            const freqEl = document.getElementById('med-freq');
+            if (!freqEl) return;
+            const freq = parseInt(freqEl.value);
+            const container = document.getElementById('time-inputs');
+            if (!container) return;
+            const defaultTimes = {
+                1: ['08:00'],
+                2: ['08:00', '20:00'],
+                3: ['08:00', '14:00', '20:00'],
+                4: ['06:00', '12:00', '18:00', '22:00']
+            };
+            const times = defaultTimes[freq] || ['08:00'];
+
+            container.innerHTML = times.map((time, i) => `
+                <div class="form-group">
+                    <label>Waktu ${i + 1}</label>
+                    <input type="time" id="time-${i + 1}" value="${time}">
+                </div>
+            `).join('');
+        }
+
+        function openAddModal() {
+            document.getElementById('addModal').classList.add('active');
+            document.getElementById('med-name').value = '';
+            document.getElementById('med-qty').value = '1';
+            document.getElementById('med-unit').value = 'tablet';
+            document.getElementById('med-freq').value = '1';
+            document.getElementById('med-reminder').checked = true;
+            updateTimeInputs();
+        }
+
+        function closeModal() {
+            document.getElementById('addModal').classList.remove('active');
+        }
+
+        function saveMedication() {
+            const name = document.getElementById('med-name').value.trim();
+            const quantity = parseInt(document.getElementById('med-qty').value) || 1;
+            const unit = document.getElementById('med-unit').value;
+            const frequency = parseInt(document.getElementById('med-freq').value);
+            const reminder = document.getElementById('med-reminder').checked;
+
+            if (!name) {
+                showToast('Masukkan nama obat', 'error');
+                return;
+            }
+
+            // Get reminder times
+            const times = [];
+            for (let i = 1; i <= frequency; i++) {
+                const input = document.getElementById(`time-${i}`);
+                if (input) times.push(input.value);
+            }
+
+            const meds = getMedications();
+            meds.push({
+                name,
+                quantity,
+                unit,
+                frequency,
+                reminder,
+                reminderTimes: times,
+                createdAt: new Date().toISOString()
+            });
+            saveMedications(meds);
+
+            closeModal();
+            showToast('Obat berhasil ditambahkan', 'success');
+            loadMedications();
+        }
+
+        function toggleReminder(index) {
+            const meds = getMedications();
+            if (meds[index]) {
+                meds[index].reminder = !meds[index].reminder;
+                saveMedications(meds);
+                renderMyMedications(meds);
+                showToast(meds[index].reminder ? 'Pengingat diaktifkan' : 'Pengingat dimatikan', 'info');
+            }
+        }
+
+        function deleteMedication(index) {
+            if (!confirm('Hapus obat ini dari daftar?')) return;
+
+            const meds = getMedications();
+            meds.splice(index, 1);
+            saveMedications(meds);
+            showToast('Obat berhasil dihapus', 'success');
+            loadMedications();
+        }
+
+        // Export to window for onclick handlers
+        window.openAddModal = openAddModal;
+        window.closeModal = closeModal;
+        window.updateTimeInputs = updateTimeInputs;
+        window.saveMedication = saveMedication;
+        window.toggleReminder = toggleReminder;
+        window.deleteMedication = deleteMedication;
+
+        // ========== RENDER FUNCTIONS ==========
+
+        async function loadMedications() {
+            const myMeds = getMedications();
+            renderMyMedications(myMeds);
+
+            // Load doctor prescriptions
+            try {
+                const response = await fetch('/api/patients/medications', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success && result.data && result.data.length > 0) {
+                        renderPrescriptions(result.data);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading prescriptions:', error);
+            }
+
+            // Show empty state if nothing
+            const emptyState = document.getElementById('empty-state');
+            const mySection = document.getElementById('my-meds-section');
+            const presSection = document.getElementById('prescriptions-section');
+
+            if (mySection.style.display === 'none' && presSection.style.display === 'none') {
+                emptyState.style.display = 'block';
+            } else {
+                emptyState.style.display = 'none';
+            }
+        }
+
+        function renderMyMedications(meds) {
+            const section = document.getElementById('my-meds-section');
+            const container = document.getElementById('my-meds-container');
+
+            if (!meds || meds.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+            container.innerHTML = meds.map((med, index) => {
+                const freqText = med.frequency === 1 ? '1x/hari' : `${med.frequency}x/hari`;
+                const reminderTimes = getReminderTimes(med.frequency, med.reminderTimes);
+                const qtyText = med.quantity ? `${med.quantity} ${med.unit || 'tablet'}` : '';
+
+                return `
+                    <div class="med-card">
+                        <div class="med-header">
+                            <div class="med-info">
+                                <div class="med-name">
+                                    <div class="med-icon"><i class="fa fa-pills"></i></div>
+                                    ${escapeHtml(med.name)}
+                                    ${qtyText ? `<span class="med-qty">${qtyText}</span>` : ''}
+                                </div>
+                                <div class="med-schedule">
+                                    <i class="fa fa-clock-o"></i>${freqText}
+                                    ${med.reminder
+                                        ? `<span class="med-reminder"><i class="fa fa-bell"></i> ${reminderTimes}</span>`
+                                        : `<span class="med-reminder off"><i class="fa fa-bell-slash"></i> Tidak aktif</span>`
+                                    }
+                                </div>
+                            </div>
+                            <div class="med-actions">
+                                <button class="action-btn reminder ${med.reminder ? '' : 'off'}" onclick="toggleReminder(${index})" title="${med.reminder ? 'Matikan pengingat' : 'Aktifkan pengingat'}">
+                                    <i class="fa fa-bell${med.reminder ? '' : '-slash'}"></i>
+                                </button>
+                                <button class="action-btn delete" onclick="deleteMedication(${index})" title="Hapus">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderPrescriptions(prescriptions) {
+            const section = document.getElementById('prescriptions-section');
+            const container = document.getElementById('prescriptions-container');
+
+            if (!prescriptions || prescriptions.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.style.display = 'block';
+            container.innerHTML = prescriptions.map(pres => {
+                const visitDate = new Date(pres.visit_date).toLocaleDateString('id-ID', {
+                    day: 'numeric',
+                    month: 'short',
+                    year: 'numeric'
+                });
+                const medLines = (pres.terapi || '').split('\n').filter(line => line.trim());
+
+                return `
+                    <div class="prescription-card">
+                        <div class="prescription-header">
+                            <div class="doc-icon"><i class="fa fa-stethoscope"></i></div>
+                            Kunjungan ${visitDate}
+                        </div>
+                        <ul class="prescription-list">
+                            ${medLines.map(line => `<li>${escapeHtml(line)}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ========== INITIALIZATION ==========
+        // Initialize time inputs (now safe - function is defined above)
+        updateTimeInputs();
+
+        // Load data
+        loadMedications();
+    </script>
+</body>
+</html>
