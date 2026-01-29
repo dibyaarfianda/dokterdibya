@@ -4443,3 +4443,8 @@ window.confirmHospitalAppointment = confirmHospitalAppointment;
 window.completeHospitalAppointment = completeHospitalAppointment;
 window.cancelHospitalAppointment = cancelHospitalAppointment;
 window.startHospitalExam = startHospitalExam;
+
+// Utility functions used by external modules (tanya-dokter.js, etc)
+window.hideAllPages = hideAllPages;
+// window.setActiveNav = setActiveNav; // Defined in patient-utils.js, not here
+window.setPageTitle = setPageTitle;
