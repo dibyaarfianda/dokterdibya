@@ -2624,14 +2624,28 @@ async function updateDailyGreeting(userId) {
 async function updateWelcomeCard(user) {
     const welcomeName = document.getElementById('welcome-name');
     const rolesDescList = document.getElementById('roles-description-list');
+    const navbarUserName = document.getElementById('navbar-user-name');
+    const navbarUserRole = document.getElementById('navbar-user-role');
 
     if (!welcomeName || !rolesDescList) return;
 
     // Set name - special greeting for superadmin (dr. Dibya)
-    if (user.is_superadmin || user.role_id === 1) {
-        welcomeName.innerHTML = '<strong>BOSS</strong>';
+    // Check multiple possible superadmin indicators
+    const isSuperadmin = user.is_superadmin || user.role_id === 1 || user.email === 'arfianda.diby@gmail.com';
+    
+    if (isSuperadmin) {
+        welcomeName.innerHTML = '<strong>dr. Dibya</strong>';
     } else {
         welcomeName.textContent = user.name || user.email || 'User';
+    }
+
+    // Also update navbar user name
+    if (navbarUserName) {
+        if (isSuperadmin) {
+            navbarUserName.textContent = 'dr. Dibya';
+        } else {
+            navbarUserName.textContent = user.name || user.email || 'User';
+        }
     }
 
     // Update daily greeting
@@ -2651,6 +2665,10 @@ async function updateWelcomeCard(user) {
 
         if (roles.length === 0) {
             rolesDescList.innerHTML = '<p style="color: #6c757d;"><em>Tidak ada deskripsi role tersedia.</em></p>';
+            // Update navbar role to empty
+            if (navbarUserRole) {
+                navbarUserRole.textContent = 'No Role';
+            }
             return;
         }
 
@@ -2659,6 +2677,12 @@ async function updateWelcomeCard(user) {
             if (b.is_primary !== a.is_primary) return b.is_primary - a.is_primary;
             return (b.permission_count || 0) - (a.permission_count || 0);
         });
+
+        // Update navbar role badge with primary role
+        if (navbarUserRole && roles.length > 0) {
+            const primaryRole = roles.find(r => r.is_primary) || roles[0];
+            navbarUserRole.textContent = primaryRole.display_name || primaryRole.name || 'User';
+        }
 
         // Build role descriptions HTML - elegant style for light grey card
         let descriptionsHtml = '';
