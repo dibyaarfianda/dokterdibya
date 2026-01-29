@@ -750,6 +750,15 @@
             }
         }
 
+        /* DISABLE ALL ANIMATIONS on Capacitor/mobile */
+        body.capacitor-app *,
+        body.capacitor-app *::before,
+        body.capacitor-app *::after {
+            animation: none !important;
+            animation-duration: 0s !important;
+            transition: none !important;
+        }
+
         /* Bottom Sheet Overlay */
         .bottom-sheet-overlay {
             position: fixed;
@@ -866,6 +875,13 @@
     </style>
 </head>
 <body>
+    <!-- Detect Capacitor/Mobile and disable animations -->
+    <script>
+        if (window.Capacitor || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+            document.body.classList.add('capacitor-app');
+        }
+    </script>
+
     <!-- Navbar -->
     <nav class="nav-bar">
         <div class="nav-brand">

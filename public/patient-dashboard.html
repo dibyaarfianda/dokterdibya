@@ -75,16 +75,37 @@
             pointer-events: none;
         }
 
+        /* Hide bg-animation completely on mobile/Capacitor */
+        @media (max-width: 768px), (hover: none) {
+            .bg-animation {
+                display: none !important;
+            }
+        }
+
+        /* DISABLE ALL ANIMATIONS on Capacitor/mobile */
+        body.capacitor-app *,
+        body.capacitor-app *::before,
+        body.capacitor-app *::after {
+            animation: none !important;
+            animation-duration: 0s !important;
+            transition: none !important;
+        }
+
+        body.capacitor-app .bg-animation,
+        body.capacitor-app .bubble {
+            display: none !important;
+        }
+
         .bubble {
             position: absolute;
             background: rgba(255, 255, 255, 0.1);
             border-radius: 50%;
-            animation: float 8s ease-in-out infinite;
+            animation: float 20s ease-in-out infinite;
         }
 
         @keyframes float {
             0%, 100% { transform: translateY(0) rotate(0deg); }
-            50% { transform: translateY(-100px) rotate(180deg); }
+            50% { transform: translateY(-30px) rotate(45deg); }
         }
         
         a {
@@ -1935,6 +1956,13 @@
     </style>
 </head>
 <body>
+    <!-- Detect Capacitor/Mobile and disable animations -->
+    <script>
+        if (window.Capacitor || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+            document.body.classList.add('capacitor-app');
+        }
+    </script>
+
     <!-- Pull to Refresh Indicator -->
     <div class="ptr-container" id="ptr-container">
         <div class="ptr-indicator" id="ptr-indicator">
@@ -8437,19 +8465,27 @@
     <script>
         function createBubbles() {
             const bgAnimation = document.getElementById('bgAnimation');
-            const bubbleCount = 15;
+            if (!bgAnimation) return;
+
+            // Remove bg-animation entirely on mobile/Capacitor
+            if (window.Capacitor || /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)) {
+                bgAnimation.remove();
+                return;
+            }
+
+            const bubbleCount = 5; // Reduced from 15
 
             for (let i = 0; i < bubbleCount; i++) {
                 const bubble = document.createElement('div');
                 bubble.className = 'bubble';
 
-                const size = Math.random() * 60 + 20;
+                const size = Math.random() * 40 + 20;
                 bubble.style.width = size + 'px';
                 bubble.style.height = size + 'px';
                 bubble.style.left = Math.random() * 100 + '%';
                 bubble.style.top = Math.random() * 100 + '%';
-                bubble.style.animationDelay = Math.random() * 8 + 's';
-                bubble.style.animationDuration = (Math.random() * 4 + 6) + 's';
+                bubble.style.animationDelay = Math.random() * 10 + 's';
+                bubble.style.animationDuration = (Math.random() * 10 + 25) + 's'; // Much slower: 25-35s
 
                 bgAnimation.appendChild(bubble);
             }
