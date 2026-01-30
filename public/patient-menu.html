@@ -187,6 +187,26 @@
             font-weight: 600;
             font-size: 14px;
             line-height: 1.2;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            justify-content: flex-end;
+        }
+
+        .vip-badge {
+            display: none;
+            background: linear-gradient(135deg, #ffd700, #daa520);
+            color: #1a1a1f;
+            font-size: 8px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .vip-badge.show {
+            display: inline-block;
         }
 
         .user-info-nav .user-role {
@@ -1164,7 +1184,10 @@
                     <span id="user-avatar-initials">--</span>
                 </div>
                 <div class="user-info-nav">
-                    <div class="user-name" id="user-name-nav">Loading...</div>
+                    <div class="user-name" id="user-name-nav">
+                        <span id="user-name-text">Loading...</span>
+                        <span class="vip-badge" id="vip-badge">VIP</span>
+                    </div>
                     <div class="user-role">Pasien</div>
                 </div>
                 <div class="dropdown-menu-custom" id="user-dropdown">
@@ -1464,7 +1487,7 @@
                     window.currentProfile = profile;
 
                     // Update navbar
-                    document.getElementById('user-name-nav').textContent = profile.fullname || 'Pasien';
+                    document.getElementById('user-name-text').textContent = profile.fullname || 'Pasien';
 
                     // Set avatar
                     if (profile.profile_picture) {
@@ -1483,6 +1506,9 @@
                     // Store gestational age for pregnancy tracker
                     window.patientGestationalAge = profile.gestational_age;
 
+                    // Check subscription for VIP badge
+                    checkVipSubscription();
+
                     // Show content
                     document.getElementById('loading-state').style.display = 'none';
                     document.getElementById('content-wrapper').style.display = 'block';
@@ -1492,11 +1518,36 @@
             } catch (error) {
                 console.error('Error loading profile:', error);
                 // Update navbar with default values
-                document.getElementById('user-name-nav').textContent = 'Pasien';
+                document.getElementById('user-name-text').textContent = 'Pasien';
                 document.getElementById('user-avatar-initials').textContent = '--';
                 // Still show content
                 document.getElementById('loading-state').style.display = 'none';
                 document.getElementById('content-wrapper').style.display = 'block';
+            }
+        }
+
+        // Check if patient has VIP subscription
+        async function checkVipSubscription() {
+            try {
+                const token = getToken();
+                if (!token) return;
+
+                const response = await fetch('/api/patient-questions/can-ask', {
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.tier === 'vip') {
+                        const badge = document.getElementById('vip-badge');
+                        if (badge) badge.classList.add('show');
+                    }
+                }
+            } catch (error) {
+                // Silently fail - VIP badge is optional
             }
         }
 
