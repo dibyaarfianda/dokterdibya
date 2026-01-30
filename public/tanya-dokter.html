@@ -640,9 +640,6 @@
                     <div id="blocked-container" class="blocked-container" style="display: none;">
                         <i class="fa fa-clock-o"></i>
                         <p id="blocked-message">Anda memiliki pertanyaan yang belum dijawab.</p>
-                        <button class="btn-secondary" onclick="switchSection('history')">
-                            <i class="fa fa-history"></i> Lihat Riwayat
-                        </button>
                     </div>
                 </div>
             </div>
@@ -829,10 +826,13 @@
                 if (data) {
                     const tierNames = { 'free': 'Gratis', 'first_class': 'First-Class', 'executive': 'Executive-Class', 'vip': 'VIP' };
                     const tier = data.tier || 'free';
+                    const limit = data.limit || 1;
+                    const used = data.used || 0;
+                    const remaining = data.remaining !== undefined ? data.remaining : (limit - used);
 
                     // Update quota text
                     document.getElementById('quota-text').innerHTML =
-                        `Paket: <strong>${tierNames[tier]}</strong> | Sisa: <strong>${data.remaining}/${data.limit}</strong> pertanyaan minggu ini`;
+                        `Paket: <strong>${tierNames[tier]}</strong> | Sisa: <strong>${remaining}/${limit}</strong> pertanyaan minggu ini`;
 
                     // Update premium section
                     document.getElementById('current-tier').textContent = tierNames[tier];
@@ -845,7 +845,15 @@
                     } else {
                         document.getElementById('form-container').style.display = 'none';
                         document.getElementById('blocked-container').style.display = 'block';
-                        document.getElementById('blocked-message').textContent = data.reason || 'Anda tidak bisa bertanya saat ini.';
+
+                        // Translate reason codes to proper messages
+                        let message = 'Anda tidak bisa bertanya saat ini.';
+                        if (data.reason === 'thread_open') {
+                            message = 'Anda masih memiliki pertanyaan yang belum dijawab. Silakan tunggu jawaban dari dokter.';
+                        } else if (data.reason === 'weekly_quota') {
+                            message = `Kuota pertanyaan minggu ini sudah habis (${data.used || 0}/${data.limit || 1}). Silakan coba lagi minggu depan.`;
+                        }
+                        document.getElementById('blocked-message').textContent = message;
                     }
                 }
             } catch (error) {
