@@ -549,6 +549,11 @@
             <i class="fa fa-plus-circle"></i> Tambah Obat/Vitamin
         </button>
 
+        <!-- Test Notification Button (for debugging - can be hidden later) -->
+        <button class="add-btn" onclick="testNotification()" style="background: linear-gradient(135deg, #28a7e9, #0066ff); margin-bottom: 20px;">
+            <i class="fa fa-bell"></i> Test Notifikasi
+        </button>
+
         <!-- My Medications -->
         <div id="my-meds-section" style="display: none;">
             <h3 class="section-title">Obat Saya</h3>
@@ -647,6 +652,17 @@
 
     <script type="module">
         import { getToken, checkAuth, showToast } from '/scripts/patient-utils.js';
+        import {
+            requestNotificationPermission,
+            isNotificationPermitted,
+            scheduleVitaminReminder,
+            cancelVitaminReminder,
+            rescheduleAllReminders,
+            showTestNotification,
+            startWebNotificationChecker,
+            setupNotificationChannel,
+            isCapacitor
+        } from '/scripts/vitamin-notifications.js';
 
         // Check auth
         if (!checkAuth()) {
@@ -720,7 +736,7 @@
             document.getElementById('addModal').classList.remove('active');
         }
 
-        function saveMedication() {
+        async function saveMedication() {
             const name = document.getElementById('med-name').value.trim();
             const quantity = parseInt(document.getElementById('med-qty').value) || 1;
             const unit = document.getElementById('med-unit').value;
@@ -739,37 +755,66 @@
                 if (input) times.push(input.value);
             }
 
-            const meds = getMedications();
-            meds.push({
+            const newMed = {
                 name,
                 quantity,
                 unit,
                 frequency,
                 reminder,
                 reminderTimes: times,
+                notificationIds: [],
                 createdAt: new Date().toISOString()
-            });
+            };
+
+            // Schedule notifications if reminder is enabled
+            if (reminder) {
+                newMed.notificationIds = await scheduleVitaminReminder(newMed);
+            }
+
+            const meds = getMedications();
+            meds.push(newMed);
             saveMedications(meds);
 
             closeModal();
-            showToast('Obat berhasil ditambahkan', 'success');
+            showToast('Obat berhasil ditambahkan' + (reminder ? ' dengan pengingat' : ''), 'success');
             loadMedications();
         }
 
-        function toggleReminder(index) {
+        async function toggleReminder(index) {
             const meds = getMedications();
             if (meds[index]) {
-                meds[index].reminder = !meds[index].reminder;
+                const wasEnabled = meds[index].reminder;
+                meds[index].reminder = !wasEnabled;
+
+                if (meds[index].reminder) {
+                    // Enable - schedule notifications
+                    meds[index].notificationIds = await scheduleVitaminReminder(meds[index]);
+                    showToast('Pengingat diaktifkan', 'success');
+                } else {
+                    // Disable - cancel notifications
+                    if (meds[index].notificationIds && meds[index].notificationIds.length > 0) {
+                        await cancelVitaminReminder(meds[index].notificationIds);
+                    }
+                    meds[index].notificationIds = [];
+                    showToast('Pengingat dimatikan', 'info');
+                }
+
                 saveMedications(meds);
                 renderMyMedications(meds);
-                showToast(meds[index].reminder ? 'Pengingat diaktifkan' : 'Pengingat dimatikan', 'info');
             }
         }
 
-        function deleteMedication(index) {
+        async function deleteMedication(index) {
             if (!confirm('Hapus obat ini dari daftar?')) return;
 
             const meds = getMedications();
+            const med = meds[index];
+
+            // Cancel any scheduled notifications
+            if (med && med.notificationIds && med.notificationIds.length > 0) {
+                await cancelVitaminReminder(med.notificationIds);
+            }
+
             meds.splice(index, 1);
             saveMedications(meds);
             showToast('Obat berhasil dihapus', 'success');
@@ -896,9 +941,51 @@
             }).join('');
         }
 
+        // ========== NOTIFICATION INITIALIZATION ==========
+        async function initNotifications() {
+            // Setup notification channel for Android
+            await setupNotificationChannel();
+
+            // Request notification permission
+            const hasPermission = await requestNotificationPermission();
+            if (!hasPermission) {
+                console.warn('Notification permission not granted');
+                // Disable reminder toggle if no permission
+                const reminderToggle = document.getElementById('med-reminder');
+                if (reminderToggle) {
+                    reminderToggle.addEventListener('change', async function() {
+                        if (this.checked) {
+                            const granted = await requestNotificationPermission();
+                            if (!granted) {
+                                this.checked = false;
+                                showToast('Izin notifikasi ditolak. Aktifkan di pengaturan.', 'error');
+                            }
+                        }
+                    });
+                }
+            }
+
+            // Start web notification checker (for browsers)
+            startWebNotificationChecker();
+
+            // Reschedule all existing reminders (in case app was closed)
+            let meds = getMedications();
+            meds = await rescheduleAllReminders(meds);
+            saveMedications(meds);
+        }
+
+        // Test notification function (for debugging)
+        async function testNotification() {
+            await showTestNotification('Test Pengingat Obat', 'Ini adalah test notifikasi vitamin');
+        }
+        window.testNotification = testNotification;
+
         // ========== INITIALIZATION ==========
         // Initialize time inputs (now safe - function is defined above)
         updateTimeInputs();
+
+        // Initialize notifications
+        initNotifications();
 
         // Load data
         loadMedications();
