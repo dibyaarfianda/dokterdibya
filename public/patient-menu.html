@@ -1483,7 +1483,7 @@
         async function loadBirthData() {
             const token = getToken();
             try {
-                const response = await fetch('/api/patient/birth-record', {
+                const response = await fetch('/api/patients/birth-record', {
                     headers: {
                         'Authorization': 'Bearer ' + token,
                         'Cache-Control': 'no-cache'
