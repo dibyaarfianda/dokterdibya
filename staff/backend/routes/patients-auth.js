@@ -2166,4 +2166,69 @@ router.get('/medications', verifyToken, async (req, res) => {
     }
 });
 
+/**
+ * GET /birth-record
+ * Get birth congratulations data for logged-in patient
+ */
+router.get('/birth-record', verifyToken, async (req, res) => {
+    try {
+        const patientId = req.user.id;
+
+        // Get published birth congratulations for this patient
+        const [birthRecords] = await db.query(`
+            SELECT
+                id,
+                baby_name,
+                birth_date,
+                birth_time,
+                birth_weight as weight,
+                birth_length as length,
+                gender,
+                photo_url,
+                photo_r2_key,
+                message,
+                doctor_name,
+                theme_color
+            FROM birth_congratulations
+            WHERE patient_id = ?
+            AND is_published = 1
+            ORDER BY birth_date DESC
+            LIMIT 1
+        `, [patientId]);
+
+        if (birthRecords.length === 0) {
+            return res.json({
+                success: true,
+                birth: null
+            });
+        }
+
+        const birth = birthRecords[0];
+
+        // If photo_r2_key exists but photo_url is expired, generate new signed URL
+        if (birth.photo_r2_key && birth.photo_url) {
+            try {
+                // Generate fresh signed URL (valid for 7 days)
+                const signedUrl = await r2Storage.getSignedDownloadUrl(birth.photo_r2_key, 7 * 24 * 60 * 60);
+                birth.photo_url = signedUrl;
+            } catch (err) {
+                console.error('Error generating signed URL for birth photo:', err);
+                // Keep existing URL as fallback
+            }
+        }
+
+        res.json({
+            success: true,
+            birth: birth
+        });
+
+    } catch (error) {
+        console.error('Birth record error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal memuat data kelahiran'
+        });
+    }
+});
+
 module.exports = router;
