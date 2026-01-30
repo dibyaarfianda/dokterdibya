@@ -39,89 +39,114 @@
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
             -webkit-backdrop-filter: blur(10px);
-            padding: 12px 20px;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
             position: sticky;
             top: 0;
             z-index: 100;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .nav-bar .nav-container {
             display: flex;
             justify-content: space-between;
             align-items: center;
+            gap: 40px;
+            max-width: 1170px;
+            margin: 0 auto;
+            padding: 0 15px;
         }
 
-        .nav-brand {
+        .nav-links {
+            display: flex;
+            gap: 5px;
+            margin-left: 15px;
+        }
+
+        .welcome-text {
             display: flex;
             flex-direction: column;
+            justify-content: center;
         }
 
-        .nav-brand h1 {
-            font-size: 18px;
-            font-weight: 600;
+        .welcome-title {
             color: #ffffff;
-        }
-
-        .nav-brand h1 span {
-            color: #28a7e9;
-        }
-
-        .nav-brand p {
-            font-size: 11px;
-            color: rgba(255, 255, 255, 0.6);
-        }
-
-        .nav-actions {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .notification-bell {
-            position: relative;
-            cursor: pointer;
-            padding: 8px;
-            transition: transform 0.3s ease;
-        }
-
-        .notification-bell:hover {
-            transform: scale(1.1);
-        }
-
-        .notification-bell i {
             font-size: 20px;
-            color: rgba(255, 255, 255, 0.8);
+            font-weight: 600;
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .welcome-subtitle {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 13px;
+            margin: 2px 0 0 0;
+            line-height: 1.2;
+        }
+
+        .nav-bar a {
+            color: #cccccc;
+            padding: 10px 15px;
+            display: inline-block;
             transition: color 0.3s;
         }
 
-        .notification-bell:hover i {
+        .nav-bar a:hover {
             color: #28a7e9;
         }
 
-        .notification-badge {
-            position: absolute;
-            top: 2px;
-            right: 2px;
-            background: #ef4444;
-            color: white;
-            font-size: 10px;
-            font-weight: 600;
-            min-width: 18px;
-            height: 18px;
-            border-radius: 9px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            display: none;
+        .nav-bar a i {
+            margin-right: 5px;
         }
 
-        /* User Avatar in Navbar */
+        /* Notification Bell Styles */
+        .notification-bell {
+            position: relative;
+            cursor: pointer;
+            padding: 10px 15px;
+            margin-right: 10px;
+            transition: transform 0.3s ease;
+        }
+        .notification-bell:hover {
+            transform: scale(1.1);
+        }
+        .notification-bell i {
+            font-size: 22px;
+            color: #cccccc;
+            transition: color 0.3s;
+        }
+        .notification-bell:hover i {
+            color: #28a7e9;
+        }
+        .notification-badge {
+            position: absolute;
+            top: 5px;
+            right: 8px;
+            background: #dc3545;
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            min-width: 18px;
+            height: 18px;
+            line-height: 18px;
+            text-align: center;
+            border-radius: 50%;
+            padding: 0 4px;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
         .user-avatar-nav {
             position: relative;
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             cursor: pointer;
-            padding: 6px 10px;
-            border-radius: 25px;
+            padding: 8px 12px;
+            margin-right: 15px;
+            border-radius: 8px;
             transition: background 0.3s;
         }
 
@@ -130,45 +155,44 @@
         }
 
         .avatar-circle {
-            width: 36px;
-            height: 36px;
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
             background: linear-gradient(135deg, #0066FF 0%, #00D4FF 100%);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
+            color: #ffffff;
             font-weight: 600;
-            overflow: hidden;
+            font-size: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 12px rgba(0, 102, 255, 0.3);
         }
 
         .avatar-circle img {
             width: 100%;
             height: 100%;
+            border-radius: 50%;
             object-fit: cover;
         }
 
         .user-info-nav {
-            display: none;
+            display: flex;
+            flex-direction: column;
+            text-align: right;
         }
 
-        @media (min-width: 400px) {
-            .user-info-nav {
-                display: block;
-            }
-            .user-info-nav .user-name {
-                font-size: 13px;
-                font-weight: 600;
-                color: #ffffff;
-                max-width: 100px;
-                white-space: nowrap;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-            .user-info-nav .user-role {
-                font-size: 10px;
-                color: rgba(255, 255, 255, 0.6);
-            }
+        .user-info-nav .user-name {
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 14px;
+            line-height: 1.2;
+        }
+
+        .user-info-nav .user-role {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 12px;
+            line-height: 1.2;
         }
 
         /* Dropdown Menu */
@@ -225,7 +249,9 @@
 
         /* Content Container */
         .content-container {
-            padding: 15px;
+            padding: 30px 15px;
+            max-width: 1200px;
+            margin: 0 auto;
         }
 
         /* Dashboard Card (Collapsible) */
@@ -247,16 +273,27 @@
         }
 
         .dashboard-card h3 {
-            font-size: 16px;
+            color: #28a7e9;
+            font-size: 24px;
             font-weight: 600;
-            margin-bottom: 15px;
+            margin-top: 0;
+            margin-bottom: 20px;
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
         .dashboard-card h3 i {
-            color: #28a7e9;
+            margin-right: 10px;
+            width: 30px;
+        }
+
+        .dashboard-card h3[onclick] {
+            transition: color 0.3s;
+        }
+
+        .dashboard-card h3[onclick]:hover {
+            color: #47C6F8;
         }
 
         /* Collapsible Styles */
@@ -269,7 +306,6 @@
 
         .collapsible-header .toggle-icon {
             transition: transform 0.3s ease;
-            font-size: 14px;
             color: rgba(255, 255, 255, 0.6);
         }
 
@@ -312,31 +348,80 @@
             font-weight: 600;
         }
 
-        /* Announcements */
+        /* Announcements - same style as patient-dashboard */
         .announcement-item {
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 10px;
-            border-left: 3px solid #f59e0b;
+            background: #2a2a2a;
+            border-radius: 5px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-left: 5px solid #28a7e9;
+            transition: all 0.3s;
+        }
+
+        .announcement-item:hover {
+            background: #333333;
+            border-left-width: 6px;
+        }
+
+        .announcement-item.priority-urgent {
+            border-left-color: #e74c3c;
+        }
+
+        .announcement-item.priority-important {
+            border-left-color: #f39c12;
         }
 
         .announcement-item h4 {
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 600;
-            margin-bottom: 5px;
+            margin: 0 0 10px 0;
+            color: #ffffff;
         }
 
-        .announcement-item p {
+        .announcement-item .announcement-content {
+            font-size: 14px;
+            color: #e0e0e0;
+            line-height: 1.6;
+            margin: 0 0 12px 0;
+        }
+
+        .announcement-item .announcement-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-top: 12px;
+            border-top: 1px solid #404040;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .announcement-item .announcement-author {
             font-size: 12px;
-            color: rgba(255, 255, 255, 0.7);
-            margin: 0;
+            color: #28a7e9;
+            font-weight: 500;
         }
 
         .announcement-item .announcement-date {
+            font-size: 12px;
+            color: #999;
+        }
+
+        .announcement-priority-badge {
+            background: #2980b9;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 15px;
             font-size: 10px;
-            color: rgba(255, 255, 255, 0.5);
-            margin-top: 8px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .announcement-priority-badge.urgent {
+            background: #c0392b;
+        }
+
+        .announcement-priority-badge.important {
+            background: #e67e22;
         }
 
         /* Pregnancy Tracker */
@@ -718,6 +803,98 @@
             .menu-card {
                 transition: transform 0.1s ease;
             }
+
+            .nav-bar {
+                padding: 8px 0;
+            }
+
+            .nav-bar .nav-container {
+                flex-direction: row;
+                gap: 10px;
+                padding: 0 10px;
+            }
+
+            .nav-links {
+                flex: 1;
+                justify-content: flex-start;
+            }
+
+            .welcome-text {
+                text-align: left;
+            }
+
+            .welcome-title {
+                font-size: 14px;
+            }
+
+            .welcome-subtitle {
+                font-size: 10px;
+                margin-top: 0;
+            }
+
+            .user-info-nav {
+                display: none;
+            }
+
+            .notification-bell {
+                padding: 6px 10px;
+                margin-right: 5px;
+            }
+
+            .notification-bell i {
+                font-size: 18px;
+            }
+
+            .user-avatar-nav {
+                margin-right: 0;
+                padding-left: 0 !important;
+            }
+
+            .avatar-circle {
+                width: 32px;
+                height: 32px;
+                font-size: 12px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .nav-bar {
+                padding: 6px 0;
+            }
+
+            .nav-bar .nav-container {
+                padding: 0 8px;
+            }
+
+            .welcome-title {
+                font-size: 13px;
+            }
+
+            .welcome-subtitle {
+                font-size: 9px;
+            }
+
+            .notification-bell {
+                padding: 4px 8px;
+            }
+
+            .notification-bell i {
+                font-size: 16px;
+            }
+
+            .avatar-circle {
+                width: 28px;
+                height: 28px;
+                font-size: 11px;
+            }
+
+            .dashboard-container {
+                padding: 15px 10px;
+            }
+
+            .dashboard-card h3 {
+                font-size: 18px;
+            }
         }
 
         /* Small screens */
@@ -873,6 +1050,12 @@
             font-size: 12px;
         }
     </style>
+
+    <!-- Socket.io for real-time announcements -->
+    <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
+    <!-- Markdown and sanitization libraries for announcements -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.0.6/dist/purify.min.js"></script>
 </head>
 <body>
     <!-- Detect Capacitor/Mobile and disable animations -->
@@ -884,18 +1067,21 @@
 
     <!-- Navbar -->
     <nav class="nav-bar">
-        <div class="nav-brand">
-            <h1>dokter<span>DIBYA</span></h1>
-            <p>Portal Privat Kandungan Anda</p>
-        </div>
-        <div class="nav-actions">
-            <div class="notification-bell" onclick="navigateTo('notifikasi')">
-                <i class="fa fa-bell-o"></i>
-                <span class="notification-badge" id="notif-badge">0</span>
+        <div class="nav-container">
+            <div class="nav-links">
+                <div class="welcome-text">
+                    <h2 class="welcome-title"><span style="color: #ffffff;">dokter</span><span style="color: #0066FF;">DIBYA</span></h2>
+                    <p class="welcome-subtitle">Portal Privat Kandungan Anda</p>
+                </div>
+            </div>
+            <!-- Notification Bell -->
+            <div class="notification-bell" id="notification-bell" onclick="navigateTo('notifikasi')" title="Notifikasi">
+                <i class="fa fa-bell"></i>
+                <span class="notification-badge" id="notif-badge" style="display: none;">0</span>
             </div>
             <div class="user-avatar-nav" onclick="toggleDropdown(event)">
                 <div class="avatar-circle" id="user-avatar">
-                    <img id="user-avatar-img" src="" alt="" style="display: none;">
+                    <img id="user-avatar-img" src="" alt="" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover; display: none;">
                     <span id="user-avatar-initials">--</span>
                 </div>
                 <div class="user-info-nav">
@@ -931,49 +1117,20 @@
         <div id="content-wrapper" style="display: none;">
             <div class="content-container">
 
-                <!-- Selamat Datang (Collapsed by default) -->
-                <div class="dashboard-card" id="welcome-card">
-                    <h3 class="collapsible-header collapsed" onclick="toggleCard('welcome')">
-                        <span><i class="fa fa-heart"></i> Selamat Datang</span>
-                        <i class="fa fa-chevron-right toggle-icon" id="welcome-toggle-icon"></i>
-                    </h3>
-                    <div class="collapsible-content collapsed" id="welcome-content">
-                        <div class="welcome-content">
-                            <p>Halaman ini adalah ruang khusus bagi Anda — tempat saya membantu Anda, memantau kehamilan atau kesehatan kandungan Anda secara berkala dan privat. Semua catatan dan informasi di sini bersifat <strong>rahasia</strong>. Mohon untuk tidak membagikan halaman rekam medis kepada orang selain keluarga inti/ keluarga yang dipercaya. Karena itulah keamanan sistem ini menjadi prioritas saya dengan menerapkan proteksi berlapis dan enkripsi untuk mencegah peretasan.</p>
-
-                            <p>Adanya <strong><span style="color: #ffffff;">dokter</span><span style="color: #0066FF;">DIBYA</span></strong> berawal dari keinginan <i>sederhana</i> saya, yaitu agar setiap pasien bisa tetap terhubung dengan dokter pilihannya, tanpa batasan rumah sakit, tempat, atau waktu. Update selalu dengan perubahan jadwal dari saya, reminding jadwal kontrol, booking slot dengan mudah, dan bahkan kedepan bukan tidak mungkin konsultasi secara online dengan jadwal yang disepakati!</p>
-
-                            <p>Walaupun demikian saya paham, banyak tantangan dan kesulitan dalam memulai hal baru. Tapi saya percaya, langkah kecil ini bisa membawa perubahan besar menuju pelayanan berkesinambungan dari dokter favorit Anda. Sebelum kita memulai perjalanan ini, mohon mengisi data pribadi dan riwayat medis, data kehamilan, masalah kandungan, riwayat KB. Besar harapan saya, Anda mengisi dengan lengkap sehingga dapat menjadi modalitas bagi saya dalam pemilihan terapi dan layanan terbaik untuk Anda.</p>
-
-                            <p>Terima kasih telah menjadi bagian dari <strong>"modern therapy without boundary"</strong> — pendampingan dan terapi berkelanjutan, di mana pun dan kapan pun Anda membutuhkannya.</p>
-
-                            <p style="margin-top: 20px; text-align: right; color: #28a7e9;">
-                                <strong style="font-weight: 500;">Salam hangat,</strong><br>
-                                <strong style="font-size: 16px; font-weight: 600;">dokter Anda</strong>
-                            </p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Pengumuman (Collapsed by default) -->
-                <div class="dashboard-card" id="announcements-card">
-                    <h3 class="collapsible-header collapsed" onclick="toggleCard('announcements')">
+                <!-- Pengumuman - same structure as patient-dashboard -->
+                <div class="dashboard-card" id="announcements-section" style="margin-bottom: 20px;">
+                    <h3 class="collapsible-header" onclick="toggleAnnouncementsSection()">
                         <span><i class="fa fa-bullhorn"></i> Pengumuman</span>
-                        <i class="fa fa-chevron-right toggle-icon" id="announcements-toggle-icon"></i>
+                        <i class="fa fa-chevron-down toggle-icon" id="announcements-toggle-icon"></i>
                     </h3>
-                    <div class="collapsible-content collapsed" id="announcements-content">
+                    <div id="announcements-content">
                         <div id="announcements-container">
-                            <div style="text-align: center; padding: 15px; color: #999;">
-                                <i class="fa fa-spinner fa-spin"></i>
-                                <p style="margin-top: 8px; font-size: 12px;">Memuat pengumuman...</p>
+                            <div style="text-align: center; padding: 20px; color: #999;">
+                                <i class="fa fa-spinner fa-spin fa-2x"></i>
+                                <p style="margin-top: 10px;">Memuat pengumuman...</p>
                             </div>
                         </div>
                     </div>
-                </div>
-
-                <!-- Pregnancy Tracker / Birth Congratulations -->
-                <div id="pregnancy-section" style="display: none;">
-                    <!-- Will be filled by JS -->
                 </div>
 
                 <!-- Quick Status (Active Booking) -->
@@ -1111,8 +1268,8 @@
             // Authenticated, load data
             loadProfile();
             loadNotificationCount();
-            loadAnnouncements();
-            loadPregnancySection();
+            // loadAnnouncements handled by announcements-dashboard.js
+            // loadPregnancySection(); // Removed - only show on dashboard
             checkActiveBooking();
         });
 
@@ -1126,10 +1283,18 @@
                         'Cache-Control': 'no-cache'
                     }
                 });
-                const data = await response.json();
 
-                if (data.success && data.profile) {
-                    const profile = data.profile;
+                if (!response.ok) {
+                    throw new Error('Failed to load profile');
+                }
+
+                const data = await response.json();
+                const profile = data.user;
+
+                if (profile) {
+
+                    // Set global profile for announcements-dashboard.js
+                    window.currentProfile = profile;
 
                     // Update navbar
                     document.getElementById('user-name-nav').textContent = profile.fullname || 'Pasien';
@@ -1158,7 +1323,11 @@
                     throw new Error('Failed to load profile');
                 }
             } catch (error) {
-                // Still show content with default values
+                console.error('Error loading profile:', error);
+                // Update navbar with default values
+                document.getElementById('user-name-nav').textContent = 'Pasien';
+                document.getElementById('user-avatar-initials').textContent = '--';
+                // Still show content
                 document.getElementById('loading-state').style.display = 'none';
                 document.getElementById('content-wrapper').style.display = 'block';
             }
@@ -1189,25 +1358,6 @@
             }
         });
 
-        // ==================== COLLAPSIBLE ====================
-        function toggleCard(cardId) {
-            const content = document.getElementById(cardId + '-content');
-            const header = content.previousElementSibling;
-            const icon = document.getElementById(cardId + '-toggle-icon');
-
-            if (content.classList.contains('collapsed')) {
-                content.classList.remove('collapsed');
-                header.classList.remove('collapsed');
-                icon.classList.remove('fa-chevron-right');
-                icon.classList.add('fa-chevron-down');
-            } else {
-                content.classList.add('collapsed');
-                header.classList.add('collapsed');
-                icon.classList.remove('fa-chevron-down');
-                icon.classList.add('fa-chevron-right');
-            }
-        }
-
         // ==================== NOTIFICATIONS ====================
         async function loadNotificationCount() {
             const token = getToken();
@@ -1228,37 +1378,21 @@
         }
 
         // ==================== ANNOUNCEMENTS ====================
-        async function loadAnnouncements() {
-            const container = document.getElementById('announcements-container');
+        // Announcements are loaded by external js/announcements-dashboard.js
+        // Toggle function for announcements section (same as patient-dashboard)
+        function toggleAnnouncementsSection() {
+            const wrapper = document.getElementById('announcements-content');
+            const icon = document.getElementById('announcements-toggle-icon');
+            if (!wrapper || !icon) return;
 
-            try {
-                // Use public endpoint same as patient-dashboard
-                const response = await fetch('/api/announcements/active');
-                const data = await response.json();
-
-                if (data.success && data.data && data.data.length > 0) {
-                    // Show max 3 announcements
-                    const announcements = data.data.slice(0, 3);
-                    container.innerHTML = announcements.map(a => {
-                        const date = new Date(a.created_at);
-                        const dateStr = date.toLocaleDateString('id-ID', {
-                            day: 'numeric',
-                            month: 'short',
-                            year: 'numeric'
-                        });
-                        return `
-                            <div class="announcement-item">
-                                <h4>${escapeHtml(a.title)}</h4>
-                                <p>${escapeHtml(truncateText(a.message, 100))}</p>
-                                <div class="announcement-date"><i class="fa fa-clock-o"></i> ${dateStr}</div>
-                            </div>
-                        `;
-                    }).join('');
-                } else {
-                    container.innerHTML = '<p style="text-align: center; color: #666; font-size: 12px;">Tidak ada pengumuman terbaru</p>';
-                }
-            } catch (error) {
-                container.innerHTML = '<p style="text-align: center; color: #666; font-size: 12px;">Gagal memuat pengumuman</p>';
+            if (wrapper.style.display === 'none') {
+                wrapper.style.display = 'block';
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            } else {
+                wrapper.style.display = 'none';
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
             }
         }
 
@@ -1272,138 +1406,6 @@
             if (!text) return '';
             if (text.length <= maxLength) return text;
             return text.substring(0, maxLength) + '...';
-        }
-
-        // ==================== PREGNANCY SECTION ====================
-        async function loadPregnancySection() {
-            const token = getToken();
-            const section = document.getElementById('pregnancy-section');
-
-            try {
-                // First check for birth congratulations
-                const birthResponse = await fetch('/api/patient/birth-congratulations', {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-
-                if (birthResponse.ok) {
-                    const birthResult = await birthResponse.json();
-                    if (birthResult.success && birthResult.data) {
-                        // Show birth congratulations
-                        renderBirthCongratulations(birthResult.data);
-                        return;
-                    }
-                }
-
-                // If no birth data, check pregnancy tracker
-                const trackerResponse = await fetch('/api/patients/pregnancy-tracker', {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-
-                if (trackerResponse.ok) {
-                    const trackerResult = await trackerResponse.json();
-                    if (trackerResult.success && trackerResult.data && trackerResult.data.gestational_age > 0) {
-                        renderPregnancyTracker(trackerResult.data);
-                    }
-                }
-            } catch (error) {
-                // Silently fail
-            }
-        }
-
-        function renderPregnancyTracker(data) {
-            const section = document.getElementById('pregnancy-section');
-            section.style.display = 'block';
-
-            const hplDate = data.hpl ? new Date(data.hpl).toLocaleDateString('id-ID', {
-                day: 'numeric',
-                month: 'short',
-                year: 'numeric'
-            }) : '-';
-
-            const trimester = data.gestational_age <= 12 ? '1' : (data.gestational_age <= 28 ? '2' : '3');
-
-            section.innerHTML = `
-                <div class="dashboard-card pregnancy-tracker-card">
-                    <h3>
-                        <i class="fa fa-heartbeat"></i> Pregnancy Tracker
-                    </h3>
-                    <div class="tracker-content">
-                        <div class="tracker-week">
-                            <div class="week-number">${data.gestational_age}</div>
-                            <div class="week-label">Minggu Kehamilan</div>
-                        </div>
-                        <div class="tracker-info">
-                            <div class="tracker-info-item">
-                                <div class="label">Trimester</div>
-                                <div class="value">${trimester}</div>
-                            </div>
-                            <div class="tracker-info-item">
-                                <div class="label">HPL</div>
-                                <div class="value">${hplDate}</div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderBirthCongratulations(data) {
-            const section = document.getElementById('pregnancy-section');
-            section.style.display = 'block';
-
-            const birthDate = data.birth_date ? new Date(data.birth_date).toLocaleDateString('id-ID', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
-            }) : '-';
-
-            let birthTime = '-';
-            if (data.birth_time) {
-                const timeParts = data.birth_time.split(':');
-                birthTime = timeParts[0] + ':' + timeParts[1] + ' WIB';
-            }
-
-            section.innerHTML = `
-                <div class="dashboard-card birth-congrats-card">
-                    <div class="birth-corner-accent" id="birth-corner-tl"></div>
-                    <div class="birth-corner-accent" id="birth-corner-tr"></div>
-                    <div class="birth-corner-accent" id="birth-corner-bl"></div>
-                    <div class="birth-corner-accent" id="birth-corner-br"></div>
-
-                    <div class="birth-header">
-                        <h2><i class="fa fa-heart"></i> Selamat atas Kelahiran Buah Hati!</h2>
-                    </div>
-
-                    <div class="birth-content">
-                        ${data.photo_url ? `
-                        <div class="birth-photo" onclick="window.open('${data.photo_url}', '_blank')">
-                            <img src="${data.photo_url}" alt="Foto Bayi">
-                        </div>
-                        ` : ''}
-                        <div class="birth-details">
-                            <h3>${escapeHtml(data.baby_name || 'Baby')}</h3>
-                            <div class="birth-details-grid">
-                                <div class="birth-detail-box">
-                                    <div class="birth-detail-label">Tanggal Lahir</div>
-                                    <div class="birth-detail-value">${birthDate}</div>
-                                </div>
-                                <div class="birth-detail-box">
-                                    <div class="birth-detail-label">Jam</div>
-                                    <div class="birth-detail-value">${birthTime}</div>
-                                </div>
-                                <div class="birth-detail-box">
-                                    <div class="birth-detail-label">Berat</div>
-                                    <div class="birth-detail-value">${data.birth_weight || '-'}</div>
-                                </div>
-                                <div class="birth-detail-box">
-                                    <div class="birth-detail-label">Panjang</div>
-                                    <div class="birth-detail-value">${data.birth_length || '-'}</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
         }
 
         // ==================== ACTIVE BOOKING ====================
@@ -1563,5 +1565,7 @@
             }
         }
     </script>
+    <!-- Announcements - same as patient-dashboard -->
+    <script src="js/announcements-dashboard.js?v=20260130"></script>
 </body>
 </html>

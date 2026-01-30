@@ -351,57 +351,6 @@
                 <div class="profile-id" id="profile-id">ID: -</div>
             </div>
 
-            <!-- Welcome Message -->
-            <div class="info-card welcome-card" id="welcome-card" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(40, 167, 233, 0.1), rgba(0, 102, 255, 0.1)); border: 1px solid rgba(40, 167, 233, 0.3);">
-                <h3 style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; margin: 0 0 15px 0; color: #28a7e9; font-size: 16px;" onclick="toggleWelcomeMessage()">
-                    <span><i class="fa fa-heart" style="margin-right: 8px;"></i> Selamat Datang</span>
-                    <i class="fa fa-chevron-down" id="welcome-toggle-icon" style="transition: transform 0.3s;"></i>
-                </h3>
-                <div id="welcome-content" style="line-height: 1.9; color: #e0e0e0; font-family: 'Poppins', sans-serif; font-size: 14px; font-weight: 400;">
-                    <p>Halaman ini adalah ruang khusus bagi Anda — tempat saya membantu Anda, memantau kehamilan atau kesehatan kandungan Anda secara berkala dan privat. Semua catatan dan informasi di sini bersifat <strong style="color: #28a7e9; font-weight: 600;">rahasia</strong>. Mohon untuk tidak membagikan halaman rekam medis kepada orang selain keluarga inti/ keluarga yang dipercaya. Karena itulah keamanan sistem ini menjadi prioritas saya dengan menerapkan proteksi berlapis dan enkripsi untuk mencegah peretasan.</p>
-
-                    <p style="margin-top: 12px;">Adanya <strong style="font-weight: 600;"><span style="color: #ffffff;">dokter</span><span style="color: #0066FF;">DIBYA</span></strong> berawal dari keinginan <i>sederhana</i> saya, yaitu agar setiap pasien bisa tetap terhubung dengan dokter pilihannya, tanpa batasan rumah sakit, tempat, atau waktu. Update selalu dengan perubahan jadwal dari saya, reminding jadwal kontrol, booking slot dengan mudah, dan bahkan kedepan bukan tidak mungkin konsultasi secara online dengan jadwal yang disepakati!</p>
-
-                    <p style="margin-top: 12px;">Walaupun demikian saya paham, banyak tantangan dan kesulitan dalam memulai hal baru. Tapi saya percaya, langkah kecil ini bisa membawa perubahan besar menuju pelayanan berkesinambungan dari dokter favorit Anda. Sebelum kita memulai perjalanan ini, mohon mengisi data pribadi dan riwayat medis, data kehamilan, masalah kandungan, riwayat KB. Besar harapan saya, Anda mengisi dengan lengkap sehingga dapat menjadi modalitas bagi saya dalam pemilihan terapi dan layanan terbaik untuk Anda.</p>
-
-                    <p style="margin-top: 15px;">Terima kasih telah menjadi bagian dari <strong style="color: #28a7e9; font-weight: 600;">"modern therapy without boundary"</strong> — pendampingan dan terapi berkelanjutan, di mana pun dan kapan pun Anda membutuhkannya.</p>
-
-                    <p style="margin-top: 20px; text-align: right; color: #28a7e9;">
-                        <strong style="font-weight: 500;">Salam hangat,</strong><br>
-                        <strong style="font-size: 16px; font-weight: 600;">dokter Anda</strong>
-                    </p>
-                </div>
-            </div>
-
-            <!-- Birth Congratulations Card - Hidden by default -->
-            <div class="info-card" id="birth-congrats-card" style="display: none; margin-bottom: 20px; background: transparent; border: 2px solid rgba(168, 85, 247, 0.5); position: relative;">
-                <h3 style="color: #a855f7; font-size: 16px; margin: 0 0 15px 0;">
-                    <i class="fa fa-heart" style="margin-right: 8px;"></i>
-                    Selamat atas Kelahiran Buah Hati!
-                </h3>
-                <p style="color: #888; font-size: 12px; margin-bottom: 15px;" id="birth-congrats-doctor"></p>
-
-                <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-start;">
-                    <!-- Photo -->
-                    <div id="birth-photo-container" style="width: 100px; height: 100px; border-radius: 12px; overflow: hidden; border: 2px solid rgba(168, 85, 247, 0.5); flex-shrink: 0;">
-                        <img id="birth-photo" src="" alt="Foto Kelahiran" style="width: 100%; height: 100%; object-fit: cover;">
-                    </div>
-
-                    <!-- Details -->
-                    <div style="flex: 1; min-width: 180px;">
-                        <h4 id="birth-baby-name" style="color: #a855f7; font-size: 18px; font-weight: 600; margin: 0 0 8px 0;"></h4>
-                        <div style="display: grid; gap: 6px; font-size: 12px; color: #9ca3af;">
-                            <div><i class="fa fa-calendar" style="width: 16px;"></i> <span id="birth-date">-</span></div>
-                            <div><i class="fa fa-clock-o" style="width: 16px;"></i> <span id="birth-time">-</span></div>
-                            <div><i class="fa fa-balance-scale" style="width: 16px;"></i> <span id="birth-weight">-</span> gram</div>
-                            <div><i class="fa fa-arrows-v" style="width: 16px;"></i> <span id="birth-length">-</span> cm</div>
-                        </div>
-                    </div>
-                </div>
-
-                <p id="birth-message" style="margin-top: 15px; font-style: italic; color: #d1d5db; font-size: 13px; border-top: 1px solid rgba(168, 85, 247, 0.2); padding-top: 15px;"></p>
-            </div>
-
             <!-- Basic Info -->
             <div class="info-card">
                 <div class="info-row">
@@ -547,6 +496,92 @@
     <!-- Toast Container -->
     <div id="toast-container"></div>
 
+    <!-- Change Password Modal -->
+    <div class="edit-modal" id="password-modal" style="display: none;">
+        <div class="edit-modal-header">
+            <h3>Ubah Password</h3>
+            <button class="close-btn" onclick="closePasswordModal()">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+        <div class="edit-modal-body">
+            <form id="password-form" onsubmit="submitPasswordChange(event)">
+                <div class="form-group">
+                    <label>Password Lama</label>
+                    <input type="password" id="old-password" class="form-control" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label>Password Baru</label>
+                    <input type="password" id="new-password" class="form-control" required minlength="6">
+                </div>
+                <div class="form-group">
+                    <label>Konfirmasi Password Baru</label>
+                    <input type="password" id="confirm-password" class="form-control" required minlength="6">
+                </div>
+            </form>
+        </div>
+        <div class="edit-modal-footer">
+            <button class="save-btn" onclick="submitPasswordChange(event)">
+                <i class="fa fa-check"></i> Simpan Password
+            </button>
+        </div>
+    </div>
+
+    <!-- Notification Settings Modal -->
+    <div class="edit-modal" id="notif-modal" style="display: none;">
+        <div class="edit-modal-header">
+            <h3>Pengaturan Notifikasi</h3>
+            <button class="close-btn" onclick="closeNotifModal()">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+        <div class="edit-modal-body">
+            <div style="display: flex; flex-direction: column; gap: 15px;">
+                <label style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                    <span style="color: #e0e0e0;">Jadwal Kontrol</span>
+                    <input type="checkbox" id="notif-jadwal" style="width: 20px; height: 20px; accent-color: #28a7e9;">
+                </label>
+                <label style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                    <span style="color: #e0e0e0;">Pengumuman</span>
+                    <input type="checkbox" id="notif-pengumuman" style="width: 20px; height: 20px; accent-color: #28a7e9;">
+                </label>
+                <label style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                    <span style="color: #e0e0e0;">Pesan Dokter</span>
+                    <input type="checkbox" id="notif-pesan" style="width: 20px; height: 20px; accent-color: #28a7e9;">
+                </label>
+                <label style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                    <span style="color: #e0e0e0;">Jadwal Minum Obat</span>
+                    <input type="checkbox" id="notif-obat" style="width: 20px; height: 20px; accent-color: #28a7e9;">
+                </label>
+
+                <!-- Divider -->
+                <div style="border-top: 1px solid rgba(255,255,255,0.1); margin: 10px 0;"></div>
+
+                <!-- Sound Selection -->
+                <div style="padding: 12px; background: rgba(255,255,255,0.05); border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <span style="color: #e0e0e0;">Suara Notifikasi</span>
+                        <button type="button" onclick="playNotifSound()" style="background: rgba(40,167,233,0.2); border: none; color: #28a7e9; padding: 5px 10px; border-radius: 5px; font-size: 12px; cursor: pointer;">
+                            <i class="fa fa-volume-up"></i> Test
+                        </button>
+                    </div>
+                    <select id="notif-sound" style="width: 100%; padding: 10px; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; color: white; font-size: 14px;">
+                        <option value="default">Default</option>
+                        <option value="chime">Chime</option>
+                        <option value="bell">Bell</option>
+                        <option value="soft">Soft</option>
+                        <option value="none">Tanpa Suara</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="edit-modal-footer">
+            <button class="save-btn" onclick="saveNotifSettings()">
+                <i class="fa fa-check"></i> Simpan
+            </button>
+        </div>
+    </div>
+
     <!-- Hidden file input for avatar -->
     <input type="file" id="avatar-input" accept="image/*" style="display: none;">
 
@@ -562,10 +597,14 @@
         window.saveProfile = saveProfile;
         window.editAvatar = editAvatar;
         window.changePassword = changePassword;
+        window.closePasswordModal = closePasswordModal;
+        window.submitPasswordChange = submitPasswordChange;
         window.toggleNotifications = toggleNotifications;
+        window.closeNotifModal = closeNotifModal;
+        window.saveNotifSettings = saveNotifSettings;
+        window.playNotifSound = playNotifSound;
         window.showAbout = showAbout;
         window.logout = logout;
-        window.toggleWelcomeMessage = toggleWelcomeMessage;
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async function() {
@@ -579,7 +618,6 @@
             }
 
             await loadProfile();
-            await loadBirthCongratulations();
 
             // Setup avatar upload
             document.getElementById('avatar-input').addEventListener('change', handleAvatarUpload);
@@ -587,68 +625,6 @@
             document.getElementById('loading-state').style.display = 'none';
             document.getElementById('content-wrapper').style.display = 'block';
         });
-
-        // Toggle welcome message
-        let welcomeExpanded = true;
-        function toggleWelcomeMessage() {
-            const content = document.getElementById('welcome-content');
-            const icon = document.getElementById('welcome-toggle-icon');
-            welcomeExpanded = !welcomeExpanded;
-
-            if (welcomeExpanded) {
-                content.style.display = 'block';
-                icon.style.transform = 'rotate(0deg)';
-            } else {
-                content.style.display = 'none';
-                icon.style.transform = 'rotate(-90deg)';
-            }
-        }
-
-        // Load birth congratulations
-        async function loadBirthCongratulations() {
-            try {
-                const data = await apiRequest('/api/patient/birth-congratulations');
-
-                if (!data || !data.success || !data.data) return;
-
-                const birthData = data.data;
-                const card = document.getElementById('birth-congrats-card');
-                if (!card) return;
-
-                // Fill data
-                document.getElementById('birth-baby-name').textContent = birthData.baby_name || 'Baby';
-                document.getElementById('birth-congrats-doctor').textContent = 'Dari ' + (birthData.doctor_name || 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.');
-
-                // Format date
-                if (birthData.birth_date) {
-                    const birthDate = new Date(birthData.birth_date);
-                    document.getElementById('birth-date').textContent = birthDate.toLocaleDateString('id-ID', {
-                        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-                    });
-                }
-
-                // Format time
-                if (birthData.birth_time) {
-                    const timeParts = birthData.birth_time.split(':');
-                    document.getElementById('birth-time').textContent = timeParts[0] + ':' + timeParts[1] + ' WIB';
-                }
-
-                document.getElementById('birth-weight').textContent = birthData.birth_weight || '-';
-                document.getElementById('birth-length').textContent = birthData.birth_length || '-';
-                document.getElementById('birth-message').textContent = birthData.message || 'Selamat atas kelahiran buah hati Anda!';
-
-                // Photo
-                if (birthData.photo_url) {
-                    document.getElementById('birth-photo').src = birthData.photo_url;
-                }
-
-                // Show card
-                card.style.display = 'block';
-
-            } catch (error) {
-                console.log('Birth congratulations not available');
-            }
-        }
 
         // Load Profile
         async function loadProfile() {
@@ -744,7 +720,7 @@
             }
 
             try {
-                const data = await apiRequest('/api/patients/profile/me', {
+                const data = await apiRequest('/api/patients/profile', {
                     method: 'PUT',
                     body: JSON.stringify({ fullname: name, email, phone })
                 });
@@ -772,17 +748,17 @@
             if (!e.target.files || !e.target.files[0]) return;
 
             const file = e.target.files[0];
-            if (file.size > 5 * 1024 * 1024) {
-                showToast('Ukuran file maksimal 5MB', 'error');
+            if (file.size > 2 * 1024 * 1024) {
+                showToast('Ukuran file maksimal 2MB', 'error');
                 return;
             }
 
             const formData = new FormData();
-            formData.append('profile_picture', file);
+            formData.append('photo', file);
 
             try {
                 const token = getToken();
-                const response = await fetch('/api/patients/profile/picture', {
+                const response = await fetch('/api/patients/upload-photo', {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` },
                     body: formData
@@ -804,12 +780,138 @@
 
         // Change password
         function changePassword() {
-            showToast('Fitur ubah password akan segera hadir', 'info');
+            // Check if user has password (Google-only users may not have one)
+            if (profileData && !profileData.has_password) {
+                showToast('Akun ini menggunakan Google Sign-In. Fitur ubah password tidak tersedia.', 'info');
+                return;
+            }
+            document.getElementById('password-modal').style.display = 'block';
+            document.getElementById('old-password').value = '';
+            document.getElementById('new-password').value = '';
+            document.getElementById('confirm-password').value = '';
+        }
+
+        function closePasswordModal() {
+            document.getElementById('password-modal').style.display = 'none';
+        }
+
+        async function submitPasswordChange(e) {
+            if (e) e.preventDefault();
+
+            const oldPassword = document.getElementById('old-password').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+
+            if (!oldPassword || !newPassword || !confirmPassword) {
+                showToast('Semua field harus diisi', 'error');
+                return;
+            }
+
+            if (newPassword !== confirmPassword) {
+                showToast('Password baru dan konfirmasi tidak cocok', 'error');
+                return;
+            }
+
+            if (newPassword.length < 6) {
+                showToast('Password minimal 6 karakter', 'error');
+                return;
+            }
+
+            try {
+                const data = await apiRequest('/api/patients/change-password', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        old_password: oldPassword,
+                        new_password: newPassword,
+                        confirm_password: confirmPassword
+                    })
+                });
+
+                if (data && data.success) {
+                    showToast('Password berhasil diubah', 'success');
+                    closePasswordModal();
+                } else {
+                    showToast(data?.message || 'Gagal mengubah password', 'error');
+                }
+            } catch (e) {
+                console.error('Error changing password:', e);
+                showToast('Gagal mengubah password', 'error');
+            }
         }
 
         // Toggle notifications
         function toggleNotifications() {
-            showToast('Pengaturan notifikasi akan segera hadir', 'info');
+            // Load saved settings from localStorage
+            const settings = JSON.parse(localStorage.getItem('notif_settings') || '{"jadwal":true,"pengumuman":true,"pesan":true,"obat":true,"sound":"default"}');
+            document.getElementById('notif-jadwal').checked = settings.jadwal !== false;
+            document.getElementById('notif-pengumuman').checked = settings.pengumuman !== false;
+            document.getElementById('notif-pesan').checked = settings.pesan !== false;
+            document.getElementById('notif-obat').checked = settings.obat !== false;
+            document.getElementById('notif-sound').value = settings.sound || 'default';
+            document.getElementById('notif-modal').style.display = 'block';
+        }
+
+        function closeNotifModal() {
+            document.getElementById('notif-modal').style.display = 'none';
+        }
+
+        function saveNotifSettings() {
+            const settings = {
+                jadwal: document.getElementById('notif-jadwal').checked,
+                pengumuman: document.getElementById('notif-pengumuman').checked,
+                pesan: document.getElementById('notif-pesan').checked,
+                obat: document.getElementById('notif-obat').checked,
+                sound: document.getElementById('notif-sound').value
+            };
+            localStorage.setItem('notif_settings', JSON.stringify(settings));
+            showToast('Pengaturan notifikasi disimpan', 'success');
+            closeNotifModal();
+        }
+
+        // Play notification sound preview
+        function playNotifSound() {
+            const soundType = document.getElementById('notif-sound').value;
+            if (soundType === 'none') {
+                showToast('Suara notifikasi dinonaktifkan', 'info');
+                return;
+            }
+
+            // Create audio context for preview
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                // Different sounds based on selection
+                switch(soundType) {
+                    case 'chime':
+                        oscillator.frequency.value = 880;
+                        oscillator.type = 'sine';
+                        break;
+                    case 'bell':
+                        oscillator.frequency.value = 660;
+                        oscillator.type = 'triangle';
+                        break;
+                    case 'soft':
+                        oscillator.frequency.value = 440;
+                        oscillator.type = 'sine';
+                        break;
+                    default:
+                        oscillator.frequency.value = 520;
+                        oscillator.type = 'square';
+                }
+
+                gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+
+                oscillator.start(audioContext.currentTime);
+                oscillator.stop(audioContext.currentTime + 0.5);
+            } catch(e) {
+                console.log('Audio preview not supported');
+            }
         }
 
         // Show about
