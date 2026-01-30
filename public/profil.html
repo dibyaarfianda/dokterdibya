@@ -83,6 +83,26 @@
             font-weight: 600;
             color: white;
             margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .vip-badge {
+            display: none;
+            background: linear-gradient(135deg, #ffd700, #daa520);
+            color: #1a1a1f;
+            font-size: 10px;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .vip-badge.show {
+            display: inline-block;
         }
 
         .profile-id {
@@ -351,7 +371,10 @@
                         <i class="fa fa-camera"></i>
                     </button>
                 </div>
-                <div class="profile-name" id="profile-name">-</div>
+                <div class="profile-name" id="profile-name">
+                    <span id="profile-name-text">-</span>
+                    <span class="vip-badge" id="vip-badge">VIP</span>
+                </div>
                 <div class="profile-id" id="profile-id">ID: -</div>
             </div>
 
@@ -661,7 +684,7 @@
             const name = profileData.fullname || profileData.full_name || '-';
 
             // Name & ID
-            document.getElementById('profile-name').textContent = name;
+            document.getElementById('profile-name-text').textContent = name;
             document.getElementById('profile-id').textContent = `ID: ${profileData.patient_id || profileData.id || '-'}`;
 
             // Avatar
@@ -683,6 +706,34 @@
                 document.getElementById('info-birthdate').textContent = bd.toLocaleDateString('id-ID', {
                     day: 'numeric', month: 'long', year: 'numeric'
                 });
+            }
+
+            // Check VIP subscription for badge
+            checkVipSubscription();
+        }
+
+        // Check if patient has VIP subscription
+        async function checkVipSubscription() {
+            try {
+                const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
+                if (!token) return;
+
+                const response = await fetch('/api/patient-questions/can-ask', {
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.success && data.tier === 'vip') {
+                        const badge = document.getElementById('vip-badge');
+                        if (badge) badge.classList.add('show');
+                    }
+                }
+            } catch (error) {
+                // Silently fail - VIP badge is optional
             }
         }
 
