@@ -665,29 +665,29 @@
                     <div class="current-tier-box">
                         <div class="current-tier-label">Status Langganan Saat Ini</div>
                         <div class="current-tier-name" id="current-tier">Gratis</div>
-                        <div class="current-tier-quota" id="current-quota">1 pertanyaan / minggu</div>
+                        <div class="current-tier-quota" id="current-quota">1 pertanyaan / bulan</div>
                     </div>
 
                     <!-- Tier Options -->
                     <div id="tier-list">
-                        <!-- First Class -->
-                        <div class="tier-card" onclick="selectTier('first_class')">
+                        <!-- Starter -->
+                        <div class="tier-card" onclick="selectTier('starter')">
                             <div class="tier-header">
-                                <span class="tier-name">First-Class</span>
+                                <span class="tier-name">Starter</span>
                                 <span class="tier-badge bronze">BRONZE</span>
                             </div>
                             <div class="tier-quota">3 pertanyaan / minggu</div>
-                            <div class="tier-price">Rp 50.000<span>/bulan</span></div>
+                            <div class="tier-price">Rp 49.000<span>/bulan</span></div>
                         </div>
 
-                        <!-- Executive -->
-                        <div class="tier-card popular" onclick="selectTier('executive')">
+                        <!-- Pro -->
+                        <div class="tier-card popular" onclick="selectTier('pro')">
                             <div class="tier-header">
-                                <span class="tier-name">Executive-Class</span>
+                                <span class="tier-name">Pro</span>
                                 <span class="tier-badge silver">SILVER</span>
                             </div>
-                            <div class="tier-quota">5 pertanyaan / minggu</div>
-                            <div class="tier-price">Rp 100.000<span>/bulan</span></div>
+                            <div class="tier-quota">6 pertanyaan / minggu</div>
+                            <div class="tier-price">Rp 74.000<span>/bulan</span></div>
                         </div>
 
                         <!-- VIP -->
@@ -696,8 +696,14 @@
                                 <span class="tier-name">VIP</span>
                                 <span class="tier-badge gold">GOLD</span>
                             </div>
-                            <div class="tier-quota">10 pertanyaan / minggu + Bonus fitur eksklusif</div>
-                            <div class="tier-price">Rp 200.000<span>/bulan</span></div>
+                            <div class="tier-quota">15 pertanyaan / minggu + Fitur eksklusif</div>
+                            <div class="tier-price">Rp 149.000<span>/bulan</span></div>
+                            <div class="tier-features" style="font-size: 11px; color: rgba(255,255,255,0.6); margin-top: 8px; line-height: 1.5;">
+                                <i class="fa fa-check" style="color: #28a7e9; margin-right: 5px;"></i>Konsultasi online<br>
+                                <i class="fa fa-check" style="color: #28a7e9; margin-right: 5px;"></i>Chat history disimpan selamanya<br>
+                                <i class="fa fa-check" style="color: #28a7e9; margin-right: 5px;"></i>VIP badge<br>
+                                <i class="fa fa-check" style="color: #28a7e9; margin-right: 5px;"></i>Dan fitur eksklusif lainnya
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -824,7 +830,7 @@
                 const data = await apiRequest('/api/patient-questions/can-ask');
 
                 if (data) {
-                    const tierNames = { 'free': 'Gratis', 'first_class': 'First-Class', 'executive': 'Executive-Class', 'vip': 'VIP' };
+                    const tierNames = { 'free': 'Gratis', 'starter': 'Starter', 'pro': 'Pro', 'vip': 'VIP' };
                     const tier = data.tier || 'free';
                     const limit = data.limit || 1;
                     const used = data.used || 0;
@@ -1163,7 +1169,7 @@
 
         // Select tier (placeholder - would integrate with payment)
         function selectTier(tier) {
-            const tierNames = { 'first_class': 'First-Class', 'executive': 'Executive-Class', 'vip': 'VIP' };
+            const tierNames = { 'starter': 'Starter', 'pro': 'Pro', 'vip': 'VIP' };
             showToast(`Fitur pembayaran ${tierNames[tier]} akan segera hadir`, 'info');
         }
     </script>

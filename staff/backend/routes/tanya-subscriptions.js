@@ -8,9 +8,9 @@ const db = require('../db');
 const { verifyPatientToken } = require('../middleware/auth');
 
 const TIER_CONFIG = {
-    'first_class': { name: 'Premium First-Class', questions_per_week: 3, price: 50000, description: '3 pertanyaan per minggu' },
-    'executive': { name: 'Premium Executive-Class', questions_per_week: 5, price: 100000, description: '5 pertanyaan per minggu', popular: true },
-    'vip': { name: 'Premium VIP', questions_per_week: 10, price: 200000, description: '10 pertanyaan per minggu + Bonus fitur eksklusif' }
+    'starter': { name: 'Starter', questions_per_week: 3, price: 49000, description: '3 pertanyaan per minggu' },
+    'pro': { name: 'Pro', questions_per_week: 6, price: 74000, description: '6 pertanyaan per minggu', popular: true },
+    'vip': { name: 'VIP', questions_per_week: 15, price: 149000, description: '15 pertanyaan per minggu + Fitur eksklusif' }
 };
 
 const PAYMENT_METHOD_LABELS = {
