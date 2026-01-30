@@ -509,25 +509,18 @@
             color: #ffffff;
         }
 
-        /* Birth Congratulations Card */
+        /* Birth Congratulations Card - Matching patient-dashboard.html exactly */
         .birth-congrats-card {
-            background: rgba(168, 85, 247, 0.05);
+            background: transparent;
             border: none;
             position: relative;
             overflow: visible;
-            transition: all 0.2s ease;
-        }
-
-        .birth-congrats-card:hover {
-            transform: translateY(-3px);
-            background: rgba(168, 85, 247, 0.1);
-            box-shadow: 0 8px 25px rgba(168, 85, 247, 0.3);
         }
 
         .birth-corner-accent {
             position: absolute;
-            width: 40px;
-            height: 40px;
+            width: 50px;
+            height: 50px;
             z-index: 10;
         }
 
@@ -537,12 +530,12 @@
         #birth-corner-br { bottom: 0; right: 0; border-bottom: 3px solid #a855f7; border-right: 3px solid #a855f7; }
 
         .birth-header {
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
         .birth-header h2 {
             color: #a855f7;
-            font-size: 18px;
+            font-size: 22px;
             font-weight: 600;
             margin-bottom: 5px;
         }
@@ -553,14 +546,15 @@
 
         .birth-content {
             display: flex;
-            gap: 15px;
+            align-items: flex-start;
+            gap: 25px;
             flex-wrap: wrap;
         }
 
         .birth-photo {
-            width: 120px;
-            height: 120px;
-            border-radius: 12px;
+            width: 180px;
+            height: 180px;
+            border-radius: 15px;
             overflow: hidden;
             box-shadow: 0 8px 25px rgba(168, 85, 247, 0.3);
             border: 3px solid rgba(168, 85, 247, 0.5);
@@ -576,42 +570,108 @@
 
         .birth-details {
             flex: 1;
-            min-width: 180px;
+            min-width: 280px;
+            text-align: left;
         }
 
         .birth-details h3 {
             color: #a855f7;
-            font-size: 20px;
+            font-size: 28px;
             font-weight: 700;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
+        }
+
+        .birth-subtitle {
+            color: #9ca3af;
+            font-size: 13px;
+            margin-bottom: 15px;
         }
 
         .birth-details-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin-top: 10px;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
         }
 
         .birth-detail-box {
-            padding: 10px;
-            border-radius: 8px;
+            padding: 15px;
+            border-radius: 12px;
             background: rgba(30, 30, 40, 0.9);
             border: 1px solid rgba(168, 85, 247, 0.3);
         }
 
         .birth-detail-label {
             color: #9ca3af;
-            font-size: 9px;
+            font-size: 11px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
-            margin-bottom: 2px;
+            margin-bottom: 4px;
         }
 
         .birth-detail-value {
             color: #ffffff;
             font-weight: 600;
-            font-size: 12px;
+            font-size: 15px;
+        }
+
+        .birth-message-container {
+            padding: 15px 20px;
+            border-radius: 12px;
+            background: rgba(30, 30, 40, 0.9);
+            border-left: 3px solid #a855f7;
+        }
+
+        .birth-message-label {
+            color: #a855f7;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .birth-message {
+            color: #e5e7eb;
+            font-size: 14px;
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        /* Birth Photo Modal */
+        .birth-photo-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .birth-photo-modal img {
+            max-width: 90%;
+            max-height: 90%;
+            object-fit: contain;
+            border-radius: 10px;
+            box-shadow: 0 10px 50px rgba(0,0,0,0.5);
+        }
+
+        .birth-photo-modal-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: none;
+            font-size: 30px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 10000;
         }
 
         /* Menu Container */
@@ -914,8 +974,27 @@
                 font-size: 13px;
             }
             .birth-photo {
-                width: 100px;
-                height: 100px;
+                width: 140px;
+                height: 140px;
+            }
+            .birth-details h3 {
+                font-size: 22px;
+            }
+            .birth-header h2 {
+                font-size: 18px;
+            }
+            .birth-details-grid {
+                grid-template-columns: 1fr 1fr;
+                gap: 8px;
+            }
+            .birth-detail-box {
+                padding: 10px;
+            }
+            .birth-detail-label {
+                font-size: 9px;
+            }
+            .birth-detail-value {
+                font-size: 13px;
             }
         }
 
@@ -1139,47 +1218,69 @@
                     </div>
                 </div>
 
-                <!-- Birth Congratulations Card - Hidden by default -->
+                <!-- Birth Congratulations Card - Hidden by default, matching patient-dashboard.html -->
                 <div class="dashboard-card birth-congrats-card" id="birth-congrats-card" style="display: none; margin-bottom: 20px;">
+                    <!-- Decorative Corner Accents -->
                     <div class="birth-corner-accent" id="birth-corner-tl"></div>
                     <div class="birth-corner-accent" id="birth-corner-tr"></div>
                     <div class="birth-corner-accent" id="birth-corner-bl"></div>
                     <div class="birth-corner-accent" id="birth-corner-br"></div>
 
+                    <!-- Header -->
                     <div class="birth-header">
-                        <h2><i class="fa fa-heart"></i> Selamat atas Kelahiran Buah Hati!</h2>
+                        <h2 id="birth-card-title">
+                            <i class="fa fa-heart" id="birth-card-icon"></i>
+                            Selamat atas Kelahiran Buah Hati!
+                        </h2>
                         <p style="color: #888; font-size: 12px;" id="birth-congrats-doctor"></p>
                     </div>
 
+                    <!-- Content Container -->
                     <div class="birth-content">
-                        <div class="birth-photo" id="birth-photo-container" onclick="viewBirthPhoto()">
+                        <!-- Photo -->
+                        <div class="birth-photo" id="birth-photo-container" onclick="openBirthPhotoModal()">
                             <img id="birth-photo" src="" alt="Foto Kelahiran">
                         </div>
 
+                        <!-- Details -->
                         <div class="birth-details">
                             <h3 id="birth-baby-name"></h3>
-                            <div class="birth-details-grid">
+                            <p class="birth-subtitle" id="birth-subtitle"></p>
+
+                            <div class="birth-details-grid" id="birth-details-grid">
                                 <div class="birth-detail-box">
-                                    <div class="birth-detail-label"><i class="fa fa-calendar"></i> Tanggal</div>
-                                    <div class="birth-detail-value" id="birth-date">-</div>
+                                    <div class="birth-detail-label">Tanggal Lahir</div>
+                                    <div class="birth-detail-value" id="birth-date"></div>
                                 </div>
                                 <div class="birth-detail-box">
-                                    <div class="birth-detail-label"><i class="fa fa-clock-o"></i> Waktu</div>
-                                    <div class="birth-detail-value" id="birth-time">-</div>
+                                    <div class="birth-detail-label">Jam</div>
+                                    <div class="birth-detail-value" id="birth-time"></div>
                                 </div>
                                 <div class="birth-detail-box">
-                                    <div class="birth-detail-label"><i class="fa fa-balance-scale"></i> Berat</div>
-                                    <div class="birth-detail-value"><span id="birth-weight">-</span> gram</div>
+                                    <div class="birth-detail-label">Berat Badan</div>
+                                    <div class="birth-detail-value" id="birth-weight"></div>
                                 </div>
                                 <div class="birth-detail-box">
-                                    <div class="birth-detail-label"><i class="fa fa-arrows-v"></i> Panjang</div>
-                                    <div class="birth-detail-value"><span id="birth-length">-</span> cm</div>
+                                    <div class="birth-detail-label">Panjang Badan</div>
+                                    <div class="birth-detail-value" id="birth-length"></div>
                                 </div>
+                            </div>
+
+                            <!-- Message from Doctor -->
+                            <div class="birth-message-container" id="birth-message-container">
+                                <div class="birth-message-label">
+                                    <i class="fa fa-quote-left" style="margin-right: 5px;"></i> Pesan dari Dokter
+                                </div>
+                                <p class="birth-message" id="birth-message"></p>
                             </div>
                         </div>
                     </div>
+                </div>
 
-                    <p id="birth-message" style="margin-top: 15px; font-style: italic; color: #d1d5db; font-size: 13px; border-top: 1px solid rgba(168, 85, 247, 0.2); padding-top: 15px;"></p>
+                <!-- Birth Photo Modal -->
+                <div class="birth-photo-modal" id="birth-photo-modal" onclick="closeBirthPhotoModal()">
+                    <button class="birth-photo-modal-close" onclick="closeBirthPhotoModal()">&times;</button>
+                    <img id="birth-photo-modal-img" src="" alt="Foto Kelahiran" onclick="event.stopPropagation()">
                 </div>
 
                 <!-- Pengumuman - same structure as patient-dashboard -->
@@ -1250,12 +1351,12 @@
                             <p>Ruang Membaca, Perjalanan Ibu</p>
                         </div>
 
-                        <!-- Card 5: Tanya dr. Dibya -->
+                        <!-- Card 5: Tanya Dokter -->
                         <div class="menu-card" onclick="navigateTo('tanya-dokter')">
                             <div class="menu-icon" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9);">
                                 <i class="fa fa-comments"></i>
                             </div>
-                            <h3>Tanya dr. Dibya</h3>
+                            <h3>Tanya Dokter</h3>
                             <p>Tanya Jawab Privat</p>
                         </div>
 
@@ -1492,64 +1593,147 @@
 
                 if (!response.ok) return;
 
-                const data = await response.json();
-                if (!data.success || !data.birth) return;
+                const result = await response.json();
+                if (!result.success || !result.birth) return;
 
-                const birth = data.birth;
+                const data = result.birth;
                 const card = document.getElementById('birth-congrats-card');
                 if (!card) return;
 
-                // Set baby name
-                document.getElementById('birth-baby-name').textContent = birth.baby_name || 'Buah Hati';
+                // Fill in the data
+                document.getElementById('birth-baby-name').textContent = data.baby_name || 'Baby';
+                document.getElementById('birth-congrats-doctor').textContent = 'Dari ' + (data.doctor_name || 'dr. Dibya Arfianda, SpOG, M.Ked.Klin.');
 
-                // Set date
-                if (birth.birth_date) {
-                    const date = new Date(birth.birth_date);
-                    document.getElementById('birth-date').textContent = date.toLocaleDateString('id-ID', {
+                // Set subtitle with gender
+                const genderText = data.gender === 'Laki-laki' ? 'Putra' : (data.gender === 'Perempuan' ? 'Putri' : 'Buah Hati');
+                document.getElementById('birth-subtitle').textContent = genderText + ' Anda telah lahir dengan selamat';
+
+                // Format date
+                if (data.birth_date) {
+                    const birthDate = new Date(data.birth_date);
+                    document.getElementById('birth-date').textContent = birthDate.toLocaleDateString('id-ID', {
                         weekday: 'long',
-                        day: 'numeric',
+                        year: 'numeric',
                         month: 'long',
-                        year: 'numeric'
+                        day: 'numeric'
                     });
                 }
 
-                // Set time
-                document.getElementById('birth-time').textContent = birth.birth_time || '-';
-
-                // Set weight & length
-                document.getElementById('birth-weight').textContent = birth.weight || '-';
-                document.getElementById('birth-length').textContent = birth.length || '-';
-
-                // Set photo
-                if (birth.photo_url) {
-                    document.getElementById('birth-photo').src = birth.photo_url;
-                } else {
-                    document.getElementById('birth-photo-container').style.display = 'none';
+                // Format time
+                if (data.birth_time) {
+                    const timeParts = data.birth_time.split(':');
+                    document.getElementById('birth-time').textContent = timeParts[0] + ':' + timeParts[1] + ' WIB';
                 }
 
-                // Set message
-                if (birth.message) {
-                    document.getElementById('birth-message').textContent = birth.message;
+                document.getElementById('birth-weight').textContent = data.weight || '-';
+                document.getElementById('birth-length').textContent = data.length || '-';
+                document.getElementById('birth-message').textContent = data.message || 'Selamat atas kelahiran buah hati Anda!';
+
+                // Define theme colors based on GENDER (dark style with accent colors)
+                const themeColors = {
+                    pink: {      // For female
+                        accent: '#ec4899',
+                        accentLight: 'rgba(236, 72, 153, 0.5)',
+                        shadow: 'rgba(236, 72, 153, 0.3)'
+                    },
+                    blue: {      // For male
+                        accent: '#3b82f6',
+                        accentLight: 'rgba(59, 130, 246, 0.5)',
+                        shadow: 'rgba(59, 130, 246, 0.3)'
+                    },
+                    purple: {    // Neutral/default
+                        accent: '#a855f7',
+                        accentLight: 'rgba(168, 85, 247, 0.5)',
+                        shadow: 'rgba(168, 85, 247, 0.3)'
+                    }
+                };
+
+                // Select theme based on gender
+                let theme;
+                if (data.gender === 'Perempuan') {
+                    theme = themeColors.pink;
+                } else if (data.gender === 'Laki-laki') {
+                    theme = themeColors.blue;
                 } else {
-                    document.getElementById('birth-message').style.display = 'none';
+                    theme = themeColors.purple;
                 }
 
-                // Set doctor attribution
-                document.getElementById('birth-congrats-doctor').textContent = 'Dari dr. Dibya';
+                // Handle photo with theme-appropriate colors
+                const photoContainer = document.getElementById('birth-photo-container');
+                const photoImg = document.getElementById('birth-photo');
+                if (data.photo_url) {
+                    photoImg.src = data.photo_url;
+                    photoImg.onerror = function() {
+                        photoContainer.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(30,30,40,0.8);"><i class="fa fa-baby" style="font-size:60px;color:${theme.accent};"></i></div>`;
+                    };
+                } else {
+                    photoContainer.innerHTML = `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:rgba(30,30,40,0.8);"><i class="fa fa-baby" style="font-size:60px;color:${theme.accent};"></i></div>`;
+                }
+
+                // Apply theme to photo container
+                photoContainer.style.border = `3px solid ${theme.accentLight}`;
+                photoContainer.style.boxShadow = `0 8px 25px ${theme.shadow}`;
+
+                // Update title and icon colors
+                const cardTitle = document.getElementById('birth-card-title');
+                const cardIcon = document.getElementById('birth-card-icon');
+                const babyName = document.getElementById('birth-baby-name');
+                if (cardTitle) cardTitle.style.color = theme.accent;
+                if (cardIcon) cardIcon.style.color = theme.accent;
+                if (babyName) babyName.style.color = theme.accent;
+
+                // Apply theme to detail boxes
+                document.querySelectorAll('.birth-detail-box').forEach(box => {
+                    box.style.background = 'rgba(30, 30, 40, 0.9)';
+                    box.style.border = `1px solid ${theme.accentLight}`;
+                });
+
+                // Apply theme to message container
+                const msgContainer = document.getElementById('birth-message-container');
+                if (msgContainer) {
+                    msgContainer.style.background = 'rgba(30, 30, 40, 0.9)';
+                    msgContainer.style.borderLeft = `3px solid ${theme.accent}`;
+                }
+
+                // Update message label color
+                const msgLabel = msgContainer?.querySelector('.birth-message-label');
+                if (msgLabel) msgLabel.style.color = theme.accent;
+
+                // Update corner accent colors
+                document.querySelectorAll('.birth-corner-accent').forEach(corner => {
+                    corner.style.borderColor = theme.accent;
+                });
 
                 // Show the card
                 card.style.display = 'block';
+
             } catch (error) {
-                // Silently fail - birth data is optional
+                console.error('Error loading birth congratulations:', error);
             }
         }
 
-        function viewBirthPhoto() {
-            const img = document.getElementById('birth-photo');
-            if (img && img.src) {
-                window.open(img.src, '_blank');
-            }
+        // Birth Photo Modal Functions
+        function openBirthPhotoModal() {
+            const photoImg = document.getElementById('birth-photo');
+            if (!photoImg || !photoImg.src) return;
+
+            const modalImg = document.getElementById('birth-photo-modal-img');
+            modalImg.src = photoImg.src;
+            document.getElementById('birth-photo-modal').style.display = 'flex';
+            document.body.style.overflow = 'hidden';
         }
+
+        function closeBirthPhotoModal() {
+            document.getElementById('birth-photo-modal').style.display = 'none';
+            document.body.style.overflow = '';
+        }
+
+        // Close modal on escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeBirthPhotoModal();
+            }
+        });
 
         function escapeHtml(text) {
             const div = document.createElement('div');
@@ -1640,7 +1824,7 @@
                 ]
             },
             'tanya-dokter': {
-                title: 'Tanya dr. Dibya',
+                title: 'Tanya Dokter',
                 icon: 'fa-comments',
                 color: 'linear-gradient(135deg, #8b5cf6, #6d28d9)',
                 items: [
