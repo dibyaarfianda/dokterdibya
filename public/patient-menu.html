@@ -1117,6 +1117,71 @@
         <div id="content-wrapper" style="display: none;">
             <div class="content-container">
 
+                <!-- Welcome Message -->
+                <div class="dashboard-card" id="welcome-section" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(40, 167, 233, 0.1), rgba(0, 102, 255, 0.1)); border: 1px solid rgba(40, 167, 233, 0.3);">
+                    <h3 class="collapsible-header" onclick="toggleWelcomeSection()">
+                        <span><i class="fa fa-heart"></i> Selamat Datang</span>
+                        <i class="fa fa-chevron-down toggle-icon" id="welcome-toggle-icon"></i>
+                    </h3>
+                    <div id="welcome-content" class="welcome-content">
+                        <p>Halaman ini adalah ruang khusus bagi Anda — tempat saya membantu Anda, memantau kehamilan atau kesehatan kandungan Anda secara berkala dan privat. Semua catatan dan informasi di sini bersifat <strong>rahasia</strong>. Mohon untuk tidak membagikan halaman rekam medis kepada orang selain keluarga inti/ keluarga yang dipercaya. Karena itulah keamanan sistem ini menjadi prioritas saya dengan menerapkan proteksi berlapis dan enkripsi untuk mencegah peretasan.</p>
+
+                        <p>Adanya <strong style="font-weight: 600;"><span style="color: #ffffff;">dokter</span><span style="color: #0066FF;">DIBYA</span></strong> berawal dari keinginan <i>sederhana</i> saya, yaitu agar setiap pasien bisa tetap terhubung dengan dokter pilihannya, tanpa batasan rumah sakit, tempat, atau waktu. Update selalu dengan perubahan jadwal dari saya, reminding jadwal kontrol, booking slot dengan mudah, dan bahkan kedepan bukan tidak mungkin konsultasi secara online dengan jadwal yang disepakati!</p>
+
+                        <p>Walaupun demikian saya paham, banyak tantangan dan kesulitan dalam memulai hal baru. Tapi saya percaya, langkah kecil ini bisa membawa perubahan besar menuju pelayanan berkesinambungan dari dokter favorit Anda. Sebelum kita memulai perjalanan ini, mohon mengisi data pribadi dan riwayat medis, data kehamilan, masalah kandungan, riwayat KB. Besar harapan saya, Anda mengisi dengan lengkap sehingga dapat menjadi modalitas bagi saya dalam pemilihan terapi dan layanan terbaik untuk Anda.</p>
+
+                        <p>Terima kasih telah menjadi bagian dari <strong>"modern therapy without boundary"</strong> — pendampingan dan terapi berkelanjutan, di mana pun dan kapan pun Anda membutuhkannya.</p>
+
+                        <p style="text-align: right; color: #28a7e9; margin-top: 20px;">
+                            <strong style="font-weight: 500;">Salam hangat,</strong><br>
+                            <strong style="font-size: 16px; font-weight: 600;">dokter Anda</strong>
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Birth Congratulations Card - Hidden by default -->
+                <div class="dashboard-card birth-congrats-card" id="birth-congrats-card" style="display: none; margin-bottom: 20px;">
+                    <div class="birth-corner-accent" id="birth-corner-tl"></div>
+                    <div class="birth-corner-accent" id="birth-corner-tr"></div>
+                    <div class="birth-corner-accent" id="birth-corner-bl"></div>
+                    <div class="birth-corner-accent" id="birth-corner-br"></div>
+
+                    <div class="birth-header">
+                        <h2><i class="fa fa-heart"></i> Selamat atas Kelahiran Buah Hati!</h2>
+                        <p style="color: #888; font-size: 12px;" id="birth-congrats-doctor"></p>
+                    </div>
+
+                    <div class="birth-content">
+                        <div class="birth-photo" id="birth-photo-container" onclick="viewBirthPhoto()">
+                            <img id="birth-photo" src="" alt="Foto Kelahiran">
+                        </div>
+
+                        <div class="birth-details">
+                            <h3 id="birth-baby-name"></h3>
+                            <div class="birth-details-grid">
+                                <div class="birth-detail-box">
+                                    <div class="birth-detail-label"><i class="fa fa-calendar"></i> Tanggal</div>
+                                    <div class="birth-detail-value" id="birth-date">-</div>
+                                </div>
+                                <div class="birth-detail-box">
+                                    <div class="birth-detail-label"><i class="fa fa-clock-o"></i> Waktu</div>
+                                    <div class="birth-detail-value" id="birth-time">-</div>
+                                </div>
+                                <div class="birth-detail-box">
+                                    <div class="birth-detail-label"><i class="fa fa-balance-scale"></i> Berat</div>
+                                    <div class="birth-detail-value"><span id="birth-weight">-</span> gram</div>
+                                </div>
+                                <div class="birth-detail-box">
+                                    <div class="birth-detail-label"><i class="fa fa-arrows-v"></i> Panjang</div>
+                                    <div class="birth-detail-value"><span id="birth-length">-</span> cm</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p id="birth-message" style="margin-top: 15px; font-style: italic; color: #d1d5db; font-size: 13px; border-top: 1px solid rgba(168, 85, 247, 0.2); padding-top: 15px;"></p>
+                </div>
+
                 <!-- Pengumuman - same structure as patient-dashboard -->
                 <div class="dashboard-card" id="announcements-section" style="margin-bottom: 20px;">
                     <h3 class="collapsible-header" onclick="toggleAnnouncementsSection()">
@@ -1271,6 +1336,7 @@
             // loadAnnouncements handled by announcements-dashboard.js
             // loadPregnancySection(); // Removed - only show on dashboard
             checkActiveBooking();
+            loadBirthData();
         });
 
         // ==================== LOAD PROFILE ====================
@@ -1393,6 +1459,95 @@
                 wrapper.style.display = 'none';
                 icon.classList.remove('fa-chevron-down');
                 icon.classList.add('fa-chevron-up');
+            }
+        }
+
+        // Toggle Welcome Section
+        function toggleWelcomeSection() {
+            const wrapper = document.getElementById('welcome-content');
+            const icon = document.getElementById('welcome-toggle-icon');
+            if (!wrapper || !icon) return;
+
+            if (wrapper.style.display === 'none') {
+                wrapper.style.display = 'block';
+                icon.classList.remove('fa-chevron-up');
+                icon.classList.add('fa-chevron-down');
+            } else {
+                wrapper.style.display = 'none';
+                icon.classList.remove('fa-chevron-down');
+                icon.classList.add('fa-chevron-up');
+            }
+        }
+
+        // ==================== BIRTH CONGRATULATIONS ====================
+        async function loadBirthData() {
+            const token = getToken();
+            try {
+                const response = await fetch('/api/patient/birth-record', {
+                    headers: {
+                        'Authorization': 'Bearer ' + token,
+                        'Cache-Control': 'no-cache'
+                    }
+                });
+
+                if (!response.ok) return;
+
+                const data = await response.json();
+                if (!data.success || !data.birth) return;
+
+                const birth = data.birth;
+                const card = document.getElementById('birth-congrats-card');
+                if (!card) return;
+
+                // Set baby name
+                document.getElementById('birth-baby-name').textContent = birth.baby_name || 'Buah Hati';
+
+                // Set date
+                if (birth.birth_date) {
+                    const date = new Date(birth.birth_date);
+                    document.getElementById('birth-date').textContent = date.toLocaleDateString('id-ID', {
+                        weekday: 'long',
+                        day: 'numeric',
+                        month: 'long',
+                        year: 'numeric'
+                    });
+                }
+
+                // Set time
+                document.getElementById('birth-time').textContent = birth.birth_time || '-';
+
+                // Set weight & length
+                document.getElementById('birth-weight').textContent = birth.weight || '-';
+                document.getElementById('birth-length').textContent = birth.length || '-';
+
+                // Set photo
+                if (birth.photo_url) {
+                    document.getElementById('birth-photo').src = birth.photo_url;
+                } else {
+                    document.getElementById('birth-photo-container').style.display = 'none';
+                }
+
+                // Set message
+                if (birth.message) {
+                    document.getElementById('birth-message').textContent = birth.message;
+                } else {
+                    document.getElementById('birth-message').style.display = 'none';
+                }
+
+                // Set doctor attribution
+                document.getElementById('birth-congrats-doctor').textContent = 'Dari dr. Dibya';
+
+                // Show the card
+                card.style.display = 'block';
+            } catch (error) {
+                // Silently fail - birth data is optional
+            }
+        }
+
+        function viewBirthPhoto() {
+            const img = document.getElementById('birth-photo');
+            if (img && img.src) {
+                window.open(img.src, '_blank');
             }
         }
 
