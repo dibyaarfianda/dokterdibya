@@ -183,7 +183,6 @@
 
         .collapsible-header .toggle-icon {
             transition: transform 0.3s ease;
-            font-size: 14px;
             color: rgba(255, 255, 255, 0.6);
         }
 
@@ -2020,9 +2019,9 @@
     <div class="dashboard-container">
         <!-- Welcome Message -->
         <div class="dashboard-card welcome-message" id="welcome-card" style="margin-bottom: 30px;">
-            <h3 style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="toggleWelcomeMessage()">
+            <h3 class="collapsible-header" onclick="toggleWelcomeMessage()">
                 <span><i class="fa fa-heart"></i> Selamat Datang</span>
-                <i class="fa fa-chevron-down" id="welcome-toggle-icon"></i>
+                <i class="fa fa-chevron-down toggle-icon" id="welcome-toggle-icon"></i>
             </h3>
             <div id="welcome-content" style="line-height: 1.9; color: #e0e0e0; font-family: 'Poppins', sans-serif; font-size: 16px; font-weight: 400;">
                 <p style="font-size: 16px;">Halaman ini adalah ruang khusus bagi Anda — tempat saya membantu Anda, memantau kehamilan atau kesehatan kandungan Anda secara berkala dan privat. Semua catatan dan informasi di sini bersifat <strong style="color: #28a7e9; font-weight: 600;">rahasia</strong>. Mohon untuk tidak membagikan halaman rekam medis kepada orang selain keluarga inti/ keluarga yang dipercaya. Karena itulah keamanan sistem ini menjadi prioritas saya dengan menerapkan proteksi berlapis dan enkripsi untuk mencegah peretasan.</p>
@@ -2150,9 +2149,9 @@
 
         <!-- Announcements Section -->
         <div class="dashboard-card" id="announcements-section" style="margin-bottom: 30px;">
-            <h3 style="cursor: pointer; display: flex; justify-content: space-between; align-items: center;" onclick="toggleAnnouncementsSection()">
+            <h3 class="collapsible-header" onclick="toggleAnnouncementsSection()">
                 <span><i class="fa fa-bullhorn"></i> Pengumuman</span>
-                <i class="fa fa-chevron-down" id="announcements-toggle-icon"></i>
+                <i class="fa fa-chevron-down toggle-icon" id="announcements-toggle-icon"></i>
             </h3>
             <div id="announcements-content">
                 <div id="announcements-container">

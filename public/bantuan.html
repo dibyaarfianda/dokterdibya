@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a1a1a">
+    <title>Bantuan & FAQ - dokterDIBYA</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
+    <link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
+
+    <!-- Fonts & Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Shared Styles -->
+    <link rel="stylesheet" href="/styles/patient-portal.css">
+
+    <style>
+        .faq-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px 15px 100px;
+        }
+
+        .page-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .page-header h1 {
+            color: #28a7e9;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .page-header p {
+            color: rgba(255,255,255,0.7);
+            font-size: 14px;
+        }
+
+        .faq-section {
+            margin-bottom: 25px;
+        }
+
+        .faq-section-title {
+            color: #28a7e9;
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid rgba(40, 167, 233, 0.3);
+        }
+
+        .faq-item {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+
+        .faq-question {
+            padding: 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: #ffffff;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .faq-question:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .faq-question i {
+            color: #28a7e9;
+            transition: transform 0.3s;
+        }
+
+        .faq-question.active i {
+            transform: rotate(180deg);
+        }
+
+        .faq-answer {
+            display: none;
+            padding: 0 15px 15px;
+            color: rgba(255,255,255,0.8);
+            font-size: 13px;
+            line-height: 1.7;
+        }
+
+        .faq-answer.show {
+            display: block;
+        }
+
+        .contact-card {
+            background: linear-gradient(135deg, rgba(40, 167, 233, 0.15), rgba(0, 102, 255, 0.15));
+            border: 1px solid rgba(40, 167, 233, 0.3);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .contact-card h3 {
+            color: #28a7e9;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .contact-card p {
+            color: rgba(255,255,255,0.8);
+            font-size: 14px;
+            margin-bottom: 15px;
+        }
+
+        .contact-card a {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #28a7e9;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.3s;
+        }
+
+        .contact-card a:hover {
+            background: #1e90d0;
+            transform: translateY(-2px);
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(255,255,255,0.7);
+            text-decoration: none;
+            font-size: 14px;
+            margin-bottom: 20px;
+        }
+
+        .back-btn:hover {
+            color: #28a7e9;
+        }
+    </style>
+</head>
+<body>
+    <div class="faq-container">
+        <a href="/profil.html" class="back-btn">
+            <i class="fa fa-arrow-left"></i> Kembali
+        </a>
+
+        <div class="page-header">
+            <h1><i class="fa fa-question-circle"></i> Bantuan & FAQ</h1>
+            <p>Pertanyaan yang sering diajukan</p>
+        </div>
+
+        <!-- Akun & Login -->
+        <div class="faq-section">
+            <div class="faq-section-title"><i class="fa fa-user"></i> Akun & Login</div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>Bagaimana cara mendaftar di dokterDIBYA?</span>
+                    <i class="fa fa-chevron-down"></i>
+                </div>
+                <div class="faq-answer">
+                    Anda dapat mendaftar melalui halaman login dengan memilih "Daftar Sekarang". Masukkan email, password, dan data diri Anda. Anda juga bisa mendaftar langsung dengan akun Google.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>Saya lupa password, bagaimana cara mengatasinya?</span>
+                    <i class="fa fa-chevron-down"></i>
+                </div>
+                <div class="faq-answer">
+                    Pada halaman login, klik "Lupa Password". Masukkan email yang terdaftar, dan kami akan mengirimkan link untuk reset password ke email Anda.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>Apakah aman login dengan Google?</span>
+                    <i class="fa fa-chevron-down"></i>
+                </div>
+                <div class="faq-answer">
+                    Ya, login dengan Google sangat aman. Kami menggunakan protokol OAuth 2.0 standar industri. Data Anda tidak pernah dibagikan ke pihak ketiga.
+                </div>
+            </div>
+        </div>
+
+        <!-- Profil -->
+        <div class="faq-section">
+            <div class="faq-section-title"><i class="fa fa-id-card"></i> Profil & Data Diri</div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>Bagaimana cara mengubah foto profil?</span>
+                    <i class="fa fa-chevron-down"></i>
+                </div>
+                <div class="faq-answer">
+                    Buka menu Profil, lalu klik ikon kamera pada foto profil Anda. Pilih gambar dari galeri (maksimal 2MB, format JPG/PNG).
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>Bagaimana cara mengubah password?</span>
+                    <i class="fa fa-chevron-down"></i>
+                </div>
+                <div class="faq-answer">
+                    Buka menu Profil > Ubah Password. Masukkan password lama, password baru, dan konfirmasi password baru (minimal 6 karakter).
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>Mengapa data profil saya penting?</span>
+                    <i class="fa fa-chevron-down"></i>
+                </div>
+                <div class="faq-answer">
+                    Data profil lengkap membantu dokter memberikan pelayanan terbaik. Riwayat medis, alergi, dan kondisi kesehatan Anda akan menjadi pertimbangan dalam pemilihan terapi.
+                </div>
+            </div>
+        </div>
+
+        <!-- Booking & Jadwal -->
+        <div class="faq-section">
+            <div class="faq-section-title"><i class="fa fa-calendar"></i> Booking & Jadwal</div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>Bagaimana cara booking jadwal klinik?</span>
+                    <i class="fa fa-chevron-down"></i>
+                </div>
+                <div class="faq-answer">
+                    Buka menu Booking Klinik, pilih tanggal dan slot waktu yang tersedia, lalu konfirmasi booking Anda. Anda akan menerima notifikasi konfirmasi.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>Bagaimana cara membatalkan jadwal?</span>
+                    <i class="fa fa-chevron-down"></i>
+                </div>
+                <div class="faq-answer">
+                    Buka menu Booking Klinik, cari jadwal aktif Anda, lalu klik tombol "Batalkan". Harap batalkan minimal 1 hari sebelum jadwal untuk memberi kesempatan pasien lain.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>Bagaimana melihat riwayat kunjungan?</span>
+                    <i class="fa fa-chevron-down"></i>
+                </div>
+                <div class="faq-answer">
+                    Buka menu Riwayat Kunjungan untuk melihat semua kunjungan sebelumnya beserta diagnosis dan resep yang diberikan.
+                </div>
+            </div>
+        </div>
+
+        <!-- Rekam Medis -->
+        <div class="faq-section">
+            <div class="faq-section-title"><i class="fa fa-file-text"></i> Rekam Medis</div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>Bagaimana cara melihat hasil USG?</span>
+                    <i class="fa fa-chevron-down"></i>
+                </div>
+                <div class="faq-answer">
+                    Buka menu Album USG untuk melihat semua foto USG Anda. Klik foto untuk memperbesar. Anda juga bisa mengunduh foto untuk disimpan.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>Apakah data rekam medis saya aman?</span>
+                    <i class="fa fa-chevron-down"></i>
+                </div>
+                <div class="faq-answer">
+                    Ya, data rekam medis Anda dilindungi dengan enkripsi dan hanya dapat diakses oleh Anda dan dokter yang merawat. Kami mematuhi standar keamanan data medis.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>Bagaimana cara mengunduh dokumen medis?</span>
+                    <i class="fa fa-chevron-down"></i>
+                </div>
+                <div class="faq-answer">
+                    Pada halaman rekam medis atau dokumen, klik tombol unduh (ikon download) untuk menyimpan dokumen ke perangkat Anda.
+                </div>
+            </div>
+        </div>
+
+        <!-- Kehamilan -->
+        <div class="faq-section">
+            <div class="faq-section-title"><i class="fa fa-heart"></i> Kehamilan</div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>Apa itu Pregnancy Tracker?</span>
+                    <i class="fa fa-chevron-down"></i>
+                </div>
+                <div class="faq-answer">
+                    Pregnancy Tracker adalah fitur untuk memantau perkembangan kehamilan Anda. Menampilkan usia kehamilan, HPL (Hari Perkiraan Lahir), dan informasi perkembangan janin setiap minggunya.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>Apa itu Kick Counter?</span>
+                    <i class="fa fa-chevron-down"></i>
+                </div>
+                <div class="faq-answer">
+                    Kick Counter adalah fitur untuk menghitung gerakan janin. Memantau gerakan janin secara teratur membantu memastikan kesehatan bayi dalam kandungan.
+                </div>
+            </div>
+        </div>
+
+        <!-- Tanya Dokter -->
+        <div class="faq-section">
+            <div class="faq-section-title"><i class="fa fa-comments"></i> Tanya Dokter</div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>Bagaimana cara bertanya ke dokter?</span>
+                    <i class="fa fa-chevron-down"></i>
+                </div>
+                <div class="faq-answer">
+                    Buka menu Tanya Dokter, tulis pertanyaan Anda, lalu kirim. Dokter akan menjawab pertanyaan Anda melalui fitur yang sama.
+                </div>
+            </div>
+
+            <div class="faq-item">
+                <div class="faq-question" onclick="toggleFaq(this)">
+                    <span>Berapa lama waktu tunggu jawaban?</span>
+                    <i class="fa fa-chevron-down"></i>
+                </div>
+                <div class="faq-answer">
+                    Umumnya dokter akan menjawab dalam 1x24 jam pada hari kerja. Untuk kondisi darurat, segera hubungi IGD rumah sakit terdekat.
+                </div>
+            </div>
+        </div>
+
+        <!-- Contact Card -->
+        <div class="contact-card">
+            <h3><i class="fa fa-envelope"></i> Butuh Bantuan Lebih?</h3>
+            <p>Jika pertanyaan Anda belum terjawab, silakan hubungi tim support kami.</p>
+            <a href="mailto:admin@dokterdibya.com">
+                <i class="fa fa-envelope"></i> admin@dokterdibya.com
+            </a>
+        </div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <a href="/patient-dashboard.html" class="nav-item">
+            <i class="fa fa-home"></i>
+            <span>Beranda</span>
+        </a>
+        <a href="/patient-menu.html" class="nav-item">
+            <i class="fa fa-th-large"></i>
+            <span>Menu</span>
+        </a>
+        <a href="/notifikasi.html" class="nav-item">
+            <i class="fa fa-bell"></i>
+            <span>Notifikasi</span>
+        </a>
+    </nav>
+
+    <script>
+        function toggleFaq(element) {
+            const answer = element.nextElementSibling;
+            const isOpen = answer.classList.contains('show');
+
+            // Close all other FAQs
+            document.querySelectorAll('.faq-answer').forEach(a => a.classList.remove('show'));
+            document.querySelectorAll('.faq-question').forEach(q => q.classList.remove('active'));
+
+            // Toggle current
+            if (!isOpen) {
+                answer.classList.add('show');
+                element.classList.add('active');
+            }
+        }
+    </script>
+</body>
+</html>
