@@ -1,5 +1,5 @@
 /**
- * Tanya dr. Dibya - Staff Panel JavaScript
+ * Tanya Dokter - Staff Panel JavaScript
  * Handles Q&A management for staff (view all, reply for dokter only)
  */
 
@@ -20,7 +20,7 @@
         if (typeof hideAllPages === 'function') hideAllPages();
         document.getElementById('tanya-dokter-page').classList.remove('d-none');
         if (typeof setActiveNav === 'function') setActiveNav('nav-tanya-dokter');
-        if (typeof setPageTitle === 'function') setPageTitle('Tanya dr. Dibya');
+        if (typeof setPageTitle === 'function') setPageTitle('Tanya Dokter');
         loadTanyaDokterQuestions();
     };
 

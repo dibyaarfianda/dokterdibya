@@ -1,5 +1,5 @@
 /**
- * Patient Questions Route - Tanya dr. Dibya
+ * Patient Questions Route - Tanya Dokter
  * Q&A feature between patients and doctor
  */
 

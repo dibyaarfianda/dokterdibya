@@ -1,5 +1,5 @@
 /**
- * Subscriptions Route - Tanya dr. Dibya Premium
+ * Subscriptions Route - Tanya Dokter Premium
  */
 
 const express = require('express');

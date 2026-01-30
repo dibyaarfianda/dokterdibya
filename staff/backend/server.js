@@ -173,7 +173,7 @@ const PATIENT_ALLOWED_ROUTES = [
     '/api/patient/',           // Patient-specific endpoints (birth-congratulations, etc)
     '/api/patient-intake',     // Patient intake form submission
     '/api/patient-documents',  // Patient documents (USG, lab results, uploads)
-    '/api/patient-questions',  // Tanya dr. Dibya - Q&A with doctor
+    '/api/patient-questions',  // Tanya Dokter - Q&A with doctor
     '/api/sunday-appointments', // Sunday clinic booking
     '/api/hospital-appointments', // Hospital booking
     '/api/articles',           // Public articles
@@ -185,7 +185,7 @@ const PATIENT_ALLOWED_ROUTES = [
     '/api/billings/',          // Billing details (with id path)
     '/api/usg-photos',         // USG photos access
     '/api/practice-schedules', // Practice schedules for all locations
-    '/api/tanya-subscriptions', // Tanya dr. Dibya - Subscription & payments
+    '/api/tanya-subscriptions', // Tanya Dokter - Subscription & payments
     '/api/registration-codes', // Registration code validation (for new patients)
     '/api/kick-counter',       // Kick counter for fetal movement tracking
     '/api/doctors',            // List available doctors for Q&A
@@ -416,11 +416,11 @@ app.use('/api/usg-reader', usgReaderRoutes);
 const medifyBatchRoutes = require('./routes/medify-batch');
 app.use('/api/medify-batch', medifyBatchRoutes);
 
-// Tanya dr. Dibya - Patient Questions
+// Tanya Dokter - Patient Questions
 const patientQuestionsRoutes = require('./routes/patient-questions');
 app.use('/api/patient-questions', patientQuestionsRoutes);
 
-// Tanya dr. Dibya - Subscriptions & Payments
+// Tanya Dokter - Subscriptions & Payments
 const tanyaSubscriptionsRoutes = require('./routes/tanya-subscriptions');
 app.use('/api/tanya-subscriptions', tanyaSubscriptionsRoutes);
 // Webhook endpoint (no auth)
