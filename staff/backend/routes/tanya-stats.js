@@ -1,5 +1,5 @@
 /**
- * Tanya Stats Route - Revenue reporting for Tanya dr. Dibya
+ * Tanya Stats Route - Revenue reporting for Tanya Dokter
  * Calculates revenue split per doctor based on questions answered
  */
 
