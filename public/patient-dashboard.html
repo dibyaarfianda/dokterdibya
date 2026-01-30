@@ -2575,25 +2575,25 @@
 
                         <!-- Tier Cards -->
                         <div id="premium-tier-list" style="display: grid; gap: 12px;">
-                            <!-- First Class -->
-                            <div class="tier-card" data-tier="first_class" onclick="selectTier('first_class')" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px; cursor: pointer; transition: all 0.2s;">
+                            <!-- Starter -->
+                            <div class="tier-card" data-tier="starter" onclick="selectTier('starter')" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 15px; cursor: pointer; transition: all 0.2s;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                    <span style="font-weight: 600; color: #fff;">First-Class</span>
+                                    <span style="font-weight: 600; color: #fff;">Starter</span>
                                     <span style="background: linear-gradient(135deg, #cd7f32, #8b4513); color: #fff; padding: 3px 8px; border-radius: 12px; font-size: 10px;">BRONZE</span>
                                 </div>
                                 <div style="font-size: 13px; color: #ccc; margin-bottom: 5px;">3 pertanyaan / minggu</div>
-                                <div style="font-size: 18px; font-weight: 700; color: #28a7e9;">Rp 50.000<span style="font-size: 12px; font-weight: 400; color: #888;">/bulan</span></div>
+                                <div style="font-size: 18px; font-weight: 700; color: #28a7e9;">Rp 49.000<span style="font-size: 12px; font-weight: 400; color: #888;">/bulan</span></div>
                             </div>
 
-                            <!-- Executive -->
-                            <div class="tier-card" data-tier="executive" onclick="selectTier('executive')" style="background: rgba(255,255,255,0.05); border: 2px solid #28a7e9; border-radius: 12px; padding: 15px; cursor: pointer; transition: all 0.2s; position: relative;">
+                            <!-- Pro -->
+                            <div class="tier-card" data-tier="pro" onclick="selectTier('pro')" style="background: rgba(255,255,255,0.05); border: 2px solid #28a7e9; border-radius: 12px; padding: 15px; cursor: pointer; transition: all 0.2s; position: relative;">
                                 <div style="position: absolute; top: -10px; right: 15px; background: #28a7e9; color: #fff; padding: 3px 10px; border-radius: 10px; font-size: 10px; font-weight: 600;">POPULER</div>
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                                    <span style="font-weight: 600; color: #fff;">Executive-Class</span>
+                                    <span style="font-weight: 600; color: #fff;">Pro</span>
                                     <span style="background: linear-gradient(135deg, #c0c0c0, #808080); color: #333; padding: 3px 8px; border-radius: 12px; font-size: 10px;">SILVER</span>
                                 </div>
-                                <div style="font-size: 13px; color: #ccc; margin-bottom: 5px;">5 pertanyaan / minggu</div>
-                                <div style="font-size: 18px; font-weight: 700; color: #28a7e9;">Rp 100.000<span style="font-size: 12px; font-weight: 400; color: #888;">/bulan</span></div>
+                                <div style="font-size: 13px; color: #ccc; margin-bottom: 5px;">6 pertanyaan / minggu</div>
+                                <div style="font-size: 18px; font-weight: 700; color: #28a7e9;">Rp 74.000<span style="font-size: 12px; font-weight: 400; color: #888;">/bulan</span></div>
                             </div>
 
                             <!-- VIP -->
@@ -2602,8 +2602,8 @@
                                     <span style="font-weight: 600; color: #fff;">VIP</span>
                                     <span style="background: linear-gradient(135deg, #ffd700, #daa520); color: #333; padding: 3px 8px; border-radius: 12px; font-size: 10px;">GOLD</span>
                                 </div>
-                                <div style="font-size: 13px; color: #ccc; margin-bottom: 5px;">10 pertanyaan / minggu + Tanya Dokter & Dokter Pediatri</div>
-                                <div style="font-size: 18px; font-weight: 700; color: #28a7e9;">Rp 200.000<span style="font-size: 12px; font-weight: 400; color: #888;">/bulan</span></div>
+                                <div style="font-size: 13px; color: #ccc; margin-bottom: 5px;">15 pertanyaan / minggu + Fitur eksklusif</div>
+                                <div style="font-size: 18px; font-weight: 700; color: #28a7e9;">Rp 149.000<span style="font-size: 12px; font-weight: 400; color: #888;">/bulan</span></div>
                             </div>
                         </div>
                     </div>
@@ -6998,15 +6998,15 @@
                     const quotaText = document.getElementById('tanya-quota-text');
                     if (quotaText) {
                         const tier = data.tier || 'free';
-                        const tierNames = { 'free': 'Gratis', 'first_class': 'First-Class', 'executive': 'Executive-Class', 'vip': 'VIP' };
-                        quotaText.innerHTML = `Paket: <strong>${tierNames[tier] || 'Gratis'}</strong> | Sisa: <strong>${data.remaining}/${data.limit}</strong> pertanyaan minggu ini`;
+                        const tierNames = { 'free': 'Gratis', 'starter': 'Starter', 'pro': 'Pro', 'vip': 'VIP' };
+                        quotaText.innerHTML = `Paket: <strong>${tierNames[tier] || 'Gratis'}</strong> | Sisa: <strong>${data.remaining || 0}/${data.limit || 1}</strong> pertanyaan`;
                     }
 
                     // Update current status in premium section
                     const currentTier = document.getElementById('tanya-current-tier');
                     const currentQuota = document.getElementById('tanya-current-quota');
                     if (currentTier) {
-                        const tierNames = { 'free': 'Gratis', 'first_class': 'Premium First-Class', 'executive': 'Premium Executive-Class', 'vip': 'Premium VIP' };
+                        const tierNames = { 'free': 'Gratis', 'starter': 'Starter', 'pro': 'Pro', 'vip': 'VIP' };
                         currentTier.textContent = tierNames[data.tier] || 'Gratis';
                     }
                     if (currentQuota) {
@@ -7333,8 +7333,8 @@
 
         // Show payment method bottom sheet
         function showPaymentMethodSheet(tier) {
-            const tierPrices = { 'first_class': 50000, 'executive': 100000, 'vip': 200000 };
-            const tierNames = { 'first_class': 'First-Class', 'executive': 'Executive-Class', 'vip': 'VIP' };
+            const tierPrices = { 'starter': 49000, 'pro': 74000, 'vip': 149000 };
+            const tierNames = { 'starter': 'Starter', 'pro': 'Pro', 'vip': 'VIP' };
 
             const sheet = document.createElement('div');
             sheet.className = 'payment-method-sheet';
