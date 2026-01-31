@@ -271,6 +271,9 @@
     </style>
 </head>
 <body>
+    <!-- Safe Area Overlays -->
+    <div class="safe-area-top" style="position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0);background:#1a1a2e;z-index:9999;"></div>
+    <div class="safe-area-bottom" style="position:fixed;bottom:0;left:0;right:0;height:env(safe-area-inset-bottom,0);background:#1a1a2e;z-index:9999;"></div>
     <!-- Top Navbar -->
     <nav class="nav-bar">
         <div class="nav-left">
@@ -416,10 +419,12 @@
             }
         }
 
-        // Get file type from URL
+        // Get file type from URL (handles signed URLs with query params)
         function getFileType(url) {
             if (!url) return 'unknown';
-            const ext = url.split('.').pop().toLowerCase();
+            // Remove query parameters first
+            const urlWithoutQuery = url.split('?')[0];
+            const ext = urlWithoutQuery.split('.').pop().toLowerCase();
             if (['jpg', 'jpeg', 'png', 'gif', 'webp'].includes(ext)) return 'image';
             if (ext === 'pdf') return 'pdf';
             return 'unknown';
