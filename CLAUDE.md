@@ -38,6 +38,22 @@ git commit -m "Fix animation bug on mobile
 Co-Authored-By: Claude..."
 ```
 
+## CRITICAL: Always Commit and Push
+
+**ALWAYS commit and push changes after completing a task or set of related changes.**
+
+- After finishing implementation, immediately `git add`, `git commit`, and `git push`
+- Do not wait for the user to ask - proactively commit when work is done
+- Group related changes into a single commit with a clear message
+- Push to remote to ensure changes are backed up
+
+```bash
+# After completing changes:
+git add <files>
+git commit -m "Clear description of what was done"
+git push origin main
+```
+
 ## Code Standards
 
 ### 1. Authentication Token
