@@ -364,7 +364,7 @@
                 Buka Gallery Kenangan
             </a>
 
-            <a href="patient-dashboard.html" class="action-btn secondary-btn">
+            <a href="patient-menu.html" class="action-btn secondary-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                     <polyline points="9 22 9 12 15 12 15 22"/>
@@ -403,7 +403,7 @@
                 Cek Status Pembayaran
             </button>
 
-            <a href="patient-dashboard.html" class="action-btn secondary-btn">
+            <a href="patient-menu.html" class="action-btn secondary-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
                     <polyline points="9 22 9 12 15 12 15 22"/>
@@ -426,7 +426,7 @@
         const orderId = urlParams.get('order_id');
         const status = urlParams.get('status');
 
-        // Get auth token (same keys as patient-dashboard.html)
+        // Get auth token (same keys as patient-menu.html)
         function getAuthToken() {
             return localStorage.getItem('vps_auth_token') ||
                    sessionStorage.getItem('vps_auth_token') ||
@@ -452,7 +452,7 @@
         async function checkPaymentStatus() {
             const token = getAuthToken();
             if (!token) {
-                window.location.href = 'patient-dashboard.html';
+                window.location.href = 'patient-menu.html';
                 return;
             }
 

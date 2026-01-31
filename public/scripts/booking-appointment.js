@@ -325,7 +325,7 @@ async function submitBooking() {
         `, 'success');
 
         setTimeout(() => {
-            window.location.href = '/patient-dashboard.html';
+            window.location.href = '/patient-menu.html';
         }, 3000);
 
     } catch (error) {

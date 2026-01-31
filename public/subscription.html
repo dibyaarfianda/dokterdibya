@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Berlangganan Gallery Kenangan - Klinik Dr. Dibya</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
@@ -19,6 +19,28 @@
             color: #374151;
             overflow-x: hidden;
             position: relative;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        .safe-area-top {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-top, 0px);
+            background: #fdf2f8;
+            z-index: 9999;
+        }
+
+        .safe-area-bottom {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-bottom, 0px);
+            background: #fdf2f8;
+            z-index: 9999;
         }
 
         /* Animated Background */
@@ -562,6 +584,8 @@
     </style>
 </head>
 <body>
+    <div class="safe-area-top"></div>
+    <div class="safe-area-bottom"></div>
     <!-- Animated Background -->
     <div class="bg-animation">
         <div class="floating-shape"></div>
@@ -579,7 +603,7 @@
     <!-- Header -->
     <header class="header">
         <div class="header-content">
-            <button class="back-btn" onclick="window.location.href='patient-dashboard.html'">
+            <button class="back-btn" onclick="window.location.href='patient-menu.html'">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M19 12H5M12 19l-7-7 7-7"/>
                 </svg>
@@ -604,7 +628,7 @@
             </svg>
             <h3>Masuk untuk Berlangganan</h3>
             <p>Silakan masuk ke akun pasien Anda untuk berlangganan Gallery Kenangan Premium</p>
-            <a href="patient-dashboard.html" class="login-btn">
+            <a href="patient-menu.html" class="login-btn">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
                     <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3"/>
                 </svg>
@@ -749,7 +773,7 @@
             await checkAuthAndSubscription();
         });
 
-        // Get auth token (same keys as patient-dashboard.html)
+        // Get auth token (same keys as patient-menu.html)
         function getAuthToken() {
             return localStorage.getItem('vps_auth_token') ||
                    sessionStorage.getItem('vps_auth_token') ||

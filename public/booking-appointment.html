@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -35,7 +35,29 @@
             font-family: 'Poppins', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             min-height: 100vh;
             padding: 20px 0;
+            padding-top: calc(20px + env(safe-area-inset-top, 0px));
+            padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
             position: relative;
+        }
+
+        .safe-area-top {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-top, 0px);
+            background: #1a1a1a;
+            z-index: 9999;
+        }
+
+        .safe-area-bottom {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-bottom, 0px);
+            background: #1a1a1a;
+            z-index: 9999;
         }
 
         .bg-animation {
@@ -463,11 +485,13 @@
     </style>
 </head>
 <body>
+    <div class="safe-area-top"></div>
+    <div class="safe-area-bottom"></div>
     <div class="bg-animation" id="bgAnimation"></div>
 
     <div class="booking-container">
         <div class="booking-header" style="position: relative;">
-            <a href="/patient-dashboard.html" class="back-btn">
+            <a href="/patient-menu.html" class="back-btn">
                 <i class="fa fa-arrow-left"></i> Kembali
             </a>
             <h1><i class="fa fa-calendar-check-o"></i> Buat Janji Konsultasi</h1>

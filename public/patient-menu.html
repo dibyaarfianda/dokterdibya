@@ -25,13 +25,40 @@
 
         body {
             font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #1a1a1a 0%, #303030 100%);
+            background: #1a1a1a;
             min-height: 100vh;
             color: #ffffff;
-            padding-top: env(safe-area-inset-top);
-            padding-bottom: env(safe-area-inset-bottom);
             padding-left: env(safe-area-inset-left);
             padding-right: env(safe-area-inset-right);
+        }
+
+        /* Fixed safe area bars for mobile */
+        .safe-area-top {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-top, 0px);
+            background: #1a1a1a;
+            z-index: 9999;
+        }
+
+        .safe-area-bottom {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-bottom, 0px);
+            background: #1a1a1a;
+            z-index: 9999;
+        }
+
+        /* Main content wrapper */
+        .app-wrapper {
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            min-height: 100vh;
+            background: linear-gradient(135deg, #1a1a1a 0%, #303030 100%);
         }
 
         /* Navbar */
@@ -44,6 +71,12 @@
             position: sticky;
             top: 0;
             z-index: 100;
+        }
+
+        /* In Capacitor app, navbar sticks below safe area */
+        .capacitor-app .nav-bar {
+            position: sticky;
+            top: 0;
         }
 
         .nav-bar .nav-container {
@@ -1164,6 +1197,13 @@
         }
     </script>
 
+    <!-- Safe area bars for notch/status bar/navigation bar -->
+    <div class="safe-area-top"></div>
+    <div class="safe-area-bottom"></div>
+
+    <!-- App wrapper with safe area padding -->
+    <div class="app-wrapper">
+
     <!-- Navbar -->
     <nav class="nav-bar">
         <div class="nav-container">
@@ -1974,6 +2014,9 @@
             }
         }
     </script>
+
+    </div><!-- End app-wrapper -->
+
     <!-- Announcements - same as patient-dashboard -->
     <script src="js/announcements-dashboard.js?v=20260130"></script>
 </body>

@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Kalender Kesuburan - dokterDIBYA</title>
     <link rel="icon" type="image/png" href="/favicon.png">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -29,6 +29,28 @@
             min-height: 100vh;
             color: #fff;
             font-weight: 300;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        .safe-area-top {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-top, 0px);
+            background: #1a1a1a;
+            z-index: 9999;
+        }
+
+        .safe-area-bottom {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-bottom, 0px);
+            background: #1a1a1a;
+            z-index: 9999;
         }
 
         /* Background Animation */
@@ -901,6 +923,8 @@
     </style>
 </head>
 <body>
+    <div class="safe-area-top"></div>
+    <div class="safe-area-bottom"></div>
     <!-- Background Animation -->
     <div class="bg-animation">
         <div class="bubble" style="width: 80px; height: 80px; left: 10%; top: 20%; animation-delay: 0s;"></div>
@@ -914,7 +938,7 @@
         <!-- Header -->
         <div class="header">
             <h1><div class="header-logo"><img src="/db-logo.png" alt="Logo"></div> Kalender Kesuburan</h1>
-            <a href="/patient-dashboard.html" class="btn-back">
+            <a href="/patient-menu.html" class="btn-back">
                 <i class="fas fa-arrow-left"></i> Kembali
             </a>
         </div>

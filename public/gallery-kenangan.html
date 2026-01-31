@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Gallery Kenangan Anda - Dokter Dibya</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Quicksand:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -63,6 +63,28 @@
             color: var(--text-primary);
             transition: all 0.5s ease;
             overflow-x: hidden;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        .safe-area-top {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-top, 0px);
+            background: var(--primary-light);
+            z-index: 9999;
+        }
+
+        .safe-area-bottom {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-bottom, 0px);
+            background: var(--primary-light);
+            z-index: 9999;
         }
 
         /* Floating particles background */
@@ -934,9 +956,11 @@
     </style>
 </head>
 <body data-theme="pink">
+    <div class="safe-area-top"></div>
+    <div class="safe-area-bottom"></div>
     <!-- Access Gate (Subscriber Wall) -->
     <div class="access-gate" id="accessGate">
-        <a href="/patient-dashboard.html" class="gate-back">
+        <a href="/patient-menu.html" class="gate-back">
             <i class="fas fa-arrow-left"></i> Kembali
         </a>
         <div class="gate-content">
@@ -974,7 +998,7 @@
                 <i class="fas fa-crown"></i> Berlangganan Sekarang - Rp 10.000/bulan
             </a>
             <p class="gate-login">
-                Sudah berlangganan? <a href="/patient-dashboard.html">Login di sini</a>
+                Sudah berlangganan? <a href="/patient-menu.html">Login di sini</a>
             </p>
         </div>
     </div>
@@ -984,7 +1008,7 @@
 
     <!-- Header -->
     <header class="header" style="display: none;" id="mainHeader">
-        <a href="/patient-dashboard.html" class="back-btn">
+        <a href="/patient-menu.html" class="back-btn">
             <i class="fas fa-arrow-left"></i>
             <span>Kembali</span>
         </a>

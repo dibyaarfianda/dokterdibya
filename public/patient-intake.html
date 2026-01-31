@@ -1254,7 +1254,7 @@
                     setTimeout(() => {
                         // Get token for redirect (preserve auth for mobile app)
                         const redirectToken = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token') || localStorage.getItem('patient_token');
-                        let dashboardUrl = '/patient-dashboard.html';
+                        let dashboardUrl = '/patient-menu.html';
                         if (redirectToken) {
                             dashboardUrl += '?token=' + encodeURIComponent(redirectToken);
                         }

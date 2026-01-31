@@ -3,7 +3,7 @@ const API_BASE_URL = '/api/patients';
 
 // Configuration
 const GOOGLE_CLIENT_ID = '738335602560-52as846lk2oo78fr38a86elu8888m7eh.apps.googleusercontent.com'; // TODO: Replace with actual Google Client ID from console.cloud.google.com
-const REDIRECT_AFTER_LOGIN = '/patient-dashboard.html'; // Change to '/patient-intake.html' if you want direct form access
+const REDIRECT_AFTER_LOGIN = '/patient-menu.html'; // Change to '/patient-intake.html' if you want direct form access
 
 // Suppress Google Sign-In related errors globally
 window.addEventListener('error', function(event) {
