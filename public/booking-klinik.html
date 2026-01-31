@@ -17,7 +17,28 @@
             background: linear-gradient(135deg, #1a1a2e 0%, #303030 100%);
             min-height: 100vh;
             color: #ffffff;
-            padding-bottom: 80px;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+        }
+
+        .safe-area-top {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-top, 0px);
+            background: #1a1a2e;
+            z-index: 9999;
+        }
+
+        .safe-area-bottom {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-bottom, 0px);
+            background: #1a1a2e;
+            z-index: 9999;
         }
 
         /* Navbar */
@@ -595,6 +616,8 @@
     </style>
 </head>
 <body>
+    <div class="safe-area-top"></div>
+    <div class="safe-area-bottom"></div>
     <!-- Top Navbar -->
     <nav class="nav-bar">
         <div class="nav-left">
