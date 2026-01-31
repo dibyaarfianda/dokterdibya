@@ -21,13 +21,13 @@ const config: CapacitorConfig = {
     allowMixedContent: false,
     captureInput: true,
     webContentsDebuggingEnabled: true, // Enable for debugging
-    backgroundColor: '#0f0f1a'
+    backgroundColor: '#1a1a1a'
   },
 
   // iOS specific config
   ios: {
     contentInset: 'automatic',
-    backgroundColor: '#0f0f1a',
+    backgroundColor: '#1a1a1a',
     preferredContentMode: 'mobile'
   },
 
@@ -36,12 +36,13 @@ const config: CapacitorConfig = {
     SplashScreen: {
       launchShowDuration: 0,
       launchAutoHide: true,
-      backgroundColor: '#0f0f1a',
+      backgroundColor: '#1a1a1a',
       showSpinner: false
     },
     StatusBar: {
       style: 'DARK',
-      backgroundColor: '#0f0f1a'
+      backgroundColor: '#1a1a1a',
+      overlaysWebView: true  // true = edge-to-edge, CSS env(safe-area-inset-*) akan aktif
     },
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert']
