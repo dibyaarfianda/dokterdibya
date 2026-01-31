@@ -831,6 +831,21 @@
             justify-content: center;
         }
 
+        /* Item Badge (NEW, etc) */
+        .item-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            font-size: 9px;
+            font-weight: 700;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 8px;
+            vertical-align: middle;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
         /* Quick Status */
         .quick-status {
             margin-bottom: 15px;
@@ -1393,7 +1408,7 @@
                                 <i class="fa fa-heartbeat"></i>
                             </div>
                             <h3>Aplikasi</h3>
-                            <p>Kick Counter, Tracker</p>
+                            <p>Kick Counter, Tracker, Kalender</p>
                         </div>
 
                         <!-- Card 3: Jadwal -->
@@ -1909,8 +1924,9 @@
                 icon: 'fa-heartbeat',
                 color: 'linear-gradient(135deg, #ec4899, #be185d)',
                 items: [
-                    { icon: 'fa-hand-paper-o', label: 'Kick Counter', href: '/kick-counter.html' },
+                    { icon: 'fa-hand-paper-o', label: 'Kick Counter', href: '/kick-counter.html', badge: 'NEW' },
                     { icon: 'fa-line-chart', label: 'Pregnancy Tracker', href: '/pregnancy-tracker.html' },
+                    { icon: 'fa-calendar', label: 'Kalender Kesuburan', href: '/fertility-calendar.html' },
                     { icon: 'fa-medkit', label: 'Jadwal Vitamin', href: '/jadwal-vitamin.html' }
                 ]
             },
@@ -1967,9 +1983,10 @@
             // Build menu items
             let menuHtml = '';
             data.items.forEach(function(item) {
+                const badgeHtml = item.badge ? '<span class="item-badge">' + item.badge + '</span>' : '';
                 menuHtml += '<a href="' + item.href + '" class="sheet-menu-item">' +
                     '<i class="fa ' + item.icon + ' menu-icon"></i>' +
-                    '<span>' + item.label + '</span>' +
+                    '<span>' + item.label + badgeHtml + '</span>' +
                     '<i class="fa fa-chevron-right arrow"></i>' +
                 '</a>';
             });
