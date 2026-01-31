@@ -127,17 +127,14 @@ function displayAnnouncements(announcements) {
         return;
     }
 
-    // Get priority announcement and most recent
+    // Show only latest 1 announcement (prioritize important/urgent if any)
     const priorityAnnouncement = announcements.find(a => a.priority === 'important' || a.priority === 'urgent');
-    const otherAnnouncements = announcements.filter(a => a.id !== priorityAnnouncement?.id);
 
-    // Initial 2: priority (if exists) + most recent
-    const initialAnnouncements = [];
-    if (priorityAnnouncement) initialAnnouncements.push(priorityAnnouncement);
-    if (otherAnnouncements[0]) initialAnnouncements.push(otherAnnouncements[0]);
-    const initialIds = initialAnnouncements.map(a => a.id);
+    // Initial: only 1 announcement (priority if exists, otherwise most recent)
+    const initialAnnouncement = priorityAnnouncement || announcements[0];
+    const initialAnnouncements = initialAnnouncement ? [initialAnnouncement] : [];
 
-    const remainingAnnouncements = announcements.filter(a => !initialIds.includes(a.id));
+    const remainingAnnouncements = announcements.filter(a => a.id !== initialAnnouncement?.id);
     const hasMore = remainingAnnouncements.length > 0;
 
     // Render initial announcements

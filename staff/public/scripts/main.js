@@ -102,6 +102,7 @@ function initPages() {
     pages.bulkUploadUSG = grab('bulk-upload-usg-page');
     pages.medifySync = grab('medify-sync-page');
     pages.patientActivity = grab('patient-activity-page');
+    pages.tanyaDokter = grab('tanya-dokter-page');
 }
 function loadExternalPage(containerId, htmlFile, options = {}) {
     const { forceReload = false } = options;

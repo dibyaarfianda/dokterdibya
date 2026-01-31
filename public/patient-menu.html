@@ -1223,20 +1223,20 @@
                 <div class="dashboard-card" id="welcome-section" style="margin-bottom: 20px; background: linear-gradient(135deg, rgba(40, 167, 233, 0.1), rgba(0, 102, 255, 0.1)); border: 1px solid rgba(40, 167, 233, 0.3);">
                     <h3 class="collapsible-header" onclick="toggleWelcomeSection()">
                         <span><i class="fa fa-heart"></i> Selamat Datang</span>
-                        <i class="fa fa-chevron-down toggle-icon" id="welcome-toggle-icon"></i>
+                        <i class="fa fa-chevron-up toggle-icon" id="welcome-toggle-icon"></i>
                     </h3>
-                    <div id="welcome-content" class="welcome-content">
-                        <p>Halaman ini adalah ruang khusus bagi Anda — tempat saya membantu Anda, memantau kehamilan atau kesehatan kandungan Anda secara berkala dan privat. Semua catatan dan informasi di sini bersifat <strong>rahasia</strong>. Mohon untuk tidak membagikan halaman rekam medis kepada orang selain keluarga inti/ keluarga yang dipercaya. Karena itulah keamanan sistem ini menjadi prioritas saya dengan menerapkan proteksi berlapis dan enkripsi untuk mencegah peretasan.</p>
+                    <div id="welcome-content" class="welcome-content" style="display: none;">
+                        <p>Halaman ini adalah ruang khusus bagi Anda — tempat saya membantu Anda, memantau kehamilan atau kesehatan kandungan Anda secara berkala dan privat. Semua catatan dan informasi di sini bersifat <strong>rahasia</strong>. Mohon untuk tidak membagikan portal Anda kepada orang selain keluarga inti/ keluarga yang dipercaya. Karena itulah keamanan sistem ini menjadi prioritas saya dengan menerapkan proteksi berlapis dan enkripsi untuk mencegah peretasan.</p>
 
-                        <p>Adanya <strong style="font-weight: 600;"><span style="color: #ffffff;">dokter</span><span style="color: #0066FF;">DIBYA</span></strong> berawal dari keinginan <i>sederhana</i> saya, yaitu agar setiap pasien bisa tetap terhubung dengan dokter pilihannya, tanpa batasan rumah sakit, tempat, atau waktu. Update selalu dengan perubahan jadwal dari saya, reminding jadwal kontrol, booking slot dengan mudah, dan bahkan kedepan bukan tidak mungkin konsultasi secara online dengan jadwal yang disepakati!</p>
+                        <p>Adanya Portal <strong style="font-weight: 600;"><span style="color: #ffffff;">dokter</span><span style="color: #0066FF;">DIBYA</span></strong> berawal dari keinginan <i>sederhana</i> saya, yaitu agar setiap pasien bisa tetap terhubung dengan dokter pilihannya tanpa batasan tempat dan waktu. Update selalu dengan perubahan jadwal, reminding jadwal minum vitamin, booking slot dengan mudah dan bahkan nantinya konsultasi secara online dengan jadwal yang disepakati!</p>
 
-                        <p>Walaupun demikian saya paham, banyak tantangan dan kesulitan dalam memulai hal baru. Tapi saya percaya, langkah kecil ini bisa membawa perubahan besar menuju pelayanan berkesinambungan dari dokter favorit Anda. Sebelum kita memulai perjalanan ini, mohon mengisi data pribadi dan riwayat medis, data kehamilan, masalah kandungan, riwayat KB. Besar harapan saya, Anda mengisi dengan lengkap sehingga dapat menjadi modalitas bagi saya dalam pemilihan terapi dan layanan terbaik untuk Anda.</p>
+                        <p>Walaupun demikian saya paham, banyak tantangan dan kesulitan dalam memulai hal baru. Tapi saya percaya, langkah kecil ini bisa membawa perubahan besar menuju pelayanan berkesinambungan. Sebelum kita memulai perjalanan ini, mohon mengisi data pribadi dan riwayat medis, data kehamilan, masalah kandungan, riwayat KB. Besar harapan saya, Anda mengisi dengan lengkap sehingga dapat menjadi modalitas bagi saya dalam pemilihan terapi dan layanan terbaik untuk Anda.</p>
 
                         <p>Terima kasih telah menjadi bagian dari <strong>"modern therapy without boundary"</strong> — pendampingan dan terapi berkelanjutan, di mana pun dan kapan pun Anda membutuhkannya.</p>
 
                         <p style="text-align: right; color: #28a7e9; margin-top: 20px;">
-                            <strong style="font-weight: 500;">Salam hangat,</strong><br>
-                            <strong style="font-size: 16px; font-weight: 600;">dokter Anda</strong>
+                            <strong style="font-weight: 500;">salam hangat,</strong><br>
+                            <strong style="font-size: 16px; font-weight: 600;">dr. Dibya</strong>
                         </p>
                     </div>
                 </div>
@@ -1310,9 +1310,9 @@
                 <div class="dashboard-card" id="announcements-section" style="margin-bottom: 20px;">
                     <h3 class="collapsible-header" onclick="toggleAnnouncementsSection()">
                         <span><i class="fa fa-bullhorn"></i> Pengumuman</span>
-                        <i class="fa fa-chevron-down toggle-icon" id="announcements-toggle-icon"></i>
+                        <i class="fa fa-chevron-up toggle-icon" id="announcements-toggle-icon"></i>
                     </h3>
-                    <div id="announcements-content">
+                    <div id="announcements-content" style="display: none;">
                         <div id="announcements-container">
                             <div style="text-align: center; padding: 20px; color: #999;">
                                 <i class="fa fa-spinner fa-spin fa-2x"></i>
@@ -1338,12 +1338,12 @@
                 <!-- Menu Grid -->
                 <div class="menu-container">
                     <div class="menu-grid">
-                        <!-- Card 1: Resume Medis -->
+                        <!-- Card 1: Dokumen -->
                         <div class="menu-card" onclick="navigateTo('rekam-medis')">
                             <div class="menu-icon" style="background: linear-gradient(135deg, #3b82f6, #1d4ed8);">
                                 <i class="fa fa-file-text-o"></i>
                             </div>
-                            <h3>Resume Medis</h3>
+                            <h3>Dokumen</h3>
                             <p>USG, Lab, Riwayat</p>
                         </div>
 
@@ -1505,6 +1505,17 @@
 
                     // Store gestational age for pregnancy tracker
                     window.patientGestationalAge = profile.gestational_age;
+
+                    // Expand welcome message for new patients (intake not completed, registered < 24 hours)
+                    if (profile.intake_completed !== 1 && profile.created_at) {
+                        const regDate = new Date(profile.created_at);
+                        const hoursSinceReg = (Date.now() - regDate.getTime()) / (1000 * 60 * 60);
+                        if (hoursSinceReg < 24) {
+                            document.getElementById('welcome-content').style.display = 'block';
+                            document.getElementById('welcome-toggle-icon').classList.remove('fa-chevron-up');
+                            document.getElementById('welcome-toggle-icon').classList.add('fa-chevron-down');
+                        }
+                    }
 
                     // Check subscription for VIP badge
                     checkVipSubscription();
@@ -1835,13 +1846,13 @@
         // ==================== BOTTOM SHEET MENU DATA ====================
         const menuData = {
             'rekam-medis': {
-                title: 'Resume Medis',
+                title: 'Dokumen',
                 icon: 'fa-file-text-o',
                 color: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
                 items: [
                     { icon: 'fa-picture-o', label: 'Album USG', href: '/album-usg.html' },
                     { icon: 'fa-flask', label: 'Hasil Lab', href: '/hasil-lab.html' },
-                    { icon: 'fa-folder-open', label: 'Rekam Medis Saya', href: '/dokumen-medis.html' },
+                    { icon: 'fa-folder-open', label: 'Resume Medis Saya', href: '/dokumen-medis.html' },
                     { icon: 'fa-history', label: 'Riwayat Medis', href: '/riwayat-medis.html' }
                 ]
             },
