@@ -19,8 +19,8 @@
     --red: #ef4444;
     --gray: #6b7280;
 
-    --bg-dark: #1a1a2e;
-    --bg-dark-secondary: #303030;
+    --bg-dark: #000000;
+    --bg-dark-secondary: #000000;
     --bg-card: rgba(255, 255, 255, 0.1);
     --border-light: rgba(255, 255, 255, 0.2);
     --border-lighter: rgba(255, 255, 255, 0.1);

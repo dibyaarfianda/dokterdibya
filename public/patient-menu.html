@@ -39,7 +39,7 @@
             left: 0;
             right: 0;
             height: env(safe-area-inset-top, 0px);
-            background: #1a1a1a;
+            background: #000000;
             z-index: 9999;
         }
 
@@ -49,7 +49,7 @@
             left: 0;
             right: 0;
             height: env(safe-area-inset-bottom, 0px);
-            background: #1a1a1a;
+            background: #000000;
             z-index: 9999;
         }
 
@@ -58,7 +58,7 @@
             padding-top: env(safe-area-inset-top, 0px);
             padding-bottom: env(safe-area-inset-bottom, 0px);
             min-height: 100vh;
-            background: linear-gradient(135deg, #1a1a1a 0%, #303030 100%);
+            background: #000000;
         }
 
         /* Navbar */
@@ -1956,7 +1956,7 @@
                 items: [
                     { icon: 'fa-question-circle', label: 'Ajukan Pertanyaan', href: '/tanya-dokter.html#ask' },
                     { icon: 'fa-history', label: 'Riwayat Tanya Jawab', href: '/tanya-dokter.html#history' },
-                    { icon: 'fa-star', label: 'Upgrade Premium', href: '/tanya-dokter.html#premium' }
+                    { icon: 'fa-star', label: 'Upgrade Premium', href: '#', comingSoon: true }
                 ]
             },
             'bantuan': {
@@ -1965,7 +1965,7 @@
                 color: 'linear-gradient(135deg, #6b7280, #4b5563)',
                 items: [
                     { icon: 'fa-question', label: 'FAQ', href: '/bantuan.html' },
-                    { icon: 'fa-whatsapp', label: 'Hubungi Kami', href: 'https://wa.me/6281234567890' }
+                    { icon: 'fa-whatsapp', label: 'Hubungi Kami', href: 'https://wa.me/62895320726801' }
                 ]
             }
         };
@@ -1984,11 +1984,19 @@
             let menuHtml = '';
             data.items.forEach(function(item) {
                 const badgeHtml = item.badge ? '<span class="item-badge">' + item.badge + '</span>' : '';
-                menuHtml += '<a href="' + item.href + '" class="sheet-menu-item">' +
-                    '<i class="fa ' + item.icon + ' menu-icon"></i>' +
-                    '<span>' + item.label + badgeHtml + '</span>' +
-                    '<i class="fa fa-chevron-right arrow"></i>' +
-                '</a>';
+                if (item.comingSoon) {
+                    menuHtml += '<a href="#" onclick="showComingSoon(event)" class="sheet-menu-item">' +
+                        '<i class="fa ' + item.icon + ' menu-icon"></i>' +
+                        '<span>' + item.label + badgeHtml + '</span>' +
+                        '<i class="fa fa-chevron-right arrow"></i>' +
+                    '</a>';
+                } else {
+                    menuHtml += '<a href="' + item.href + '" class="sheet-menu-item">' +
+                        '<i class="fa ' + item.icon + ' menu-icon"></i>' +
+                        '<span>' + item.label + badgeHtml + '</span>' +
+                        '<i class="fa fa-chevron-right arrow"></i>' +
+                    '</a>';
+                }
             });
 
             document.getElementById('sheet-menu').innerHTML = menuHtml;
@@ -2029,6 +2037,24 @@
             } else {
                 window.location.href = '/patient-login.html';
             }
+        }
+
+        // ==================== COMING SOON ====================
+        function showComingSoon(event) {
+            event.preventDefault();
+            // Create toast notification
+            let toast = document.getElementById('coming-soon-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'coming-soon-toast';
+                toast.style.cssText = 'position:fixed;bottom:100px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,0.95);color:#000;padding:12px 24px;border-radius:25px;font-size:14px;font-weight:500;z-index:10000;box-shadow:0 4px 15px rgba(0,0,0,0.3);opacity:0;transition:opacity 0.3s;';
+                document.body.appendChild(toast);
+            }
+            toast.textContent = 'Akan segera hadir';
+            toast.style.opacity = '1';
+            setTimeout(function() {
+                toast.style.opacity = '0';
+            }, 2000);
         }
     </script>
 
