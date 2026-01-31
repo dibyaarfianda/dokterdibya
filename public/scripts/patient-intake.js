@@ -1263,7 +1263,7 @@ form.addEventListener('submit', async (event) => {
         
         // Redirect to dashboard after 2 seconds
         setTimeout(() => {
-            window.location.href = '/patient-dashboard.html?_=' + Date.now();
+            window.location.href = '/patient-menu.html?_=' + Date.now();
         }, 2000);
     } catch (error) {
         console.error('Submit intake gagal', error);

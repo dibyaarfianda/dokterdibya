@@ -150,7 +150,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Success - redirect to dashboard
             console.log('Profile saved successfully, redirecting...');
-            window.location.href = '/patient-dashboard.html';
+            window.location.href = '/patient-menu.html';
             
         } catch (error) {
             console.error('Error saving profile:', error);

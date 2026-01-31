@@ -9,7 +9,7 @@ const OFFLINE_URL = '/offline.html';
 // Files to cache immediately on install
 const PRECACHE_FILES = [
   '/',
-  '/patient-dashboard.html',
+  '/patient-menu.html',
   '/patient-login.html',
   '/offline.html',
   '/images/dibya-logo.png',
@@ -142,7 +142,7 @@ self.addEventListener('push', (event) => {
     badge: '/images/pwa-icons/icon-72x72.png',
     vibrate: [100, 50, 100],
     data: {
-      url: data.url || '/patient-dashboard.html'
+      url: data.url || '/patient-menu.html'
     }
   };
 
@@ -154,7 +154,7 @@ self.addEventListener('push', (event) => {
 // Handle notification click
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const url = event.notification.data?.url || '/patient-dashboard.html';
+  const url = event.notification.data?.url || '/patient-menu.html';
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })

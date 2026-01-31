@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Perjalanan menjadi Ibu - dokterDIBYA</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
@@ -28,6 +28,28 @@
             min-height: 100vh;
             color: #ffffff;
             overflow-x: hidden;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        .safe-area-top {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-top, 0px);
+            background: #1a1a1a;
+            z-index: 9999;
+        }
+
+        .safe-area-bottom {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-bottom, 0px);
+            background: #1a1a1a;
+            z-index: 9999;
         }
 
         .bg-animation {
@@ -81,7 +103,7 @@
 
         .back-btn {
             position: fixed;
-            top: 30px;
+            top: calc(30px + env(safe-area-inset-top, 0px));
             left: 30px;
             background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
@@ -342,9 +364,11 @@
     </style>
 </head>
 <body>
+    <div class="safe-area-top"></div>
+    <div class="safe-area-bottom"></div>
     <div class="bg-animation" id="bgAnimation"></div>
 
-    <a href="/patient-dashboard.html" class="back-btn">
+    <a href="/patient-menu.html" class="back-btn">
         <i class="fa fa-arrow-left"></i> Kembali ke Dashboard
     </a>
 

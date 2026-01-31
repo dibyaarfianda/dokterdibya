@@ -2,7 +2,7 @@
   "name": "Dokter Dibya - Portal Pasien",
   "short_name": "Dokter Dibya",
   "description": "Portal pasien untuk booking jadwal, riwayat kunjungan, dan informasi kesehatan",
-  "start_url": "/patient-dashboard.html",
+  "start_url": "/patient-menu.html",
   "display": "standalone",
   "background_color": "#1a1a1a",
   "theme_color": "#0066FF",

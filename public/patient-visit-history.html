@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Riwayat Kontrol - Dokter Dibya</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
@@ -16,6 +16,28 @@
             font-weight: 300;
             margin: 0;
             padding: 0;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+
+        .safe-area-top {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-top, 0px);
+            background: #202020;
+            z-index: 9999;
+        }
+
+        .safe-area-bottom {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: env(safe-area-inset-bottom, 0px);
+            background: #303030;
+            z-index: 9999;
         }
         
         a {
@@ -584,10 +606,12 @@
     </style>
 </head>
 <body>
+    <div class="safe-area-top"></div>
+    <div class="safe-area-bottom"></div>
     <!-- Navigation -->
     <nav class="nav-bar">
         <div class="container">
-            <a href="patient-dashboard.html"><i class="fa fa-home"></i> Dashboard</a>
+            <a href="patient-menu.html"><i class="fa fa-home"></i> Dashboard</a>
             <a href="patient-visit-history.html" class="active"><i class="fa fa-history"></i> Riwayat Kontrol</a>
             <a href="#" id="logout-link"><i class="fa fa-sign-out"></i> Keluar</a>
         </div>
@@ -657,7 +681,7 @@
 
         function smartRedirectToDashboard() {
             const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
-            let url = '/patient-dashboard.html';
+            let url = '/patient-menu.html';
             if (token) {
                 url += '?token=' + encodeURIComponent(token);
             }
