@@ -1430,8 +1430,16 @@
             // Check for token in URL (from mobile app)
             const urlParams = new URLSearchParams(window.location.search);
             const urlToken = urlParams.get('token');
+            const urlUser = urlParams.get('user');
             if (urlToken) {
                 localStorage.setItem('vps_auth_token', urlToken);
+                if (urlUser) {
+                    try {
+                        localStorage.setItem('patient_user', decodeURIComponent(urlUser));
+                    } catch (e) {
+                        console.error('Failed to parse user from URL:', e);
+                    }
+                }
                 localStorage.setItem('from_mobile_app', 'true');
                 // Clean URL
                 window.history.replaceState({}, document.title, window.location.pathname);
