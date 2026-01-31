@@ -700,11 +700,26 @@ router.get('/my-documents', verifyPatientToken, async (req, res) => {
             'rs_bhayangkara': { name: 'RS Bhayangkara', logo: '/images/bhayangkara-logo.png', color: '#28a745' }
         };
 
-        const enrichedDocuments = documents.map(doc => ({
-            ...doc,
-            location_name: locationConfig[doc.visit_location]?.name || 'Klinik Privat',
-            location_logo: locationConfig[doc.visit_location]?.logo || '/images/dibyablacklogo.svg',
-            location_color: locationConfig[doc.visit_location]?.color || '#3c8dbc'
+        // Generate signed URLs for R2 files
+        const enrichedDocuments = await Promise.all(documents.map(async (doc) => {
+            let fileUrl = doc.file_url;
+
+            // If file_url looks like an R2 key (not a full URL), generate signed URL
+            if (fileUrl && !fileUrl.startsWith('http') && !fileUrl.startsWith('/')) {
+                try {
+                    fileUrl = await r2Storage.getSignedDownloadUrl(fileUrl, 3600); // 1 hour expiry
+                } catch (e) {
+                    logger.error('Error generating signed URL for document', { id: doc.id, error: e.message });
+                }
+            }
+
+            return {
+                ...doc,
+                file_url: fileUrl,
+                location_name: locationConfig[doc.visit_location]?.name || 'Klinik Privat',
+                location_logo: locationConfig[doc.visit_location]?.logo || '/images/dibyablacklogo.svg',
+                location_color: locationConfig[doc.visit_location]?.color || '#3c8dbc'
+            };
         }));
 
         res.json({
