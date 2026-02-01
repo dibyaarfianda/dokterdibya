@@ -122,14 +122,12 @@ export async function requestNotificationPermission() {
 
         // Plugin not available - check if we're in Android WebView on external URL
         if (isAndroidWebView || isCapacitor) {
-            // Check if permission was previously granted from local Capacitor page
-            if (isPermissionGrantedFromLocalStorage()) {
-                console.log('[VitaminNotif] Plugin unavailable but permission was granted from local page');
-                return true;
-            }
-            console.warn('[VitaminNotif] Plugin unavailable and no saved permission status');
-            // Don't show error - user needs to grant permission from local page first
-            return false;
+            // In WebView on external URL, plugin is not accessible
+            // But native permission was already granted at app level
+            // localStorage between local page and external URL is NOT shared
+            // So we assume permission is granted if we're in the app's WebView
+            console.log('[VitaminNotif] In WebView on external URL - assuming permission granted at native level');
+            return true;
         }
 
         // Fallback to Web Notifications API (for regular browser)
@@ -173,11 +171,12 @@ export async function isNotificationPermitted() {
             return granted;
         }
 
-        // Plugin not available - check localStorage fallback
+        // Plugin not available - we're in WebView on external URL
         if (isAndroidWebView || isCapacitor) {
-            const savedStatus = isPermissionGrantedFromLocalStorage();
-            console.log('[VitaminNotif] Plugin unavailable, using saved status:', savedStatus);
-            return savedStatus;
+            // In WebView, native permission was granted at app startup
+            // We can't check it from external URL, but assume it's granted
+            console.log('[VitaminNotif] In WebView - assuming permission granted at native level');
+            return true;
         }
 
         // Fallback to Web Notification API
