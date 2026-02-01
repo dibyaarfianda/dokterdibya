@@ -659,7 +659,7 @@ function renderHospitalAppointmentsTable(appointments, hospitalName, hospitalCol
                 </td>
                 <td>${age}</td>
                 <td>${categoryBadge}</td>
-                <td>${complaint}</td>
+                <td style="white-space: normal; word-break: break-word; max-width: 200px;">${complaint}</td>
                 <td>${statusBadge}</td>
                 <td class="text-center">
                     <button type="button" class="btn btn-sm btn-primary" onclick="startHospitalExam(${apt.id}, '${apt.patient_id}', '${(apt.patient_name || '').replace(/'/g, "\\'")}')">

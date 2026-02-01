@@ -228,7 +228,7 @@ function renderAppointments(appointments) {
             </td>
             <td>${formatAge(appointment.patientAge)}</td>
             <td>${categoryBadge}</td>
-            <td>${complaint}</td>
+            <td style="white-space: normal; word-break: break-word; max-width: 200px;">${complaint}</td>
             <td>${statusBadge}</td>
             <td class="text-center">
                 <button type="button" class="btn btn-sm btn-primary klinik-private-periksa-btn" onclick="window.handleKlinikPeriksa && window.handleKlinikPeriksa(${index})">
