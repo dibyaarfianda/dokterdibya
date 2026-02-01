@@ -234,9 +234,15 @@ export function initRealtimeSync(user) {
             console.log(`📝 [REALTIME] ${data.userName} updated anamnesa for: ${data.patientName}`);
             showRealtimeNotification(`${data.userName} mengupdate anamnesa untuk: ${data.patientName}`, 'info');
 
-            // Auto-reload anamnesa data if same patient
+            // Auto-reload anamnesa data if same patient, but only if no unsaved changes
             if (window.currentPatientId === data.patientId) {
-                await reloadMedicalExamData('anamnesa');
+                // Check for unsaved changes before auto-reload
+                const stateManager = window.stateManager;
+                if (stateManager && stateManager.hasUnsavedChanges && stateManager.hasUnsavedChanges()) {
+                    console.log('[REALTIME] Skipping anamnesa reload - unsaved changes detected');
+                } else {
+                    await reloadMedicalExamData('anamnesa');
+                }
             }
         }
     });
@@ -247,9 +253,14 @@ export function initRealtimeSync(user) {
             console.log(`🩺 [REALTIME] ${data.userName} updated physical exam for: ${data.patientName}`);
             showRealtimeNotification(`${data.userName} mengupdate pemeriksaan fisik untuk: ${data.patientName}`, 'info');
 
-            // Auto-reload physical exam data if same patient
+            // Auto-reload physical exam data if same patient, but only if no unsaved changes
             if (window.currentPatientId === data.patientId) {
-                await reloadMedicalExamData('physical');
+                const stateManager = window.stateManager;
+                if (stateManager && stateManager.hasUnsavedChanges && stateManager.hasUnsavedChanges()) {
+                    console.log('[REALTIME] Skipping physical exam reload - unsaved changes detected');
+                } else {
+                    await reloadMedicalExamData('physical');
+                }
             }
         }
     });
@@ -260,9 +271,14 @@ export function initRealtimeSync(user) {
             console.log(`👶 [REALTIME] ${data.userName} updated USG exam for: ${data.patientName}`);
             showRealtimeNotification(`${data.userName} mengupdate USG untuk: ${data.patientName}`, 'info');
 
-            // Auto-reload USG data if same patient
+            // Auto-reload USG data if same patient, but only if no unsaved changes
             if (window.currentPatientId === data.patientId) {
-                await reloadMedicalExamData('usg');
+                const stateManager = window.stateManager;
+                if (stateManager && stateManager.hasUnsavedChanges && stateManager.hasUnsavedChanges()) {
+                    console.log('[REALTIME] Skipping USG reload - unsaved changes detected');
+                } else {
+                    await reloadMedicalExamData('usg');
+                }
             }
         }
     });
@@ -273,9 +289,14 @@ export function initRealtimeSync(user) {
             console.log(`🔬 [REALTIME] ${data.userName} updated lab exam for: ${data.patientName}`);
             showRealtimeNotification(`${data.userName} mengupdate pemeriksaan penunjang untuk: ${data.patientName}`, 'info');
 
-            // Auto-reload lab data if same patient
+            // Auto-reload lab data if same patient, but only if no unsaved changes
             if (window.currentPatientId === data.patientId) {
-                await reloadMedicalExamData('lab');
+                const stateManager = window.stateManager;
+                if (stateManager && stateManager.hasUnsavedChanges && stateManager.hasUnsavedChanges()) {
+                    console.log('[REALTIME] Skipping lab reload - unsaved changes detected');
+                } else {
+                    await reloadMedicalExamData('lab');
+                }
             }
         }
     });

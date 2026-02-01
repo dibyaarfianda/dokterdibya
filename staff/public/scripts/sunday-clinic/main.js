@@ -1976,10 +1976,20 @@ class SundayClinicApp {
                 // Only auto-refresh if the confirmed billing is for the same MR we're viewing
                 // This prevents resetting form data when staff is working on a different patient
                 if (data.mrId && this.currentMrId && data.mrId.toUpperCase() === this.currentMrId.toUpperCase()) {
-                    setTimeout(() => {
-                        console.log('[SundayClinic] Auto-refreshing after billing confirmed (same MR)');
-                        this.reload();
-                    }, 2000);
+                    // Check for unsaved changes before auto-reload
+                    // If staff is still typing/editing, don't auto-reload (would lose their work)
+                    if (stateManager.hasUnsavedChanges()) {
+                        console.log('[SundayClinic] Skipping auto-refresh - unsaved changes detected');
+                        // Show a subtle notification that they can manually refresh when ready
+                        if (window.showSuccess) {
+                            window.showSuccess('Billing terkonfirmasi. Simpan perubahan Anda, lalu refresh untuk melihat data terbaru.');
+                        }
+                    } else {
+                        setTimeout(() => {
+                            console.log('[SundayClinic] Auto-refreshing after billing confirmed (same MR)');
+                            this.reload();
+                        }, 2000);
+                    }
                 } else {
                     console.log('[SundayClinic] Skipping auto-refresh - different MR (confirmed:', data.mrId, 'current:', this.currentMrId, ')');
                 }
