@@ -118,6 +118,23 @@
             font-weight: 400 !important;
         }
 
+        /* Mobile-friendly complaint/reason columns - wrap text instead of horizontal scroll */
+        #klinik-private-tbody td:nth-child(5),
+        .hospital-appointments-container td:nth-child(5) {
+            white-space: normal !important;
+            word-break: break-word !important;
+            max-width: 150px !important;
+            line-height: 1.4 !important;
+        }
+
+        @media (max-width: 768px) {
+            #klinik-private-tbody td:nth-child(5),
+            .hospital-appointments-container td:nth-child(5) {
+                max-width: 100px !important;
+                font-size: 0.8rem !important;
+            }
+        }
+
         /* Submenu bullet icons - smaller circles */
         .sidebar .nav-treeview .nav-link i.fas.fa-circle.nav-icon,
         .nav-sidebar .nav-treeview .nav-link i.fa-circle {
