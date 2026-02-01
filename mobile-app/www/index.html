@@ -1285,27 +1285,35 @@
         }
 
         // Request notification permission on first launch
+        // IMPORTANT: This also saves permission status to localStorage for external URL access
         async function requestNotificationPermissionOnStart() {
-            try {
-                // Check if we already asked (to avoid asking every time)
-                const askedNotif = localStorage.getItem('asked_notification_permission');
-                if (askedNotif) return;
+            const NOTIF_PERMISSION_KEY = 'capacitor_notif_permission_granted';
 
+            try {
                 // Wait a bit for Capacitor to be fully ready
                 await new Promise(resolve => setTimeout(resolve, 500));
 
                 if (window.Capacitor && window.Capacitor.Plugins) {
                     const LocalNotifications = window.Capacitor.Plugins.LocalNotifications;
                     const PushNotifications = window.Capacitor.Plugins.PushNotifications;
+                    let permissionGranted = false;
 
-                    // Request Local Notifications permission
+                    // Request/Check Local Notifications permission
                     if (LocalNotifications) {
                         const localStatus = await LocalNotifications.checkPermissions();
                         console.log('[Notif] Local permission status:', localStatus.display);
-                        if (localStatus.display === 'prompt') {
+
+                        if (localStatus.display === 'granted') {
+                            permissionGranted = true;
+                        } else if (localStatus.display === 'prompt') {
                             const result = await LocalNotifications.requestPermissions();
                             console.log('[Notif] Local permission result:', result.display);
+                            permissionGranted = result.display === 'granted';
                         }
+
+                        // Save permission status to localStorage for external URL access
+                        localStorage.setItem(NOTIF_PERMISSION_KEY, permissionGranted ? 'true' : 'false');
+                        console.log('[Notif] Saved permission status:', permissionGranted);
                     }
 
                     // Request Push Notifications permission
