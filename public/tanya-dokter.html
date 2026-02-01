@@ -611,7 +611,8 @@
                 <div class="tanya-tab" data-section="history" onclick="switchSection('history')">
                     <i class="fa fa-history"></i> Riwayat
                 </div>
-                <div class="tanya-tab" data-section="premium" onclick="switchSection('premium')">
+                <!-- Premium tab hidden -->
+                <div class="tanya-tab" data-section="premium" onclick="switchSection('premium')" style="display:none;">
                     <i class="fa fa-star"></i> Premium
                 </div>
             </div>
@@ -679,8 +680,8 @@
                 </div>
             </div>
 
-            <!-- Section: Premium -->
-            <div class="content-section" id="section-premium">
+            <!-- Section: Premium (hidden) -->
+            <div class="content-section" id="section-premium" style="display:none !important;">
                 <div class="card tanya-card">
                     <p style="color: rgba(255,255,255,0.7); font-size: 14px; margin-bottom: 20px;">
                         Dapatkan lebih banyak kesempatan bertanya dengan berlangganan Premium!
