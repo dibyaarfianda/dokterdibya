@@ -1162,6 +1162,27 @@
             transition: none !important;
         }
 
+        /* Pull to Refresh */
+        .pull-indicator {
+            position: fixed;
+            top: calc(env(safe-area-inset-top, 0px) + 60px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(40, 167, 233, 0.9);
+            color: #fff;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 13px;
+            z-index: 200;
+            opacity: 0;
+            transition: opacity 0.3s;
+            pointer-events: none;
+        }
+
+        .pull-indicator.visible {
+            opacity: 1;
+        }
+
         /* Bottom Sheet Overlay */
         .bottom-sheet-overlay {
             position: fixed;
@@ -1294,6 +1315,11 @@
     <!-- Safe area bars for notch/status bar/navigation bar -->
     <div class="safe-area-top"></div>
     <div class="safe-area-bottom"></div>
+
+    <!-- Pull to Refresh Indicator -->
+    <div class="pull-indicator" id="pullIndicator">
+        <i class="fa fa-refresh"></i> Lepas untuk refresh
+    </div>
 
     <!-- App wrapper with safe area padding -->
     <div class="app-wrapper">
@@ -2160,6 +2186,44 @@
                 toast.style.opacity = '0';
             }, 2000);
         }
+
+        // ==================== PULL TO REFRESH ====================
+        let touchStartY = 0;
+        let touchEndY = 0;
+        const pullIndicator = document.getElementById('pullIndicator');
+
+        document.addEventListener('touchstart', function(e) {
+            if (window.scrollY === 0) {
+                touchStartY = e.touches[0].clientY;
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchmove', function(e) {
+            if (window.scrollY === 0 && touchStartY > 0) {
+                touchEndY = e.touches[0].clientY;
+                const pullDistance = touchEndY - touchStartY;
+                if (pullDistance > 80) {
+                    pullIndicator.classList.add('visible');
+                } else {
+                    pullIndicator.classList.remove('visible');
+                }
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchend', function(e) {
+            if (window.scrollY === 0 && touchStartY > 0) {
+                const pullDistance = touchEndY - touchStartY;
+                if (pullDistance > 80) {
+                    pullIndicator.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Memuat...';
+                    setTimeout(function() {
+                        window.location.reload();
+                    }, 300);
+                }
+            }
+            touchStartY = 0;
+            touchEndY = 0;
+            pullIndicator.classList.remove('visible');
+        }, { passive: true });
     </script>
 
     </div><!-- End app-wrapper -->
