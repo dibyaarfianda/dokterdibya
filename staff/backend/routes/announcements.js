@@ -5,6 +5,8 @@ const logger = require('../utils/logger');
 const { verifyToken, requirePermission } = require('../middleware/auth');
 const multer = require('multer');
 const r2Storage = require('../services/r2Storage');
+const firebase = require('../services/firebase');
+const { createPatientNotification } = require('./patient-notifications');
 
 // Configure multer for memory storage
 const upload = multer({
@@ -358,6 +360,13 @@ router.post('/', verifyToken, requirePermission('announcements.create'), async (
             logger.info('Emitted announcement:new event', { id: newAnnouncement.id, title: newAnnouncement.title });
         }
 
+        // Send push notifications to all patients if announcement is active
+        if (newAnnouncement.status === 'active') {
+            sendAnnouncementToAllPatients(newAnnouncement).catch(err => {
+                logger.error('Error sending announcement notifications:', err);
+            });
+        }
+
         res.json({
             success: true,
             message: 'Announcement created successfully',
@@ -466,22 +475,130 @@ router.delete('/:id', verifyToken, requirePermission('announcements.delete'), as
             'DELETE FROM announcements WHERE id = ?',
             [req.params.id]
         );
-        
+
         if (result.affectedRows === 0) {
-            return res.status(404).json({ 
-                success: false, 
-                message: 'Announcement not found' 
+            return res.status(404).json({
+                success: false,
+                message: 'Announcement not found'
             });
         }
-        
-        res.json({ 
-            success: true, 
-            message: 'Announcement deleted successfully' 
+
+        res.json({
+            success: true,
+            message: 'Announcement deleted successfully'
         });
     } catch (error) {
         console.error('Error deleting announcement:', error);
         res.status(500).json({ success: false, message: error.message });
     }
 });
+
+/**
+ * Send announcement notification to all patients
+ * Creates patient_notifications entries and sends FCM push notifications
+ * @param {Object} announcement - The announcement object
+ */
+async function sendAnnouncementToAllPatients(announcement) {
+    try {
+        // Get all active patients
+        const [patients] = await db.query(`
+            SELECT id, fcm_token FROM patients
+            WHERE status != 'deleted' OR status IS NULL
+        `);
+
+        if (patients.length === 0) {
+            logger.info('No patients to send announcement to');
+            return;
+        }
+
+        logger.info(`Sending announcement to ${patients.length} patients`, {
+            announcementId: announcement.id
+        });
+
+        // Determine icon based on priority
+        let icon = 'fa fa-bullhorn';
+        let iconColor = 'text-info';
+        if (announcement.priority === 'urgent') {
+            icon = 'fa fa-exclamation-triangle';
+            iconColor = 'text-danger';
+        } else if (announcement.priority === 'important') {
+            icon = 'fa fa-exclamation-circle';
+            iconColor = 'text-warning';
+        }
+
+        // Create notification for each patient (in batches)
+        const batchSize = 100;
+        for (let i = 0; i < patients.length; i += batchSize) {
+            const batch = patients.slice(i, i + batchSize);
+
+            // Insert notifications for batch
+            const values = batch.map(p => [
+                p.id,
+                'announcement',
+                announcement.title,
+                announcement.message.substring(0, 200),
+                `/patient-menu.html#pengumuman`,
+                icon,
+                iconColor
+            ]);
+
+            const placeholders = values.map(() => '(?, ?, ?, ?, ?, ?, ?)').join(', ');
+            const flatValues = values.flat();
+
+            await db.query(`
+                INSERT INTO patient_notifications
+                (patient_id, type, title, message, link, icon, icon_color)
+                VALUES ${placeholders}
+            `, flatValues);
+        }
+
+        logger.info(`Created ${patients.length} patient notifications for announcement`);
+
+        // Send FCM push notifications to patients with tokens
+        const fcmTokens = patients
+            .filter(p => p.fcm_token)
+            .map(p => p.fcm_token);
+
+        if (fcmTokens.length > 0 && firebase.isInitialized()) {
+            logger.info(`Sending FCM to ${fcmTokens.length} devices`);
+
+            // FCM has a limit of 500 tokens per batch
+            const fcmBatchSize = 500;
+            for (let i = 0; i < fcmTokens.length; i += fcmBatchSize) {
+                const batch = fcmTokens.slice(i, i + fcmBatchSize);
+
+                const result = await firebase.sendNotificationToMultiple(
+                    batch,
+                    announcement.title,
+                    announcement.message.substring(0, 100),
+                    {
+                        type: 'announcement',
+                        announcement_id: String(announcement.id),
+                        priority: announcement.priority || 'normal'
+                    }
+                );
+
+                logger.info(`FCM batch result: ${result.successCount} success, ${result.failureCount} failed`);
+
+                // Remove invalid tokens
+                if (result.invalidTokens && result.invalidTokens.length > 0) {
+                    for (const token of result.invalidTokens) {
+                        await db.query(
+                            'UPDATE patients SET fcm_token = NULL WHERE fcm_token = ?',
+                            [token]
+                        );
+                    }
+                    logger.info(`Removed ${result.invalidTokens.length} invalid FCM tokens`);
+                }
+            }
+        } else {
+            logger.info('No FCM tokens or Firebase not initialized');
+        }
+
+    } catch (error) {
+        logger.error('Error in sendAnnouncementToAllPatients:', error);
+        throw error;
+    }
+}
 
 module.exports = router;
