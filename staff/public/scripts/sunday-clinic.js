@@ -277,6 +277,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const initialRoute = parseRoute();
         const urlParams = new URLSearchParams(window.location.search);
         const mrIdFromQuery = urlParams.get('mr');
+        const patientIdFromQuery = urlParams.get('patient');
+        const appointmentIdFromQuery = urlParams.get('appointment');
+        const locationFromQuery = urlParams.get('location');
 
         if (initialRoute.mrId) {
             // Path-based: /sunday-clinic/{mrId}/{section}
@@ -284,6 +287,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else if (mrIdFromQuery) {
             // Query param: ?mr=xxx
             await loadMedicalRecord(mrIdFromQuery, 'identity');
+        } else if (patientIdFromQuery) {
+            // Query param: ?patient=xxx&appointment=yyy&location=zzz (from PERIKSA button)
+            await handlePatientFromUrl(patientIdFromQuery, appointmentIdFromQuery, locationFromQuery);
         } else {
             showWelcomeScreen();
         }
@@ -344,6 +350,87 @@ async function checkAuthentication() {
         localStorage.removeItem('vps_auth_token');
         window.location.href = '/staff/public/login.html';
         return false;
+    }
+}
+
+// ============================================================================
+// HANDLE PATIENT FROM URL (PERIKSA BUTTON FLOW)
+// ============================================================================
+
+/**
+ * Handle patient from URL parameters (from PERIKSA button click)
+ * Checks if patient already has a record today, if so loads it
+ * Otherwise creates a new record to prevent duplicate DRDs
+ */
+async function handlePatientFromUrl(patientId, appointmentId, location) {
+    console.log('[SundayClinic] Handling patient from URL:', { patientId, appointmentId, location });
+
+    // Show loading indicator
+    if (DOM.loading) {
+        DOM.loading.style.display = 'flex';
+        DOM.loading.innerHTML = `
+            <div class="text-center">
+                <div class="spinner-border text-primary mb-3" role="status"></div>
+                <p class="text-muted">Memuat rekam medis...</p>
+            </div>
+        `;
+    }
+
+    try {
+        const token = localStorage.getItem('vps_auth_token');
+
+        // Check if patient already has a record today at this location
+        const checkUrl = `/api/sunday-clinic/check-existing?patient_id=${patientId}${location ? `&location=${location}` : ''}`;
+        const checkResponse = await fetch(checkUrl, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const checkData = await checkResponse.json();
+
+        console.log('[SundayClinic] Check existing result:', checkData);
+
+        if (checkData.success && checkData.existingMrId) {
+            // Patient already has a record today - load it
+            console.log('[SundayClinic] Found existing record:', checkData.existingMrId);
+            await loadMedicalRecord(checkData.existingMrId, 'identity');
+        } else {
+            // No existing record - create new one
+            console.log('[SundayClinic] No existing record, creating new one');
+
+            // Default to 'obstetri' category, can be changed by user
+            const category = 'obstetri';
+            const visitLocation = location || 'klinik_private';
+
+            const createResponse = await fetch('/api/sunday-clinic/start-walk-in', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    patient_id: patientId,
+                    category: category,
+                    location: visitLocation
+                })
+            });
+
+            const createData = await createResponse.json();
+
+            if (createData.success && createData.data?.mrId) {
+                console.log('[SundayClinic] Created new record:', createData.data.mrId);
+                await loadMedicalRecord(createData.data.mrId, 'identity');
+            } else {
+                throw new Error(createData.message || 'Gagal membuat rekam medis baru');
+            }
+        }
+    } catch (error) {
+        console.error('[SundayClinic] Error handling patient from URL:', error);
+        showError('Gagal memuat rekam medis: ' + error.message);
+
+        // Hide loading and show welcome screen as fallback
+        if (DOM.loading) {
+            DOM.loading.style.display = 'none';
+        }
+        showWelcomeScreen();
     }
 }
 
