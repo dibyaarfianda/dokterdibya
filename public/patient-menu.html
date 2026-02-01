@@ -25,7 +25,7 @@
 
         body {
             font-family: 'Poppins', sans-serif;
-            background: #1a1a1a;
+            background: #000000;
             min-height: 100vh;
             color: #ffffff;
             padding-left: env(safe-area-inset-left);
@@ -909,6 +909,83 @@
             font-size: 11px;
         }
 
+        /* Download App Banner - only show on web */
+        .download-app-banner {
+            display: none;
+            margin: 20px 15px 10px;
+            padding: 16px 20px;
+            background: linear-gradient(135deg, rgba(40, 167, 233, 0.15), rgba(139, 92, 246, 0.15));
+            border: 1px solid rgba(40, 167, 233, 0.3);
+            border-radius: 16px;
+            text-align: center;
+        }
+
+        .download-app-banner.show {
+            display: block;
+        }
+
+        .download-app-banner h4 {
+            font-size: 14px;
+            font-weight: 600;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+
+        .download-app-banner p {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.7);
+            margin-bottom: 12px;
+        }
+
+        .download-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 25px;
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+
+        .download-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+        }
+
+        .download-btn.ios {
+            background: linear-gradient(135deg, #6b7280, #4b5563);
+            cursor: default;
+            position: relative;
+        }
+
+        .download-btn.ios:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .download-btn .coming-soon {
+            font-size: 9px;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 4px;
+        }
+
+        .download-btn i {
+            font-size: 16px;
+        }
+
         /* Loading State */
         .loading {
             display: flex;
@@ -1451,6 +1528,21 @@
                     </div>
                 </div>
 
+                <!-- Download App Banner (only visible on web browser) -->
+                <div class="download-app-banner" id="download-banner">
+                    <h4><i class="fa fa-mobile"></i> Dapatkan Aplikasi</h4>
+                    <p>Akses lebih cepat & notifikasi langsung</p>
+                    <div class="download-buttons">
+                        <a href="/downloads/dokterDIBYA_v2.0.apk" class="download-btn">
+                            <i class="fa fa-android"></i> Android
+                        </a>
+                        <span class="download-btn ios">
+                            <i class="fa fa-apple"></i> iOS
+                            <span class="coming-soon">Coming Soon</span>
+                        </span>
+                    </div>
+                </div>
+
                 <!-- Version Footer -->
                 <div class="version-footer">
                     <p>dokterDIBYA Patient Portal v2.0</p>
@@ -1526,6 +1618,16 @@
             // loadPregnancySection(); // Removed - only show on dashboard
             checkActiveBooking();
             loadBirthData();
+
+            // Show download banner only on web browser (not Capacitor)
+            const isCapacitorApp = window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform();
+            const fromMobileApp = localStorage.getItem('from_mobile_app') === 'true';
+            if (!isCapacitorApp && !fromMobileApp) {
+                const downloadBanner = document.getElementById('download-banner');
+                if (downloadBanner) {
+                    downloadBanner.classList.add('show');
+                }
+            }
         });
 
         // ==================== LOAD PROFILE ====================

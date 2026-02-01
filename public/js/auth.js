@@ -618,7 +618,7 @@ function checkLoginStatus() {
 
     if (token && userFullName && userEmail) {
         // User is logged in
-        if (window.location.pathname.endsWith('patient-dashboard.html')) {
+        if (window.location.pathname.endsWith('patient-menu.html') || window.location.pathname.endsWith('patient-dashboard.html')) {
             $('#user-name').text(userFullName);
             $('#user-email').text(userEmail);
 

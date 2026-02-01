@@ -134,7 +134,7 @@ ${this.clinicName}`;
         // Generate portal URL
         const portalUrl = shareToken
             ? `${this.baseUrl}/shared-document/${shareToken}`
-            : `${this.baseUrl}/patient-dashboard.html`;
+            : `${this.baseUrl}/patient-menu.html`;
 
         // Generate message
         const message = this.generateDocumentMessage(patientName, documents, portalUrl);
