@@ -1880,6 +1880,13 @@
                             <p>Import Fields</p>
                         </a>
                     </li>
+
+                    <li class="nav-item dokter-only d-none" id="nav-mobile-app">
+                        <a href="#" class="nav-link" onclick="showMobileAppPage(); return false;">
+                            <i class="nav-icon fas fa-mobile-alt"></i>
+                            <p>Aplikasi Mobile</p>
+                        </a>
+                    </li>
                 </ul>
             </nav>
             
@@ -6062,6 +6069,151 @@ Contoh Markdown:
                                         <nav>
                                             <ul class="pagination pagination-sm mb-0" id="patient-activity-pagination"></ul>
                                         </nav>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MOBILE APP PAGE -->
+                <div id="mobile-app-page" class="d-none">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h3 class="card-title"><i class="fas fa-mobile-alt mr-2"></i>Aplikasi Mobile</h3>
+                                    <div class="card-tools">
+                                        <button type="button" class="btn btn-tool" onclick="loadMobileAppStats()">
+                                            <i class="fas fa-sync-alt"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="card-body">
+                                    <!-- Current Version Info -->
+                                    <div class="row mb-4">
+                                        <div class="col-md-6">
+                                            <div class="info-box bg-gradient-success">
+                                                <span class="info-box-icon"><i class="fab fa-android"></i></span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">Android Version</span>
+                                                    <span class="info-box-number" id="ma-android-version">-</span>
+                                                    <div class="progress">
+                                                        <div class="progress-bar" style="width: 100%"></div>
+                                                    </div>
+                                                    <span class="progress-description" id="ma-android-updated">-</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="info-box bg-gradient-secondary">
+                                                <span class="info-box-icon"><i class="fab fa-apple"></i></span>
+                                                <div class="info-box-content">
+                                                    <span class="info-box-text">iOS Version</span>
+                                                    <span class="info-box-number" id="ma-ios-version">Coming Soon</span>
+                                                    <div class="progress">
+                                                        <div class="progress-bar" style="width: 0%"></div>
+                                                    </div>
+                                                    <span class="progress-description">Dalam pengembangan</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Download Stats -->
+                                    <div class="row mb-4">
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-info">
+                                                <div class="inner">
+                                                    <h3 id="ma-stat-total">0</h3>
+                                                    <p>Total Download</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-download"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-success">
+                                                <div class="inner">
+                                                    <h3 id="ma-stat-today">0</h3>
+                                                    <p>Hari Ini</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-calendar-day"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-warning">
+                                                <div class="inner">
+                                                    <h3 id="ma-stat-week">0</h3>
+                                                    <p>7 Hari Terakhir</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-calendar-week"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-3 col-6">
+                                            <div class="small-box bg-primary">
+                                                <div class="inner">
+                                                    <h3 id="ma-stat-unique">0</h3>
+                                                    <p>Unique Users</p>
+                                                </div>
+                                                <div class="icon"><i class="fas fa-users"></i></div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Download Link -->
+                                    <div class="callout callout-info mb-4">
+                                        <h5><i class="fas fa-link mr-2"></i>Link Download Tracking</h5>
+                                        <p class="mb-2">Gunakan link berikut untuk melacak download:</p>
+                                        <code id="ma-download-link">https://dokterdibya.com/api/app-version/download/android</code>
+                                        <button class="btn btn-sm btn-outline-primary ml-2" onclick="copyDownloadLink()">
+                                            <i class="fas fa-copy"></i> Copy
+                                        </button>
+                                    </div>
+
+                                    <!-- Download Logs Table -->
+                                    <div class="card card-outline card-primary">
+                                        <div class="card-header">
+                                            <h3 class="card-title"><i class="fas fa-list mr-2"></i>Log Download</h3>
+                                            <div class="card-tools">
+                                                <div class="input-group input-group-sm" style="width: 200px;">
+                                                    <input type="date" class="form-control" id="ma-filter-date" onchange="loadMobileAppLogs()">
+                                                    <div class="input-group-append">
+                                                        <button type="button" class="btn btn-default" onclick="document.getElementById('ma-filter-date').value=''; loadMobileAppLogs();">
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="card-body p-0">
+                                            <table class="table table-striped table-hover mb-0">
+                                                <thead>
+                                                    <tr>
+                                                        <th style="width:180px">Waktu Download</th>
+                                                        <th style="width:100px">Platform</th>
+                                                        <th style="width:100px">Versi</th>
+                                                        <th>IP Address</th>
+                                                        <th>User Agent</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody id="ma-logs-body">
+                                                    <tr>
+                                                        <td colspan="5" class="text-center text-muted py-4">
+                                                            <i class="fas fa-spinner fa-spin fa-2x mb-2"></i>
+                                                            <p class="mb-0">Memuat data...</p>
+                                                        </td>
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                        <div class="card-footer">
+                                            <div class="d-flex justify-content-between align-items-center">
+                                                <div class="text-muted small" id="ma-logs-info">Menampilkan 0 dari 0</div>
+                                                <nav>
+                                                    <ul class="pagination pagination-sm mb-0" id="ma-logs-pagination"></ul>
+                                                </nav>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
