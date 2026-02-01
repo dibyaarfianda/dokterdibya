@@ -15,6 +15,12 @@ let currentZipFile = null;
 let selectedHospital = null;
 let hospitals = [];
 
+// History state
+let historyData = [];
+let currentHistoryOffset = 0;
+let historyTotal = 0;
+const historyLimit = 20;
+
 /**
  * Initialize the bulk upload page
  */
@@ -67,6 +73,9 @@ function renderPage() {
                     <i class="fas fa-upload mr-2"></i>Bulk Upload Foto USG
                 </h3>
                 <div class="card-tools">
+                    <button class="btn btn-outline-secondary btn-sm mr-2" id="btn-view-history">
+                        <i class="fas fa-history mr-1"></i>Riwayat Upload
+                    </button>
                     <span class="badge badge-info" id="selected-hospital-badge">Pilih Lokasi</span>
                 </div>
             </div>
@@ -210,6 +219,113 @@ function renderPage() {
                 </div>
             </div>
         </div>
+
+        <!-- History Section (hidden by default) -->
+        <div id="upload-history-section" class="d-none">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-history mr-2"></i>Riwayat Bulk Upload
+                    </h3>
+                    <div class="card-tools">
+                        <button class="btn btn-outline-primary btn-sm" id="btn-back-to-upload">
+                            <i class="fas fa-arrow-left mr-1"></i>Kembali ke Upload
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <!-- Filters -->
+                    <div class="row mb-3">
+                        <div class="col-md-3">
+                            <label>Lokasi RS</label>
+                            <select class="form-control form-control-sm" id="history-filter-hospital">
+                                <option value="">Semua Lokasi</option>
+                                ${hospitals.map(h => `<option value="${h.value}">${h.label}</option>`).join('')}
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label>Dari Tanggal</label>
+                            <input type="date" class="form-control form-control-sm" id="history-filter-start">
+                        </div>
+                        <div class="col-md-3">
+                            <label>Sampai Tanggal</label>
+                            <input type="date" class="form-control form-control-sm" id="history-filter-end">
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button class="btn btn-info btn-sm" id="btn-filter-history">
+                                <i class="fas fa-search mr-1"></i>Filter
+                            </button>
+                            <button class="btn btn-secondary btn-sm ml-2" id="btn-reset-filter">
+                                <i class="fas fa-undo mr-1"></i>Reset
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Loading -->
+                    <div id="history-loading" class="text-center py-4 d-none">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-2 text-muted">Memuat riwayat...</p>
+                    </div>
+
+                    <!-- History Table -->
+                    <div class="table-responsive" id="history-table-container">
+                        <table class="table table-bordered table-hover table-sm">
+                            <thead class="thead-light">
+                                <tr>
+                                    <th>Tanggal Upload</th>
+                                    <th>Tanggal USG</th>
+                                    <th>Lokasi</th>
+                                    <th>File ZIP</th>
+                                    <th>Hasil</th>
+                                    <th>Diupload Oleh</th>
+                                    <th>Detail</th>
+                                </tr>
+                            </thead>
+                            <tbody id="history-tbody">
+                                <tr>
+                                    <td colspan="7" class="text-center text-muted">Belum ada data</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div id="history-pagination" class="d-flex justify-content-between align-items-center mt-3">
+                        <span class="text-muted" id="history-info">Menampilkan 0 dari 0 data</span>
+                        <div>
+                            <button class="btn btn-sm btn-outline-secondary" id="btn-prev-page" disabled>
+                                <i class="fas fa-chevron-left"></i> Sebelumnya
+                            </button>
+                            <button class="btn btn-sm btn-outline-secondary ml-2" id="btn-next-page" disabled>
+                                Berikutnya <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detail Modal -->
+        <div class="modal fade" id="history-detail-modal" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">
+                            <i class="fas fa-list mr-2"></i>Detail Upload
+                        </h5>
+                        <button type="button" class="close" data-dismiss="modal">
+                            <span>&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body" id="history-detail-body">
+                        <!-- Content will be loaded here -->
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     `;
 }
 
@@ -311,6 +427,14 @@ function setupEventListeners() {
             if (!cb.disabled) cb.checked = e.target.checked;
         });
     });
+
+    // History button
+    document.getElementById('btn-view-history')?.addEventListener('click', showHistory);
+    document.getElementById('btn-back-to-upload')?.addEventListener('click', hideHistory);
+    document.getElementById('btn-filter-history')?.addEventListener('click', () => loadHistory(0));
+    document.getElementById('btn-reset-filter')?.addEventListener('click', resetHistoryFilter);
+    document.getElementById('btn-prev-page')?.addEventListener('click', () => loadHistory(currentHistoryOffset - historyLimit));
+    document.getElementById('btn-next-page')?.addEventListener('click', () => loadHistory(currentHistoryOffset + historyLimit));
 }
 
 /**
@@ -646,6 +770,185 @@ function formatDate(dateStr) {
         day: 'numeric',
         month: 'long',
         year: 'numeric'
+    });
+}
+
+/**
+ * Show history section
+ */
+function showHistory() {
+    document.querySelector('.card:not(#upload-history-section .card)').classList.add('d-none');
+    document.getElementById('upload-history-section').classList.remove('d-none');
+    loadHistory(0);
+}
+
+/**
+ * Hide history section
+ */
+function hideHistory() {
+    document.getElementById('upload-history-section').classList.add('d-none');
+    document.querySelector('.card:not(#upload-history-section .card)').classList.remove('d-none');
+}
+
+/**
+ * Reset history filter
+ */
+function resetHistoryFilter() {
+    document.getElementById('history-filter-hospital').value = '';
+    document.getElementById('history-filter-start').value = '';
+    document.getElementById('history-filter-end').value = '';
+    loadHistory(0);
+}
+
+/**
+ * Load history data
+ */
+async function loadHistory(offset = 0) {
+    const loadingEl = document.getElementById('history-loading');
+    const tableContainer = document.getElementById('history-table-container');
+
+    loadingEl.classList.remove('d-none');
+    tableContainer.style.opacity = '0.5';
+
+    try {
+        const token = await getIdToken();
+        const hospital = document.getElementById('history-filter-hospital').value;
+        const startDate = document.getElementById('history-filter-start').value;
+        const endDate = document.getElementById('history-filter-end').value;
+
+        let url = `${API_URL}/usg-bulk-upload/history?limit=${historyLimit}&offset=${offset}`;
+        if (hospital) url += `&hospital=${hospital}`;
+        if (startDate) url += `&startDate=${startDate}`;
+        if (endDate) url += `&endDate=${endDate}`;
+
+        const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.message || 'Failed to load history');
+        }
+
+        historyData = data.history;
+        historyTotal = data.total;
+        currentHistoryOffset = offset;
+
+        renderHistory();
+
+    } catch (error) {
+        console.error('Load history error:', error);
+        window.showError('Gagal memuat riwayat: ' + error.message);
+    } finally {
+        loadingEl.classList.add('d-none');
+        tableContainer.style.opacity = '1';
+    }
+}
+
+/**
+ * Render history table
+ */
+function renderHistory() {
+    const tbody = document.getElementById('history-tbody');
+
+    if (historyData.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">Tidak ada data</td></tr>`;
+    } else {
+        tbody.innerHTML = historyData.map(row => `
+            <tr>
+                <td>${formatDateTime(row.created_at)}</td>
+                <td>${formatDate(row.upload_date)}</td>
+                <td><span class="badge badge-info">${row.hospital_name}</span></td>
+                <td><code>${row.zip_filename || '-'}</code></td>
+                <td>
+                    <span class="badge badge-success">${row.success_count} sukses</span>
+                    ${row.skipped_count > 0 ? `<span class="badge badge-warning">${row.skipped_count} skip</span>` : ''}
+                    ${row.error_count > 0 ? `<span class="badge badge-danger">${row.error_count} error</span>` : ''}
+                </td>
+                <td>${row.uploaded_by || '-'}</td>
+                <td>
+                    <button class="btn btn-xs btn-outline-info" onclick="window.showHistoryDetail(${row.id})">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </td>
+            </tr>
+        `).join('');
+    }
+
+    // Update pagination info
+    const start = historyTotal > 0 ? currentHistoryOffset + 1 : 0;
+    const end = Math.min(currentHistoryOffset + historyLimit, historyTotal);
+    document.getElementById('history-info').textContent = `Menampilkan ${start}-${end} dari ${historyTotal} data`;
+
+    // Update pagination buttons
+    document.getElementById('btn-prev-page').disabled = currentHistoryOffset === 0;
+    document.getElementById('btn-next-page').disabled = currentHistoryOffset + historyLimit >= historyTotal;
+}
+
+/**
+ * Show history detail modal
+ */
+window.showHistoryDetail = function(id) {
+    const row = historyData.find(r => r.id === id);
+    if (!row) return;
+
+    const details = row.details || [];
+    const detailBody = document.getElementById('history-detail-body');
+
+    detailBody.innerHTML = `
+        <div class="mb-3">
+            <strong>Tanggal Upload:</strong> ${formatDateTime(row.created_at)}<br>
+            <strong>Tanggal USG:</strong> ${formatDate(row.upload_date)}<br>
+            <strong>Lokasi:</strong> ${row.hospital_name}<br>
+            <strong>File:</strong> ${row.zip_filename || '-'}<br>
+            <strong>Diupload oleh:</strong> ${row.uploaded_by || '-'}
+        </div>
+        <hr>
+        <h6>Detail per Folder:</h6>
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered">
+                <thead class="thead-light">
+                    <tr>
+                        <th>Folder</th>
+                        <th>Status</th>
+                        <th>Pasien/MR</th>
+                        <th>Keterangan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${details.map(d => `
+                        <tr>
+                            <td><code>${d.folder}</code></td>
+                            <td>
+                                <span class="badge badge-${d.status === 'success' ? 'success' : (d.status === 'skipped' ? 'warning' : 'danger')}">
+                                    ${d.status}
+                                </span>
+                            </td>
+                            <td>${d.mr_id || '-'}</td>
+                            <td>${d.status === 'success' ? `${d.photosUploaded} foto` : (d.reason || '-')}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+    `;
+
+    $('#history-detail-modal').modal('show');
+};
+
+/**
+ * Format datetime
+ */
+function formatDateTime(dateStr) {
+    if (!dateStr) return '-';
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('id-ID', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
     });
 }
 

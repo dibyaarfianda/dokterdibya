@@ -641,6 +641,28 @@ router.post('/execute', verifyToken, upload.single('zipFile'), async (req, res) 
             errors: errorCount
         });
 
+        // Log to history table
+        try {
+            await db.query(`
+                INSERT INTO usg_bulk_upload_logs
+                (upload_date, hospital, hospital_name, zip_filename, total_folders, success_count, skipped_count, error_count, details, uploaded_by)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            `, [
+                date,
+                hospital,
+                HOSPITAL_LOCATIONS[hospital] || hospital,
+                req.file.originalname,
+                mappingsData.length,
+                successCount,
+                skipCount,
+                errorCount,
+                JSON.stringify(results),
+                req.user?.name || req.user?.email || 'Unknown'
+            ]);
+        } catch (logError) {
+            logger.error('[BulkUSG] Failed to log upload history', logError);
+        }
+
         res.json({
             success: true,
             results,
@@ -656,6 +678,82 @@ router.post('/execute', verifyToken, upload.single('zipFile'), async (req, res) 
         res.status(500).json({
             success: false,
             message: 'Gagal upload: ' + error.message
+        });
+    }
+});
+
+/**
+ * GET /api/usg-bulk-upload/history
+ * Get bulk upload history
+ */
+router.get('/history', verifyToken, async (req, res) => {
+    try {
+        const { limit = 50, offset = 0, hospital, startDate, endDate } = req.query;
+
+        let whereClause = '1=1';
+        const params = [];
+
+        if (hospital) {
+            whereClause += ' AND hospital = ?';
+            params.push(hospital);
+        }
+
+        if (startDate) {
+            whereClause += ' AND upload_date >= ?';
+            params.push(startDate);
+        }
+
+        if (endDate) {
+            whereClause += ' AND upload_date <= ?';
+            params.push(endDate);
+        }
+
+        // Get total count
+        const [countResult] = await db.query(
+            `SELECT COUNT(*) as total FROM usg_bulk_upload_logs WHERE ${whereClause}`,
+            params
+        );
+
+        // Get history records
+        const [rows] = await db.query(`
+            SELECT
+                id,
+                upload_date,
+                hospital,
+                hospital_name,
+                zip_filename,
+                total_folders,
+                success_count,
+                skipped_count,
+                error_count,
+                details,
+                uploaded_by,
+                created_at
+            FROM usg_bulk_upload_logs
+            WHERE ${whereClause}
+            ORDER BY created_at DESC
+            LIMIT ? OFFSET ?
+        `, [...params, parseInt(limit), parseInt(offset)]);
+
+        // Parse JSON details
+        const history = rows.map(row => ({
+            ...row,
+            details: typeof row.details === 'string' ? JSON.parse(row.details) : row.details
+        }));
+
+        res.json({
+            success: true,
+            history,
+            total: countResult[0].total,
+            limit: parseInt(limit),
+            offset: parseInt(offset)
+        });
+
+    } catch (error) {
+        logger.error('[BulkUSG] Failed to get history', error);
+        res.status(500).json({
+            success: false,
+            message: 'Gagal mengambil history: ' + error.message
         });
     }
 });
