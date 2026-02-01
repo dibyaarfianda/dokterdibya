@@ -1459,14 +1459,23 @@ PLAN
             // Handle queue item click - like "Periksa" button
             window.handleQueueItemClick = async function(event, element) {
                 event.preventDefault();
+                event.stopPropagation(); // Prevent event bubbling to dropdown
 
                 const patientId = element.dataset.patientId;
                 const existingMrId = element.dataset.mrId;
                 const category = element.dataset.category || 'obstetri';
 
-                // Close dropdown
-                $(element).closest('.dropdown-menu').removeClass('show');
-                $(element).closest('.dropdown').find('.dropdown-toggle').dropdown('toggle');
+                // Prevent double-click
+                if (element.dataset.loading === 'true') {
+                    console.log('[Queue] Already loading, ignoring click');
+                    return;
+                }
+                element.dataset.loading = 'true';
+
+                // Close dropdown immediately
+                const dropdownMenu = $(element).closest('.dropdown-menu');
+                dropdownMenu.removeClass('show');
+                dropdownMenu.parent().removeClass('show');
 
                 try {
                     const token = localStorage.getItem('vps_auth_token');
@@ -1501,6 +1510,7 @@ PLAN
                 } catch (error) {
                     console.error('[Queue] Error:', error);
                     alert('Gagal: ' + error.message);
+                    element.dataset.loading = 'false';
                     loadHeaderQueue(); // Reload queue
                 }
             };

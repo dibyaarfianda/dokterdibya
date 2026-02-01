@@ -480,6 +480,8 @@ router.get('/queue/today', verifyToken, async (req, res, next) => {
         const todayGMT7 = new Date(now.getTime() + gmt7Offset);
         const todayStr = todayGMT7.toISOString().split('T')[0];
 
+        // Join by appointment_id first, then fallback to patient_id + today's date
+        // This handles cases where record was created without appointment_id link
         const [appointments] = await db.query(
             `SELECT
                 sa.id,
@@ -492,16 +494,20 @@ router.get('/queue/today', verifyToken, async (req, res, next) => {
                 sa.chief_complaint,
                 sa.consultation_category,
                 sa.status,
-                scr.mr_id,
-                scr.mr_category,
-                scr.status as record_status
+                COALESCE(scr1.mr_id, scr2.mr_id) as mr_id,
+                COALESCE(scr1.mr_category, scr2.mr_category) as mr_category,
+                COALESCE(scr1.status, scr2.status) as record_status
              FROM sunday_appointments sa
-             LEFT JOIN sunday_clinic_records scr
-                ON scr.appointment_id = sa.id
+             LEFT JOIN sunday_clinic_records scr1
+                ON scr1.appointment_id = sa.id
+             LEFT JOIN sunday_clinic_records scr2
+                ON scr2.patient_id = sa.patient_id
+                AND DATE(scr2.created_at) = ?
+                AND scr2.appointment_id IS NULL
              WHERE sa.appointment_date = ?
                AND sa.status IN ('confirmed', 'completed')
              ORDER BY sa.session ASC, sa.slot_number ASC`,
-            [todayStr]
+            [todayStr, todayStr]
         );
 
         // Enrich with session labels and slot times
