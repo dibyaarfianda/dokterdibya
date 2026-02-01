@@ -181,6 +181,7 @@ const PATIENT_ALLOWED_ROUTES = [
     '/api/announcements',      // Public announcements
     '/api/fertility-calendar', // Fertility cycle tracking
     '/api/app',                // Mobile app version check
+    '/api/app-version',        // App version check for updates
     '/api/billings/my-billings', // Patient visit history (my own billings)
     '/api/billings/',          // Billing details (with id path)
     '/api/usg-photos',         // USG photos access
@@ -433,6 +434,10 @@ app.use('/api/doctors', doctorsRoutes);
 // Tanya Stats endpoint (revenue reporting for Q&A)
 const tanyaStatsRoutes = require('./routes/tanya-stats');
 app.use('/api/tanya-stats', tanyaStatsRoutes);
+
+// App Version endpoint (for mobile app updates)
+const appVersionRoutes = require('./routes/app-version');
+app.use('/api/app-version', appVersionRoutes);
 
 // API Documentation
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec, {

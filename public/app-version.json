@@ -1,0 +1,19 @@
+{
+  "android": {
+    "version": "2.0.0",
+    "version_code": 200,
+    "min_version_code": 200,
+    "download_url": "/downloads/dokterDIBYA_v2.0.apk",
+    "release_notes": "Versi pertama aplikasi dokterDIBYA Patient Portal",
+    "force_update": false
+  },
+  "ios": {
+    "version": "1.0.0",
+    "version_code": 100,
+    "min_version_code": 100,
+    "download_url": null,
+    "release_notes": "Coming soon",
+    "force_update": false
+  },
+  "updated_at": "2026-02-01"
+}
