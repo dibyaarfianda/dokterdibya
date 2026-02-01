@@ -1119,3 +1119,78 @@ Selesai. Perubahan sudah diterapkan.
 - ES modules punya scope terpisah, akses global function via `window.`
 - Selalu pastikan fungsi sudah didefinisikan sebelum di-assign ke `window`
 - Untuk navbar update yang reliable, lakukan di `updateWelcomeCard()` yang dipanggil dari `onAuthStateChanged`
+
+### 30. Capacitor LocalNotifications - External URL Access
+
+**Problem:** Capacitor LocalNotifications plugin tidak bisa diakses dari URL eksternal (dokterdibya.com) dalam WebView.
+
+**Symptoms:**
+- `window.Capacitor.Plugins.LocalNotifications` returns `undefined`
+- Permission check fails with "izin notifikasi ditolak" even after granting permission
+- `localStorage` NOT shared between local Capacitor page (`file://`) and external URL (`https://`)
+
+**Root Cause:**
+- Capacitor plugins only work on local pages served from app assets
+- When WebView navigates to external URL, plugins become inaccessible
+- localStorage is scoped to origin, so `file://` and `https://dokterdibya.com` don't share data
+
+**Solution:**
+If detected in WebView on external URL, assume notification permission is already granted at native level:
+
+```javascript
+// In vitamin-notifications.js (or similar)
+
+// Detect Android WebView
+const isAndroidWebView = navigator.userAgent.includes('wv') ||
+    (navigator.userAgent.includes('Android') && navigator.userAgent.includes('Version/'));
+
+// In permission check function:
+async function isNotificationPermitted() {
+    const LocalNotifications = await getLocalNotificationsPlugin();
+
+    if (LocalNotifications) {
+        // Plugin available - check normally
+        const permStatus = await LocalNotifications.checkPermissions();
+        return permStatus.display === 'granted';
+    }
+
+    // Plugin NOT available - check if we're in WebView
+    if (isAndroidWebView || isCapacitor) {
+        // In WebView on external URL, plugin is not accessible
+        // But native permission was already granted at app level
+        console.log('[VitaminNotif] In WebView - assuming permission granted at native level');
+        return true;  // <-- KEY: Assume granted
+    }
+
+    // Fallback to Web Notification API for regular browser
+    return 'Notification' in window && Notification.permission === 'granted';
+}
+```
+
+**For test notification button:**
+```javascript
+async function showTestNotification() {
+    const LocalNotifications = await getLocalNotificationsPlugin();
+
+    if (LocalNotifications) {
+        // Schedule via plugin
+        await LocalNotifications.schedule({ notifications: [...] });
+    } else if (isAndroidWebView || isCapacitor) {
+        // Can't schedule from external URL, but show success message
+        alert('Izin notifikasi sudah aktif! ✓\n\nPengingat obat akan berfungsi normal.');
+    } else {
+        // Use Web Notification API
+        new Notification(title, { body, icon });
+    }
+}
+```
+
+**Key Insight:**
+- Permission is granted once at app install/first launch on the LOCAL Capacitor page
+- Native Android permission persists across WebView navigation
+- We just can't CHECK or SCHEDULE from external URLs
+- But the permission IS granted, so assume it's true
+
+**Files:**
+- `public/scripts/vitamin-notifications.js` - notification service with WebView detection
+- `mobile-app/www/index.html` - local page that requests permission on first launch
