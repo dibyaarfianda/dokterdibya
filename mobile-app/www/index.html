@@ -1284,10 +1284,55 @@
             }
         }
 
+        // Request notification permission on first launch
+        async function requestNotificationPermissionOnStart() {
+            try {
+                // Check if we already asked (to avoid asking every time)
+                const askedNotif = localStorage.getItem('asked_notification_permission');
+                if (askedNotif) return;
+
+                // Wait a bit for Capacitor to be fully ready
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                if (window.Capacitor && window.Capacitor.Plugins) {
+                    const LocalNotifications = window.Capacitor.Plugins.LocalNotifications;
+                    const PushNotifications = window.Capacitor.Plugins.PushNotifications;
+
+                    // Request Local Notifications permission
+                    if (LocalNotifications) {
+                        const localStatus = await LocalNotifications.checkPermissions();
+                        console.log('[Notif] Local permission status:', localStatus.display);
+                        if (localStatus.display === 'prompt') {
+                            const result = await LocalNotifications.requestPermissions();
+                            console.log('[Notif] Local permission result:', result.display);
+                        }
+                    }
+
+                    // Request Push Notifications permission
+                    if (PushNotifications) {
+                        const pushStatus = await PushNotifications.checkPermissions();
+                        console.log('[Notif] Push permission status:', pushStatus.receive);
+                        if (pushStatus.receive === 'prompt') {
+                            const result = await PushNotifications.requestPermissions();
+                            console.log('[Notif] Push permission result:', result.receive);
+                        }
+                    }
+
+                    // Mark as asked
+                    localStorage.setItem('asked_notification_permission', 'true');
+                }
+            } catch (e) {
+                console.error('[Notif] Error requesting permission:', e);
+            }
+        }
+
         // Listen for Capacitor app URL open events
         document.addEventListener('DOMContentLoaded', () => {
             // Clear any error messages on page load
             document.querySelectorAll('.error-message').forEach(e => e.classList.remove('show'));
+
+            // Request notification permission on first launch
+            requestNotificationPermissionOnStart();
 
             // Check for deep link on app start
             if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
