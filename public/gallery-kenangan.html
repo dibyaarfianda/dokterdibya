@@ -482,13 +482,15 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.95);
+            background: #000000;
             z-index: 1000;
             display: flex;
             flex-direction: column;
             opacity: 0;
             visibility: hidden;
             transition: all 0.3s ease;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
         }
 
         .lightbox.active {
@@ -501,7 +503,9 @@
             justify-content: space-between;
             align-items: center;
             padding: 15px 20px;
+            padding-top: calc(15px + env(safe-area-inset-top, 0px));
             color: white;
+            background: #000000;
         }
 
         .lightbox-close {
@@ -583,8 +587,10 @@
 
         .lightbox-footer {
             padding: 20px;
+            padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
             text-align: center;
             color: white;
+            background: #000000;
         }
 
         .lightbox-caption {

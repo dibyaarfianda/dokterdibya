@@ -172,9 +172,11 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: rgba(0, 0, 0, 0.95);
+            background: #000000;
             z-index: 9999;
             flex-direction: column;
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
         }
 
         .lightbox-modal.active {
@@ -186,7 +188,8 @@
             justify-content: space-between;
             align-items: center;
             padding: 15px 20px;
-            background: rgba(26, 26, 46, 0.95);
+            padding-top: calc(15px + env(safe-area-inset-top, 0px));
+            background: #000000;
         }
 
         .lightbox-header h3 {
@@ -195,12 +198,13 @@
         }
 
         .lightbox-close {
-            background: none;
+            background: rgba(255, 255, 255, 0.1);
             border: none;
             color: white;
             font-size: 24px;
             cursor: pointer;
             padding: 8px;
+            border-radius: 8px;
         }
 
         .lightbox-body {
@@ -221,7 +225,8 @@
 
         .lightbox-footer {
             padding: 15px 20px;
-            background: rgba(26, 26, 46, 0.95);
+            padding-bottom: calc(15px + env(safe-area-inset-bottom, 0px));
+            background: #000000;
             text-align: center;
         }
 
