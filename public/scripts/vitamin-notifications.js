@@ -7,26 +7,51 @@
  */
 
 // Detect if running in Capacitor native app
-const isCapacitor = window.Capacitor?.isNativePlatform?.() || false;
+// Check multiple conditions because external URLs might not have isNativePlatform available
+const isCapacitor = (
+    window.Capacitor?.isNativePlatform?.() ||
+    window.Capacitor?.getPlatform?.() === 'android' ||
+    window.Capacitor?.getPlatform?.() === 'ios' ||
+    // Fallback: check if Capacitor object exists and we're in a WebView
+    (window.Capacitor && navigator.userAgent.includes('dokterdibya'))
+) || false;
+
+// Alternative check for Android WebView
+const isAndroidWebView = navigator.userAgent.includes('wv') ||
+    (navigator.userAgent.includes('Android') && navigator.userAgent.includes('Version/'));
 
 // Storage key for notification ID counter
 const NOTIF_COUNTER_KEY = 'vitamin_notif_counter';
 
 // Get LocalNotifications plugin from Capacitor
 async function getLocalNotificationsPlugin() {
-    if (!isCapacitor) return null;
-
+    // Try even if isCapacitor is false - we might be on external URL but still in WebView
     try {
         // Try to get from Capacitor.Plugins first (registered plugins)
         if (window.Capacitor?.Plugins?.LocalNotifications) {
+            console.log('[VitaminNotif] Using Capacitor.Plugins.LocalNotifications');
             return window.Capacitor.Plugins.LocalNotifications;
         }
 
+        // Try window.CapacitorCustomPlatform for some versions
+        if (window.CapacitorCustomPlatform?.Plugins?.LocalNotifications) {
+            console.log('[VitaminNotif] Using CapacitorCustomPlatform.Plugins.LocalNotifications');
+            return window.CapacitorCustomPlatform.Plugins.LocalNotifications;
+        }
+
         // Fallback: dynamic import from @capacitor/local-notifications
-        const { LocalNotifications } = await import('@capacitor/local-notifications');
-        return LocalNotifications;
+        // This works if the module is bundled
+        try {
+            const { LocalNotifications } = await import('@capacitor/local-notifications');
+            console.log('[VitaminNotif] Using dynamic import LocalNotifications');
+            return LocalNotifications;
+        } catch (importError) {
+            console.warn('[VitaminNotif] Dynamic import failed:', importError.message);
+        }
+
+        return null;
     } catch (error) {
-        console.error('Failed to load LocalNotifications plugin:', error);
+        console.error('[VitaminNotif] Failed to load LocalNotifications plugin:', error);
         return null;
     }
 }
@@ -47,42 +72,52 @@ function generateNotifId() {
  */
 export async function requestNotificationPermission() {
     try {
-        if (isCapacitor) {
-            // Capacitor Local Notifications
-            const LocalNotifications = await getLocalNotificationsPlugin();
-            if (!LocalNotifications) {
-                console.error('LocalNotifications plugin not available');
-                return false;
-            }
+        // First, try Capacitor LocalNotifications (works in native app)
+        const LocalNotifications = await getLocalNotificationsPlugin();
 
+        if (LocalNotifications) {
+            console.log('[VitaminNotif] Using Capacitor LocalNotifications');
             const permStatus = await LocalNotifications.checkPermissions();
+            console.log('[VitaminNotif] Permission status:', permStatus.display);
 
-            if (permStatus.display === 'prompt') {
+            if (permStatus.display === 'prompt' || permStatus.display === 'prompt-with-rationale') {
                 const result = await LocalNotifications.requestPermissions();
+                console.log('[VitaminNotif] Permission request result:', result.display);
                 return result.display === 'granted';
             }
 
-            return permStatus.display === 'granted';
-        } else {
-            // Web Notifications API
-            if (!('Notification' in window)) {
-                console.warn('Browser does not support notifications');
+            if (permStatus.display === 'denied') {
+                console.warn('[VitaminNotif] Notification permission denied by user');
                 return false;
             }
 
-            if (Notification.permission === 'granted') {
-                return true;
-            }
+            return permStatus.display === 'granted';
+        }
 
-            if (Notification.permission !== 'denied') {
-                const permission = await Notification.requestPermission();
-                return permission === 'granted';
-            }
+        // Fallback to Web Notifications API
+        console.log('[VitaminNotif] Falling back to Web Notifications API');
 
+        if (!('Notification' in window)) {
+            console.warn('[VitaminNotif] Browser does not support notifications');
+            // If we're in a WebView but can't use notifications, inform user
+            if (isAndroidWebView) {
+                console.warn('[VitaminNotif] Running in Android WebView without notification support');
+            }
             return false;
         }
+
+        if (Notification.permission === 'granted') {
+            return true;
+        }
+
+        if (Notification.permission !== 'denied') {
+            const permission = await Notification.requestPermission();
+            return permission === 'granted';
+        }
+
+        return false;
     } catch (error) {
-        console.error('Error requesting notification permission:', error);
+        console.error('[VitaminNotif] Error requesting notification permission:', error);
         return false;
     }
 }
@@ -93,15 +128,22 @@ export async function requestNotificationPermission() {
  */
 export async function isNotificationPermitted() {
     try {
-        if (isCapacitor) {
-            const LocalNotifications = await getLocalNotificationsPlugin();
-            if (!LocalNotifications) return false;
+        const LocalNotifications = await getLocalNotificationsPlugin();
+
+        if (LocalNotifications) {
             const permStatus = await LocalNotifications.checkPermissions();
+            console.log('[VitaminNotif] isNotificationPermitted check:', permStatus.display);
             return permStatus.display === 'granted';
-        } else {
+        }
+
+        // Fallback to Web Notification API
+        if ('Notification' in window) {
             return Notification.permission === 'granted';
         }
+
+        return false;
     } catch (error) {
+        console.error('[VitaminNotif] isNotificationPermitted error:', error);
         return false;
     }
 }
@@ -301,7 +343,12 @@ export async function showTestNotification(title = 'Test Notifikasi', body = 'In
     if (!hasPermission) {
         const granted = await requestNotificationPermission();
         if (!granted) {
-            alert('Izin notifikasi ditolak. Silakan aktifkan di pengaturan browser/aplikasi.');
+            // More helpful message for Android users
+            if (isAndroidWebView || isCapacitor) {
+                alert('Izin notifikasi belum diaktifkan.\n\nCara mengaktifkan:\n1. Buka Pengaturan HP\n2. Pilih Aplikasi > dokterDIBYA\n3. Aktifkan Notifikasi');
+            } else {
+                alert('Izin notifikasi ditolak. Silakan aktifkan di pengaturan browser.');
+            }
             return;
         }
     }
