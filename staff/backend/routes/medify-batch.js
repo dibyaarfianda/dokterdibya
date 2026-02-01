@@ -1678,7 +1678,7 @@ router.post('/send-to-portal', verifyToken, async (req, res) => {
 
                 await pool.query(`
                     INSERT INTO patient_notifications (patient_id, title, message, type, link, created_at)
-                    VALUES (?, ?, ?, 'document', '/patient-dashboard.html#documents', NOW())
+                    VALUES (?, ?, ?, 'document', '/patient-menu.html', NOW())
                 `, [patientId, 'Dokumen Baru Tersedia', `Resume medis dan dokumen pemeriksaan Anda sudah tersedia di portal pasien.`]);
 
                 results.push({ patientId, mrId, success: true });
