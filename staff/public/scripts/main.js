@@ -103,6 +103,7 @@ function initPages() {
     pages.medifySync = grab('medify-sync-page');
     pages.patientActivity = grab('patient-activity-page');
     pages.tanyaDokter = grab('tanya-dokter-page');
+    pages.mobileApp = grab('mobile-app-page');
 }
 function loadExternalPage(containerId, htmlFile, options = {}) {
     const { forceReload = false } = options;
@@ -1288,6 +1289,157 @@ function showMedifySyncPage() {
         }
     }).catch(error => {
         console.error('Failed to load medify-sync.js:', error);
+    });
+}
+
+// Mobile App Page
+let mobileAppLogsPage = 1;
+let mobileAppLogsTotalPages = 1;
+
+function showMobileAppPage() {
+    hideAllPages();
+    pages.mobileApp?.classList.remove('d-none');
+    setTitleAndActive('Aplikasi Mobile', 'nav-mobile-app', 'mobile-app');
+    loadMobileAppStats();
+    loadMobileAppLogs();
+}
+
+async function loadMobileAppStats() {
+    try {
+        const token = getAuthToken();
+        const response = await fetch('/api/app-version/stats', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('Gagal memuat statistik');
+
+        const data = await response.json();
+        if (!data.success) throw new Error(data.message);
+
+        const stats = data.stats;
+
+        document.getElementById('ma-stat-total').textContent = stats.total || 0;
+        document.getElementById('ma-stat-today').textContent = stats.today || 0;
+        document.getElementById('ma-stat-week').textContent = stats.this_week || 0;
+        document.getElementById('ma-stat-unique').textContent = stats.unique_users || 0;
+
+        // Load version info
+        const versionResponse = await fetch('/api/app-version?platform=android');
+        if (versionResponse.ok) {
+            const versionData = await versionResponse.json();
+            if (versionData.success) {
+                document.getElementById('ma-android-version').textContent = `v${versionData.version} (${versionData.version_code})`;
+                document.getElementById('ma-android-updated').textContent = `Diperbarui: ${versionData.updated_at || '-'}`;
+            }
+        }
+
+    } catch (error) {
+        console.error('Load mobile app stats error:', error);
+    }
+}
+
+async function loadMobileAppLogs(page = 1) {
+    const tbody = document.getElementById('ma-logs-body');
+    if (!tbody) return;
+
+    mobileAppLogsPage = page;
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4"><i class="fas fa-spinner fa-spin"></i> Memuat...</td></tr>';
+
+    try {
+        const token = getAuthToken();
+        const filterDate = document.getElementById('ma-filter-date')?.value || '';
+        const limit = 20;
+        const offset = (page - 1) * limit;
+
+        let url = `/api/app-version/logs?limit=${limit}&offset=${offset}`;
+        if (filterDate) url += `&date=${filterDate}`;
+
+        const response = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!response.ok) throw new Error('Gagal memuat log');
+
+        const data = await response.json();
+        if (!data.success) throw new Error(data.message);
+
+        const logs = data.logs || [];
+        const total = data.total || 0;
+        mobileAppLogsTotalPages = Math.ceil(total / limit);
+
+        const start = logs.length > 0 ? offset + 1 : 0;
+        const end = start > 0 ? offset + logs.length : 0;
+        document.getElementById('ma-logs-info').textContent = `Menampilkan ${start}-${end} dari ${total}`;
+
+        // Render pagination
+        const pagination = document.getElementById('ma-logs-pagination');
+        if (pagination) {
+            let paginationHtml = '';
+            paginationHtml += `<li class="page-item ${page <= 1 ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="loadMobileAppLogs(${page - 1}); return false;">&laquo;</a>
+            </li>`;
+
+            for (let i = Math.max(1, page - 2); i <= Math.min(mobileAppLogsTotalPages, page + 2); i++) {
+                paginationHtml += `<li class="page-item ${i === page ? 'active' : ''}">
+                    <a class="page-link" href="#" onclick="loadMobileAppLogs(${i}); return false;">${i}</a>
+                </li>`;
+            }
+
+            paginationHtml += `<li class="page-item ${page >= mobileAppLogsTotalPages ? 'disabled' : ''}">
+                <a class="page-link" href="#" onclick="loadMobileAppLogs(${page + 1}); return false;">&raquo;</a>
+            </li>`;
+            pagination.innerHTML = paginationHtml;
+        }
+
+        if (logs.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted py-4">Belum ada data download</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = logs.map(log => {
+            const downloadTime = log.downloaded_at ? new Date(log.downloaded_at).toLocaleString('id-ID', {
+                day: '2-digit', month: 'short', year: 'numeric',
+                hour: '2-digit', minute: '2-digit'
+            }) : '-';
+
+            const platformBadge = log.platform === 'android'
+                ? '<span class="badge badge-success"><i class="fab fa-android"></i> Android</span>'
+                : '<span class="badge badge-secondary"><i class="fab fa-apple"></i> iOS</span>';
+
+            const shortUA = (log.user_agent || '-').substring(0, 60) + (log.user_agent?.length > 60 ? '...' : '');
+
+            return `
+                <tr>
+                    <td><small>${downloadTime}</small></td>
+                    <td>${platformBadge}</td>
+                    <td><small class="text-muted">${log.version || '-'}</small></td>
+                    <td><code class="small">${log.ip_address || '-'}</code></td>
+                    <td><small class="text-muted" title="${log.user_agent || ''}">${shortUA}</small></td>
+                </tr>
+            `;
+        }).join('');
+
+    } catch (error) {
+        console.error('Load mobile app logs error:', error);
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-danger py-4">Gagal memuat data</td></tr>';
+    }
+}
+
+function copyDownloadLink() {
+    const link = document.getElementById('ma-download-link');
+    if (!link) return;
+
+    navigator.clipboard.writeText(link.textContent).then(() => {
+        toastr.success('Link berhasil disalin');
+    }).catch(() => {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = link.textContent;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        toastr.success('Link berhasil disalin');
     });
 }
 
@@ -4479,6 +4631,10 @@ window.showKelolaObatPage = showKelolaObatPage;
 window.showPenjualanObatPage = showPenjualanObatPage;
 window.showBulkUploadUSGPage = showBulkUploadUSGPage;
 window.showMedifySyncPage = showMedifySyncPage;
+window.showMobileAppPage = showMobileAppPage;
+window.loadMobileAppStats = loadMobileAppStats;
+window.loadMobileAppLogs = loadMobileAppLogs;
+window.copyDownloadLink = copyDownloadLink;
 window.showHospitalAppointmentsPage = showHospitalAppointmentsPage;
 window.showHospitalPatientsPage = showHospitalPatientsPage;
 window.showPasienBaruPage = showPasienBaruPage;
