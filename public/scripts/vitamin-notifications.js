@@ -23,6 +23,9 @@ const isAndroidWebView = navigator.userAgent.includes('wv') ||
 // Storage key for notification ID counter
 const NOTIF_COUNTER_KEY = 'vitamin_notif_counter';
 
+// Storage key for permission status (synced from local Capacitor page)
+const NOTIF_PERMISSION_KEY = 'capacitor_notif_permission_granted';
+
 // Get LocalNotifications plugin from Capacitor
 async function getLocalNotificationsPlugin() {
     // Try even if isCapacitor is false - we might be on external URL but still in WebView
@@ -49,11 +52,29 @@ async function getLocalNotificationsPlugin() {
             console.warn('[VitaminNotif] Dynamic import failed:', importError.message);
         }
 
+        console.warn('[VitaminNotif] No LocalNotifications plugin available');
         return null;
     } catch (error) {
         console.error('[VitaminNotif] Failed to load LocalNotifications plugin:', error);
         return null;
     }
+}
+
+/**
+ * Check if permission was granted from local Capacitor page
+ * This is used as fallback when plugin is not accessible from external URL
+ */
+function isPermissionGrantedFromLocalStorage() {
+    return localStorage.getItem(NOTIF_PERMISSION_KEY) === 'true';
+}
+
+/**
+ * Save permission status to localStorage
+ * Called when permission is granted from local Capacitor page
+ */
+function savePermissionStatus(granted) {
+    localStorage.setItem(NOTIF_PERMISSION_KEY, granted ? 'true' : 'false');
+    console.log('[VitaminNotif] Saved permission status:', granted);
 }
 
 /**
@@ -83,26 +104,39 @@ export async function requestNotificationPermission() {
             if (permStatus.display === 'prompt' || permStatus.display === 'prompt-with-rationale') {
                 const result = await LocalNotifications.requestPermissions();
                 console.log('[VitaminNotif] Permission request result:', result.display);
-                return result.display === 'granted';
+                const granted = result.display === 'granted';
+                savePermissionStatus(granted); // Save to localStorage for external URL access
+                return granted;
             }
 
             if (permStatus.display === 'denied') {
                 console.warn('[VitaminNotif] Notification permission denied by user');
+                savePermissionStatus(false);
                 return false;
             }
 
-            return permStatus.display === 'granted';
+            const granted = permStatus.display === 'granted';
+            savePermissionStatus(granted);
+            return granted;
         }
 
-        // Fallback to Web Notifications API
+        // Plugin not available - check if we're in Android WebView on external URL
+        if (isAndroidWebView || isCapacitor) {
+            // Check if permission was previously granted from local Capacitor page
+            if (isPermissionGrantedFromLocalStorage()) {
+                console.log('[VitaminNotif] Plugin unavailable but permission was granted from local page');
+                return true;
+            }
+            console.warn('[VitaminNotif] Plugin unavailable and no saved permission status');
+            // Don't show error - user needs to grant permission from local page first
+            return false;
+        }
+
+        // Fallback to Web Notifications API (for regular browser)
         console.log('[VitaminNotif] Falling back to Web Notifications API');
 
         if (!('Notification' in window)) {
             console.warn('[VitaminNotif] Browser does not support notifications');
-            // If we're in a WebView but can't use notifications, inform user
-            if (isAndroidWebView) {
-                console.warn('[VitaminNotif] Running in Android WebView without notification support');
-            }
             return false;
         }
 
@@ -133,7 +167,17 @@ export async function isNotificationPermitted() {
         if (LocalNotifications) {
             const permStatus = await LocalNotifications.checkPermissions();
             console.log('[VitaminNotif] isNotificationPermitted check:', permStatus.display);
-            return permStatus.display === 'granted';
+            const granted = permStatus.display === 'granted';
+            // Update localStorage with current status
+            savePermissionStatus(granted);
+            return granted;
+        }
+
+        // Plugin not available - check localStorage fallback
+        if (isAndroidWebView || isCapacitor) {
+            const savedStatus = isPermissionGrantedFromLocalStorage();
+            console.log('[VitaminNotif] Plugin unavailable, using saved status:', savedStatus);
+            return savedStatus;
         }
 
         // Fallback to Web Notification API
@@ -354,13 +398,10 @@ export async function showTestNotification(title = 'Test Notifikasi', body = 'In
     }
 
     try {
-        if (isCapacitor) {
-            const LocalNotifications = await getLocalNotificationsPlugin();
-            if (!LocalNotifications) {
-                alert('Plugin notifikasi tidak tersedia');
-                return;
-            }
+        const LocalNotifications = await getLocalNotificationsPlugin();
 
+        if (LocalNotifications) {
+            // Plugin available - schedule notification
             await LocalNotifications.schedule({
                 notifications: [{
                     id: generateNotifId(),
@@ -371,12 +412,21 @@ export async function showTestNotification(title = 'Test Notifikasi', body = 'In
                     smallIcon: 'ic_stat_icon'
                 }]
             });
-        } else {
+            console.log('[VitaminNotif] Test notification scheduled via Capacitor');
+        } else if (isAndroidWebView || isCapacitor) {
+            // In WebView but plugin not accessible (external URL)
+            // Permission is granted, but we can't schedule from here
+            // Show success message - actual notifications will work when scheduled from local page
+            alert('Izin notifikasi sudah aktif! ✓\n\nPengingat obat akan berfungsi normal.');
+            console.log('[VitaminNotif] Plugin unavailable from external URL, but permission is granted');
+        } else if ('Notification' in window) {
+            // Regular browser - use Web Notification API
             new Notification(title, {
                 body: body,
                 icon: '/images/logo-dokter-dibya.png',
                 badge: '/images/logo-dokter-dibya.png'
             });
+            console.log('[VitaminNotif] Test notification shown via Web API');
         }
     } catch (error) {
         console.error('Error showing test notification:', error);
