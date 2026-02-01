@@ -13,23 +13,24 @@
 		"allowMixedContent": false,
 		"captureInput": true,
 		"webContentsDebuggingEnabled": true,
-		"backgroundColor": "#0f0f1a"
+		"backgroundColor": "#1a1a1a"
 	},
 	"ios": {
 		"contentInset": "automatic",
-		"backgroundColor": "#0f0f1a",
+		"backgroundColor": "#1a1a1a",
 		"preferredContentMode": "mobile"
 	},
 	"plugins": {
 		"SplashScreen": {
 			"launchShowDuration": 0,
 			"launchAutoHide": true,
-			"backgroundColor": "#0f0f1a",
+			"backgroundColor": "#1a1a1a",
 			"showSpinner": false
 		},
 		"StatusBar": {
 			"style": "DARK",
-			"backgroundColor": "#0f0f1a"
+			"backgroundColor": "#1a1a1a",
+			"overlaysWebView": true
 		},
 		"PushNotifications": {
 			"presentationOptions": [

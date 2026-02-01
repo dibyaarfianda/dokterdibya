@@ -757,12 +757,32 @@
 
     <!-- Main app script -->
     <script>
-        const APP_VERSION = '1.0.3';
+        const APP_VERSION = '1.0.4';
         console.log('=== DOKTERDIBYA MOBILE APP LOADED ===');
         console.log('Version:', APP_VERSION);
 
         const API_BASE = 'https://dokterdibya.com';
         const DASHBOARD_URL = 'https://dokterdibya.com/patient-menu.html';
+        const INTAKE_URL = 'https://dokterdibya.com/patient-intake.html';
+
+        // Helper: Get redirect URL based on intake completion status
+        function getPostLoginUrl(data, token) {
+            const userJson = data.user ? JSON.stringify(data.user) : localStorage.getItem('patient_user');
+            let baseUrl;
+
+            // If intake not completed, redirect to intake form
+            if (data.intake_completed === false || (data.user && !data.user.intake_completed)) {
+                console.log('[Redirect] Intake not completed, redirecting to intake form');
+                baseUrl = INTAKE_URL;
+            } else {
+                console.log('[Redirect] Intake completed, redirecting to dashboard');
+                baseUrl = DASHBOARD_URL;
+            }
+
+            let url = `${baseUrl}?token=${encodeURIComponent(token)}`;
+            if (userJson) url += `&user=${encodeURIComponent(userJson)}`;
+            return url;
+        }
 
         // Check for logout flag - clear all auth data
         const urlParams = new URLSearchParams(window.location.search);
@@ -779,12 +799,13 @@
         }
 
         // Google Sign-In - Native (fast) with web fallback
-        const GOOGLE_WEB_CLIENT_ID = '738335602560-5napmglm15g8jr5c1j0ienc9v8ptnsnt.apps.googleusercontent.com';
+        // IMPORTANT: This must be the WEB client ID (used as serverClientId for token audience)
+        const GOOGLE_WEB_CLIENT_ID = '738335602560-52as846lk2oo78fr38a86elu8888m7eh.apps.googleusercontent.com';
         let googleAuthReady = false;
         let firstLoginRetry = false;
         let firstRegisterRetry = false;
         let validatedRegCode = null; // Store validated registration code for new user registration
-        let loginFlowAborted = false; // Flag to abort login flow when registration starts
+        let currentGoogleOperationId = 0; // Unique ID for each Google sign-in operation (prevents race conditions)
 
         // Initialize GoogleAuth on app start
         (async function initGoogleAuth() {
@@ -826,23 +847,36 @@
         })();
 
         window.loginWithGoogle = async function() {
-            // Reset abort flag when starting fresh login
-            loginFlowAborted = false;
+            // Get unique operation ID - any new operation will invalidate this one
+            const myOperationId = ++currentGoogleOperationId;
+            console.log('[Login] Starting operation #' + myOperationId);
+
+            // Helper to check if this operation is still valid
+            const isOperationValid = () => myOperationId === currentGoogleOperationId;
+
             // Try native Google Sign-In first (fast, single tap)
             if (googleAuthReady) {
                 try {
-                    console.log('Using native Google Sign-In...');
+                    console.log('[Login #' + myOperationId + '] Using native Google Sign-In...');
                     const result = await window.Capacitor.Plugins.GoogleAuth.signIn();
 
-                    // Check if user navigated away during signIn
-                    if (loginFlowAborted) {
-                        console.log('Login flow aborted after signIn');
+                    // Check if this operation was superseded
+                    if (!isOperationValid()) {
+                        console.log('[Login #' + myOperationId + '] Operation superseded, aborting');
                         return;
                     }
 
                     if (result && result.authentication && result.authentication.idToken) {
-                        console.log('Native sign-in succeeded, sending to backend');
+                        console.log('[Login #' + myOperationId + '] Native sign-in succeeded, sending to backend');
                         showLoading();
+
+                        // Final check before backend call
+                        if (!isOperationValid()) {
+                            console.log('[Login #' + myOperationId + '] Operation superseded before backend, aborting');
+                            document.getElementById('loading-overlay').classList.add('hidden');
+                            return;
+                        }
+
                         const res = await fetch(`${API_BASE}/api/patients/auth/google`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -852,24 +886,29 @@
                             })
                         });
                         const data = await res.json();
-                        console.log('Backend response:', res.status, data);
+
+                        // Check again after fetch (user might have started registration)
+                        if (!isOperationValid()) {
+                            console.log('[Login #' + myOperationId + '] Operation superseded after backend, discarding result');
+                            document.getElementById('loading-overlay').classList.add('hidden');
+                            return;
+                        }
+
+                        console.log('[Login #' + myOperationId + '] Backend response:', res.status, data);
 
                         if (res.ok && data.token) {
-                            console.log('Login successful, redirecting...');
+                            console.log('[Login #' + myOperationId + '] Login successful, checking intake status...');
                             localStorage.setItem('vps_auth_token', data.token);
                             if (data.user) localStorage.setItem('patient_user', JSON.stringify(data.user));
                             localStorage.setItem('auth_provider', 'google');
                             localStorage.setItem('from_mobile_app', 'true');
-                            let url = `${DASHBOARD_URL}?token=${encodeURIComponent(data.token)}`;
-                            const user = localStorage.getItem('patient_user');
-                            if (user) url += `&user=${encodeURIComponent(user)}`;
-                            window.location.href = url;
+                            window.location.href = getPostLoginUrl(data, data.token);
                             return;
                         }
 
                         // Check if registration code is required (new patient trying to login)
                         if (data.code_required) {
-                            console.log('New patient - need to register first');
+                            console.log('[Login #' + myOperationId + '] New patient - need to register first');
                             document.getElementById('loading-overlay').classList.add('hidden');
                             showError('login-error', 'Akun belum terdaftar. Silakan klik "Daftar" untuk membuat akun baru.');
                             return;
@@ -877,50 +916,64 @@
 
                         document.getElementById('loading-overlay').classList.add('hidden');
                         const errorMsg = data.message || (data.error ? data.error : 'Login gagal');
-                        console.log('Backend error: ' + errorMsg);
+                        console.log('[Login #' + myOperationId + '] Backend error: ' + errorMsg);
                         showError('login-error', errorMsg);
                         return;
                     } else {
                         // User cancelled native sign-in (result is null/empty)
-                        console.log('Native sign-in cancelled by user');
+                        console.log('[Login #' + myOperationId + '] Native sign-in cancelled by user');
                         return; // Don't fallback to web
                     }
                 } catch (e) {
-                    console.log('Native sign-in error: ' + e.message);
+                    console.log('[Login #' + myOperationId + '] Native sign-in error: ' + e.message);
                     // Check if user cancelled (common error codes/messages)
                     const msg = (e.message || '').toLowerCase();
                     if (msg.includes('cancel') || msg.includes('12501') || msg.includes('user denied') || msg.includes('popup_closed')) {
-                        console.log('User cancelled - not falling back to web');
+                        console.log('[Login #' + myOperationId + '] User cancelled - not falling back to web');
                         return; // Don't fallback to web when user cancels
                     }
+
+                    // Check if operation still valid before retry
+                    if (!isOperationValid()) {
+                        console.log('[Login #' + myOperationId + '] Operation superseded, skipping retry');
+                        return;
+                    }
+
                     // Attempt a one-time native retry before falling back to web
                     if (!firstLoginRetry) {
                         try {
                             firstLoginRetry = true;
-                            // Check if user switched to registration flow
-                            if (loginFlowAborted) {
-                                console.log('Login flow aborted - user switched to registration');
-                                return;
-                            }
-                            console.log('Retrying native Google Sign-In after cleanup...');
+                            console.log('[Login #' + myOperationId + '] Retrying native Google Sign-In after cleanup...');
                             // Ensure clean state
                             await window.Capacitor.Plugins.GoogleAuth.signOut();
                             await new Promise(r => setTimeout(r, 600));
-                            const retryResult = await window.Capacitor.Plugins.GoogleAuth.signIn();
-                            // Check again after signIn (user might have switched to registration)
-                            if (loginFlowAborted) {
-                                console.log('Login flow aborted after signIn - user switched to registration');
+
+                            // Check again before retry signIn
+                            if (!isOperationValid()) {
+                                console.log('[Login #' + myOperationId + '] Operation superseded during cleanup, aborting');
                                 return;
                             }
-                            console.log('Retry sign-in result: ' + (retryResult && retryResult.authentication ? 'success' : 'empty'));
+
+                            const retryResult = await window.Capacitor.Plugins.GoogleAuth.signIn();
+
+                            // Check if operation still valid
+                            if (!isOperationValid()) {
+                                console.log('[Login #' + myOperationId + '] Operation superseded after retry signIn, aborting');
+                                return;
+                            }
+
+                            console.log('[Login #' + myOperationId + '] Retry sign-in result: ' + (retryResult && retryResult.authentication ? 'success' : 'empty'));
                             if (retryResult && retryResult.authentication && retryResult.authentication.idToken) {
-                                // Check abort flag before sending to backend
-                                if (loginFlowAborted) {
-                                    console.log('Login flow aborted before backend call');
+                                console.log('[Login #' + myOperationId + '] Retry succeeded, sending to backend');
+                                showLoading();
+
+                                // Final check before backend
+                                if (!isOperationValid()) {
+                                    console.log('[Login #' + myOperationId + '] Operation superseded before retry backend, aborting');
+                                    document.getElementById('loading-overlay').classList.add('hidden');
                                     return;
                                 }
-                                console.log('Retry succeeded, sending to backend');
-                                showLoading();
+
                                 const res = await fetch(`${API_BASE}/api/patients/auth/google`, {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
@@ -930,45 +983,56 @@
                                     })
                                 });
                                 const data = await res.json();
-                                console.log('Retry backend response:', res.status, data);
+
+                                // Check after fetch
+                                if (!isOperationValid()) {
+                                    console.log('[Login #' + myOperationId + '] Operation superseded after retry backend, discarding');
+                                    document.getElementById('loading-overlay').classList.add('hidden');
+                                    return;
+                                }
+
+                                console.log('[Login #' + myOperationId + '] Retry backend response:', res.status, data);
                                 if (res.ok && data.token) {
-                                    console.log('Retry login successful, redirecting...');
+                                    console.log('[Login #' + myOperationId + '] Retry login successful, checking intake status...');
                                     localStorage.setItem('vps_auth_token', data.token);
                                     if (data.user) localStorage.setItem('patient_user', JSON.stringify(data.user));
                                     localStorage.setItem('auth_provider', 'google');
                                     localStorage.setItem('from_mobile_app', 'true');
-                                    let url = `${DASHBOARD_URL}?token=${encodeURIComponent(data.token)}`;
-                                    const user = localStorage.getItem('patient_user');
-                                    if (user) url += `&user=${encodeURIComponent(user)}`;
-                                    window.location.href = url;
+                                    window.location.href = getPostLoginUrl(data, data.token);
                                     return;
                                 }
                                 // Registration code needed
                                 if (data.code_required) {
-                                    console.log('New patient - need to register first (after retry)');
+                                    console.log('[Login #' + myOperationId + '] New patient - need to register first (after retry)');
                                     document.getElementById('loading-overlay').classList.add('hidden');
                                     showError('login-error', 'Akun belum terdaftar. Silakan klik "Daftar" untuk membuat akun baru.');
                                     return;
                                 }
                                 document.getElementById('loading-overlay').classList.add('hidden');
                                 const errorMsg = data.message || (data.error ? data.error : 'Login gagal');
-                                console.log('Retry backend error: ' + errorMsg);
+                                console.log('[Login #' + myOperationId + '] Retry backend error: ' + errorMsg);
                                 showError('login-error', errorMsg);
                                 return;
                             } else {
-                                console.log('Retry sign-in result empty, will fallback to web');
+                                console.log('[Login #' + myOperationId + '] Retry sign-in result empty, will fallback to web');
                             }
                         } catch (retryErr) {
-                            console.log('Native retry failed: ' + retryErr.message);
+                            console.log('[Login #' + myOperationId + '] Native retry failed: ' + retryErr.message);
                         }
                     }
                     // Only fallback to web for actual errors (network issues, etc.)
-                    console.log('Actual error - falling back to web OAuth');
+                    console.log('[Login #' + myOperationId + '] Actual error - falling back to web OAuth');
                 }
             }
 
+            // Final check before web OAuth
+            if (!isOperationValid()) {
+                console.log('[Login #' + myOperationId + '] Operation superseded, skipping web OAuth');
+                return;
+            }
+
             // Fallback to web OAuth (only for non-cancel errors or when native not available)
-            console.log('Using web OAuth...');
+            console.log('[Login #' + myOperationId + '] Using web OAuth...');
             const redirectUri = encodeURIComponent('https://dokterdibya.com/mobile-google-callback.html');
             const scope = encodeURIComponent('email profile');
             const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_WEB_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent`;
@@ -1018,8 +1082,9 @@
 
         // Register with Google (uses pre-validated code)
         window.registerWithGoogle = async function() {
-            // Abort any pending login flow to prevent race conditions
-            loginFlowAborted = true;
+            // CRITICAL: Get NEW operation ID - this invalidates any pending login operations
+            const myOperationId = ++currentGoogleOperationId;
+            console.log('[Register] Starting operation #' + myOperationId + ', code=' + validatedRegCode);
 
             if (!validatedRegCode) {
                 showError('regcode-error', 'Kode registrasi belum divalidasi');
@@ -1027,125 +1092,121 @@
                 return;
             }
 
+            // Store code locally in case it changes during async operations
+            const regCode = validatedRegCode;
+
             // Try native Google Sign-In first
             if (googleAuthReady) {
                 try {
-                    console.log('Using native Google Sign-In for registration, code=' + validatedRegCode);
-                    // Aggressive cleanup to clear stale session from login attempt
-                    // Double signOut with longer delays to force fresh token
+                    console.log('[Register #' + myOperationId + '] Using native Google Sign-In, code=' + regCode);
+                    // Clean up any stale session
                     try {
-                        console.log('Clearing Google session before registration...');
+                        console.log('[Register #' + myOperationId + '] Clearing Google session...');
                         await window.Capacitor.Plugins.GoogleAuth.signOut();
                         await new Promise(r => setTimeout(r, 500));
-                        await window.Capacitor.Plugins.GoogleAuth.signOut();
-                        await new Promise(r => setTimeout(r, 500));
-                        console.log('Google session cleared');
-                    } catch (e) { console.log('SignOut error (ignored):', e.message); }
+                        console.log('[Register #' + myOperationId + '] Google session cleared');
+                    } catch (e) { console.log('[Register #' + myOperationId + '] SignOut error (ignored):', e.message); }
+
                     const result = await window.Capacitor.Plugins.GoogleAuth.signIn();
 
                     if (result && result.authentication && result.authentication.idToken) {
-                        console.log('Native sign-in succeeded, sending to backend with code=' + validatedRegCode);
+                        console.log('[Register #' + myOperationId + '] Native sign-in succeeded, sending to backend');
                         showLoading();
                         const res = await fetch(`${API_BASE}/api/patients/auth/google`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
                                 idToken: result.authentication.idToken,
-                                registration_code: validatedRegCode,
+                                registration_code: regCode,
                                 app_version: APP_VERSION
                             })
                         });
                         const data = await res.json();
-                        console.log('Backend response:', res.status, data);
+                        console.log('[Register #' + myOperationId + '] Backend response:', res.status, data);
 
                         if (res.ok && data.token) {
-                            console.log('Registration successful, redirecting...');
+                            console.log('[Register #' + myOperationId + '] Registration successful, redirecting to intake form...');
                             localStorage.setItem('vps_auth_token', data.token);
                             if (data.user) localStorage.setItem('patient_user', JSON.stringify(data.user));
                             localStorage.setItem('auth_provider', 'google');
                             localStorage.setItem('from_mobile_app', 'true');
                             validatedRegCode = null;
-                            let url = `${DASHBOARD_URL}?token=${encodeURIComponent(data.token)}`;
-                            const user = localStorage.getItem('patient_user');
-                            if (user) url += `&user=${encodeURIComponent(user)}`;
-                            window.location.href = url;
+                            // New registrations always go to intake form
+                            window.location.href = getPostLoginUrl(data, data.token);
                             return;
                         }
 
                         document.getElementById('loading-overlay').classList.add('hidden');
                         const errorMsg = data.message || (data.error ? data.error : 'Registrasi gagal');
-                        console.log('Backend error: ' + errorMsg);
+                        console.log('[Register #' + myOperationId + '] Backend error: ' + errorMsg);
                         showError('regcode-error', errorMsg);
                         return;
                     } else {
                         // User cancelled native sign-in
-                        console.log('Native sign-in cancelled by user - result empty');
+                        console.log('[Register #' + myOperationId + '] Native sign-in cancelled by user');
                         return; // Don't fallback to web
                     }
                 } catch (e) {
-                    console.log('Native sign-in error: ' + e.message + ', code=' + validatedRegCode);
+                    console.log('[Register #' + myOperationId + '] Native sign-in error: ' + e.message);
                     document.getElementById('loading-overlay').classList.add('hidden');
                     // Check if user cancelled
                     const msg = (e.message || '').toLowerCase();
                     if (msg.includes('cancel') || msg.includes('12501') || msg.includes('user denied') || msg.includes('popup_closed')) {
-                        console.log('User cancelled - not falling back to web');
+                        console.log('[Register #' + myOperationId + '] User cancelled - not falling back to web');
                         return; // Don't fallback to web when user cancels
                     }
                     // Attempt a one-time native retry before falling back to web
                     if (!firstRegisterRetry) {
                         try {
                             firstRegisterRetry = true;
-                            console.log('Retrying native Google Sign-In for registration after cleanup, code=' + validatedRegCode);
+                            console.log('[Register #' + myOperationId + '] Retrying native Google Sign-In after cleanup');
                             await window.Capacitor.Plugins.GoogleAuth.signOut();
                             await new Promise(r => setTimeout(r, 600));
                             const retryResult = await window.Capacitor.Plugins.GoogleAuth.signIn();
-                            console.log('Retry sign-in result: ' + (retryResult && retryResult.authentication ? 'success' : 'empty'));
+                            console.log('[Register #' + myOperationId + '] Retry sign-in result: ' + (retryResult && retryResult.authentication ? 'success' : 'empty'));
                             if (retryResult && retryResult.authentication && retryResult.authentication.idToken) {
-                                console.log('Retry succeeded, sending to backend with code=' + validatedRegCode);
+                                console.log('[Register #' + myOperationId + '] Retry succeeded, sending to backend');
                                 showLoading();
                                 const res = await fetch(`${API_BASE}/api/patients/auth/google`, {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({
                                         idToken: retryResult.authentication.idToken,
-                                        registration_code: validatedRegCode,
+                                        registration_code: regCode,
                                         app_version: APP_VERSION
                                     })
                                 });
                                 const data = await res.json();
-                                console.log('Retry backend response:', res.status, data);
+                                console.log('[Register #' + myOperationId + '] Retry backend response:', res.status, data);
                                 if (res.ok && data.token) {
-                                    console.log('Retry registration successful, redirecting...');
+                                    console.log('[Register #' + myOperationId + '] Retry registration successful, redirecting to intake...');
                                     localStorage.setItem('vps_auth_token', data.token);
                                     if (data.user) localStorage.setItem('patient_user', JSON.stringify(data.user));
                                     localStorage.setItem('auth_provider', 'google');
                                     localStorage.setItem('from_mobile_app', 'true');
                                     validatedRegCode = null;
-                                    let url = `${DASHBOARD_URL}?token=${encodeURIComponent(data.token)}`;
-                                    const user = localStorage.getItem('patient_user');
-                                    if (user) url += `&user=${encodeURIComponent(user)}`;
-                                    window.location.href = url;
+                                    window.location.href = getPostLoginUrl(data, data.token);
                                     return;
                                 }
                                 document.getElementById('loading-overlay').classList.add('hidden');
                                 const errorMsg = data.message || (data.error ? data.error : 'Registrasi gagal');
-                                console.log('Retry backend error: ' + errorMsg);
+                                console.log('[Register #' + myOperationId + '] Retry backend error: ' + errorMsg);
                                 showError('regcode-error', errorMsg);
                                 return;
                             } else {
-                                console.log('Retry sign-in result empty, will fallback to web');
+                                console.log('[Register #' + myOperationId + '] Retry sign-in result empty, will fallback to web');
                             }
                         } catch (retryErr) {
-                            console.log('Native registration retry failed: ' + retryErr.message);
+                            console.log('[Register #' + myOperationId + '] Native registration retry failed: ' + retryErr.message);
                         }
                     }
-                    console.log('Actual error - falling back to web OAuth');
+                    console.log('[Register #' + myOperationId + '] Actual error - falling back to web OAuth');
                 }
             }
 
             // Fallback to web OAuth (code will be passed via callback)
-            console.log('Using web OAuth for registration...');
-            localStorage.setItem('pending_reg_code', validatedRegCode);
+            console.log('[Register #' + myOperationId + '] Using web OAuth...');
+            localStorage.setItem('pending_reg_code', regCode);
             const redirectUri = encodeURIComponent('https://dokterdibya.com/mobile-google-callback.html');
             const scope = encodeURIComponent('email profile');
             const googleAuthUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_WEB_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent`;
@@ -1200,14 +1261,22 @@
                         if (userJson) {
                             localStorage.setItem('patient_user', userJson);
                         }
-                        console.log('Token saved from deep link, redirecting...');
+                        console.log('Token saved from deep link, checking intake status...');
                         localStorage.setItem('from_mobile_app', 'true');
-                        // Pass token and user in URL so web dashboard can access it
-                        let dashboardUrl = `${DASHBOARD_URL}?token=${encodeURIComponent(token)}`;
-                        if (userJson) {
-                            dashboardUrl += `&user=${encodeURIComponent(userJson)}`;
-                        }
-                        window.location.href = dashboardUrl;
+
+                        // Parse user to check intake status
+                        let user = null;
+                        try {
+                            user = userJson ? JSON.parse(userJson) : null;
+                        } catch (e) { console.log('Could not parse user JSON'); }
+
+                        // Construct data object for getPostLoginUrl
+                        const data = {
+                            token: token,
+                            intake_completed: user ? user.intake_completed : false,
+                            user: user
+                        };
+                        window.location.href = getPostLoginUrl(data, token);
                     }
                 }
             } catch (e) {
@@ -1215,10 +1284,55 @@
             }
         }
 
+        // Request notification permission on first launch
+        async function requestNotificationPermissionOnStart() {
+            try {
+                // Check if we already asked (to avoid asking every time)
+                const askedNotif = localStorage.getItem('asked_notification_permission');
+                if (askedNotif) return;
+
+                // Wait a bit for Capacitor to be fully ready
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                if (window.Capacitor && window.Capacitor.Plugins) {
+                    const LocalNotifications = window.Capacitor.Plugins.LocalNotifications;
+                    const PushNotifications = window.Capacitor.Plugins.PushNotifications;
+
+                    // Request Local Notifications permission
+                    if (LocalNotifications) {
+                        const localStatus = await LocalNotifications.checkPermissions();
+                        console.log('[Notif] Local permission status:', localStatus.display);
+                        if (localStatus.display === 'prompt') {
+                            const result = await LocalNotifications.requestPermissions();
+                            console.log('[Notif] Local permission result:', result.display);
+                        }
+                    }
+
+                    // Request Push Notifications permission
+                    if (PushNotifications) {
+                        const pushStatus = await PushNotifications.checkPermissions();
+                        console.log('[Notif] Push permission status:', pushStatus.receive);
+                        if (pushStatus.receive === 'prompt') {
+                            const result = await PushNotifications.requestPermissions();
+                            console.log('[Notif] Push permission result:', result.receive);
+                        }
+                    }
+
+                    // Mark as asked
+                    localStorage.setItem('asked_notification_permission', 'true');
+                }
+            } catch (e) {
+                console.error('[Notif] Error requesting permission:', e);
+            }
+        }
+
         // Listen for Capacitor app URL open events
         document.addEventListener('DOMContentLoaded', () => {
             // Clear any error messages on page load
             document.querySelectorAll('.error-message').forEach(e => e.classList.remove('show'));
+
+            // Request notification permission on first launch
+            requestNotificationPermissionOnStart();
 
             // Check for deep link on app start
             if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App) {
@@ -1269,14 +1383,23 @@
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (res.ok) {
-                    // Pass token in URL - dashboard is different origin, can't access our localStorage
-                    localStorage.setItem('from_mobile_app', 'true');
-                    const user = localStorage.getItem('patient_user');
-                    let url = `${DASHBOARD_URL}?token=${encodeURIComponent(token)}`;
+                    const profileResponse = await res.json();
+                    const user = profileResponse.user || profileResponse;
+                    console.log('Profile fetched, intake_completed:', user.intake_completed);
+
+                    // Update stored user data with fresh profile
                     if (user) {
-                        url += `&user=${encodeURIComponent(user)}`;
+                        localStorage.setItem('patient_user', JSON.stringify(user));
                     }
-                    window.location.href = url;
+
+                    localStorage.setItem('from_mobile_app', 'true');
+
+                    // Check intake status and redirect accordingly
+                    const data = {
+                        intake_completed: user.intake_completed,
+                        user: user
+                    };
+                    window.location.href = getPostLoginUrl(data, token);
                 } else {
                     // Token invalid, clear and show login
                     localStorage.removeItem('vps_auth_token');
@@ -1299,15 +1422,10 @@
             document.getElementById(pageId).classList.add('active');
             // Clear errors
             document.querySelectorAll('.error-message').forEach(e => e.classList.remove('show'));
-            // Abort login flow when navigating to registration page
+            // Invalidate any pending Google operations when navigating to registration page
             if (pageId === 'page-regcode') {
-                loginFlowAborted = true;
-                console.log('Navigated to registration - login flow aborted');
-            }
-            // Reset abort flag when going back to login
-            if (pageId === 'page-login') {
-                loginFlowAborted = false;
-                console.log('Navigated to login - abort flag reset');
+                currentGoogleOperationId++;
+                console.log('[Navigation] To registration - invalidated previous operations, current ID=' + currentGoogleOperationId);
             }
         };
 
@@ -1371,9 +1489,9 @@
                         localStorage.setItem('patient_user', JSON.stringify(data.user));
                     }
 
-                    // Redirect to dashboard
+                    // Redirect based on intake completion status
                     localStorage.setItem('from_mobile_app', 'true');
-                    window.location.href = DASHBOARD_URL;
+                    window.location.href = getPostLoginUrl(data, data.token);
                 } else {
                     showError('login-error', data.message || 'Email atau password salah');
                 }
@@ -1417,13 +1535,14 @@
                 const data = await res.json();
 
                 if (res.ok && data.success) {
-                    // Auto login after register
+                    // Auto login after register - redirect to intake form
                     localStorage.setItem('vps_auth_token', data.token);
                     if (data.user) {
                         localStorage.setItem('patient_user', JSON.stringify(data.user));
                     }
                     localStorage.setItem('from_mobile_app', 'true');
-                    window.location.href = DASHBOARD_URL;
+                    // New registrations always need intake form
+                    window.location.href = getPostLoginUrl(data, data.token);
                 } else {
                     showError('register-error', data.message || 'Gagal mendaftar. Silakan coba lagi.');
                 }
