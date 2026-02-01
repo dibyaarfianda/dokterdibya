@@ -3235,18 +3235,28 @@ async function checkExtensionImportData() {
             if (!patientId) return; // User cancelled
         }
 
-        // Create MR directly
-        const mrRes = await fetch('/api/sunday-clinic/start-walk-in', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-            body: JSON.stringify({ patient_id: patientId, category, location: visitLocation, import_source: data.source })
+        // Check for existing DRD today - DO NOT create new one (only PERIKSA can create)
+        const checkRes = await fetch(`/api/sunday-clinic/check-existing?patient_id=${patientId}&location=${visitLocation}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
         });
-        const mrResult = await mrRes.json();
+        const checkResult = await checkRes.json();
 
-        if (!mrResult.success) throw new Error(mrResult.message || 'Gagal membuat MR');
-
-        // mrId can be at top level or nested in data
-        const mrId = mrResult.mrId || mrResult.mr_id || mrResult.data?.mrId || mrResult.data?.mr_id;
+        let mrId;
+        if (checkResult.success && checkResult.existingMrId) {
+            // Use existing DRD
+            mrId = checkResult.existingMrId;
+            console.log('[Import] Using existing DRD:', mrId);
+        } else {
+            // No existing DRD - show error
+            if (window.Swal) Swal.close();
+            await Swal.fire({
+                icon: 'warning',
+                title: 'Belum Ada DRD',
+                html: `Pasien <b>${patientName}</b> belum memiliki rekam medis hari ini.<br><br>Gunakan tombol <b>PERIKSA</b> di halaman Appointment untuk membuat rekam medis baru terlebih dahulu.`,
+                confirmButtonText: 'OK'
+            });
+            return;
+        }
         sessionStorage.setItem('simrs_import_data', JSON.stringify(data));
         sessionStorage.setItem('simrs_import_mr_id', mrId);
 
@@ -3380,6 +3390,8 @@ if (document.readyState === 'loading') {
 }
 
 // -------------------- START PATIENT VISIT (Walk-in) --------------------
+// NOTE: This function is DISABLED. Only PERIKSA button can create new DRD.
+// Use the PERIKSA button from Appointment page instead.
 async function startPatientVisit(patientId, patientName, location, category) {
     try {
         const token = getAuthToken();
@@ -3392,31 +3404,29 @@ async function startPatientVisit(patientId, patientName, location, category) {
         const btn = document.getElementById('btn-confirm-new-visit');
         if (btn) {
             btn.disabled = true;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Memproses...';
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Memeriksa...';
         }
 
-        // Call API to create walk-in visit
-        const response = await fetch('/api/sunday-clinic/start-walk-in', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                patient_id: patientId,
-                category: category,
-                location: location
-            })
+        // Check for existing DRD - DO NOT create new one (only PERIKSA can create)
+        const checkRes = await fetch(`/api/sunday-clinic/check-existing?patient_id=${patientId}&location=${location || 'klinik_private'}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
         });
+        const checkResult = await checkRes.json();
 
-        const result = await response.json();
-
-        if (!response.ok) {
-            throw new Error(result.message || 'Gagal memulai kunjungan');
-        }
-
-        if (!result.success || !result.data?.mrId) {
-            throw new Error('Data rekam medis tidak lengkap');
+        let mrId;
+        if (checkResult.success && checkResult.existingMrId) {
+            // Use existing DRD
+            mrId = checkResult.existingMrId;
+            console.log('[StartVisit] Using existing DRD:', mrId);
+        } else {
+            // No existing DRD - show error
+            alert('Pasien belum memiliki rekam medis hari ini.\n\nGunakan tombol PERIKSA di halaman Appointment untuk membuat rekam medis baru.');
+            // Reset button state
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-play-circle mr-1"></i> Mulai Kunjungan';
+            }
+            return;
         }
 
         // Update session with patient data
@@ -3427,8 +3437,8 @@ async function startPatientVisit(patientId, patientName, location, category) {
                 patientId: patientId,
                 name: patientName,
                 sundayClinic: {
-                    mrId: result.data.mrId,
-                    status: result.data.status,
+                    mrId: mrId,
+                    status: checkResult.status,
                     location: location
                 }
             });
@@ -3440,7 +3450,7 @@ async function startPatientVisit(patientId, patientName, location, category) {
         $('#patientDetailModal').modal('hide');
 
         // Redirect to Sunday Clinic page
-        const mrSlug = String(result.data.mrId).toLowerCase();
+        const mrSlug = String(mrId).toLowerCase();
         window.location.href = `/sunday-clinic/${mrSlug}/identitas`;
 
     } catch (error) {
@@ -4365,6 +4375,7 @@ function selectPatientForImport(id, name) {
 
 /**
  * Start visit with imported SOAP data (retrospective import)
+ * NOTE: Cannot create new DRD - only PERIKSA button can create DRDs
  */
 async function startVisitWithImport() {
     const patientId = document.getElementById('import-selected-id').value;
@@ -4378,49 +4389,34 @@ async function startVisitWithImport() {
     }
 
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Memproses...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i> Memeriksa...';
 
     try {
         const token = getAuthToken();
         const importData = window._simrsImportData;
+        const location = importData?.visit_location || 'rsia_melinda';
 
-        // Build visit datetime for retrospective import
-        let visitDateTime = null;
-        if (visitDate) {
-            visitDateTime = visitDate;
-            if (visitTime) {
-                visitDateTime += 'T' + visitTime + ':00';
-            }
-        }
-
-        console.log('[Import] Creating retrospective visit:', { patientId, visitDateTime, visitDate, visitTime });
-
-        // Create visit record using sunday-clinic start-walk-in API with retrospective date
-        const visitResponse = await fetch('/api/sunday-clinic/start-walk-in', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({
-                patient_id: patientId,
-                category: 'obstetri',
-                location: 'rsia_melinda',
-                visit_date: visitDateTime,  // Pass retrospective date
-                is_retrospective: !!visitDate  // Flag to indicate this is a past visit
-            })
+        // Check for existing DRD - DO NOT create new one (only PERIKSA can create)
+        const checkRes = await fetch(`/api/sunday-clinic/check-existing?patient_id=${patientId}&location=${location}`, {
+            headers: { 'Authorization': `Bearer ${token}` }
         });
+        const checkResult = await checkRes.json();
 
-        if (!visitResponse.ok) {
-            const err = await visitResponse.json();
-            throw new Error(err.message || 'Gagal membuat rekam medis');
+        let mrId;
+        if (checkResult.success && checkResult.existingMrId) {
+            // Use existing DRD
+            mrId = checkResult.existingMrId;
+            console.log('[Import] Using existing DRD:', mrId);
+        } else {
+            // No existing DRD - show error
+            alert('Pasien belum memiliki rekam medis hari ini.\n\nGunakan tombol PERIKSA di halaman Appointment untuk membuat rekam medis baru terlebih dahulu, lalu import data ke rekam medis tersebut.');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-file-import mr-1"></i> Import Rekam Medis';
+            return;
         }
 
-        const visitResult = await visitResponse.json();
-        const mrId = visitResult.data?.mrId || visitResult.mrId;
         const drdCode = mrId;
-
-        console.log('[Import] Medical record created:', { mrId, drdCode, visitDateTime });
+        console.log('[Import] Using existing DRD for import:', { mrId, drdCode });
 
         // Store import data for form filling
         sessionStorage.setItem('simrs_import_mr_id', mrId);

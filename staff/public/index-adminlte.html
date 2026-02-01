@@ -7870,33 +7870,41 @@ body.mobile-app-mode .mobile-action-bar-force button {
 
         try {
             if (applyBtn) {
-                applyBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Membuat MR...';
+                applyBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Memeriksa MR...';
                 applyBtn.disabled = true;
             }
 
-            // Create new MR via API
+            // Check for existing DRD - DO NOT create new one (only PERIKSA can create)
             const token = localStorage.getItem('token') || localStorage.getItem('vps_auth_token');
-            const response = await fetch('/api/sunday-clinic/start-walk-in', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify({
-                    patient_id: patientId,
-                    category: category,
-                    location: visitLocation
-                })
+            const checkRes = await fetch(`/api/sunday-clinic/check-existing?patient_id=${patientId}&location=${visitLocation}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
             });
+            const checkResult = await checkRes.json();
 
-            const result = await response.json();
+            let mrId;
+            if (checkResult.success && checkResult.existingMrId) {
+                // Use existing DRD
+                mrId = checkResult.existingMrId;
+                console.log('[Import] Using existing DRD:', mrId);
+            } else {
+                // No existing DRD - show error
+                if (applyBtn) {
+                    applyBtn.innerHTML = originalBtnText;
+                    applyBtn.disabled = false;
+                }
 
-            if (!result.success) {
-                throw new Error(result.message || 'Gagal membuat MR baru');
+                if (window.Swal) {
+                    await Swal.fire({
+                        icon: 'warning',
+                        title: 'Belum Ada DRD',
+                        html: 'Pasien belum memiliki rekam medis hari ini.<br><br>Gunakan tombol <b>PERIKSA</b> di halaman Appointment untuk membuat rekam medis baru terlebih dahulu.',
+                        confirmButtonText: 'OK'
+                    });
+                } else {
+                    alert('Pasien belum memiliki rekam medis hari ini.\n\nGunakan tombol PERIKSA di halaman Appointment untuk membuat rekam medis baru terlebih dahulu.');
+                }
+                return;
             }
-
-            const newMR = result.data;
-            console.log('[Import] Created new MR:', newMR.mrId);
 
             // Store parsed data in sessionStorage to apply after navigation
             const importDataToApply = {
@@ -7912,19 +7920,19 @@ body.mobile-app-mode .mobile-action-bar-force button {
             $('#import-medical-modal').modal('hide');
             resetImportModal();
 
-            // Show success and navigate
+            // Show info and navigate
             if (window.Swal) {
                 await Swal.fire({
-                    icon: 'success',
-                    title: 'MR Berhasil Dibuat',
-                    html: `MR ID: <strong>${newMR.mrId}</strong><br>Mengalihkan ke form rekam medis...`,
+                    icon: 'info',
+                    title: 'Menggunakan MR yang Ada',
+                    html: `MR ID: <strong>${mrId}</strong><br>Mengalihkan ke form rekam medis...`,
                     timer: 1500,
                     showConfirmButton: false
                 });
             }
 
-            // Navigate to sunday-clinic with the new MR
-            window.location.href = `/sunday-clinic/${newMR.mrId}/identity`;
+            // Navigate to sunday-clinic with the existing MR
+            window.location.href = `/sunday-clinic/${mrId}/identity`;
 
         } catch (error) {
             console.error('Import apply error:', error);

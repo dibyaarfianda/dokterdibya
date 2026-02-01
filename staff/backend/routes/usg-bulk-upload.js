@@ -454,59 +454,19 @@ router.post('/execute', verifyToken, upload.single('zipFile'), async (req, res) 
                         record_id: targetRecordId
                     });
                 } else {
-                    // Create NEW kunjungan with NEW DRD using atomic transaction
-                    // This prevents duplicate MR IDs from concurrent requests
-                    const connection = await db.getConnection();
-                    try {
-                        await connection.beginTransaction();
-
-                        // Lock table to get accurate MAX sequence
-                        const [maxSeq] = await connection.query(`
-                            SELECT MAX(mr_sequence) as max_seq FROM sunday_clinic_records FOR UPDATE
-                        `);
-                        const nextSeq = (maxSeq[0].max_seq || 0) + 1;
-                        effectiveMrId = `DRD${String(nextSeq).padStart(4, '0')}`;
-
-                        // Also update unified counter to stay in sync
-                        await connection.query(`
-                            UPDATE sunday_clinic_mr_counters
-                            SET current_sequence = GREATEST(current_sequence, ?)
-                            WHERE category = 'unified'
-                        `, [nextSeq]);
-
-                        const [patientInfo] = await connection.query(`SELECT full_name FROM patients WHERE id = ?`, [patient_id]);
-                        const patientName = patientInfo[0]?.full_name || 'Unknown';
-                        const folderPath = `${effectiveMrId}_${patientName.replace(/[^a-zA-Z0-9]/g, '_')}`;
-
-                        // Get patient's last category (default obstetri for new patients)
-                        const [lastCategory] = await connection.query(`
-                            SELECT mr_category FROM sunday_clinic_records
-                            WHERE patient_id = ? ORDER BY created_at DESC LIMIT 1
-                        `, [patient_id]);
-                        const category = lastCategory[0]?.mr_category || 'obstetri';
-
-                        const [insertResult] = await connection.query(`
-                            INSERT INTO sunday_clinic_records
-                            (mr_id, mr_sequence, patient_id, visit_location, folder_path, mr_category, status, created_at, updated_at)
-                            VALUES (?, ?, ?, ?, ?, ?, 'draft', ?, NOW())
-                        `, [effectiveMrId, nextSeq, patient_id, hospital, folderPath, category, recordDate]);
-
-                        await connection.commit();
-                        targetRecordId = insertResult.insertId;
-
-                        logger.info('[BulkUSG] Created new kunjungan with NEW DRD (atomic)', {
-                            patient_id,
-                            mr_id: effectiveMrId,
-                            hospital,
-                            category,
-                            record_id: targetRecordId
-                        });
-                    } catch (txError) {
-                        await connection.rollback();
-                        throw txError;
-                    } finally {
-                        connection.release();
-                    }
+                    // NO existing DRD - skip this folder (only PERIKSA button can create DRD)
+                    logger.info('[BulkUSG] No existing DRD for patient at this hospital - skipping', {
+                        patient_id,
+                        hospital,
+                        folder: folderName
+                    });
+                    results.push({
+                        folder: folderName,
+                        status: 'skipped',
+                        reason: 'Pasien belum punya DRD di RS ini. Gunakan PERIKSA untuk membuat DRD baru.'
+                    });
+                    skipCount++;
+                    continue;
                 }
 
                 const uploadedPhotos = [];
