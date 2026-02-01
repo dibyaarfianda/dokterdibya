@@ -118,21 +118,13 @@
             font-weight: 400 !important;
         }
 
-        /* Mobile-friendly complaint/reason columns - wrap text instead of horizontal scroll */
+        /* Mobile-friendly complaint/reason columns - smaller text, wrap down */
         #klinik-private-tbody td:nth-child(5),
         .hospital-appointments-container td:nth-child(5) {
             white-space: normal !important;
             word-break: break-word !important;
-            max-width: 150px !important;
-            line-height: 1.4 !important;
-        }
-
-        @media (max-width: 768px) {
-            #klinik-private-tbody td:nth-child(5),
-            .hospital-appointments-container td:nth-child(5) {
-                max-width: 100px !important;
-                font-size: 0.8rem !important;
-            }
+            font-size: 0.75rem !important;
+            line-height: 1.3 !important;
         }
 
         /* Submenu bullet icons - smaller circles */
@@ -2070,13 +2062,13 @@
                                         <table class="table table-hover mb-0">
                                             <thead class="thead-light">
                                                 <tr>
-                                                    <th style="width: 8%;" class="text-center">Waktu</th>
-                                                    <th style="width: 25%;">Nama Pasien</th>
-                                                    <th style="width: 8%;">Usia</th>
-                                                    <th style="width: 12%;">Kategori</th>
-                                                    <th style="width: 25%;">Alasan Kontrol</th>
-                                                    <th style="width: 12%;">Status</th>
-                                                    <th style="width: 10%;" class="text-center">Aksi</th>
+                                                    <th style="width: 7%;" class="text-center">Waktu</th>
+                                                    <th style="width: 20%;">Nama Pasien</th>
+                                                    <th style="width: 6%;">Usia</th>
+                                                    <th style="width: 10%;">Kategori</th>
+                                                    <th style="width: 35%;">Alasan</th>
+                                                    <th style="width: 10%;">Status</th>
+                                                    <th style="width: 12%;" class="text-center">Aksi</th>
                                                 </tr>
                                             </thead>
                                             <tbody id="klinik-private-tbody"></tbody>
