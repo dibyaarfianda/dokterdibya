@@ -537,6 +537,55 @@ router.get('/queue/today', verifyToken, async (req, res, next) => {
     }
 });
 
+// ==================== CHECK EXISTING RECORD ====================
+
+/**
+ * GET /api/sunday-clinic/check-existing
+ * Check if patient already has a record for today at the specified location
+ * Used by PERIKSA button to prevent duplicate DRD creation
+ */
+router.get('/check-existing', verifyToken, async (req, res, next) => {
+    try {
+        const { patient_id, location } = req.query;
+
+        if (!patient_id) {
+            return res.status(400).json({
+                success: false,
+                message: 'patient_id is required'
+            });
+        }
+
+        // Check for existing record today at this location (or any location if not specified)
+        let query = `
+            SELECT mr_id, id, status, visit_location
+            FROM sunday_clinic_records
+            WHERE patient_id = ? AND DATE(created_at) = CURDATE()
+        `;
+        const params = [patient_id];
+
+        if (location) {
+            query += ` AND visit_location = ?`;
+            params.push(location);
+        }
+
+        query += ` ORDER BY created_at DESC LIMIT 1`;
+
+        const [rows] = await db.query(query, params);
+
+        res.json({
+            success: true,
+            existingMrId: rows[0]?.mr_id || null,
+            existingRecordId: rows[0]?.id || null,
+            status: rows[0]?.status || null,
+            location: rows[0]?.visit_location || null
+        });
+
+    } catch (error) {
+        logger.error('Error checking existing record:', error);
+        next(error);
+    }
+});
+
 // ==================== DIRECTORY ====================
 
 router.get('/directory', verifyToken, async (req, res, next) => {
