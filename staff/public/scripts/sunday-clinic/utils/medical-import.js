@@ -473,11 +473,12 @@ async function importMedicalApply() {
     });
 
     try {
-        // Check if we need to create a new MR
+        // Check if we need to find an existing MR
         const hasActive = hasActiveMR();
 
         if (!hasActive) {
-            // Need to create new MR
+            // No active MR - check if patient has existing DRD today
+            // NOTE: Cannot create new DRD - only PERIKSA button can create DRDs
             const patientSelect = document.getElementById('import-patient-select');
             const patientId = patientSelect?.value;
 
@@ -491,52 +492,75 @@ async function importMedicalApply() {
             const applyBtn = document.getElementById('btn-import-apply');
             const originalBtnText = applyBtn?.innerHTML;
             if (applyBtn) {
-                applyBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Membuat MR...';
+                applyBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Memeriksa MR...';
                 applyBtn.disabled = true;
             }
 
             try {
-                // Create new MR with import_source from parsed data
-                // parsedImportData.source contains: 'rsud_gambiran', 'simrs_melinda', etc.
-                const importSource = parsedImportData?.source || null;
-                const newMR = await createNewMRAndNavigate(patientId, category, visitLocation || 'klinik_private', visitDate, importSource);
+                // Check for existing DRD - DO NOT create new one
+                const token = localStorage.getItem('token') || localStorage.getItem('vps_auth_token');
+                const checkRes = await fetch(`/api/sunday-clinic/check-existing?patient_id=${patientId}&location=${visitLocation || 'klinik_private'}`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const checkResult = await checkRes.json();
 
-                console.log('[Import] Created new MR:', newMR.mrId, 'importSource:', importSource);
+                if (checkResult.success && checkResult.existingMrId) {
+                    // Use existing DRD
+                    console.log('[Import] Using existing DRD:', checkResult.existingMrId);
 
-                // Close modal first
-                $('#import-medical-modal').modal('hide');
+                    // Close modal first
+                    $('#import-medical-modal').modal('hide');
 
-                // Store the parsed data in sessionStorage to apply after navigation
-                const importDataToApply = {
-                    template: template,
-                    checkedFields: checkedFields,
-                    visitDate: visitDate,
-                    visitLocation: visitLocation
-                };
-                sessionStorage.setItem('pendingImportData', JSON.stringify(importDataToApply));
+                    // Store the parsed data in sessionStorage to apply after navigation
+                    const importDataToApply = {
+                        template: template,
+                        checkedFields: checkedFields,
+                        visitDate: visitDate,
+                        visitLocation: visitLocation
+                    };
+                    sessionStorage.setItem('pendingImportData', JSON.stringify(importDataToApply));
 
-                // Reset modal state
-                resetImportModal();
+                    // Reset modal state
+                    resetImportModal();
 
-                // Navigate to the new MR
-                const newUrl = `/sunday-clinic/${newMR.mrId}/identity`;
+                    // Navigate to existing MR
+                    const mrUrl = `/sunday-clinic/${checkResult.existingMrId}/identity`;
 
-                if (window.Swal) {
-                    await Swal.fire({
-                        icon: 'success',
-                        title: 'MR Berhasil Dibuat',
-                        html: `MR ID: <strong>${newMR.mrId}</strong><br>Mengalihkan ke halaman MR...`,
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
+                    if (window.Swal) {
+                        await Swal.fire({
+                            icon: 'info',
+                            title: 'Menggunakan MR yang Ada',
+                            html: `MR ID: <strong>${checkResult.existingMrId}</strong><br>Mengalihkan ke halaman MR...`,
+                            timer: 1500,
+                            showConfirmButton: false
+                        });
+                    }
+
+                    // Redirect to existing MR - will apply data after page load
+                    window.location.href = mrUrl;
+                    return;
+                } else {
+                    // No existing DRD - show error
+                    if (applyBtn) {
+                        applyBtn.innerHTML = originalBtnText;
+                        applyBtn.disabled = false;
+                    }
+
+                    if (window.Swal) {
+                        await Swal.fire({
+                            icon: 'warning',
+                            title: 'Belum Ada DRD',
+                            html: 'Pasien belum memiliki rekam medis hari ini.<br><br>Gunakan tombol <b>PERIKSA</b> di halaman Appointment untuk membuat rekam medis baru terlebih dahulu.',
+                            confirmButtonText: 'OK'
+                        });
+                    } else {
+                        alert('Pasien belum memiliki rekam medis hari ini.\n\nGunakan tombol PERIKSA di halaman Appointment untuk membuat rekam medis baru terlebih dahulu.');
+                    }
+                    return;
                 }
 
-                // Redirect to new MR - will apply data after page load
-                window.location.href = newUrl;
-                return;
-
             } catch (error) {
-                console.error('Create MR error:', error);
+                console.error('Check existing MR error:', error);
                 if (applyBtn) {
                     applyBtn.innerHTML = originalBtnText;
                     applyBtn.disabled = false;

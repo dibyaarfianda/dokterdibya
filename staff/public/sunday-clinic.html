@@ -1469,39 +1469,34 @@ PLAN
                 $(element).closest('.dropdown').find('.dropdown-toggle').dropdown('toggle');
 
                 try {
-                    if (existingMrId) {
-                        // Already has MR - open it
-                        console.log('[Queue] Opening existing MR:', existingMrId);
-                        window.location.href = `/sunday-clinic/${existingMrId}/identity`;
-                    } else {
-                        // No MR yet - create new one (like "Periksa" button)
-                        console.log('[Queue] Creating new MR for patient:', patientId);
+                    const token = localStorage.getItem('vps_auth_token');
 
-                        // Show loading
-                        element.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Membuat MR...';
+                    // Show loading
+                    element.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memuat...';
 
-                        const token = localStorage.getItem('vps_auth_token');
-                        const response = await fetch('/api/sunday-clinic/start-walk-in', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Authorization': `Bearer ${token}`
-                            },
-                            body: JSON.stringify({
-                                patient_id: patientId,
-                                category: category,
-                                location: 'klinik_private'
-                            })
+                    // Check for existing record today (from dataset or API)
+                    let mrIdToOpen = existingMrId;
+
+                    if (!mrIdToOpen) {
+                        // Check via API if patient has record today
+                        const checkResponse = await fetch(`/api/sunday-clinic/check-existing?patient_id=${patientId}&location=klinik_private`, {
+                            headers: { 'Authorization': `Bearer ${token}` }
                         });
+                        const checkData = await checkResponse.json();
+                        if (checkData.success && checkData.existingMrId) {
+                            mrIdToOpen = checkData.existingMrId;
+                        }
+                    }
 
-                        const result = await response.json();
-                        if (!result.success) throw new Error(result.message || 'Gagal membuat MR');
-
-                        const newMrId = result.data?.mrId;
-                        console.log('[Queue] Created new MR:', newMrId);
-
-                        // Navigate to the new MR
-                        window.location.href = `/sunday-clinic/${newMrId}/identity`;
+                    if (mrIdToOpen) {
+                        // Has existing MR - open it
+                        console.log('[Queue] Opening existing MR:', mrIdToOpen);
+                        window.location.href = `/sunday-clinic/${mrIdToOpen}/identity`;
+                    } else {
+                        // No existing record - tell user to use PERIKSA button
+                        console.log('[Queue] No existing record for patient:', patientId);
+                        alert('Pasien ini belum ada rekam medis hari ini.\n\nGunakan tombol PERIKSA di halaman Appointment untuk membuat rekam medis baru.');
+                        loadHeaderQueue(); // Reload queue to reset UI
                     }
                 } catch (error) {
                     console.error('[Queue] Error:', error);
