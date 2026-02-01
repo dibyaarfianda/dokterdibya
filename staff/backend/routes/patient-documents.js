@@ -313,29 +313,38 @@ router.post('/publish', verifyToken, async (req, res) => {
                 let notifIcon = 'fa fa-file-text';
                 let notifIconColor = 'text-info';
 
+                let notifType = 'new_document';
+                let notifLink = '/dokumen-medis.html';
+
                 if (doc.document_type === 'resume_medis') {
                     notifTitle = 'Resume Medis Baru';
                     notifMessage = `Resume medis Anda telah tersedia.`;
                     notifIcon = 'fa fa-file-medical-alt';
                     notifIconColor = 'text-success';
-                } else if (doc.document_type === 'usg_photo') {
+                    notifType = 'new_document';
+                    notifLink = '/dokumen-medis.html';
+                } else if (doc.document_type === 'usg_photo' || doc.document_type === 'patient_usg') {
                     notifTitle = 'Foto USG Baru';
                     notifMessage = `Foto USG Anda telah tersedia.`;
                     notifIcon = 'fa fa-image';
                     notifIconColor = 'text-primary';
-                } else if (doc.document_type === 'lab_result') {
+                    notifType = 'new_usg';
+                    notifLink = '/album-usg.html';
+                } else if (doc.document_type === 'lab_result' || doc.document_type === 'patient_lab') {
                     notifTitle = 'Hasil Lab Baru';
                     notifMessage = `Hasil laboratorium Anda telah tersedia.`;
                     notifIcon = 'fa fa-flask';
                     notifIconColor = 'text-warning';
+                    notifType = 'new_lab';
+                    notifLink = '/hasil-lab.html';
                 }
 
                 await createPatientNotification({
                     patient_id: patientId,
-                    type: 'document',
+                    type: notifType,
                     title: notifTitle,
                     message: notifMessage,
-                    link: `/patient-dashboard.html#documents`,
+                    link: notifLink,
                     icon: notifIcon,
                     icon_color: notifIconColor
                 });
@@ -509,6 +518,9 @@ router.post('/publish-from-mr', verifyToken, async (req, res) => {
                 let notifIconColor = 'text-info';
 
                 // Customize notification based on document type
+                let notifType = 'new_document';
+                let notifLink = '/dokumen-medis.html';
+
                 if (doc.type === 'resume_medis') {
                     notifTitle = `Resume Medis ${actionText}`;
                     notifMessage = isUpdated
@@ -516,28 +528,34 @@ router.post('/publish-from-mr', verifyToken, async (req, res) => {
                         : `Resume medis Anda telah tersedia. Klik untuk melihat.`;
                     notifIcon = 'fa fa-file-medical-alt';
                     notifIconColor = 'text-success';
-                } else if (doc.type === 'usg_photo') {
+                    notifType = 'new_document';
+                    notifLink = '/dokumen-medis.html';
+                } else if (doc.type === 'usg_photo' || doc.type === 'patient_usg') {
                     notifTitle = `Foto USG ${actionText}`;
                     notifMessage = isUpdated
                         ? `Foto USG Anda telah diperbarui. Klik untuk melihat.`
                         : `Foto USG Anda telah tersedia. Klik untuk melihat.`;
                     notifIcon = 'fa fa-image';
                     notifIconColor = 'text-primary';
-                } else if (doc.type === 'lab_result') {
+                    notifType = 'new_usg';
+                    notifLink = '/album-usg.html';
+                } else if (doc.type === 'lab_result' || doc.type === 'patient_lab') {
                     notifTitle = `Hasil Lab ${actionText}`;
                     notifMessage = isUpdated
                         ? `Hasil laboratorium Anda telah diperbarui. Klik untuk melihat.`
                         : `Hasil laboratorium Anda telah tersedia. Klik untuk melihat.`;
                     notifIcon = 'fa fa-flask';
                     notifIconColor = 'text-warning';
+                    notifType = 'new_lab';
+                    notifLink = '/hasil-lab.html';
                 }
 
                 await createPatientNotification({
                     patient_id: patientId,
-                    type: 'document',
+                    type: notifType,
                     title: notifTitle,
                     message: notifMessage,
-                    link: `/patient-dashboard.html#documents`,
+                    link: notifLink,
                     icon: notifIcon,
                     icon_color: notifIconColor
                 });

@@ -155,8 +155,8 @@
 </head>
 <body>
     <!-- Safe Area Overlays -->
-    <div class="safe-area-top" style="position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0);background:#1a1a2e;z-index:9999;"></div>
-    <div class="safe-area-bottom" style="position:fixed;bottom:0;left:0;right:0;height:env(safe-area-inset-bottom,0);background:#1a1a2e;z-index:9999;"></div>
+    <div class="safe-area-top" style="position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0);background:#000000;z-index:9999;"></div>
+    <div class="safe-area-bottom" style="position:fixed;bottom:0;left:0;right:0;height:env(safe-area-inset-bottom,0);background:#000000;z-index:9999;"></div>
     <!-- Top Navbar -->
     <nav class="nav-bar">
         <div class="nav-left">
@@ -360,7 +360,9 @@
                 'thread_closed': { icon: 'fa-check-circle', class: 'success' },
                 'booking_confirmed': { icon: 'fa-calendar-check-o', class: 'booking' },
                 'booking_cancelled': { icon: 'fa-calendar-times-o', class: 'warning' },
+                'appointment': { icon: 'fa-calendar', class: 'booking' },
                 'new_document': { icon: 'fa-file-o', class: 'document' },
+                'document': { icon: 'fa-file-o', class: 'document' },
                 'new_usg': { icon: 'fa-picture-o', class: 'document' },
                 'new_lab': { icon: 'fa-flask', class: 'document' },
                 'announcement': { icon: 'fa-bullhorn', class: 'info' },
@@ -399,14 +401,38 @@
                     break;
                 case 'booking_confirmed':
                 case 'booking_cancelled':
+                case 'appointment':
                     window.location.href = '/booking-klinik.html';
                     break;
-                case 'new_document':
                 case 'new_usg':
                     window.location.href = '/album-usg.html';
                     break;
                 case 'new_lab':
                     window.location.href = '/hasil-lab.html';
+                    break;
+                case 'new_document':
+                    window.location.href = '/dokumen-medis.html';
+                    break;
+                case 'document':
+                    // Legacy type - check link or title to determine destination
+                    if (data.link) {
+                        window.location.href = data.link;
+                    } else {
+                        // Try to determine from notification content
+                        const notif = allNotifications.find(n => n.id == id);
+                        if (notif) {
+                            const title = (notif.title || '').toLowerCase();
+                            if (title.includes('usg')) {
+                                window.location.href = '/album-usg.html';
+                            } else if (title.includes('lab')) {
+                                window.location.href = '/hasil-lab.html';
+                            } else {
+                                window.location.href = '/dokumen-medis.html';
+                            }
+                        } else {
+                            window.location.href = '/dokumen-medis.html';
+                        }
+                    }
                     break;
                 default:
                     // Stay on page
