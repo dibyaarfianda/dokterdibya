@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#1a1a1a">
+    <meta name="theme-color" content="#000000">
     <title>Album USG - dokterDIBYA</title>
 
     <!-- Favicon -->
@@ -299,8 +299,8 @@
 </head>
 <body>
     <!-- Safe Area Overlays -->
-    <div class="safe-area-top" style="position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0);background:#1a1a2e;z-index:9999;"></div>
-    <div class="safe-area-bottom" style="position:fixed;bottom:0;left:0;right:0;height:env(safe-area-inset-bottom,0);background:#1a1a2e;z-index:9999;"></div>
+    <div class="safe-area-top" style="position:fixed;top:0;left:0;right:0;height:env(safe-area-inset-top,0);background:#000000;z-index:9999;"></div>
+    <div class="safe-area-bottom" style="position:fixed;bottom:0;left:0;right:0;height:env(safe-area-inset-bottom,0);background:#000000;z-index:9999;"></div>
     <!-- Top Navbar -->
     <nav class="nav-bar">
         <div class="nav-left">
@@ -339,7 +339,6 @@
             <!-- Filter Tabs -->
             <div class="filter-tabs">
                 <div class="filter-tab active" data-type="all" onclick="filterByType('all')">Semua</div>
-                <div class="filter-tab" data-type="usg_photo" onclick="filterByType('usg_photo')">Foto USG</div>
                 <div class="filter-tab" data-type="usg_2d" onclick="filterByType('usg_2d')">USG 2D</div>
                 <div class="filter-tab" data-type="usg_4d" onclick="filterByType('usg_4d')">USG 4D</div>
             </div>
@@ -410,6 +409,7 @@
         let currentFilter = 'all';
         let currentLightboxIndex = 0;
         let customThumbnailId = localStorage.getItem('usg_thumbnail_id');
+        let detectedTypes = {}; // Cache for detected 2D/4D types
 
         // Make functions globally available
         window.filterByType = filterByType;
@@ -418,6 +418,67 @@
         window.navigateLightbox = navigateLightbox;
         window.setAsThumbnail = setAsThumbnail;
         window.downloadImage = downloadImage;
+
+        /**
+         * Analyze image to determine if it's grayscale (2D) or colored (4D)
+         * @param {string} imageUrl - URL of the image to analyze
+         * @returns {Promise<string>} - 'usg_2d' or 'usg_4d'
+         */
+        async function detectUsgType(imageUrl) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.crossOrigin = 'anonymous';
+
+                img.onload = function() {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+
+                        // Sample a smaller version for performance
+                        const sampleSize = 100;
+                        canvas.width = sampleSize;
+                        canvas.height = sampleSize;
+
+                        ctx.drawImage(img, 0, 0, sampleSize, sampleSize);
+                        const imageData = ctx.getImageData(0, 0, sampleSize, sampleSize);
+                        const pixels = imageData.data;
+
+                        let coloredPixels = 0;
+                        const threshold = 15; // Tolerance for color difference
+                        const totalSamples = (sampleSize * sampleSize);
+
+                        // Sample pixels to check for color
+                        for (let i = 0; i < pixels.length; i += 4) {
+                            const r = pixels[i];
+                            const g = pixels[i + 1];
+                            const b = pixels[i + 2];
+
+                            // Check if pixel has significant color difference (not grayscale)
+                            const rgDiff = Math.abs(r - g);
+                            const gbDiff = Math.abs(g - b);
+                            const rbDiff = Math.abs(r - b);
+
+                            if (rgDiff > threshold || gbDiff > threshold || rbDiff > threshold) {
+                                coloredPixels++;
+                            }
+                        }
+
+                        // If more than 5% of pixels are colored, it's 4D
+                        const colorRatio = coloredPixels / totalSamples;
+                        resolve(colorRatio > 0.05 ? 'usg_4d' : 'usg_2d');
+                    } catch (e) {
+                        console.error('Error analyzing image:', e);
+                        resolve('usg_2d'); // Default to 2D on error
+                    }
+                };
+
+                img.onerror = function() {
+                    resolve('usg_2d'); // Default to 2D on error
+                };
+
+                img.src = imageUrl;
+            });
+        }
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async function() {
@@ -441,14 +502,17 @@
 
                 allImages = [];
 
-                if (responsePhoto && responsePhoto.success && responsePhoto.documents) {
-                    allImages = allImages.concat(responsePhoto.documents.map(d => ({ ...d, type: 'usg_photo' })));
-                }
+                // Add explicitly typed images
                 if (response2d && response2d.success && response2d.documents) {
-                    allImages = allImages.concat(response2d.documents.map(d => ({ ...d, type: 'usg_2d' })));
+                    allImages = allImages.concat(response2d.documents.map(d => ({ ...d, type: 'usg_2d', detectedType: 'usg_2d' })));
                 }
                 if (response4d && response4d.success && response4d.documents) {
-                    allImages = allImages.concat(response4d.documents.map(d => ({ ...d, type: 'usg_4d' })));
+                    allImages = allImages.concat(response4d.documents.map(d => ({ ...d, type: 'usg_4d', detectedType: 'usg_4d' })));
+                }
+
+                // Add usg_photo images (will detect 2D/4D automatically)
+                if (responsePhoto && responsePhoto.success && responsePhoto.documents) {
+                    allImages = allImages.concat(responsePhoto.documents.map(d => ({ ...d, type: 'usg_photo', detectedType: null })));
                 }
 
                 // Sort by date descending
@@ -461,9 +525,42 @@
                 document.getElementById('total-count').textContent = `${allImages.length} foto`;
 
                 filterByType('all');
+
+                // Auto-detect types for usg_photo images in background
+                detectAllImageTypes();
             } catch (error) {
                 console.error('Error loading USG:', error);
                 showToast('Gagal memuat album', 'error');
+            }
+        }
+
+        // Detect types for all usg_photo images
+        async function detectAllImageTypes() {
+            const photosToDetect = allImages.filter(img => img.type === 'usg_photo' && !img.detectedType);
+
+            for (const img of photosToDetect) {
+                try {
+                    // Check cache first
+                    const cacheKey = `usg_type_${img.id}`;
+                    const cached = localStorage.getItem(cacheKey);
+
+                    if (cached) {
+                        img.detectedType = cached;
+                    } else {
+                        const detected = await detectUsgType(img.file_url);
+                        img.detectedType = detected;
+                        // Cache the result
+                        localStorage.setItem(cacheKey, detected);
+                    }
+                } catch (e) {
+                    console.error('Error detecting type for image:', img.id, e);
+                    img.detectedType = 'usg_2d'; // Default to 2D
+                }
+            }
+
+            // Re-render if any types were detected
+            if (photosToDetect.length > 0) {
+                renderGallery();
             }
         }
 
@@ -476,11 +573,15 @@
                 tab.classList.toggle('active', tab.dataset.type === type);
             });
 
-            // Filter images
+            // Filter images - use detectedType for better accuracy
             if (type === 'all') {
                 filteredImages = [...allImages];
             } else {
-                filteredImages = allImages.filter(img => img.type === type || img.document_type === type);
+                filteredImages = allImages.filter(img => {
+                    // Use detectedType if available, otherwise use original type
+                    const effectiveType = img.detectedType || img.type;
+                    return effectiveType === type || img.document_type === type;
+                });
             }
 
             renderGallery();
@@ -503,7 +604,6 @@
             }
 
             const typeLabels = {
-                'usg_photo': 'Foto',
                 'usg_2d': '2D',
                 'usg_4d': '4D'
             };
@@ -513,13 +613,16 @@
                 const dateStr = date.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
                 const isNew = !img.first_viewed_at;
                 const isThumbnail = customThumbnailId && parseInt(customThumbnailId) === img.id;
-                const type = img.type || img.document_type;
+
+                // Use detectedType for badge, fallback to original type
+                const effectiveType = img.detectedType || img.type;
+                const typeLabel = typeLabels[effectiveType] || '';
 
                 return `
                     <div class="usg-item" onclick="openLightbox(${index})">
                         ${isNew ? '<span class="new-badge">BARU</span>' : ''}
                         ${isThumbnail ? '<span class="thumbnail-badge"><i class="fa fa-star"></i></span>' : ''}
-                        ${currentFilter === 'all' ? `<span class="type-badge">${typeLabels[type] || 'USG'}</span>` : ''}
+                        ${currentFilter === 'all' && typeLabel ? `<span class="type-badge">${typeLabel}</span>` : ''}
                         <img src="${img.file_url}" alt="USG ${dateStr}" loading="lazy"
                              onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%27200%27 height=%27200%27%3E%3Crect width=%27200%27 height=%27200%27 fill=%27%23404040%27/%3E%3Ctext x=%2750%25%27 y=%2750%25%27 font-size=%2720%27 fill=%27%2328a7e9%27 text-anchor=%27middle%27 dy=%27.3em%27%3EError%3C/text%3E%3C/svg%3E'">
                         <div class="overlay">
