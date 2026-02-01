@@ -12,6 +12,25 @@ const isCapacitor = window.Capacitor?.isNativePlatform?.() || false;
 // Storage key for notification ID counter
 const NOTIF_COUNTER_KEY = 'vitamin_notif_counter';
 
+// Get LocalNotifications plugin from Capacitor
+async function getLocalNotificationsPlugin() {
+    if (!isCapacitor) return null;
+
+    try {
+        // Try to get from Capacitor.Plugins first (registered plugins)
+        if (window.Capacitor?.Plugins?.LocalNotifications) {
+            return window.Capacitor.Plugins.LocalNotifications;
+        }
+
+        // Fallback: dynamic import from @capacitor/local-notifications
+        const { LocalNotifications } = await import('@capacitor/local-notifications');
+        return LocalNotifications;
+    } catch (error) {
+        console.error('Failed to load LocalNotifications plugin:', error);
+        return null;
+    }
+}
+
 /**
  * Generate unique notification ID
  */
@@ -30,7 +49,11 @@ export async function requestNotificationPermission() {
     try {
         if (isCapacitor) {
             // Capacitor Local Notifications
-            const { LocalNotifications } = await import('https://cdn.jsdelivr.net/npm/@capacitor/local-notifications@6.0.0/+esm');
+            const LocalNotifications = await getLocalNotificationsPlugin();
+            if (!LocalNotifications) {
+                console.error('LocalNotifications plugin not available');
+                return false;
+            }
 
             const permStatus = await LocalNotifications.checkPermissions();
 
@@ -71,7 +94,8 @@ export async function requestNotificationPermission() {
 export async function isNotificationPermitted() {
     try {
         if (isCapacitor) {
-            const { LocalNotifications } = await import('https://cdn.jsdelivr.net/npm/@capacitor/local-notifications@6.0.0/+esm');
+            const LocalNotifications = await getLocalNotificationsPlugin();
+            if (!LocalNotifications) return false;
             const permStatus = await LocalNotifications.checkPermissions();
             return permStatus.display === 'granted';
         } else {
@@ -123,7 +147,11 @@ export async function scheduleVitaminReminder(medication) {
     try {
         if (isCapacitor) {
             // Capacitor Local Notifications
-            const { LocalNotifications } = await import('https://cdn.jsdelivr.net/npm/@capacitor/local-notifications@6.0.0/+esm');
+            const LocalNotifications = await getLocalNotificationsPlugin();
+            if (!LocalNotifications) {
+                console.error('LocalNotifications plugin not available for scheduling');
+                return notificationIds;
+            }
 
             const notifications = medication.reminderTimes.map(time => {
                 const id = generateNotifId();
@@ -196,7 +224,8 @@ export async function cancelVitaminReminder(notificationIds) {
 
     try {
         if (isCapacitor) {
-            const { LocalNotifications } = await import('https://cdn.jsdelivr.net/npm/@capacitor/local-notifications@6.0.0/+esm');
+            const LocalNotifications = await getLocalNotificationsPlugin();
+            if (!LocalNotifications) return;
 
             await LocalNotifications.cancel({
                 notifications: notificationIds.map(id => ({ id }))
@@ -232,7 +261,8 @@ export async function rescheduleAllReminders(medications) {
 
     try {
         if (isCapacitor) {
-            const { LocalNotifications } = await import('https://cdn.jsdelivr.net/npm/@capacitor/local-notifications@6.0.0/+esm');
+            const LocalNotifications = await getLocalNotificationsPlugin();
+            if (!LocalNotifications) return medications;
 
             // Get all pending notifications
             const pending = await LocalNotifications.getPending();
@@ -278,7 +308,11 @@ export async function showTestNotification(title = 'Test Notifikasi', body = 'In
 
     try {
         if (isCapacitor) {
-            const { LocalNotifications } = await import('https://cdn.jsdelivr.net/npm/@capacitor/local-notifications@6.0.0/+esm');
+            const LocalNotifications = await getLocalNotificationsPlugin();
+            if (!LocalNotifications) {
+                alert('Plugin notifikasi tidak tersedia');
+                return;
+            }
 
             await LocalNotifications.schedule({
                 notifications: [{
@@ -359,7 +393,8 @@ export async function setupNotificationChannel() {
     if (!isCapacitor) return;
 
     try {
-        const { LocalNotifications } = await import('https://cdn.jsdelivr.net/npm/@capacitor/local-notifications@6.0.0/+esm');
+        const LocalNotifications = await getLocalNotificationsPlugin();
+        if (!LocalNotifications) return;
 
         await LocalNotifications.createChannel({
             id: 'medication_reminders',
