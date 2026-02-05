@@ -825,15 +825,21 @@ export default {
                     </button>`;
             }
         } else if (status === 'confirmed') {
-            // CONFIRMED: Show print buttons + Mark as Paid button
+            // CONFIRMED: Show print buttons + Mark as Paid button + Pay Online button
             const markPaidBtn = `
                 <button type="button" class="btn btn-primary mr-2" id="btn-mark-paid">
                     <i class="fas fa-money-bill-wave mr-2"></i>Tandai Lunas
                 </button>`;
 
+            const payOnlineBtn = `
+                <button type="button" class="btn btn-info mr-2" id="btn-pay-online">
+                    <i class="fas fa-qrcode mr-2"></i>Bayar Online
+                </button>`;
+
             if (isDokter) {
                 actionsHtml = `
                     ${markPaidBtn}
+                    ${payOnlineBtn}
                     <button type="button" class="btn btn-success mr-2" id="btn-print-etiket">
                         <i class="fas fa-tag mr-2"></i>Cetak Etiket
                     </button>
@@ -842,9 +848,10 @@ export default {
                     </button>
                     ${billing.printed_at ? '<small class="text-muted ml-2">Telah dicetak</small>' : ''}`;
             } else {
-                // Non-dokter: Print + Ajukan Perubahan + Mark as Paid
+                // Non-dokter: Print + Ajukan Perubahan + Mark as Paid + Pay Online
                 actionsHtml = `
                     ${markPaidBtn}
+                    ${payOnlineBtn}
                     <button type="button" class="btn btn-warning mr-2" id="btn-request-revision">
                         <i class="fas fa-edit mr-2"></i>Ajukan Perubahan
                     </button>
@@ -1406,6 +1413,26 @@ export default {
                                 } else {
                                     window.showToast('error', error.message || 'Gagal menandai pembayaran');
                                 }
+                            }
+                        });
+                    }
+
+                    // 6. Pay Online button - opens Xendit payment modal
+                    const payOnlineBtn = document.getElementById('btn-pay-online');
+                    if (payOnlineBtn) {
+                        payOnlineBtn.addEventListener('click', function() {
+                            const mrId = window.routeMrSlug;
+                            if (!mrId) {
+                                window.showToast('error', 'MR ID tidak ditemukan');
+                                return;
+                            }
+
+                            // Check if PaymentModal is loaded
+                            if (window.PaymentModal && typeof window.PaymentModal.show === 'function') {
+                                window.PaymentModal.show(mrId);
+                            } else {
+                                console.error('PaymentModal not loaded');
+                                window.showToast('error', 'Modul pembayaran tidak tersedia');
                             }
                         });
                     }

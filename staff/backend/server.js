@@ -427,6 +427,10 @@ app.use('/api/tanya-subscriptions', tanyaSubscriptionsRoutes);
 // Webhook endpoint (no auth)
 app.use('/api/tanya-payments', tanyaSubscriptionsRoutes);
 
+// Xendit Payment Webhook (for billing online payments)
+const xenditWebhookRoutes = require('./routes/xendit-webhook');
+app.use('/api/webhooks/xendit', xenditWebhookRoutes);
+
 // Doctors endpoint (for Q&A doctor selection)
 const doctorsRoutes = require('./routes/doctors');
 app.use('/api/doctors', doctorsRoutes);
