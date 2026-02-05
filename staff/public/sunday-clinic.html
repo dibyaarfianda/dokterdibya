@@ -562,6 +562,32 @@
             color: #17a2b8;
             margin-bottom: 1rem;
         }
+
+        /* Credit Card Form */
+        .payment-cc-form .form-control {
+            font-size: 1rem;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+        }
+        .payment-cc-form #cc-number {
+            font-family: monospace;
+            letter-spacing: 2px;
+        }
+        .payment-cc-form #cc-cvv {
+            font-family: monospace;
+        }
+        .payment-cc-form .cc-icon {
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+        .payment-cc-form .cc-icon:hover {
+            opacity: 1;
+        }
+        .payment-3ds iframe {
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            background: #fff;
+        }
     </style>
 </head>
 <body class="hold-transition sidebar-mini">
@@ -1406,6 +1432,30 @@ PLAN
     <script src="https://cdn.jsdelivr.net/npm/admin-lte@3.2/dist/js/adminlte.min.js"></script>
     <!-- Socket.IO for real-time updates -->
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <!-- Xendit.js for Credit Card Tokenization -->
+    <script src="https://js.xendit.co/v1/xendit.min.js"></script>
+    <script>
+        // Initialize Xendit with public key (loaded from server)
+        (async function() {
+            try {
+                const token = window.getToken ? window.getToken() : localStorage.getItem('vps_auth_token');
+                if (!token) return;
+
+                const mrId = window.routeMrSlug || 'TEMP';
+                const response = await fetch('/api/sunday-clinic/billing/' + mrId + '/xendit-public-key', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                });
+                const result = await response.json();
+
+                if (result.success && result.data && result.data.public_key) {
+                    Xendit.setPublishableKey(result.data.public_key);
+                    console.log('[Xendit] Public key initialized');
+                }
+            } catch (e) {
+                console.warn('[Xendit] Could not initialize public key:', e.message);
+            }
+        })();
+    </script>
     <!-- Global Chat Loader (must be after Socket.IO) -->
     <script src="/staff/public/scripts/global-chat-loader.js"></script>
 

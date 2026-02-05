@@ -326,6 +326,22 @@ function parseWebhookPayload(payload) {
         };
     }
 
+    // Credit Card webhook
+    if (payload.credit_card_charge_id || payload.card_brand || payload.masked_card_number) {
+        const status = payload.status?.toLowerCase();
+        return {
+            type: 'credit_card',
+            event: payload.event || 'credit_card.charge',
+            xendit_id: payload.credit_card_charge_id || payload.id,
+            reference_id: payload.external_id,
+            amount: payload.capture_amount || payload.authorized_amount || payload.amount,
+            paid_at: status === 'captured' ? (payload.created || new Date().toISOString()) : null,
+            status: status === 'captured' ? 'paid' : status,
+            card_brand: payload.card_brand,
+            masked_card_number: payload.masked_card_number
+        };
+    }
+
     // Generic payment webhook
     return {
         type: 'unknown',
@@ -382,8 +398,199 @@ function getSupportedMethods() {
             icon: 'fas fa-university',
             bank_code: 'MANDIRI',
             expiry_hours: XENDIT_CONFIG.vaExpiryHours
+        },
+        {
+            code: 'credit_card',
+            name: 'Kartu Kredit/Debit',
+            description: 'Visa, Mastercard, JCB',
+            icon: 'fas fa-credit-card',
+            supports_3ds: true
         }
     ];
+}
+
+/**
+ * Get Xendit public key for frontend tokenization
+ * @returns {string} Public key
+ */
+function getPublicKey() {
+    return process.env.XENDIT_PUBLIC_KEY || '';
+}
+
+/**
+ * Create Credit Card Charge
+ * @param {Object} params
+ * @param {string} params.tokenId - Token from Xendit.js tokenization
+ * @param {string} params.authId - Authentication ID (for 3DS)
+ * @param {number} params.amount - Payment amount in IDR
+ * @param {string} params.mrId - Medical record ID
+ * @param {string} params.patientName - Patient name
+ * @returns {Promise<Object>} Charge result
+ */
+async function createCreditCardCharge({ tokenId, authId, amount, mrId, patientName }) {
+    if (!isConfigured()) {
+        throw new Error('Xendit tidak dikonfigurasi');
+    }
+
+    const api = getAxiosInstance();
+    const referenceId = generateReferenceId(mrId);
+
+    try {
+        logger.info('[Xendit] Creating credit card charge', { mrId, amount, referenceId });
+
+        const chargeData = {
+            token_id: tokenId,
+            external_id: referenceId,
+            amount: Math.round(amount),
+            capture: true, // Capture immediately
+            description: `Pembayaran ${mrId} - ${patientName}`,
+            metadata: {
+                mr_id: mrId,
+                patient_name: patientName
+            }
+        };
+
+        // Add authentication_id if 3DS was performed
+        if (authId) {
+            chargeData.authentication_id = authId;
+        }
+
+        const response = await api.post('/credit_card_charges', chargeData);
+
+        logger.info('[Xendit] Credit card charge created', {
+            mrId,
+            chargeId: response.data.id,
+            status: response.data.status
+        });
+
+        return {
+            success: true,
+            xendit_id: response.data.id,
+            reference_id: referenceId,
+            status: response.data.status.toLowerCase(),
+            amount: response.data.capture_amount || response.data.authorized_amount,
+            card_brand: response.data.card_brand,
+            masked_card_number: response.data.masked_card_number,
+            charge_type: response.data.charge_type,
+            paid_at: response.data.status === 'CAPTURED' ? new Date().toISOString() : null,
+            raw_response: response.data
+        };
+
+    } catch (error) {
+        logger.error('[Xendit] Failed to create credit card charge', {
+            mrId,
+            error: error.response?.data || error.message
+        });
+
+        // Parse specific error messages
+        const errorData = error.response?.data;
+        let errorMessage = 'Gagal memproses pembayaran kartu';
+
+        if (errorData?.error_code) {
+            switch (errorData.error_code) {
+                case 'CARD_DECLINED':
+                    errorMessage = 'Kartu ditolak. Silakan gunakan kartu lain.';
+                    break;
+                case 'INSUFFICIENT_BALANCE':
+                    errorMessage = 'Saldo tidak mencukupi.';
+                    break;
+                case 'INVALID_CVN':
+                    errorMessage = 'CVV/CVC tidak valid.';
+                    break;
+                case 'EXPIRED_CARD':
+                    errorMessage = 'Kartu sudah kadaluarsa.';
+                    break;
+                case 'PROCESSOR_ERROR':
+                    errorMessage = 'Gangguan sistem bank. Silakan coba lagi.';
+                    break;
+                default:
+                    errorMessage = errorData.message || errorMessage;
+            }
+        }
+
+        throw new Error(errorMessage);
+    }
+}
+
+/**
+ * Create 3DS Authentication for Credit Card
+ * @param {Object} params
+ * @param {string} params.tokenId - Token from Xendit.js
+ * @param {number} params.amount - Payment amount
+ * @param {string} params.mrId - Medical record ID
+ * @returns {Promise<Object>} Authentication result
+ */
+async function create3DSAuthentication({ tokenId, amount, mrId }) {
+    if (!isConfigured()) {
+        throw new Error('Xendit tidak dikonfigurasi');
+    }
+
+    const api = getAxiosInstance();
+    const referenceId = generateReferenceId(mrId);
+
+    try {
+        logger.info('[Xendit] Creating 3DS authentication', { mrId, amount });
+
+        const response = await api.post('/credit_card_charges/authenticate', {
+            token_id: tokenId,
+            external_id: referenceId,
+            amount: Math.round(amount)
+        });
+
+        return {
+            success: true,
+            authentication_id: response.data.id,
+            status: response.data.status,
+            payer_authentication_url: response.data.payer_authentication_url,
+            raw_response: response.data
+        };
+
+    } catch (error) {
+        logger.error('[Xendit] Failed to create 3DS authentication', {
+            mrId,
+            error: error.response?.data || error.message
+        });
+
+        throw new Error(
+            error.response?.data?.message ||
+            'Gagal memulai autentikasi 3DS'
+        );
+    }
+}
+
+/**
+ * Get Credit Card Charge Status
+ * @param {string} chargeId - Xendit charge ID
+ * @returns {Promise<Object>} Charge status
+ */
+async function getCreditCardChargeStatus(chargeId) {
+    if (!isConfigured()) {
+        throw new Error('Xendit tidak dikonfigurasi');
+    }
+
+    const api = getAxiosInstance();
+
+    try {
+        const response = await api.get(`/credit_card_charges/${chargeId}`);
+
+        return {
+            success: true,
+            xendit_id: chargeId,
+            status: response.data.status.toLowerCase(),
+            amount: response.data.capture_amount,
+            card_brand: response.data.card_brand,
+            masked_card_number: response.data.masked_card_number,
+            raw_response: response.data
+        };
+
+    } catch (error) {
+        logger.error('[Xendit] Failed to get charge status', {
+            chargeId,
+            error: error.response?.data || error.message
+        });
+
+        throw new Error('Gagal mengecek status pembayaran');
+    }
 }
 
 module.exports = {
@@ -394,5 +601,9 @@ module.exports = {
     verifyWebhookSignature,
     parseWebhookPayload,
     getSupportedMethods,
+    getPublicKey,
+    createCreditCardCharge,
+    create3DSAuthentication,
+    getCreditCardChargeStatus,
     XENDIT_CONFIG
 };

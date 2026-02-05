@@ -13,7 +13,7 @@ CREATE TABLE IF NOT EXISTS `tagihan_payments` (
     `xendit_reference_id` VARCHAR(100) NULL COMMENT 'Our reference ID sent to Xendit',
 
     -- Payment method details
-    `payment_method` ENUM('qris', 'va_bca', 'va_bni', 'va_bri', 'va_mandiri') NOT NULL,
+    `payment_method` ENUM('qris', 'va_bca', 'va_bni', 'va_bri', 'va_mandiri', 'credit_card') NOT NULL,
 
     -- For QRIS
     `qris_string` TEXT NULL COMMENT 'Raw QRIS string for generating QR locally',
@@ -22,6 +22,10 @@ CREATE TABLE IF NOT EXISTS `tagihan_payments` (
     -- For Virtual Account
     `va_number` VARCHAR(50) NULL COMMENT 'Virtual account number',
     `va_bank_code` VARCHAR(20) NULL COMMENT 'Bank code (BCA, BNI, BRI, MANDIRI)',
+
+    -- For Credit Card
+    `card_brand` VARCHAR(20) NULL COMMENT 'Card brand (VISA, MASTERCARD, JCB)',
+    `masked_card_number` VARCHAR(20) NULL COMMENT 'Masked card number (e.g., 1234****5678)',
 
     -- Amount and status
     `amount` DECIMAL(12,2) NOT NULL COMMENT 'Payment amount in IDR',

@@ -135,6 +135,18 @@ const PaymentModal = {
                         <i class="fas fa-chevron-right text-muted"></i>
                     </div>
                 </div>
+
+                <!-- Credit Card Option -->
+                <div class="payment-method-card mb-2" data-method="credit_card">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-credit-card fa-2x text-success mr-3"></i>
+                        <div class="flex-grow-1">
+                            <strong>Kartu Kredit/Debit</strong>
+                            <small class="d-block text-muted">Visa, Mastercard, JCB</small>
+                        </div>
+                        <i class="fas fa-chevron-right text-muted"></i>
+                    </div>
+                </div>
             </div>
 
             <div class="modal-footer px-0 pb-0">
@@ -156,6 +168,12 @@ const PaymentModal = {
      */
     async selectMethod(method) {
         const content = document.getElementById('payment-modal-content');
+
+        // Credit card has its own form
+        if (method === 'credit_card') {
+            this.renderCreditCardForm();
+            return;
+        }
 
         // Show loading
         content.innerHTML = `
@@ -338,6 +356,311 @@ const PaymentModal = {
 
         // Start countdown
         this.startCountdown(data.expires_in_seconds);
+    },
+
+    /**
+     * Render Credit Card payment form
+     */
+    renderCreditCardForm() {
+        const content = document.getElementById('payment-modal-content');
+
+        content.innerHTML = `
+            <div class="payment-cc-form">
+                <div class="amount-display text-center mb-3">
+                    <strong>Total Tagihan:</strong>
+                    <span class="h4 text-primary ml-2">Rp ${this.formatCurrency(this.billingTotal)}</span>
+                </div>
+
+                <div class="card-brands text-center mb-3">
+                    <img src="https://cdn.jsdelivr.net/gh/nickinack/cc-icons@master/visa.svg" alt="Visa" class="cc-icon mx-1" style="height: 24px;">
+                    <img src="https://cdn.jsdelivr.net/gh/nickinack/cc-icons@master/mastercard.svg" alt="Mastercard" class="cc-icon mx-1" style="height: 24px;">
+                    <img src="https://cdn.jsdelivr.net/gh/nickinack/cc-icons@master/jcb.svg" alt="JCB" class="cc-icon mx-1" style="height: 24px;">
+                </div>
+
+                <form id="cc-payment-form">
+                    <div class="form-group">
+                        <label for="cc-number">Nomor Kartu</label>
+                        <input type="text" class="form-control" id="cc-number" placeholder="1234 5678 9012 3456"
+                               maxlength="19" autocomplete="cc-number" required>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group col-md-6">
+                            <label for="cc-expiry">Berlaku Hingga</label>
+                            <input type="text" class="form-control" id="cc-expiry" placeholder="MM/YY"
+                                   maxlength="5" autocomplete="cc-exp" required>
+                        </div>
+                        <div class="form-group col-md-6">
+                            <label for="cc-cvv">CVV</label>
+                            <input type="text" class="form-control" id="cc-cvv" placeholder="123"
+                                   maxlength="4" autocomplete="cc-csc" required>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="cc-name">Nama di Kartu</label>
+                        <input type="text" class="form-control" id="cc-name" placeholder="NAMA LENGKAP"
+                               autocomplete="cc-name" required style="text-transform: uppercase;">
+                    </div>
+
+                    <div class="alert alert-info small">
+                        <i class="fas fa-lock mr-1"></i>
+                        Transaksi aman dengan enkripsi SSL. Data kartu tidak disimpan di server kami.
+                    </div>
+
+                    <div id="cc-error-message" class="alert alert-danger d-none"></div>
+                </form>
+            </div>
+
+            <div class="modal-footer px-0 pb-0">
+                <button type="button" class="btn btn-secondary" onclick="PaymentModal.renderMethodSelection()">
+                    <i class="fas fa-arrow-left mr-1"></i>Kembali
+                </button>
+                <button type="button" class="btn btn-success" id="btn-pay-cc" onclick="PaymentModal.processCreditCard()">
+                    <i class="fas fa-lock mr-1"></i>Bayar Sekarang
+                </button>
+            </div>
+        `;
+
+        // Setup input formatters
+        this.setupCreditCardInputs();
+    },
+
+    /**
+     * Setup credit card input formatters
+     */
+    setupCreditCardInputs() {
+        const numberInput = document.getElementById('cc-number');
+        const expiryInput = document.getElementById('cc-expiry');
+        const cvvInput = document.getElementById('cc-cvv');
+
+        // Format card number with spaces
+        if (numberInput) {
+            numberInput.addEventListener('input', (e) => {
+                let value = e.target.value.replace(/\D/g, '');
+                value = value.replace(/(.{4})/g, '$1 ').trim();
+                e.target.value = value.substring(0, 19);
+            });
+        }
+
+        // Format expiry MM/YY
+        if (expiryInput) {
+            expiryInput.addEventListener('input', (e) => {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value.length >= 2) {
+                    value = value.substring(0, 2) + '/' + value.substring(2);
+                }
+                e.target.value = value.substring(0, 5);
+            });
+        }
+
+        // CVV only numbers
+        if (cvvInput) {
+            cvvInput.addEventListener('input', (e) => {
+                e.target.value = e.target.value.replace(/\D/g, '').substring(0, 4);
+            });
+        }
+    },
+
+    /**
+     * Process credit card payment
+     */
+    async processCreditCard() {
+        const numberInput = document.getElementById('cc-number');
+        const expiryInput = document.getElementById('cc-expiry');
+        const cvvInput = document.getElementById('cc-cvv');
+        const nameInput = document.getElementById('cc-name');
+        const errorDiv = document.getElementById('cc-error-message');
+        const payBtn = document.getElementById('btn-pay-cc');
+
+        // Validate inputs
+        const cardNumber = numberInput.value.replace(/\s/g, '');
+        const expiry = expiryInput.value;
+        const cvv = cvvInput.value;
+        const cardName = nameInput.value.toUpperCase();
+
+        if (cardNumber.length < 13 || cardNumber.length > 19) {
+            this.showCCError('Nomor kartu tidak valid');
+            return;
+        }
+
+        if (!/^\d{2}\/\d{2}$/.test(expiry)) {
+            this.showCCError('Format expired tidak valid (MM/YY)');
+            return;
+        }
+
+        if (cvv.length < 3) {
+            this.showCCError('CVV tidak valid');
+            return;
+        }
+
+        if (cardName.length < 3) {
+            this.showCCError('Nama pemegang kartu diperlukan');
+            return;
+        }
+
+        // Hide error, show loading
+        errorDiv.classList.add('d-none');
+        payBtn.disabled = true;
+        payBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-1"></i>Memproses...';
+
+        try {
+            // Check if Xendit.js is loaded
+            if (typeof Xendit === 'undefined') {
+                throw new Error('Xendit SDK belum dimuat. Silakan refresh halaman.');
+            }
+
+            // Parse expiry
+            const [expMonth, expYear] = expiry.split('/');
+            const fullYear = '20' + expYear;
+
+            // Tokenize card using Xendit.js
+            const tokenData = await this.tokenizeCard({
+                card_number: cardNumber,
+                card_exp_month: expMonth,
+                card_exp_year: fullYear,
+                card_cvn: cvv,
+                is_multiple_use: false,
+                should_authenticate: true
+            });
+
+            if (tokenData.status === 'IN_REVIEW' && tokenData.payer_authentication_url) {
+                // 3DS authentication required
+                await this.handle3DSAuthentication(tokenData);
+            } else if (tokenData.status === 'VERIFIED') {
+                // Card verified, create charge
+                await this.createCardCharge(tokenData.id);
+            } else {
+                throw new Error('Status tokenisasi tidak valid: ' + tokenData.status);
+            }
+
+        } catch (error) {
+            console.error('[PaymentModal] Credit card error:', error);
+            this.showCCError(error.message || 'Gagal memproses pembayaran');
+            payBtn.disabled = false;
+            payBtn.innerHTML = '<i class="fas fa-lock mr-1"></i>Bayar Sekarang';
+        }
+    },
+
+    /**
+     * Tokenize card using Xendit.js
+     * @param {Object} cardData - Card details
+     * @returns {Promise<Object>} Token data
+     */
+    tokenizeCard(cardData) {
+        return new Promise((resolve, reject) => {
+            Xendit.card.createToken(cardData, (err, token) => {
+                if (err) {
+                    reject(new Error(err.message || 'Tokenisasi gagal'));
+                } else {
+                    resolve(token);
+                }
+            });
+        });
+    },
+
+    /**
+     * Handle 3DS authentication
+     * @param {Object} tokenData - Token with 3DS URL
+     */
+    async handle3DSAuthentication(tokenData) {
+        const content = document.getElementById('payment-modal-content');
+
+        content.innerHTML = `
+            <div class="payment-3ds">
+                <div class="text-center mb-3">
+                    <h6><i class="fas fa-shield-alt mr-2"></i>Verifikasi Keamanan 3D Secure</h6>
+                    <p class="text-muted small">Silakan selesaikan verifikasi di bawah ini</p>
+                </div>
+                <div class="embed-responsive embed-responsive-4by3" style="min-height: 400px;">
+                    <iframe id="3ds-iframe" src="${tokenData.payer_authentication_url}"
+                            class="embed-responsive-item" frameborder="0"></iframe>
+                </div>
+            </div>
+        `;
+
+        // Listen for 3DS completion via postMessage
+        window.addEventListener('message', async (event) => {
+            if (event.data && event.data.status) {
+                if (event.data.status === 'VERIFIED') {
+                    // 3DS successful, create charge
+                    await this.createCardCharge(tokenData.id, tokenData.authentication_id);
+                } else {
+                    this.showCCError('Verifikasi 3DS gagal. Silakan coba lagi.');
+                    this.renderCreditCardForm();
+                }
+            }
+        }, { once: true });
+    },
+
+    /**
+     * Create card charge after tokenization
+     * @param {string} tokenId - Xendit token ID
+     * @param {string} authId - Authentication ID (optional, for 3DS)
+     */
+    async createCardCharge(tokenId, authId = null) {
+        const content = document.getElementById('payment-modal-content');
+
+        content.innerHTML = `
+            <div class="text-center py-5">
+                <i class="fas fa-spinner fa-spin fa-3x text-primary mb-3"></i>
+                <p>Memproses pembayaran...</p>
+            </div>
+        `;
+
+        try {
+            const token = window.getToken ? window.getToken() : localStorage.getItem('vps_auth_token');
+            const response = await fetch(`/api/sunday-clinic/billing/${this.mrId}/create-card-charge`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    token_id: tokenId,
+                    authentication_id: authId
+                })
+            });
+
+            const result = await response.json();
+
+            if (!result.success) {
+                throw new Error(result.message || 'Gagal memproses pembayaran');
+            }
+
+            if (result.data.status === 'captured') {
+                // Payment successful
+                this.handleSuccess();
+            } else {
+                throw new Error('Status pembayaran: ' + result.data.status);
+            }
+
+        } catch (error) {
+            console.error('[PaymentModal] Card charge failed:', error);
+            this.showCCError(error.message);
+            setTimeout(() => {
+                this.renderCreditCardForm();
+            }, 3000);
+        }
+    },
+
+    /**
+     * Show credit card error message
+     * @param {string} message - Error message
+     */
+    showCCError(message) {
+        const errorDiv = document.getElementById('cc-error-message');
+        if (errorDiv) {
+            errorDiv.textContent = message;
+            errorDiv.classList.remove('d-none');
+        } else {
+            // Fallback if error div not found
+            if (window.showError) {
+                window.showError(message);
+            } else {
+                alert(message);
+            }
+        }
     },
 
     /**
