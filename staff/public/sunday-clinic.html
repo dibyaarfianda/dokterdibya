@@ -370,6 +370,198 @@
         body.mobile-app-mode .patient-sidebar-section .toggle-icon {
             display: none !important;
         }
+
+        /* =============================================
+           Payment Modal Styles (Xendit QRIS/VA)
+           ============================================= */
+
+        /* Method Selection Cards */
+        .payment-method-card {
+            border: 2px solid #dee2e6;
+            border-radius: 12px;
+            padding: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: #fff;
+        }
+        .payment-method-card:hover {
+            border-color: #17a2b8;
+            background-color: #f8f9fa;
+        }
+        .payment-method-card.selected {
+            border-color: #17a2b8;
+            background-color: #e3f7fc;
+            box-shadow: 0 0 0 3px rgba(23, 162, 184, 0.2);
+        }
+        .payment-method-card .method-icon {
+            font-size: 2rem;
+            color: #17a2b8;
+            margin-bottom: 0.5rem;
+        }
+        .payment-method-card .method-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 0.25rem;
+        }
+        .payment-method-card .method-desc {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        .payment-method-card .method-expiry {
+            font-size: 0.75rem;
+            color: #adb5bd;
+            margin-top: 0.5rem;
+        }
+
+        /* QRIS Display */
+        .qris-container {
+            text-align: center;
+            padding: 1rem;
+        }
+        .qris-image {
+            max-width: 250px;
+            width: 100%;
+            height: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            margin: 1rem auto;
+            padding: 0.5rem;
+            background: #fff;
+        }
+        .qris-instructions {
+            font-size: 0.9rem;
+            color: #495057;
+            margin-top: 1rem;
+        }
+        .qris-instructions ol {
+            text-align: left;
+            padding-left: 1.5rem;
+        }
+
+        /* VA Number Display */
+        .va-container {
+            text-align: center;
+            padding: 1rem;
+        }
+        .va-bank-logo {
+            font-size: 3rem;
+            color: #0d6efd;
+            margin-bottom: 0.5rem;
+        }
+        .va-bank-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 1rem;
+        }
+        .va-number-box {
+            background: #f8f9fa;
+            border: 2px dashed #dee2e6;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+        .va-number-label {
+            font-size: 0.85rem;
+            color: #6c757d;
+            margin-bottom: 0.5rem;
+        }
+        .va-number-value {
+            font-family: monospace;
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #212529;
+            word-break: break-all;
+        }
+        .va-copy-btn {
+            margin-top: 0.75rem;
+        }
+        .va-amount-box {
+            background: #e7f1ff;
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-top: 1rem;
+        }
+        .va-amount-label {
+            font-size: 0.8rem;
+            color: #6c757d;
+        }
+        .va-amount-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #0d6efd;
+        }
+
+        /* Payment Countdown */
+        .payment-countdown {
+            background: linear-gradient(135deg, #fff3cd 0%, #ffeeba 100%);
+            border-radius: 8px;
+            padding: 0.75rem 1rem;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+        .payment-countdown i {
+            color: #856404;
+        }
+        .payment-countdown .countdown-text {
+            font-size: 0.9rem;
+            color: #856404;
+        }
+        .payment-countdown .countdown-time {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: #856404;
+        }
+        .payment-countdown.expired {
+            background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+        }
+        .payment-countdown.expired i,
+        .payment-countdown.expired .countdown-text,
+        .payment-countdown.expired .countdown-time {
+            color: #721c24;
+        }
+
+        /* Payment Status */
+        .payment-status {
+            text-align: center;
+            padding: 2rem 1rem;
+        }
+        .payment-status .status-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+        .payment-status .status-icon.success {
+            color: #28a745;
+        }
+        .payment-status .status-icon.pending {
+            color: #ffc107;
+        }
+        .payment-status .status-icon.expired {
+            color: #dc3545;
+        }
+        .payment-status .status-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        .payment-status .status-message {
+            font-size: 0.95rem;
+            color: #6c757d;
+        }
+
+        /* Payment Loading */
+        .payment-loading {
+            text-align: center;
+            padding: 2rem;
+        }
+        .payment-loading .spinner {
+            font-size: 2rem;
+            color: #17a2b8;
+            margin-bottom: 1rem;
+        }
     </style>
 </head>
 <body class="hold-transition sidebar-mini">
@@ -1180,6 +1372,32 @@ PLAN
         </div>
     </div>
 
+    <!-- Payment Modal (Xendit QRIS/VA) -->
+    <div class="modal fade" id="payment-modal" tabindex="-1" role="dialog" aria-labelledby="paymentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-info text-white">
+                    <h5 class="modal-title" id="paymentModalLabel">
+                        <i class="fas fa-credit-card mr-2"></i>Pembayaran Online
+                    </h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body" id="payment-modal-body">
+                    <!-- Dynamic content rendered by payment-modal.js -->
+                    <div class="text-center py-4">
+                        <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
+                        <p class="mt-2 text-muted">Memuat...</p>
+                    </div>
+                </div>
+                <div class="modal-footer" id="payment-modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <!-- Bootstrap 4 -->
@@ -1235,6 +1453,8 @@ PLAN
     </script>
     <!-- Medical import from text files -->
     <script type="module" src="/staff/public/scripts/sunday-clinic/utils/medical-import.js?v=20260111193043"></script>
+    <!-- Payment modal (Xendit QRIS/VA) -->
+    <script type="module" src="/staff/public/scripts/sunday-clinic/components/shared/payment-modal.js?v=20260205"></script>
     <script>
         // Mobile app mode detection and initialization
         (function() {

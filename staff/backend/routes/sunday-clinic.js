@@ -3302,5 +3302,9 @@ function setupSocketHandlers(io) {
     // The realtime-sync module handles socket connections
 }
 
+// Import and mount billing payment routes (Xendit integration)
+const billingPaymentRoutes = require('./billing-payment');
+router.use('/billing', billingPaymentRoutes);
+
 module.exports = router;
 module.exports.setupSocketHandlers = setupSocketHandlers;
