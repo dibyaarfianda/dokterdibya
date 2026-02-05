@@ -397,6 +397,203 @@ router.post('/:mrId/cancel-payment/:paymentId', verifyToken, async (req, res) =>
 });
 
 /**
+ * GET /:mrId/xendit-public-key
+ * Get Xendit public key for frontend tokenization
+ */
+router.get('/:mrId/xendit-public-key', verifyToken, async (req, res) => {
+    try {
+        const publicKey = xenditPayment.getPublicKey();
+
+        if (!publicKey) {
+            return sendError(res, 'Xendit public key belum dikonfigurasi', 503);
+        }
+
+        return sendSuccess(res, { public_key: publicKey });
+
+    } catch (error) {
+        return sendError(res, 'Gagal mengambil public key', 500);
+    }
+});
+
+/**
+ * POST /:mrId/create-card-charge
+ * Create credit card charge with token from Xendit.js
+ */
+router.post('/:mrId/create-card-charge', verifyToken, async (req, res) => {
+    const mrId = normalizeMrId(req.params.mrId);
+    const { token_id, authentication_id } = req.body;
+
+    try {
+        if (!token_id) {
+            return sendError(res, 'Token kartu diperlukan', 400);
+        }
+
+        // Check Xendit configuration
+        if (!xenditPayment.isConfigured()) {
+            return sendError(res, 'Payment gateway belum dikonfigurasi', 503);
+        }
+
+        // Get billing info
+        const [[billing]] = await db.query(`
+            SELECT b.id, b.mr_id, b.patient_id, b.total, b.status,
+                   p.full_name as patient_name
+            FROM sunday_clinic_billings b
+            JOIN patients p ON p.id = b.patient_id
+            WHERE b.mr_id = ?
+        `, [mrId]);
+
+        if (!billing) {
+            return sendError(res, 'Billing tidak ditemukan', 404);
+        }
+
+        if (billing.status !== 'confirmed') {
+            return sendError(res, 'Billing harus dikonfirmasi terlebih dahulu', 400);
+        }
+
+        if (billing.status === 'paid') {
+            return sendError(res, 'Billing sudah dibayar', 400);
+        }
+
+        const amount = parseFloat(billing.total);
+
+        // Create credit card charge
+        const chargeResult = await xenditPayment.createCreditCardCharge({
+            tokenId: token_id,
+            authId: authentication_id,
+            amount,
+            mrId,
+            patientName: billing.patient_name
+        });
+
+        // Save to database
+        const [insertResult] = await db.query(`
+            INSERT INTO tagihan_payments (
+                billing_id, mr_id, patient_id, xendit_id, xendit_reference_id,
+                payment_method, amount, status, paid_at, xendit_response, created_by
+            ) VALUES (?, ?, ?, ?, ?, 'credit_card', ?, ?, ?, ?, ?)
+        `, [
+            billing.id,
+            mrId,
+            billing.patient_id,
+            chargeResult.xendit_id,
+            chargeResult.reference_id,
+            amount,
+            chargeResult.status === 'captured' ? 'paid' : 'pending',
+            chargeResult.paid_at,
+            JSON.stringify(chargeResult.raw_response),
+            req.user?.name || req.user?.id || 'System'
+        ]);
+
+        // Log the event
+        await db.query(`
+            INSERT INTO tagihan_payment_logs (
+                payment_id, billing_id, mr_id, event_type, event_source,
+                status_after, request_data, response_data, ip_address
+            ) VALUES (?, ?, ?, 'payment.card_charged', 'api', ?, ?, ?, ?)
+        `, [
+            insertResult.insertId,
+            billing.id,
+            mrId,
+            chargeResult.status,
+            JSON.stringify({ token_id: token_id.substring(0, 10) + '...' }),
+            JSON.stringify(chargeResult),
+            req.ip
+        ]);
+
+        // If payment captured, process success
+        if (chargeResult.status === 'captured') {
+            const payment = {
+                id: insertResult.insertId,
+                billing_id: billing.id,
+                mr_id: mrId,
+                payment_method: 'credit_card',
+                amount
+            };
+
+            await handlePaymentSuccess(payment, {
+                paid_at: chargeResult.paid_at,
+                card_brand: chargeResult.card_brand,
+                masked_card_number: chargeResult.masked_card_number
+            });
+        }
+
+        logger.info('[BillingPayment] Credit card charge created', {
+            mrId,
+            paymentId: insertResult.insertId,
+            status: chargeResult.status
+        });
+
+        return sendSuccess(res, {
+            payment_id: insertResult.insertId,
+            xendit_id: chargeResult.xendit_id,
+            status: chargeResult.status,
+            amount,
+            card_brand: chargeResult.card_brand,
+            masked_card_number: chargeResult.masked_card_number
+        }, chargeResult.status === 'captured' ? 'Pembayaran berhasil' : 'Pembayaran diproses');
+
+    } catch (error) {
+        logger.error('[BillingPayment] Create card charge failed', {
+            mrId,
+            error: error.message
+        });
+        return sendError(res, error.message || 'Gagal memproses pembayaran kartu', 500);
+    }
+});
+
+/**
+ * POST /:mrId/create-3ds-auth
+ * Create 3DS authentication for credit card
+ */
+router.post('/:mrId/create-3ds-auth', verifyToken, async (req, res) => {
+    const mrId = normalizeMrId(req.params.mrId);
+    const { token_id } = req.body;
+
+    try {
+        if (!token_id) {
+            return sendError(res, 'Token kartu diperlukan', 400);
+        }
+
+        // Get billing amount
+        const [[billing]] = await db.query(`
+            SELECT total FROM sunday_clinic_billings WHERE mr_id = ?
+        `, [mrId]);
+
+        if (!billing) {
+            return sendError(res, 'Billing tidak ditemukan', 404);
+        }
+
+        const amount = parseFloat(billing.total);
+
+        // Create 3DS authentication
+        const authResult = await xenditPayment.create3DSAuthentication({
+            tokenId: token_id,
+            amount,
+            mrId
+        });
+
+        logger.info('[BillingPayment] 3DS authentication created', {
+            mrId,
+            authId: authResult.authentication_id,
+            status: authResult.status
+        });
+
+        return sendSuccess(res, {
+            authentication_id: authResult.authentication_id,
+            status: authResult.status,
+            payer_authentication_url: authResult.payer_authentication_url
+        });
+
+    } catch (error) {
+        logger.error('[BillingPayment] Create 3DS auth failed', {
+            mrId,
+            error: error.message
+        });
+        return sendError(res, error.message || 'Gagal memulai autentikasi 3DS', 500);
+    }
+});
+
+/**
  * Handle successful payment - update billing, deduct stock, etc.
  */
 async function handlePaymentSuccess(payment, webhookData) {
