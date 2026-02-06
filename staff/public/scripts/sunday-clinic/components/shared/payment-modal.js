@@ -106,6 +106,8 @@ const PaymentModal = {
                 </div>
 
                 <!-- VA Options -->
+                <!-- BCA not activated in Xendit dashboard -->
+                <!--
                 <div class="payment-method-card mb-2" data-method="va_bca">
                     <div class="d-flex align-items-center">
                         <img src="/staff/public/images/banks/bca.png" alt="BCA" class="bank-logo mr-3" onerror="this.outerHTML='<i class=\\'fas fa-university fa-2x text-info mr-3\\'></i>'">
@@ -116,6 +118,7 @@ const PaymentModal = {
                         <i class="fas fa-chevron-right text-muted"></i>
                     </div>
                 </div>
+                -->
 
                 <div class="payment-method-card mb-2" data-method="va_bni">
                     <div class="d-flex align-items-center">
