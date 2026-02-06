@@ -1551,6 +1551,15 @@
                             <h3>Bantuan</h3>
                             <p>FAQ, Kontak</p>
                         </div>
+
+                        <!-- Card 7: Tagihan (Trial) -->
+                        <div class="menu-card" id="menu-tagihan" onclick="window.location.href='/patient-billing.html'" style="display:none;">
+                            <div class="menu-icon" style="background: linear-gradient(135deg, #f97316, #ea580c);">
+                                <i class="fa fa-credit-card"></i>
+                            </div>
+                            <h3>Tagihan</h3>
+                            <p>Bayar Online</p>
+                        </div>
                     </div>
                 </div>
 
@@ -1708,6 +1717,12 @@
                             document.getElementById('welcome-toggle-icon').classList.remove('fa-chevron-up');
                             document.getElementById('welcome-toggle-icon').classList.add('fa-chevron-down');
                         }
+                    }
+
+                    // Show Tagihan menu for trial patient
+                    if (profile.id === 'P2025091') {
+                        var menuTagihan = document.getElementById('menu-tagihan');
+                        if (menuTagihan) menuTagihan.style.display = '';
                     }
 
                     // Check subscription for VIP badge

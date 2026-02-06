@@ -1410,7 +1410,7 @@ PLAN
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <div class="modal-body" id="payment-modal-body">
+                <div class="modal-body" id="payment-modal-content">
                     <!-- Dynamic content rendered by payment-modal.js -->
                     <div class="text-center py-4">
                         <i class="fas fa-spinner fa-spin fa-2x text-muted"></i>
@@ -1503,8 +1503,8 @@ PLAN
     </script>
     <!-- Medical import from text files -->
     <script type="module" src="/staff/public/scripts/sunday-clinic/utils/medical-import.js?v=20260111193043"></script>
-    <!-- Payment modal (Xendit QRIS/VA) -->
-    <script type="module" src="/staff/public/scripts/sunday-clinic/components/shared/payment-modal.js?v=20260205"></script>
+    <!-- Payment modal (Xendit QRIS/VA) - regular script for global access -->
+    <script src="/staff/public/scripts/sunday-clinic/components/shared/payment-modal.js?v=20260206"></script>
     <script>
         // Mobile app mode detection and initialization
         (function() {

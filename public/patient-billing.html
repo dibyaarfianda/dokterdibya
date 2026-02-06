@@ -1,0 +1,1248 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#1a1a1a">
+    <title>Tagihan - dokterDIBYA</title>
+
+    <link rel="icon" type="image/png" href="/images/logo-dokter-dibya.png">
+    <link rel="apple-touch-icon" href="/images/logo-dokter-dibya.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #000000;
+            min-height: 100vh;
+            color: #ffffff;
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+
+        .safe-area-top {
+            position: fixed; top: 0; left: 0; right: 0;
+            height: env(safe-area-inset-top, 0px);
+            background: #000000; z-index: 9999;
+        }
+
+        .safe-area-bottom {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            height: env(safe-area-inset-bottom, 0px);
+            background: #000000; z-index: 9999;
+        }
+
+        .app-wrapper {
+            padding-top: env(safe-area-inset-top, 0px);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            min-height: 100vh;
+            background: #000000;
+        }
+
+        /* Navbar */
+        .nav-bar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .nav-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+
+        .btn-back {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .nav-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        /* Content */
+        .content {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 15px;
+            padding-bottom: 40px;
+        }
+
+        /* Section visibility */
+        .section { display: none; }
+        .section.active { display: block; }
+
+        /* Billing Card */
+        .billing-card {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .billing-card:hover {
+            transform: translateY(-2px);
+            border-color: #28a7e9;
+        }
+
+        .billing-card:active {
+            transform: scale(0.98);
+        }
+
+        .billing-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .billing-mr {
+            font-size: 13px;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .billing-date {
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+        }
+
+        .billing-amount {
+            font-size: 20px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 8px;
+        }
+
+        .billing-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-paid {
+            background: rgba(16, 185, 129, 0.2);
+            color: #10b981;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .badge-confirmed {
+            background: rgba(249, 115, 22, 0.2);
+            color: #f97316;
+            border: 1px solid rgba(249, 115, 22, 0.3);
+        }
+
+        .btn-pay-small {
+            background: linear-gradient(135deg, #28a7e9, #1d8bd1);
+            color: white;
+            border: none;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        /* Empty state */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: rgba(255,255,255,0.4);
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            display: block;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+        }
+
+        /* Detail Section */
+        .detail-header {
+            margin-bottom: 20px;
+        }
+
+        .detail-patient {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .detail-meta {
+            font-size: 13px;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .items-table {
+            width: 100%;
+            margin: 15px 0;
+        }
+
+        .item-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+        }
+
+        .item-row:last-child { border-bottom: none; }
+
+        .item-info { flex: 1; }
+
+        .item-name {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+
+        .item-qty {
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+        }
+
+        .item-type-badge {
+            display: inline-block;
+            font-size: 9px;
+            padding: 1px 6px;
+            border-radius: 4px;
+            margin-left: 6px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        .item-type-tindakan { background: rgba(139,92,246,0.2); color: #a78bfa; }
+        .item-type-obat { background: rgba(16,185,129,0.2); color: #34d399; }
+        .item-type-admin { background: rgba(107,114,128,0.2); color: #9ca3af; }
+
+        .item-total {
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+            margin-left: 10px;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-top: 2px solid rgba(255,255,255,0.15);
+            margin-top: 5px;
+        }
+
+        .total-label {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .total-amount {
+            font-size: 22px;
+            font-weight: 700;
+            color: #28a7e9;
+        }
+
+        /* Buttons */
+        .btn-primary {
+            display: block;
+            width: 100%;
+            background: linear-gradient(135deg, #28a7e9, #1d8bd1);
+            color: white;
+            border: none;
+            padding: 14px;
+            border-radius: 14px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            margin-top: 20px;
+            transition: all 0.2s;
+        }
+
+        .btn-primary:hover { opacity: 0.9; }
+        .btn-primary:active { transform: scale(0.98); }
+
+        .btn-secondary {
+            display: block;
+            width: 100%;
+            background: rgba(255,255,255,0.08);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.15);
+            padding: 12px;
+            border-radius: 14px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            margin-top: 10px;
+            transition: all 0.2s;
+        }
+
+        .btn-secondary:hover { background: rgba(255,255,255,0.12); }
+
+        /* Payment Method Cards */
+        .method-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .method-card {
+            background: rgba(255, 255, 255, 0.06);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .method-card:hover {
+            border-color: rgba(40, 167, 233, 0.4);
+            background: rgba(40, 167, 233, 0.08);
+        }
+
+        .method-card.selected {
+            border-color: #28a7e9;
+            background: rgba(40, 167, 233, 0.12);
+        }
+
+        .method-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+
+        .method-info h4 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 2px;
+        }
+
+        .method-info p {
+            font-size: 11px;
+            color: rgba(255,255,255,0.4);
+        }
+
+        .method-check {
+            margin-left: auto;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 2px solid rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s;
+        }
+
+        .method-card.selected .method-check {
+            background: #28a7e9;
+            border-color: #28a7e9;
+        }
+
+        .method-card.selected .method-check::after {
+            content: '\f00c';
+            font-family: FontAwesome;
+            font-size: 12px;
+            color: white;
+        }
+
+        /* Section title */
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: rgba(255,255,255,0.8);
+        }
+
+        /* Payment Display */
+        .payment-display {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            margin: 15px 0;
+        }
+
+        .payment-display .method-label {
+            font-size: 13px;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .payment-display .amount-label {
+            font-size: 24px;
+            font-weight: 700;
+            color: #28a7e9;
+            margin-bottom: 20px;
+        }
+
+        /* QR Code */
+        .qr-container {
+            background: white;
+            border-radius: 12px;
+            padding: 16px;
+            display: inline-block;
+            margin: 10px 0 15px;
+        }
+
+        .qr-container img {
+            width: 200px;
+            height: 200px;
+        }
+
+        .qr-instruction {
+            font-size: 13px;
+            color: rgba(255,255,255,0.5);
+            margin-top: 10px;
+        }
+
+        /* VA Number */
+        .va-container {
+            margin: 15px 0;
+        }
+
+        .va-bank-name {
+            font-size: 14px;
+            font-weight: 600;
+            color: rgba(255,255,255,0.7);
+            margin-bottom: 10px;
+        }
+
+        .va-number-box {
+            background: rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.15);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .va-number {
+            font-size: 20px;
+            font-weight: 700;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 2px;
+        }
+
+        .btn-copy {
+            background: rgba(40,167,233,0.2);
+            border: 1px solid rgba(40,167,233,0.3);
+            color: #28a7e9;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            font-family: 'Poppins', sans-serif;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .btn-copy:active { transform: scale(0.95); }
+
+        .btn-copy.copied {
+            background: rgba(16,185,129,0.2);
+            border-color: rgba(16,185,129,0.3);
+            color: #10b981;
+        }
+
+        .va-instructions {
+            margin-top: 15px;
+            text-align: left;
+        }
+
+        .va-instructions h5 {
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: rgba(255,255,255,0.6);
+        }
+
+        .va-instructions ol {
+            padding-left: 20px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+            line-height: 1.8;
+        }
+
+        /* Countdown */
+        .countdown {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin: 15px 0;
+            font-size: 13px;
+            color: rgba(255,255,255,0.5);
+        }
+
+        .countdown i { color: #f97316; }
+
+        .countdown-time {
+            font-weight: 700;
+            color: #f97316;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Success */
+        .success-container {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: rgba(16, 185, 129, 0.15);
+            border: 3px solid #10b981;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 36px;
+            color: #10b981;
+            animation: scaleIn 0.5s ease;
+        }
+
+        @keyframes scaleIn {
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .success-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .success-detail {
+            font-size: 14px;
+            color: rgba(255,255,255,0.5);
+            margin-bottom: 5px;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: rgba(255,255,255,0.4);
+        }
+
+        .loading i {
+            font-size: 24px;
+            animation: spin 1s linear infinite;
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Status dot */
+        .status-dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+            animation: pulse 2s infinite;
+        }
+
+        .status-dot.pending { background: #f97316; }
+        .status-dot.checking { background: #28a7e9; }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .poll-status {
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+            text-align: center;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="safe-area-top"></div>
+    <div class="safe-area-bottom"></div>
+
+    <div class="app-wrapper">
+        <!-- Navbar -->
+        <div class="nav-bar">
+            <div class="nav-container">
+                <button class="btn-back" onclick="handleBack()">
+                    <i class="fa fa-arrow-left"></i>
+                </button>
+                <span class="nav-title" id="nav-title">Tagihan Saya</span>
+            </div>
+        </div>
+
+        <div class="content">
+            <!-- Section 1: Billing List -->
+            <div class="section active" id="section-list">
+                <div id="billing-list">
+                    <div class="loading">
+                        <i class="fa fa-spinner"></i>
+                        <p>Memuat tagihan...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Section 2: Billing Detail -->
+            <div class="section" id="section-detail">
+                <div id="detail-content"></div>
+            </div>
+
+            <!-- Section 3: Payment Method -->
+            <div class="section" id="section-method">
+                <div class="section-title">Pilih Metode Pembayaran</div>
+                <div class="method-grid">
+                    <div class="method-card" data-method="qris" onclick="selectMethod('qris')">
+                        <div class="method-icon" style="background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: white;">
+                            <i class="fa fa-qrcode"></i>
+                        </div>
+                        <div class="method-info">
+                            <h4>QRIS</h4>
+                            <p>Scan QR dari e-wallet (GoPay, OVO, DANA, dll)</p>
+                        </div>
+                        <div class="method-check"></div>
+                    </div>
+
+                    <div class="method-card" data-method="va_bca" onclick="selectMethod('va_bca')">
+                        <div class="method-icon" style="background: #003d79; color: white; font-size: 11px; font-weight: 700;">BCA</div>
+                        <div class="method-info">
+                            <h4>BCA Virtual Account</h4>
+                            <p>Transfer via ATM, Mobile, Internet Banking</p>
+                        </div>
+                        <div class="method-check"></div>
+                    </div>
+
+                    <div class="method-card" data-method="va_bni" onclick="selectMethod('va_bni')">
+                        <div class="method-icon" style="background: #f15a22; color: white; font-size: 11px; font-weight: 700;">BNI</div>
+                        <div class="method-info">
+                            <h4>BNI Virtual Account</h4>
+                            <p>Transfer via ATM, Mobile, Internet Banking</p>
+                        </div>
+                        <div class="method-check"></div>
+                    </div>
+
+                    <div class="method-card" data-method="va_bri" onclick="selectMethod('va_bri')">
+                        <div class="method-icon" style="background: #00529c; color: white; font-size: 11px; font-weight: 700;">BRI</div>
+                        <div class="method-info">
+                            <h4>BRI Virtual Account</h4>
+                            <p>Transfer via ATM, Mobile, Internet Banking</p>
+                        </div>
+                        <div class="method-check"></div>
+                    </div>
+
+                    <div class="method-card" data-method="va_mandiri" onclick="selectMethod('va_mandiri')">
+                        <div class="method-icon" style="background: #003366; color: #ffd700; font-size: 9px; font-weight: 700;">MDR</div>
+                        <div class="method-info">
+                            <h4>Mandiri Virtual Account</h4>
+                            <p>Transfer via ATM, Livin, Internet Banking</p>
+                        </div>
+                        <div class="method-check"></div>
+                    </div>
+                </div>
+
+                <div id="method-amount" style="text-align:center; margin: 15px 0;">
+                    <div style="font-size:13px; color:rgba(255,255,255,0.5);">Total Pembayaran</div>
+                    <div style="font-size:22px; font-weight:700; color:#28a7e9;" id="method-total"></div>
+                </div>
+
+                <button class="btn-primary" id="btn-proceed" onclick="createPayment()" disabled style="opacity:0.5;">
+                    Lanjutkan
+                </button>
+                <button class="btn-secondary" onclick="showSection('detail')">
+                    <i class="fa fa-arrow-left"></i> Kembali
+                </button>
+            </div>
+
+            <!-- Section 4: Payment Display -->
+            <div class="section" id="section-payment">
+                <div id="payment-content"></div>
+            </div>
+
+            <!-- Section 5: Success -->
+            <div class="section" id="section-success">
+                <div class="success-container">
+                    <div class="success-icon">
+                        <i class="fa fa-check"></i>
+                    </div>
+                    <div class="success-title">Pembayaran Berhasil!</div>
+                    <div class="success-detail" id="success-amount"></div>
+                    <div class="success-detail" id="success-method"></div>
+                    <button class="btn-primary" onclick="window.location.href='/patient-menu.html'" style="margin-top:30px;">
+                        Kembali ke Menu
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== STATE ====================
+        let currentSection = 'list';
+        let currentBilling = null;
+        let currentPayment = null;
+        let selectedMethod = null;
+        let pollInterval = null;
+        let countdownInterval = null;
+
+        const API_BASE = '/api/patient-billing';
+
+        // ==================== AUTH ====================
+        function getToken() {
+            return localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+        }
+
+        function authHeaders() {
+            return {
+                'Authorization': 'Bearer ' + getToken(),
+                'Content-Type': 'application/json',
+                'Cache-Control': 'no-cache'
+            };
+        }
+
+        // Check auth on load
+        if (!getToken()) {
+            window.location.href = '/index.html';
+        }
+
+        // ==================== NAVIGATION ====================
+        function showSection(name) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            const section = document.getElementById('section-' + name);
+            if (section) section.classList.add('active');
+            currentSection = name;
+
+            // Update title
+            const titles = {
+                'list': 'Tagihan Saya',
+                'detail': 'Detail Tagihan',
+                'method': 'Metode Pembayaran',
+                'payment': 'Pembayaran',
+                'success': 'Berhasil'
+            };
+            document.getElementById('nav-title').textContent = titles[name] || 'Tagihan';
+        }
+
+        function handleBack() {
+            stopPolling();
+            if (currentSection === 'detail') {
+                showSection('list');
+            } else if (currentSection === 'method') {
+                showSection('detail');
+            } else if (currentSection === 'payment') {
+                showSection('method');
+            } else {
+                window.location.href = '/patient-menu.html';
+            }
+        }
+
+        // ==================== FORMAT ====================
+        function formatRupiah(num) {
+            return 'Rp ' + Number(num).toLocaleString('id-ID');
+        }
+
+        function formatDate(dateStr) {
+            const d = new Date(dateStr);
+            const day = d.getDate();
+            const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agt','Sep','Okt','Nov','Des'];
+            return day + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+        }
+
+        function formatCountdown(seconds) {
+            if (seconds <= 0) return '00:00';
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = seconds % 60;
+            if (h > 0) {
+                return String(h).padStart(2, '0') + ':' + String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+            }
+            return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+        }
+
+        // ==================== LOAD BILLINGS ====================
+        async function loadBillings() {
+            try {
+                const resp = await fetch(API_BASE + '/my-bills?_t=' + Date.now(), {
+                    headers: authHeaders()
+                });
+                const data = await resp.json();
+
+                if (!data.success) {
+                    document.getElementById('billing-list').innerHTML =
+                        '<div class="empty-state"><i class="fa fa-exclamation-circle"></i><p>' + (data.message || 'Gagal memuat') + '</p></div>';
+                    return;
+                }
+
+                const billings = data.data || [];
+
+                if (billings.length === 0) {
+                    document.getElementById('billing-list').innerHTML =
+                        '<div class="empty-state"><i class="fa fa-file-text-o"></i><p>Belum ada tagihan</p></div>';
+                    return;
+                }
+
+                let html = '';
+                billings.forEach(function(b) {
+                    const isPaid = b.status === 'paid' || b.payment_status === 'paid';
+                    const badgeClass = isPaid ? 'badge-paid' : 'badge-confirmed';
+                    const badgeText = isPaid ? 'LUNAS' : 'BELUM BAYAR';
+
+                    html += '<div class="billing-card" onclick="openBilling(' + b.id + ')">' +
+                        '<div class="billing-header">' +
+                            '<div class="billing-mr">' + b.mr_id + '</div>' +
+                            '<div class="billing-date">' + formatDate(b.created_at) + '</div>' +
+                        '</div>' +
+                        '<div class="billing-amount">' + formatRupiah(b.total) + '</div>' +
+                        '<div class="billing-footer">' +
+                            '<span class="badge ' + badgeClass + '">' + badgeText + '</span>' +
+                            (!isPaid ? '<button class="btn-pay-small" onclick="event.stopPropagation(); openBilling(' + b.id + ')">Bayar <i class="fa fa-arrow-right"></i></button>' : '') +
+                        '</div>' +
+                    '</div>';
+                });
+
+                document.getElementById('billing-list').innerHTML = html;
+
+            } catch (err) {
+                console.error('Load billings error:', err);
+                document.getElementById('billing-list').innerHTML =
+                    '<div class="empty-state"><i class="fa fa-exclamation-circle"></i><p>Gagal memuat tagihan</p></div>';
+            }
+        }
+
+        // ==================== BILLING DETAIL ====================
+        async function openBilling(billingId) {
+            showSection('detail');
+            document.getElementById('detail-content').innerHTML =
+                '<div class="loading"><i class="fa fa-spinner"></i><p>Memuat detail...</p></div>';
+
+            try {
+                const resp = await fetch(API_BASE + '/' + billingId + '/details?_t=' + Date.now(), {
+                    headers: authHeaders()
+                });
+                const data = await resp.json();
+
+                if (!data.success || !data.data) {
+                    document.getElementById('detail-content').innerHTML =
+                        '<div class="empty-state"><i class="fa fa-exclamation-circle"></i><p>Tagihan tidak ditemukan</p></div>';
+                    return;
+                }
+
+                currentBilling = data.data.billing;
+                const items = data.data.items || [];
+                const isPaid = currentBilling.status === 'paid';
+
+                let html = '<div class="detail-header">' +
+                    '<div class="detail-patient">' + currentBilling.patient_name + '</div>' +
+                    '<div class="detail-meta">' + currentBilling.mr_id + ' &bull; ' + formatDate(currentBilling.created_at) + '</div>' +
+                    '<div style="margin-top:8px;"><span class="badge ' + (isPaid ? 'badge-paid' : 'badge-confirmed') + '">' +
+                    (isPaid ? 'LUNAS' : 'BELUM BAYAR') + '</span></div>' +
+                '</div>';
+
+                html += '<div class="items-table">';
+                items.forEach(function(item) {
+                    var typeClass = 'item-type-' + item.item_type;
+                    var typeLabel = item.item_type === 'tindakan' ? 'Tindakan' : (item.item_type === 'obat' ? 'Obat' : 'Admin');
+
+                    html += '<div class="item-row">' +
+                        '<div class="item-info">' +
+                            '<div class="item-name">' + item.item_name + '<span class="item-type-badge ' + typeClass + '">' + typeLabel + '</span></div>' +
+                            '<div class="item-qty">' + item.quantity + ' x ' + formatRupiah(item.price) + '</div>' +
+                        '</div>' +
+                        '<div class="item-total">' + formatRupiah(item.total) + '</div>' +
+                    '</div>';
+                });
+                html += '</div>';
+
+                html += '<div class="total-row">' +
+                    '<div class="total-label">Total</div>' +
+                    '<div class="total-amount">' + formatRupiah(currentBilling.total) + '</div>' +
+                '</div>';
+
+                if (!isPaid) {
+                    // Check for existing payment first
+                    try {
+                        const payResp = await fetch(API_BASE + '/' + billingId + '/payment-details?_t=' + Date.now(), {
+                            headers: authHeaders()
+                        });
+                        const payData = await payResp.json();
+
+                        if (payData.success && payData.data && payData.data.status === 'pending') {
+                            // Resume existing payment
+                            currentPayment = payData.data;
+                            html += '<button class="btn-primary" onclick="showPaymentDisplay()">' +
+                                '<i class="fa fa-clock-o"></i> Lihat Pembayaran Aktif' +
+                            '</button>';
+                        } else {
+                            html += '<button class="btn-primary" onclick="showPaymentMethods()">' +
+                                '<i class="fa fa-credit-card"></i> Bayar Sekarang' +
+                            '</button>';
+                        }
+                    } catch (e) {
+                        html += '<button class="btn-primary" onclick="showPaymentMethods()">' +
+                            '<i class="fa fa-credit-card"></i> Bayar Sekarang' +
+                        '</button>';
+                    }
+                }
+
+                html += '<button class="btn-secondary" onclick="showSection(\'list\')">' +
+                    '<i class="fa fa-arrow-left"></i> Kembali ke Daftar' +
+                '</button>';
+
+                document.getElementById('detail-content').innerHTML = html;
+
+            } catch (err) {
+                console.error('Open billing error:', err);
+                document.getElementById('detail-content').innerHTML =
+                    '<div class="empty-state"><i class="fa fa-exclamation-circle"></i><p>Gagal memuat detail</p></div>';
+            }
+        }
+
+        // ==================== PAYMENT METHODS ====================
+        function showPaymentMethods() {
+            selectedMethod = null;
+            document.getElementById('method-total').textContent = formatRupiah(currentBilling.total);
+            document.querySelectorAll('.method-card').forEach(function(c) { c.classList.remove('selected'); });
+            document.getElementById('btn-proceed').disabled = true;
+            document.getElementById('btn-proceed').style.opacity = '0.5';
+            showSection('method');
+        }
+
+        function selectMethod(method) {
+            selectedMethod = method;
+            document.querySelectorAll('.method-card').forEach(function(c) {
+                c.classList.toggle('selected', c.dataset.method === method);
+            });
+            document.getElementById('btn-proceed').disabled = false;
+            document.getElementById('btn-proceed').style.opacity = '1';
+        }
+
+        // ==================== CREATE PAYMENT ====================
+        async function createPayment() {
+            if (!selectedMethod || !currentBilling) return;
+
+            var btn = document.getElementById('btn-proceed');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Memproses...';
+
+            try {
+                var resp = await fetch(API_BASE + '/' + currentBilling.id + '/create-payment', {
+                    method: 'POST',
+                    headers: authHeaders(),
+                    body: JSON.stringify({ payment_method: selectedMethod })
+                });
+
+                var data = await resp.json();
+
+                if (!data.success) {
+                    alert(data.message || 'Gagal membuat pembayaran');
+                    btn.disabled = false;
+                    btn.innerHTML = 'Lanjutkan';
+                    return;
+                }
+
+                currentPayment = data.data;
+                showPaymentDisplay();
+
+            } catch (err) {
+                console.error('Create payment error:', err);
+                alert('Terjadi kesalahan. Silakan coba lagi.');
+                btn.disabled = false;
+                btn.innerHTML = 'Lanjutkan';
+            }
+        }
+
+        // ==================== PAYMENT DISPLAY ====================
+        function showPaymentDisplay() {
+            if (!currentPayment) return;
+
+            showSection('payment');
+            var p = currentPayment;
+            var html = '<div class="payment-display">';
+
+            // Method label
+            var methodName = p.payment_method === 'qris' ? 'QRIS' :
+                p.payment_method.replace('va_', '').toUpperCase() + ' Virtual Account';
+            html += '<div class="method-label">' + methodName + '</div>';
+            html += '<div class="amount-label">' + formatRupiah(p.amount) + '</div>';
+
+            if (p.payment_method === 'qris' && p.qris_url) {
+                // QRIS display
+                html += '<div class="qr-container">' +
+                    '<img src="' + p.qris_url + '" alt="QR Code" onerror="this.parentElement.innerHTML=\'<p style=color:#999>QR tidak tersedia</p>\'">' +
+                '</div>';
+                html += '<div class="qr-instruction">Scan QR code menggunakan aplikasi e-wallet<br>(GoPay, OVO, DANA, ShopeePay, dll)</div>';
+            } else if (p.va_number) {
+                // VA display
+                var bankName = (p.va_bank_code || p.payment_method.replace('va_', '')).toUpperCase();
+                html += '<div class="va-container">' +
+                    '<div class="va-bank-name">Bank ' + bankName + '</div>' +
+                    '<div class="va-number-box">' +
+                        '<span class="va-number">' + p.va_number + '</span>' +
+                        '<button class="btn-copy" onclick="copyVA(\'' + p.va_number + '\', this)">Salin</button>' +
+                    '</div>' +
+                    '<div class="va-instructions">' +
+                        '<h5>Cara Transfer:</h5>' +
+                        '<ol>' +
+                            '<li>Buka aplikasi mobile banking atau ATM</li>' +
+                            '<li>Pilih menu Transfer > Virtual Account</li>' +
+                            '<li>Masukkan nomor VA di atas</li>' +
+                            '<li>Konfirmasi jumlah dan selesaikan</li>' +
+                        '</ol>' +
+                    '</div>' +
+                '</div>';
+            }
+
+            html += '</div>'; // end payment-display
+
+            // Countdown
+            html += '<div class="countdown" id="countdown-box">' +
+                '<i class="fa fa-clock-o"></i>' +
+                '<span>Berlaku: </span>' +
+                '<span class="countdown-time" id="countdown-timer">--:--</span>' +
+            '</div>';
+
+            // Status
+            html += '<div class="poll-status" id="poll-status">' +
+                '<span class="status-dot pending"></span>Menunggu pembayaran...' +
+            '</div>';
+
+            // Check status button
+            html += '<button class="btn-secondary" onclick="manualCheckStatus()" id="btn-check-status">' +
+                '<i class="fa fa-refresh"></i> Cek Status Pembayaran' +
+            '</button>';
+
+            // Back
+            html += '<button class="btn-secondary" onclick="handleBack()" style="margin-top:5px;">' +
+                '<i class="fa fa-arrow-left"></i> Kembali' +
+            '</button>';
+
+            document.getElementById('payment-content').innerHTML = html;
+
+            // Start polling and countdown
+            startPolling();
+            startCountdown();
+        }
+
+        // ==================== POLLING ====================
+        function startPolling() {
+            stopPolling();
+            pollInterval = setInterval(checkPaymentStatus, 5000);
+        }
+
+        function stopPolling() {
+            if (pollInterval) {
+                clearInterval(pollInterval);
+                pollInterval = null;
+            }
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+        }
+
+        async function checkPaymentStatus() {
+            if (!currentPayment || !currentBilling) return;
+
+            try {
+                var statusEl = document.getElementById('poll-status');
+                if (statusEl) {
+                    statusEl.innerHTML = '<span class="status-dot checking"></span>Mengecek status...';
+                }
+
+                var resp = await fetch(
+                    API_BASE + '/' + currentBilling.id + '/payment-status/' + currentPayment.payment_id + '?_t=' + Date.now(),
+                    { headers: authHeaders() }
+                );
+                var data = await resp.json();
+
+                if (data.success && data.data) {
+                    if (data.data.status === 'paid') {
+                        stopPolling();
+                        showSuccess();
+                        return;
+                    }
+
+                    if (data.data.status === 'expired') {
+                        stopPolling();
+                        if (statusEl) {
+                            statusEl.innerHTML = '<span style="color:#ef4444;"><i class="fa fa-times-circle"></i> Pembayaran kadaluarsa</span>';
+                        }
+                        return;
+                    }
+
+                    // Update countdown from server
+                    if (data.data.expires_in_seconds !== undefined) {
+                        currentPayment.expires_in_seconds = data.data.expires_in_seconds;
+                    }
+                }
+
+                if (statusEl) {
+                    statusEl.innerHTML = '<span class="status-dot pending"></span>Menunggu pembayaran...';
+                }
+
+            } catch (err) {
+                console.error('Check status error:', err);
+                var statusEl = document.getElementById('poll-status');
+                if (statusEl) {
+                    statusEl.innerHTML = '<span class="status-dot pending"></span>Menunggu pembayaran...';
+                }
+            }
+        }
+
+        async function manualCheckStatus() {
+            var btn = document.getElementById('btn-check-status');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fa fa-spinner fa-spin"></i> Mengecek...';
+            }
+
+            await checkPaymentStatus();
+
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa fa-refresh"></i> Cek Status Pembayaran';
+            }
+        }
+
+        // ==================== COUNTDOWN ====================
+        function startCountdown() {
+            if (!currentPayment || !currentPayment.expires_at) return;
+
+            var expiresAt = new Date(currentPayment.expires_at).getTime();
+
+            function updateCountdown() {
+                var now = Date.now();
+                var remaining = Math.max(0, Math.floor((expiresAt - now) / 1000));
+
+                var timerEl = document.getElementById('countdown-timer');
+                if (timerEl) {
+                    timerEl.textContent = formatCountdown(remaining);
+                }
+
+                if (remaining <= 0) {
+                    stopPolling();
+                    var statusEl = document.getElementById('poll-status');
+                    if (statusEl) {
+                        statusEl.innerHTML = '<span style="color:#ef4444;"><i class="fa fa-times-circle"></i> Pembayaran kadaluarsa</span>';
+                    }
+                }
+            }
+
+            updateCountdown();
+            countdownInterval = setInterval(updateCountdown, 1000);
+        }
+
+        // ==================== COPY VA ====================
+        function copyVA(vaNumber, btn) {
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(vaNumber).then(function() {
+                    btn.textContent = 'Tersalin!';
+                    btn.classList.add('copied');
+                    setTimeout(function() {
+                        btn.textContent = 'Salin';
+                        btn.classList.remove('copied');
+                    }, 2000);
+                });
+            } else {
+                // Fallback
+                var ta = document.createElement('textarea');
+                ta.value = vaNumber;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                document.body.removeChild(ta);
+                btn.textContent = 'Tersalin!';
+                btn.classList.add('copied');
+                setTimeout(function() {
+                    btn.textContent = 'Salin';
+                    btn.classList.remove('copied');
+                }, 2000);
+            }
+        }
+
+        // ==================== SUCCESS ====================
+        function showSuccess() {
+            stopPolling();
+            var methodName = '';
+            if (currentPayment) {
+                methodName = currentPayment.payment_method === 'qris' ? 'QRIS' :
+                    currentPayment.payment_method.replace('va_', '').toUpperCase() + ' Virtual Account';
+            }
+
+            document.getElementById('success-amount').textContent = formatRupiah(currentPayment ? currentPayment.amount : 0);
+            document.getElementById('success-method').textContent = 'via ' + methodName;
+
+            showSection('success');
+        }
+
+        // ==================== INIT ====================
+        loadBillings();
+    </script>
+</body>
+</html>
