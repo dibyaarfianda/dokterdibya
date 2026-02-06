@@ -92,12 +92,13 @@ async function createQRISPayment({ amount, mrId, patientName, expiryMinutes }) {
         logger.info('[Xendit] Creating QRIS payment', { mrId, amount, referenceId });
 
         const response = await api.post('/qr_codes', {
-            reference_id: referenceId,
+            external_id: referenceId,
             type: 'DYNAMIC',
             currency: 'IDR',
             amount: Math.round(amount), // Xendit requires integer
+            callback_url: 'https://dokterdibya.com/api/webhooks/xendit/qris',
             expires_at: expiresAt.toISOString(),
-            description: `Pembayaran ${mrId} - ${patientName}`,
+            description: `Pembayaran ${mrId} - ${patientName}`.substring(0, 100),
             metadata: {
                 mr_id: mrId,
                 patient_name: patientName
@@ -123,16 +124,24 @@ async function createQRISPayment({ amount, mrId, patientName, expiryMinutes }) {
         };
 
     } catch (error) {
+        const xenditErr = error.response?.data;
         logger.error('[Xendit] Failed to create QRIS', {
             mrId,
-            error: error.response?.data || error.message
+            status: error.response?.status,
+            xenditError: xenditErr,
+            payload: { external_id: referenceId, amount: Math.round(amount) }
         });
 
-        throw new Error(
-            error.response?.data?.message ||
-            error.message ||
-            'Gagal membuat pembayaran QRIS'
-        );
+        // Surface specific Xendit validation errors
+        let msg = 'Gagal membuat pembayaran QRIS';
+        if (xenditErr?.errors?.length) {
+            msg = xenditErr.errors.map(e => e.message).join('; ');
+        } else if (xenditErr?.message) {
+            msg = xenditErr.message;
+        } else if (error.message) {
+            msg = error.message;
+        }
+        throw new Error(msg);
     }
 }
 
@@ -165,16 +174,18 @@ async function createVAPayment({ amount, mrId, bankCode, customerName, expiryHou
     try {
         logger.info('[Xendit] Creating VA payment', { mrId, amount, bankCode: normalizedBankCode, referenceId });
 
-        const response = await api.post('/callback_virtual_accounts', {
+        const vaPayload = {
             external_id: referenceId,
             bank_code: normalizedBankCode,
             name: customerName.substring(0, 50), // Max 50 chars
             expected_amount: Math.round(amount),
             is_closed: true, // Closed VA - exact amount required
             is_single_use: true,
-            expiration_date: expiresAt.toISOString(),
-            description: `Pembayaran ${mrId}`
-        });
+            expiration_date: expiresAt.toISOString()
+            // description removed: not supported by BNI and some banks
+        };
+
+        const response = await api.post('/callback_virtual_accounts', vaPayload);
 
         logger.info('[Xendit] VA created successfully', {
             mrId,
@@ -197,17 +208,27 @@ async function createVAPayment({ amount, mrId, bankCode, customerName, expiryHou
         };
 
     } catch (error) {
+        const xenditErr = error.response?.data;
         logger.error('[Xendit] Failed to create VA', {
             mrId,
             bankCode: normalizedBankCode,
-            error: error.response?.data || error.message
+            status: error.response?.status,
+            xenditError: xenditErr,
+            payload: { external_id: referenceId, bank_code: normalizedBankCode, expected_amount: Math.round(amount) }
         });
 
-        throw new Error(
-            error.response?.data?.message ||
-            error.message ||
-            'Gagal membuat Virtual Account'
-        );
+        // Surface specific Xendit errors
+        let msg = 'Gagal membuat Virtual Account';
+        if (xenditErr?.error_code === 'BANK_NOT_ACTIVATED_ERROR') {
+            msg = `Bank ${normalizedBankCode} belum diaktifkan. Silakan pilih bank lain.`;
+        } else if (xenditErr?.errors?.length) {
+            msg = xenditErr.errors.map(e => e.message).join('; ');
+        } else if (xenditErr?.message) {
+            msg = xenditErr.message;
+        } else if (error.message) {
+            msg = error.message;
+        }
+        throw new Error(msg);
     }
 }
 
@@ -367,14 +388,15 @@ function getSupportedMethods() {
             icon: 'fas fa-qrcode',
             expiry_minutes: XENDIT_CONFIG.qrisExpiryMinutes
         },
-        {
-            code: 'va_bca',
-            name: 'Virtual Account BCA',
-            description: 'Transfer via Bank Central Asia',
-            icon: 'fas fa-university',
-            bank_code: 'BCA',
-            expiry_hours: XENDIT_CONFIG.vaExpiryHours
-        },
+        // BCA not activated in Xendit dashboard - uncomment when activated
+        // {
+        //     code: 'va_bca',
+        //     name: 'Virtual Account BCA',
+        //     description: 'Transfer via Bank Central Asia',
+        //     icon: 'fas fa-university',
+        //     bank_code: 'BCA',
+        //     expiry_hours: XENDIT_CONFIG.vaExpiryHours
+        // },
         {
             code: 'va_bni',
             name: 'Virtual Account BNI',
