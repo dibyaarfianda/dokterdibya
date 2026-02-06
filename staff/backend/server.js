@@ -190,6 +190,7 @@ const PATIENT_ALLOWED_ROUTES = [
     '/api/registration-codes', // Registration code validation (for new patients)
     '/api/kick-counter',       // Kick counter for fetal movement tracking
     '/api/doctors',            // List available doctors for Q&A
+    '/api/patient-billing',    // Patient billing & online payment
 ];
 
 app.use('/api', (req, res, next) => {
@@ -331,6 +332,10 @@ app.use('/api/import-config', importConfigRoutes);
 
 // Billing routes
 app.use('/api/billings', billingsRoutes);
+
+// Patient billing & payment routes
+const patientBillingRoutes = require('./routes/patient-billing');
+app.use('/api/patient-billing', patientBillingRoutes);
 
 // Announcements routes
 const announcementsRoutes = require('./routes/announcements');

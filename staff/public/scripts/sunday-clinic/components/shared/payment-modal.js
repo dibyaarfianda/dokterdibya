@@ -12,14 +12,18 @@ const PaymentModal = {
     countdownInterval: null,
 
     /**
-     * Initialize payment modal
+     * Show payment modal (called from billing.js)
      * @param {string} mrId - Medical record ID
-     * @param {number} total - Billing total amount
      */
-    async init(mrId, total) {
+    async show(mrId) {
         this.mrId = mrId;
-        this.billingTotal = total;
         this.currentPayment = null;
+
+        // Get billing total from stateManager
+        if (window.stateManager) {
+            const state = window.stateManager.getState();
+            this.billingTotal = state.billingData?.total || 0;
+        }
 
         // Check for existing active payment
         await this.checkExistingPayment();
@@ -28,10 +32,20 @@ const PaymentModal = {
         this.renderMethodSelection();
 
         // Show modal
-        $('#paymentModal').modal('show');
+        $('#payment-modal').modal('show');
 
         // Start Socket.IO listener for instant payment notification
         this.setupSocketListener();
+    },
+
+    /**
+     * Initialize payment modal (alias for show)
+     * @param {string} mrId - Medical record ID
+     * @param {number} total - Billing total amount
+     */
+    async init(mrId, total) {
+        this.billingTotal = total || 0;
+        await this.show(mrId);
     },
 
     /**
@@ -938,7 +952,7 @@ const PaymentModal = {
         this.stopPolling();
         this.stopCountdown();
         this.currentPayment = null;
-        $('#paymentModal').modal('hide');
+        $('#payment-modal').modal('hide');
     },
 
     /**
@@ -997,7 +1011,7 @@ window.openPaymentModal = function(mrId, total) {
 
 // Cleanup on modal close
 $(document).ready(function() {
-    $('#paymentModal').on('hidden.bs.modal', function() {
+    $('#payment-modal').on('hidden.bs.modal', function() {
         PaymentModal.stopPolling();
         PaymentModal.stopCountdown();
     });

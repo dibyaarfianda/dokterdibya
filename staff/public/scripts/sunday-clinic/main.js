@@ -204,7 +204,7 @@ class SundayClinicApp {
     async loadComponents() {
         const componentPaths = this.getComponentPaths();
         // Hard version number - increment this to force reload
-        const COMPONENT_VERSION = '3.0.3';
+        const COMPONENT_VERSION = '3.0.4';
         const cacheBuster = `?v=${COMPONENT_VERSION}-${Date.now()}`;
 
         for (const { section, path } of componentPaths) {
