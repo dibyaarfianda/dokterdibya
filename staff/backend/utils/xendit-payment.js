@@ -63,7 +63,18 @@ function getAxiosInstance() {
  */
 function generateReferenceId(mrId) {
     const timestamp = Date.now();
-    return `DIBYA-${mrId}-${timestamp}`;
+    const safeMrId = String(mrId || 'MR')
+        .trim()
+        .replace(/[^A-Za-z0-9-_]/g, '-')
+        .replace(/-+/g, '-')
+        .substring(0, 30) || 'MR';
+    return `DIBYA-${safeMrId}-${timestamp}`;
+}
+
+function buildDescription(mrId, patientName) {
+    const name = String(patientName || 'Pasien').trim();
+    const base = `Pembayaran ${mrId} - ${name}`.trim();
+    return base.substring(0, 100);
 }
 
 /**
@@ -93,15 +104,16 @@ async function createQRISPayment({ amount, mrId, patientName, expiryMinutes }) {
 
         const response = await api.post('/qr_codes', {
             external_id: referenceId,
+            reference_id: referenceId,
             type: 'DYNAMIC',
             currency: 'IDR',
             amount: Math.round(amount), // Xendit requires integer
-            callback_url: 'https://dokterdibya.com/api/webhooks/xendit/qris',
+            callback_url: 'https://dokterdibya.com/api/webhooks/xendit/payment',
             expires_at: expiresAt.toISOString(),
-            description: `Pembayaran ${mrId} - ${patientName}`.substring(0, 100),
+            description: buildDescription(mrId, patientName),
             metadata: {
                 mr_id: mrId,
-                patient_name: patientName
+                patient_name: String(patientName || 'Pasien').trim()
             }
         });
 
@@ -129,13 +141,13 @@ async function createQRISPayment({ amount, mrId, patientName, expiryMinutes }) {
             mrId,
             status: error.response?.status,
             xenditError: xenditErr,
-            payload: { external_id: referenceId, amount: Math.round(amount) }
+            payload: { reference_id: referenceId, amount: Math.round(amount) }
         });
 
         // Surface specific Xendit validation errors
         let msg = 'Gagal membuat pembayaran QRIS';
         if (xenditErr?.errors?.length) {
-            msg = xenditErr.errors.map(e => e.message).join('; ');
+            msg = xenditErr.errors.map(e => e.message || e.field || JSON.stringify(e)).join('; ');
         } else if (xenditErr?.message) {
             msg = xenditErr.message;
         } else if (error.message) {
@@ -177,7 +189,7 @@ async function createVAPayment({ amount, mrId, bankCode, customerName, expiryHou
         const vaPayload = {
             external_id: referenceId,
             bank_code: normalizedBankCode,
-            name: customerName.substring(0, 50), // Max 50 chars
+            name: String(customerName || 'Pasien').trim().substring(0, 50), // Max 50 chars
             expected_amount: Math.round(amount),
             is_closed: true, // Closed VA - exact amount required
             is_single_use: true,
