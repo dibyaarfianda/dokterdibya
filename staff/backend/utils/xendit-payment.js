@@ -11,6 +11,7 @@ const XENDIT_CONFIG = {
     secretKey: process.env.XENDIT_SECRET_KEY,
     webhookToken: process.env.XENDIT_WEBHOOK_TOKEN,
     isProduction: process.env.XENDIT_PRODUCTION === 'true',
+    useV3PaymentRequests: process.env.XENDIT_USE_V3_PAYMENT_REQUESTS === 'true',
     baseUrl: 'https://api.xendit.co',
     qrisExpiryMinutes: parseInt(process.env.XENDIT_QRIS_EXPIRY_MINUTES || '30'),
     vaExpiryHours: parseInt(process.env.XENDIT_VA_EXPIRY_HOURS || '24'),
@@ -78,6 +79,97 @@ function buildDescription(mrId, patientName) {
 }
 
 /**
+ * Create QRIS Payment via v3 Payment Requests API
+ * Uses POST /v3/payment_requests with QRIS payment method
+ * @param {Object} params
+ * @param {number} params.amount - Payment amount in IDR
+ * @param {string} params.mrId - Medical record ID
+ * @param {string} params.patientName - Patient name
+ * @param {number} [params.expiryMinutes] - Expiry in minutes
+ * @returns {Promise<Object>} Payment request result mapped to standard shape
+ */
+async function createPaymentRequestV3({ amount, mrId, patientName, expiryMinutes }) {
+    const api = getAxiosInstance();
+    const referenceId = generateReferenceId(mrId);
+    const expiry = expiryMinutes || XENDIT_CONFIG.qrisExpiryMinutes;
+
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + expiry);
+
+    const payload = {
+        amount: Math.round(amount),
+        currency: 'IDR',
+        reference_id: referenceId,
+        description: buildDescription(mrId, patientName),
+        payment_method: {
+            type: 'QR_CODE',
+            reusability: 'ONE_TIME_USE',
+            qr_code: {
+                channel_code: 'QRIS'
+            }
+        },
+        metadata: {
+            mr_id: String(mrId || ''),
+            patient_name: String(patientName || 'Pasien').trim(),
+            api_version: 'v3'
+        }
+    };
+
+    logger.info('[Xendit-v3] Creating QRIS payment request', { mrId, amount, referenceId });
+
+    try {
+        const response = await api.post('/payment_requests', payload);
+        const data = response.data;
+
+        logger.info('[Xendit-v3] Payment request created', {
+            mrId,
+            id: data.id,
+            status: data.status,
+            referenceId
+        });
+
+        // Extract QR data from payment_requests response
+        // Response may have actions[] with qr_checkout_string, or payment_method.qr_code.channel_properties.qr_string
+        const qrAction = data.actions?.find(a => a.action === 'PRESENT_TO_CUSTOMER' || a.qr_checkout_string);
+        const qrString = qrAction?.qr_checkout_string ||
+                         data.payment_method?.qr_code?.channel_properties?.qr_string ||
+                         null;
+
+        return {
+            success: true,
+            xendit_id: data.id,
+            reference_id: referenceId,
+            qris_string: qrString,
+            qris_url: null, // v3 doesn't provide hosted QR image
+            amount: data.amount,
+            expires_at: expiresAt,
+            expires_in_seconds: expiry * 60,
+            api_version: 'v3',
+            raw_response: data
+        };
+
+    } catch (error) {
+        const xenditErr = error.response?.data;
+        logger.error('[Xendit-v3] Failed to create payment request', {
+            mrId,
+            status: error.response?.status,
+            xenditError: xenditErr,
+            payload: { reference_id: referenceId, amount: Math.round(amount) }
+        });
+
+        let msg = 'Gagal membuat pembayaran QRIS (v3)';
+        if (xenditErr?.errors?.length) {
+            msg = xenditErr.errors.map(e => e.message || e.field || JSON.stringify(e)).join('; ');
+        } else if (xenditErr?.message) {
+            msg = xenditErr.message;
+        } else if (error.message) {
+            msg = error.message;
+        }
+        throw new Error(msg);
+    }
+}
+
+/**
  * Create QRIS Payment
  * @param {Object} params
  * @param {number} params.amount - Payment amount in IDR
@@ -89,6 +181,12 @@ function buildDescription(mrId, patientName) {
 async function createQRISPayment({ amount, mrId, patientName, expiryMinutes }) {
     if (!isConfigured()) {
         throw new Error('Xendit tidak dikonfigurasi. Silakan set XENDIT_SECRET_KEY di .env');
+    }
+
+    // Use v3 Payment Requests API if enabled
+    if (XENDIT_CONFIG.useV3PaymentRequests) {
+        logger.info('[Xendit] Using v3 Payment Requests API for QRIS');
+        return createPaymentRequestV3({ amount, mrId, patientName, expiryMinutes });
     }
 
     const api = getAxiosInstance();
@@ -260,6 +358,36 @@ async function getPaymentStatus(xenditId, type = 'qris') {
     try {
         let response;
 
+        // v3 payment requests have IDs starting with 'pr_' or 'pr-'
+        const isV3 = xenditId.startsWith('pr_') || xenditId.startsWith('pr-');
+
+        if (isV3) {
+            response = await api.get(`/payment_requests/${xenditId}`);
+            const data = response.data;
+
+            // Map v3 statuses to our standard statuses
+            let status = 'pending';
+            if (data.status === 'SUCCEEDED') {
+                status = 'paid';
+            } else if (data.status === 'FAILED') {
+                status = 'failed';
+            } else if (data.status === 'EXPIRED' || data.status === 'VOIDED') {
+                status = 'expired';
+            }
+            // PENDING, REQUIRES_ACTION, AWAITING_CAPTURE remain 'pending'
+
+            return {
+                success: true,
+                xendit_id: xenditId,
+                status: status,
+                amount: data.amount,
+                paid_amount: status === 'paid' ? data.amount : 0,
+                paid_at: data.updated || null,
+                api_version: 'v3',
+                raw_response: data
+            };
+        }
+
         if (type === 'qris') {
             response = await api.get(`/qr_codes/${xenditId}`);
         } else {
@@ -331,7 +459,34 @@ function verifyWebhookSignature(callbackToken) {
  * @returns {Object} Parsed webhook data
  */
 function parseWebhookPayload(payload) {
-    // QRIS webhook
+    // v3 Payment Request webhook (event: payment.succeeded, payment.failed, etc.)
+    if (payload.data?.payment_request_id || payload.data?.payment_method?.type === 'QR_CODE') {
+        const data = payload.data || {};
+        const isQris = data.payment_method?.type === 'QR_CODE' ||
+                       data.payment_method?.qr_code?.channel_code === 'QRIS';
+
+        let status = 'pending';
+        if (payload.event === 'payment.succeeded' || data.status === 'SUCCEEDED') {
+            status = 'paid';
+        } else if (payload.event === 'payment.failed' || data.status === 'FAILED') {
+            status = 'failed';
+        } else if (data.status === 'EXPIRED' || data.status === 'VOIDED') {
+            status = 'expired';
+        }
+
+        return {
+            type: isQris ? 'qris' : 'v3_payment',
+            event: payload.event || 'payment.succeeded',
+            xendit_id: data.payment_request_id || data.id,
+            reference_id: data.reference_id,
+            amount: data.amount,
+            paid_at: data.updated || data.created || new Date().toISOString(),
+            status: status,
+            api_version: 'v3'
+        };
+    }
+
+    // QRIS webhook (legacy /qr_codes)
     if (payload.qr_code || payload.type === 'QR_CODE') {
         return {
             type: 'qris',
@@ -630,6 +785,7 @@ async function getCreditCardChargeStatus(chargeId) {
 module.exports = {
     isConfigured,
     createQRISPayment,
+    createPaymentRequestV3,
     createVAPayment,
     getPaymentStatus,
     verifyWebhookSignature,
