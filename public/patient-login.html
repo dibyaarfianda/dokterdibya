@@ -2,21 +2,40 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0f0f1a">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Login Pasien - dokterDIBYA</title>
+
+    <!-- Icons & Manifest -->
+    <link rel="icon" type="image/png" href="/images/pwa-icons/icon-192x192.png">
+    <link rel="apple-touch-icon" href="/images/pwa-icons/icon-192x192.png">
+    <link rel="manifest" href="/manifest.json">
+
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
         :root {
             --primary: #0066FF;
             --primary-dark: #0052CC;
             --bg-dark: #0f0f1a;
+            --bg-card: #1a1a2e;
             --text: #ffffff;
             --text-muted: rgba(255,255,255,0.6);
+            --border: rgba(255,255,255,0.1);
+            --success: #10b981;
+            --error: #ef4444;
+            --safe-top: env(safe-area-inset-top, 0px);
+            --safe-bottom: env(safe-area-inset-bottom, 0px);
         }
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
         }
         body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
@@ -24,7 +43,41 @@
             color: var(--text);
             min-height: 100vh;
             min-height: 100dvh;
+            padding-top: var(--safe-top);
+            padding-bottom: var(--safe-bottom);
             overflow-x: hidden;
+        }
+
+        /* Loading overlay */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-dark);
+            z-index: 99999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.3s ease;
+        }
+        .loading-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .loading-overlay .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(255,255,255,0.2);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        .loading-overlay p {
+            margin-top: 16px;
+            color: var(--text-muted);
         }
 
         /* Animated Background */
@@ -41,6 +94,7 @@
             z-index: 0;
         }
 
+        /* Container */
         .container {
             position: relative;
             z-index: 1;
@@ -48,65 +102,153 @@
             min-height: 100dvh;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
             padding: 24px 20px;
         }
 
+        /* Logo Section */
         .logo-section {
-            text-align: center;
-            margin-bottom: 32px;
+            flex: 0 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 0 32px;
         }
-
-        .logo-section img {
-            width: 120px;
-            height: 120px;
-            margin-bottom: 16px;
-            border-radius: 24px;
-            background: white;
-            padding: 8px;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.3);
-        }
-
         .app-tagline {
             font-size: 18px;
             color: rgba(255,255,255,0.8);
         }
 
+        /* Form Section */
         .form-section {
-            width: 100%;
-            max-width: 360px;
+            flex: 1;
             display: flex;
             flex-direction: column;
             align-items: center;
+            justify-content: center;
+            min-height: 200px;
         }
-
         .form-title {
-            font-size: 28px;
+            font-size: 24px;
             font-weight: 600;
             margin-bottom: 8px;
         }
-
         .form-subtitle {
+            font-size: 14px;
             color: var(--text-muted);
             margin-bottom: 30px;
-            font-size: 15px;
         }
 
-        .error-msg {
+        /* Input Group */
+        .input-group {
+            margin-bottom: 16px;
+            width: 100%;
+        }
+        .input-label {
+            display: block;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+        }
+        .input-wrapper {
+            position: relative;
+        }
+        .input-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            fill: var(--text-muted);
+            transition: fill 0.2s;
+        }
+        input[type="text"] {
+            width: 100%;
+            padding: 16px 16px 16px 48px;
+            font-size: 16px;
+            font-family: inherit;
+            background: var(--bg-card);
+            border: 2px solid var(--border);
+            border-radius: 14px;
+            color: var(--text);
+            outline: none;
+            transition: all 0.2s;
+        }
+        input:focus {
+            border-color: var(--primary);
+            background: rgba(0, 102, 255, 0.05);
+        }
+        input:focus + .input-icon,
+        input:focus ~ .input-icon {
+            fill: var(--primary);
+        }
+        input::placeholder {
+            color: var(--text-muted);
+        }
+
+        /* Error Message */
+        .error-message {
             display: none;
             width: 100%;
+            max-width: 320px;
             padding: 12px 16px;
             background: rgba(239, 68, 68, 0.15);
             border: 1px solid rgba(239, 68, 68, 0.3);
             border-radius: 12px;
             color: #fca5a5;
             font-size: 14px;
-            margin-bottom: 20px;
-            text-align: center;
+            margin-bottom: 16px;
+            align-items: center;
+            gap: 10px;
         }
-        .error-msg.show {
-            display: block;
+        .error-message.show {
+            display: flex;
+        }
+        .error-message svg {
+            width: 18px;
+            height: 18px;
+            fill: #fca5a5;
+            flex-shrink: 0;
+        }
+
+        /* Buttons */
+        .btn {
+            width: 100%;
+            padding: 16px;
+            font-size: 16px;
+            font-weight: 600;
+            font-family: inherit;
+            border: none;
+            border-radius: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: 0 8px 24px rgba(0, 102, 255, 0.3);
+        }
+        .btn-primary:active {
+            transform: scale(0.98);
+            box-shadow: 0 4px 12px rgba(0, 102, 255, 0.3);
+        }
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-secondary {
+            background: var(--bg-card);
+            color: var(--text);
+            border: 2px solid var(--border);
+        }
+        .btn-secondary:active {
+            background: rgba(255,255,255,0.05);
         }
 
         .btn-google-large {
@@ -127,83 +269,314 @@
             font-family: inherit;
             font-weight: 500;
         }
-
         .btn-google-large:hover {
             background: #f8f8f8;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
         }
-
         .btn-google-large:active {
             transform: scale(0.98);
         }
 
+        /* Spinner */
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Footer Links */
+        .footer-links {
+            margin-top: 24px;
+            text-align: center;
+        }
+        .footer-links a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+        }
         .footer-text {
-            margin-top: 40px;
             color: var(--text-muted);
             font-size: 14px;
         }
-        .footer-text a {
-            color: var(--primary);
-            text-decoration: none;
+
+        /* Page Transitions */
+        .page {
+            display: none;
+            animation: fadeIn 0.3s ease;
         }
-        .footer-text a:hover {
-            text-decoration: underline;
+        .page.active {
+            display: flex;
+            flex-direction: column;
+            min-height: 100%;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Back Button */
+        .back-btn {
+            position: absolute;
+            top: calc(var(--safe-top) + 16px);
+            left: 16px;
+            width: 40px;
+            height: 40px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10;
+        }
+        .back-btn svg {
+            width: 20px;
+            height: 20px;
+            fill: var(--text);
         }
     </style>
 </head>
 <body>
+    <!-- Loading overlay -->
+    <div class="loading-overlay hidden" id="loading-overlay">
+        <div class="spinner" style="width:40px;height:40px;border-width:3px;"></div>
+        <p>Memproses login...</p>
+    </div>
+
     <div class="bg-gradient"></div>
 
     <div class="container">
-        <div class="logo-section">
-            <img src="/db-logo.png" alt="dokterDIBYA">
-            <div class="app-tagline">Portal Privat Anda</div>
+        <!-- LOGIN PAGE -->
+        <div class="page active" id="page-login">
+            <div class="logo-section">
+                <img src="/db-logo.png" alt="dokterDIBYA" style="width: 120px; height: 120px; margin-bottom: 16px; border-radius: 24px; background: white; padding: 8px; box-shadow: 0 8px 24px rgba(0,0,0,0.3);">
+                <div class="app-tagline">Portal Privat Anda</div>
+            </div>
+
+            <div class="form-section">
+                <h1 class="form-title">Selamat Datang</h1>
+                <p class="form-subtitle">Masuk untuk mengakses portal pasien</p>
+
+                <div class="error-message" id="login-error">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                    <span id="login-error-text">Login gagal</span>
+                </div>
+
+                <button type="button" class="btn-google-large" id="btn-google" onclick="loginWithGoogle()">
+                    <svg width="24" height="24" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                    </svg>
+                    <span>Masuk dengan Google</span>
+                </button>
+
+                <div class="footer-links">
+                    <p class="footer-text">Belum punya akun? <a href="#" onclick="showPage('page-regcode'); return false;">Daftar</a></p>
+                </div>
+            </div>
         </div>
 
-        <div class="form-section">
-            <h1 class="form-title">Selamat Datang</h1>
-            <p class="form-subtitle">Masuk untuk mengakses portal pasien</p>
-
-            <div class="error-msg" id="error-msg"></div>
-
-            <button type="button" class="btn-google-large" id="btn-google">
-                <svg width="24" height="24" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                </svg>
-                <span>Masuk dengan Google</span>
+        <!-- REGISTRATION CODE PAGE -->
+        <div class="page" id="page-regcode">
+            <button class="back-btn" onclick="showPage('page-login')">
+                <svg viewBox="0 0 24 24"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
             </button>
 
-            <p class="footer-text">
-                Kembali ke <a href="/index.html">Halaman Utama</a>
-            </p>
+            <div class="logo-section" style="padding-top: 60px;">
+                <div style="font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">Daftar Baru</div>
+                <div class="app-tagline" style="font-size: 14px; color: var(--text-muted); margin-top: 4px;">Masukkan kode registrasi untuk mendaftar</div>
+            </div>
+
+            <div class="form-section" style="justify-content: flex-start;">
+                <div class="error-message" id="regcode-error">
+                    <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                    <span id="regcode-error-text">Kode tidak valid</span>
+                </div>
+
+                <!-- Step 1: Code Input -->
+                <div id="regcode-step1" style="width: 100%; max-width: 320px;">
+                    <div style="background: rgba(0, 102, 255, 0.1); border: 1px solid rgba(0, 102, 255, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                        <p style="font-size: 14px; color: var(--text-muted); margin: 0;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--primary)" style="vertical-align: middle; margin-right: 8px;"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z"/></svg>
+                            Pendaftaran baru memerlukan kode registrasi. Hubungi admin klinik untuk mendapatkan kode.
+                        </p>
+                    </div>
+
+                    <form id="regcode-form" onsubmit="handleRegCodeSubmit(event)">
+                        <div class="input-group">
+                            <label class="input-label">Kode Registrasi</label>
+                            <div class="input-wrapper">
+                                <input type="text" id="regcode-input" placeholder="Masukkan 6 karakter kode" required maxlength="6" style="text-transform: uppercase; letter-spacing: 2px; text-align: center; font-size: 20px; font-weight: 600;">
+                                <svg class="input-icon" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary" id="btn-validate-code" style="margin-top: 16px;">
+                            <span>Validasi Kode</span>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Step 2: Code Valid - Show Google Sign-In -->
+                <div id="regcode-step2" style="display: none; width: 100%; max-width: 320px;">
+                    <div style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
+                        <p style="font-size: 14px; color: #10b981; margin: 0; display: flex; align-items: center; gap: 8px;">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="#10b981"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+                            <span>Kode valid! Lanjutkan dengan Google untuk mendaftar.</span>
+                        </p>
+                    </div>
+
+                    <button type="button" class="btn-google-large" id="btn-google-register" onclick="registerWithGoogle()">
+                        <svg width="24" height="24" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+                        </svg>
+                        <span>Daftar dengan Google</span>
+                    </button>
+
+                    <button type="button" class="btn btn-secondary" onclick="resetRegCodePage()" style="margin-top: 12px; max-width: 320px;">
+                        <span>Gunakan Kode Lain</span>
+                    </button>
+                </div>
+
+                <div class="footer-links">
+                    <p class="footer-text">Sudah punya akun? <a href="#" onclick="showPage('page-login'); return false;">Masuk</a></p>
+                </div>
+            </div>
         </div>
     </div>
 
     <script>
-        // If accessed from mobile app context, redirect to app
+        // ==================== MOBILE APP CONTEXT ====================
         const urlParams = new URLSearchParams(window.location.search);
         const referrer = document.referrer;
         const fromMobile = localStorage.getItem('from_mobile_app') === 'true';
 
-        // Check multiple indicators for mobile app context
         if (fromMobile || (referrer && referrer.includes('dokterdibya.com') && referrer.includes('token='))) {
             console.log('[Login] Detected mobile app context, redirecting to app');
             localStorage.removeItem('from_mobile_app');
             window.location.href = 'dokterdibya://logout';
         }
 
+        // ==================== AUTH CONFIG ====================
         const GOOGLE_CLIENT_ID = '738335602560-52as846lk2oo78fr38a86elu8888m7eh.apps.googleusercontent.com';
+        let validatedRegCode = null;
 
-        // Google login
-        document.getElementById('btn-google').addEventListener('click', () => {
-            const redirectUri = encodeURIComponent('https://dokterdibya.com/mobile-google-callback.html');
-            const scope = encodeURIComponent('email profile');
-            const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${GOOGLE_CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&access_type=offline&prompt=consent`;
-            window.location.href = url;
+        // ==================== AUTO-LOGIN CHECK ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            const token = localStorage.getItem('vps_auth_token') || sessionStorage.getItem('vps_auth_token');
+            const user = JSON.parse(localStorage.getItem('patient_user') || '{}');
+            if (token && user.id) {
+                window.location.href = '/patient-menu.html';
+            }
         });
+
+        // ==================== PAGE NAVIGATION ====================
+        function showPage(pageId) {
+            document.querySelectorAll('.page').forEach(function(p) { p.classList.remove('active'); });
+            document.getElementById(pageId).classList.add('active');
+            document.querySelectorAll('.error-message').forEach(function(e) { e.classList.remove('show'); });
+        }
+
+        // ==================== ERROR HANDLING ====================
+        function showError(elementId, message) {
+            var errorEl = document.getElementById(elementId);
+            var textEl = document.getElementById(elementId + '-text');
+            textEl.textContent = message;
+            errorEl.classList.add('show');
+        }
+
+        // ==================== GOOGLE LOGIN (Web OAuth) ====================
+        function loginWithGoogle() {
+            var redirectUri = encodeURIComponent('https://dokterdibya.com/mobile-google-callback.html');
+            var scope = encodeURIComponent('email profile');
+            var url = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=' + GOOGLE_CLIENT_ID +
+                '&redirect_uri=' + redirectUri +
+                '&response_type=code&scope=' + scope +
+                '&access_type=offline&prompt=consent';
+            window.location.href = url;
+        }
+
+        // ==================== REGISTRATION CODE ====================
+        function handleRegCodeSubmit(event) {
+            event.preventDefault();
+            document.getElementById('regcode-error').classList.remove('show');
+
+            var code = document.getElementById('regcode-input').value.trim();
+            if (!code || code.length !== 6) {
+                showError('regcode-error', 'Masukkan kode 6 karakter');
+                return;
+            }
+
+            validateRegCode(code);
+        }
+
+        async function validateRegCode(code) {
+            var btn = document.getElementById('btn-validate-code');
+            btn.disabled = true;
+            btn.innerHTML = '<div class="spinner"></div>';
+            document.getElementById('regcode-error').classList.remove('show');
+
+            try {
+                var res = await fetch('/api/registration-codes/validate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ code: code.toUpperCase().trim() })
+                });
+                var data = await res.json();
+
+                if (res.ok && data.success) {
+                    validatedRegCode = code.toUpperCase().trim();
+                    document.getElementById('regcode-step1').style.display = 'none';
+                    document.getElementById('regcode-step2').style.display = 'block';
+                } else {
+                    showError('regcode-error', data.message || 'Kode registrasi tidak valid');
+                }
+            } catch (err) {
+                showError('regcode-error', 'Tidak dapat terhubung ke server');
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = '<span>Validasi Kode</span>';
+        }
+
+        function resetRegCodePage() {
+            validatedRegCode = null;
+            document.getElementById('regcode-input').value = '';
+            document.getElementById('regcode-step1').style.display = 'block';
+            document.getElementById('regcode-step2').style.display = 'none';
+            document.getElementById('regcode-error').classList.remove('show');
+        }
+
+        function registerWithGoogle() {
+            if (!validatedRegCode) {
+                showError('regcode-error', 'Kode registrasi belum divalidasi');
+                resetRegCodePage();
+                return;
+            }
+
+            localStorage.setItem('pending_reg_code', validatedRegCode);
+
+            var redirectUri = encodeURIComponent('https://dokterdibya.com/mobile-google-callback.html');
+            var scope = encodeURIComponent('email profile');
+            var url = 'https://accounts.google.com/o/oauth2/v2/auth?client_id=' + GOOGLE_CLIENT_ID +
+                '&redirect_uri=' + redirectUri +
+                '&response_type=code&scope=' + scope +
+                '&access_type=offline&prompt=consent';
+            window.location.href = url;
+        }
     </script>
 </body>
 </html>
