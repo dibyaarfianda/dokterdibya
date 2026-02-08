@@ -1061,7 +1061,7 @@ router.post('/billing/:mrId', verifyToken, async (req, res, next) => {
 
             // Check if billing exists
             const [existingRows] = await connection.query(
-                `SELECT id FROM sunday_clinic_billings WHERE mr_id = ?`,
+                `SELECT id, status FROM sunday_clinic_billings WHERE mr_id = ?`,
                 [normalizedMrId]
             );
 
@@ -1069,7 +1069,31 @@ router.post('/billing/:mrId', verifyToken, async (req, res, next) => {
 
             if (existingRows.length > 0) {
                 // Update existing billing
-                billingId = existingRows[0].id;
+                const existingBilling = existingRows[0];
+                billingId = existingBilling.id;
+
+                // Guard: paid billing cannot be edited
+                if (existingBilling.status === 'paid') {
+                    await connection.rollback();
+                    return res.status(400).json({ success: false, message: 'Tagihan sudah dibayar, tidak dapat diubah.' });
+                }
+
+                // Guard: confirmed billing - only dokter can edit
+                if (existingBilling.status === 'confirmed') {
+                    const isDokterEdit = req.user.role === ROLE_NAMES.DOKTER || req.user.is_superadmin || isSuperadminRole(req.user.role_id);
+                    if (!isDokterEdit) {
+                        await connection.rollback();
+                        return res.status(400).json({ success: false, message: 'Tagihan sudah dikonfirmasi, tidak dapat diubah.' });
+                    }
+                    // Block if pending payment
+                    const [[pendingPay]] = await connection.query(
+                        `SELECT id FROM tagihan_payments WHERE billing_id = ? AND status = 'pending'`, [billingId]
+                    );
+                    if (pendingPay) {
+                        await connection.rollback();
+                        return res.status(400).json({ success: false, message: 'Ada pembayaran pending. Batalkan pembayaran terlebih dahulu.' });
+                    }
+                }
 
                 // Delete existing items
                 await connection.query(
@@ -1261,7 +1285,7 @@ router.post('/billing/:mrId/obat', verifyToken, async (req, res, next) => {
         await connection.beginTransaction();
 
         const [billingRows] = await connection.query(
-            `SELECT id FROM sunday_clinic_billings WHERE mr_id = ? FOR UPDATE`,
+            `SELECT id, status FROM sunday_clinic_billings WHERE mr_id = ? FOR UPDATE`,
             [normalizedMrId]
         );
 
@@ -1275,7 +1299,31 @@ router.post('/billing/:mrId/obat', verifyToken, async (req, res, next) => {
             );
             billingId = insertResult.insertId;
         } else {
-            billingId = billingRows[0].id;
+            const existingBilling = billingRows[0];
+            billingId = existingBilling.id;
+
+            // Guard: paid billing cannot be edited
+            if (existingBilling.status === 'paid') {
+                await connection.rollback();
+                return res.status(400).json({ success: false, message: 'Tagihan sudah dibayar, tidak dapat diubah.' });
+            }
+
+            // Guard: confirmed billing - only dokter can edit
+            if (existingBilling.status === 'confirmed') {
+                const isDokterEdit = req.user.role === ROLE_NAMES.DOKTER || req.user.is_superadmin || isSuperadminRole(req.user.role_id);
+                if (!isDokterEdit) {
+                    await connection.rollback();
+                    return res.status(400).json({ success: false, message: 'Tagihan sudah dikonfirmasi, tidak dapat diubah.' });
+                }
+                // Block if pending payment
+                const [[pendingPay]] = await connection.query(
+                    `SELECT id FROM tagihan_payments WHERE billing_id = ? AND status = 'pending'`, [billingId]
+                );
+                if (pendingPay) {
+                    await connection.rollback();
+                    return res.status(400).json({ success: false, message: 'Ada pembayaran pending. Batalkan pembayaran terlebih dahulu.' });
+                }
+            }
         }
 
         // NOTE: No longer deleting existing items - now APPENDING new items
@@ -1926,7 +1974,7 @@ router.delete('/billing/:mrId/items/:itemType', verifyToken, async (req, res, ne
 
         // Get billing record
         const [billingRows] = await connection.query(
-            `SELECT id FROM sunday_clinic_billings WHERE mr_id = ? FOR UPDATE`,
+            `SELECT id, status FROM sunday_clinic_billings WHERE mr_id = ? FOR UPDATE`,
             [normalizedMrId]
         );
 
@@ -1938,7 +1986,32 @@ router.delete('/billing/:mrId/items/:itemType', verifyToken, async (req, res, ne
             });
         }
 
-        const billingId = billingRows[0].id;
+        const billing = billingRows[0];
+        const billingId = billing.id;
+        const isDokterEdit = req.user.role === ROLE_NAMES.DOKTER || req.user.is_superadmin || isSuperadminRole(req.user.role_id);
+
+        // Paid billing cannot be edited
+        if (billing.status === 'paid') {
+            await connection.rollback();
+            return res.status(400).json({ success: false, message: 'Tagihan sudah dibayar, tidak dapat diubah.' });
+        }
+
+        // Confirmed billing: only dokter can edit
+        if (billing.status === 'confirmed' && !isDokterEdit) {
+            await connection.rollback();
+            return res.status(400).json({ success: false, message: 'Tagihan sudah dikonfirmasi, tidak dapat diubah.' });
+        }
+
+        // Block edit if pending payment exists
+        if (billing.status === 'confirmed') {
+            const [[pendingPay]] = await connection.query(
+                `SELECT id FROM tagihan_payments WHERE billing_id = ? AND status = 'pending'`, [billingId]
+            );
+            if (pendingPay) {
+                await connection.rollback();
+                return res.status(400).json({ success: false, message: 'Ada pembayaran pending. Batalkan pembayaran terlebih dahulu.' });
+            }
+        }
 
         // Delete items of specified type
         await connection.query(
@@ -2013,7 +2086,7 @@ router.delete('/billing/:mrId/items/code/:code', verifyToken, async (req, res, n
 
         // Get billing record
         const [billingRows] = await connection.query(
-            `SELECT id FROM sunday_clinic_billings WHERE mr_id = ? FOR UPDATE`,
+            `SELECT id, status FROM sunday_clinic_billings WHERE mr_id = ? FOR UPDATE`,
             [normalizedMrId]
         );
 
@@ -2025,7 +2098,32 @@ router.delete('/billing/:mrId/items/code/:code', verifyToken, async (req, res, n
             });
         }
 
-        const billingId = billingRows[0].id;
+        const billing = billingRows[0];
+        const billingId = billing.id;
+        const isDokterEdit = req.user.role === ROLE_NAMES.DOKTER || req.user.is_superadmin || isSuperadminRole(req.user.role_id);
+
+        // Paid billing cannot be edited
+        if (billing.status === 'paid') {
+            await connection.rollback();
+            return res.status(400).json({ success: false, message: 'Tagihan sudah dibayar, tidak dapat diubah.' });
+        }
+
+        // Confirmed billing: only dokter can edit
+        if (billing.status === 'confirmed' && !isDokterEdit) {
+            await connection.rollback();
+            return res.status(400).json({ success: false, message: 'Tagihan sudah dikonfirmasi, tidak dapat diubah.' });
+        }
+
+        // Block edit if pending payment exists
+        if (billing.status === 'confirmed') {
+            const [[pendingPay]] = await connection.query(
+                `SELECT id FROM tagihan_payments WHERE billing_id = ? AND status = 'pending'`, [billingId]
+            );
+            if (pendingPay) {
+                await connection.rollback();
+                return res.status(400).json({ success: false, message: 'Ada pembayaran pending. Batalkan pembayaran terlebih dahulu.' });
+            }
+        }
 
         // Delete item by code
         const [deleteResult] = await connection.query(
@@ -2121,14 +2219,39 @@ router.delete('/billing/:mrId/items/id/:itemId', verifyToken, async (req, res, n
         }
 
         const billing = billingRows[0];
+        const isDokter = req.user.role === ROLE_NAMES.DOKTER || req.user.is_superadmin || isSuperadminRole(req.user.role_id);
 
-        // Only allow deletion when status is 'draft'
-        if (billing.status !== 'draft') {
+        // Paid billing cannot be edited by anyone
+        if (billing.status === 'paid') {
+            await connection.rollback();
+            return res.status(400).json({
+                success: false,
+                message: 'Tagihan sudah dibayar, tidak dapat diubah.'
+            });
+        }
+
+        // Confirmed billing: only dokter can edit
+        if (billing.status === 'confirmed' && !isDokter) {
             await connection.rollback();
             return res.status(400).json({
                 success: false,
                 message: 'Tidak dapat menghapus item. Tagihan sudah dikonfirmasi.'
             });
+        }
+
+        // Block edit if there's a pending payment
+        if (billing.status === 'confirmed') {
+            const [[pendingPayment]] = await connection.query(
+                `SELECT id FROM tagihan_payments WHERE billing_id = ? AND status = 'pending'`,
+                [billing.id]
+            );
+            if (pendingPayment) {
+                await connection.rollback();
+                return res.status(400).json({
+                    success: false,
+                    message: 'Ada pembayaran pending. Batalkan pembayaran terlebih dahulu.'
+                });
+            }
         }
 
         // Get item details before deletion (for response)

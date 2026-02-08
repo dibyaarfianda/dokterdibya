@@ -750,14 +750,18 @@ export default {
             return 'Rp ' + number.toLocaleString('id-ID', { maximumFractionDigits: 0 });
         };
 
+        // Check user role - dokter can edit even after confirmation
+        const userRole = window.currentStaffIdentity?.role || '';
+        const isDokter = userRole === 'dokter' || userRole === 'superadmin';
+
         // Calculate total
         let subtotal = 0;
         const itemsHtml = items.map(item => {
             const itemTotal = (item.quantity || 1) * (item.price || 0);
             subtotal += itemTotal;
 
-            // Show delete button for obat items when status is draft
-            const showDeleteBtn = item.item_type === 'obat' && status === 'draft';
+            // Show delete button for obat items when draft, or when confirmed and user is dokter
+            const showDeleteBtn = item.item_type === 'obat' && (status === 'draft' || (status === 'confirmed' && isDokter));
             const deleteBtn = showDeleteBtn
                 ? `<button type="button" class="btn btn-sm btn-outline-danger ml-2 delete-obat-btn"
                            data-item-id="${item.id}"
@@ -787,10 +791,6 @@ export default {
         } else if (status === 'paid') {
             statusBadge = '<span class="badge badge-primary">Lunas</span>';
         }
-
-        // Check user role - only dokter can confirm billing
-        const userRole = window.currentStaffIdentity?.role || '';
-        const isDokter = userRole === 'dokter' || userRole === 'superadmin';
 
         // Action buttons
         let actionsHtml = '';
@@ -917,7 +917,7 @@ export default {
                                data-name="${escapeHtml(item.name)}"
                                data-price="${item.price}"
                                ${isChecked ? 'checked' : ''}
-                               ${status === 'confirmed' ? 'disabled' : ''}>
+                               ${(status === 'confirmed' && !isDokter) || status === 'paid' ? 'disabled' : ''}>
                         <label class="custom-control-label" for="admin-${item.code}">
                             ${escapeHtml(item.name)}
                             <small class="text-muted d-block">${formatRupiahLocal(item.price)}</small>
@@ -941,7 +941,9 @@ export default {
                         <div class="row">
                             ${adminCheckboxesHtml}
                         </div>
-                        ${status === 'confirmed' ? '<small class="text-muted"><i class="fas fa-lock mr-1"></i>Tagihan sudah dikonfirmasi, tidak dapat diubah.</small>' : ''}
+                        ${status === 'confirmed' && !isDokter ? '<small class="text-muted"><i class="fas fa-lock mr-1"></i>Tagihan sudah dikonfirmasi, tidak dapat diubah.</small>' : ''}
+                        ${status === 'confirmed' && isDokter ? '<small class="text-info"><i class="fas fa-edit mr-1"></i>Dokter dapat mengubah item tagihan.</small>' : ''}
+                        ${status === 'paid' ? '<small class="text-muted"><i class="fas fa-lock mr-1"></i>Tagihan sudah dibayar.</small>' : ''}
                     </div>
 
                     <hr>
