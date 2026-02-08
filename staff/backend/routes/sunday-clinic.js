@@ -901,6 +901,78 @@ router.post('/records/:mrId/:section', verifyToken, async (req, res, next) => {
                 logger.warn('Auto-finalize warning:', finalizeError);
                 // Don't fail the resume save
             }
+
+            // Auto-publish resume medis to patient portal
+            try {
+                const patientId = recordRow.patient_id;
+                const resumeContent = data.resume || data.content || '';
+
+                if (resumeContent) {
+                    // Get patient name for title
+                    const [patientRows] = await db.query(
+                        'SELECT full_name FROM patients WHERE id = ?', [patientId]
+                    );
+                    const patientName = patientRows[0]?.full_name || 'Pasien';
+                    const today = new Date();
+                    const dateStr = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+                    const title = `Resume Medis - ${patientName} - ${dateStr}`;
+
+                    // Check if already published for this MR
+                    const [existingDoc] = await db.query(
+                        `SELECT id FROM patient_documents
+                         WHERE patient_id = ? AND mr_id = ? AND document_type = 'resume_medis' AND status = 'published'`,
+                        [patientId, normalizedMrId]
+                    );
+
+                    const sourceData = JSON.stringify({ content: resumeContent, generatedAt: new Date().toISOString() });
+
+                    if (existingDoc.length > 0) {
+                        // Update existing
+                        await db.query(
+                            `UPDATE patient_documents SET title = ?, source_data = ?, published_at = NOW(), published_by = ?, updated_at = NOW()
+                             WHERE id = ?`,
+                            [title, sourceData, req.user.id || null, existingDoc[0].id]
+                        );
+                    } else {
+                        // Insert new
+                        await db.query(
+                            `INSERT INTO patient_documents
+                             (patient_id, mr_id, document_type, title, file_name, file_type, file_size,
+                              source_data, source, status, published_at, published_by, created_by, created_at)
+                             VALUES (?, ?, 'resume_medis', ?, ?, 'text/plain', 0, ?, 'clinic', 'published', NOW(), ?, ?, NOW())`,
+                            [patientId, normalizedMrId, title, title,
+                             sourceData, req.user.id || null, req.user.id || null]
+                        );
+
+                        // Only notify on first publish (not updates)
+                        const { createPatientNotification } = require('./patient-notifications');
+                        await createPatientNotification({
+                            patient_id: patientId,
+                            type: 'document',
+                            title: 'Resume Medis Baru',
+                            message: 'Resume medis Anda telah tersedia. Klik untuk melihat.',
+                            link: '/dokumen-medis.html',
+                            icon: 'fa fa-file-medical',
+                            icon_color: 'text-success'
+                        });
+                    }
+
+                    // Broadcast Socket.IO for real-time refresh
+                    const realtimeSync = require('../realtime-sync');
+                    realtimeSync.broadcast({
+                        type: 'document:patient_updated',
+                        patient_id: patientId,
+                        mr_id: normalizedMrId,
+                        document_type: 'resume_medis'
+                    });
+
+                    logger.info('Resume medis auto-published to patient portal', {
+                        mrId: normalizedMrId, patientId, isUpdate: existingDoc.length > 0
+                    });
+                }
+            } catch (autoPublishError) {
+                logger.warn('Resume medis auto-publish warning:', autoPublishError);
+            }
         }
 
         // Auto-publish USG photos to patient portal when USG section is saved
