@@ -1804,11 +1804,13 @@
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
                 const data = await response.json();
+                const badge = document.getElementById('notif-badge');
 
                 if (data.success && data.count > 0) {
-                    const badge = document.getElementById('notif-badge');
                     badge.textContent = data.count > 99 ? '99+' : data.count;
                     badge.style.display = 'flex';
+                } else if (badge) {
+                    badge.style.display = 'none';
                 }
             } catch (error) {
                 // Silently fail
@@ -1847,6 +1849,7 @@
         }
         // Expose for Socket.IO listener in announcements-dashboard.js
         window.loadUnreadUsgCount = loadUnreadUsgCount;
+        window.loadNotificationCount = loadNotificationCount;
 
         // ==================== ANNOUNCEMENTS ====================
         // Announcements are loaded by external js/announcements-dashboard.js
