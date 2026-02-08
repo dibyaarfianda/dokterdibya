@@ -30,6 +30,13 @@ function initializeSocket() {
     socket.on('announcement:updated', () => {
         loadAnnouncements();
     });
+
+    // Listen for USG photo updates (auto-publish from staff)
+    socket.on('usg:patient_updated', () => {
+        if (typeof window.loadUnreadUsgCount === 'function') {
+            window.loadUnreadUsgCount();
+        }
+    });
 }
 
 async function loadAnnouncements() {
