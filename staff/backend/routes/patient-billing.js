@@ -290,8 +290,8 @@ router.get('/:billingId/payment-status/:paymentId', async (req, res) => {
             });
         }
 
-        // Check local expiration
-        if (new Date(payment.expires_at) < new Date()) {
+        // Check local expiration (skip for insurance - no expiry)
+        if (payment.expires_at && new Date(payment.expires_at) < new Date()) {
             await db.query(
                 'UPDATE tagihan_payments SET status = ? WHERE id = ?',
                 ['expired', paymentId]
@@ -369,8 +369,8 @@ router.get('/:billingId/payment-details', async (req, res) => {
             return sendSuccess(res, null, 'Tidak ada pembayaran aktif');
         }
 
-        // Check expiration for pending
-        if (payment.status === 'pending' && new Date(payment.expires_at) < new Date()) {
+        // Check expiration for pending (skip for insurance - no expiry)
+        if (payment.status === 'pending' && payment.expires_at && new Date(payment.expires_at) < new Date()) {
             await db.query(
                 'UPDATE tagihan_payments SET status = ? WHERE id = ?',
                 ['expired', payment.id]
@@ -391,12 +391,20 @@ router.get('/:billingId/payment-details', async (req, res) => {
         if (payment.payment_method === 'qris') {
             responseData.qris_url = payment.qris_url;
             responseData.qris_string = payment.qris_string;
+        } else if (payment.payment_method === 'asuransi') {
+            try {
+                responseData.insurance_info = typeof payment.insurance_info === 'string'
+                    ? JSON.parse(payment.insurance_info)
+                    : (payment.insurance_info || {});
+            } catch (e) {
+                responseData.insurance_info = {};
+            }
         } else {
             responseData.va_number = payment.va_number;
             responseData.va_bank_code = payment.va_bank_code;
         }
 
-        if (payment.status === 'pending') {
+        if (payment.status === 'pending' && payment.expires_at) {
             responseData.expires_in_seconds = Math.max(0,
                 Math.floor((new Date(payment.expires_at) - new Date()) / 1000)
             );
@@ -411,6 +419,111 @@ router.get('/:billingId/payment-details', async (req, res) => {
             error: error.message
         });
         return sendError(res, 'Gagal mengambil detail pembayaran', 500);
+    }
+});
+
+/**
+ * POST /:billingId/create-insurance-payment
+ * Create an insurance payment claim (status: pending)
+ */
+router.post('/:billingId/create-insurance-payment', async (req, res) => {
+    const patientId = req.user.id;
+    const billingId = parseInt(req.params.billingId);
+    const { insurance_provider, insurance_number, notes } = req.body;
+
+    try {
+        if (!insurance_provider || !insurance_provider.trim()) {
+            return sendError(res, 'Nama asuransi wajib diisi', 400);
+        }
+
+        // Get billing (verify ownership + status)
+        const [[billing]] = await db.query(`
+            SELECT b.id, b.mr_id, b.patient_id, b.total, b.status,
+                   p.full_name as patient_name
+            FROM sunday_clinic_billings b
+            JOIN patients p ON p.id = b.patient_id
+            WHERE b.id = ? AND b.patient_id = ?
+        `, [billingId, patientId]);
+
+        if (!billing) {
+            return sendError(res, 'Tagihan tidak ditemukan', 404);
+        }
+
+        if (billing.status !== 'confirmed') {
+            return sendError(res, 'Tagihan belum dikonfirmasi atau sudah dibayar', 400);
+        }
+
+        // Check for existing pending payment
+        const [[existingPayment]] = await db.query(`
+            SELECT id, payment_method, status
+            FROM tagihan_payments
+            WHERE billing_id = ? AND status = 'pending'
+            ORDER BY created_at DESC LIMIT 1
+        `, [billingId]);
+
+        if (existingPayment) {
+            return sendError(res, 'Sudah ada pembayaran yang sedang diproses', 400);
+        }
+
+        const amount = parseFloat(billing.total);
+        const insuranceInfo = {
+            provider: insurance_provider.trim(),
+            number: (insurance_number || '').trim() || null,
+            notes: (notes || '').trim() || null
+        };
+
+        // Insert insurance payment
+        const [insertResult] = await db.query(`
+            INSERT INTO tagihan_payments (
+                billing_id, mr_id, patient_id,
+                payment_method, amount, status, insurance_info, created_by
+            ) VALUES (?, ?, ?, 'asuransi', ?, 'pending', ?, ?)
+        `, [
+            billing.id,
+            billing.mr_id,
+            patientId,
+            amount,
+            JSON.stringify(insuranceInfo),
+            'Patient: ' + (billing.patient_name || patientId)
+        ]);
+
+        // Log the event
+        await db.query(`
+            INSERT INTO tagihan_payment_logs (
+                payment_id, billing_id, mr_id, event_type, event_source,
+                status_after, request_data, ip_address
+            ) VALUES (?, ?, ?, 'payment.created', 'api', 'pending', ?, ?)
+        `, [
+            insertResult.insertId,
+            billing.id,
+            billing.mr_id,
+            JSON.stringify({ payment_method: 'asuransi', source: 'patient_portal', insurance_info: insuranceInfo }),
+            req.ip
+        ]);
+
+        logger.info('[PatientBilling] Insurance payment created', {
+            patientId,
+            mrId: billing.mr_id,
+            paymentId: insertResult.insertId,
+            insuranceProvider: insuranceInfo.provider,
+            amount
+        });
+
+        return sendSuccess(res, {
+            payment_id: insertResult.insertId,
+            payment_method: 'asuransi',
+            amount,
+            status: 'pending',
+            insurance_info: insuranceInfo
+        }, 'Klaim asuransi berhasil dibuat');
+
+    } catch (error) {
+        logger.error('[PatientBilling] Create insurance payment failed', {
+            patientId,
+            billingId,
+            error: error.message
+        });
+        return sendError(res, error.message || 'Gagal membuat klaim asuransi', 500);
     }
 });
 
