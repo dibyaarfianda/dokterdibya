@@ -759,8 +759,7 @@ router.post('/google-auth-code', async (req, res) => {
                 // Validate registration code
                 const [codes] = await db.query(
                     `SELECT * FROM registration_codes
-                     WHERE code = ? AND is_active = 1 AND (expires_at IS NULL OR expires_at > NOW())
-                     AND (max_uses IS NULL OR current_uses < max_uses)`,
+                     WHERE code = ? AND status = 'active' AND expires_at > NOW()`,
                     [registrationCode]
                 );
 
@@ -773,12 +772,6 @@ router.post('/google-auth-code', async (req, res) => {
                         is_new_patient: true
                     });
                 }
-
-                // Increment usage count
-                await db.query(
-                    'UPDATE registration_codes SET current_uses = current_uses + 1 WHERE id = ?',
-                    [codes[0].id]
-                );
                 console.log('[GOOGLE-AUTH-CODE] Registration code validated:', registrationCode);
             }
 
