@@ -682,6 +682,8 @@
                     </div>
                     -->
 
+                    <!-- VA methods hidden: QRIS-only mode -->
+                    <!--
                     <div class="method-card" data-method="va_bni" onclick="selectMethod('va_bni')">
                         <div class="method-icon" style="background: #f15a22; color: white; font-size: 11px; font-weight: 700;">BNI</div>
                         <div class="method-info">
@@ -708,6 +710,7 @@
                         </div>
                         <div class="method-check"></div>
                     </div>
+                    -->
 
                     <div class="method-card" data-method="asuransi" onclick="selectMethod('asuransi')">
                         <div class="method-icon" style="background: linear-gradient(135deg, #06b6d4, #0891b2); color: white;">
@@ -755,6 +758,9 @@
             </div>
         </div>
     </div>
+
+    <!-- QRCode library for generating QR from qris_string (v3 API) -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
 
     <script>
         // ==================== STATE ====================
@@ -1174,11 +1180,17 @@
             html += '<div class="method-label">' + methodName + '</div>';
             html += '<div class="amount-label">' + formatRupiah(p.amount) + '</div>';
 
-            if (p.payment_method === 'qris' && p.qris_url) {
-                // QRIS display
-                html += '<div class="qr-container">' +
-                    '<img src="' + p.qris_url + '" alt="QR Code" onerror="this.parentElement.innerHTML=\'<p style=color:#999>QR tidak tersedia</p>\'">' +
-                '</div>';
+            if (p.payment_method === 'qris' && (p.qris_url || p.qris_string)) {
+                // QRIS display - use hosted image if available, otherwise generate locally
+                if (p.qris_url) {
+                    html += '<div class="qr-container">' +
+                        '<img src="' + p.qris_url + '" alt="QR Code" onerror="this.parentElement.innerHTML=\'<p style=color:#999>QR tidak tersedia</p>\'">' +
+                    '</div>';
+                } else {
+                    html += '<div class="qr-container">' +
+                        '<canvas id="patient-qrcode-canvas" style="max-width:220px;"></canvas>' +
+                    '</div>';
+                }
                 html += '<div class="qr-instruction">Scan QR code menggunakan aplikasi e-wallet<br>(GoPay, OVO, DANA, ShopeePay, dll)</div>';
             } else if (p.va_number) {
                 // VA display
@@ -1226,6 +1238,19 @@
             '</button>';
 
             document.getElementById('payment-content').innerHTML = html;
+
+            // Generate QR code locally if qris_string is available (v3 API)
+            if (p.payment_method === 'qris' && !p.qris_url && p.qris_string) {
+                var canvas = document.getElementById('patient-qrcode-canvas');
+                if (canvas && typeof QRCode !== 'undefined') {
+                    QRCode.toCanvas(canvas, p.qris_string, {
+                        width: 220,
+                        margin: 2
+                    }, function(err) {
+                        if (err) console.error('[PatientBilling] QR generation error:', err);
+                    });
+                }
+            }
 
             // Start polling and countdown
             startPolling();
