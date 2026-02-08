@@ -1504,7 +1504,9 @@ PLAN
     <!-- Medical import from text files -->
     <script type="module" src="/staff/public/scripts/sunday-clinic/utils/medical-import.js?v=20260111193043"></script>
     <!-- Payment modal (Xendit QRIS/VA) - regular script for global access -->
-    <script src="/staff/public/scripts/sunday-clinic/components/shared/payment-modal.js?v=20260206"></script>
+    <!-- QRCode library for generating QR from qris_string (v3 API) -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+    <script src="/staff/public/scripts/sunday-clinic/components/shared/payment-modal.js?v=20260208"></script>
     <script>
         // Mobile app mode detection and initialization
         (function() {
