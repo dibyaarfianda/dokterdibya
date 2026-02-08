@@ -1051,6 +1051,109 @@ router.post('/records/:mrId/:section', verifyToken, async (req, res, next) => {
             }
         }
 
+        // Auto-publish penunjang/lab results to patient portal when penunjang section is saved
+        if (section === 'penunjang') {
+            try {
+                const files = data.files || [];
+                const interpretation = data.interpretation || '';
+                const patientId = recordRow.patient_id;
+
+                // 1. Get currently published lab_result docs for this MR
+                const [existingDocs] = await db.query(
+                    `SELECT id, file_url FROM patient_documents
+                     WHERE patient_id = ? AND mr_id = ? AND document_type = 'lab_result' AND status = 'published'`,
+                    [patientId, normalizedMrId]
+                );
+
+                // 2. Build sets for comparison
+                const existingUrls = new Set(existingDocs.map(d => d.file_url));
+                const currentUrls = new Set(files.map(f => f.url));
+
+                // 3. Delete removed files from patient_documents
+                const toDelete = existingDocs.filter(d => !currentUrls.has(d.file_url));
+                if (toDelete.length > 0) {
+                    await db.query(
+                        `DELETE FROM patient_documents WHERE id IN (?)`,
+                        [toDelete.map(d => d.id)]
+                    );
+                }
+
+                // 4. Insert new files into patient_documents
+                const toInsert = files.filter(f => !existingUrls.has(f.url));
+                for (const file of toInsert) {
+                    await db.query(
+                        `INSERT INTO patient_documents
+                         (patient_id, mr_id, document_type, title, file_url, file_path, file_name, file_type, file_size,
+                          source, status, published_at, published_by, created_by, created_at)
+                         VALUES (?, ?, 'lab_result', ?, ?, ?, ?, ?, ?, 'clinic', 'published', NOW(), ?, ?, NOW())`,
+                        [patientId, normalizedMrId, file.name || 'Hasil Lab',
+                         file.url, file.key || file.filename, file.name, file.type || 'application/octet-stream', file.size || 0,
+                         req.user.id || null, req.user.id || null]
+                    );
+                }
+
+                // 5. Upsert interpretation as lab_interpretation doc
+                if (interpretation.trim()) {
+                    const [existingInterp] = await db.query(
+                        `SELECT id FROM patient_documents
+                         WHERE patient_id = ? AND mr_id = ? AND document_type = 'lab_interpretation' AND status = 'published'`,
+                        [patientId, normalizedMrId]
+                    );
+                    const sourceData = JSON.stringify({ content: interpretation, generatedAt: new Date().toISOString() });
+                    if (existingInterp.length > 0) {
+                        await db.query(
+                            `UPDATE patient_documents SET source_data = ?, published_at = NOW(), published_by = ?, updated_at = NOW() WHERE id = ?`,
+                            [sourceData, req.user.id || null, existingInterp[0].id]
+                        );
+                    } else {
+                        await db.query(
+                            `INSERT INTO patient_documents
+                             (patient_id, mr_id, document_type, title, file_name, file_type, file_size, source_data,
+                              source, status, published_at, published_by, created_by, created_at)
+                             VALUES (?, ?, 'lab_interpretation', 'Interpretasi Hasil Lab', 'Interpretasi Hasil Lab', 'text/plain', 0, ?,
+                              'clinic', 'published', NOW(), ?, ?, NOW())`,
+                            [patientId, normalizedMrId, sourceData, req.user.id || null, req.user.id || null]
+                        );
+                    }
+                }
+
+                // 6. Send notification only if new files were added
+                if (toInsert.length > 0) {
+                    const { createPatientNotification } = require('./patient-notifications');
+                    await createPatientNotification({
+                        patient_id: patientId,
+                        type: 'document',
+                        title: 'Hasil Lab Baru',
+                        message: `${toInsert.length} hasil lab baru telah tersedia. Klik untuk melihat.`,
+                        link: '/hasil-lab.html',
+                        icon: 'fa fa-flask',
+                        icon_color: 'text-info'
+                    });
+                }
+
+                // 7. Broadcast Socket.IO event for real-time refresh
+                const realtimeSync = require('../realtime-sync');
+                realtimeSync.broadcast({
+                    type: 'document:patient_updated',
+                    patient_id: patientId,
+                    mr_id: normalizedMrId,
+                    document_type: 'lab_result',
+                    added: toInsert.length,
+                    removed: toDelete.length
+                });
+
+                if (toInsert.length > 0 || toDelete.length > 0) {
+                    logger.info('Penunjang auto-published to patient portal', {
+                        mrId: normalizedMrId, patientId,
+                        added: toInsert.length, removed: toDelete.length
+                    });
+                }
+            } catch (autoPublishError) {
+                logger.warn('Penunjang auto-publish warning:', autoPublishError);
+                // Don't fail the save
+            }
+        }
+
         logger.info('Saved section data for Sunday Clinic', {
             mrId: normalizedMrId,
             section,
