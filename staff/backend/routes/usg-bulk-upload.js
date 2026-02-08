@@ -572,6 +572,46 @@ router.post('/execute', verifyToken, upload.single('zipFile'), async (req, res) 
                     });
                 }
 
+                // Auto-publish to patient portal
+                try {
+                    for (const photo of uploadedPhotos) {
+                        await db.query(
+                            `INSERT INTO patient_documents
+                             (patient_id, mr_id, document_type, title, file_url, file_path, file_name, file_type, file_size,
+                              source, status, published_at, published_by, created_by, created_at)
+                             VALUES (?, ?, 'usg_photo', ?, ?, ?, ?, ?, ?, 'clinic', 'published', NOW(), ?, ?, NOW())
+                             ON DUPLICATE KEY UPDATE updated_at = NOW()`,
+                            [patient_id, effectiveMrId, photo.name || 'Foto USG',
+                             photo.url, photo.key || photo.filename, photo.name, photo.type || 'image/jpeg', photo.size || 0,
+                             req.user.id || null, req.user.id || null]
+                        );
+                    }
+
+                    // Send notification
+                    const { createPatientNotification } = require('./patient-notifications');
+                    await createPatientNotification({
+                        patient_id,
+                        type: 'document',
+                        title: 'Foto USG Baru',
+                        message: `${uploadedPhotos.length} foto USG baru telah tersedia. Klik untuk melihat.`,
+                        link: '/album-usg.html',
+                        icon: 'fa fa-image',
+                        icon_color: 'text-primary'
+                    });
+
+                    // Broadcast for real-time refresh
+                    const realtimeSync = require('../realtime-sync');
+                    realtimeSync.broadcast({
+                        type: 'usg:patient_updated',
+                        patient_id,
+                        mr_id: effectiveMrId,
+                        added: uploadedPhotos.length,
+                        removed: 0
+                    });
+                } catch (publishError) {
+                    logger.warn('[BulkUSG] Auto-publish warning:', publishError);
+                }
+
                 results.push({
                     folder: folderName,
                     status: 'success',
